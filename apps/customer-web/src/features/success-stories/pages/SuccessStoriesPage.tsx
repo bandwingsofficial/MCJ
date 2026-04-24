@@ -32,19 +32,23 @@ export function SuccessStoriesPage() {
     <main>
 
       {/* HERO */}
-      <Section className="bg-white pt-20 pb-12">
+      <Section className="bg-white pt-10 pb-20">
         <Container>
 
-          <Heading
-            title="Success Stories"
-            subtitle="Real students. Real careers."
-            align="center"
-          />
+          <div className="text-center max-w-3xl mx-auto">
+            <h1 className="text-4xl md:text-5xl font-bold text-[#0f2044]">
+              Success Stories
+            </h1>
 
-          <p className="text-center text-gray-600 mt-4 max-w-2xl mx-auto">
-            Our students have successfully built careers in accounting,
-            taxation, and finance. Here are some of their stories.
-          </p>
+            <p className="mt-4 text-lg text-gray-500">
+              Real students. Real careers.
+            </p>
+
+            <p className="mt-6 text-gray-600 leading-relaxed">
+              Our students have successfully built careers in accounting,
+              taxation, and finance with real-world training and placement support.
+            </p>
+          </div>
 
         </Container>
       </Section>
@@ -53,7 +57,7 @@ export function SuccessStoriesPage() {
       <Section className="bg-[#fdf8ef] py-16">
         <Container>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
 
             {[
               { value: "5000+", label: "Students Placed" },
@@ -61,11 +65,14 @@ export function SuccessStoriesPage() {
               { value: "200+", label: "Hiring Partners" },
               { value: "15+", label: "Years Experience" },
             ].map((item) => (
-              <Card key={item.label} className="p-6">
-                <h3 className="text-2xl font-bold text-[#0f2044]">
+              <Card
+                key={item.label}
+                className="p-6 text-center rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-lg transition"
+              >
+                <h3 className="text-3xl font-bold text-[#0f2044]">
                   {item.value}
                 </h3>
-                <p className="text-sm text-gray-500 mt-1">{item.label}</p>
+                <p className="text-sm text-gray-500 mt-2">{item.label}</p>
               </Card>
             ))}
 
@@ -75,7 +82,7 @@ export function SuccessStoriesPage() {
       </Section>
 
       {/* TESTIMONIALS */}
-      <Section className="bg-white py-20">
+      <Section className="bg-white py-24">
         <Container>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -83,10 +90,10 @@ export function SuccessStoriesPage() {
             {testimonials.map((t, i) => (
               <Card
                 key={i}
-                className="p-6 hover:shadow-xl transition duration-300"
+                className="p-6 rounded-xl border border-gray-100 bg-white hover:shadow-xl transition duration-300"
               >
 
-                <p className="text-gray-700 text-sm leading-relaxed">
+                <p className="text-gray-600 text-sm leading-relaxed italic">
                   “{t.text}”
                 </p>
 
@@ -94,7 +101,7 @@ export function SuccessStoriesPage() {
                   <img
                     src={t.image}
                     alt={t.name}
-                    className="w-12 h-12 rounded-full object-cover"
+                    className="w-12 h-12 rounded-full object-cover border border-[#b8922a]"
                   />
                   <div>
                     <h4 className="font-semibold text-[#0f2044] text-sm">
@@ -112,37 +119,37 @@ export function SuccessStoriesPage() {
         </Container>
       </Section>
 
-      {/* FEATURE STORY */}
-      <Section className="bg-[#fdf8ef] py-20">
+      {/* FEATURE */}
+      <Section className="bg-[#fdf8ef] py-24">
         <Container>
 
           <div className="grid md:grid-cols-2 gap-12 items-center">
 
-            {/* IMAGE */}
             <img
               src="https://images.unsplash.com/photo-1607746882042-944635dfe10e"
-              className="rounded-2xl shadow-lg w-full h-[350px] object-cover"
+              className="rounded-2xl shadow-xl w-full h-[380px] object-cover"
               alt="Success Story"
             />
 
-            {/* CONTENT */}
             <div>
-              <h2 className="text-2xl font-bold text-[#0f2044] mb-4">
+              <h2 className="text-3xl font-bold text-[#0f2044] mb-4">
                 From Student to Professional
               </h2>
 
-              <p className="text-gray-600 leading-relaxed mb-4">
+              <p className="text-gray-600 mb-4 leading-relaxed">
                 One of our students started with no accounting background and
-                successfully secured a job within 3 months after completing training.
+                secured a job within just 3 months.
               </p>
 
               <p className="text-gray-600 leading-relaxed">
-                This transformation is possible because of our structured learning,
-                practical training, and dedicated placement support.
+                With structured learning, practical exposure, and placement support,
+                success becomes achievable.
               </p>
 
               <div className="mt-6">
-                <Button>Join Now</Button>
+                <Button className="bg-[#b8922a] hover:bg-[#a67c1f] text-white px-6">
+                  Join Now
+                </Button>
               </div>
             </div>
 
@@ -152,11 +159,11 @@ export function SuccessStoriesPage() {
       </Section>
 
       {/* CTA */}
-      <Section className="bg-[#0f2044] py-16">
+      <Section className="bg-[#0f2044] py-20">
         <Container>
 
-          <div className="text-center text-white">
-            <h2 className="text-2xl font-bold mb-4">
+          <div className="text-center text-white max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold mb-4">
               Be Our Next Success Story
             </h2>
 
@@ -164,7 +171,7 @@ export function SuccessStoriesPage() {
               Start your journey with MCJ Institute today.
             </p>
 
-            <Button className="bg-[#b8922a] hover:bg-[#a67c1f] text-white">
+            <Button className="bg-[#b8922a] hover:bg-[#a67c1f] text-white px-8 py-3 rounded-lg">
               Enroll Now
             </Button>
           </div>

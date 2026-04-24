@@ -1,3 +1,15 @@
-export function Section({ children }: { children: React.ReactNode }) {
-  return <section className="py-16">{children}</section>;
+import { ReactNode } from "react";
+import { cn } from "@/src/shared/lib/cn";
+
+interface SectionProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function Section({ children, className }: SectionProps) {
+  return (
+    <section className={cn("w-full", className)}>
+      {children}
+    </section>
+  );
 }
