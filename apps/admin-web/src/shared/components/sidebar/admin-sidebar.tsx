@@ -1,0 +1,124 @@
+"use client";
+
+import Image from "next/image";
+import { cn } from "@/src/shared/lib/cn";
+import { usePathname } from "next/navigation";
+
+import {
+  LayoutDashboard,
+  Users,
+  Layers,
+  GitBranch,
+  BookOpen,
+  Boxes,
+  UserPlus,
+  WifiOff,
+  Globe,
+  Video,
+  MessageSquare,
+  Newspaper,
+  Briefcase,
+  FileText,
+  Settings,
+  LogOut,
+} from "lucide-react";
+
+const menu = [
+  {
+    section: "MAIN",
+    items: [
+      { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+      { name: "Users", icon: Users, path: "/users" },
+      { name: "Category", icon: Layers, path: "/category" },
+      { name: "Branches", icon: GitBranch, path: "/branches" },
+      { name: "Courses", icon: BookOpen, path: "/courses" },
+      { name: "Batches", icon: Boxes, path: "/batches" },
+      { name: "Student Enrollments", icon: UserPlus, path: "/enrollments" },
+    ],
+  },
+  {
+    section: "MANAGEMENT",
+    items: [
+      { name: "Offline Management", icon: WifiOff, path: "/offline" },
+      { name: "Online Management", icon: Globe, path: "/online" },
+      { name: "Recorded Management", icon: Video, path: "/recorded" },
+    ],
+  },
+  {
+    section: "ECOSYSTEM",
+    items: [
+      { name: "Community", icon: MessageSquare, path: "/community" },
+      { name: "Finance News", icon: Newspaper, path: "/finance-news" },
+      { name: "Jobs", icon: Briefcase, path: "/jobs" },
+      { name: "Job Applications", icon: FileText, path: "/applications" },
+      { name: "Settings", icon: Settings, path: "/settings" },
+    ],
+  },
+];
+
+export function AdminSidebar() {
+  const pathname = usePathname();
+
+  return (
+    <aside className="w-64 h-screen bg-gradient-to-b from-[#0B1120] to-[#111827] text-white flex flex-col">
+      
+      {/* LOGO */}
+      <div className="h-20 flex items-center gap-3 px-5 border-b border-white/10">
+        <Image
+          src="/Logo/MCJ_logo.png"
+          alt="logo"
+          width={40}
+          height={40}
+        />
+        <div>
+          <h2 className="text-sm font-semibold">MCJ Institute</h2>
+          <p className="text-xs text-gray-400">ADMIN PLATFORM</p>
+        </div>
+      </div>
+
+      {/* MENU SCROLLABLE */}
+      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6 custom-scrollbar">
+        {menu.map((group) => (
+          <div key={group.section}>
+            
+            {/* SECTION TITLE */}
+            <p className="text-xs text-gray-500 px-3 mb-2 tracking-wider">
+              {group.section}
+            </p>
+
+            {/* ITEMS */}
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.path;
+
+                return (
+                  <div
+                    key={item.name}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition-all",
+                      isActive
+                        ? "bg-white/10 text-white"
+                        : "text-gray-400 hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.name}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* LOGOUT (FIXED) */}
+      <div className="p-4 border-t border-white/10">
+        <div className="flex items-center gap-3 text-red-400 cursor-pointer hover:bg-red-500/10 px-3 py-2 rounded-lg transition">
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </div>
+      </div>
+    </aside>
+  );
+}

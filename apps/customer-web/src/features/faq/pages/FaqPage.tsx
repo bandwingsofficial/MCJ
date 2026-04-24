@@ -1,10 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Container } from "@/src/shared/components/ui/container";
-import { Section } from "@/src/shared/components/ui/section";
-import { Heading } from "@/src/shared/components/ui/heading";
-import { Card } from "@/src/shared/components/ui/card";
 
 const faqData = [
   {
@@ -48,7 +44,7 @@ const faqData = [
   },
 ];
 
-export function FaqPage() {
+export default function FaqPage() {
   const [openIndex, setOpenIndex] = useState<string | null>(null);
 
   const toggle = (key: string) => {
@@ -56,105 +52,97 @@ export function FaqPage() {
   };
 
   return (
-    <main>
+    <main className="min-h-screen bg-white">
 
-      {/* HERO */}
-      <Section className="bg-white pt-20 pb-12">
-        <Container>
-          <Heading
-            title="Frequently Asked Questions"
-            subtitle="Find answers to common queries"
-            align="center"
-          />
-
-          <p className="text-center text-gray-600 mt-4 max-w-2xl mx-auto">
-            Have questions? We’ve answered the most common ones to help you get started quickly.
+      {/* HEADER */}
+      <section className="pt-10 pb-12 border-b bg-white">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <h1 className="text-3xl md:text-4xl font-bold text-[#0f2044]">
+            Frequently Asked Questions
+          </h1>
+          <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
+            Find answers to the most common questions about our courses, placements, and payments.
           </p>
-        </Container>
-      </Section>
+        </div>
+      </section>
 
-      {/* FAQ LIST */}
-      <Section className="bg-[#fdf8ef] py-16">
-        <Container>
+      {/* FAQ */}
+      <section className="py-16 bg-[#fdf8ef]">
+        <div className="max-w-4xl mx-auto px-4 space-y-10">
 
-          <div className="max-w-4xl mx-auto space-y-10">
+          {faqData.map((group, i) => (
+            <div key={i}>
 
-            {faqData.map((group, i) => (
-              <div key={i}>
+              {/* CATEGORY */}
+              <h2 className="text-lg font-semibold text-[#0f2044] mb-4">
+                {group.category}
+              </h2>
 
-                {/* CATEGORY */}
-                <h2 className="text-lg font-semibold text-[#0f2044] mb-4">
-                  {group.category}
-                </h2>
+              <div className="space-y-4">
 
-                {/* QUESTIONS */}
-                <div className="space-y-4">
+                {group.items.map((item, j) => {
+                  const key = `${i}-${j}`;
+                  const isOpen = openIndex === key;
 
-                  {group.items.map((item, j) => {
-                    const key = `${i}-${j}`;
-                    const isOpen = openIndex === key;
+                  return (
+                    <div
+                      key={key}
+                      className="bg-white border border-[#e8e0cf] rounded-xl p-5 cursor-pointer transition hover:shadow-sm"
+                      onClick={() => toggle(key)}
+                    >
+                      {/* QUESTION */}
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-sm md:text-base font-medium text-[#0f2044]">
+                          {item.q}
+                        </h3>
+                        <span className="text-[#b8922a] text-xl font-bold">
+                          {isOpen ? "−" : "+"}
+                        </span>
+                      </div>
 
-                    return (
-                      <Card
-                        key={key}
-                        className="p-5 cursor-pointer"
-                        onClick={() => toggle(key)}
+                      {/* ANSWER (BELOW) */}
+                      <div
+                        className={`overflow-hidden transition-all duration-300 ${
+                          isOpen ? "max-h-40 mt-3" : "max-h-0"
+                        }`}
                       >
-                        <div className="flex justify-between items-center">
-
-                          <h3 className="text-sm font-medium text-[#0f2044]">
-                            {item.q}
-                          </h3>
-
-                          <span className="text-[#b8922a] text-lg">
-                            {isOpen ? "-" : "+"}
-                          </span>
-
-                        </div>
-
-                        {isOpen && (
-                          <p className="text-sm text-gray-600 mt-3 leading-relaxed">
-                            {item.a}
-                          </p>
-                        )}
-
-                      </Card>
-                    );
-                  })}
-
-                </div>
+                        <p className="text-sm text-gray-600 leading-relaxed">
+                          {item.a}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
 
               </div>
-            ))}
 
-          </div>
+            </div>
+          ))}
 
-        </Container>
-      </Section>
+        </div>
+      </section>
 
       {/* CTA */}
-      <Section className="bg-white py-16">
-        <Container>
+      <section className="py-16 bg-white border-t">
+        <div className="max-w-4xl mx-auto px-4 text-center">
 
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-[#0f2044] mb-4">
-              Still have questions?
-            </h2>
+          <h2 className="text-2xl font-bold text-[#0f2044] mb-4">
+            Still have questions?
+          </h2>
 
-            <p className="text-gray-600 mb-6">
-              Contact our team and we’ll help you out.
-            </p>
+          <p className="text-gray-600 mb-6">
+            Our team is ready to help you. Reach out anytime.
+          </p>
 
-            <a
-              href="/contact"
-              className="inline-block bg-[#0f2044] text-white px-6 py-3 rounded-md hover:bg-[#1a3460] transition"
-            >
-              Contact Us
-            </a>
-          </div>
+          <a
+            href="/contact"
+            className="inline-block bg-[#0f2044] text-white px-6 py-3 rounded-md hover:bg-[#1a3460] transition"
+          >
+            Contact Us
+          </a>
 
-        </Container>
-      </Section>
+        </div>
+      </section>
 
     </main>
   );
