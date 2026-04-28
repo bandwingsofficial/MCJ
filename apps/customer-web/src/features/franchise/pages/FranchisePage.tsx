@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { CTASection } from "../../home/components/cta";
 
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
@@ -643,22 +644,7 @@ export function FranchisePage() {
             </div>
           </div>
         </section>
-
-        <section className="final-cta">
-          <div className="final-inner">
-            <h2 className="final-h2">Your City Is Waiting<br />for a <em>Great Institute</em></h2>
-            <p className="final-sub">
-              MCJ has built the curriculum, brand, and placement track record. All that's missing
-              is the right partner in your city. Let's talk.
-            </p>
-            <div className="final-btns">
-              <button className="btn-gold-solid" onClick={() => document.getElementById('contact-sec')?.scrollIntoView({ behavior: 'smooth' })}>
-                Contact Franchise Team →
-              </button>
-              <button className="btn-wht-out">Download Partner Brochure</button>
-            </div>
-          </div>
-        </section>
+        <CTASection />
 
       </div>
     </>

@@ -4,6 +4,7 @@ import {
   VisionSection,
   TestimonialsSection,
 } from "./components";
+import { CTASection } from "./components/cta";
 
 export function HomePage() {
   return (
@@ -20,6 +21,9 @@ export function HomePage() {
 
       {/* TESTIMONIALS */}
       <TestimonialsSection />
+
+      {/* CTA */}
+      <CTASection />
 
     </main>
   );
