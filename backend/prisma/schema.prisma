@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//
+// =====================
+// ENUMS
+// =====================
+//
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum AuditAction {
+  REGISTER
+  LOGIN
+  LOGIN_FAILED
+  LOGOUT
+  LOGOUT_ALL
+  REFRESH
+  SESSION_REVOKED
+
+  // 🔥 NEW
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_SUCCESS
+  PASSWORD_RESET_FAILED
+}
+
+enum DeviceType {
+  MOBILE
+  DESKTOP
+  TABLET
+  UNKNOWN
+}
+
+//
+// =====================
+// USER
+// =====================
+//
+
+model User {
+  id                String        @id @default(uuid())
+
+  name              String
+  phone             String?       @unique
+  email             String        @unique
+  passwordHash      String
+
+  role              Role          @default(STUDENT)
+  status            AccountStatus @default(ACTIVE)
+
+  isEmailVerified   Boolean       @default(false)
+
+  // 🔐 relations
+  sessions          Session[]
+  auditLogs         AuditLog[]
+  passwordResets    PasswordResetToken[] // 🔥 NEW
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([email])
+  @@index([phone])
+}
+
+//
+// =====================
+// SESSION
+// =====================
+//
+
+model Session {
+  id                String   @id @default(uuid())
+
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 🔐 token security
+  refreshTokenHash  String   @unique
+
+  // 📱 device tracking
+  userAgent         String?
+  ipAddress         String?
+  deviceType        DeviceType @default(UNKNOWN) // 🔥 NEW
+
+  // 🔥 session state
+  isRevoked         Boolean  @default(false)
+  revokedAt         DateTime?
+
+  // ⏳ lifecycle
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  expiresAt         DateTime
+
+  @@index([userId])
+  @@index([userId, isRevoked])
+  @@index([expiresAt])
+}
+
+//
+// =====================
+// PASSWORD RESET TOKEN
+// =====================
+//
+
+model PasswordResetToken {
+  id          String   @id @default(uuid())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  otpHash     String   // 🔐 hashed OTP
+
+  // 🔥 SECURITY
+  attempts    Int      @default(0)     // count failed attempts
+  isUsed      Boolean  @default(false) // one-time usage
+
+  // ⏳ LIFECYCLE
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  // 🔥 OPTIONAL (cooldown tracking clarity)
+  // lastAttemptAt DateTime?   // if you want per-attempt delay
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([userId, createdAt]) // 🔥 useful for latest lookup
+}
+
+//
+// =====================
+// AUDIT LOG
+// =====================
+//
+
+model AuditLog {
+  id          String   @id @default(uuid())
+
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  action      AuditAction
+  deviceType DeviceType @default(UNKNOWN)
+
+  sessionId   String?
+  ipAddress   String?
+  userAgent   String?
+
+  metadata    Json?    // 🔥 flexible extra info
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}

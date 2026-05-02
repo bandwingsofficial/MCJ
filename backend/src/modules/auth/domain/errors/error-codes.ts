@@ -1,0 +1,50 @@
+// domain/errors/error-codes.ts
+
+export const ERROR_CODES = {
+  // =====================
+  // USER
+  // =====================
+  USER_NAME_REQUIRED: 'USER_NAME_REQUIRED',
+  USER_INVALID_EMAIL: 'USER_INVALID_EMAIL',
+  USER_INVALID_PHONE: 'USER_INVALID_PHONE',
+  USER_PASSWORD_INVALID: 'USER_PASSWORD_INVALID',
+  USER_NOT_FOUND: 'USER_NOT_FOUND',
+  USER_ALREADY_EXISTS: 'USER_ALREADY_EXISTS',
+  USER_EMAIL_NOT_VERIFIED: 'USER_EMAIL_NOT_VERIFIED',
+
+  // =====================
+  // ACCOUNT STATUS
+  // =====================
+  ACCOUNT_BLOCKED: 'ACCOUNT_BLOCKED',
+  ACCOUNT_INACTIVE: 'ACCOUNT_INACTIVE',
+  TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
+
+  // =====================
+  // AUTH
+  // =====================
+  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
+  INVALID_TOKEN: 'INVALID_TOKEN',
+  TOKEN_EXPIRED: 'TOKEN_EXPIRED',
+  TOKEN_REUSE_DETECTED: 'TOKEN_REUSE_DETECTED',
+
+  // =====================
+  // SESSION
+  // =====================
+  SESSION_NOT_FOUND: 'SESSION_NOT_FOUND',
+  SESSION_EXPIRED: 'SESSION_EXPIRED',
+  SESSION_REVOKED: 'SESSION_REVOKED',
+  SESSION_UNAUTHORIZED: 'SESSION_UNAUTHORIZED',
+
+  // =====================
+  // VALIDATION
+  // =====================
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+
+  // =====================
+  // SYSTEM
+  // =====================
+  INTERNAL_SERVER_ERROR: 'INTERNAL_SERVER_ERROR',
+} as const;
+
+export type ErrorCode =
+  (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
