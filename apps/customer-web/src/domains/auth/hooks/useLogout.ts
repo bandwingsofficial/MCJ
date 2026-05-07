@@ -9,9 +9,10 @@ import { authApi } from "../api/auth.api";
 export const useLogout = () => {
   const router = useRouter();
 
-  const clearAuth = useAuthStore(
-    (s) => s.clearAuth
-  );
+  const clearUser =
+    useAuthStore(
+      (s) => s.clearUser
+    );
 
   const logout = async () => {
     try {
@@ -27,18 +28,10 @@ export const useLogout = () => {
       );
     } finally {
       // =========================
-      // ALWAYS CLEAN FRONTEND
+      // CLEAR FRONTEND STATE
       // =========================
 
-      clearAuth();
-
-      localStorage.removeItem(
-        "accessToken"
-      );
-
-      localStorage.removeItem(
-        "refreshToken"
-      );
+      clearUser();
 
       router.replace("/login");
     }

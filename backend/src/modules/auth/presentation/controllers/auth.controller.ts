@@ -7,8 +7,14 @@ import {
   Param,
   UseGuards,
   UnauthorizedException,
+  Res,
 } from '@nestjs/common';
-import type { Request } from 'express';
+
+import type {
+  Request,
+  Response,
+} from 'express';
+
 
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import type { AuthUser } from 'src/common/decorators/current-user.decorator';
@@ -99,22 +105,84 @@ export class AuthController {
   // 🟢 LOGIN
   // =====================
   @Post('login')
-  async login(@Body() dto: LoginDto, @Req() req: Request) {
-    const command = new LoginUserCommand(
+async login(
+  @Body() dto: LoginDto,
+  @Req() req: Request,
+  @Res({ passthrough: true })
+  res: Response,
+) {
+  const command =
+    new LoginUserCommand(
       dto.identifier,
       dto.password,
       this.getUserAgent(req),
       req.ip,
     );
 
-    const result = await this.loginHandler.execute(command);
+  const result =
+    await this.loginHandler.execute(
+      command,
+    );
 
-    return {
-      message: 'Login successful',
-      data: result,
-    };
-  }
+  // =========================
+  // ACCESS TOKEN COOKIE
+  // =========================
 
+  res.cookie(
+    'accessToken',
+    result.accessToken,
+    {
+      httpOnly: true,
+
+      secure: false,
+
+      sameSite: 'lax',
+
+      maxAge:
+        15 * 60 * 1000,
+    },
+  );
+
+  // =========================
+  // REFRESH TOKEN COOKIE
+  // =========================
+
+  res.cookie(
+    'refreshToken',
+    result.refreshToken,
+    {
+      httpOnly: true,
+
+      secure: false,
+
+      sameSite: 'lax',
+
+      maxAge:
+        7 *
+        24 *
+        60 *
+        60 *
+        1000,
+    },
+  );
+
+  return {
+    message:
+      'Login successful',
+
+    data: {
+      id: result.userId,
+
+      email: result.email,
+
+      name: result.name,
+
+      role: result.role,
+
+      phone: result.phone,
+    },
+  };
+}
  // =====================
 // 👤 CURRENT USER
 // =====================
@@ -138,40 +206,110 @@ async getCurrentUser(@CurrentUser() user: AuthUser) {
   // 🔥 REFRESH TOKEN
   // =====================
   @Post('refresh')
-  async refresh(@Body() dto: RefreshTokenDto, @Req() req: Request) {
-    const command = new RefreshTokenCommand(
-      dto.refreshToken,
+async refresh(
+  @Req() req: Request,
+  @Res({ passthrough: true })
+  res: Response,
+) {
+  const refreshToken =
+    req.cookies?.refreshToken;
+
+  const command =
+    new RefreshTokenCommand(
+      refreshToken,
       req.ip,
       this.getUserAgent(req),
     );
 
-    const result = await this.refreshHandler.execute(command);
+  const result =
+    await this.refreshHandler.execute(
+      command,
+    );
 
-    return {
-      message: 'Token refreshed',
-      data: result,
-    };
-  }
+  // =========================
+  // ROTATE ACCESS TOKEN
+  // =========================
 
+  res.cookie(
+    'accessToken',
+    result.accessToken,
+    {
+      httpOnly: true,
+
+      secure: false,
+
+      sameSite: 'lax',
+
+      maxAge:
+        15 * 60 * 1000,
+    },
+  );
+
+  // =========================
+  // ROTATE REFRESH TOKEN
+  // =========================
+
+  res.cookie(
+    'refreshToken',
+    result.refreshToken,
+    {
+      httpOnly: true,
+
+      secure: false,
+
+      sameSite: 'lax',
+
+      maxAge:
+        7 *
+        24 *
+        60 *
+        60 *
+        1000,
+    },
+  );
+
+  return {
+    message:
+      'Token refreshed',
+  };
+}
   // =====================
   // 🔐 LOGOUT (CURRENT)
   // =====================
   @UseGuards(JwtAuthGuard)
-  @Post('logout')
-  async logout(@CurrentUser() user: AuthUser, @Req() req: Request) {
-    await this.logoutHandler.execute(
-      new LogoutCommand(
-        user.sessionId,
-        user.sub, // 🔥 FIXED (ownership check requires userId)
-        req.ip,
-        this.getUserAgent(req),
-      ),
-    );
+@Post('logout')
+async logout(
+  @CurrentUser() user: AuthUser,
+  @Req() req: Request,
+  @Res({ passthrough: true })
+  res: Response,
+) {
+  await this.logoutHandler.execute(
+    new LogoutCommand(
+      user.sessionId,
+      user.sub,
+      req.ip,
+      this.getUserAgent(req),
+    ),
+  );
 
-    return {
-      message: 'Logged out successfully',
-    };
-  }
+  // =========================
+  // CLEAR COOKIES
+  // =========================
+
+  res.clearCookie(
+    'accessToken',
+  );
+
+  res.clearCookie(
+    'refreshToken',
+  );
+
+  return {
+    message:
+      'Logged out successfully',
+  };
+}
 
   // =====================
   // 📱 LIST SESSIONS

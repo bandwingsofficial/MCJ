@@ -13,8 +13,8 @@ interface ApiResponse<T> {
 }
 
 export const useLogin = () => {
-  const setAuth = useAuthStore(
-    (s) => s.setAuth
+  const setUser = useAuthStore(
+    (s) => s.setUser
   );
 
   const login = async (data: {
@@ -24,59 +24,25 @@ export const useLogin = () => {
   }): Promise<ApiResponse<any>> => {
     try {
       // =========================
-      // CLEAR OLD TOKENS
-      // =========================
-
-      localStorage.removeItem(
-        "accessToken"
-      );
-
-      localStorage.removeItem(
-        "refreshToken"
-      );
-
-      // =========================
       // LOGIN
       // =========================
 
-      const res = await authApi.login(
-        data
-      );
+      const res =
+        await authApi.login(data);
 
       if (!res.data.success) {
         return res.data;
       }
 
-      const loginData = res.data.data;
-
       // =========================
-      // STORE NEW TOKENS
+      // FETCH CURRENT USER
       // =========================
 
-      localStorage.setItem(
-        "accessToken",
-        loginData.accessToken
-      );
-
-      localStorage.setItem(
-        "refreshToken",
-        loginData.refreshToken
-      );
-
-      // =========================
-      // FETCH USER
-      // =========================
-
-      const me = await authApi.me();
+      const me =
+        await authApi.me();
 
       if (me.data.success) {
-        setAuth(
-          me.data.data,
-
-          loginData.accessToken,
-
-          loginData.refreshToken
-        );
+        setUser(me.data.data);
       }
 
       return res.data;

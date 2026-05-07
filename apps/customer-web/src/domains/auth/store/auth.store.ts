@@ -1,73 +1,92 @@
 "use client";
 
 import { create } from "zustand";
+
 import { persist } from "zustand/middleware";
+
+// ==============================
+// USER TYPE
+// ==============================
 
 export interface User {
   id: string;
-  sessionId: string;
+
+  email: string;
+
+  name: string;
+
+  role: string;
+
+  phone?: string;
+
+  sessionId?: string;
 }
+
+// ==============================
+// STORE TYPE
+// ==============================
 
 interface AuthState {
   user: User | null;
 
-  accessToken: string | null;
-  refreshToken: string | null;
+  // ==========================
+  // ACTIONS
+  // ==========================
 
-  setAuth: (
-    user: User,
-    accessToken: string,
-    refreshToken: string
+  setUser: (
+    user: User
   ) => void;
 
-  clearAuth: () => void;
+  clearUser: () => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
+// ==============================
+// STORE
+// ==============================
 
-      accessToken: null,
-      refreshToken: null,
+export const useAuthStore =
+  create<AuthState>()(
+    persist(
+      (set) => ({
+        // ======================
+        // STATE
+        // ======================
 
-      setAuth: (
-        user,
-        accessToken,
-        refreshToken
-      ) => {
-        localStorage.setItem(
-          "accessToken",
-          accessToken
-        );
+        user: null,
 
-        localStorage.setItem(
-          "refreshToken",
-          refreshToken
-        );
+        // ======================
+        // SET USER
+        // ======================
 
-        set({
-          user,
-          accessToken,
-          refreshToken,
-        });
-      },
+        setUser: (user) =>
+          set({
+            user,
+          }),
 
-      clearAuth: () => {
-        localStorage.removeItem("accessToken");
+        // ======================
+        // CLEAR USER
+        // ======================
 
-        localStorage.removeItem("refreshToken");
+        clearUser: () =>
+          set({
+            user: null,
+          }),
+      }),
 
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-        });
-      },
-    }),
+      {
+        // ======================
+        // STORAGE KEY
+        // ======================
 
-    {
-      name: "auth-storage",
-    }
-  )
-);
+        name: "auth-storage",
+
+        // ======================
+        // ONLY PERSIST USER
+        // ======================
+
+        partialize: (state) => ({
+          user: state.user,
+        }),
+      }
+    )
+  );

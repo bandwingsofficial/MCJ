@@ -1,9 +1,7 @@
-"use client";
-
-export const AuthProvider = ({
+export default function PublicLayout({
   children,
 }: {
   children: React.ReactNode;
-}) => {
+}) {
   return <>{children}</>;
-};
+}

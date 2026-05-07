@@ -7,10 +7,9 @@ export const authApi = {
   login: (data: any) =>
     apiClient.post("/auth/login", data),
 
-  refresh: (refreshToken: string) =>
-    apiClient.post("/auth/refresh", {
-      refreshToken,
-    }),
+  // 🔥 refresh now uses cookies
+  refresh: () =>
+    apiClient.post("/auth/refresh"),
 
   logout: () =>
     apiClient.post("/auth/logout"),
@@ -22,15 +21,27 @@ export const authApi = {
     apiClient.get("/auth/sessions"),
 
   revokeSession: (id: string) =>
-    apiClient.post(`/auth/sessions/${id}/revoke`),
+    apiClient.post(
+      `/auth/sessions/${id}/revoke`
+    ),
 
-  requestPasswordReset: (email: string) =>
-    apiClient.post("/auth/password-reset/request", {
-      email,
-    }),
+  requestPasswordReset: (
+    email: string
+  ) =>
+    apiClient.post(
+      "/auth/password-reset/request",
+      {
+        email,
+      }
+    ),
 
-  confirmPasswordReset: (data: any) =>
-    apiClient.post("/auth/password-reset/confirm", data),
+  confirmPasswordReset: (
+    data: any
+  ) =>
+    apiClient.post(
+      "/auth/password-reset/confirm",
+      data
+    ),
 
   me: () =>
     apiClient.get("/auth/me"),

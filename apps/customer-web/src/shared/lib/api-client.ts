@@ -3,7 +3,6 @@
 import axios, {
   AxiosError,
   AxiosInstance,
-  InternalAxiosRequestConfig,
 } from "axios";
 
 // ==============================
@@ -21,40 +20,41 @@ export const apiClient: AxiosInstance =
   axios.create({
     baseURL: API_BASE_URL,
 
-    // 🔥 REQUIRED for cookies
     withCredentials: true,
 
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type":
+        "application/json",
     },
   });
 
 // ==============================
-// REQUEST INTERCEPTOR
+// REFRESH STATE
 // ==============================
 
-apiClient.interceptors.request.use(
-  (
-    config: InternalAxiosRequestConfig
-  ) => {
-    // 🔥 browser only
-    if (typeof window !== "undefined") {
-      const token =
-        localStorage.getItem("accessToken");
+let isRefreshing = false;
 
-      // 🔥 attach bearer token
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+let failedQueue: any[] = [];
+
+// ==============================
+// PROCESS QUEUE
+// ==============================
+
+const processQueue = (
+  error: any = null
+) => {
+  failedQueue.forEach(
+    (promise) => {
+      if (error) {
+        promise.reject(error);
+      } else {
+        promise.resolve();
       }
     }
+  );
 
-    return config;
-  },
-
-  (error: AxiosError) => {
-    return Promise.reject(error);
-  }
-);
+  failedQueue = [];
+};
 
 // ==============================
 // RESPONSE INTERCEPTOR
@@ -64,24 +64,87 @@ apiClient.interceptors.response.use(
   (response) => response,
 
   async (error: AxiosError<any>) => {
+    const originalRequest: any =
+      error.config;
+
     // ==========================
-    // UNAUTHORIZED
+    // ONLY HANDLE 401
     // ==========================
 
-    if (error.response?.status === 401) {
-      console.warn(
-        "Unauthorized - session expired"
-      );
+    if (
+      error.response?.status ===
+        401 &&
+      !originalRequest._retry
+    ) {
+      // ========================
+      // ALREADY REFRESHING
+      // ========================
 
-      // 🔥 optional cleanup
-      if (typeof window !== "undefined") {
-        localStorage.removeItem(
-          "accessToken"
+      if (isRefreshing) {
+        return new Promise(
+          (
+            resolve,
+            reject
+          ) => {
+            failedQueue.push({
+              resolve,
+              reject,
+            });
+          }
+        ).then(() =>
+          apiClient(
+            originalRequest
+          )
+        );
+      }
+
+      originalRequest._retry =
+        true;
+
+      isRefreshing = true;
+
+      try {
+        // ======================
+        // REFRESH TOKENS
+        // ======================
+
+        await apiClient.post(
+          "/auth/refresh"
         );
 
-        localStorage.removeItem(
-          "refreshToken"
+        processQueue();
+
+        // ======================
+        // RETRY ORIGINAL REQUEST
+        // ======================
+
+        return apiClient(
+          originalRequest
         );
+      } catch (
+        refreshError
+      ) {
+        processQueue(
+          refreshError
+        );
+
+        // ======================
+        // FORCE LOGOUT
+        // ======================
+
+        if (
+          typeof window !==
+          "undefined"
+        ) {
+          window.location.href =
+            "/login";
+        }
+
+        return Promise.reject(
+          refreshError
+        );
+      } finally {
+        isRefreshing = false;
       }
     }
 
