@@ -3,31 +3,39 @@ import {
   ValidationPipe,
   BadRequestException,
 } from '@nestjs/common';
-import { NestExpressApplication } from '@nestjs/platform-express'; // 👈 ADD THIS
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { ConfigService } from '@nestjs/config';
 
 import { AppModule } from './app.module';
 import { AppExceptionFilter } from './common/filters/app-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
-import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule); // 👈 FIX
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const configService = app.get(ConfigService);
 
-  // ✅ Now this works
+  // 🔐 Trust proxy (important for production behind load balancer)
   app.set('trust proxy', true);
 
+  // 🔁 Graceful shutdown
   app.enableShutdownHooks();
 
+  // 🌐 CORS (STRICT for your frontend)
   app.enableCors({
-    origin: true,
+    origin: [
+      'http://localhost:3000', // main frontend
+      'http://localhost:3001', // customer-web
+      'http://localhost:3002', // admin-web (if needed)
+    ],
     credentials: true,
   });
 
+  // 🧠 Global filters & interceptors
   app.useGlobalFilters(new AppExceptionFilter());
   app.useGlobalInterceptors(new ResponseInterceptor());
 
+  // ✅ Validation (clean error formatting)
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -56,7 +64,7 @@ async function bootstrap() {
               if (!formattedErrors[field]) {
                 formattedErrors[field] = [];
               }
-              formattedErrors[field].push(message);
+              formattedErrors[field].push(message as string);
             }
 
             if (err.children?.length) {
@@ -75,11 +83,12 @@ async function bootstrap() {
     }),
   );
 
-  const port = configService.get<number>('PORT') ?? 3000;
+  // 📌 Port handling (safe fallback)
+  const port = configService.get<number>('PORT') || 4000;
 
   await app.listen(port);
 
-  console.log(`🚀 Server running on http://localhost:${port}`);
+  console.log(`🚀 Backend running on: http://localhost:${port}`);
 }
 
 bootstrap();

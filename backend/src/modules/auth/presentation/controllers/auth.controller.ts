@@ -6,6 +6,7 @@ import {
   Get,
   Param,
   UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 
@@ -113,6 +114,25 @@ export class AuthController {
       data: result,
     };
   }
+
+ // =====================
+// 👤 CURRENT USER
+// =====================
+@UseGuards(JwtAuthGuard)
+@Get('me')
+async getCurrentUser(@CurrentUser() user: AuthUser) {
+  if (!user) {
+    throw new UnauthorizedException('User not authenticated');
+  }
+
+  return {
+    message: 'Current user fetched successfully',
+    data: {
+      id: user.sub,
+      sessionId: user.sessionId,
+    },
+  };
+}
 
   // =====================
   // 🔥 REFRESH TOKEN
