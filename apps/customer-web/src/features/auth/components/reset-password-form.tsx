@@ -1,69 +1,261 @@
-// src/features/auth/components/reset-password-form.tsx
-
 "use client";
 
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
+
 import { authApi } from "@/src/domains/auth/api/auth.api";
 
 export const ResetPasswordForm = () => {
-  const [form, setForm] = useState({
-    email: "",
-    otp: "",
-    newPassword: "",
-  });
+  // ==========================
+  // ROUTER
+  // ==========================
 
-  const [msg, setMsg] = useState("");
-  const [error, setError] = useState("");
+  const router = useRouter();
 
-  const handleSubmit = async (e: any) => {
+  const searchParams =
+    useSearchParams();
+
+  // ==========================
+  // QUERY EMAIL
+  // ==========================
+
+  const queryEmail =
+    searchParams.get(
+      "email"
+    ) || "";
+
+  // ==========================
+  // STATE
+  // ==========================
+
+  const [form, setForm] =
+    useState({
+      email: "",
+      otp: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const [success, setSuccess] =
+    useState("");
+
+  // ==========================
+  // PREFILL EMAIL
+  // ==========================
+
+  useEffect(() => {
+    if (queryEmail) {
+      setForm((prev) => ({
+        ...prev,
+        email: queryEmail,
+      }));
+    }
+  }, [queryEmail]);
+
+  // ==========================
+  // SUBMIT
+  // ==========================
+
+  const handleSubmit = async (
+    e: React.FormEvent
+  ) => {
     e.preventDefault();
 
+    setError("");
+    setSuccess("");
+
+    // ======================
+    // PASSWORD MATCH
+    // ======================
+
+    if (
+      form.newPassword !==
+      form.confirmPassword
+    ) {
+      setError(
+        "Passwords do not match"
+      );
+
+      return;
+    }
+
+    // ======================
+    // VALIDATION
+    // ======================
+
+    if (
+      form.newPassword.length < 6
+    ) {
+      setError(
+        "Password must be at least 6 characters"
+      );
+
+      return;
+    }
+
     try {
-      const res = await authApi.confirmPasswordReset(form);
+      setLoading(true);
+
+      // ====================
+      // RESET PASSWORD
+      // ====================
+
+      const res =
+        await authApi.confirmPasswordReset(
+          {
+            email:
+              form.email,
+            otp: form.otp,
+            newPassword:
+              form.newPassword,
+          }
+        );
+
+      // ====================
+      // FAILED
+      // ====================
 
       if (!res.data.success) {
-        setError(res.data.message);
+        setError(
+          res.data.message ||
+            "Failed to reset password"
+        );
+
         return;
       }
 
-      setMsg("Password reset successful");
-    } catch {
-      setError("Failed to reset password");
+      // ====================
+      // SUCCESS
+      // ====================
+
+      setSuccess(
+        "Password reset successful"
+      );
+
+      // ====================
+      // CLEAN STORAGE
+      // ====================
+
+      sessionStorage.removeItem(
+        "reset-email"
+      );
+
+      // ====================
+      // REDIRECT LOGIN
+      // ====================
+
+      setTimeout(() => {
+        router.push("/login");
+      }, 1500);
+    } catch (err: any) {
+      setError(
+        err?.response?.data
+          ?.message ||
+          "Failed to reset password"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
+  // ==========================
+  // UI
+  // ==========================
+
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4"
+    >
       <input
+        type="email"
         placeholder="Email"
-        className="w-full border p-3 rounded"
-        onChange={(e) =>
-          setForm({ ...form, email: e.target.value })
-        }
+        value={form.email}
+        readOnly
+        className="w-full rounded border bg-gray-100 p-3"
       />
 
       <input
-        placeholder="OTP"
-        className="w-full border p-3 rounded"
+        type="text"
+        placeholder="Enter OTP"
+        className="w-full rounded border p-3"
+        value={form.otp}
         onChange={(e) =>
-          setForm({ ...form, otp: e.target.value })
+          setForm({
+            ...form,
+            otp: e.target.value,
+          })
         }
+        required
       />
 
       <input
         type="password"
         placeholder="New Password"
-        className="w-full border p-3 rounded"
-        onChange={(e) =>
-          setForm({ ...form, newPassword: e.target.value })
+        className="w-full rounded border p-3"
+        value={
+          form.newPassword
         }
+        onChange={(e) =>
+          setForm({
+            ...form,
+            newPassword:
+              e.target.value,
+          })
+        }
+        required
       />
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-      {msg && <p className="text-green-500 text-sm">{msg}</p>}
+      <input
+        type="password"
+        placeholder="Confirm Password"
+        className="w-full rounded border p-3"
+        value={
+          form.confirmPassword
+        }
+        onChange={(e) =>
+          setForm({
+            ...form,
+            confirmPassword:
+              e.target.value,
+          })
+        }
+        required
+      />
 
-      <button className="w-full bg-black text-white p-3 rounded">
-        Reset Password
+      {error && (
+        <p className="text-sm text-red-500">
+          {error}
+        </p>
+      )}
+
+      {success && (
+        <p className="text-sm text-green-500">
+          {success}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full rounded bg-black p-3 text-white disabled:opacity-50"
+      >
+        {loading
+          ? "Resetting..."
+          : "Reset Password"}
       </button>
     </form>
   );
