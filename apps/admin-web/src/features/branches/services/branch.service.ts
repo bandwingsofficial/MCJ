@@ -85,6 +85,18 @@ class BranchService {
     }
   }
 
+   async permanentlyDeleteBranch(
+    id: string
+  ) {
+    try {
+      return await branchApi.deletePermanentlyBranch(
+        id
+      );
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async restoreBranch(
     id: string
   ) {

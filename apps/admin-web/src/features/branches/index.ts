@@ -17,3 +17,4 @@ export * from "./components/delete-branch-dialog";
 export * from "./components/restore-branch-dialog";
 
 export * from "./components/status-branch-dialog";
+export * from "./pages/branch-page";

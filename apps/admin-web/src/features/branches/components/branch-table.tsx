@@ -13,6 +13,8 @@ import { Dropdown } from "@/src/shared/components/ui/dropdown";
 
 import { Button } from "@/src/shared/components/ui/button";
 
+import { MoreVertical } from "lucide-react";
+
 import {
   BranchListItem,
 } from "@/src/features/branches/types/branch.types";
@@ -34,6 +36,10 @@ interface BranchTableProps {
     branch: BranchListItem
   ) => void;
 
+  onPermanentDelete: (
+    branch: BranchListItem
+  ) => void;
+
   onRestore: (
     branch: BranchListItem
   ) => void;
@@ -48,6 +54,7 @@ export function BranchTable({
   onView,
   onEdit,
   onDelete,
+  onPermanentDelete,
   onRestore,
   onToggleStatus,
 }: BranchTableProps) {
@@ -55,35 +62,35 @@ export function BranchTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>
+          <TableHead className="py-1">
             Branch Name
           </TableHead>
 
-          <TableHead>
+          <TableHead className="py-1">
             Code
           </TableHead>
 
-          <TableHead>
+          <TableHead className="py-1">
             Email
           </TableHead>
 
-          <TableHead>
+          <TableHead className="py-1">
             Phone
           </TableHead>
 
-          <TableHead>
+          <TableHead className="py-1">
             City
           </TableHead>
 
-          <TableHead>
+          <TableHead className="py-1">
             State
           </TableHead>
 
-          <TableHead>
+          <TableHead className="py-1">
             Status
           </TableHead>
 
-          <TableHead>
+          <TableHead className="py-1">
             Actions
           </TableHead>
         </TableRow>
@@ -95,35 +102,35 @@ export function BranchTable({
             <TableRow
               key={branch.id}
             >
-              <TableCell>
+              <TableCell className="py-1">
                 {
                   branch.branchName
                 }
               </TableCell>
 
-              <TableCell>
+              <TableCell className="py-1">
                 {
                   branch.branchCode
                 }
               </TableCell>
 
-              <TableCell>
+              <TableCell className="py-1">
                 {branch.email}
               </TableCell>
 
-              <TableCell>
+              <TableCell className="py-1">
                 {branch.phone}
               </TableCell>
 
-              <TableCell>
+              <TableCell className="py-1">
                 {branch.city}
               </TableCell>
 
-              <TableCell>
+              <TableCell className="py-1">
                 {branch.state}
               </TableCell>
 
-              <TableCell>
+              <TableCell className="py-1">
                 <BranchStatusBadge
                   status={
                     branch.status
@@ -131,13 +138,13 @@ export function BranchTable({
                 />
               </TableCell>
 
-              <TableCell>
+              <TableCell className="py-1">
                 <Dropdown
                   trigger={
                     <Button
                       variant="outline"
                     >
-                      Actions
+                      <MoreVertical className="w-4 h-4" />
                     </Button>
                   }
                   items={[
@@ -182,6 +189,16 @@ export function BranchTable({
                       onClick:
                         () =>
                           onDelete(
+                            branch
+                          ),
+                    },
+                    {
+                      label:
+                        "Delete permanently",
+
+                      onClick:
+                        () =>
+                          onPermanentDelete(
                             branch
                           ),
                     },

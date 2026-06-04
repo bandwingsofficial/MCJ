@@ -57,6 +57,11 @@ const menu = [
         path: "/branches",
       },
       {
+        name: "Branch-Users",
+        icon: GitBranch,
+        path: "/branch-users",
+      },
+      {
         name: "Courses",
         icon: BookOpen,
         path: "/courses",

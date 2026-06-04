@@ -99,4 +99,17 @@ export const branchApi = {
 
     return response.data;
   },
+
+  async deletePermanentlyBranch(
+  id: string
+) {
+  const response =
+    await apiClient.delete<
+      ApiResponse<null>
+    >(
+      `/admin/branches/${id}`
+    );
+
+  return response.data;
+}
 };
