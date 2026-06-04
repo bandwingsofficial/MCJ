@@ -23,7 +23,7 @@ import { usePermanentlyDeleteCourse } from "@/src/features/courses/hooks/use-per
 
 import { CourseFilters } from "@/src/features/courses/components/course-filters";
 import { CourseTable } from "@/src/features/courses/components/course-table";
-import { CourseFormDrawer } from "@/src/features/courses/components/course-form-drawer";
+import { CourseFormModal } from "@/src/features/courses/components/course-form-modal";
 
 import {
   CourseListItem,
@@ -332,7 +332,7 @@ const branchOptions =
         )}
       </div>
 
-      <CourseFormDrawer
+      <CourseFormModal
         open={drawerOpen}
         course={
           selectedCourse as never

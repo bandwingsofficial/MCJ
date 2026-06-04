@@ -42,11 +42,6 @@ const menu = [
         path: "/dashboard",
       },
       {
-        name: "Users",
-        icon: Users,
-        path: "/users",
-      },
-      {
         name: "Category",
         icon: Layers,
         path: "/categories",
@@ -58,8 +53,13 @@ const menu = [
       },
       {
         name: "Branch-Users",
-        icon: GitBranch,
+        icon: Users,
         path: "/branch-users",
+      },
+      {
+        name: "Trainers",
+        icon: Users,
+        path: "/trainers",
       },
       {
         name: "Courses",

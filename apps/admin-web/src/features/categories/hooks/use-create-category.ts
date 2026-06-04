@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  useState,
-} from "react";
+import { useState } from "react";
 
 import { appToast } from "@/src/shared/components/ui/toast";
 
@@ -10,7 +8,17 @@ import { categoryService } from "@/src/features/categories/services/category.ser
 
 import type {
   CreateCategoryRequest,
+  CategoryDetails,
 } from "@/src/features/categories/types/category.types";
+
+interface ApiError {
+  response?: {
+    data?: {
+      code?: string;
+      message?: string;
+    };
+  };
+}
 
 export const useCreateCategory =
   () => {
@@ -22,7 +30,7 @@ export const useCreateCategory =
     const createCategory =
       async (
         payload: CreateCategoryRequest
-      ) => {
+      ): Promise<CategoryDetails | null> => {
         try {
           setIsLoading(true);
 
@@ -38,46 +46,37 @@ export const useCreateCategory =
           return response.data;
         } catch (error) {
           const apiError =
-            error as {
-              response?: {
-                data?: {
-                  code?: string;
-                  message?: string;
-                };
-              };
-            };
+            error as ApiError;
 
           const code =
             apiError.response?.data
               ?.code;
 
-          if (
-            code ===
-            "CATEGORY_ALREADY_EXISTS"
-          ) {
-            appToast.error(
-              "Category already exists"
-            );
+          const message =
+            apiError.response?.data
+              ?.message;
 
-            throw error;
+          switch (code) {
+            case "CATEGORY_ALREADY_EXISTS":
+              appToast.error(
+                "Category already exists"
+              );
+              return null;
+
+            case "BRANCH_NOT_FOUND":
+              appToast.error(
+                "Selected branch not found"
+              );
+              return null;
+
+            default:
+              appToast.error(
+                message ??
+                  "Failed to create category"
+              );
+
+              return null;
           }
-
-          if (
-            code ===
-            "BRANCH_NOT_FOUND"
-          ) {
-            appToast.error(
-              "Selected branch not found"
-            );
-
-            throw error;
-          }
-
-          appToast.error(
-            "Failed to create category"
-          );
-
-          throw error;
         } finally {
           setIsLoading(false);
         }

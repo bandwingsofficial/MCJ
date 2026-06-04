@@ -26,16 +26,20 @@ export function CreateCategoryModal({
   const {
     createCategory,
     isLoading,
-  } =
-    useCreateCategory();
+  } = useCreateCategory();
 
   const handleSubmit =
     async (
       values: CreateCategoryFormValues
     ) => {
-      await createCategory(
-        values
-      );
+      const result =
+        await createCategory(
+          values
+        );
+
+      if (!result) {
+        return;
+      }
 
       onSuccess();
 
