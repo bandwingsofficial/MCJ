@@ -54,7 +54,7 @@ export const BranchUserTable = ({
             Role
           </TableHead>
           <TableHead className="font-semibold text-xs tracking-wider text-muted-foreground uppercase">
-            Branch ID
+            Branch Code
           </TableHead>
           <TableHead className="font-semibold text-xs tracking-wider text-muted-foreground uppercase">
             Status
@@ -88,7 +88,8 @@ export const BranchUserTable = ({
             </TableCell>
 
             <TableCell className="font-mono text-xs text-muted-foreground">
-              {branchUser.branchId}
+              {branchUser.branchCode} -
+              {branchUser.branchName}
             </TableCell>
 
             <TableCell>

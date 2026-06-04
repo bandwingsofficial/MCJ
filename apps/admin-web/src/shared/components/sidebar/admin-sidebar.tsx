@@ -49,7 +49,7 @@ const menu = [
       {
         name: "Category",
         icon: Layers,
-        path: "/category",
+        path: "/categories",
       },
       {
         name: "Branches",

@@ -25,6 +25,10 @@ export interface BranchUser {
 
   branchId: string;
 
+  branchName: string;
+
+  branchCode: string;
+
   isActive: boolean;
 
   lastLoginAt: string | null;
@@ -80,7 +84,7 @@ export interface BranchUserListItem {
   firstName: string;
 
   lastName: string;
-
+  
   email: string;
 
   phone: string;
@@ -91,6 +95,10 @@ export interface BranchUserListItem {
 
   branchId: string;
 
+  branchCode: string;
+
+  branchName: string;
+  
   isActive: boolean;
 
   lastLoginAt: string | null;
