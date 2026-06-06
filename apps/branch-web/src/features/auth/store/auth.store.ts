@@ -14,6 +14,10 @@ interface AuthStore {
   ) => void;
 
   clearUser: () => void;
+
+  updateUser: (
+    user: Partial<ProfileDto>
+  ) => void;
 }
 
 export const useAuthStore =
@@ -27,6 +31,16 @@ export const useAuthStore =
         user,
         isAuthenticated: true,
       }),
+
+    updateUser: (payload) =>
+      set((state) => ({
+        user: state.user
+          ? {
+              ...state.user,
+              ...payload,
+            }
+          : null,
+      })),
 
     clearUser: () =>
       set({
