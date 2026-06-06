@@ -22,21 +22,54 @@ class CourseService {
     "/admin/courses";
 
   async createCourse(
-    payload: CreateCourseRequest
-  ): Promise<
-    ApiSuccessResponse<CourseDetails>
-  > {
-    const response =
-      await apiClient.post<
-        ApiSuccessResponse<CourseDetails>
-      >(
-        this.basePath,
-        payload
-      );
+  payload: CreateCourseRequest
+): Promise<
+  ApiSuccessResponse<CourseDetails>
+> {
+  const formData =
+    new FormData();
 
-    return response.data;
-  }
+  Object.entries(payload).forEach(
+    ([key, value]) => {
+      if (
+        value !== undefined &&
+        value !== null
+      ) {
+        if (
+          Array.isArray(value)
+        ) {
+          formData.append(
+            key,
+            JSON.stringify(
+              value
+            )
+          );
+        } else {
+          formData.append(
+            key,
+            String(value)
+          );
+        }
+      }
+    }
+  );
 
+  const response =
+    await apiClient.post<
+      ApiSuccessResponse<CourseDetails>
+    >(
+      this.basePath,
+      formData,
+      {
+        headers: {
+          "Content-Type":
+            "multipart/form-data",
+        },
+      }
+    );
+
+  return response.data;
+}
   async getCourses(
   filters: CourseFilters
 ): Promise<

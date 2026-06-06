@@ -42,6 +42,7 @@ import { DeleteBranchDialog } from "@/src/features/branches/components/delete-br
 import { RestoreBranchDialog } from "@/src/features/branches/components/restore-branch-dialog";
 
 import { StatusBranchDialog } from "@/src/features/branches/components/status-branch-dialog";
+import { Card } from "@/src/shared/components/ui/card";
 
 export default function BranchesPage() {
   const {
@@ -192,11 +193,14 @@ export default function BranchesPage() {
           </Button>
         }
       />
-
+   <Card>
+            <div className="p-0">
       <BranchFilters
         filters={filters}
         onChange={setFilters}
       />
+      </div>
+              </Card>
 
       {branches.length === 0 ? (
         <EmptyState

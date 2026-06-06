@@ -34,11 +34,13 @@ export function TrainerFilters({
       className="
         flex
         flex-col
-        gap-4
-        lg:flex-row
+        gap-3
+        sm:flex-row
+        sm:items-center
+        w-full
       "
     >
-      <div className="flex-1">
+      <div className="flex-1 min-w-[200px]">
         <SearchInput
           value={
             filters.search
@@ -55,61 +57,68 @@ export function TrainerFilters({
         />
       </div>
 
-      <AppSelect
-        value={
-          filters.trainerType
-        }
-        onValueChange={(
-          value
-        ) =>
-          onChange({
-            ...filters,
-            trainerType:
-              value as never,
-          })
-        }
-        options={TRAINER_TYPES.map(
-          (
-            type
-          ) => ({
-            label:
-              type.replaceAll(
-                "_",
-                " "
-              ),
-            value:
-              type,
-          })
-        )}
-      />
+      <div className="w-full sm:w-[180px]">
+        <AppSelect
+          placeholder="Select Type"
+          value={
+            filters.trainerType
+          }
+          onValueChange={(
+            value
+          ) =>
+            onChange({
+              ...filters,
+              trainerType:
+                value as never,
+            })
+          }
+          options={TRAINER_TYPES.map(
+            (
+              type
+            ) => ({
+              label:
+                type.replaceAll(
+                  "_",
+                  " "
+                ),
+              value:
+                type,
+            })
+          )}
+        />
+      </div>
 
-      <AppSelect
-        value={
-          filters.status
-        }
-        onValueChange={(
-          value
-        ) =>
-          onChange({
-            ...filters,
-            status:
-              value as never,
-          })
-        }
-        options={TRAINER_STATUSES.map(
-          (
-            status
-          ) => ({
-            label:
-              status,
-            value:
-              status,
-          })
-        )}
-      />
+      <div className="w-full sm:w-[180px]">
+        <AppSelect
+          placeholder="Select Status"
+          value={
+            filters.status
+          }
+          onValueChange={(
+            value
+          ) =>
+            onChange({
+              ...filters,
+              status:
+                value as never,
+            })
+          }
+          options={TRAINER_STATUSES.map(
+            (
+              status
+            ) => ({
+              label:
+                status,
+              value:
+                status,
+            })
+          )}
+        />
+      </div>
 
       <Button
         variant="outline"
+        className="h-10 px-4 w-full sm:w-auto shrink-0"
         onClick={() =>
           onChange({
             search: "",
@@ -128,6 +137,6 @@ export function TrainerFilters({
       >
         Reset
       </Button>
-    </div>
+    </div>  
   );
 }

@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
 import { courseService } from "@/src/features/courses/services/course.service";
-
 import {
   ActivateCourseResponse,
 } from "@/src/features/courses/types/course.types";

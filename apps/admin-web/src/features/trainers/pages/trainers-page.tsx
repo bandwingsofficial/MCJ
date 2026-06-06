@@ -23,6 +23,7 @@ import { TrainerEmptyState } from "@/src/features/trainers/components/trainer-em
 import type {
   TrainerDetails,
 } from "@/src/features/trainers/types/trainer.types";
+import { Card } from "@/src/shared/components/ui/card";
 
 export function TrainersPage() {
   const {
@@ -93,13 +94,16 @@ export function TrainersPage() {
           </Button>
         }
       />
-
+ <Card>
+          <div className="p-0">
       <TrainerFilters
         filters={filters}
         onChange={
           setFilters
         }
       />
+      </div>
+        </Card>
 
       {isLoading ? (
         <SkeletonTable

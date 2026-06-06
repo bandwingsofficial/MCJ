@@ -50,10 +50,11 @@ const courseFields = {
       "Invalid category selected"
     ),
 
-  branchId: z
-    .string()
-    .uuid(
-      "Invalid branch selected"
+  branchIds: z
+    .array(
+      z.string().uuid(
+        "Invalid branch selected"
+      )
     )
     .optional(),
 
@@ -97,9 +98,16 @@ const courseFields = {
     COURSE_LEVELS
   ),
 
-  mode: z.enum(
-    COURSE_MODES
-  ),
+  modes: z
+    .array(
+      z.enum(
+        COURSE_MODES
+      )
+    )
+    .min(
+      1,
+      "At least one mode is required"
+    ),
 
   language: z
     .string()

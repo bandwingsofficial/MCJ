@@ -25,8 +25,17 @@ export function CourseFilters({
   onChange,
 }: Props) {
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-      <div className="flex-1">
+    <div 
+      className="
+        flex 
+        flex-col 
+        gap-3 
+        sm:flex-row 
+        sm:items-center 
+        w-full
+      "
+    >
+      <div className="flex-1 min-w-[200px]">
         <SearchInput
           value={filters.search}
           onChange={(value) =>
@@ -38,8 +47,9 @@ export function CourseFilters({
         />
       </div>
 
-      <div className="w-full lg:w-[220px]">
+      <div className="w-full sm:w-[180px]">
         <AppSelect
+          placeholder="Select Status"
           value={
             filters.status ??
             "ALL"
@@ -80,7 +90,7 @@ export function CourseFilters({
         />
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 select-none shrink-0 h-10 px-1">
         <Switch
           checked={
             filters.includeDeleted
@@ -96,7 +106,10 @@ export function CourseFilters({
           }
         />
 
-        <Label>
+        <Label
+          htmlFor="course-include-deleted"
+          className="text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground transition-colors select-none"
+        >
           Include Deleted
         </Label>
       </div>

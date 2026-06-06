@@ -120,10 +120,12 @@ export function CourseTable({
               </TableCell>
 
               <TableCell>
-                {
-                  course.mode
-                }
-              </TableCell>
+  {
+    (course as any).modes && (course as any).modes.length > 0
+      ? (course as any).modes.join(", ")
+      : course.mode || "-"
+  }
+</TableCell>
 
               <TableCell>
                 {

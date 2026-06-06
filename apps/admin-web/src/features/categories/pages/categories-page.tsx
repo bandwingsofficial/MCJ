@@ -19,6 +19,7 @@ import { DeleteCategoryDialog } from "@/src/features/categories/components/delet
 import type {
   CategoryListItem,
 } from "@/src/features/categories/types/category.types";
+import { Card } from "@/src/shared/components/ui/card";
 
 type DialogAction =
   | "delete"
@@ -162,13 +163,16 @@ export function CategoriesPage() {
           </Button>
         }
       />
-
+    
       <div className="space-y-6">
-        <CategoryFilters
+        
+         <Card>
+          <div className="p-0"><CategoryFilters
           filters={filters}
           onChange={setFilters}
         />
-
+  </div>
+        </Card>
         {isLoading ? (
           <SkeletonTable
             rows={10}

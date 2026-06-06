@@ -1,9 +1,7 @@
 "use client";
 
 import { Dropdown } from "@/src/shared/components/ui/dropdown";
-
 import { Button } from "@/src/shared/components/ui/button";
-
 import {
   CourseListItem,
 } from "@/src/features/courses/types/course.types";
@@ -79,7 +77,9 @@ export function CourseActions({
 
   if (
     course.status ===
-    "INACTIVE"
+    "INACTIVE" ||
+    course.status ===
+    "DRAFT"
   ) {
     items.push({
       label: "Activate",

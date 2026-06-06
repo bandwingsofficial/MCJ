@@ -183,7 +183,7 @@ export function BranchUsersPage() {
         />
 
         <Card>
-          <div className="p-5">
+          <div className="p-0">
             <BranchUserFiltersBar
               filters={filters}
               onChange={

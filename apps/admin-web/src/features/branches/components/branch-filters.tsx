@@ -29,8 +29,17 @@ export function BranchFilters({
   onChange,
 }: BranchFiltersProps) {
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-      <div className="w-full lg:max-w-sm">
+    <div 
+      className="
+        flex 
+        flex-col 
+        gap-3 
+        sm:flex-row 
+        sm:items-center 
+        w-full
+      "
+    >
+      <div className="flex-1 min-w-[200px]">
         <SearchInput
           value={
             filters.search ?? ""
@@ -46,8 +55,9 @@ export function BranchFilters({
         />
       </div>
 
-      <div className="w-full lg:w-56">
+      <div className="w-full sm:w-[180px]">
         <AppSelect
+          placeholder="Select Status"
           value={
             filters.status
           }
@@ -68,11 +78,11 @@ export function BranchFilters({
         />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 select-none shrink-0 h-10 px-1">
         <Checkbox
           checked={
-  filters.includeDeleted ?? false
-}
+            filters.includeDeleted ?? false
+          }
           onCheckedChange={(
             checked
           ) =>
@@ -86,7 +96,10 @@ export function BranchFilters({
           }
         />
 
-        <Label>
+        <Label
+          htmlFor="branch-include-deleted"
+          className="text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground transition-colors select-none"
+        >
           Include Deleted
         </Label>
       </div>

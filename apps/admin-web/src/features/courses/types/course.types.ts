@@ -166,7 +166,7 @@ export interface CreateCourseRequest {
 
   level?: CourseLevel;
 
-  mode?: CourseMode;
+  modes?: CourseMode[];
 
   language?: string;
 
@@ -180,7 +180,11 @@ export interface CreateCourseRequest {
 
   categoryId: string;
 
-  branchId?: string;
+  branchIds?: string[];
+
+  status?: CourseStatus;
+
+  materialsMeta?: string;
 }
 
 export interface UpdateCourseRequest {
@@ -206,7 +210,7 @@ export interface UpdateCourseRequest {
 
   level?: CourseLevel;
 
-  mode?: CourseMode;
+  modes?: CourseMode[];
 
   language?: string;
 
@@ -220,7 +224,11 @@ export interface UpdateCourseRequest {
 
   categoryId?: string;
 
-  branchId?: string;
+  branchIds?: string[];
+
+  status?: CourseStatus;
+
+  materialsMeta?: string;
 }
 
 export interface CourseFilters {

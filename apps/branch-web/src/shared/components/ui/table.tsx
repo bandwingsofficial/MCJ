@@ -1,27 +1,89 @@
+import * as React from "react";
+
 import { cn } from "@/src/shared/lib/cn";
 
-export function Table({ children }: { children: React.ReactNode }) {
+export function Table({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div className="w-full overflow-x-auto">
-      <table className="w-full text-sm">{children}</table>
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="overflow-x-auto">
+        <table className="min-w-full">
+          {children}
+        </table>
+      </div>
     </div>
   );
 }
 
-export function TableHeader({ children }: any) {
-  return <thead className="bg-gray-50">{children}</thead>;
-}
-
-export function TableRow({ children }: any) {
+export function TableHeader({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <tr className="border-b hover:bg-gray-50 transition">{children}</tr>
+    <thead className="bg-slate-50">
+      {children}
+    </thead>
   );
 }
 
-export function TableHead({ children }: any) {
-  return <th className="text-left p-3 text-gray-500">{children}</th>;
+export function TableBody({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <tbody>{children}</tbody>;
 }
 
-export function TableCell({ children }: any) {
-  return <td className="p-3">{children}</td>;
+export function TableRow({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <tr className="border-b last:border-0">
+      {children}
+    </tr>
+  );
+}
+
+export function TableHead({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <th
+      className={cn(
+        "px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-600",
+        className
+      )}
+    >
+      {children}
+    </th>
+  );
+}
+
+export function TableCell({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <td
+      className={cn(
+        "px-4 py-4 text-sm text-slate-700",
+        className
+      )}
+    >
+      {children}
+    </td>
+  );
 }

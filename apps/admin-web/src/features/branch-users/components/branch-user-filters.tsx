@@ -26,8 +26,17 @@ export const BranchUserFiltersBar = ({
   onChange,
 }: Props) => {
   return (
-    <div className="flex flex-wrap gap-4">
-      <div className="min-w-[300px] flex-1">
+    <div 
+      className="
+        flex 
+        flex-col 
+        gap-3 
+        sm:flex-row 
+        sm:items-center 
+        w-full
+      "
+    >
+      <div className="flex-1 min-w-[240px]">
         <SearchInput
           value={filters.search}
           onChange={(value) =>
@@ -39,49 +48,49 @@ export const BranchUserFiltersBar = ({
         />
       </div>
 
-      <div className="w-[220px]">
+      <div className="w-full sm:w-[200px]">
         <AppSelect
-  value={filters.role ?? "ALL"}
-  onValueChange={(value) =>
-    onChange({
-      ...filters,
-      role:
-        value === "ALL"
-          ? undefined
-          : (value as never),
-    })
-  }
-  options={[
-    {
-      label: "All Roles",
-      value: "ALL",
-    },
-    ...BRANCH_USER_ROLE_OPTIONS,
-  ]}
-/>
+          value={filters.role ?? "ALL"}
+          onValueChange={(value) =>
+            onChange({
+              ...filters,
+              role:
+                value === "ALL"
+                  ? undefined
+                  : (value as never),
+            })
+          }
+          options={[
+            {
+              label: "All Roles",
+              value: "ALL",
+            },
+            ...BRANCH_USER_ROLE_OPTIONS,
+          ]}
+        />
       </div>
 
-      <div className="w-[220px]">
+      <div className="w-full sm:w-[200px]">
         <AppSelect
-  value={filters.status ?? "ALL"}
-  onValueChange={(value) =>
-    onChange({
-      ...filters,
-      status:
-        value === "ALL"
-          ? undefined
-          : (value as
-              | "ACTIVE"
-              | "INACTIVE"),
-    })
-  }
-  options={[
-    ...BRANCH_USER_STATUS_OPTIONS,
-  ]}
-/>
+          value={filters.status ?? "ALL"}
+          onValueChange={(value) =>
+            onChange({
+              ...filters,
+              status:
+                value === "ALL"
+                  ? undefined
+                  : (value as
+                      | "ACTIVE"
+                      | "INACTIVE"),
+            })
+          }
+          options={[
+            ...BRANCH_USER_STATUS_OPTIONS,
+          ]}
+        />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 select-none shrink-0 py-1 sm:py-0">
         <Checkbox
           checked={
             filters.includeDeleted
@@ -99,9 +108,12 @@ export const BranchUserFiltersBar = ({
           }
         />
 
-        <span className="text-sm">
+        <label 
+          htmlFor="include-deleted-checkbox" 
+          className="text-sm font-medium cursor-pointer text-foreground"
+        >
           Include Deleted
-        </span>
+        </label>
       </div>
     </div>
   );

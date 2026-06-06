@@ -61,14 +61,10 @@ export function AdminHeader() {
           {date}
         </div>
 
-        {/* SETTINGS ICON */}
-        <button className="p-2 rounded-full hover:bg-gray-100 transition">
-          <Settings className="w-5 h-5 text-gray-600" />
-        </button>
-
+      
         {/* PROFILE */}
         <div className="cursor-pointer">
-          <Avatar />
+          <Avatar alt={"A"} fallback={"A"} />
         </div>
 
       </div>

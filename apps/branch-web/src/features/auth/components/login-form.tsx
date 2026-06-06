@@ -1,62 +1,125 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useForm } from "react-hook-form";
 
-import { Input } from "@/src/shared/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import {
+  loginSchema,
+  LoginFormValues,
+} from "@/src/features/auth/schemas/login.schema";
+
+import { useLogin } from "@/src/features/auth/hooks/use-login";
+
 import { Button } from "@/src/shared/components/ui/button";
 
+import { Input } from "@/src/shared/components/ui/input";
+
+import { Label } from "@/src/shared/components/ui/label";
+
 export function LoginForm() {
-  const router = useRouter();
+  const {
+    login,
+    isLoading,
+  } = useLogin();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: {
+      errors,
+    },
+  } = useForm<LoginFormValues>({
+    resolver:
+      zodResolver(
+        loginSchema
+      ),
 
-  const handleLogin = async () => {
-    if (!email || !password) return;
+    defaultValues: {
+      identifier: "",
+      password: "",
+    },
+  });
 
-    try {
-      setLoading(true);
-
-      // TEMP (until backend ready)
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 800);
-
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const onSubmit = async (
+  values: LoginFormValues
+) => {
+  try {
+    await login(values);
+  } catch {
+    // already handled in hook
+  }
+};
 
   return (
-    <div className="w-full max-w-sm space-y-5">
-      <h2 className="text-2xl font-semibold text-center text-gray-800">
-        Login
-      </h2>
+    <form
+      onSubmit={handleSubmit(
+        onSubmit
+      )}
+      className="space-y-5"
+    >
+      <div>
+        <Label htmlFor="identifier">
+          Email
+        </Label>
 
-      <Input
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
+        <Input
+          id="identifier"
+          placeholder="Enter email"
+          autoComplete="email"
+          {...register(
+            "identifier"
+          )}
+        />
 
-      <Input
-        placeholder="Password"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+        {errors.identifier && (
+          <p className="mt-1 text-sm text-red-500">
+            {
+              errors
+                .identifier
+                .message
+            }
+          </p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="password">
+          Password
+        </Label>
+
+        <Input
+          id="password"
+          type="password"
+          placeholder="Enter password"
+          autoComplete="current-password"
+          {...register(
+            "password"
+          )}
+        />
+
+        {errors.password && (
+          <p className="mt-1 text-sm text-red-500">
+            {
+              errors
+                .password
+                .message
+            }
+          </p>
+        )}
+      </div>
 
       <Button
-        className="w-full bg-purple-600 hover:bg-purple-700 transition-all"
-        onClick={handleLogin}
-        disabled={loading}
+        type="submit"
+        disabled={
+          isLoading
+        }
+        className="w-full"
       >
-        {loading ? "Logging in..." : "Login"}
+        {isLoading
+          ? "Signing In..."
+          : "Sign In"}
       </Button>
-    </div>
+    </form>
   );
 }

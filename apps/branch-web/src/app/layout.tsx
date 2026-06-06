@@ -1,5 +1,9 @@
 import "@/src/styles/globals.css";
 
+import { Toaster } from "sonner";
+
+import { AppProvider } from "@/src/core/providers/app-provider";
+
 export default function RootLayout({
   children,
 }: {
@@ -7,7 +11,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AppProvider>
+          {children}
+        </AppProvider>
+
+        <Toaster
+          richColors
+          position="top-right"
+          closeButton
+        />
+      </body>
     </html>
   );
 }

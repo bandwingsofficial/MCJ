@@ -180,7 +180,7 @@ const branchOptions =
         />
 
         <Card>
-          <div className="p-5">
+          <div className="p-0">
             <CourseFilters
               filters={filters}
               onChange={

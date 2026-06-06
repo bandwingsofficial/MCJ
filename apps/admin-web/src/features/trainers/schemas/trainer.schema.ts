@@ -22,14 +22,15 @@ export const createTrainerSchema =
         "Maximum 100 characters allowed"
       ),
 
-    lastName: z.string().optional(),
+    lastName: z.string().optional().or(z.literal("")),
 
     email: z
       .string()
       .email(
         "Enter valid email address"
       )
-      .optional(),
+      .optional()
+      .or(z.literal("")),
 
     phone: z
       .string()
@@ -37,16 +38,17 @@ export const createTrainerSchema =
         phoneRegex,
         "Enter valid mobile number"
       )
-      .optional(),
+      .optional()
+      .or(z.literal("")),
 
     gender: z
       .enum(TRAINER_GENDERS)
       .optional(),
 
-    bio: z.string().optional(),
+    bio: z.string().optional().or(z.literal("")),
 
     qualification:
-      z.string().optional(),
+      z.string().optional().or(z.literal("")),
 
     experienceYears: z
       .number()
@@ -54,14 +56,14 @@ export const createTrainerSchema =
       .optional(),
 
     specialization:
-      z.string().optional(),
+      z.string().optional().or(z.literal("")),
 
     skills: z
       .array(z.string())
       .default([]),
 
     employeeCode:
-      z.string().optional(),
+      z.string().optional().or(z.literal("")),
 
     trainerType: z.enum(
       TRAINER_TYPES
@@ -70,22 +72,26 @@ export const createTrainerSchema =
     linkedInUrl: z
       .string()
       .url()
-      .optional(),
+      .optional()
+      .or(z.literal("")),
 
     youtubeUrl: z
       .string()
       .url()
-      .optional(),
+      .optional()
+      .or(z.literal("")),
 
     instagramUrl: z
       .string()
       .url()
-      .optional(),
+      .optional()
+      .or(z.literal("")),
 
     branchId: z
       .string()
       .uuid()
-      .optional(),
+      .optional()
+      .or(z.literal("")),
 
     averageRating: z
       .number()
@@ -102,7 +108,7 @@ export const createTrainerSchema =
       z.boolean(),
 
     joinedAt:
-      z.string().optional(),
+      z.string().optional().or(z.literal("")),
 
     courseIds: z
       .array(

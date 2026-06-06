@@ -64,7 +64,7 @@ export function CourseForm({
       shortDescription: undefined,
       description: undefined,
       categoryId: "",
-      branchId: undefined,
+      branchIds: [],
       originalPrice: 0,
       discountPrice: 0,
       currency: "INR",
@@ -72,7 +72,7 @@ export function CourseForm({
       duration: undefined,
       durationType: "DAYS",
       level: "BEGINNER",
-      mode: "ONLINE",
+      modes: ["ONLINE"],
       language: "English",
       displayOrder: 0,
       metaTitle: undefined,
@@ -202,20 +202,16 @@ const {
 
           <Controller
             control={control}
-            name="branchId"
-            render={({
-              field,
-            }) => (
+            name="branchIds"
+            render={({ field }) => (
               <AppSelect
-                value={
-                  field.value
+                value={field.value?.[0]}
+                onValueChange={(value) =>
+                  field.onChange(
+                    value ? [value] : []
+                  )
                 }
-                onValueChange={
-                  field.onChange
-                }
-                options={
-                  branchOptions
-                }
+                options={branchOptions}
               />
             )}
           />
@@ -263,25 +259,19 @@ const {
 
           <Controller
             control={control}
-            name="mode"
-            render={({
-              field,
-            }) => (
+            name="modes"
+            render={({ field }) => (
               <AppSelect
-                value={
-                  field.value
-                }
-                onValueChange={
-                  field.onChange
+                value={field.value?.[0]}
+                onValueChange={(value) =>
+                  field.onChange(
+                    value ? [value] : []
+                  )
                 }
                 options={COURSE_MODES.map(
-                  (
-                    mode
-                  ) => ({
-                    label:
-                      mode,
-                    value:
-                      mode,
+                  (mode) => ({
+                    label: mode,
+                    value: mode,
                   })
                 )}
               />
