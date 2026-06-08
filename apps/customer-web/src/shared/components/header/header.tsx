@@ -131,35 +131,32 @@ const logoutMutation = useLogout();
 
         {/* ================= NAVIGATION ================= */}
 
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-          {navItems.map((item) => {
-            const isActive =
-              pathname === item.href;
+<nav className="hidden md:flex items-center gap-8 text-sm font-medium">
+  {navItems.map((item) => {
+    const isActive =
+      pathname === item.href;
 
-            return (
-              <button
-                key={item.name}
-                onClick={() =>
-  router.push(
-    AUTH_ROUTES.LOGIN
-  )
-}
-                className={`relative pb-1 transition ${
-                  isActive
-                    ? "text-blue-600 font-semibold"
-                    : "text-gray-600 hover:text-black"
-                }`}
-              >
-                {item.name}
+    return (
+      <button
+        key={item.name}
+        onClick={() =>
+          router.push(item.href)
+        }
+        className={`relative pb-1 transition ${
+          isActive
+            ? "text-blue-600 font-semibold"
+            : "text-gray-600 hover:text-black"
+        }`}
+      >
+        {item.name}
 
-                {isActive && (
-                  <span className="absolute left-0 bottom-0 w-full h-[2px] bg-blue-600 rounded-full" />
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
+        {isActive && (
+          <span className="absolute left-0 bottom-0 w-full h-[2px] bg-blue-600 rounded-full" />
+        )}
+      </button>
+    );
+  })}
+</nav>
         {/* ================= RIGHT SIDE ================= */}
 
         <div className="flex items-center gap-4">
