@@ -1,6 +1,25 @@
-export function Container({ children }: { children: React.ReactNode }) {
+// src/shared/components/ui/container.tsx
+
+import { ReactNode } from "react";
+
+import { cn } from "@/src/shared/lib/cn";
+
+interface ContainerProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function Container({
+  children,
+  className,
+}: ContainerProps) {
   return (
-    <div className="max-w-7xl mx-auto px-4">
+    <div
+      className={cn(
+        "mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8",
+        className
+      )}
+    >
       {children}
     </div>
   );

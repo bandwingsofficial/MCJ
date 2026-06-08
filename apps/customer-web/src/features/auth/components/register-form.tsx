@@ -1,167 +1,125 @@
-// src/features/auth/components/register-form.tsx
-
 "use client";
 
-import { useState } from "react";
-import { useRegister } from "@/src/domains/auth/hooks/useRegister";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-export const RegisterForm = () => {
-  const { register } = useRegister();
-  const router = useRouter();
+import { Button } from "@/src/shared/components/ui/button";
+import { FormError } from "@/src/shared/components/ui/form-error";
+import { Input } from "@/src/shared/components/ui/input";
+import { Label } from "@/src/shared/components/ui/label";
 
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    phone: "",
+import { useRegister } from "@/src/features/auth/hooks/use-register";
+
+import {
+  registerSchema,
+  RegisterFormValues,
+} from "@/src/features/auth/schemas/register.schema";
+
+export function RegisterForm() {
+  const registerMutation =
+    useRegister();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormValues>({
+    resolver:
+      zodResolver(registerSchema),
   });
 
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  // 🔥 Strict validation (aligned with backend)
-  const validate = () => {
-    if (!form.name.trim()) return "Name is required";
-
-    const email = form.email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      return "Enter a valid email";
-
-    if (form.password.length < 6)
-      return "Password must be at least 6 characters";
-
-    // allow user to type with or without +91 or leading 0
-    const digits = form.phone.replace(/\D/g, "");
-    if (digits.length !== 10)
-      return "Phone must be 10 digits";
-
-    // must start with 6–9 (India mobile rule)
-    if (!/^[6-9]\d{9}$/.test(digits))
-      return "Enter valid Indian mobile number";
-
-    return null;
-  };
-
-  // 🔥 Normalize phone → +91XXXXXXXXXX
-  const normalizePhone = (phone: string) => {
-    const digits = phone.replace(/\D/g, "").replace(/^0+/, "");
-    return `+91${digits}`;
-  };
-
-  const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
+  const onSubmit = (
+    data: RegisterFormValues
   ) => {
-    e.preventDefault();
-    setError("");
-
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const payload = {
-        name: form.name.trim(),
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
-        phone: normalizePhone(form.phone), // 🔥 critical fix
-      };
-
-      // 🔍 debug once if needed
-      // console.log("REGISTER PAYLOAD:", payload);
-
-      const res = await register(payload);
-
-      if (!res.success) {
-        setError(res.message);
-        return;
-      }
-
-      router.push("/login");
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.message ||
-          "Registration failed. Please try again."
-      );
-    } finally {
-      setLoading(false);
-    }
+    registerMutation.mutate(data);
   };
 
   return (
-    <div className="space-y-4">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* NAME */}
-        <input
-          placeholder="Full Name"
-          className="w-full border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-          value={form.name}
-          onChange={(e) =>
-            setForm({ ...form, name: e.target.value })
-          }
+    <form
+      onSubmit={handleSubmit(
+        onSubmit
+      )}
+      className="space-y-5"
+    >
+      <div>
+        <Label required>
+          Full Name
+        </Label>
+
+        <Input
+          placeholder="Enter full name"
+          {...register("name")}
         />
 
-        {/* EMAIL */}
-        <input
-          type="email"
-          placeholder="Email Address"
-          className="w-full border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-          value={form.email}
-          onChange={(e) =>
-            setForm({ ...form, email: e.target.value })
+        <FormError
+          message={
+            errors.name?.message
           }
         />
+      </div>
 
-        {/* PHONE */}
-        <input
-          placeholder="Phone Number (10 digits)"
-          className="w-full border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-          value={form.phone}
-          onChange={(e) =>
-            setForm({ ...form, phone: e.target.value })
-          }
+      <div>
+        <Label required>
+          Email
+        </Label>
+
+        <Input
+          placeholder="Enter email"
+          {...register("email")}
         />
 
-        {/* PASSWORD */}
-        <input
+        <FormError
+          message={
+            errors.email?.message
+          }
+        />
+      </div>
+
+      <div>
+        <Label required>
+          Phone Number
+        </Label>
+
+        <Input
+          placeholder="Enter phone number"
+          {...register("phone")}
+        />
+
+        <FormError
+          message={
+            errors.phone?.message
+          }
+        />
+      </div>
+
+      <div>
+        <Label required>
+          Password
+        </Label>
+
+        <Input
           type="password"
-          placeholder="Password"
-          className="w-full border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-          value={form.password}
-          onChange={(e) =>
-            setForm({ ...form, password: e.target.value })
-          }
+          placeholder="Enter password"
+          {...register("password")}
         />
 
-        {/* ERROR */}
-        {error && (
-          <p className="text-red-500 text-sm">{error}</p>
-        )}
+        <FormError
+          message={
+            errors.password
+              ?.message
+          }
+        />
+      </div>
 
-        {/* BUTTON */}
-        <button
-          disabled={loading}
-          className="w-full bg-black text-white p-3 rounded-lg hover:opacity-90 transition disabled:opacity-50"
-        >
-          {loading ? "Creating..." : "Register"}
-        </button>
-      </form>
-
-      {/* LOGIN LINK */}
-      <p className="text-sm text-center text-gray-600">
-        Already have an account?{" "}
-        <Link
-          href="/login"
-          className="text-blue-600 hover:underline"
-        >
-          Login
-        </Link>
-      </p>
-    </div>
+      <Button
+        type="submit"
+        className="w-full"
+        loading={
+          registerMutation.isPending
+        }
+      >
+        Create Account
+      </Button>
+    </form>
   );
-};
+}

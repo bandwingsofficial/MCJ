@@ -1,129 +1,75 @@
 "use client";
 
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { useRouter } from "next/navigation";
+import { Button } from "@/src/shared/components/ui/button";
+import { FormError } from "@/src/shared/components/ui/form-error";
+import { Input } from "@/src/shared/components/ui/input";
+import { Label } from "@/src/shared/components/ui/label";
 
-import { authApi } from "@/src/domains/auth/api/auth.api";
+import { useForgotPassword } from "@/src/features/auth/hooks/use-forgot-password";
 
-export const ForgotPasswordForm = () => {
-  // ==========================
-  // ROUTER
-  // ==========================
+import {
+  forgotPasswordSchema,
+  ForgotPasswordFormValues,
+} from "@/src/features/auth/schemas/forgot-password.schema";
 
-  const router = useRouter();
+export function ForgotPasswordForm() {
+  const mutation =
+    useForgotPassword();
 
-  // ==========================
-  // STATE
-  // ==========================
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } =
+    useForm<ForgotPasswordFormValues>({
+      resolver:
+        zodResolver(
+          forgotPasswordSchema
+        ),
+    });
 
-  const [email, setEmail] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  // ==========================
-  // SUBMIT
-  // ==========================
-
-  const handleSubmit = async (
-    e: React.FormEvent
+  const onSubmit = (
+    data: ForgotPasswordFormValues
   ) => {
-    e.preventDefault();
-
-    setError("");
-
-    try {
-      setLoading(true);
-
-      const res =
-        await authApi.requestPasswordReset(
-          email
-        );
-
-      // ======================
-      // FAILED
-      // ======================
-
-      if (!res.data.success) {
-        setError(
-          res.data.message ||
-            "Unable to send OTP"
-        );
-
-        return;
-      }
-
-      // ======================
-      // SAVE EMAIL
-      // ======================
-
-      sessionStorage.setItem(
-        "reset-email",
-        email
-      );
-
-      // ======================
-      // REDIRECT
-      // ======================
-
-      router.push(
-        `/reset-password?email=${encodeURIComponent(
-          email
-        )}`
-      );
-    } catch (err: any) {
-      setError(
-        err?.response?.data
-          ?.message ||
-          "Email not found"
-      );
-    } finally {
-      setLoading(false);
-    }
+    mutation.mutate(data);
   };
-
-  // ==========================
-  // UI
-  // ==========================
 
   return (
     <form
-      onSubmit={handleSubmit}
-      className="space-y-4"
-    >
-      <input
-        type="email"
-        required
-        placeholder="Enter email"
-        className="w-full rounded border p-3"
-        value={email}
-        onChange={(e) =>
-          setEmail(
-            e.target.value
-          )
-        }
-      />
-
-      {error && (
-        <p className="text-sm text-red-500">
-          {error}
-        </p>
+      onSubmit={handleSubmit(
+        onSubmit
       )}
+      className="space-y-5"
+    >
+      <div>
+        <Label required>
+          Email Address
+        </Label>
 
-      <button
+        <Input
+          placeholder="Enter email"
+          {...register("email")}
+        />
+
+        <FormError
+          message={
+            errors.email?.message
+          }
+        />
+      </div>
+
+      <Button
         type="submit"
-        disabled={loading}
-        className="w-full rounded bg-black p-3 text-white disabled:opacity-50"
+        className="w-full"
+        loading={
+          mutation.isPending
+        }
       >
-        {loading
-          ? "Sending OTP..."
-          : "Send OTP"}
-      </button>
+        Send OTP
+      </Button>
     </form>
   );
-};
+}

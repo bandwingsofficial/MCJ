@@ -5,6 +5,7 @@ import {
   TestimonialsSection,
 } from "./components";
 import { CTASection } from "./components/cta";
+import { PlacementsSection } from "./components/PlacementsSection";
 
 export function HomePage() {
   return (
@@ -12,6 +13,9 @@ export function HomePage() {
 
       {/* HERO */}
       <HeroSection />
+
+      {/* PLACEMENTS */}
+      <PlacementsSection />
 
       {/* VISION */}
       <VisionSection />

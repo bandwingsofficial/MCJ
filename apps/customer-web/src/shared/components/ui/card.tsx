@@ -1,6 +1,21 @@
-export function Card({ children }: { children: React.ReactNode }) {
+import { cn } from "@/src/shared/lib/cn";
+
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function Card({
+  children,
+  className,
+}: CardProps) {
   return (
-    <div className="border rounded-xl p-4 hover:shadow-md transition">
+    <div
+      className={cn(
+        "rounded-2xl border border-slate-200 bg-white p-6 shadow-sm",
+        className
+      )}
+    >
       {children}
     </div>
   );

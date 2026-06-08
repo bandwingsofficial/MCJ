@@ -1,57 +1,56 @@
+// src/features/auth/pages/login.page.tsx
+
 "use client";
 
 import { useEffect } from "react";
-
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-import { AuthLayout } from "@/src/features/auth/components/auth-layout";
-
+import { AuthCard } from "@/src/features/auth/components/auth-card";
+import { AuthPageWrapper } from "@/src/features/auth/components/auth-page-wrapper";
 import { LoginForm } from "@/src/features/auth/components/login-form";
+import { useAuthStore } from "@/src/features/auth/store/auth.store";
 
-import { useAuthStore } from "@/src/domains/auth/store/auth.store";
-
-export const LoginPage = () => {
-  // ==========================
-  // ROUTER
-  // ==========================
-
+export function LoginPage() {
   const router = useRouter();
-
-  // ==========================
-  // AUTH STORE
-  // ==========================
-
-  const user = useAuthStore(
-    (s) => s.user
-  );
-
-  // ==========================
-  // REDIRECT IF LOGGED IN
-  // ==========================
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
-    if (user) {
-      router.replace(
-        "/student"
-      );
+    if (isAuthenticated) {
+      router.replace("/student");
     }
-  }, [user, router]);
+  }, [isAuthenticated, router]);
 
-  // ==========================
-  // PREVENT LOGIN FLASH
-  // ==========================
-
-  if (user) {
+  if (isAuthenticated) {
     return null;
   }
 
-  // ==========================
-  // UI
-  // ==========================
-
   return (
-    <AuthLayout title="Login">
-      <LoginForm />
-    </AuthLayout>
+    <AuthPageWrapper>
+      <AuthCard
+        title="Welcome Back"
+        description="Sign in to continue"
+      >
+        <div className="space-y-6">
+          <LoginForm />
+
+          <div className="flex justify-between text-sm">
+            <Link
+              href="/forgot-password"
+              className="text-primary hover:underline"
+            >
+              Forgot Password?
+            </Link>
+
+            <Link
+              href="/register"
+              className="text-primary hover:underline"
+            >
+              Create Account
+            </Link>
+          </div>
+        </div>
+      </AuthCard>
+    </AuthPageWrapper>
   );
-};
+}

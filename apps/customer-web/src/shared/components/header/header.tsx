@@ -20,9 +20,9 @@ import {
   useEffect,
 } from "react";
 
-import { useAuthStore } from "@/src/domains/auth/store/auth.store";
-
-import { useLogout } from "@/src/domains/auth/hooks/useLogout";
+import { useAuthStore } from "@/src/features/auth/store/auth.store";
+import { AUTH_ROUTES } from "@/src/features/auth/constants/auth.constants";
+import { useLogout } from "@/src/features/auth/hooks/use-logout";
 
 const navItems = [
   { name: "Home", href: "/" },
@@ -53,7 +53,7 @@ export function Header() {
     (state) => state.user
   );
 
-  const { logout } = useLogout();
+const logoutMutation = useLogout();
 
   const [open, setOpen] = useState(false);
 
@@ -75,26 +75,32 @@ export function Header() {
   // =========================
 
   const handleProtectedRoute = (
-    href: string
-  ) => {
-    if (!user) {
-      router.push("/login");
+  href: string
+) => {
+  if (!user) {
+    router.push(
+      AUTH_ROUTES.LOGIN
+    );
 
-      return;
-    }
+    return;
+  }
 
-    router.push(href);
-  };
+  router.push(href);
+};
 
   // =========================
   // LOGOUT
   // =========================
 
-  const handleLogout = async () => {
-    await logout();
+ const handleLogout = async () => {
+  try {
+    await logoutMutation.mutateAsync();
 
     setOpen(false);
-  };
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   return (
     <header className="border-b bg-white sticky top-0 z-50">
@@ -134,10 +140,10 @@ export function Header() {
               <button
                 key={item.name}
                 onClick={() =>
-                  handleProtectedRoute(
-                    item.href
-                  )
-                }
+  router.push(
+    AUTH_ROUTES.LOGIN
+  )
+}
                 className={`relative pb-1 transition ${
                   isActive
                     ? "text-blue-600 font-semibold"

@@ -1,155 +1,97 @@
 "use client";
 
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { useLogin } from "@/src/domains/auth/hooks/useLogin";
+import { Button } from "@/src/shared/components/ui/button";
+import { Input } from "@/src/shared/components/ui/input";
+import { Label } from "@/src/shared/components/ui/label";
+import { FormError } from "@/src/shared/components/ui/form-error";
 
-import { useRouter } from "next/navigation";
+import { useLogin } from "@/src/features/auth/hooks/use-login";
 
-import Link from "next/link";
+import {
+  loginSchema,
+  LoginFormValues,
+} from "@/src/features/auth/schemas/login.schema";
+import { z } from "zod";
 
-export const LoginForm = () => {
-  const { login } = useLogin();
+export function LoginForm() {
+  const loginMutation =
+    useLogin();
 
-  const router = useRouter();
-
-  const [form, setForm] = useState({
-    identifier: "",
-    password: "",
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<z.input<typeof loginSchema>>({
+    resolver:
+      zodResolver(loginSchema),
   });
 
-  const [error, setError] = useState("");
-
-  const [loading, setLoading] = useState(false);
-
-  const isEmail = (value: string) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-      value
-    );
-
-  const validate = () => {
-    if (!form.identifier.trim()) {
-      return "Email is required";
-    }
-
-    if (!isEmail(form.identifier)) {
-      return "Enter valid email";
-    }
-
-    if (form.password.length < 6) {
-      return "Password must be at least 6 characters";
-    }
-
-    return null;
-  };
-
-  const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
+  const onSubmit = (
+    data: LoginFormValues
   ) => {
-    e.preventDefault();
-
-    setError("");
-
-    const validationError = validate();
-
-    if (validationError) {
-      setError(validationError);
-
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const payload = {
-        identifier: form.identifier
-          .trim()
-          .toLowerCase(),
-
-        password: form.password,
-      };
-
-      const res = await login(payload);
-
-      if (!res.success) {
-        setError(res.message);
-
-        return;
-      }
-
-      router.push("/student");
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.message ||
-          "Login failed"
-      );
-    } finally {
-      setLoading(false);
-    }
+    loginMutation.mutate(data);
   };
 
   return (
-    <div className="space-y-4">
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-4"
-      >
-        <input
-          placeholder="Email"
-          className="w-full border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-          value={form.identifier}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              identifier: e.target.value,
-            })
-          }
+    <form
+      onSubmit={handleSubmit(
+        onSubmit
+      )}
+      className="space-y-5"
+    >
+      <div>
+        <Label required>
+          Email
+        </Label>
+
+        <Input
+          placeholder="Enter email"
+          {...register(
+            "identifier"
+          )}
         />
 
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
-          value={form.password}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              password: e.target.value,
-            })
+        <FormError
+          message={
+            errors.identifier
+              ?.message
           }
         />
-
-        {error && (
-          <p className="text-red-500 text-sm">
-            {error}
-          </p>
-        )}
-
-        <button
-          disabled={loading}
-          className="w-full bg-black text-white p-3 rounded-lg hover:opacity-90 transition disabled:opacity-50"
-        >
-          {loading
-            ? "Logging in..."
-            : "Login"}
-        </button>
-      </form>
-
-      <div className="flex justify-between text-sm">
-        <Link
-          href="/forgot-password"
-          className="text-blue-600"
-        >
-          Forgot Password?
-        </Link>
-
-        <Link
-          href="/register"
-          className="text-blue-600"
-        >
-          Create Account
-        </Link>
       </div>
-    </div>
+
+      <div>
+        <Label required>
+          Password
+        </Label>
+
+        <Input
+          type="password"
+          placeholder="Enter password"
+          {...register(
+            "password"
+          )}
+        />
+
+        <FormError
+          message={
+            errors.password
+              ?.message
+          }
+        />
+      </div>
+
+      <Button
+        type="submit"
+        loading={
+          loginMutation.isPending
+        }
+        className="w-full"
+      >
+        Login
+      </Button>
+    </form>
   );
-};
+}

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { useAuthStore } from "@/src/domains/auth/store/auth.store";
+import { useAuthStore } from "@/src/features/auth/store/auth.store";
 
 export default function StudentPage() {
   const router = useRouter();
