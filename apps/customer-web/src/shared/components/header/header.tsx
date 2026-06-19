@@ -32,6 +32,7 @@ const navItems = [
   { name: "Courses", href: "/courses" },
 
   { name: "Franchise", href: "/franchise" },
+  { name: "Batches", href: "/batch" },
 
   {
     name: "Finance News",
