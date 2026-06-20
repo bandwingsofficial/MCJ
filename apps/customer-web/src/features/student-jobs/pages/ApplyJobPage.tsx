@@ -1,0 +1,143 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { useRouter } from "next/navigation";
+
+import { Loader } from "@/src/shared/components/ui/loader";
+import { ErrorState } from "@/src/shared/components/ui/error-state";
+import { PageHeader } from "@/src/shared/components/ui/page-header";
+import { appToast } from "@/src/shared/components/ui/toast";
+
+import { JobApplicationForm } from "@/src/features/student-jobs/components/application-form";
+
+import { useApplyJob } from "@/src/features/student-jobs/hooks";
+
+import { jobService } from "@/src/features/jobs/services/job.service";
+
+import type {
+  Job,
+} from "@/src/features/jobs/types/job.types";
+
+import type {
+  ApplyJobSchema,
+} from "@/src/features/student-jobs/schemas";
+
+interface ApplyJobPageProps {
+  jobSlug: string;
+
+  jobId: string;
+}
+
+export function ApplyJobPage({
+  jobSlug,
+  jobId,
+}: ApplyJobPageProps) {
+  const router = useRouter();
+
+  const [job, setJob] =
+    useState<Job | null>(null);
+
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState<string | null>(null);
+
+  const {
+    applyJob,
+    isSubmitting,
+  } = useApplyJob();
+
+ useEffect(() => {
+  const fetchJob = async () => {
+    try {
+      setIsLoading(true);
+
+      const response =
+        await jobService.getJob(jobSlug);
+
+      setJob(response);
+
+      setError(null);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to load job.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  void fetchJob();
+}, [jobSlug]);
+
+  const handleSubmit =
+    async (
+      values: ApplyJobSchema,
+    ) => {
+      const response =
+        await applyJob(
+          jobId,
+          values,
+        );
+
+      if (!response) {
+        appToast.error(
+          "Unable to submit application.",
+        );
+
+        return;
+      }
+
+      appToast.success(
+        "Application submitted successfully.",
+      );
+
+      router.push(
+        "/student/applications",
+      );
+    };
+
+  if (isLoading) {
+    return <Loader />;
+  }
+
+  if (error || !job) {
+    return (
+      <ErrorState
+        title="Unable to load job"
+        description={
+          error ??
+          "Job not found."
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={job.title}
+        description={
+          job.companyName
+        }
+      />
+
+      <JobApplicationForm
+        isSubmitting={
+          isSubmitting
+        }
+        onSubmit={
+          handleSubmit
+        }
+      />
+    </div>
+  );
+}

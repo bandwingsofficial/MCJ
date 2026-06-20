@@ -1,8 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
+
+import { useAuthStore } from "@/src/features/auth/store/auth.store";
 
 import type {
   Job,
@@ -15,6 +19,26 @@ interface JobHeroProps {
 export function JobHero({
   job,
 }: JobHeroProps) {
+  const router = useRouter();
+
+  const user = useAuthStore(
+    (state) => state.user,
+  );
+
+  const handleApply = () => {
+    if (!user) {
+      router.push(
+        `/login?redirect=/student/jobs/${job.id}/apply`,
+      );
+
+      return;
+    }
+
+    router.push(
+      `/student/jobs/${job.slug}/apply`,
+    );
+  };
+
   return (
     <Card className="space-y-6 p-8">
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
@@ -33,8 +57,7 @@ export function JobHero({
 
           <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
             <span>
-              📍 {job.city},{" "}
-              {job.state}
+              📍 {job.city}, {job.state}
             </span>
 
             <span>
@@ -46,14 +69,15 @@ export function JobHero({
             </span>
 
             <span>
-              ⏳{" "}
-              {job.minExperience}-
+              ⏳ {job.minExperience}-
               {job.maxExperience} Years
             </span>
           </div>
         </div>
 
-        <Button>
+        <Button
+          onClick={handleApply}
+        >
           Apply Now
         </Button>
       </div>
