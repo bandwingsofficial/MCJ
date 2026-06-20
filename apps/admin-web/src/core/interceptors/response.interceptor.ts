@@ -1,5 +1,3 @@
-// src/core/interceptors/response.interceptor.ts
-
 import {
   AxiosError,
   AxiosInstance,
@@ -12,7 +10,15 @@ export const setupResponseInterceptor = (
     (response) => response,
 
     (error: AxiosError) => {
-      return Promise.reject(error);
+      const message =
+        (error.response?.data as { message?: string })?.message ??
+        (error.response?.data as { error?: string })?.error ??
+        error.message ??
+        "Something went wrong";
+
+      return Promise.reject(
+        new Error(message)
+      );
     }
   );
 };

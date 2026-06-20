@@ -41,6 +41,9 @@ interface Props {
   onDeactivate: (
     trainer: TrainerListItem
   ) => void;
+   onPermanentDelete: (
+        trainer: TrainerListItem
+    ) => void;
 }
 
 export function TrainerTable({
@@ -50,6 +53,7 @@ export function TrainerTable({
   onRestore,
   onActivate,
   onDeactivate,
+  onPermanentDelete,
 }: Props) {
   return (
     <Table>
@@ -198,6 +202,9 @@ export function TrainerTable({
                       trainer
                     )
                   }
+                   onPermanentDelete={() =>
+        onPermanentDelete(trainer)
+    }
                 />
               </TableCell>
             </TableRow>

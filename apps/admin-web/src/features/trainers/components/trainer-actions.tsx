@@ -5,19 +5,22 @@ import { Dropdown } from "@/src/shared/components/ui/dropdown";
 import { Button } from "@/src/shared/components/ui/button";
 
 interface Props {
-  onEdit: () => void;
 
-  onActivate: () => void;
+    onEdit: () => void;
 
-  onDeactivate: () => void;
+    onActivate: () => void;
 
-  onDelete: () => void;
+    onDeactivate: () => void;
 
-  onRestore: () => void;
+    onDelete: () => void;
 
-  isDeleted: boolean;
+    onRestore: () => void;
 
-  status: string;
+    onPermanentDelete: () => void;
+
+    isDeleted: boolean;
+
+    status: string;
 }
 
 export function TrainerActions({
@@ -26,6 +29,7 @@ export function TrainerActions({
   onDeactivate,
   onDelete,
   onRestore,
+   onPermanentDelete,
   isDeleted,
   status,
 }: Props) {
@@ -77,16 +81,17 @@ export function TrainerActions({
           : []),
 
         ...(isDeleted
-          ? [
-              {
-                label:
-                  "Restore",
-
-                onClick:
-                  onRestore,
-              },
-            ]
-          : []),
+  ? [
+      {
+        label: "Restore",
+        onClick: onRestore,
+      },
+      {
+        label: "Permanent Delete",
+        onClick: onPermanentDelete,
+      },
+    ]
+  : []),
       ]}
     />
   );

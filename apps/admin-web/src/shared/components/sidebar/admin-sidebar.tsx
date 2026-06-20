@@ -70,6 +70,10 @@ const menu = [
         name: "Batches",
         icon: Boxes,
         path: "/batches",
+      },{
+        name: "Students",
+        icon: Layers,
+        path: "/students",
       },
       {
         name: "Student Enrollments",

@@ -5,11 +5,14 @@ import { useState } from "react";
 import { PageHeader } from "@/src/shared/components/ui/page-header";
 
 import { Button } from "@/src/shared/components/ui/button";
-
+import { useCreateTrainer } from "@/src/features/trainers/hooks/use-create-trainer";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
-
+import { useActivateTrainer } from "@/src/features/trainers/hooks/use-activate-trainer";
+import { useDeactivateTrainer } from "@/src/features/trainers/hooks/use-deactivate-trainer";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
-
+import { useDeleteTrainer } from "@/src/features/trainers/hooks/use-delete-trainer";
+import { useRestoreTrainer } from "@/src/features/trainers/hooks/use-restore-trainer";
+import { usePermanentDeleteTrainer } from "@/src/features/trainers/hooks/use-permanent-delete-trainer";
 import { useTrainers } from "@/src/features/trainers/hooks/use-trainers";
 
 import { TrainerTable } from "@/src/features/trainers/components/trainer-table";
@@ -34,7 +37,18 @@ export function TrainersPage() {
     setFilters,
     refetch,
   } = useTrainers();
+const {
+    activateTrainer,
+} = useActivateTrainer();
+const { deleteTrainer } = useDeleteTrainer();
 
+const { restoreTrainer } = useRestoreTrainer();
+
+const { permanentDeleteTrainer } =
+  usePermanentDeleteTrainer();
+const {
+    deactivateTrainer,
+} = useDeactivateTrainer();
   const [
     formOpen,
     setFormOpen,
@@ -47,6 +61,10 @@ export function TrainersPage() {
     useState<TrainerDetails | null>(
       null
     );
+const {
+    createTrainer,
+    isLoading: creatingTrainer,
+} = useCreateTrainer();
 
   const handleCreate =
     () => {
@@ -114,15 +132,47 @@ export function TrainersPage() {
         <TrainerEmptyState />
       ) : (
         <TrainerTable
-          trainers={trainers}
-          onEdit={
-            handleEdit
-          }
-          onDelete={() => {}}
-          onRestore={() => {}}
-          onActivate={() => {}}
-          onDeactivate={() => {}}
-        />
+    trainers={trainers}
+    onEdit={handleEdit}
+    onDelete={async (trainer) => {
+    const success = await deleteTrainer(trainer.id);
+
+    if (success) {
+        await refetch();
+    }
+}}
+
+onRestore={async (trainer) => {
+    const success = await restoreTrainer(trainer.id);
+
+    if (success) {
+        await refetch();
+    }
+}}
+    onActivate={async (trainer) => {
+        const success = await activateTrainer(trainer.id);
+
+        if (success) {
+            await refetch();
+        }
+    }}
+    onDeactivate={async (trainer) => {
+        const success = await deactivateTrainer(trainer.id);
+
+        if (success) {
+            await refetch();
+        }
+    }}
+    onPermanentDelete={async (trainer) => {
+
+        const success =
+            await permanentDeleteTrainer(trainer.id);
+
+        if (success) {
+            await refetch();
+        }
+    }}
+/>
       )}
 
       <TrainerForm
@@ -130,15 +180,18 @@ export function TrainersPage() {
         trainer={
           selectedTrainer
         }
-        loading={false}
+        loading={creatingTrainer}
         onClose={() =>
           setFormOpen(false)
         }
-        onSubmit={async () => {
-          await refetch();
+       onSubmit={async (values) => {
+    const success = await createTrainer(values);
 
-          setFormOpen(false);
-        }}
+    if (success) {
+        await refetch();
+        setFormOpen(false);
+    }
+}}
       />
     </div>
   );
