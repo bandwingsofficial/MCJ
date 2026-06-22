@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BriefcaseBusiness,
   LayoutDashboard,
   User,
 } from "lucide-react";
@@ -36,6 +37,18 @@ export function StudentSidebar() {
           icon={User}
           label="Profile"
         />
+
+        <StudentSidebarItem
+          href="/student/applications"
+          icon={BriefcaseBusiness}
+          label="My Applications"
+        />
+
+        <StudentSidebarItem
+  href="/student/placement"
+  icon={BriefcaseBusiness}
+  label="Placement"
+/>
       </nav>
 
       {/* Bottom Footer Accent */}

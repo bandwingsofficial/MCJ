@@ -128,6 +128,11 @@ const menu = [
         path: "/job-applications",
       },
       {
+        name: "Placements",
+        icon: FileText,
+        path: "/placements",
+      },
+      {
         name: "Settings",
         icon: Settings,
         path: "/settings",
