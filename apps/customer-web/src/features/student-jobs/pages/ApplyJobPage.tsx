@@ -53,30 +53,30 @@ export function ApplyJobPage({
     isSubmitting,
   } = useApplyJob();
 
- useEffect(() => {
-  const fetchJob = async () => {
-    try {
-      setIsLoading(true);
+  useEffect(() => {
+    const fetchJob = async () => {
+      try {
+        setIsLoading(true);
 
-      const response =
-        await jobService.getJob(jobSlug);
+        const response =
+          await jobService.getJob(jobSlug);
 
-      setJob(response);
+        setJob(response);
 
-      setError(null);
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to load job.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        setError(null);
+      } catch (error) {
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load job.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  void fetchJob();
-}, [jobSlug]);
+    void fetchJob();
+  }, [jobSlug]);
 
   const handleSubmit =
     async (
@@ -106,38 +106,48 @@ export function ApplyJobPage({
     };
 
   if (isLoading) {
-    return <Loader />;
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader />
+      </div>
+    );
   }
 
   if (error || !job) {
     return (
-      <ErrorState
-        title="Unable to load job"
-        description={
-          error ??
-          "Job not found."
-        }
-      />
+      <div className="max-w-md mx-auto py-2 px-1">
+        <ErrorState
+          title="Unable to load job"
+          description={
+            error ??
+            "Job not found."
+          }
+        />
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={job.title}
-        description={
-          job.companyName
-        }
-      />
+    <div className="w-full max-w-3xl mx-auto px-1 py-2 md:py-8 space-y-6">
+      <div className="border-b border-slate-100 pb-1">
+        <PageHeader
+          title={job.title}
+          description={
+            job.companyName
+          }
+        />
+      </div>
 
-      <JobApplicationForm
-        isSubmitting={
-          isSubmitting
-        }
-        onSubmit={
-          handleSubmit
-        }
-      />
+      <div className="bg-white rounded-xl">
+        <JobApplicationForm
+          isSubmitting={
+            isSubmitting
+          }
+          onSubmit={
+            handleSubmit
+          }
+        />
+      </div>
     </div>
   );
 }

@@ -125,7 +125,7 @@ const menu = [
       {
         name: "Job Applications",
         icon: FileText,
-        path: "/applications",
+        path: "/job-applications",
       },
       {
         name: "Settings",
