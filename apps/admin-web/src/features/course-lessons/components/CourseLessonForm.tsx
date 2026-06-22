@@ -44,6 +44,8 @@ interface CourseLessonFormProps {
 
   loading: boolean;
 
+  moduleId: string;
+
   lesson?: CourseLesson;
 
   onClose: () => void;
@@ -52,14 +54,14 @@ interface CourseLessonFormProps {
     values: CourseLessonFormValues,
   ) => Promise<void>;
 }
-
 export function CourseLessonForm({
   open,
   loading,
+  moduleId,
   lesson,
   onClose,
   onSubmit,
-}: CourseLessonFormProps) {
+}: CourseLessonFormProps){
   const {
     modules,
     isLoading: isLoadingModules,

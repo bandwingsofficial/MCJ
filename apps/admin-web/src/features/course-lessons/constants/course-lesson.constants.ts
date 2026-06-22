@@ -14,12 +14,12 @@ export const COURSE_LESSON_DESCRIPTION_MAX_LENGTH =
 export const COURSE_LESSON_VIDEO_URL_MAX_LENGTH =
   500;
 
-export const DEFAULT_COURSE_LESSON_FILTERS: CourseLessonFilters =
-  {
-    search: "",
-    moduleId: "",
-    includeDeleted: false,
-  };
+export const DEFAULT_COURSE_LESSON_FILTERS = {
+  search: "",
+  courseId: "",
+  moduleId: undefined,
+  includeDeleted: false,
+};
 
 export const DEFAULT_COURSE_LESSON_FORM_VALUES: CourseLessonFormValues =
   {

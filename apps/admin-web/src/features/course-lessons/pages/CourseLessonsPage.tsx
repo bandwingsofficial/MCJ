@@ -37,19 +37,25 @@ import type {
 
 interface CourseLessonsPageProps {
   courseId: string;
+
+  moduleId: string;
 }
 
 export function CourseLessonsPage({
   courseId,
+  moduleId,
 }: CourseLessonsPageProps) {
   const {
-    courseLessons,
-    isLoading,
-    error,
-    filters,
-    setFilters,
-    refetch,
-  } = useCourseLessons();
+  courseLessons,
+  isLoading,
+  error,
+  filters,
+  setFilters,
+  refetch,
+} = useCourseLessons({
+  courseId,
+  includeDeleted: false,
+});
 
   const {
     createCourseLesson,
@@ -271,7 +277,7 @@ export function CourseLessonsPage({
           isCreating ||
           isUpdating
         }
-        courseId={courseId}
+        moduleId={moduleId}
         lesson={
           selectedLesson ??
           undefined

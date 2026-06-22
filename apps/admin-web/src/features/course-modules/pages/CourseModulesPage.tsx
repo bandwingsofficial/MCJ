@@ -126,41 +126,42 @@ export function CourseModulesPage({
       />
 
       <CourseModuleList
-        modules={modules}
-        onCreate={() =>
-          setFormOpen(true)
-        }
-        onEdit={(module) => {
-          setSelectedModule(
-            module
-          );
+  courseId={courseId}
+  modules={modules}
+  onCreate={() =>
+    setFormOpen(true)
+  }
+  onEdit={(module) => {
+    setSelectedModule(
+      module,
+    );
 
-          setFormOpen(true);
-        }}
-        onMove={(module) => {
-          setSelectedModule(
-            module
-          );
+    setFormOpen(true);
+  }}
+  onMove={(module) => {
+    setSelectedModule(
+      module,
+    );
 
-          setMoveOpen(true);
-        }}
-        onDelete={(module) => {
-          setSelectedModule(
-            module
-          );
+    setMoveOpen(true);
+  }}
+  onDelete={(module) => {
+    setSelectedModule(
+      module,
+    );
 
-          setDeleteOpen(true);
-        }}
-        onRestore={async (
-          module
-        ) => {
-          await restoreCourseModule(
-            module.id
-          );
+    setDeleteOpen(true);
+  }}
+  onRestore={async (
+    module,
+  ) => {
+    await restoreCourseModule(
+      module.id,
+    );
 
-          await refetch();
-        }}
-      />
+    await refetch();
+  }}
+/>
 
       <CourseModuleForm
   open={formOpen}

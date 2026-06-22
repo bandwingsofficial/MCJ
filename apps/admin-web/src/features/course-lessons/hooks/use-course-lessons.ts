@@ -41,64 +41,80 @@ interface UseCourseLessonsProps {
   includeDeleted?: boolean;
 }
 
-export const useCourseLessons = ({
-  courseId,
-  includeDeleted = false,
-}: UseCourseLessonsProps): UseCourseLessonsReturn => {
-    const [
-      courseLessons,
-      setCourseLessons,
-    ] = useState<CourseLesson[]>([]);
+export const useCourseLessons = (
+  props?: UseCourseLessonsProps,
+): UseCourseLessonsReturn => {
+  const courseId =
+    props?.courseId ?? "";
 
-    const [
-      isLoading,
-      setIsLoading,
-    ] = useState(true);
+  const includeDeleted =
+    props?.includeDeleted ??
+    false;
 
-    const [error, setError] =
-      useState<string | null>(null);
+  const [
+    courseLessons,
+    setCourseLessons,
+  ] = useState<CourseLesson[]>([]);
 
-    const [filters, setFilters] =
-      useState<CourseLessonFilters>(
-        DEFAULT_COURSE_LESSON_FILTERS,
-      );
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(true);
 
-    const fetchCourseLessons =
-      useCallback(async () => {
-        try {
-          setIsLoading(true);
+  const [error, setError] =
+    useState<string | null>(null);
 
-          setError(null);
+  const [filters, setFilters] =
+    useState<CourseLessonFilters>(
+      DEFAULT_COURSE_LESSON_FILTERS,
+    );
 
-          const response =
-            await courseLessonService.getCourseLessons();
+  const fetchCourseLessons =
+    useCallback(async () => {
+      try {
+        setIsLoading(true);
 
-          setCourseLessons(
-            response.data,
+        setError(null);
+
+        const response =
+          await courseLessonService.getCourseLessons(
+            {
+              courseId,
+              includeDeleted,
+            },
           );
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : "Failed to fetch course lessons.";
 
-          setError(message);
-        } finally {
-          setIsLoading(false);
-        }
-      }, [filters]);
+        setCourseLessons(
+          response.data,
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch course lessons.";
 
-    useEffect(() => {
-      void fetchCourseLessons();
-    }, [fetchCourseLessons]);
+        setError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    }, [
+      courseId,
+      includeDeleted,
+    ]);
 
-    return {
-      courseLessons,
-      isLoading,
-      error,
-      filters,
-      setFilters,
-      refetch:
-        fetchCourseLessons,
-    };
+  useEffect(() => {
+    void fetchCourseLessons();
+  }, [
+    fetchCourseLessons,
+  ]);
+
+  return {
+    courseLessons,
+    isLoading,
+    error,
+    filters,
+    setFilters,
+    refetch:
+      fetchCourseLessons,
   };
+};

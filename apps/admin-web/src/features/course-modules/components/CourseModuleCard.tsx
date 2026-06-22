@@ -10,6 +10,8 @@ import type {
 } from "@/src/features/course-modules/types/course-module.types";
 
 interface CourseModuleCardProps {
+  courseId: string;
+
   module: CourseModule;
 
   onEdit: (
@@ -31,6 +33,7 @@ interface CourseModuleCardProps {
 
 export function CourseModuleCard({
   module,
+  courseId,
   onEdit,
   onMove,
   onDelete,
@@ -82,13 +85,14 @@ export function CourseModuleCard({
           )}
         </div>
 
-        <CourseModuleActions
-          module={module}
-          onEdit={onEdit}
-          onMove={onMove}
-          onDelete={onDelete}
-          onRestore={onRestore}
-        />
+       <CourseModuleActions
+  courseId={courseId}
+  module={module}
+  onEdit={onEdit}
+  onMove={onMove}
+  onDelete={onDelete}
+  onRestore={onRestore}
+/>
       </div>
     </Card>
   );

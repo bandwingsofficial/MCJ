@@ -3,6 +3,7 @@
 import { apiClient } from "@/src/core/api/axios";
 
 import type {
+    GetCourseLessonsRequest,
   CourseLessonListResponse,
   CourseLessonResponse,
   CreateCourseLessonRequest,
@@ -12,10 +13,23 @@ import type {
 } from "@/src/features/course-lessons/types";
 
 class CourseLessonService {
-  async getCourseLessons() {
+  private readonly basePath =
+    "/admin/course-lessons";
+
+  async getCourseLessons(
+    filters: GetCourseLessonsRequest,
+  ) {
     const { data } =
       await apiClient.get<CourseLessonListResponse>(
-        "/admin/course-lessons",
+        this.basePath,
+        {
+          params: {
+  moduleId: filters.moduleId,
+
+  includeDeleted:
+    filters.includeDeleted,
+},
+        },
       );
 
     return data;
@@ -26,7 +40,7 @@ class CourseLessonService {
   ) {
     const { data } =
       await apiClient.post<CourseLessonResponse>(
-        "/admin/course-lessons",
+        this.basePath,
         payload,
       );
 
@@ -39,7 +53,7 @@ class CourseLessonService {
   ) {
     const { data } =
       await apiClient.patch<CourseLessonResponse>(
-        `/admin/course-lessons/${id}`,
+        `${this.basePath}/${id}`,
         payload,
       );
 
@@ -52,7 +66,7 @@ class CourseLessonService {
   ) {
     const { data } =
       await apiClient.patch<CourseLessonResponse>(
-        `/admin/course-lessons/${id}/move`,
+        `${this.basePath}/${id}/move`,
         payload,
       );
 
@@ -64,7 +78,7 @@ class CourseLessonService {
   ) {
     const { data } =
       await apiClient.delete<DeleteCourseLessonResponse>(
-        `/admin/course-lessons/${id}`,
+        `${this.basePath}/${id}`,
       );
 
     return data;
@@ -75,7 +89,7 @@ class CourseLessonService {
   ) {
     const { data } =
       await apiClient.patch<CourseLessonResponse>(
-        `/admin/course-lessons/${id}/restore`,
+        `${this.basePath}/${id}/restore`,
       );
 
     return data;

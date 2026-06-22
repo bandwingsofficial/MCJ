@@ -8,28 +8,31 @@ import type {
 } from "@/src/features/course-modules/types/course-module.types";
 
 interface CourseModuleListProps {
+  courseId: string;
+
   modules: CourseModule[];
 
   onCreate?: () => void;
 
   onEdit: (
-    module: CourseModule
+    module: CourseModule,
   ) => void;
 
   onMove: (
-    module: CourseModule
+    module: CourseModule,
   ) => void;
 
   onDelete: (
-    module: CourseModule
+    module: CourseModule,
   ) => void;
 
   onRestore: (
-    module: CourseModule
+    module: CourseModule,
   ) => void;
 }
 
 export function CourseModuleList({
+  courseId,
   modules,
   onCreate,
   onEdit,
@@ -53,17 +56,14 @@ export function CourseModuleList({
         (module) => (
           <CourseModuleCard
             key={module.id}
+            courseId={courseId}
             module={module}
             onEdit={onEdit}
             onMove={onMove}
-            onDelete={
-              onDelete
-            }
-            onRestore={
-              onRestore
-            }
+            onDelete={onDelete}
+            onRestore={onRestore}
           />
-        )
+        ),
       )}
     </div>
   );

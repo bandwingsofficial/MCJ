@@ -95,6 +95,8 @@ export interface CourseLessonFormValues {
 export interface CourseLessonFilters {
   search: string;
 
+  courseId: string;
+
   moduleId?: string;
 
   includeDeleted: boolean;
@@ -106,4 +108,10 @@ export interface CourseLessonApiError {
   code: string;
 
   message: string;
+}
+
+export interface GetCourseLessonsRequest {
+  moduleId: string;
+
+  includeDeleted: boolean;
 }
