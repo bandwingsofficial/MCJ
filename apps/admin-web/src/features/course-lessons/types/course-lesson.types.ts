@@ -1,0 +1,109 @@
+// src/features/course-lessons/types/course-lesson.types.ts
+
+export interface CourseLesson {
+  id: string;
+
+  moduleId: string;
+
+  title: string;
+
+  slug: string;
+
+  description: string | null;
+
+  videoUrl: string | null;
+
+  duration: number | null;
+
+  displayOrder: number;
+
+  createdBy: string;
+
+  updatedBy: string | null;
+
+  isDeleted: boolean;
+
+  deletedAt: string | null;
+
+  createdAt: string;
+
+  updatedAt: string;
+}
+
+export interface CreateCourseLessonRequest {
+  moduleId: string;
+
+  title: string;
+
+  description?: string;
+
+  videoUrl?: string;
+}
+
+export interface UpdateCourseLessonRequest {
+  title?: string;
+
+  description?: string;
+
+  videoUrl?: string;
+}
+
+export interface MoveCourseLessonRequest {
+  newPosition: number;
+}
+
+export interface DeleteCourseLessonResponse {
+  success: boolean;
+
+  message: string;
+
+  data: {
+    id: string;
+
+    isDeleted: boolean;
+
+    deletedAt: string;
+  };
+}
+
+export interface CourseLessonResponse {
+  success: boolean;
+
+  message: string;
+
+  data: CourseLesson;
+}
+
+export interface CourseLessonListResponse {
+  success: boolean;
+
+  message: string;
+
+  data: CourseLesson[];
+}
+
+export interface CourseLessonFormValues {
+  moduleId: string;
+
+  title: string;
+
+  description: string;
+
+  videoUrl: string;
+}
+
+export interface CourseLessonFilters {
+  search: string;
+
+  moduleId?: string;
+
+  includeDeleted: boolean;
+}
+
+export interface CourseLessonApiError {
+  success: false;
+
+  code: string;
+
+  message: string;
+}

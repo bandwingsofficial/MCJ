@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/src/shared/components/ui/button";
 import { Dropdown } from "@/src/shared/components/ui/dropdown";
 
@@ -8,6 +10,8 @@ import type {
 } from "@/src/features/course-modules/types/course-module.types";
 
 interface CourseModuleActionsProps {
+  courseId: string;
+
   module: CourseModule;
 
   onEdit: (
@@ -28,12 +32,16 @@ interface CourseModuleActionsProps {
 }
 
 export function CourseModuleActions({
+  courseId,
   module,
   onEdit,
   onMove,
   onDelete,
   onRestore,
 }: CourseModuleActionsProps) {
+  const router =
+    useRouter();
+
   return (
     <Dropdown
       trigger={
@@ -44,6 +52,14 @@ export function CourseModuleActions({
         </Button>
       }
       items={[
+        {
+          label:
+            "View Lessons",
+          onClick: () =>
+            router.push(
+              `/courses/${courseId}/modules/${module.id}/lessons`
+            ),
+        },
         {
           label: "Edit",
           onClick: () =>
