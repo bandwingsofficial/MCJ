@@ -18,6 +18,10 @@ interface CourseLessonActionsProps {
     lesson: CourseLesson,
   ) => void;
 
+  onResources: (
+  lesson: CourseLesson,
+) => void;
+
   onDelete: (
     lesson: CourseLesson,
   ) => void;
@@ -31,6 +35,7 @@ export function CourseLessonActions({
   lesson,
   onEdit,
   onMove,
+  onResources,
   onDelete,
   onRestore,
 }: CourseLessonActionsProps) {
@@ -47,6 +52,13 @@ export function CourseLessonActions({
           onClick: () =>
             onEdit(lesson),
         },
+        {
+  label: "Resources",
+  onClick: () =>
+    onResources(
+      lesson,
+    ),
+},
         {
           label: "Move",
           onClick: () =>

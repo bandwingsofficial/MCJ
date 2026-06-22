@@ -9,91 +9,85 @@ import { Button } from "@/src/shared/components/ui/button";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { PageHeader } from "@/src/shared/components/ui/page-header";
 import { appToast } from "@/src/shared/components/ui/toast";
-import { useRouter } from "next/navigation";
 
 import {
-  CourseLessonDeleteDialog,
-  CourseLessonEmpty,
-  CourseLessonFilters,
-  CourseLessonForm,
-  CourseLessonList,
-  CourseLessonMoveDialog,
-  CourseLessonSkeleton,
-} from "@/src/features/course-lessons/components";
+  CourseResourceDeleteDialog,
+  CourseResourceEmpty,
+  CourseResourceFilters,
+  CourseResourceForm,
+  CourseResourceList,
+  CourseResourceMoveDialog,
+  CourseResourceSkeleton,
+} from "@/src/features/course-resources/components";
 
 import {
-  useCourseLessons,
-  useCreateCourseLesson,
-  useUpdateCourseLesson,
-  useDeleteCourseLesson,
-  useMoveCourseLesson,
-  useRestoreCourseLesson,
-} from "@/src/features/course-lessons/hooks";
+  useCourseResources,
+  useCreateCourseResource,
+  useDeleteCourseResource,
+  useMoveCourseResource,
+  useRestoreCourseResource,
+  useUpdateCourseResource,
+} from "@/src/features/course-resources/hooks";
 
 import type {
-  CourseLesson,
-  CourseLessonFilters as CourseLessonFilterValues,
-  CourseLessonFormValues,
-} from "@/src/features/course-lessons/types";
+  CourseResource,
+  CourseResourceFormValues,
+} from "@/src/features/course-resources/types";
 
-interface CourseLessonsPageProps {
-  courseId: string;
-
-  moduleId: string;
+interface CourseResourcesPageProps {
+  lessonId: string;
 }
 
-export function CourseLessonsPage({
-  courseId,
-  moduleId,
-}: CourseLessonsPageProps) {
-  const router =
-  useRouter();
+export function CourseResourcesPage({
+  lessonId,
+}: CourseResourcesPageProps) {
   const {
-  courseLessons,
-  isLoading,
-  error,
-  filters,
-  setFilters,
-  refetch,
-} = useCourseLessons({
-  moduleId,
-  includeDeleted: false,
-});
+    resources,
+    filters,
+    setFilters,
+    isLoading,
+    error,
+    refetch,
+  } =
+    useCourseResources({
+      lessonId,
+      includeDeleted: false,
+    });
 
   const {
-    createCourseLesson,
+    createCourseResource,
     isLoading: isCreating,
   } =
-    useCreateCourseLesson();
+    useCreateCourseResource();
 
   const {
-    updateCourseLesson,
+    updateCourseResource,
     isLoading: isUpdating,
   } =
-    useUpdateCourseLesson();
+    useUpdateCourseResource();
 
   const {
-    deleteCourseLesson,
+    deleteCourseResource,
     isLoading: isDeleting,
   } =
-    useDeleteCourseLesson();
+    useDeleteCourseResource();
 
   const {
-    restoreCourseLesson,
+    restoreCourseResource,
   } =
-    useRestoreCourseLesson();
+    useRestoreCourseResource();
 
   const {
-    moveCourseLesson,
+    moveCourseResource,
     isLoading: isMoving,
   } =
-    useMoveCourseLesson();
+    useMoveCourseResource();
 
   const [
-    selectedLesson,
-    setSelectedLesson,
+    selectedResource,
+    setSelectedResource,
   ] =
-    useState<CourseLesson | null>(
+    useState<CourseResource | null>(
       null,
     );
 
@@ -111,13 +105,14 @@ export function CourseLessonsPage({
     moveOpen,
     setMoveOpen,
   ] = useState(false);
-    const filteredLessons =
+
+  const filteredResources =
     useMemo(() => {
-      return courseLessons.filter(
-        (lesson) => {
+      return resources.filter(
+        (resource) => {
           if (
             !filters.includeDeleted &&
-            lesson.isDeleted
+            resource.isDeleted
           ) {
             return false;
           }
@@ -125,7 +120,7 @@ export function CourseLessonsPage({
           if (
             filters.search.trim()
           ) {
-            return lesson.title
+            return resource.title
               .toLowerCase()
               .includes(
                 filters.search.toLowerCase(),
@@ -136,12 +131,12 @@ export function CourseLessonsPage({
         },
       );
     }, [
-      courseLessons,
+      resources,
       filters,
     ]);
 
   const closeForm = () => {
-    setSelectedLesson(
+    setSelectedResource(
       null,
     );
 
@@ -150,7 +145,7 @@ export function CourseLessonsPage({
 
   const closeDeleteDialog =
     () => {
-      setSelectedLesson(
+      setSelectedResource(
         null,
       );
 
@@ -159,7 +154,7 @@ export function CourseLessonsPage({
 
   const closeMoveDialog =
     () => {
-      setSelectedLesson(
+      setSelectedResource(
         null,
       );
 
@@ -168,62 +163,57 @@ export function CourseLessonsPage({
 
   if (isLoading) {
     return (
-      <CourseLessonSkeleton />
+      <CourseResourceSkeleton />
     );
   }
 
   if (error) {
     return (
       <ErrorState
-        title="Failed To Load Lessons"
+        title="Failed To Load Resources"
         description={error}
         onRetry={refetch}
       />
     );
   }
-    return (
+
+  return (
     <>
       <PageHeader
-        title="Course Lessons"
-        description="Manage lessons for this course."
+        title="Course Resources"
+        description="Manage lesson resources."
         actions={
           <Button
             onClick={() =>
               setFormOpen(true)
             }
           >
-            Add Lesson
+            Add Resource
           </Button>
         }
       />
 
       <div className="mt-6">
-        <CourseLessonFilters
+        <CourseResourceFilters
           filters={filters}
-          onChange={(
-            nextFilters,
-          ) =>
-            setFilters(
-              nextFilters,
-            )
-          }
+          onChange={setFilters}
         />
       </div>
 
       <div className="mt-6">
-        {filteredLessons.length ===
+        {filteredResources.length ===
         0 ? (
-          <CourseLessonEmpty />
+          <CourseResourceEmpty />
         ) : (
-          <CourseLessonList
-            lessons={
-              filteredLessons
+          <CourseResourceList
+            resources={
+              filteredResources
             }
             onEdit={(
-              lesson,
+              resource,
             ) => {
-              setSelectedLesson(
-                lesson,
+              setSelectedResource(
+                resource,
               );
 
               setFormOpen(
@@ -231,28 +221,21 @@ export function CourseLessonsPage({
               );
             }}
             onMove={(
-              lesson,
+              resource,
             ) => {
-              setSelectedLesson(
-                lesson,
+              setSelectedResource(
+                resource,
               );
 
               setMoveOpen(
                 true,
               );
             }}
-            onResources={(
-  lesson,
-) => {
-  router.push(
-    `/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/resources`,
-  );
-}}
             onDelete={(
-              lesson,
+              resource,
             ) => {
-              setSelectedLesson(
-                lesson,
+              setSelectedResource(
+                resource,
               );
 
               setDeleteOpen(
@@ -260,19 +243,19 @@ export function CourseLessonsPage({
               );
             }}
             onRestore={async (
-              lesson,
+              resource,
             ) => {
               await appToast.promise(
-                restoreCourseLesson(
-                  lesson.id,
+                restoreCourseResource(
+                  resource.id,
                 ),
                 {
                   loading:
-                    "Restoring lesson...",
+                    "Restoring resource...",
                   success:
-                    "Lesson restored successfully.",
+                    "Resource restored successfully.",
                   error:
-                    "Failed to restore lesson.",
+                    "Failed to restore resource.",
                 },
               );
 
@@ -281,57 +264,58 @@ export function CourseLessonsPage({
           />
         )}
       </div>
-            <CourseLessonForm
+
+      <CourseResourceForm
         open={formOpen}
         loading={
           isCreating ||
           isUpdating
         }
-        moduleId={moduleId}
-        lesson={
-          selectedLesson ??
+        lessonId={lessonId}
+        resource={
+          selectedResource ??
           undefined
         }
         onClose={closeForm}
         onSubmit={async (
-          values: CourseLessonFormValues,
+          values: CourseResourceFormValues,
         ) => {
           if (
-            selectedLesson
+            selectedResource
           ) {
             await appToast.promise(
-              updateCourseLesson(
-                selectedLesson.id,
+              updateCourseResource(
+                selectedResource.id,
                 {
                   title:
                     values.title,
-                  description:
-                    values.description,
-                  videoUrl:
-                    values.videoUrl,
+                  type:
+                    values.type,
+                  fileUrl:
+                    values.fileUrl,
                 },
               ),
               {
                 loading:
-                  "Updating lesson...",
+                  "Updating resource...",
                 success:
-                  "Lesson updated successfully.",
+                  "Resource updated successfully.",
                 error:
-                  "Failed to update lesson.",
+                  "Failed to update resource.",
               },
             );
           } else {
             await appToast.promise(
-              createCourseLesson(
+              createCourseResource(
                 values,
               ),
               {
                 loading:
-                  "Creating lesson...",
+                  "Creating resource...",
                 success:
-                  "Lesson created successfully.",
+                  "Resource created successfully.",
                 error:
-                  "Failed to create lesson.",
+                  "Failed to create resource.",
               },
             );
           }
@@ -342,7 +326,7 @@ export function CourseLessonsPage({
         }}
       />
 
-      <CourseLessonDeleteDialog
+      <CourseResourceDeleteDialog
         open={deleteOpen}
         loading={
           isDeleting
@@ -352,22 +336,22 @@ export function CourseLessonsPage({
         }
         onConfirm={async () => {
           if (
-            !selectedLesson
+            !selectedResource
           ) {
             return;
           }
 
           await appToast.promise(
-            deleteCourseLesson(
-              selectedLesson.id,
+            deleteCourseResource(
+              selectedResource.id,
             ),
             {
               loading:
-                "Deleting lesson...",
+                "Deleting resource...",
               success:
-                "Lesson deleted successfully.",
+                "Resource deleted successfully.",
               error:
-                "Failed to delete lesson.",
+                "Failed to delete resource.",
             },
           );
 
@@ -377,13 +361,12 @@ export function CourseLessonsPage({
         }}
       />
 
-      <CourseLessonMoveDialog
+      <CourseResourceMoveDialog
         open={moveOpen}
         loading={isMoving}
         currentPosition={
-          selectedLesson
-            ?.displayOrder ??
-          1
+          selectedResource
+            ?.displayOrder ?? 1
         }
         onClose={
           closeMoveDialog
@@ -392,23 +375,23 @@ export function CourseLessonsPage({
           newPosition,
         ) => {
           if (
-            !selectedLesson
+            !selectedResource
           ) {
             return;
           }
 
           await appToast.promise(
-            moveCourseLesson(
-              selectedLesson.id,
+            moveCourseResource(
+              selectedResource.id,
               newPosition,
             ),
             {
               loading:
-                "Moving lesson...",
+                "Moving resource...",
               success:
-                "Lesson moved successfully.",
+                "Resource moved successfully.",
               error:
-                "Failed to move lesson.",
+                "Failed to move resource.",
             },
           );
 

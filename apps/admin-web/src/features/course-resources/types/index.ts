@@ -1,0 +1,1 @@
+export * from "./course-resource.types";

@@ -36,16 +36,16 @@ interface UseCourseLessonsReturn {
 }
 
 interface UseCourseLessonsProps {
-  courseId: string;
+    moduleId: string;
 
-  includeDeleted?: boolean;
+    includeDeleted?: boolean;
 }
 
 export const useCourseLessons = (
   props?: UseCourseLessonsProps,
 ): UseCourseLessonsReturn => {
-  const courseId =
-    props?.courseId ?? "";
+const moduleId =
+    props?.moduleId ?? "";
 
   const includeDeleted =
     props?.includeDeleted ??
@@ -79,7 +79,7 @@ export const useCourseLessons = (
         const response =
           await courseLessonService.getCourseLessons(
             {
-              courseId,
+              moduleId,
               includeDeleted,
             },
           );
@@ -98,7 +98,7 @@ export const useCourseLessons = (
         setIsLoading(false);
       }
     }, [
-      courseId,
+      moduleId,
       includeDeleted,
     ]);
 

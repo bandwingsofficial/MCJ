@@ -17,6 +17,10 @@ interface CourseLessonListProps {
     lesson: CourseLesson,
   ) => void;
 
+  onResources: (
+  lesson: CourseLesson,
+) => void;
+
   onDelete: (
     lesson: CourseLesson,
   ) => void;
@@ -30,6 +34,7 @@ export function CourseLessonList({
   lessons,
   onEdit,
   onMove,
+  onResources,
   onDelete,
   onRestore,
 }: CourseLessonListProps) {
@@ -37,13 +42,16 @@ export function CourseLessonList({
     <div className="space-y-4">
       {lessons.map((lesson) => (
         <CourseLessonCard
-          key={lesson.id}
-          lesson={lesson}
-          onEdit={onEdit}
-          onMove={onMove}
-          onDelete={onDelete}
-          onRestore={onRestore}
-        />
+  key={lesson.id}
+  lesson={lesson}
+  onEdit={onEdit}
+  onMove={onMove}
+  onResources={
+    onResources
+  }
+  onDelete={onDelete}
+  onRestore={onRestore}
+/>
       ))}
     </div>
   );

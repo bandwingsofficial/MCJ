@@ -20,6 +20,10 @@ interface CourseLessonCardProps {
     lesson: CourseLesson,
   ) => void;
 
+  onResources: (
+  lesson: CourseLesson,
+) => void;
+
   onDelete: (
     lesson: CourseLesson,
   ) => void;
@@ -33,6 +37,7 @@ export function CourseLessonCard({
   lesson,
   onEdit,
   onMove,
+  onResources,
   onDelete,
   onRestore,
 }: CourseLessonCardProps) {
@@ -81,12 +86,15 @@ export function CourseLessonCard({
       </div>
 
       <CourseLessonActions
-        lesson={lesson}
-        onEdit={onEdit}
-        onMove={onMove}
-        onDelete={onDelete}
-        onRestore={onRestore}
-      />
+  lesson={lesson}
+  onEdit={onEdit}
+  onMove={onMove}
+  onResources={
+    onResources
+  }
+  onDelete={onDelete}
+  onRestore={onRestore}
+/>
     </Card>
   );
 }
