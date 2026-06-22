@@ -1,7 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { Dropdown } from "@/src/shared/components/ui/dropdown";
 import { Button } from "@/src/shared/components/ui/button";
+
 import {
   CourseListItem,
 } from "@/src/features/courses/types/course.types";
@@ -48,11 +51,22 @@ export function CourseActions({
   onDeactivate,
   onPermanentDelete,
 }: Props) {
+  const router =
+    useRouter();
+
   const items = [
     {
       label: "View",
       onClick: () =>
         onView(course),
+    },
+
+    {
+      label: "Modules",
+      onClick: () =>
+        router.push(
+          `/courses/${course.id}/modules`
+        ),
     },
 
     {
@@ -77,9 +91,9 @@ export function CourseActions({
 
   if (
     course.status ===
-    "INACTIVE" ||
+      "INACTIVE" ||
     course.status ===
-    "DRAFT"
+      "DRAFT"
   ) {
     items.push({
       label: "Activate",
@@ -127,9 +141,7 @@ export function CourseActions({
   return (
     <Dropdown
       trigger={
-        <Button
-          variant="outline"
-        >
+        <Button variant="outline">
           Actions
         </Button>
       }
