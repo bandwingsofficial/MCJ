@@ -254,12 +254,13 @@ export function CourseCard({
               </Button>
 
               <Button
-                onClick={
-                  handleBuyNow
-                }
-              >
-                Enroll Now
-              </Button>
+  className="w-full"
+  onClick={() =>
+    router.push(`/courses/${course.slug}/enroll`)
+  }
+>
+  Enroll Now
+</Button>
 
             </div>
 

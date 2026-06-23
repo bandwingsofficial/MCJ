@@ -3,7 +3,7 @@
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
-
+import { useRouter } from "next/navigation";
 import type {
   Course,
 } from "@/src/features/courses/types/course.types";
@@ -14,7 +14,8 @@ interface CourseDetailsProps {
 
 export function CourseDetails({
   course,
-}: CourseDetailsProps) {
+}: CourseDetailsProps) 
+{ const router = useRouter();
   return (
     <main className="w-full py-12">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -163,11 +164,13 @@ export function CourseDetails({
                 </div>
 
                 <Button
-                  className="w-full"
-                >
-                  Enroll Now
-                </Button>
-
+  className="w-full"
+  onClick={() =>
+    router.push(`/courses/${course.slug}/enroll`)
+  }
+>
+  Enroll Now
+</Button>
               </div>
 
             </Card>
