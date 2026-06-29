@@ -9,9 +9,7 @@ import { cn } from "@/src/shared/lib/cn";
 
 interface StudentSidebarItemProps {
   href: string;
-
   label: string;
-
   icon: LucideIcon;
 }
 
@@ -20,28 +18,61 @@ export function StudentSidebarItem({
   label,
   icon: Icon,
 }: StudentSidebarItemProps) {
-  const pathname =
-    usePathname();
-
-  const isActive =
-    pathname === href;
+  const pathname = usePathname();
+  const isActive = pathname === href;
 
   return (
-    <Link
-      href={href}
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200",
-        isActive
-          ? "bg-slate-900 text-white shadow-sm shadow-slate-900/10"
-          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
-      )}
-    >
-      <Icon className={cn(
-        "h-4 w-4 transition-colors",
-        isActive ? "text-white" : "text-slate-400 group-hover:text-slate-600"
-      )} />
+    <>
+      <style>{`
+        .stu-nav-item {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          padding: 9px 12px;
+          border-radius: 9px;
+          margin-bottom: 2px;
+          text-decoration: none;
+          font-family: 'Inter', system-ui, -apple-system, sans-serif;
+          font-size: 13.5px;
+          font-weight: 500;
+          letter-spacing: -0.005em;
+          transition: none;
+        }
 
-      <span>{label}</span>
-    </Link>
+        /* INACTIVE */
+        .stu-nav-item.inactive {
+          color: #78716C;
+          background: transparent;
+        }
+        .stu-nav-item.inactive .stu-nav-icon {
+          color: #C4B5A5;
+        }
+
+        /* ACTIVE — the signature: warm amber left bar + soft tinted pill */
+        .stu-nav-item.active {
+          background: #FFFBEB;
+          color: #92400E;
+          font-weight: 600;
+          border-left: 2.5px solid #F59E0B;
+        }
+        .stu-nav-item.active .stu-nav-icon {
+          color: #D97706;
+        }
+
+        .stu-nav-icon {
+          width: 15px;
+          height: 15px;
+          flex-shrink: 0;
+        }
+      `}</style>
+
+      <Link
+        href={href}
+        className={cn("stu-nav-item", isActive ? "active" : "inactive")}
+      >
+        <Icon className="stu-nav-icon" />
+        <span>{label}</span>
+      </Link>
+    </>
   );
 }

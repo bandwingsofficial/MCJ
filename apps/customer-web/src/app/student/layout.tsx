@@ -3,6 +3,9 @@
 import { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+import { Header } from "@/src/shared/components/header/header";
+import { Footer } from "@/src/shared/components/footer/footer";
+
 import { StudentSidebar } from "@/src/features/student";
 
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
@@ -16,9 +19,7 @@ export default function StudentLayout({
 }: StudentLayoutProps) {
   const router = useRouter();
 
-  const user = useAuthStore(
-    (state) => state.user,
-  );
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
     if (!user) {
@@ -31,16 +32,25 @@ export default function StudentLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50/50 antialiased text-slate-900">
-      {/* Sidebar Area */}
-      <StudentSidebar />
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+      {/* Header */}
+      <Header />
 
-      {/* Main Content Workspace */}
-      <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
-        <div className="mx-auto max-w-7xl w-full h-full">
-          {children}
-        </div>
-      </main>
+      {/* Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <StudentSidebar />
+
+        {/* Main */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-7xl">
+            {children}
+          </div>
+        </main>
+      </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
