@@ -1,5 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
+import Image from "next/image";
+
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -28,7 +32,10 @@ interface SelectOption {
 }
 
 interface Props {
-  defaultValues?: Partial<CreateCourseFormValues>;
+  defaultValues?:
+    Partial<CreateCourseFormValues> & {
+      thumbnailUrl?: string;
+    };
 
   categoryOptions: SelectOption[];
 
@@ -39,7 +46,8 @@ interface Props {
   submitLabel?: string;
 
   onSubmit: (
-    values: CreateCourseFormValues
+    values: CreateCourseFormValues,
+    image: File | null
   ) => Promise<void>;
 }
 
@@ -51,6 +59,36 @@ export function CourseForm({
   submitLabel = "Save",
   onSubmit,
 }: Props) {
+  const [
+  selectedImage,
+  setSelectedImage,
+] = useState<File | null>(null);
+
+const [
+  previewUrl,
+  setPreviewUrl,
+] = useState<string | null>(
+  defaultValues?.thumbnailUrl ??
+    null
+);
+
+useEffect(() => {
+  if (!selectedImage) {
+    return;
+  }
+
+  const objectUrl =
+    URL.createObjectURL(
+      selectedImage
+    );
+
+  setPreviewUrl(objectUrl);
+
+  return () =>
+    URL.revokeObjectURL(
+      objectUrl
+    );
+}, [selectedImage]);
   const form =
   useForm<CreateCourseFormValues>({
     resolver:
@@ -96,10 +134,13 @@ const {
   return (
     <form
   onSubmit={handleSubmit(
-    async (data) => {
-      await onSubmit(data);
-    }
-  )}
+  async (data) => {
+    await onSubmit(
+      data,
+      selectedImage
+    );
+  }
+)}
 >
       <div className="grid gap-5">
         <div>
@@ -158,6 +199,40 @@ const {
             )}
           />
         </div>
+        <div>
+  <Label>
+    Course Image
+  </Label>
+
+  {previewUrl && (
+    <div className="mb-3">
+      <Image
+        src={previewUrl}
+        alt="Course"
+        width={120}
+        height={120}
+        className="h-28 w-28 rounded-md border object-cover"
+      />
+    </div>
+  )}
+
+  <Input
+    type="file"
+    accept="image/*"
+    onChange={(
+      event
+    ) => {
+      const file =
+        event.target
+          .files?.[0] ??
+        null;
+
+      setSelectedImage(
+        file
+      );
+    }}
+  />
+</div>
       </div>
 
       <div className="grid grid-cols-2 gap-5">

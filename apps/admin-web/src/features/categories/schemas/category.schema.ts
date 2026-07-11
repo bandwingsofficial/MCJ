@@ -13,6 +13,8 @@ export const createCategorySchema =
         100,
         "Category name cannot exceed 100 characters"
       ),
+      thumbnailFileId:
+z.string().optional(),
 
     description: z
       .string()

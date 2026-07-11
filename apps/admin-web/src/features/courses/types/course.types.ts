@@ -135,6 +135,10 @@ export interface CourseListItem {
   createdAt: string;
 
   updatedAt: string;
+
+  thumbnailFileId: string | null;
+
+  thumbnailUrl: string | null;
 }
 
 export interface CourseListResponse {
@@ -185,6 +189,7 @@ export interface CreateCourseRequest {
   status?: CourseStatus;
 
   materialsMeta?: string;
+  thumbnailFileId?: string;
 }
 
 export interface UpdateCourseRequest {
@@ -197,6 +202,7 @@ export interface UpdateCourseRequest {
   description?: string;
 
   originalPrice?: number;
+  thumbnailFileId?: string;
 
   discountPrice?: number;
 

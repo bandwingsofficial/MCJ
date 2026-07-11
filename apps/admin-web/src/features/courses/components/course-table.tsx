@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import {
   Table,
   TableBody,
@@ -64,6 +66,10 @@ export function CourseTable({
       <TableHeader>
         <TableRow>
           <TableHead>
+            Image
+          </TableHead>
+
+          <TableHead>
             Title
           </TableHead>
 
@@ -104,6 +110,28 @@ export function CourseTable({
               key={course.id}
             >
               <TableCell>
+                {course.thumbnailUrl ? (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-white p-1">
+                    <Image
+                      src={
+                        course.thumbnailUrl
+                      }
+                      alt={
+                        course.title
+                      }
+                      width={60}
+                      height={60}
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">
+                    N/A
+                  </div>
+                )}
+              </TableCell>
+
+              <TableCell>
                 <div>
                   <p className="font-medium">
                     {
@@ -120,12 +148,17 @@ export function CourseTable({
               </TableCell>
 
               <TableCell>
-  {
-    (course as any).modes && (course as any).modes.length > 0
-      ? (course as any).modes.join(", ")
-      : course.mode || "-"
-  }
-</TableCell>
+                {(course as any).modes &&
+                (course as any).modes
+                  .length > 0
+                  ? (
+                      course as any
+                    ).modes.join(
+                      ", "
+                    )
+                  : course.mode ||
+                    "-"}
+              </TableCell>
 
               <TableCell>
                 {

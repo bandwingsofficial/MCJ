@@ -21,51 +21,17 @@ class CourseService {
   private readonly basePath =
     "/admin/courses";
 
-  async createCourse(
+ async createCourse(
   payload: CreateCourseRequest
 ): Promise<
   ApiSuccessResponse<CourseDetails>
 > {
-  const formData =
-    new FormData();
-
-  Object.entries(payload).forEach(
-    ([key, value]) => {
-      if (
-        value !== undefined &&
-        value !== null
-      ) {
-        if (
-          Array.isArray(value)
-        ) {
-          formData.append(
-            key,
-            JSON.stringify(
-              value
-            )
-          );
-        } else {
-          formData.append(
-            key,
-            String(value)
-          );
-        }
-      }
-    }
-  );
-
   const response =
     await apiClient.post<
       ApiSuccessResponse<CourseDetails>
     >(
       this.basePath,
-      formData,
-      {
-        headers: {
-          "Content-Type":
-            "multipart/form-data",
-        },
-      }
+      payload
     );
 
   return response.data;
@@ -212,6 +178,27 @@ class CourseService {
 
     return response.data;
   }
+
+  async uploadCourseImage(file: File){
+   const formData = new FormData();
+
+formData.append("file", file);
+formData.append("folder", "courses");
+formData.append("fileName", file.name);
+
+const response = await apiClient.post(
+  "/admin/uploads",
+  formData,
+  {
+    headers: {
+      "Content-Type": undefined,
+    },
+    transformRequest: [(data) => data],
+  }
+);
+
+return response.data;
+}
 }
 
 export const courseService =

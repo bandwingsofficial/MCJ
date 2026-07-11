@@ -6,6 +6,8 @@ import { CategoryForm } from "@/src/features/categories/components/category-form
 
 import { useUpdateCategory } from "@/src/features/categories/hooks/use-update-category";
 
+import { categoryService } from "@/src/features/categories/services/category.service";
+
 import type {
   CategoryListItem,
 } from "@/src/features/categories/types/category.types";
@@ -33,26 +35,40 @@ export function EditCategoryModal({
   const {
     updateCategory,
     isLoading,
-  } =
-    useUpdateCategory();
+  } = useUpdateCategory();
 
   if (!category) {
     return null;
   }
 
-  const handleSubmit =
-    async (
-      values: CreateCategoryFormValues
-    ) => {
-      await updateCategory(
-        category.id,
-        values
-      );
+  const handleSubmit = async (
+    values: CreateCategoryFormValues,
+    image: File | null
+  ) => {
+    let thumbnailFileId: string | undefined;
 
-      onSuccess();
+    if (image) {
+      const uploadResponse =
+        await categoryService.uploadCategoryImage(
+          image
+        );
 
-      onClose();
-    };
+      thumbnailFileId =
+        uploadResponse.data.fileId;
+    }
+
+    await updateCategory(
+      category.id,
+      {
+        ...values,
+        thumbnailFileId,
+      }
+    );
+
+    onSuccess();
+
+    onClose();
+  };
 
   return (
     <Modal
@@ -70,6 +86,8 @@ export function EditCategoryModal({
             "",
           displayOrder:
             category.displayOrder,
+          thumbnailUrl:
+            category.thumbnailUrl,
         }}
         onSubmit={
           handleSubmit

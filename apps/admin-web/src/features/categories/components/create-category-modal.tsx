@@ -6,6 +6,8 @@ import { CategoryForm } from "@/src/features/categories/components/category-form
 
 import { useCreateCategory } from "@/src/features/categories/hooks/use-create-category";
 
+import { categoryService } from "@/src/features/categories/services/category.service";
+
 import type {
   CreateCategoryFormValues,
 } from "@/src/features/categories/schemas/category.schema";
@@ -28,23 +30,36 @@ export function CreateCategoryModal({
     isLoading,
   } = useCreateCategory();
 
-  const handleSubmit =
-    async (
-      values: CreateCategoryFormValues
-    ) => {
-      const result =
-        await createCategory(
-          values
+  const handleSubmit = async (
+    values: CreateCategoryFormValues,
+    image: File | null
+  ) => {
+    let thumbnailFileId: string | undefined;
+
+    if (image) {
+      const uploadResponse =
+        await categoryService.uploadCategoryImage(
+          image
         );
 
-      if (!result) {
-        return;
-      }
+      thumbnailFileId =
+        uploadResponse.data.fileId;
+    }
 
-      onSuccess();
+    const result =
+      await createCategory({
+        ...values,
+        thumbnailFileId,
+      });
 
-      onClose();
-    };
+    if (!result) {
+      return;
+    }
+
+    onSuccess();
+
+    onClose();
+  };
 
   return (
     <Modal
@@ -55,9 +70,7 @@ export function CreateCategoryModal({
       <CategoryForm
         submitLabel="Create Category"
         isLoading={isLoading}
-        onSubmit={
-          handleSubmit
-        }
+        onSubmit={handleSubmit}
       />
     </Modal>
   );

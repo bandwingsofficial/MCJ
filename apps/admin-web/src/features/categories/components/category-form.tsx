@@ -1,5 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
+import Image from "next/image";
+
 import { useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,14 +24,17 @@ import {
 } from "@/src/features/categories/schemas/category.schema";
 
 interface Props {
-  defaultValues?: Partial<CreateCategoryFormValues>;
+  defaultValues?: Partial<CreateCategoryFormValues> & {
+    thumbnailUrl?: string | null;
+  };
 
   isLoading?: boolean;
 
   submitLabel: string;
 
   onSubmit: (
-    values: CreateCategoryFormValues
+    values: CreateCategoryFormValues,
+    image: File | null
   ) => Promise<void>;
 }
 
@@ -37,6 +44,29 @@ export function CategoryForm({
   submitLabel,
   onSubmit,
 }: Props) {
+  const [selectedImage, setSelectedImage] =
+    useState<File | null>(null);
+
+  const [previewUrl, setPreviewUrl] =
+    useState<string | null>(
+      defaultValues?.thumbnailUrl ?? null
+    );
+
+  useEffect(() => {
+    if (!selectedImage) {
+      return;
+    }
+
+    const objectUrl =
+      URL.createObjectURL(selectedImage);
+
+    setPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [selectedImage]);
+
   const {
     register,
     handleSubmit,
@@ -69,7 +99,8 @@ export function CategoryForm({
       onSubmit={handleSubmit(
         async (values) => {
           await onSubmit(
-            values
+            values,
+            selectedImage
           );
         }
       )}
@@ -109,6 +140,36 @@ export function CategoryForm({
             errors.description
               ?.message
           }
+        />
+      </div>
+
+      <div>
+        <Label>
+          Category Image
+        </Label>
+
+        {previewUrl && (
+          <div className="mb-3">
+            <Image
+              src={previewUrl}
+              alt="Category"
+              width={120}
+              height={120}
+              className="h-28 w-28 rounded-md border object-cover"
+            />
+          </div>
+        )}
+
+        <Input
+          type="file"
+          accept="image/*"
+          onChange={(event) => {
+            const file =
+              event.target.files?.[0] ??
+              null;
+
+            setSelectedImage(file);
+          }}
         />
       </div>
 

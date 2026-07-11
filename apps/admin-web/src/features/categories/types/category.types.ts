@@ -47,10 +47,9 @@ export interface CreateCategoryRequest {
 
   branchId?: string;
 
-  status?: Exclude<
-    CategoryStatus,
-    "ARCHIVED"
-  >;
+  status?: Exclude<CategoryStatus, "ARCHIVED">;
+
+  thumbnailFileId?: string;
 }
 
 export interface UpdateCategoryRequest {
@@ -62,10 +61,9 @@ export interface UpdateCategoryRequest {
 
   branchId?: string;
 
-  status?: Exclude<
-    CategoryStatus,
-    "ARCHIVED"
-  >;
+  status?: Exclude<CategoryStatus, "ARCHIVED">;
+
+  thumbnailFileId?: string;
 }
 
 export interface CategoryListItem {
@@ -88,6 +86,8 @@ export interface CategoryListItem {
   createdAt: string;
 
   updatedAt: string;
+
+  thumbnailUrl: string;
 }
 
 export type CategoryListResponse =

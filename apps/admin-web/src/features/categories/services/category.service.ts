@@ -163,6 +163,30 @@ class CategoryService {
 
     return response.data;
   }
+
+  
+  async uploadCategoryImage(
+   file: File
+){
+   const formData = new FormData();
+
+formData.append("file", file);
+formData.append("folder", "categories");
+formData.append("fileName", file.name);
+
+const response = await apiClient.post(
+  "/admin/uploads",
+  formData,
+  {
+    headers: {
+      "Content-Type": undefined,
+    },
+    transformRequest: [(data) => data],
+  }
+);
+
+return response.data;
+}
 }
 
 export const categoryService =

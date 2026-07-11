@@ -20,6 +20,8 @@ const courseFields = {
       150,
       "Maximum 150 characters allowed"
     ),
+    thumbnailFileId:
+z.string().optional(),
 
   tagline: z
     .string()

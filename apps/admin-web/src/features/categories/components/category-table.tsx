@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import {
   Table,
   TableBody,
@@ -14,7 +16,9 @@ import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { CategoryStatusBadge } from "./category-status-badge";
 
 import { Dropdown } from "@/src/shared/components/ui/dropdown";
+
 import { Button } from "@/src/shared/components/ui/button";
+
 import { MoreHorizontal } from "lucide-react";
 
 import type {
@@ -74,6 +78,10 @@ export function CategoryTable({
       <TableHeader>
         <TableRow>
           <TableHead>
+            Image
+          </TableHead>
+
+          <TableHead>
             Name
           </TableHead>
 
@@ -107,6 +115,26 @@ export function CategoryTable({
                 category.id
               }
             >
+              <TableCell>
+                {category.thumbnailUrl ? (
+                  <Image
+                    src={
+                      category.thumbnailUrl
+                    }
+                    alt={
+                      category.name
+                    }
+                    width={50}
+                    height={50}
+                    className="h-12 w-12 rounded-md object-cover border"
+                  />
+                ) : (
+                  <div className="flex h-12 w-12 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">
+                    N/A
+                  </div>
+                )}
+              </TableCell>
+
               <TableCell>
                 {
                   category.name
@@ -146,33 +174,54 @@ export function CategoryTable({
                       variant="ghost"
                     >
                       <MoreHorizontal />
-                      <span className="sr-only">Open actions</span>
+                      <span className="sr-only">
+                        Open actions
+                      </span>
                     </Button>
                   }
                   items={[
                     {
                       label: "Edit",
-                      onClick: () => onEdit(category),
+                      onClick: () =>
+                        onEdit(
+                          category
+                        ),
                     },
                     {
                       label: "Activate",
-                      onClick: () => onActivate(category),
+                      onClick: () =>
+                        onActivate(
+                          category
+                        ),
                     },
                     {
                       label: "Deactivate",
-                      onClick: () => onDeactivate(category),
+                      onClick: () =>
+                        onDeactivate(
+                          category
+                        ),
                     },
                     {
                       label: "Delete",
-                      onClick: () => onDelete(category),
+                      onClick: () =>
+                        onDelete(
+                          category
+                        ),
                     },
                     {
                       label: "Restore",
-                      onClick: () => onRestore(category),
+                      onClick: () =>
+                        onRestore(
+                          category
+                        ),
                     },
                     {
-                      label: "Permanent Delete",
-                      onClick: () => onPermanentDelete(category),
+                      label:
+                        "Permanent Delete",
+                      onClick: () =>
+                        onPermanentDelete(
+                          category
+                        ),
                     },
                   ]}
                 />
