@@ -10,6 +10,12 @@ export const studentSchema = z.object({
     .trim()
     .min(2, "First name is required")
     .max(100),
+    
+    profileImageFileId: z
+  .string()
+  .uuid()
+  .optional()
+  .or(z.literal("")),
 
   lastName: z
     .string()

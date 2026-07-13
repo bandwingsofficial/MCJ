@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import Image from "next/image";
 import { useBranches } from "@/src/features/branches/hooks/use-branches";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -40,8 +45,9 @@ interface StudentFormProps {
   submitLabel?: string;
 
   onSubmit: (
-    values: CreateStudentRequest
-  ) => Promise<void> | void;
+  values: CreateStudentRequest,
+  image: File | null
+) => Promise<void> | void;
 }
 
 export function StudentForm({
@@ -50,6 +56,36 @@ export function StudentForm({
   submitLabel = "Save Student",
   onSubmit,
 }: StudentFormProps) {
+  const [
+  selectedImage,
+  setSelectedImage,
+] = useState<File | null>(null);
+
+const [
+  previewUrl,
+  setPreviewUrl,
+] = useState<string | null>(
+  (defaultValues as any)
+    ?.profileImageUrl ?? null
+);
+
+useEffect(() => {
+  if (!selectedImage) {
+    return;
+  }
+
+  const objectUrl =
+    URL.createObjectURL(
+      selectedImage
+    );
+
+  setPreviewUrl(objectUrl);
+
+  return () =>
+    URL.revokeObjectURL(
+      objectUrl
+    );
+}, [selectedImage]);
   const {
     register,
 
@@ -97,8 +133,9 @@ export function StudentForm({
       values: StudentFormSchema
     ) => {
       await onSubmit(
-        values
-      );
+  values,
+  selectedImage
+);
     };
 
   return (
@@ -122,6 +159,33 @@ export function StudentForm({
           </h2>
 
         </div>
+        <div className="space-y-3">
+  <Label>
+    Profile Image
+  </Label>
+
+  {previewUrl && (
+    <Image
+      src={previewUrl}
+      alt="Student"
+      width={120}
+      height={120}
+      className="h-28 w-28 rounded-md border object-contain"
+    />
+  )}
+
+  <Input
+    type="file"
+    accept="image/*"
+    onChange={(event) => {
+      const file =
+        event.target.files?.[0] ??
+        null;
+
+      setSelectedImage(file);
+    }}
+  />
+</div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 

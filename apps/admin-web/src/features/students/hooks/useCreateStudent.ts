@@ -1,41 +1,85 @@
 "use client";
 
 import {
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+  useState,
+} from "react";
 
 import { appToast } from "@/src/shared/components/ui/toast";
 
-import { studentApi } from "@/src/features/students/api/student.api";
-
 import { studentService } from "@/src/features/students/services/student.service";
 
-export const useCreateStudent = () => {
-  const queryClient =
-    useQueryClient();
+import type {
+  CreateStudentRequest,
+} from "@/src/features/students/types/student.types";
 
-  return useMutation({
-    mutationFn:
-      studentService.createStudent,
+interface UseCreateStudentReturn {
+  isLoading: boolean;
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey:
-          studentApi.lists(),
-      });
+  createStudent: (
+    payload: CreateStudentRequest,
+    image?: File | null
+  ) => Promise<boolean>;
+}
 
-      appToast.success(
-        "Student created successfully."
-      );
-    },
+export const useCreateStudent =
+  (
+    onSuccess?: () => void
+  ): UseCreateStudentReturn => {
+    const [
+      isLoading,
+      setIsLoading,
+    ] = useState(false);
 
-    onError: (
-      error: Error
-    ) => {
-      appToast.error(
-        error.message
-      );
-    },
-  });
-};
+    const createStudent =
+      async (
+        payload: CreateStudentRequest,
+        image?: File | null
+      ): Promise<boolean> => {
+        try {
+          setIsLoading(true);
+
+          const requestPayload: CreateStudentRequest =
+            {
+              ...payload,
+            };
+
+          if (image) {
+            const uploadResponse =
+              await studentService.uploadStudentImage(
+                image
+              );
+
+            requestPayload.profileImageFileId =
+              uploadResponse.data.fileId;
+          }
+
+          const response =
+            await studentService.createStudent(
+              requestPayload
+            );
+
+          appToast.success(
+            response.message
+          );
+
+          onSuccess?.();
+
+          return true;
+        } catch (error) {
+          appToast.error(
+            error instanceof Error
+              ? error.message
+              : "Failed to create student"
+          );
+
+          return false;
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+    return {
+      isLoading,
+      createStudent,
+    };
+  };

@@ -176,6 +176,44 @@ class StudentService {
       "Unexpected error occurred."
     );
   }
+
+  async uploadStudentImage(
+  file: File
+){const formData =
+  new FormData();
+
+formData.append(
+  "file",
+  file
+);
+
+formData.append(
+  "folder",
+  "students"
+);
+
+formData.append(
+  "fileName",
+  file.name
+);
+
+const response =
+  await apiClient.post(
+    "/admin/uploads",
+    formData,
+    {
+      headers: {
+        "Content-Type":
+          undefined,
+      },
+      transformRequest: [
+        (data) => data,
+      ],
+    }
+  );
+
+return response.data;
+}
 }
 
 export const studentService =

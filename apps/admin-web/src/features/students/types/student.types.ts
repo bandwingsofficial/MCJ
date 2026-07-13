@@ -101,7 +101,7 @@ export interface StudentFilters {
 
 export interface CreateStudentRequest {
   firstName: string;
-
+  profileImageFileId?: string;
   lastName: string;
 
   email: string;

@@ -23,6 +23,8 @@ import {
 
 import {
   useStudents,
+   useUpdateStudent,
+   useCreateStudent,
 } from "@/src/features/students/hooks";
 
 import {
@@ -77,6 +79,11 @@ export function StudentsPage() {
 } = useStudents({
   filters,
 });
+const createStudentMutation =
+  useCreateStudent();
+
+const updateStudentMutation =
+  useUpdateStudent();
 
 const totalCount =
   count;
@@ -88,19 +95,24 @@ const totalCount =
       )
     );
 
-  const handleCreateStudent = async (
-  values: CreateStudentRequest
+ const handleCreateStudent = async (
+  values: CreateStudentRequest,
+  image: File | null
 ) => {
   console.log("VALUES", values);
 
   try {
-    await studentService.createStudent(values);
-
+    await createStudentMutation.mutateAsync({
+  payload: values,
+  image,
+});
     appToast.success(
       "Student created successfully."
     );
 
-    router.push("/admin/students");
+    setCreateOpen(false);
+
+await refetch();
   } catch (error) {
     appToast.error(
       error instanceof Error
@@ -111,18 +123,20 @@ const totalCount =
 };
 
   const handleUpdateStudent =
-    async (
-      values: UpdateStudentRequest
-    ) => {
+async (
+  values: UpdateStudentRequest,
+  image: File | null
+) => {
       if (!selectedStudent) {
         return;
       }
 
       try {
-        await studentService.updateStudent(
-          selectedStudent.id,
-          values
-        );
+        await updateStudentMutation.mutateAsync({
+  id: selectedStudent.id,
+  payload: values,
+  image,
+});
 
         appToast.success(
           "Student updated successfully."
@@ -356,8 +370,10 @@ const totalCount =
           setCreateOpen(false)
         }
       >
-        <StudentForm
-          loading={false}
+     <StudentForm
+  loading={
+    createStudentMutation.isPending
+  }
           submitLabel="Create Student"
           onSubmit={
             handleCreateStudent
@@ -379,8 +395,10 @@ const totalCount =
         }}
       >
         {selectedStudent && (
-          <StudentForm
-            loading={false}
+         <StudentForm
+  loading={
+    updateStudentMutation.isPending
+  }
             submitLabel="Update Student"
             defaultValues={{
               firstName:
