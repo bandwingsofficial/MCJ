@@ -184,8 +184,11 @@ onRestore={async (trainer) => {
         onClose={() =>
           setFormOpen(false)
         }
-       onSubmit={async (values) => {
-    const success = await createTrainer(values);
+       onSubmit={async (values, image) => {
+    const success = await createTrainer(
+        values,
+        image
+    );
 
     if (success) {
         await refetch();

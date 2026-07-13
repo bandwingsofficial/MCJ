@@ -29,7 +29,12 @@ interface TrainerFormProps {
   trainer?: TrainerDetails | null;
   loading: boolean;
   onClose: () => void;
-  onSubmit: (values: CreateTrainerFormValues) => Promise<void>;
+  onSubmit: (
+  values:
+    CreateTrainerFormValues,
+  image:
+    File | null
+) => Promise<void>;
 }
 
 export function TrainerForm({
@@ -40,11 +45,28 @@ export function TrainerForm({
   onSubmit,
 }: TrainerFormProps) {
   const [skillInput, setSkillInput] = useState("");
+  const [
+  selectedImage,
+  setSelectedImage,
+] =
+  useState<File | null>(
+    null
+  );
+
+const [
+  previewUrl,
+  setPreviewUrl,
+] =
+  useState<string | null>(
+    trainer
+      ?.profileImageUrl ??
+      null
+  );
 
   // Dynamically load remote data sources
   const { branches, isLoading: branchesLoading } = useBranches();
   const { courses, isLoading: coursesLoading } = useCourses();
-
+  
   const {
     register,
     handleSubmit,
@@ -116,6 +138,25 @@ export function TrainerForm({
     if (!trainer) {
       return;
     }
+    useEffect(() => {
+  if (!selectedImage) {
+    return;
+  }
+
+  const objectUrl =
+    URL.createObjectURL(
+      selectedImage
+    );
+
+  setPreviewUrl(
+    objectUrl
+  );
+
+  return () =>
+    URL.revokeObjectURL(
+      objectUrl
+    );
+}, [selectedImage]);
 
     reset({
       firstName: trainer.firstName,
@@ -166,20 +207,42 @@ export function TrainerForm({
             youtubeUrl: data.youtubeUrl?.trim() === "" ? (null as any) : data.youtubeUrl,
             instagramUrl: data.instagramUrl?.trim() === "" ? (null as any) : data.instagramUrl,
           };
-          await onSubmit(submissionPayload as any);
+          await onSubmit(
+  submissionPayload as any,
+  selectedImage
+);
         })}
       >
-        {/* Profile Image Field */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-muted-foreground">
-            Profile Image
-          </label>
-          <Input
-            type="file"
-            accept="image/*"
-            className="cursor-pointer file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:opacity-90"
-          />
-        </div>
+        <div className="flex flex-col gap-2">
+
+  <label className="text-sm font-medium">
+    Profile Image
+  </label>
+
+  {previewUrl && (
+    <img
+      src={previewUrl}
+      alt="Trainer"
+      className="h-32 w-32 rounded-md border object-contain"
+    />
+  )}
+
+  <Input
+    type="file"
+    accept="image/*"
+    onChange={(event) => {
+      const file =
+        event.target
+          .files?.[0] ??
+        null;
+
+      setSelectedImage(
+        file
+      );
+    }}
+  />
+
+</div>
 
         {/* Name Fields */}
         <div className="grid grid-cols-2 gap-4">

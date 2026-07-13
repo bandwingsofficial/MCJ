@@ -16,6 +16,7 @@ interface UseUpdateCourseResourceReturn {
   updateCourseResource: (
     resourceId: string,
     payload: UpdateCourseResourceRequest,
+    file?: File | null,
   ) => Promise<void>;
 
   isLoading: boolean;
@@ -31,13 +32,29 @@ export function useUpdateCourseResource(): UseUpdateCourseResourceReturn {
     async (
       resourceId: string,
       payload: UpdateCourseResourceRequest,
+      file?: File | null,
     ) => {
       try {
         setIsLoading(true);
 
+        const requestPayload: UpdateCourseResourceRequest =
+          {
+            ...payload,
+          };
+
+        if (file) {
+          const uploadResponse =
+            await courseResourceService.uploadCourseResource(
+              file
+            );
+
+          requestPayload.fileUrl =
+            uploadResponse.data.url;
+        }
+
         await courseResourceService.updateCourseResource(
           resourceId,
-          payload,
+          requestPayload,
         );
       } finally {
         setIsLoading(false);

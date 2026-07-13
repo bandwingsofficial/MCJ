@@ -23,10 +23,15 @@ export function CourseResourceFilters({
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div className="w-full md:max-w-sm">
         <SearchInput
-          value=""
-          onChange={() => {}}
-          placeholder="Search resources..."
-        />
+  value={filters.search}
+  onChange={(value) =>
+    onChange({
+      ...filters,
+      search: value,
+    })
+  }
+  placeholder="Search resources..."
+/>
       </div>
 
       <div className="flex items-center gap-3">

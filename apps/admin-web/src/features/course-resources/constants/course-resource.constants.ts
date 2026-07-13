@@ -31,6 +31,7 @@ export const COURSE_RESOURCE_TYPES = [
 export const DEFAULT_COURSE_RESOURCE_FILTERS: CourseResourceFilters =
   {
     lessonId: "",
+    search: "",
     includeDeleted: false,
   };
 

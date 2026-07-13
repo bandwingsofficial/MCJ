@@ -281,13 +281,11 @@ export function CourseLessonsPage({
           />
         )}
       </div>
-            <CourseLessonForm
-        open={formOpen}
-        loading={
-          isCreating ||
-          isUpdating
-        }
-        moduleId={moduleId}
+           <CourseLessonForm
+    open={formOpen}
+    loading={isCreating || isUpdating}
+    moduleId={moduleId}
+    courseId={courseId}
         lesson={
           selectedLesson ??
           undefined

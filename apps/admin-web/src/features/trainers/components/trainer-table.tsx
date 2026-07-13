@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import {
   Table,
   TableBody,
@@ -41,9 +43,10 @@ interface Props {
   onDeactivate: (
     trainer: TrainerListItem
   ) => void;
-   onPermanentDelete: (
-        trainer: TrainerListItem
-    ) => void;
+
+  onPermanentDelete: (
+    trainer: TrainerListItem
+  ) => void;
 }
 
 export function TrainerTable({
@@ -59,6 +62,10 @@ export function TrainerTable({
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>
+            Image
+          </TableHead>
+
           <TableHead>
             Trainer
           </TableHead>
@@ -98,25 +105,29 @@ export function TrainerTable({
               }
             >
               <TableCell>
-                <div className="flex items-center gap-3">
-                  <Avatar
-                    src={
-                      trainer.profileImageUrl ??
-                      undefined
-                    }
-                    alt={
-                      trainer.firstName
-                    }
-                    fallback={
-                      trainer.firstName
-                        ?.charAt(
-                          0
-                        )
-                        .toUpperCase() ??
-                      "T"
-                    }
-                  />
+                {trainer.profileImageUrl ? (
+                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md border bg-white">
+                    <Image
+                      src={
+                        trainer.profileImageUrl
+                      }
+                      alt={
+                        trainer.firstName
+                      }
+                      width={64}
+                      height={64}
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">
+                    No Image
+                  </div>
+                )}
+              </TableCell>
 
+              <TableCell>
+                <div className="flex items-center gap-3">
                   <div>
                     <p className="font-medium">
                       {
@@ -202,9 +213,11 @@ export function TrainerTable({
                       trainer
                     )
                   }
-                   onPermanentDelete={() =>
-        onPermanentDelete(trainer)
-    }
+                  onPermanentDelete={() =>
+                    onPermanentDelete(
+                      trainer
+                    )
+                  }
                 />
               </TableCell>
             </TableRow>

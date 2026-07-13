@@ -15,6 +15,7 @@ import type {
 interface UseCreateCourseResourceReturn {
   createCourseResource: (
     payload: CreateCourseResourceRequest,
+    file?: File | null,
   ) => Promise<void>;
 
   isLoading: boolean;
@@ -29,12 +30,28 @@ export function useCreateCourseResource(): UseCreateCourseResourceReturn {
   const createCourseResource =
     async (
       payload: CreateCourseResourceRequest,
+      file?: File | null,
     ) => {
       try {
         setIsLoading(true);
 
+        const requestPayload: CreateCourseResourceRequest =
+          {
+            ...payload,
+          };
+
+        if (file) {
+          const uploadResponse =
+            await courseResourceService.uploadCourseResource(
+              file
+            );
+
+          requestPayload.fileUrl =
+            uploadResponse.data.url;
+        }
+
         await courseResourceService.createCourseResource(
-          payload,
+          requestPayload
         );
       } finally {
         setIsLoading(false);

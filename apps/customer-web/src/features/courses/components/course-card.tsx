@@ -22,27 +22,27 @@ export function CourseCard({ course, onClick }: CourseCardProps) {
   const user = useAuthStore((state) => state.user);
 
   return (
-    <Card className="group max-w-sm overflow-hidden border border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex flex-col h-full rounded-xl">
+    <Card className="group overflow-hidden border border-border bg-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md flex flex-col h-full rounded-lg">
       
       {/* Thumbnail Container */}
-      <div className="relative aspect-video w-full overflow-hidden bg-muted flex items-center justify-center">
+      <div className="relative h-36 w-full overflow-hidden bg-muted flex items-center justify-center border-b border-border/60">
         {course.thumbnailUrl ? (
           <img
             src={course.thumbnailUrl}
             alt={course.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-102"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-muted/60 to-muted text-muted-foreground/60">
-            <ImageOff className="h-8 w-8 stroke-[1.5]" />
-            <span className="text-xs font-medium">No Preview Available</span>
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-muted/60 to-muted text-muted-foreground/60">
+            <ImageOff className="h-6 w-6 stroke-[1.5]" />
+            <span className="text-[11px] font-medium">No Preview Available</span>
           </div>
         )}
 
         {/* Featured Badge */}
         {course.isFeatured && (
-          <div className="absolute left-3 top-3">
-            <Badge className="bg-amber-500 hover:bg-amber-600 text-white border-none px-2.5 py-0.5 text-xs font-semibold shadow-sm">
+          <div className="absolute left-2 top-2">
+            <Badge className="bg-amber-500 hover:bg-amber-600 text-white border-none px-2 py-0 text-[10px] font-semibold shadow-sm">
               Featured
             </Badge>
           </div>
@@ -50,53 +50,53 @@ export function CourseCard({ course, onClick }: CourseCardProps) {
       </div>
 
       {/* Content Wrapper */}
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-3.5">
         
         {/* Badges / Category Row */}
-        <div className="flex items-center gap-2 mb-2">
-          <Badge variant="default" className="text-[11px] px-2 py-0 font-medium bg-secondary text-secondary-foreground uppercase tracking-wider">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <Badge variant="default" className="text-[10px] px-1.5 py-0 font-medium bg-gold text-secondary-foreground uppercase tracking-wide">
             {course.level}
           </Badge>
           {course.mode && (
-            <Badge variant="default" className="text-[11px] px-2 py-0 font-medium text-muted-foreground">
+            <Badge variant="default" className="text-[10px] px-1.5 py-0 font-medium text-muted-foreground">
               {course.mode}
             </Badge>
           )}
         </div>
 
         {/* Title & Tagline */}
-        <div className="space-y-1 mb-3">
-          <h3 className="line-clamp-2 text-base font-semibold text-foreground tracking-tight group-hover:text-primary transition-colors min-h-[3rem]">
+        <div className="mb-2">
+          <h3 className="line-clamp-2 text-sm font-semibold text-foreground tracking-tight leading-snug group-hover:text-primary transition-colors">
             {course.title}
           </h3>
           {course.tagline && (
-            <p className="line-clamp-1 text-xs text-muted-foreground">
+            <p className="line-clamp-1 text-xs text-muted-foreground mt-0.5">
               {course.tagline}
             </p>
           )}
         </div>
 
         {/* Info Rows (Language, etc.) */}
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-4">
-          <Globe className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-3">
+          <Globe className="h-3 w-3" />
           <span>Language:</span>
           <span className="font-medium text-foreground">{course.language}</span>
         </div>
 
         {/* Price & Action Section pushed to bottom */}
-        <div className="mt-auto pt-3 border-t border-border/60 flex items-center justify-between gap-4">
+        <div className="mt-auto pt-2.5 border-t border-border/60 flex items-center justify-between gap-2">
           
           {/* Price Container */}
           <div>
             {course.isFree ? (
-              <span className="text-lg font-bold text-emerald-600">Free</span>
+              <span className="text-base font-bold text-emerald-600">Free</span>
             ) : (
               <div className="flex flex-col">
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-lg font-bold text-foreground">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-base font-bold text-foreground">
                     ₹{course.discountPrice}
                   </span>
-                  <span className="text-xs text-muted-foreground line-through">
+                  <span className="text-[11px] text-muted-foreground line-through">
                     ₹{course.originalPrice}
                   </span>
                 </div>
@@ -110,18 +110,18 @@ export function CourseCard({ course, onClick }: CourseCardProps) {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Button
               variant="ghost"
               size="sm"
-              className="text-xs font-medium text-muted-foreground hover:text-foreground h-9 px-3"
+              className="text-[11px] font-medium text-muted-foreground hover:text-foreground h-8 px-2"
               onClick={() => onClick?.(course)}
             >
               Details
             </Button>
             <Button
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs shadow-sm h-9 px-4 rounded-lg transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-[11px] shadow-sm h-8 px-3 rounded-md transition-colors"
               onClick={() => router.push(`/courses/${course.slug}/enroll`)}
             >
               Enroll Now

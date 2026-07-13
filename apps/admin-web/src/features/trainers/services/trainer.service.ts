@@ -178,6 +178,43 @@ class TrainerService {
 
     return response.data;
   }
+  async uploadTrainerImage(
+  file: File
+){const formData =
+  new FormData();
+
+formData.append(
+  "file",
+  file
+);
+
+formData.append(
+  "folder",
+  "trainers"
+);
+
+formData.append(
+  "fileName",
+  file.name
+);
+
+const response =
+  await apiClient.post(
+    "/admin/uploads",
+    formData,
+    {
+      headers: {
+        "Content-Type":
+          undefined,
+      },
+      transformRequest: [
+        (data) => data,
+      ],
+    }
+  );
+
+return response.data;
+}
 }
 
 export const trainerService =

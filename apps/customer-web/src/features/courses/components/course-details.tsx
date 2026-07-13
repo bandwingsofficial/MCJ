@@ -17,22 +17,25 @@ export function CourseDetails({
 }: CourseDetailsProps) 
 { const router = useRouter();
   return (
-    <main className="w-full py-12">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+    <main className="w-full py-8">
+      <div className="mx-auto max-w-6xl px-6 lg:px-8">
 
-        <div className="grid gap-8 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
 
           {/* LEFT */}
 
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-5">
 
             <div
               className="
                 flex
-                h-80
+                h-56
                 items-center
                 justify-center
-                rounded-xl
+                overflow-hidden
+                rounded-lg
+                border
+                border-border
                 bg-muted
               "
             >
@@ -45,12 +48,11 @@ export function CourseDetails({
                   className="
                     h-full
                     w-full
-                    rounded-xl
                     object-cover
                   "
                 />
               ) : (
-                <span>
+                <span className="text-sm text-muted-foreground">
                   No Thumbnail
                 </span>
               )}
@@ -58,20 +60,22 @@ export function CourseDetails({
 
             <div>
 
-              <div className="flex gap-2 mb-4">
-                <Badge variant="info">
+              <div className="flex gap-2 mb-3">
+                <Badge variant="info" className="text-[11px] px-2 py-0 uppercase tracking-wide">
                   {course.level}
                 </Badge>
 
-                <Badge variant="default">
+                <Badge variant="default" className="text-[11px] px-2 py-0">
                   {course.mode}
                 </Badge>
               </div>
 
               <h1
                 className="
-                  text-4xl
+                  text-2xl
                   font-bold
+                  tracking-tight
+                  sm:text-3xl
                 "
               >
                 {course.title}
@@ -80,8 +84,8 @@ export function CourseDetails({
               {course.tagline && (
                 <p
                   className="
-                    mt-3
-                    text-lg
+                    mt-1.5
+                    text-sm
                     text-muted-foreground
                   "
                 >
@@ -91,18 +95,18 @@ export function CourseDetails({
             </div>
 
             {course.shortDescription && (
-              <Card className="p-6">
+              <Card className="p-5">
                 <h2
                   className="
-                    mb-4
-                    text-xl
+                    mb-2.5
+                    text-base
                     font-semibold
                   "
                 >
                   Overview
                 </h2>
 
-                <p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
                   {
                     course.shortDescription
                   }
@@ -114,26 +118,26 @@ export function CourseDetails({
 
           {/* RIGHT */}
 
-          <div>
+          <div className="lg:sticky lg:top-6">
 
-            <Card className="p-6">
+            <Card className="p-5">
 
-              <div className="space-y-4">
+              <div className="space-y-3">
 
                 {course.isFree ? (
                   <div
                     className="
-                      text-3xl
+                      text-2xl
                       font-bold
                     "
                   >
                     Free
                   </div>
                 ) : (
-                  <>
-                    <div
+                  <div className="flex items-baseline gap-2">
+                    <span
                       className="
-                        text-3xl
+                        text-2xl
                         font-bold
                       "
                     >
@@ -141,10 +145,11 @@ export function CourseDetails({
                       {
                         course.discountPrice
                       }
-                    </div>
+                    </span>
 
-                    <div
+                    <span
                       className="
+                        text-sm
                         text-muted-foreground
                         line-through
                       "
@@ -153,24 +158,24 @@ export function CourseDetails({
                       {
                         course.originalPrice
                       }
-                    </div>
-                  </>
+                    </span>
+                  </div>
                 )}
 
-                <div>
+                <div className="text-sm text-muted-foreground border-t border-border/60 pt-3">
                   Language:
                   {" "}
-                  {course.language}
+                  <span className="font-medium text-foreground">{course.language}</span>
                 </div>
 
                 <Button
-  className="w-full"
-  onClick={() =>
-    router.push(`/courses/${course.slug}/enroll`)
-  }
->
-  Enroll Now
-</Button>
+                  className="w-full h-10"
+                  onClick={() =>
+                    router.push(`/courses/${course.slug}/enroll`)
+                  }
+                >
+                  Enroll Now
+                </Button>
               </div>
 
             </Card>

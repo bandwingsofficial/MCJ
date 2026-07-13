@@ -116,6 +116,7 @@ export interface CreateTrainerRequest {
   firstName: string;
 
   lastName?: string;
+  profileImageFileId?: string;
 
   email?: string;
 
@@ -158,6 +159,7 @@ export interface CreateTrainerRequest {
 
 export interface UpdateTrainerRequest {
   firstName?: string;
+  profileImageFileId?: string;
 
   lastName?: string;
 

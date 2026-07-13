@@ -63,6 +63,8 @@ export interface MoveCourseResourceRequest {
 export interface CourseResourceFilters {
   lessonId: string;
 
+  search: string;
+
   includeDeleted: boolean;
 }
 

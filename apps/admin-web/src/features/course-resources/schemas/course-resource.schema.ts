@@ -32,15 +32,12 @@ export const courseResourceSchema =
       ),
 
     fileUrl: z
-      .string()
-      .trim()
-      .url(
-        "Enter a valid URL.",
-      )
-      .max(
-        COURSE_RESOURCE_FILE_URL_MAX_LENGTH,
-        `URL cannot exceed ${COURSE_RESOURCE_FILE_URL_MAX_LENGTH} characters.`,
-      ),
+  .string()
+  .trim()
+  .max(
+    COURSE_RESOURCE_FILE_URL_MAX_LENGTH,
+    `URL cannot exceed ${COURSE_RESOURCE_FILE_URL_MAX_LENGTH} characters.`,
+  ),
   });
 
 export type CourseResourceSchema =

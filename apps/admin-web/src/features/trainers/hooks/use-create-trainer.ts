@@ -14,7 +14,8 @@ interface UseCreateTrainerReturn {
   isLoading: boolean;
 
   createTrainer: (
-    payload: CreateTrainerRequest
+    payload: CreateTrainerRequest,
+    image?: File | null
   ) => Promise<boolean>;
 }
 
@@ -22,19 +23,38 @@ export const useCreateTrainer =
   (
     onSuccess?: () => void
   ): UseCreateTrainerReturn => {
-    const [isLoading, setIsLoading] =
-      useState(false);
+    const [
+      isLoading,
+      setIsLoading,
+    ] = useState(false);
 
     const createTrainer =
       async (
-        payload: CreateTrainerRequest
+        payload: CreateTrainerRequest,
+        image?: File | null
       ): Promise<boolean> => {
         try {
           setIsLoading(true);
 
+          const requestPayload: CreateTrainerRequest =
+            {
+              ...payload,
+            };
+
+          if (image) {
+            const uploadResponse =
+              await trainerService.uploadTrainerImage(
+                image
+              );
+
+           requestPayload.profileImageFileId =
+  uploadResponse.data.fileId;
+          }
+        
+
           const response =
             await trainerService.createTrainer(
-              payload
+              requestPayload
             );
 
           appToast.success(

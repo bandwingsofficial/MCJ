@@ -279,22 +279,21 @@ export function CourseResourcesPage({
         onClose={closeForm}
         onSubmit={async (
           values: CourseResourceFormValues,
+          file?: File | null,
         ) => {
           if (
             selectedResource
           ) {
             await appToast.promise(
-              updateCourseResource(
-                selectedResource.id,
-                {
-                  title:
-                    values.title,
-                  type:
-                    values.type,
-                  fileUrl:
-                    values.fileUrl,
-                },
-              ),
+  updateCourseResource(
+    selectedResource.id,
+    {
+      title: values.title,
+      type: values.type,
+      fileUrl: values.fileUrl,
+    },
+    file,
+  ),
               {
                 loading:
                   "Updating resource...",
@@ -305,10 +304,11 @@ export function CourseResourcesPage({
               },
             );
           } else {
-            await appToast.promise(
-              createCourseResource(
-                values,
-              ),
+           await appToast.promise(
+  createCourseResource(
+    values,
+    file,
+  ),
               {
                 loading:
                   "Creating resource...",
@@ -382,9 +382,11 @@ export function CourseResourcesPage({
 
           await appToast.promise(
             moveCourseResource(
-              selectedResource.id,
-              newPosition,
-            ),
+  selectedResource.id,
+  {
+    newPosition,
+  },
+),
             {
               loading:
                 "Moving resource...",

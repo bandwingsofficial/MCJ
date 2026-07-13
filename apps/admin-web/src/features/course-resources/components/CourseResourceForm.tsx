@@ -3,7 +3,7 @@
 import {
   useEffect,
 } from "react";
-
+import { useState } from "react";
 import {
   useForm,
 } from "react-hook-form";
@@ -44,9 +44,11 @@ interface CourseResourceFormProps {
   onClose: () => void;
 
   onSubmit: (
-    values: CourseResourceFormValues,
-  ) => Promise<void>;
+  values: CourseResourceFormValues,
+  file: File | null,
+) => Promise<void>;
 }
+
 
 const resourceTypeOptions = [
   {
@@ -72,13 +74,19 @@ const resourceTypeOptions = [
 ];
 
 export function CourseResourceForm({
+  
   open,
   loading,
   lessonId,
   resource,
   onClose,
   onSubmit,
-}: CourseResourceFormProps) {
+}: 
+CourseResourceFormProps) {
+  const [
+  selectedFile,
+  setSelectedFile,
+] = useState<File | null>(null);
   const {
     register,
     control,
@@ -100,12 +108,14 @@ export function CourseResourceForm({
         DEFAULT_COURSE_RESOURCE_FORM_VALUES,
     });
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
+useEffect(() => {
+  if (!open) {
+    return;
+  }
 
-    if (!resource) {
+  setSelectedFile(null);
+
+  if (!resource) {
       reset({
         ...DEFAULT_COURSE_RESOURCE_FORM_VALUES,
         lessonId,
@@ -144,12 +154,24 @@ export function CourseResourceForm({
       }
       onClose={onClose}
     >
-      <form
-        className="space-y-6"
-        onSubmit={handleSubmit(
-          onSubmit,
-        )}
-      >
+     <form
+  onSubmit={handleSubmit(
+    async (values) => {
+      console.log("FORM SUBMITTED");
+      console.log("Values:", values);
+      console.log("Selected File:", selectedFile);
+
+      await onSubmit(
+        values,
+        selectedFile
+      );
+    },
+    (errors) => {
+      console.log("FORM VALIDATION FAILED");
+      console.log(errors);
+    }
+  )}
+>
         <div className="space-y-2">
           <Label required>
             Title
@@ -210,29 +232,36 @@ export function CourseResourceForm({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label required>
-            File URL
-          </Label>
+       <div className="space-y-2">
+  <Label required>
+    Resource File
+  </Label>
 
-          <Input
-            placeholder="https://example.com/file.pdf"
-            disabled={
-              loading ||
-              isSubmitting
-            }
-            {...register(
-              "fileUrl",
-            )}
-          />
+  <Input
+    type="file"
+    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.jpg,.jpeg,.png,.mp4"
+    disabled={
+      loading ||
+      isSubmitting
+    }
+    onChange={(event) => {
+  const file =
+    event.target.files?.[0] ?? null;
 
-          <FormError
-            message={
-              errors.fileUrl
-                ?.message
-            }
-          />
-        </div>
+  setSelectedFile(file);
+
+  if (file) {
+    setValue(
+      "fileUrl",
+      file.name,
+      {
+        shouldValidate: true,
+      },
+    );
+  }
+}}
+  />
+</div>
 
         <div className="flex justify-end gap-3 border-t pt-6">
           <Button

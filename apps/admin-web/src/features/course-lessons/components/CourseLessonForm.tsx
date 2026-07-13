@@ -43,7 +43,9 @@ interface CourseLessonFormProps {
   open: boolean;
 
   loading: boolean;
-
+  
+  courseId: string;
+  
   moduleId: string;
 
   lesson?: CourseLesson;
@@ -57,6 +59,7 @@ interface CourseLessonFormProps {
 export function CourseLessonForm({
   open,
   loading,
+  courseId,   
   moduleId,
   lesson,
   onClose,
@@ -66,9 +69,9 @@ export function CourseLessonForm({
     modules,
     isLoading: isLoadingModules,
   } = useCourseModules({
-    courseId: "",
+    courseId,
     includeDeleted: false,
-  });
+});
 
   const moduleOptions =
     useMemo(

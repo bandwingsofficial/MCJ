@@ -21,6 +21,7 @@ export const createTrainerSchema =
         100,
         "Maximum 100 characters allowed"
       ),
+      
 
     lastName: z.string().optional().or(z.literal("")),
 
@@ -40,6 +41,8 @@ export const createTrainerSchema =
       )
       .optional()
       .or(z.literal("")),
+      profileImageFileId:
+z.string().optional(),
 
     gender: z
       .enum(TRAINER_GENDERS)

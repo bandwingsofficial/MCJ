@@ -26,7 +26,7 @@ interface UseCourseResourcesProps {
 }
 
 interface UseCourseResourcesReturn {
-  courseResources: CourseResource[];
+  resources: CourseResource[];
 
   isLoading: boolean;
 
@@ -46,8 +46,8 @@ export const useCourseResources = ({
   includeDeleted = false,
 }: UseCourseResourcesProps): UseCourseResourcesReturn => {
   const [
-    courseResources,
-    setCourseResources,
+    resources,
+    setResources,
   ] = useState<CourseResource[]>([]);
 
   const [
@@ -55,15 +55,19 @@ export const useCourseResources = ({
     setIsLoading,
   ] = useState(true);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [
+    error,
+    setError,
+  ] = useState<string | null>(null);
 
-  const [filters, setFilters] =
-    useState<CourseResourceFilters>({
-      ...DEFAULT_COURSE_RESOURCE_FILTERS,
-      lessonId,
-      includeDeleted,
-    });
+  const [
+    filters,
+    setFilters,
+  ] = useState<CourseResourceFilters>({
+    ...DEFAULT_COURSE_RESOURCE_FILTERS,
+    lessonId,
+    includeDeleted,
+  });
 
   const fetchCourseResources =
     useCallback(async () => {
@@ -73,16 +77,13 @@ export const useCourseResources = ({
         setError(null);
 
         const response =
-          await courseResourceService.getCourseResources(
-            {
-              lessonId,
-              includeDeleted,
-            },
-          );
+          await courseResourceService.getCourseResources({
+            lessonId,
+            search: filters.search,
+            includeDeleted,
+          });
 
-        setCourseResources(
-          response.data,
-        );
+        setResources(response.data);
       } catch (error) {
         const message =
           error instanceof Error
@@ -103,12 +104,11 @@ export const useCourseResources = ({
   }, [fetchCourseResources]);
 
   return {
-    courseResources,
+    resources,
     isLoading,
     error,
     filters,
     setFilters,
-    refetch:
-      fetchCourseResources,
+    refetch: fetchCourseResources,
   };
 };
