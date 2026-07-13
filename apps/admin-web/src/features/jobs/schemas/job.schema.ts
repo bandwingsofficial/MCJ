@@ -6,6 +6,11 @@ const interviewProcessSchema = z.object({
     .trim()
     .min(1, "Interview title is required")
     .max(100),
+    
+    companyLogo: z
+  .string()
+  .url()
+  .optional(),
 
   description: z
     .string()

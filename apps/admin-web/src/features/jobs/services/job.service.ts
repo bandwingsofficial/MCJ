@@ -30,11 +30,27 @@ class JobService {
 
   async createJob(
     payload: CreateJobRequest,
+    image?: File | null,
   ) {
+    const requestPayload: CreateJobRequest =
+      {
+        ...payload,
+      };
+
+    if (image) {
+      const uploadResponse =
+        await this.uploadJobLogo(
+          image,
+        );
+
+requestPayload.companyLogo =
+  uploadResponse.data.url;
+    }
+
     const { data } =
       await apiClient.post<JobResponse>(
         "/admin/jobs",
-        payload,
+        requestPayload,
       );
 
     return data;
@@ -43,11 +59,27 @@ class JobService {
   async updateJob(
     id: string,
     payload: UpdateJobRequest,
+    image?: File | null,
   ) {
+    const requestPayload: UpdateJobRequest =
+      {
+        ...payload,
+      };
+
+    if (image) {
+      const uploadResponse =
+        await this.uploadJobLogo(
+          image,
+        );
+
+   requestPayload.companyLogo =
+  uploadResponse.data.url;
+    }
+
     const { data } =
       await apiClient.patch<JobResponse>(
         `/admin/jobs/${id}`,
-        payload,
+        requestPayload,
       );
 
     return data;
@@ -98,6 +130,45 @@ class JobService {
       );
 
     return data;
+  }
+
+  async uploadJobLogo(
+    file: File,
+  ) {
+    const formData =
+      new FormData();
+
+    formData.append(
+      "file",
+      file,
+    );
+
+    formData.append(
+      "folder",
+      "jobs",
+    );
+
+    formData.append(
+      "fileName",
+      file.name,
+    );
+
+    const response =
+      await apiClient.post(
+        "/admin/uploads",
+        formData,
+        {
+          headers: {
+            "Content-Type":
+              undefined,
+          },
+          transformRequest: [
+            (data) => data,
+          ],
+        },
+      );
+
+    return response.data;
   }
 }
 

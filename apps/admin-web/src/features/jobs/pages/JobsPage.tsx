@@ -174,10 +174,10 @@ export function JobsPage() {
       );
     };
 
-  const handleSubmit =
-    async (
-      values: CreateJobRequest,
-    ) => {
+  const handleSubmit = async (
+  values: CreateJobRequest,
+  image: File | null,
+) => {
       try {
         setIsSubmitting(
           true,
@@ -187,10 +187,10 @@ export function JobsPage() {
           dialogMode ===
             "create"
         ) {
-          await jobService.createJob(
-            values,
-          );
-
+         await jobService.createJob(
+  values,
+  image,
+);
           appToast.success(
             "Job created successfully.",
           );

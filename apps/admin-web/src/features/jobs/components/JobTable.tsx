@@ -92,6 +92,10 @@ export function JobTable({
         <TableHeader>
           <TableRow>
             <TableHead>
+              Logo
+            </TableHead>
+
+            <TableHead>
               Job
             </TableHead>
 
@@ -124,6 +128,20 @@ export function JobTable({
         <TableBody>
           {jobs.map((job) => (
             <TableRow key={job.id}>
+              <TableCell>
+                {job.companyLogo ? (
+                  <img
+                    src={job.companyLogo}
+                    alt={job.companyName}
+                    className="h-10 w-10 rounded-md border object-cover"
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">
+                    N/A
+                  </div>
+                )}
+              </TableCell>
+
               <TableCell>
                 <div className="space-y-1">
                   <p className="font-medium">

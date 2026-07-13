@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { useFieldArray, useForm } from "react-hook-form";
 
@@ -40,8 +40,9 @@ interface JobFormProps {
   isSubmitting: boolean;
 
   onSubmit: (
-    values: CreateJobRequest,
-  ) => Promise<void>;
+  values: CreateJobRequest,
+  image: File | null,
+) => Promise<void>;
 }
 
 export function JobForm({
@@ -57,6 +58,9 @@ export function JobForm({
       JobFormUtils.createDefaultValues(),
     mode: "onBlur",
   });
+  
+  const [selectedImage, setSelectedImage] =
+  useState<File | null>(null);
 
   const {
     register,
@@ -87,10 +91,6 @@ export function JobForm({
 
       companyName:
         initialData.companyName,
-
-      companyLogo:
-        initialData.companyLogo ??
-        "",
 
       companyWebsite:
         initialData.companyWebsite ??
@@ -168,29 +168,31 @@ export function JobForm({
         initialData
           .interviewProcess,
     });
+    setSelectedImage(null);
   }, [initialData, reset]);
 
   const submitHandler = async (
     values: CreateJobFormValues,
   ) => {
-    await onSubmit({
-      ...values,
-       status: values.status,
-      responsibilities:
-        JobFormUtils.stringToArray(
-          values.responsibilities,
-        ),
-
-      skills:
-        JobFormUtils.stringToArray(
-          values.skills,
-        ),
-
-      interviewProcess:
-        JobFormUtils.normalizeInterviewProcess(
-          values.interviewProcess,
-        ),
-    });
+    await onSubmit(
+  {
+    ...values,
+    status: values.status,
+    responsibilities:
+      JobFormUtils.stringToArray(
+        values.responsibilities,
+      ),
+    skills:
+      JobFormUtils.stringToArray(
+        values.skills,
+      ),
+    interviewProcess:
+      JobFormUtils.normalizeInterviewProcess(
+        values.interviewProcess,
+      ),
+  },
+  selectedImage,
+);
   };
 
   return (
@@ -421,16 +423,38 @@ export function JobForm({
           </div>
 
           <div className="space-y-2">
-            <Label>
-              Company Logo
-            </Label>
+            <div className="space-y-2">
+  <Label>
+    Company Logo
+  </Label>
 
-            <Input
-              placeholder="https://company.com/logo.png"
-              {...register(
-                "companyLogo",
-              )}
-            />
+  <Input
+    type="file"
+    accept="image/*"
+    disabled={isSubmitting}
+    onChange={(event) => {
+      const file =
+        event.target.files?.[0] ??
+        null;
+
+      setSelectedImage(file);
+    }}
+  />
+
+  {initialData?.companyLogo && (
+    <img
+      src={initialData.companyLogo}
+      alt="Company Logo"
+      className="mt-2 h-20 w-20 rounded-md border object-cover"
+    />
+  )}
+
+  {selectedImage && (
+    <p className="text-xs text-muted-foreground">
+      {selectedImage.name}
+    </p>
+  )}
+</div>
 
             <FormError
               message={
@@ -994,15 +1018,17 @@ Node.js`}
       </Card>
 
       <div className="flex justify-end gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() =>
-            reset(
-              JobFormUtils.createDefaultValues(),
-            )
-          }
-        >
+       <Button
+  type="button"
+  variant="outline"
+  onClick={() => {
+    reset(
+      JobFormUtils.createDefaultValues(),
+    );
+
+    setSelectedImage(null);
+  }}
+>
           Reset
         </Button>
 

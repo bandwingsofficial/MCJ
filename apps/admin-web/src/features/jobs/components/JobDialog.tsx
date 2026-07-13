@@ -22,6 +22,7 @@ interface JobDialogProps {
 
   onSubmit: (
     values: CreateJobRequest,
+    image: File | null,
   ) => Promise<void>;
 }
 
