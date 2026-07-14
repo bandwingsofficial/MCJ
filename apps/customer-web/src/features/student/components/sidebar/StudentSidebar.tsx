@@ -121,6 +121,7 @@ export function StudentSidebar() {
           <StudentSidebarItem href="/student/profile" icon={User} label="Profile" />
           <StudentSidebarItem href="/student/applications" icon={BriefcaseBusiness} label="My Applications" />
           <StudentSidebarItem href="/student/placement" icon={BriefcaseBusiness} label="Placement" />
+           <StudentSidebarItem href="/student/enrollments" icon={BriefcaseBusiness} label="My Enrollment" />
         </nav>
 
         {/* Footer */}

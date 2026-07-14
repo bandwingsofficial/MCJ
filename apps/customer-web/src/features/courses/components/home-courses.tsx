@@ -43,18 +43,14 @@ export function HomeCourses({
           </div>
 
           <Link href="/courses">
-  <Button
-    size="lg"
-    className="h-12 rounded-xl px-6"
-  >
-    View All Courses
-    <ArrowRight className="ml-2 h-4 w-4" />
-  </Button>
-</Link>
+            <Button variant="outline" className="flex items-center">
+              View All Courses
+            </Button>
+          </Link>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-4">
+        {/* Cards - Updated to 3 columns */}
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {courses.map((course) => (
             <CourseCard
               key={course.id}

@@ -37,11 +37,12 @@ export function BatchCard({ batch, onView }: BatchCardProps) {
           )}
         </div>
 
-        {/* Highlighted Target Course Name */}
-        <div className="rounded-lg bg-muted/50 px-3 py-2 text-xs border border-border/40">
-          <span className="text-muted-foreground block text-[10px] uppercase tracking-wider font-semibold mb-0.5">Course Mapping</span>
-          <span className="font-semibold text-foreground">{batch.course.title}</span>
-        </div>
+        <div className="rounded-lg bg-blue-50/50 border border-blue-100 px-3 py-2 text-xs">
+  <span className="text-blue-600 block text-[10px] uppercase tracking-wider font-bold mb-0.5">
+    Course Mapping
+  </span>
+  <span className="font-semibold text-blue-900">{batch.course.title}</span>
+</div>
 
         {/* Clean Structured Metrics Grid */}
         <div className="grid grid-cols-2 gap-y-3.5 gap-x-2 border-t border-border/60 pt-4">

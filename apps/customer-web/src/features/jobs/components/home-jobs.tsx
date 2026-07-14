@@ -44,8 +44,8 @@ export function HomeJobs({ jobs }: HomeJobsProps) {
           </Link>
         </div>
 
-        {/* Jobs Grid */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {/* Jobs Grid - Updated to 4 columns on large screens */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {jobs.map((job) => (
             <JobCard
               key={job.id}
@@ -57,12 +57,12 @@ export function HomeJobs({ jobs }: HomeJobsProps) {
         {/* Mobile Button */}
         <div className="mt-8 flex justify-center md:hidden">
           <Link
-  href="/jobs"
-  className="inline-flex items-center gap-2 rounded-xl bg-[#0B1120] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#16203A]"
->
-  View All Jobs
-  <ArrowRight className="h-4 w-4" />
-</Link>s
+            href="/jobs"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#0B1120] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#16203A]"
+          >
+            View All Jobs
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
     </section>
