@@ -100,38 +100,14 @@ export function StudentPortalGate() {
     );
   }
 
+  // ... existing imports ...
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Student Portal"
-        description="Welcome to your learning dashboard."
-      />
-
-      <StudentSummaryCard
-        student={
-          access.student
-        }
-      />
-
-      <div className="grid gap-8 xl:grid-cols-2">
-        <BatchSummaryCard
-          batch={
-            access.batch
-          }
-          trainers={
-            access.trainers ??
-            []
-          }
-        />
-
-        <PaymentSummaryCard
-          enrollment={
-            access.enrollment
-          }
-          paymentSummary={
-            access.paymentSummary
-          }
-        />
+    <div className="space-y-6">
+      <PageHeader title="Student Portal" description="Welcome back to your dashboard." />
+      <StudentSummaryCard student={access.student} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <BatchSummaryCard batch={access.batch} trainers={access.trainers ?? []} />
+        <PaymentSummaryCard enrollment={access.enrollment} paymentSummary={access.paymentSummary} />
       </div>
     </div>
   );

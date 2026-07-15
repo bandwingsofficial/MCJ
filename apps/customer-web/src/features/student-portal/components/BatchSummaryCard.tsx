@@ -1,236 +1,58 @@
 "use client";
 
-import {
-  Calendar,
-  Clock3,
-  GraduationCap,
-  Laptop,
-  MapPin,
-  Users,
-} from "lucide-react";
-
+import { GraduationCap, Calendar, Clock3, Laptop, MapPin, Users } from "lucide-react";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Card } from "@/src/shared/components/ui/card";
-
-import type {
-  StudentPortalBatch,
-  StudentPortalTrainer,
-} from "@/src/features/student-portal/types/student-portal.types";
+import type { StudentPortalBatch, StudentPortalTrainer } from "@/src/features/student-portal/types/student-portal.types";
 
 interface BatchSummaryCardProps {
   batch: StudentPortalBatch;
-
   trainers: StudentPortalTrainer[];
 }
 
-export function BatchSummaryCard({
-  batch,
-  trainers,
-}: BatchSummaryCardProps) {
+export function BatchSummaryCard({ batch, trainers }: BatchSummaryCardProps) {
+  const InfoItem = ({ icon: Icon, label, value }: any) => (
+    <div className="flex items-center gap-3">
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      <div>
+        <p className="text-[10px] uppercase text-muted-foreground tracking-wider">{label}</p>
+        <p className="text-sm font-medium">{value}</p>
+      </div>
+    </div>
+  );
+
   return (
-    <Card className="p-6">
-      <div className="mb-6 flex items-center gap-3">
-        <GraduationCap className="h-6 w-6 text-primary" />
-
-        <div>
-          <h3 className="text-lg font-semibold">
-            Batch Information
-          </h3>
-
-          <p className="text-sm text-muted-foreground">
-            Course schedule and trainer details
-          </p>
+    <Card className="p-5 shadow-none h-full">
+      <div className="flex items-center gap-2 mb-6">
+        <GraduationCap className="h-5 w-5 text-primary" />
+        <h3 className="font-semibold">Batch Details</h3>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+        <InfoItem icon={Laptop} label="Batch" value={batch.name} />
+        <InfoItem icon={MapPin} label="Code" value={batch.code} />
+        <InfoItem icon={Calendar} label="Start" value={new Date(batch.startDate).toLocaleDateString()} />
+        <InfoItem icon={Calendar} label="End" value={new Date(batch.endDate).toLocaleDateString()} />
+        <InfoItem icon={Clock3} label="Timing" value={`${batch.startTime} - ${batch.endTime}`} />
+        <div className="flex items-center gap-3">
+           <Laptop className="h-4 w-4 text-muted-foreground" />
+           <div>
+            <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Mode</p>
+            <Badge variant="default" className="text-[10px]">{batch.mode}</Badge>
+           </div>
         </div>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2">
-        <div>
-          <p className="text-xs uppercase text-muted-foreground">
-            Batch Name
-          </p>
-
-          <p className="mt-1 font-semibold">
-            {batch.name}
-          </p>
+      {trainers.length > 0 && (
+        <div className="mt-6 pt-6 border-t">
+          <p className="text-xs font-semibold mb-3 flex items-center gap-2"><Users className="h-3 w-3" /> Trainers</p>
+          {trainers.map((t) => (
+            <div key={t.id} className="text-sm border rounded p-3 mb-2">
+              <p className="font-medium">{t.firstName} {t.lastName}</p>
+              <p className="text-xs text-muted-foreground">{t.specialization}</p>
+            </div>
+          ))}
         </div>
-
-        <div>
-          <p className="text-xs uppercase text-muted-foreground">
-            Batch Code
-          </p>
-
-          <p className="mt-1 font-semibold">
-            {batch.code}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Laptop className="h-4 w-4 text-primary" />
-
-          <div>
-            <p className="text-xs uppercase text-muted-foreground">
-              Mode
-            </p>
-
-            <Badge>
-              {batch.mode}
-            </Badge>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-primary" />
-
-          <div>
-            <p className="text-xs uppercase text-muted-foreground">
-              Classroom
-            </p>
-
-            <p className="font-medium">
-              {batch.classroom ??
-                "--"}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-primary" />
-
-          <div>
-            <p className="text-xs uppercase text-muted-foreground">
-              Start Date
-            </p>
-
-            <p className="font-medium">
-              {new Date(
-                batch.startDate,
-              ).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-primary" />
-
-          <div>
-            <p className="text-xs uppercase text-muted-foreground">
-              End Date
-            </p>
-
-            <p className="font-medium">
-              {new Date(
-                batch.endDate,
-              ).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Clock3 className="h-4 w-4 text-primary" />
-
-          <div>
-            <p className="text-xs uppercase text-muted-foreground">
-              Class Time
-            </p>
-
-            <p className="font-medium">
-              {batch.startTime} -{" "}
-              {batch.endTime}
-            </p>
-          </div>
-        </div>
-
-        <div>
-          <p className="text-xs uppercase text-muted-foreground">
-            Meeting Link
-          </p>
-
-          {batch.meetingLink ? (
-            <a
-              href={
-                batch.meetingLink
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-primary underline"
-            >
-              Join Online Class
-            </a>
-          ) : (
-            <p className="font-medium">
-              --
-            </p>
-          )}
-        </div>
-      </div>
-
-      {trainers.length >
-        0 && (
-        <>
-          <div className="my-6 border-t" />
-
-          <div className="mb-4 flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-
-            <h4 className="font-semibold">
-              Trainers
-            </h4>
-          </div>
-
-          <div className="space-y-4">
-            {trainers.map(
-              (
-                trainer,
-              ) => (
-                <div
-                  key={
-                    trainer.id
-                  }
-                  className="rounded-lg border p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h5 className="font-semibold">
-                        {
-                          trainer.firstName
-                        }{" "}
-                        {
-                          trainer.lastName
-                        }
-                      </h5>
-
-                      <p className="text-sm text-muted-foreground">
-                        {
-                          trainer.specialization
-                        }
-                      </p>
-                    </div>
-
-                    <Badge variant="info">
-                      {
-                        trainer.employeeCode
-                      }
-                    </Badge>
-                  </div>
-
-                  <div className="mt-3 grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
-                    <p>
-                      {
-                        trainer.email
-                      }
-                    </p>
-
-                    <p>
-                      {
-                        trainer.phone
-                      }
-                    </p>
-                  </div>
-                </div>
-              ),
-            )}
-          </div>
-        </>
       )}
     </Card>
   );
