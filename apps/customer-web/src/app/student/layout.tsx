@@ -12,37 +12,44 @@ interface StudentLayoutProps {
   children: ReactNode;
 }
 
-export default function StudentLayout({ children }: StudentLayoutProps) {
+export default function StudentLayout({
+  children,
+}: StudentLayoutProps) {
   const router = useRouter();
-  const user = useAuthStore((state) => state.user);
+
+  const user =
+    useAuthStore(
+      (state) =>
+        state.user,
+    );
 
   useEffect(() => {
     if (!user) {
-      router.replace("/login");
+      router.replace(
+        "/login",
+      );
     }
-  }, [router, user]);
+  }, [
+    router,
+    user,
+  ]);
 
   if (!user) {
     return null;
   }
 
   return (
-    // Removed h-screen and overflow-hidden to allow natural page scrolling
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
-      
       <Header />
 
-      {/* Main Content Area */}
       <div className="flex flex-1">
-        {/* Sidebar: Fixed display on desktop */}
-        <div className="hidden md:block w-[240px] flex-shrink-0">
+        <div className="hidden w-[240px] flex-shrink-0 md:block">
           <div className="sticky top-0">
             <StudentSidebar />
           </div>
         </div>
 
-        {/* Content: Will naturally push the footer down */}
-        <main className="flex-1 w-full">
+        <main className="w-full flex-1">
           <div className="mx-auto w-full max-w-7xl p-4 md:p-6 lg:p-8">
             {children}
           </div>
