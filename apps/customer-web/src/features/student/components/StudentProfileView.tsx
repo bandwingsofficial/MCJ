@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Modal } from "@/src/shared/components/ui/model";
 
@@ -18,15 +17,8 @@ import {
 import { useStudentProfile } from "@/src/features/student/hooks";
 
 export function StudentProfileView() {
-  const {
-    profile,
-    isLoading,
-    error,
-    refetch,
-  } = useStudentProfile();
-
-  const [open, setOpen] =
-    useState(false);
+  const { profile, isLoading, error, refetch } = useStudentProfile();
+  const [open, setOpen] = useState(false);
 
   if (isLoading) {
     return <StudentProfileSkeleton />;
@@ -43,44 +35,32 @@ export function StudentProfileView() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="relative">
-        <StudentProfileHeader
-  profile={profile}
-/>
-<StudentProfileContact
-  profile={profile}
-/>
-<StudentProfileEducation
-  profile={profile}
-/>
-<StudentProfileGuardian
-  profile={profile}
-/>
+    <>
+      {/* One-off entrance animation for section cards. Move to globals.css if preferred. */}
+      <style>{`
+        @keyframes fade-up {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up {
+          animation: fade-up 0.45s ease-out both;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-fade-up { animation: none; }
+        }
+      `}</style>
 
-        <div className="absolute right-6 top-6">
-          <Button
-            onClick={() =>
-              setOpen(true)
-            }
-          >
-            {profile
-              ? "Update Profile"
-              : "Create Profile"}
-          </Button>
-        </div>
+      <div className="space-y-5">
+        <StudentProfileHeader profile={profile} onEdit={() => setOpen(true)} />
+        <StudentProfileContact profile={profile} />
+        <StudentProfileEducation profile={profile} />
+        <StudentProfileGuardian profile={profile} />
       </div>
 
       <Modal
         open={open}
-        title={
-          profile
-            ? "Update Student Profile"
-            : "Create Student Profile"
-        }
-        onClose={() =>
-          setOpen(false)
-        }
+        title={profile ? "Update Student Profile" : "Create Student Profile"}
+        onClose={() => setOpen(false)}
       >
         <StudentProfileForm
           onSuccess={() => {
@@ -89,6 +69,6 @@ export function StudentProfileView() {
           }}
         />
       </Modal>
-    </div>
+    </>
   );
 }

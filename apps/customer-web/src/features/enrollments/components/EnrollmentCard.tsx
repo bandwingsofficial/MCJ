@@ -4,7 +4,7 @@ import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
 import { Separator } from "@/src/shared/components/ui/separator";
-
+import { PaymentButton } from "@/src/features/payments/components/PaymentButton";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 
 interface EnrollmentCardProps {
@@ -90,11 +90,21 @@ export function EnrollmentCard({ enrollment }: EnrollmentCardProps) {
       </div>
 
       {/* Footer */}
-      <div className="bg-slate-50/50 px-6 py-4 flex justify-end border-t border-slate-100">
-        <Button variant="outline" size="sm" className="font-semibold">
-          View Details
-        </Button>
-      </div>
+<div className="border-t border-slate-100 bg-slate-50/50 px-6 py-4 flex justify-end">
+  {enrollment.paymentStatus === "UNPAID" ? (
+    <PaymentButton
+      enrollmentId={enrollment.id}
+    />
+  ) : (
+    <Button
+      disabled
+      variant="outline"
+      className="font-semibold"
+    >
+      Payment Completed
+    </Button>
+  )}
+</div>
     </Card>
   );
 }

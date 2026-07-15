@@ -82,11 +82,17 @@ export function ApplyJobPage({
     async (
       values: ApplyJobSchema,
     ) => {
+        console.log("========== APPLY DEBUG ==========");
+    console.log("jobSlug:", jobSlug);
+    console.log("jobId prop:", jobId);
+    console.log("Fetched Job:", job);
+    console.log("Fetched Job ID:", job?.id);
+    console.log("================================");
       const response =
-        await applyJob(
-          jobId,
-          values,
-        );
+       await applyJob(
+  job!.id,
+  values,
+);
 
       if (!response) {
         appToast.error(
