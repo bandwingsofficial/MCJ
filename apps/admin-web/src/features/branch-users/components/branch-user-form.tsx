@@ -230,11 +230,12 @@ void onSubmit(data);
             />
 
             <FormError
-              message={
-                errors.password
-                  ?.message
-              }
-            />
+  message={
+    !isEdit
+      ? (errors as any).password?.message
+      : undefined
+  }
+/>
           </div>
         )}
 

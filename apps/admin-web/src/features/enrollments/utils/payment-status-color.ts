@@ -1,8 +1,6 @@
 // src/features/enrollments/utils/payment-status-color.ts
 
-import {
-  PaymentStatus,
-} from "../types";
+import { PaymentStatus } from "../types";
 
 export function getPaymentStatusVariant(
   status: PaymentStatus,
@@ -13,17 +11,14 @@ export function getPaymentStatusVariant(
   | "danger"
   | "info" {
   switch (status) {
-    case PaymentStatus.PAID:
-      return "success";
+    case PaymentStatus.UNPAID:
+      return "warning";
 
     case PaymentStatus.PARTIAL:
       return "info";
 
-    case PaymentStatus.PENDING:
-      return "warning";
-
-    case PaymentStatus.REFUNDED:
-      return "default";
+    case PaymentStatus.PAID:
+      return "success";
 
     default:
       return "default";

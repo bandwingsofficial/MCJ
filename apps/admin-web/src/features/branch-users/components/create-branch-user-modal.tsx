@@ -67,7 +67,7 @@ export function CreateBranchUserModal({
           isLoading
         }
         submitLabel="Create User"
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmit as any}
       />
     </Modal>
   );

@@ -1,37 +1,36 @@
 // src/features/enrollments/services/enrollment-status.ts
 
-import {
+import { EnrollmentStatus } from "../types";
+
+const transitions: Record<
   EnrollmentStatus,
-} from "../types";
+  EnrollmentStatus[]
+> = {
+  [EnrollmentStatus.PENDING]: [
+    EnrollmentStatus.ADMITTED,
+    EnrollmentStatus.CANCELLED,
+  ],
+
+  [EnrollmentStatus.ADMITTED]: [
+    EnrollmentStatus.ACTIVE,
+    EnrollmentStatus.CANCELLED,
+  ],
+
+  [EnrollmentStatus.ACTIVE]: [
+    EnrollmentStatus.COMPLETED,
+    EnrollmentStatus.DROPPED,
+  ],
+
+  [EnrollmentStatus.COMPLETED]: [],
+
+  [EnrollmentStatus.CANCELLED]: [],
+
+  [EnrollmentStatus.DROPPED]: [],
+};
 
 export const canUpdateStatus = (
   current: EnrollmentStatus,
   next: EnrollmentStatus,
-) => {
-  const transitions = {
-    PENDING: [
-      EnrollmentStatus.ADMITTED,
-      EnrollmentStatus.CANCELLED,
-    ],
-
-    ADMITTED: [
-      EnrollmentStatus.ACTIVE,
-      EnrollmentStatus.CANCELLED,
-    ],
-
-    ACTIVE: [
-      EnrollmentStatus.COMPLETED,
-      EnrollmentStatus.DROPPED,
-    ],
-
-    COMPLETED: [],
-
-    CANCELLED: [],
-
-    DROPPED: [],
-  };
-
-  return transitions[
-    current
-  ]?.includes(next);
+): boolean => {
+  return transitions[current].includes(next);
 };

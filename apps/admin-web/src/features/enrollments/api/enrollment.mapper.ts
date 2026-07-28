@@ -16,6 +16,6 @@ export const enrollmentMapper = {
   toEnrollments(
     response: EnrollmentListResponse,
   ): Enrollment[] {
-    return response.data;
+    return response.data.items;
   },
 };

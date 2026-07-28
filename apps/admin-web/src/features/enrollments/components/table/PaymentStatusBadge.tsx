@@ -12,10 +12,10 @@ export function PaymentStatusBadge({
   status,
 }: PaymentStatusBadgeProps) {
   switch (status) {
-    case PaymentStatus.PENDING:
+    case PaymentStatus.UNPAID:
       return (
         <Badge variant="warning">
-          Pending
+          Unpaid
         </Badge>
       );
 
@@ -30,13 +30,6 @@ export function PaymentStatusBadge({
       return (
         <Badge variant="success">
           Paid
-        </Badge>
-      );
-
-    case PaymentStatus.REFUNDED:
-      return (
-        <Badge>
-          Refunded
         </Badge>
       );
 

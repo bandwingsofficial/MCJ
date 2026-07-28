@@ -42,8 +42,8 @@ export function BranchForm({
     formState: { errors },
   } = useForm<CreateBranchFormValues>({
     resolver: zodResolver(
-      createBranchSchema
-    ),
+    createBranchSchema
+  ) as any,
 
     defaultValues,
   });

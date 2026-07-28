@@ -10,8 +10,8 @@ export const DEFAULT_PAGE = 1;
 export const DEFAULT_LIMIT = 10;
 
 export const DEFAULT_ENROLLMENT_FILTERS: EnrollmentFilters = {
-  page: DEFAULT_PAGE,
-  limit: DEFAULT_LIMIT,
+  skip: 0,
+  take: DEFAULT_LIMIT,
   search: "",
 
   sortBy: "createdAt",

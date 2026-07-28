@@ -102,10 +102,10 @@ const totalCount =
   console.log("VALUES", values);
 
   try {
-    await createStudentMutation.mutateAsync({
-  payload: values,
+ await createStudentMutation.createStudent(
+  values,
   image,
-});
+);
     appToast.success(
       "Student created successfully."
     );
@@ -132,11 +132,11 @@ async (
       }
 
       try {
-        await updateStudentMutation.mutateAsync({
-  id: selectedStudent.id,
-  payload: values,
+        await updateStudentMutation.updateStudent(
+  selectedStudent.id,
+  values,
   image,
-});
+);
 
         appToast.success(
           "Student updated successfully."
@@ -372,7 +372,7 @@ async (
       >
      <StudentForm
   loading={
-    createStudentMutation.isPending
+    createStudentMutation.isLoading
   }
           submitLabel="Create Student"
           onSubmit={
@@ -397,7 +397,7 @@ async (
         {selectedStudent && (
          <StudentForm
   loading={
-    updateStudentMutation.isPending
+    updateStudentMutation.isLoading
   }
             submitLabel="Update Student"
             defaultValues={{

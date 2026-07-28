@@ -8,6 +8,7 @@ import { Button } from "@/src/shared/components/ui/button";
 import { EnrollmentDialog } from "@/src/features/enrollments/components/EnrollmentDialog";
 import { useCourseBatches } from "@/src/features/batches/hooks/useCourseBatches";
 
+
 interface EnrollButtonProps {
   courseSlug: string;
   isAuthenticated: boolean;
