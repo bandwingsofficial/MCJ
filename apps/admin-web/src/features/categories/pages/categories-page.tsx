@@ -35,7 +35,8 @@ export function CategoriesPage() {
   const {
     categories,
     total,
-    isLoading,
+    isInitialLoading,
+    isFetching,
     error,
     filters,
     setFilters,
@@ -173,7 +174,8 @@ export function CategoriesPage() {
     }
   };
 
-  if (error) {
+  // Hard error only when we have nothing to show yet.
+  if (error && categories.length === 0 && !isInitialLoading) {
     return (
       <ErrorState
         title="Failed To Load Categories"
@@ -226,111 +228,145 @@ export function CategoriesPage() {
           />
         </div>
 
-        {isLoading ? (
+        {isInitialLoading ? (
           <SkeletonTable rows={10} />
         ) : (
           <Card className="overflow-hidden p-0 shadow-sm">
-            <CategoryTable
-              categories={categories}
-              actionsDisabled={
-                actionLoading ||
-                isReordering
-              }
-              reorderDisabled={
-                isReordering ||
-                !!filters.status ||
-                !!filters.search
-              }
-              onEdit={handleEdit}
-              onActivate={async (
-                category
-              ) => {
-                await activateCategory(
-                  category.id
-                );
-                await refetch();
-              }}
-              onDeactivate={async (
-                category
-              ) => {
-                await deactivateCategory(
-                  category.id
-                );
-                await refetch();
-              }}
-              onDelete={
-                openDeleteDialog
-              }
-              onRestore={
-                openRestoreDialog
-              }
-              onPermanentDelete={
-                openPermanentDeleteDialog
-              }
-              onReorder={handleReorder}
-            />
-
-            {total > 0 && (
-              <div className="flex flex-col gap-2 border-t border-slate-200 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-slate-600">
-                  <span className="leading-9">
-                    Showing {from}–{to} of{" "}
-                    {total}
-                  </span>
-
-                  <label className="flex items-center gap-2 leading-9">
-                    <span className="whitespace-nowrap">
-                      Rows per page
-                    </span>
-                    <select
-                      className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-[15px]"
-                      value={
-                        filters.pageSize
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setFilters({
-                          ...filters,
-                          pageSize:
-                            Number(
-                              event
-                                .target
-                                .value
-                            ),
-                        })
-                      }
-                    >
-                      {[10, 20, 50].map(
-                        (size) => (
-                          <option
-                            key={size}
-                            value={size}
-                          >
-                            {size}
-                          </option>
-                        )
-                      )}
-                    </select>
-                  </label>
-                </div>
-
-                <Pagination
-                  page={filters.page}
-                  totalPages={
-                    totalPages
-                  }
-                  onPageChange={(
-                    page
-                  ) =>
-                    setFilters({
-                      ...filters,
-                      page,
-                    })
-                  }
-                />
+            {error && (
+              <div className="border-b border-red-100 bg-red-50 px-3.5 py-2 text-sm text-red-700">
+                {error}{" "}
+                <button
+                  type="button"
+                  className="font-medium underline"
+                  onClick={() => {
+                    void refetch();
+                  }}
+                >
+                  Retry
+                </button>
               </div>
             )}
+
+            <div
+              aria-busy={isFetching}
+              className="relative"
+            >
+              {isFetching && (
+                <span className="sr-only">
+                  Updating categories
+                </span>
+              )}
+
+              <CategoryTable
+                categories={categories}
+                actionsDisabled={
+                  actionLoading ||
+                  isReordering ||
+                  isFetching
+                }
+                reorderDisabled={
+                  isReordering ||
+                  !!filters.status ||
+                  !!filters.search.trim() ||
+                  isFetching
+                }
+                onEdit={handleEdit}
+                onActivate={async (
+                  category
+                ) => {
+                  await activateCategory(
+                    category.id
+                  );
+                  await refetch();
+                }}
+                onDeactivate={async (
+                  category
+                ) => {
+                  await deactivateCategory(
+                    category.id
+                  );
+                  await refetch();
+                }}
+                onDelete={
+                  openDeleteDialog
+                }
+                onRestore={
+                  openRestoreDialog
+                }
+                onPermanentDelete={
+                  openPermanentDeleteDialog
+                }
+                onReorder={handleReorder}
+              />
+            </div>
+
+            <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+              {total > 0 ? (
+                <>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-slate-600">
+                    <span className="leading-9">
+                      Showing {from}–{to} of{" "}
+                      {total}
+                    </span>
+
+                    <label className="flex items-center gap-2 leading-9">
+                      <span className="whitespace-nowrap">
+                        Rows per page
+                      </span>
+                      <select
+                        className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-[15px]"
+                        value={
+                          filters.pageSize
+                        }
+                        onChange={(
+                          event
+                        ) =>
+                          setFilters({
+                            ...filters,
+                            pageSize:
+                              Number(
+                                event
+                                  .target
+                                  .value
+                              ),
+                          })
+                        }
+                      >
+                        {[10, 20, 50].map(
+                          (size) => (
+                            <option
+                              key={size}
+                              value={size}
+                            >
+                              {size}
+                            </option>
+                          )
+                        )}
+                      </select>
+                    </label>
+                  </div>
+
+                  <Pagination
+                    page={filters.page}
+                    totalPages={
+                      totalPages
+                    }
+                    onPageChange={(
+                      page
+                    ) =>
+                      setFilters({
+                        ...filters,
+                        page,
+                      })
+                    }
+                  />
+                </>
+              ) : (
+                <p className="text-[15px] leading-9 text-slate-500">
+                  No categories to paginate
+                </p>
+              )}
+            </div>
           </Card>
         )}
       </div>

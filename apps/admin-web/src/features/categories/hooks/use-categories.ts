@@ -15,14 +15,18 @@ import {
 } from "@/src/features/categories/types/category.types";
 
 const DEFAULT_PAGE_SIZE = 20;
-const SEARCH_DEBOUNCE_MS = 350;
+const SEARCH_DEBOUNCE_MS = 400;
 
 interface UseCategoriesReturn {
   categories: CategoryListItem[];
 
   total: number;
 
-  isLoading: boolean;
+  /** True only for the first load when no rows exist yet. */
+  isInitialLoading: boolean;
+
+  /** True while a background refetch is in flight (keeps previous rows). */
+  isFetching: boolean;
 
   error: string | null;
 
@@ -47,8 +51,13 @@ export const useCategories =
     const [total, setTotal] =
       useState(0);
 
-    const [isLoading, setIsLoading] =
-      useState(true);
+    const [
+      isInitialLoading,
+      setIsInitialLoading,
+    ] = useState(true);
+
+    const [isFetching, setIsFetching] =
+      useState(false);
 
     const [error, setError] =
       useState<string | null>(null);
@@ -65,6 +74,8 @@ export const useCategories =
     const [debouncedSearch, setDebouncedSearch] =
       useState("");
 
+    const hasLoadedRef = useRef(false);
+    const requestIdRef = useRef(0);
     const debounceRef = useRef<ReturnType<
       typeof setTimeout
     > | null>(null);
@@ -72,17 +83,16 @@ export const useCategories =
     const setFilters = useCallback(
       (next: CategoryFilters) => {
         setFiltersState((prev) => {
-          const searchChanged =
-            next.search !== prev.search;
           const statusChanged =
             next.status !== prev.status;
           const pageSizeChanged =
             next.pageSize !== prev.pageSize;
 
+          // Search text updates immediately for the input.
+          // Page reset for search happens only when the debounced
+          // query value changes (see debounce effect below).
           const shouldResetPage =
-            searchChanged ||
-            statusChanged ||
-            pageSizeChanged;
+            statusChanged || pageSizeChanged;
 
           return {
             ...next,
@@ -101,7 +111,17 @@ export const useCategories =
       }
 
       debounceRef.current = setTimeout(() => {
-        setDebouncedSearch(filters.search.trim());
+        const nextSearch = filters.search.trim();
+
+        setDebouncedSearch((prev) =>
+          prev === nextSearch ? prev : nextSearch
+        );
+
+        setFiltersState((prev) =>
+          prev.page === 1
+            ? prev
+            : { ...prev, page: 1 }
+        );
       }, SEARCH_DEBOUNCE_MS);
 
       return () => {
@@ -111,22 +131,44 @@ export const useCategories =
       };
     }, [filters.search]);
 
-    const fetchCategories =
-      useCallback(async () => {
-        try {
-          setIsLoading(true);
+    const fetchCategories = useCallback(
+      async (options?: { silent?: boolean }) => {
+        const requestId = ++requestIdRef.current;
+        const silent = options?.silent === true;
+        const isFirstLoad = !hasLoadedRef.current;
 
-          setError(null);
+        try {
+          if (isFirstLoad) {
+            setIsInitialLoading(true);
+          } else if (!silent) {
+            setIsFetching(true);
+          }
 
           const response =
             await categoryService.getCategories({
-              ...filters,
               search: debouncedSearch,
+              branchId: filters.branchId,
+              status: filters.status,
+              page: filters.page,
+              pageSize: filters.pageSize,
             });
 
+          if (requestId !== requestIdRef.current) {
+            return;
+          }
+
           setCategories(response.data);
-          setTotal(response.meta?.total ?? response.data.length);
+          setTotal(
+            response.meta?.total ??
+              response.data.length
+          );
+          setError(null);
+          hasLoadedRef.current = true;
         } catch (error) {
+          if (requestId !== requestIdRef.current) {
+            return;
+          }
+
           const message =
             error instanceof Error
               ? error.message
@@ -134,9 +176,20 @@ export const useCategories =
 
           setError(message);
         } finally {
-          setIsLoading(false);
+          if (requestId === requestIdRef.current) {
+            setIsInitialLoading(false);
+            setIsFetching(false);
+          }
         }
-      }, [filters, debouncedSearch]);
+      },
+      [
+        debouncedSearch,
+        filters.branchId,
+        filters.status,
+        filters.page,
+        filters.pageSize,
+      ]
+    );
 
     useEffect(() => {
       void fetchCategories();
@@ -145,11 +198,12 @@ export const useCategories =
     return {
       categories,
       total,
-      isLoading,
+      isInitialLoading,
+      isFetching,
       error,
       filters,
       setFilters,
-      refetch:
-        fetchCategories,
+      refetch: () =>
+        fetchCategories({ silent: false }),
     };
   };
