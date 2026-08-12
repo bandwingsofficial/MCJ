@@ -4,11 +4,18 @@ import { cn } from "@/src/shared/lib/cn";
 
 export function Table({
   children,
+  className,
 }: {
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    <div
+      className={cn(
+        "overflow-hidden rounded-xl border border-slate-200 bg-white",
+        className
+      )}
+    >
       <div className="overflow-x-auto">
         <table className="min-w-full">
           {children}
@@ -40,11 +47,19 @@ export function TableBody({
 
 export function TableRow({
   children,
-}: {
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLTableRowElement> & {
   children: React.ReactNode;
 }) {
   return (
-    <tr className="border-b last:border-0">
+    <tr
+      className={cn(
+        "border-b last:border-0",
+        className
+      )}
+      {...props}
+    >
       {children}
     </tr>
   );
@@ -54,13 +69,13 @@ export function TableHead({
   children,
   className,
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
 }) {
   return (
     <th
       className={cn(
-        "px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-600",
+        "px-3.5 py-2.5 text-left text-sm font-semibold uppercase tracking-wide text-slate-600",
         className
       )}
     >
@@ -79,7 +94,7 @@ export function TableCell({
   return (
     <td
       className={cn(
-        "px-4 py-4 text-sm text-slate-700",
+        "px-3.5 py-2.5 text-[15px] text-slate-700",
         className
       )}
     >

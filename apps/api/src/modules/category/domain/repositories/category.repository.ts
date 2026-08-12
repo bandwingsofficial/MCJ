@@ -25,9 +25,23 @@ export interface CategoryRepository {
     includeDeleted?: boolean,
   ): Promise<Category | null>;
 
+  findByNameInsensitive(
+    name: string,
+    branchId?: string | null,
+    includeDeleted?: boolean,
+  ): Promise<Category | null>;
+
   findAll(
     filters?: CategoryListFilters,
   ): Promise<Category[]>;
+
+  count(filters?: CategoryListFilters): Promise<number>;
+
+  countBlockingReferences(id: string): Promise<{
+    courses: number;
+    enrollments: number;
+    articles: number;
+  }>;
 
   deletePermanent(id: string): Promise<void>;
 
@@ -36,8 +50,8 @@ export interface CategoryRepository {
     branchId?: string | null,
   ): Promise<number>;
   getMaxActiveDisplayOrder(
-  branchId?: string | null,
-): Promise<number>;
+    branchId?: string | null,
+  ): Promise<number>;
 
   incrementDisplayOrdersFrom(
     displayOrder: number,
@@ -45,13 +59,32 @@ export interface CategoryRepository {
   ): Promise<void>;
 
   shiftDisplayOrders(
-  oldOrder: number,
-  newOrder: number,
-  branchId?: string | null,
-): Promise<void>;
+    oldOrder: number,
+    newOrder: number,
+    branchId?: string | null,
+  ): Promise<void>;
 
-closeDisplayOrderGap(
-  deletedDisplayOrder: number,
-  branchId?: string | null,
-): Promise<void>;
+  closeDisplayOrderGap(
+    deletedDisplayOrder: number,
+    branchId?: string | null,
+  ): Promise<void>;
+
+  /**
+   * Move one ordered category to a new display order inside a transaction.
+   */
+  moveDisplayOrder(
+    categoryId: string,
+    oldOrder: number,
+    newOrder: number,
+    branchId?: string | null,
+  ): Promise<void>;
+
+  /**
+   * Persist a contiguous 1..n display order for the given IDs
+   * (non-archived / ordered categories only). Runs in a transaction.
+   */
+  reorderOrderedCategories(
+    orderedIds: string[],
+    branchId?: string | null,
+  ): Promise<void>;
 }

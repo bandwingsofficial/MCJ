@@ -7,7 +7,7 @@ export class CategoryName {
   ) {}
 
   static create(value: string): CategoryName {
-    const normalized = value?.trim();
+    const normalized = CategoryName.normalize(value);
 
     if (!normalized) {
       throw new BaseException(
@@ -26,6 +26,16 @@ export class CategoryName {
     }
 
     return new CategoryName(normalized);
+  }
+
+  /** Trim + collapse internal whitespace for storage/uniqueness. */
+  static normalize(value: string): string {
+    return (value ?? '').trim().replace(/\s+/g, ' ');
+  }
+
+  /** Case-insensitive key used for uniqueness checks. */
+  static uniquenessKey(value: string): string {
+    return CategoryName.normalize(value).toLowerCase();
   }
 
   getValue(): string {

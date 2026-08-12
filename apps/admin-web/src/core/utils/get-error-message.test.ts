@@ -48,4 +48,18 @@ describe("getErrorMessage", () => {
       "We couldn't connect to the server. Check your connection and try again."
     );
   });
+
+  it("surfaces backend validation/conflict messages", () => {
+    expect(
+      getErrorMessage(
+        axiosError(409, {
+          code: "VALIDATION_ERROR",
+          message:
+            "Cannot permanently delete this category because it is still linked to 1 course.",
+        })
+      )
+    ).toBe(
+      "Cannot permanently delete this category because it is still linked to 1 course."
+    );
+  });
 });

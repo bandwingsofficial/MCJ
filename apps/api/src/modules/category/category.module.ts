@@ -21,6 +21,7 @@ import { BulkDeactivateCategoryHandler } from './application/bulk-deactivate-cat
 import { BulkDeleteCategoryHandler } from './application/bulk-delete-category/bulk-delete-category.handler';
 import { BulkRestoreCategoryHandler } from './application/bulk-restore-category/bulk-restore-category.handler';
 import { BulkPermanentDeleteCategoryHandler } from './application/bulk-permanent-delete-category/bulk-permanent-delete-category.handler';
+import { ReorderCategoriesHandler } from './application/reorder-categories/reorder-categories.handler';
 
 import type { CategoryRepository } from './domain/repositories/category.repository';
 import { CategoryDomainService } from './domain/services/category-domain.service';
@@ -258,6 +259,22 @@ import { BranchRepository } from '../branch/domain/repositories/branch.repositor
         domainService: CategoryDomainService,
       ) =>
         new BulkDeactivateCategoryHandler(
+          categoryRepo,
+          domainService,
+        ),
+      inject: [
+        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
+        CategoryDomainService,
+      ],
+    },
+
+    {
+      provide: ReorderCategoriesHandler,
+      useFactory: (
+        categoryRepo: CategoryRepository,
+        domainService: CategoryDomainService,
+      ) =>
+        new ReorderCategoriesHandler(
           categoryRepo,
           domainService,
         ),

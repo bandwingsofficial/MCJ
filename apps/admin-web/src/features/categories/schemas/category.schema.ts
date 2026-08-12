@@ -13,22 +13,15 @@ export const createCategorySchema =
         100,
         "Category name cannot exceed 100 characters"
       ),
-      thumbnailFileId:
-z.string().optional(),
+
+    thumbnailFileId:
+      z.string().nullable().optional(),
 
     description: z
       .string()
       .max(
         500,
         "Description cannot exceed 500 characters"
-      )
-      .optional(),
-
-    displayOrder: z
-      .number()
-      .min(
-        0,
-        "Display order cannot be negative"
       )
       .optional(),
 

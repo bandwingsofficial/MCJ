@@ -13,6 +13,10 @@ interface ConfirmDialogProps {
 
   loading?: boolean;
 
+  confirmLabel?: string;
+
+  loadingLabel?: string;
+
   onConfirm: () => void;
 
   onCancel: () => void;
@@ -23,16 +27,25 @@ export function ConfirmDialog({
   title,
   description,
   loading,
+  confirmLabel = "Confirm",
+  loadingLabel,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   return (
-    <AlertDialog.Root open={open}>
+    <AlertDialog.Root
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && !loading) {
+          onCancel();
+        }
+      }}
+    >
       <AlertDialog.Portal>
-        <AlertDialog.Overlay className="fixed inset-0 bg-black/50" />
+        <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
 
-        <AlertDialog.Content className="fixed left-1/2 top-1/2 w-[450px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
-          <AlertDialog.Title className="text-lg font-semibold">
+        <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(450px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
+          <AlertDialog.Title className="text-lg font-semibold text-slate-900">
             {title}
           </AlertDialog.Title>
 
@@ -41,19 +54,33 @@ export function ConfirmDialog({
           </AlertDialog.Description>
 
           <div className="mt-6 flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={onCancel}
-            >
-              Cancel
-            </Button>
+            <AlertDialog.Cancel asChild>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={loading}
+                onClick={onCancel}
+              >
+                Cancel
+              </Button>
+            </AlertDialog.Cancel>
 
             <Button
+              type="button"
               loading={loading}
               variant="danger"
-              onClick={onConfirm}
+              disabled={loading}
+              onClick={(event) => {
+                event.preventDefault();
+                if (loading) {
+                  return;
+                }
+                onConfirm();
+              }}
             >
-              Confirm
+              {loading
+                ? loadingLabel ?? confirmLabel
+                : confirmLabel}
             </Button>
           </div>
         </AlertDialog.Content>

@@ -12,6 +12,8 @@ import type {
   UpdateCategoryRequest,
 } from "@/src/features/categories/types/category.types";
 
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
+
 export const useUpdateCategory =
   () => {
     const [
@@ -38,14 +40,12 @@ export const useUpdateCategory =
           );
 
           return response.data;
-        } catch {
+        } catch (error) {
           appToast.error(
-            "Failed to update category"
+            getErrorMessage(error)
           );
 
-          throw new Error(
-            "Failed to update category"
-          );
+          throw error;
         } finally {
           setIsLoading(false);
         }

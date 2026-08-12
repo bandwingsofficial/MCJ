@@ -4,10 +4,6 @@ import { SearchInput } from "@/src/shared/components/ui/search-input";
 
 import { AppSelect } from "@/src/shared/components/ui/select";
 
-import { Switch } from "@/src/shared/components/ui/switch";
-
-import { Label } from "@/src/shared/components/ui/label";
-
 import type {
   CategoryFilters,
 } from "@/src/features/categories/types/category.types";
@@ -25,10 +21,12 @@ export function CategoryFilters({
   onChange,
 }: Props) {
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-      <div className="flex-1">
+    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+      <div className="min-w-0 flex-1">
         <SearchInput
           value={filters.search}
+          placeholder="Search categories..."
+          className="!h-10 rounded-lg !py-2 pl-9 text-[15px]"
           onChange={(value) =>
             onChange({
               ...filters,
@@ -38,12 +36,13 @@ export function CategoryFilters({
         />
       </div>
 
-      <div className="w-full lg:w-56">
+      <div className="w-full shrink-0 sm:w-48">
         <AppSelect
           value={
             filters.status ??
             "ALL"
           }
+          triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
           onValueChange={(
             value
           ) =>
@@ -54,7 +53,8 @@ export function CategoryFilters({
                   ? undefined
                   : (value as
                       | "ACTIVE"
-                      | "INACTIVE"),
+                      | "INACTIVE"
+                      | "ARCHIVED"),
             })
           }
           options={[
@@ -70,29 +70,12 @@ export function CategoryFilters({
               label: "Inactive",
               value: "INACTIVE",
             },
+            {
+              label: "Archived",
+              value: "ARCHIVED",
+            },
           ]}
         />
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Switch
-          checked={
-            filters.includeDeleted
-          }
-          onCheckedChange={(
-            checked
-          ) =>
-            onChange({
-              ...filters,
-              includeDeleted:
-                checked,
-            })
-          }
-        />
-
-        <Label>
-          Include Deleted
-        </Label>
       </div>
     </div>
   );

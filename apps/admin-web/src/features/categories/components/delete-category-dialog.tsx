@@ -11,6 +11,10 @@ interface Props {
 
   description: string;
 
+  confirmLabel?: string;
+
+  loadingLabel?: string;
+
   onConfirm: () => void;
 
   onCancel: () => void;
@@ -21,6 +25,8 @@ export function DeleteCategoryDialog({
   loading,
   title,
   description,
+  confirmLabel = "Confirm",
+  loadingLabel,
   onConfirm,
   onCancel,
 }: Props) {
@@ -29,12 +35,10 @@ export function DeleteCategoryDialog({
       open={open}
       loading={loading}
       title={title}
-      description={
-        description
-      }
-      onConfirm={
-        onConfirm
-      }
+      description={description}
+      confirmLabel={confirmLabel}
+      loadingLabel={loadingLabel}
+      onConfirm={onConfirm}
       onCancel={onCancel}
     />
   );

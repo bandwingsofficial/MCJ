@@ -147,6 +147,7 @@ export class Category {
   softDelete(deletedBy?: string | null) {
     this.isDeleted = true;
     this.status = CategoryStatus.ARCHIVED;
+    this.displayOrder = null;
     this.deletedAt = new Date();
     this.deletedBy = deletedBy ?? null;
     this.touch();

@@ -23,10 +23,12 @@ export class DeleteCategoryHandler {
 
     await this.categoryRepo.save(category);
 
-    await this.categoryRepo.closeDisplayOrderGap(
-      deletedDisplayOrder!,
-      category.branchId,
-    );
+    if (deletedDisplayOrder != null) {
+      await this.categoryRepo.closeDisplayOrderGap(
+        deletedDisplayOrder,
+        category.branchId,
+      );
+    }
 
     return new DeleteCategoryResult(
       category.id,

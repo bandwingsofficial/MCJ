@@ -14,21 +14,30 @@ export function CategoryStatusBadge({
   switch (status) {
     case "ACTIVE":
       return (
-        <Badge variant="success">
+        <Badge
+          variant="success"
+          className="px-2.5 py-0.5 text-sm"
+        >
           Active
         </Badge>
       );
 
     case "INACTIVE":
       return (
-        <Badge variant="warning">
+        <Badge
+          variant="warning"
+          className="px-2.5 py-0.5 text-sm"
+        >
           Inactive
         </Badge>
       );
 
     case "ARCHIVED":
       return (
-        <Badge variant="danger">
+        <Badge
+          variant="danger"
+          className="px-2.5 py-0.5 text-sm"
+        >
           Archived
         </Badge>
       );

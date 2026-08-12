@@ -17,6 +17,11 @@ export class RestoreCategoryHandler {
       await this.categoryRepo.findById(command.id, true),
     );
 
+    await this.domainService.ensureCanRestore(
+      this.categoryRepo,
+      category,
+    );
+
     const nextDisplayOrder =
       (await this.categoryRepo.getMaxDisplayOrder(
         category.branchId,

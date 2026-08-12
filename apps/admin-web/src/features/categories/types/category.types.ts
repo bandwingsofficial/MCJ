@@ -18,7 +18,7 @@ export interface Category {
 
   status: CategoryStatus;
 
-  displayOrder: number;
+  displayOrder: number | null;
 
   branchId: string | null;
 
@@ -43,13 +43,11 @@ export interface CreateCategoryRequest {
 
   description?: string;
 
-  displayOrder?: number;
-
   branchId?: string;
 
   status?: Exclude<CategoryStatus, "ARCHIVED">;
 
-  thumbnailFileId?: string;
+  thumbnailFileId?: string | null;
 }
 
 export interface UpdateCategoryRequest {
@@ -57,13 +55,11 @@ export interface UpdateCategoryRequest {
 
   description?: string;
 
-  displayOrder?: number;
-
   branchId?: string;
 
   status?: Exclude<CategoryStatus, "ARCHIVED">;
 
-  thumbnailFileId?: string;
+  thumbnailFileId?: string | null;
 }
 
 export interface CategoryListItem {
@@ -77,7 +73,7 @@ export interface CategoryListItem {
 
   status: CategoryStatus;
 
-  displayOrder: number;
+  displayOrder: number | null;
 
   branchId: string | null;
 
@@ -87,22 +83,28 @@ export interface CategoryListItem {
 
   updatedAt: string;
 
-  thumbnailUrl: string;
+  thumbnailUrl: string | null;
 }
 
 export type CategoryListResponse =
   CategoryListItem[];
 
+export interface CategoryListMeta {
+  total: number;
+  skip: number;
+  take: number | null;
+}
+
 export interface CategoryFilters {
   search: string;
 
-  includeDeleted: boolean;
-
   branchId?: string;
 
-  status?:
-    | "ACTIVE"
-    | "INACTIVE";
+  status?: CategoryStatus;
+
+  page: number;
+
+  pageSize: number;
 }
 
 export interface ApiSuccessResponse<T> {
@@ -111,6 +113,8 @@ export interface ApiSuccessResponse<T> {
   message: string;
 
   data: T;
+
+  meta?: CategoryListMeta;
 }
 
 export interface ApiErrorResponse {
@@ -146,4 +150,9 @@ export interface CategoryPermanentDeleteResponse {
   id: string;
 
   permanentlyDeleted: boolean;
+}
+
+export interface ReorderCategoriesRequest {
+  categoryId: string;
+  newDisplayOrder: number;
 }

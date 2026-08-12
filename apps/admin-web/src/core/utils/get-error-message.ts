@@ -14,6 +14,8 @@ const CODE_MESSAGES: Record<string, string> = {
   SESSION_REVOKED: "Your session is no longer active. Please sign in again.",
   SESSION_EXPIRED: "Your session has expired. Please sign in again.",
   ADMIN_MFA_REQUIRED: "Multi-factor authentication is required.",
+  CATEGORY_ALREADY_EXISTS: "Category already exists.",
+  CATEGORY_NOT_FOUND: "Category not found.",
 };
 
 export const getErrorMessage = (error: unknown): string => {
@@ -21,9 +23,24 @@ export const getErrorMessage = (error: unknown): string => {
     const status = error.response?.status;
     const data = error.response?.data as ApiErrorResponse | undefined;
     const code = data?.code;
+    const message = data?.message;
 
     if (code && CODE_MESSAGES[code]) {
       return CODE_MESSAGES[code];
+    }
+
+    // Prefer explicit backend messages for validation/conflict responses
+    if (
+      status &&
+      status < 500 &&
+      typeof message === "string" &&
+      message.trim()
+    ) {
+      return message;
+    }
+
+    if (Array.isArray(message) && message[0]) {
+      return message[0];
     }
 
     if (status === 429) {
@@ -38,6 +55,12 @@ export const getErrorMessage = (error: unknown): string => {
       return "Your session has expired. Please sign in again.";
     }
 
+    if (status === 409) {
+      return typeof message === "string" && message.trim()
+        ? message
+        : "This action conflicts with existing data.";
+    }
+
     if (status && status >= 500) {
       return "Something went wrong on our side. Please try again.";
     }
@@ -46,12 +69,8 @@ export const getErrorMessage = (error: unknown): string => {
       return "We couldn't connect to the server. Check your connection and try again.";
     }
 
-    const message = data?.message;
     if (typeof message === "string" && message.trim()) {
       return message;
-    }
-    if (Array.isArray(message) && message[0]) {
-      return message[0];
     }
   }
 

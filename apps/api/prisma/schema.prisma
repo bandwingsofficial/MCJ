@@ -277,6 +277,8 @@ model Category {
   @@index([branchId, status, isDeleted])
   @@index([isDeleted])
   @@index([createdAt])
+  // Case-insensitive name uniqueness is enforced via raw migration:
+  // Category_name_branch_ci_unique
 }
 
 model Course {

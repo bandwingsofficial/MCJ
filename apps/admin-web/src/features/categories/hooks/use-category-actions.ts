@@ -8,6 +8,9 @@ import { appToast } from "@/src/shared/components/ui/toast";
 
 import { categoryService } from "@/src/features/categories/services/category.service";
 
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { AxiosError } from "axios";
+
 export const useCategoryActions =
   () => {
     const [
@@ -28,14 +31,29 @@ export const useCategoryActions =
           appToast.success(
             successMessage
           );
-        } catch {
-          appToast.error(
-            "Action failed"
-          );
+        } catch (error) {
+          const code =
+            error instanceof AxiosError
+              ? (error.response?.data as {
+                  code?: string;
+                  message?: string;
+                })?.code
+              : undefined;
 
-          throw new Error(
-            "Action failed"
-          );
+          if (
+            code ===
+            "CATEGORY_ALREADY_EXISTS"
+          ) {
+            appToast.error(
+              "Cannot restore category because another category already uses this name."
+            );
+          } else {
+            appToast.error(
+              getErrorMessage(error)
+            );
+          }
+
+          throw error;
         } finally {
           setIsLoading(false);
         }
@@ -74,7 +92,7 @@ export const useCategoryActions =
             categoryService.deleteCategory(
               id
             ),
-          "Category deleted"
+          "Category archived"
         ),
 
       restoreCategory: (

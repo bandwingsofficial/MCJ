@@ -35,6 +35,15 @@ export class UpdateCategoryHandler {
     let nextThumbnailFileId = category.thumbnailFileId;
     let nextThumbnailUrl = category.thumbnailUrl;
 
+    if (command.name !== undefined) {
+      await this.domainService.ensureNameIsAvailable(
+        this.categoryRepo,
+        command.name,
+        category.branchId,
+        category.id,
+      );
+    }
+
     await this.domainService.ensureSlugIsAvailable(
       this.categoryRepo,
       nextSlug,

@@ -10,6 +10,8 @@ import type {
   CategoryDeleteResponse,
   CategoryRestoreResponse,
   CategoryPermanentDeleteResponse,
+  ReorderCategoriesRequest,
+  CategoryListMeta,
 } from "@/src/features/categories/types/category.types";
 
 class CategoryService {
@@ -32,11 +34,19 @@ class CategoryService {
   async getCategories(
     filters: CategoryFilters
   ): Promise<
-    ApiSuccessResponse<CategoryListResponse>
+    ApiSuccessResponse<CategoryListResponse> & {
+      meta?: CategoryListMeta;
+    }
   > {
+    const skip =
+      (filters.page - 1) *
+      filters.pageSize;
+
     const response =
       await apiClient.get<
-        ApiSuccessResponse<CategoryListResponse>
+        ApiSuccessResponse<CategoryListResponse> & {
+          meta?: CategoryListMeta;
+        }
       >(this.basePath, {
         params: {
           search:
@@ -51,8 +61,11 @@ class CategoryService {
             filters.branchId ||
             undefined,
 
-          includeDeleted:
-            filters.includeDeleted,
+          includeDeleted: true,
+
+          skip,
+
+          take: filters.pageSize,
         },
       });
 
@@ -164,29 +177,50 @@ class CategoryService {
     return response.data;
   }
 
-  
-  async uploadCategoryImage(
-   file: File
-){
-   const formData = new FormData();
+  async reorderCategories(
+    payload: ReorderCategoriesRequest
+  ): Promise<
+    ApiSuccessResponse<{
+      categoryId: string;
+      displayOrder: number;
+    }>
+  > {
+    const response =
+      await apiClient.patch<
+        ApiSuccessResponse<{
+          categoryId: string;
+          displayOrder: number;
+        }>
+      >(
+        `${this.basePath}/reorder`,
+        payload
+      );
 
-formData.append("file", file);
-formData.append("folder", "categories");
-formData.append("fileName", file.name);
-
-const response = await apiClient.post(
-  "/admin/uploads",
-  formData,
-  {
-    headers: {
-      "Content-Type": undefined,
-    },
-    transformRequest: [(data) => data],
+    return response.data;
   }
-);
 
-return response.data;
-}
+  async uploadCategoryImage(
+    file: File
+  ) {
+    const formData = new FormData();
+
+    formData.append("file", file);
+    formData.append("folder", "categories");
+    formData.append("fileName", file.name);
+
+    const response = await apiClient.post(
+      "/admin/uploads",
+      formData,
+      {
+        headers: {
+          "Content-Type": undefined,
+        },
+        transformRequest: [(data) => data],
+      }
+    );
+
+    return response.data;
+  }
 }
 
 export const categoryService =

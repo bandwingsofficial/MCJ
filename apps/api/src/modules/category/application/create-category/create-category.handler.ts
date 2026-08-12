@@ -32,6 +32,12 @@ export class CreateCategoryHandler {
       ? Slug.create(command.slug).getValue()
       : Slug.fromName(command.name).getValue();
 
+    await this.domainService.ensureNameIsAvailable(
+      this.categoryRepo,
+      command.name,
+      command.branchId ?? null,
+    );
+
     await this.domainService.ensureSlugIsAvailable(
       this.categoryRepo,
       slug,

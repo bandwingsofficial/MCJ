@@ -37,15 +37,16 @@ export function EditCategoryModal({
     isLoading,
   } = useUpdateCategory();
 
-  if (!category) {
+  if (!open || !category) {
     return null;
   }
 
   const handleSubmit = async (
     values: CreateCategoryFormValues,
-    image: File | null
+    image: File | null,
+    removeImage: boolean
   ) => {
-    let thumbnailFileId: string | undefined;
+    let thumbnailFileId: string | null | undefined;
 
     if (image) {
       const uploadResponse =
@@ -55,12 +56,15 @@ export function EditCategoryModal({
 
       thumbnailFileId =
         uploadResponse.data.fileId;
+    } else if (removeImage) {
+      thumbnailFileId = null;
     }
 
     await updateCategory(
       category.id,
       {
-        ...values,
+        name: values.name,
+        description: values.description,
         thumbnailFileId,
       }
     );
@@ -84,8 +88,6 @@ export function EditCategoryModal({
           description:
             category.description ??
             "",
-          displayOrder:
-            category.displayOrder,
           thumbnailUrl:
             category.thumbnailUrl,
         }}

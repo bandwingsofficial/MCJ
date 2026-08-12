@@ -32,7 +32,8 @@ export function CreateCategoryModal({
 
   const handleSubmit = async (
     values: CreateCategoryFormValues,
-    image: File | null
+    image: File | null,
+    _removeImage: boolean
   ) => {
     let thumbnailFileId: string | undefined;
 
@@ -48,7 +49,9 @@ export function CreateCategoryModal({
 
     const result =
       await createCategory({
-        ...values,
+        name: values.name,
+        description: values.description,
+        status: values.status ?? "ACTIVE",
         thumbnailFileId,
       });
 

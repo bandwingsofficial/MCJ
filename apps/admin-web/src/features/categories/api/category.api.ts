@@ -1,13 +1,19 @@
 export const categoryApi = {
   all: ["categories"] as const,
 
-  list: (
-    includeDeleted: boolean
-  ) =>
+  list: (filters: {
+    search?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+  }) =>
     [
       ...categoryApi.all,
       "list",
-      includeDeleted,
+      filters.search ?? "",
+      filters.status ?? "ALL",
+      filters.page ?? 1,
+      filters.pageSize ?? 20,
     ] as const,
 
   detail: (id: string) =>

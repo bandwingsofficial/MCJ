@@ -52,6 +52,9 @@ import { BulkPermanentDeleteCategoryHandler } from '../../application/bulk-perma
 import { BulkRestoreCategoryCommand } from '../../application/bulk-restore-category/bulk-restore-category.command';
 import { BulkRestoreCategoryHandler } from '../../application/bulk-restore-category/bulk-restore-category.handler';
 
+import { ReorderCategoriesCommand } from '../../application/reorder-categories/reorder-categories.command';
+import { ReorderCategoriesHandler } from '../../application/reorder-categories/reorder-categories.handler';
+
 import { BulkActivateCategoryDto } from '../dtos/bulk-activate-category.dto';
 import { BulkDeactivateCategoryDto } from '../dtos/bulk-deactivate-category.dto';
 import { CreateCategoryDto } from '../dtos/create-category.dto';
@@ -60,6 +63,7 @@ import { UpdateCategoryDto } from '../dtos/update-category.dto';
 import { BulkDeleteCategoryDto } from '../dtos/bulk-delete-category.dto';
 import { BulkPermanentDeleteCategoryDto } from '../dtos/bulk-permanent-delete-category.dto';
 import { BulkRestoreCategoryDto } from '../dtos/bulk-restore-category.dto';
+import { ReorderCategoriesDto } from '../dtos/reorder-categories.dto';
 
 @ApiTags('Admin Categories')
 @ApiBearerAuth()
@@ -80,6 +84,7 @@ export class AdminCategoryController {
     private readonly bulkDeleteCategoryHandler: BulkDeleteCategoryHandler,
     private readonly bulkRestoreCategoryHandler: BulkRestoreCategoryHandler,
     private readonly bulkPermanentDeleteCategoryHandler: BulkPermanentDeleteCategoryHandler,
+    private readonly reorderCategoriesHandler: ReorderCategoriesHandler,
   ) {}
 
   @Post()
@@ -144,12 +149,15 @@ export class AdminCategoryController {
   @Get()
   @ApiResponse({ status: 200, description: 'Categories listed' })
   async list(@Query() query: ListCategoriesQueryDto) {
+    const includeDeleted =
+      query.includeDeleted ?? true;
+
     const result = await this.listCategoriesHandler.execute(
       new ListCategoriesQuery(
         query.branchId,
         query.status,
         query.search,
-        query.includeDeleted,
+        includeDeleted,
         false,
         query.skip,
         query.take,
@@ -159,6 +167,32 @@ export class AdminCategoryController {
     return {
       success: true,
       message: 'Categories fetched successfully',
+      data: result.items,
+      meta: {
+        total: result.total,
+        skip: result.skip,
+        take: result.take,
+      },
+    };
+  }
+
+  @Patch('reorder')
+  @ApiResponse({ status: 200, description: 'Categories reordered' })
+  async reorder(
+    @Body() dto: ReorderCategoriesDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.reorderCategoriesHandler.execute(
+      new ReorderCategoriesCommand(
+        dto.categoryId,
+        dto.newDisplayOrder,
+        user?.sub,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Categories reordered successfully',
       data: result,
     };
   }
@@ -217,6 +251,19 @@ export class AdminCategoryController {
     };
   }
 
+  @Delete(':id/permanent')
+  async permanentDelete(@Param('id') id: string) {
+    const result = await this.permanentDeleteCategoryHandler.execute(
+      new PermanentDeleteCategoryCommand(id),
+    );
+
+    return {
+      success: true,
+      message: 'Category permanently deleted successfully',
+      data: result,
+    };
+  }
+
   @Delete(':id')
   async delete(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     const result = await this.deleteCategoryHandler.execute(
@@ -271,19 +318,6 @@ export class AdminCategoryController {
     return {
       success: true,
       message: 'Categories deactivated successfully',
-      data: result,
-    };
-  }
-
-  @Delete(':id/permanent')
-  async permanentDelete(@Param('id') id: string) {
-    const result = await this.permanentDeleteCategoryHandler.execute(
-      new PermanentDeleteCategoryCommand(id),
-    );
-
-    return {
-      success: true,
-      message: 'Category permanently deleted successfully',
       data: result,
     };
   }
