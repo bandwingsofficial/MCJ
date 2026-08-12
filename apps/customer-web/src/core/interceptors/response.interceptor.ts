@@ -41,7 +41,9 @@ export async function responseErrorInterceptor(
 
   if (
     code ===
-    "TOKEN_REUSE_DETECTED"
+      "TOKEN_REUSE_DETECTED" ||
+    code === "SESSION_REVOKED" ||
+    code === "SESSION_EXPIRED"
   ) {
     tokenStorage.clear();
 
@@ -56,8 +58,11 @@ export async function responseErrorInterceptor(
     return Promise.reject(error);
   }
 
+  // Do not force-logout on generic INVALID_TOKEN before attempting refresh;
+  // expired/invalid access tokens are handled via the 401 refresh path below.
   if (
-    code === "INVALID_TOKEN"
+    code === "INVALID_TOKEN" &&
+    status !== 401
   ) {
     tokenStorage.clear();
 
