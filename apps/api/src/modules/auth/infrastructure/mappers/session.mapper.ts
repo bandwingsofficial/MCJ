@@ -5,6 +5,7 @@ import { Session as PrismaSession } from '@prisma/client';
 import { Session } from '../../domain/entities/session.entity';
 
 import { DeviceType } from '../../domain/enums/device-type.enum';
+import { ClientType } from '../../domain/enums/client-type.enum';
 
 export class SessionMapper {
   // =====================
@@ -18,6 +19,8 @@ export class SessionMapper {
       userId: record.userId,
 
       refreshTokenHash: record.refreshTokenHash,
+
+      clientType: (record.clientType as ClientType) ?? ClientType.UNKNOWN,
 
       userAgent: record.userAgent ?? null,
       ipAddress: record.ipAddress ?? null,
@@ -48,6 +51,8 @@ export class SessionMapper {
       userId: session.userId,
 
       refreshTokenHash: session.refreshTokenHash,
+
+      clientType: session.clientType,
 
       userAgent: session.userAgent,
       ipAddress: session.ipAddress,

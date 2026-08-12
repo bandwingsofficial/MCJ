@@ -29,6 +29,9 @@ export interface RefreshTokenPayload {
 
   /** Distinguishes refresh credentials from access tokens */
   typ: RefreshTokenType;
+
+  /** Unique id per issuance so rotations never collide within the same second */
+  jti: string;
 }
 
 export interface BranchUserAccessTokenPayload {
@@ -53,6 +56,8 @@ export interface BranchUserRefreshTokenPayload {
   sessionId: string;
 
   type: 'BRANCH_USER_REFRESH';
+
+  jti: string;
 }
 
 // 🔐 MFA TOKEN
@@ -63,7 +68,7 @@ export interface MfaTokenPayload {
 
   role: Role;
 
-  type: 'ADMIN_MFA';
+  typ: 'mfa';
 }
 
 // 🔐 Token pair

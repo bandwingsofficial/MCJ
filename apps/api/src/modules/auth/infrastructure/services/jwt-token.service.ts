@@ -1,5 +1,7 @@
 // infrastructure/services/jwt-token.service.ts
 
+import { randomUUID } from 'crypto';
+
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 
@@ -17,6 +19,8 @@ import type { Role } from '../../domain/enums/role.enum';
 import type { BranchUserRole } from '../../../branch-user/domain/enums/branch-user-role.enum';
 import type { Permission } from '../../../branch-user/domain/enums/permission.enum';
 
+const JWT_ALGORITHM = 'HS256' as const;
+
 export class JwtTokenService implements TokenPort {
   constructor(
     private readonly jwt: JwtService,
@@ -26,10 +30,6 @@ export class JwtTokenService implements TokenPort {
   private readonly accessTokenTtl = 15 * 60; // seconds (15 min)
   private readonly refreshTokenTtl = 7 * 24 * 60 * 60; // seconds (7 days)
   private readonly mfaTokenTtl = 5 * 60; // 5 min
-
-  // =====================
-  // 🔐 GENERATE TOKENS
-  // =====================
 
   async generateTokenPair(params: {
     userId: string;
@@ -54,16 +54,19 @@ export class JwtTokenService implements TokenPort {
       sub: params.userId,
       sessionId: params.sessionId,
       typ: 'refresh',
+      jti: randomUUID(),
     };
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwt.signAsync(accessPayload, {
         secret: this.requireSecret('JWT_ACCESS_SECRET'),
         expiresIn: this.accessTokenTtl,
+        algorithm: JWT_ALGORITHM,
       }),
       this.jwt.signAsync(refreshPayload, {
         secret: this.requireSecret('JWT_REFRESH_SECRET'),
         expiresIn: this.refreshTokenTtl,
+        algorithm: JWT_ALGORITHM,
       }),
     ]);
 
@@ -102,16 +105,19 @@ export class JwtTokenService implements TokenPort {
       sub: params.branchUserId,
       sessionId: params.sessionId,
       type: 'BRANCH_USER_REFRESH',
+      jti: randomUUID(),
     };
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwt.signAsync(accessPayload, {
         secret: this.getBranchAccessSecret(),
         expiresIn: this.accessTokenTtl,
+        algorithm: JWT_ALGORITHM,
       }),
       this.jwt.signAsync(refreshPayload, {
         secret: this.getBranchRefreshSecret(),
         expiresIn: this.refreshTokenTtl,
+        algorithm: JWT_ALGORITHM,
       }),
     ]);
 
@@ -123,10 +129,6 @@ export class JwtTokenService implements TokenPort {
     };
   }
 
-  // =====================
-  // 🔐 GENERATE MFA TOKEN
-  // =====================
-
   async generateMfaToken(params: {
     userId: string;
     email: string;
@@ -136,34 +138,33 @@ export class JwtTokenService implements TokenPort {
       sub: params.userId,
       email: params.email,
       role: params.role,
-      type: 'ADMIN_MFA',
+      typ: 'mfa',
     };
 
     return this.jwt.signAsync(payload, {
       secret: this.requireSecret('JWT_MFA_SECRET'),
       expiresIn: this.mfaTokenTtl,
+      algorithm: JWT_ALGORITHM,
     });
   }
 
   async verifyMfaToken(token: string): Promise<MfaTokenPayload> {
     const payload = await this.jwt.verifyAsync<MfaTokenPayload>(token, {
       secret: this.requireSecret('JWT_MFA_SECRET'),
+      algorithms: [JWT_ALGORITHM],
     });
 
-    if (payload.type !== 'ADMIN_MFA') {
+    if (payload.typ !== 'mfa') {
       throw new Error('Invalid MFA token type');
     }
 
     return payload;
   }
 
-  // =====================
-  // 🔍 VERIFY TOKENS
-  // =====================
-
   async verifyAccessToken(token: string): Promise<AccessTokenPayload> {
     const payload = await this.jwt.verifyAsync<AccessTokenPayload>(token, {
       secret: this.requireSecret('JWT_ACCESS_SECRET'),
+      algorithms: [JWT_ALGORITHM],
     });
 
     if (payload.typ !== 'access') {
@@ -176,6 +177,7 @@ export class JwtTokenService implements TokenPort {
   async verifyRefreshToken(token: string): Promise<RefreshTokenPayload> {
     const payload = await this.jwt.verifyAsync<RefreshTokenPayload>(token, {
       secret: this.requireSecret('JWT_REFRESH_SECRET'),
+      algorithms: [JWT_ALGORITHM],
     });
 
     if (payload.typ !== 'refresh') {
@@ -191,6 +193,7 @@ export class JwtTokenService implements TokenPort {
     const payload =
       await this.jwt.verifyAsync<BranchUserRefreshTokenPayload>(token, {
         secret: this.getBranchRefreshSecret(),
+        algorithms: [JWT_ALGORITHM],
       });
 
     if (payload.type !== 'BRANCH_USER_REFRESH') {
@@ -199,10 +202,6 @@ export class JwtTokenService implements TokenPort {
 
     return payload;
   }
-
-  // =====================
-  // ⏳ EXPIRY HELPERS
-  // =====================
 
   getAccessTokenExpiry(): Date {
     return new Date(Date.now() + this.accessTokenTtl * 1000);

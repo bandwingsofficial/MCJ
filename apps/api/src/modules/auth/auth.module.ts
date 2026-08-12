@@ -62,6 +62,7 @@ import { PasswordResetRepository } from './domain/repositories/password-reset.re
 import { TokenPort } from './application/ports/token.port';
 import { TotpPort } from './application/ports/totp.port';
 import { PasswordHasherPort } from './application/ports/password-hasher.port';
+import { AuthRateLimiterPort } from './application/ports/auth-rate-limiter.port';
 
 // =====================
 // SERVICES
@@ -70,6 +71,7 @@ import { PasswordHasherPort } from './application/ports/password-hasher.port';
 import { JwtTokenService } from './infrastructure/services/jwt-token.service';
 import { BcryptPasswordHasherService } from './infrastructure/services/bcrypt-password-hasher.service';
 import { OtplibTotpService } from './infrastructure/services/otplib-totp.service';
+import { InMemoryAuthRateLimiterService } from './infrastructure/services/in-memory-auth-rate-limiter.service';
 import { UserDomainService } from './domain/services/user-domain.service';
 
 // =====================
@@ -149,6 +151,11 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
     {
       provide: AUTH_TOKENS.TOTP_PORT,
       useClass: OtplibTotpService,
+    },
+
+    {
+      provide: AUTH_TOKENS.AUTH_RATE_LIMITER,
+      useClass: InMemoryAuthRateLimiterService,
     },
 
     // =====================
@@ -241,6 +248,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
         tokenPort: TokenPort,
         domainService: UserDomainService,
         passwordHasher: PasswordHasherPort,
+        rateLimiter: AuthRateLimiterPort,
       ) =>
         new LoginUserHandler(
           userRepo,
@@ -249,6 +257,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
           tokenPort,
           domainService,
           passwordHasher,
+          rateLimiter,
         ),
 
       inject: [
@@ -263,6 +272,8 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
         UserDomainService,
 
         AUTH_TOKENS.PASSWORD_HASHER,
+
+        AUTH_TOKENS.AUTH_RATE_LIMITER,
       ],
     },
 

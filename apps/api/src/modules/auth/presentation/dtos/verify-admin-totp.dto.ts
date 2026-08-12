@@ -1,8 +1,8 @@
-// presentation/dtos/verify-admin-totp.dto.ts
-
-import { IsNotEmpty, Length, Matches } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, Length, Matches } from 'class-validator';
 
 import { Transform } from 'class-transformer';
+
+import { ClientType } from '../../domain/enums/client-type.enum';
 
 export class VerifyAdminTotpDto {
   @Transform(({ value }: { value: unknown }) =>
@@ -26,4 +26,10 @@ export class VerifyAdminTotpDto {
     message: 'TOTP code must contain only numbers',
   })
   totpCode!: string;
+
+  @IsOptional()
+  @IsEnum(ClientType, {
+    message: 'clientType must be WEB, IOS, ANDROID, ADMIN_WEB, or UNKNOWN',
+  })
+  clientType?: ClientType;
 }

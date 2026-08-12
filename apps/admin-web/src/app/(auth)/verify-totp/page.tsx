@@ -1,9 +1,12 @@
 import { TotpForm } from "@/src/features/auth/components/totp-form";
+import { GuestGuard } from "@/src/features/auth/components/guest-guard";
 
 export default function VerifyTotpPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <TotpForm />
-    </main>
+    <GuestGuard>
+      <main className="min-h-screen">
+        <TotpForm />
+      </main>
+    </GuestGuard>
   );
 }

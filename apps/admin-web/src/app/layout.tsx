@@ -2,7 +2,7 @@ import "@/src/styles/globals.css";
 
 import { Toaster } from "sonner";
 
-import { AuthProvider } from "@/src/providers/auth-provider";
+import { AppProviders } from "@/src/providers/app-providers";
 
 export default function RootLayout({
   children,
@@ -12,9 +12,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
+        <AppProviders>
           {children}
-        </AuthProvider>
+        </AppProviders>
 
         <Toaster
           position="top-right"

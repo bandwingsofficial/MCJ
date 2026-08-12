@@ -45,4 +45,14 @@ export interface BranchUserRepository {
   ): Promise<boolean>;
 
   branchExists(branchId: string): Promise<boolean>;
+
+  /**
+   * Atomically rotate refresh hash only if the expected current hash still matches.
+   */
+  rotateRefreshTokenIfMatches(params: {
+    branchUserId: string;
+    expectedHash: string;
+    newHash: string;
+    expiresAt: Date;
+  }): Promise<boolean>;
 }

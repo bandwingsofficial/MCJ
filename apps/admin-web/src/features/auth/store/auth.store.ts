@@ -2,49 +2,64 @@
 
 import { create } from "zustand";
 
-export type UserRole =
-  | "ADMIN"
-  | "SUPER_ADMIN"
-  | "BRANCH_ADMIN";
+/** Matches backend Role.ADMIN */
+export type UserRole = "ADMIN";
 
+export type AuthStatus =
+  | "UNKNOWN"
+  | "BOOTSTRAPPING"
+  | "AUTHENTICATING"
+  | "AUTHENTICATED"
+  | "UNAUTHENTICATED"
+  | "REFRESHING"
+  | "MFA_REQUIRED";
 
 export interface AuthUser {
   id: string;
-
   email: string;
-
   name: string;
-
   role: UserRole;
+  phone?: string | null;
+  mfaEnabled?: boolean;
+  sessionId?: string | null;
 }
 
 interface AuthStore {
   user: AuthUser | null;
-
+  status: AuthStatus;
   isAuthenticated: boolean;
 
-  setUser: (
-    user: AuthUser
-  ) => void;
-
+  setStatus: (status: AuthStatus) => void;
+  setUser: (user: AuthUser) => void;
   clearUser: () => void;
+  markUnauthenticated: () => void;
 }
 
-export const useAuthStore =
-  create<AuthStore>((set) => ({
-    user: null,
+export const useAuthStore = create<AuthStore>((set) => ({
+  user: null,
+  status: "UNKNOWN",
+  isAuthenticated: false,
 
-    isAuthenticated: false,
+  setStatus: (status) => set({ status }),
 
-    setUser: (user) =>
-      set({
-        user,
-        isAuthenticated: true,
-      }),
+  setUser: (user) =>
+    set({
+      user,
+      status: "AUTHENTICATED",
+      isAuthenticated: true,
+    }),
 
-    clearUser: () =>
-      set({
-        user: null,
-        isAuthenticated: false,
-      }),
-  }));
+  clearUser: () =>
+    set({
+      user: null,
+      status: "UNAUTHENTICATED",
+      isAuthenticated: false,
+    }),
+
+  markUnauthenticated: () =>
+    set({
+      user: null,
+      status: "UNAUTHENTICATED",
+      isAuthenticated: false,
+    }),
+}));

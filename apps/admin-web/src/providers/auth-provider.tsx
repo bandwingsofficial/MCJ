@@ -1,17 +1,4 @@
 "use client";
 
-import { ReactNode } from "react";
-
-import { useAuthBootstrap } from "@/src/features/auth/hooks/use-auth-bootstrap";
-
-interface Props {
-  children: ReactNode;
-}
-
-export const AuthProvider = ({
-  children,
-}: Props) => {
-  useAuthBootstrap();
-
-  return <>{children}</>;
-};
+// Kept for backwards-compatible imports; prefer AppProviders.
+export { AppProviders as AuthProvider } from "@/src/providers/app-providers";

@@ -19,10 +19,12 @@ import {
 import { useLogin } from "@/src/features/auth/hooks/use-login";
 import { AuthStorage } from "@/src/features/auth/utils/auth-storage";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { useAuthStore } from "@/src/features/auth/store/auth.store";
 
 export const LoginForm = () => {
   const router = useRouter();
   const { login, loading } = useLogin();
+  const setStatus = useAuthStore((s) => s.setStatus);
 
   const {
     register,
@@ -36,7 +38,16 @@ export const LoginForm = () => {
   const onSubmit = async (values: LoginFormValues) => {
     try {
       const response = await login(values);
+
+      if (!response.data.requiresMfa || !response.data.mfaToken) {
+        setError("root", {
+          message: "Multi-factor authentication is required for admin access.",
+        });
+        return;
+      }
+
       AuthStorage.setMfaToken(response.data.mfaToken);
+      setStatus("MFA_REQUIRED");
       router.push("/verify-totp");
     } catch (error) {
       setError("root", {

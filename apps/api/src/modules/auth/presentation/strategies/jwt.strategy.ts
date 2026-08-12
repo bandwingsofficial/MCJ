@@ -14,7 +14,7 @@ interface JwtPayload {
   sessionId: string;
   email: string;
   role: Role;
-  typ?: 'access' | 'refresh';
+  typ?: 'access' | 'refresh' | 'mfa';
   type?: string;
 }
 
@@ -36,6 +36,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: secret,
+      algorithms: ['HS256'],
     });
   }
 
@@ -44,8 +45,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Invalid token payload');
     }
 
-    // Reject refresh / branch / MFA tokens if they somehow reach this strategy
-    if (payload.typ && payload.typ !== 'access') {
+    if (payload.typ !== 'access') {
       throw new UnauthorizedException('Invalid access token type');
     }
 

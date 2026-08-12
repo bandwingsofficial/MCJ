@@ -1,4 +1,5 @@
 import { DeviceType } from '../enums/device-type.enum';
+import { ClientType } from '../enums/client-type.enum';
 import { Session } from './session.entity';
 import { ERROR_CODES } from '../errors/error-codes';
 import { DomainError } from '../errors/domain.error';
@@ -11,16 +12,18 @@ describe('Session entity', () => {
       id: 'session-1',
       userId: 'user-1',
       refreshTokenHash: 'hash-v1',
+      clientType: ClientType.WEB,
       userAgent: 'Chrome',
       ipAddress: '127.0.0.1',
-      deviceType: DeviceType.WEB,
+      deviceType: DeviceType.DESKTOP,
       expiresAt: future(),
     });
 
-  it('creates an active session', () => {
+  it('creates an active session with clientType', () => {
     const session = createSession();
 
     expect(session.isActive()).toBe(true);
+    expect(session.clientType).toBe(ClientType.WEB);
     expect(session.isOwnedBy('user-1')).toBe(true);
     expect(session.canBeUsed()).toBe(true);
   });
@@ -54,6 +57,7 @@ describe('Session entity', () => {
       id: 'session-1',
       userId: 'user-1',
       refreshTokenHash: 'hash-v1',
+      clientType: ClientType.IOS,
       userAgent: null,
       ipAddress: null,
       deviceType: DeviceType.UNKNOWN,

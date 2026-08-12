@@ -1,12 +1,14 @@
 // application/commands/login-user.command.ts
 
+import type { ClientType } from '../../domain/enums/client-type.enum';
+
 export class LoginUserCommand {
   constructor(
-    public readonly identifier: string, // 🔥 email OR phone
+    public readonly identifier: string,
     public readonly password: string,
 
-    // 🔐 session tracking
     public readonly userAgent?: string,
     public readonly ipAddress?: string,
+    public readonly clientType?: ClientType,
   ) {}
 }

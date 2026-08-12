@@ -3,6 +3,7 @@
 import { DomainError } from '../errors/domain.error';
 import { ERROR_CODES } from '../errors/error-codes';
 import { DeviceType } from '../enums/device-type.enum';
+import { ClientType } from '../enums/client-type.enum';
 
 export class Session {
   private constructor(
@@ -12,7 +13,8 @@ export class Session {
     // 🔐 token
     public refreshTokenHash: string,
 
-    // 📱 device
+    // 📱 client / device
+    public clientType: ClientType,
     public userAgent: string | null,
     public ipAddress: string | null,
     public deviceType: DeviceType,
@@ -42,6 +44,7 @@ export class Session {
     userId: string;
     refreshTokenHash: string;
 
+    clientType?: ClientType;
     userAgent?: string;
     ipAddress?: string;
     deviceType?: DeviceType;
@@ -73,6 +76,7 @@ export class Session {
 
       params.refreshTokenHash,
 
+      params.clientType ?? ClientType.UNKNOWN,
       params.userAgent ?? null,
       params.ipAddress ?? null,
       params.deviceType ?? DeviceType.UNKNOWN,
@@ -100,6 +104,7 @@ export class Session {
 
     refreshTokenHash: string;
 
+    clientType: ClientType;
     userAgent: string | null;
     ipAddress: string | null;
     deviceType: DeviceType;
@@ -121,6 +126,7 @@ export class Session {
 
       params.refreshTokenHash,
 
+      params.clientType,
       params.userAgent,
       params.ipAddress,
       params.deviceType,

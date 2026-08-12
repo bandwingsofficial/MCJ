@@ -1,24 +1,14 @@
-import {
-  AxiosError,
-  AxiosInstance,
-} from "axios";
+// src/core/interceptors/response.interceptor.ts
 
-export const setupResponseInterceptor = (
-  api: AxiosInstance
-): void => {
+import { AxiosError, AxiosInstance } from "axios";
+
+/**
+ * Pass through Axios errors so callers can inspect status/code.
+ * Friendly messages are mapped in getErrorMessage / UI layers.
+ */
+export const setupResponseInterceptor = (api: AxiosInstance): void => {
   api.interceptors.response.use(
     (response) => response,
-
-    (error: AxiosError) => {
-      const message =
-        (error.response?.data as { message?: string })?.message ??
-        (error.response?.data as { error?: string })?.error ??
-        error.message ??
-        "Something went wrong";
-
-      return Promise.reject(
-        new Error(message)
-      );
-    }
+    (error: AxiosError) => Promise.reject(error)
   );
 };

@@ -1,9 +1,12 @@
 import { LoginForm } from "@/src/features/auth/components/login-form";
+import { GuestGuard } from "@/src/features/auth/components/guest-guard";
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <LoginForm />
-    </main>
+    <GuestGuard>
+      <main className="min-h-screen">
+        <LoginForm />
+      </main>
+    </GuestGuard>
   );
 }

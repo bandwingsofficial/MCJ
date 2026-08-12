@@ -1,11 +1,8 @@
 "use client";
 
-// src/features/auth/hooks/use-auth.ts
-
 import { useRouter } from "next/navigation";
 
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
-
 import { authService } from "@/src/features/auth/services/auth.service";
 
 export const useAuth = () => {
@@ -13,26 +10,39 @@ export const useAuth = () => {
 
   const {
     user,
+    status,
     isAuthenticated,
     setUser,
     clearUser,
+    setStatus,
   } = useAuthStore();
 
- const logout = async () => {
-  try {
-    await authService.logout();
-  } finally {
-    clearUser();
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } finally {
+      clearUser();
+      router.replace("/login");
+    }
+  };
 
-    router.replace("/login");
-  }
-};
+  const logoutAll = async () => {
+    try {
+      await authService.logoutAll();
+    } finally {
+      clearUser();
+      router.replace("/login");
+    }
+  };
 
   return {
     user,
+    status,
     isAuthenticated,
     setUser,
     clearUser,
+    setStatus,
     logout,
+    logoutAll,
   };
 };

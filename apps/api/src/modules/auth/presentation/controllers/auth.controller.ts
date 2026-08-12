@@ -159,6 +159,8 @@ export class AuthController {
         getUserAgent(req),
 
         getClientIp(req),
+
+        dto.clientType,
       ),
     );
 

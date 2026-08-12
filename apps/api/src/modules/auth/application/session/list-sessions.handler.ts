@@ -66,6 +66,8 @@ export class ListSessionsHandler {
         new SessionDto(
           session.id,
 
+          session.clientType,
+
           this.formatDevice(session),
 
           session.ipAddress,

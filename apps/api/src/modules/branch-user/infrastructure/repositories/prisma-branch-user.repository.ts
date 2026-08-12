@@ -244,4 +244,27 @@ export class PrismaBranchUserRepository
 
     return where;
   }
+
+  async rotateRefreshTokenIfMatches(params: {
+    branchUserId: string;
+    expectedHash: string;
+    newHash: string;
+    expiresAt: Date;
+  }): Promise<boolean> {
+    const result = await this.prisma.branchUser.updateMany({
+      where: {
+        id: params.branchUserId,
+        refreshToken: params.expectedHash,
+        isDeleted: false,
+        isActive: true,
+      },
+      data: {
+        refreshToken: params.newHash,
+        refreshTokenExpiresAt: params.expiresAt,
+        updatedAt: new Date(),
+      },
+    });
+
+    return result.count === 1;
+  }
 }

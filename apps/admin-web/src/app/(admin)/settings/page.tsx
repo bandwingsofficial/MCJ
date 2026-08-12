@@ -1,25 +1,19 @@
+"use client";
+
+import { SecuritySessionsPanel } from "@/src/features/auth/components/security-sessions-panel";
+
 export default function SettingsPage() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold">System Settings</h1>
-
-      <p className="mt-2 text-gray-600">
-        Configure institute-wide settings, user roles, permissions, academic
-        preferences, notifications, integrations, security, and system
-        configurations.
-      </p>
-
-      <div className="mt-6 rounded-lg border border-dashed border-gray-300 p-8 text-center">
-        <p className="text-lg font-medium text-gray-700">
-          Institute Settings
+    <div className="mx-auto max-w-4xl space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
+        <p className="mt-2 text-slate-600">
+          Manage account security and signed-in devices for your admin access.
         </p>
+      </div>
 
-        <p className="mt-2 text-gray-500">
-          This module will allow administrators to manage institute details,
-          branches, academic years, notification preferences, user roles,
-          permissions, payment gateways, email & SMS settings, integrations,
-          backup options, and other global configurations.
-        </p>
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <SecuritySessionsPanel />
       </div>
     </div>
   );

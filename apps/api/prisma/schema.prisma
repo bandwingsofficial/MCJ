@@ -44,6 +44,7 @@ model Session {
   id               String     @id @default(uuid())
   userId           String
   refreshTokenHash String     @unique
+  clientType       ClientType @default(UNKNOWN)
   deviceType       DeviceType @default(UNKNOWN)
   userAgent        String?
   ipAddress        String?
@@ -58,6 +59,7 @@ model Session {
 
   @@index([userId])
   @@index([userId, isRevoked])
+  @@index([clientType])
   @@index([expiresAt])
   @@index([lastUsedAt])
   @@index([createdAt])
@@ -1014,6 +1016,15 @@ enum DeviceType {
   MOBILE
   DESKTOP
   TABLET
+  UNKNOWN
+}
+
+/// Explicit client platform for Settings / multi-device session UI (web + mobile).
+enum ClientType {
+  WEB
+  IOS
+  ANDROID
+  ADMIN_WEB
   UNKNOWN
 }
 

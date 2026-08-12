@@ -4,6 +4,7 @@ import { ERROR_CODES } from '../../domain/errors/error-codes';
 import { UnauthorizedError } from '../errors/unauthorized.error';
 import { Session } from '../../domain/entities/session.entity';
 import { DeviceType } from '../../domain/enums/device-type.enum';
+import { ClientType } from '../../domain/enums/client-type.enum';
 import { Role } from '../../domain/enums/role.enum';
 import { AccountStatus } from '../../domain/enums/account-status.enum';
 import { User } from '../../domain/entities/user.entity';
@@ -18,7 +19,8 @@ describe('RefreshTokenHandler', () => {
       id: 'session-1',
       userId: overrides?.userId ?? 'user-1',
       refreshTokenHash: overrides?.hash ?? refreshHash,
-      deviceType: DeviceType.WEB,
+      clientType: ClientType.WEB,
+      deviceType: DeviceType.DESKTOP,
       expiresAt: new Date(Date.now() + 60_000),
     });
 
@@ -91,6 +93,7 @@ describe('RefreshTokenHandler', () => {
       rotateResult: true,
     });
 
+    // rate limiter not needed in refresh tests
     const result = await handler.execute(
       new RefreshTokenCommand(refreshToken, '127.0.0.1', 'Chrome'),
     );

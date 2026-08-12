@@ -1,19 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { Input } from "@/src/shared/components/ui/input";
 import { Avatar } from "@/src/shared/components/ui/avatar";
 import { useEffect, useState, useRef } from "react";
 import { Settings, LogOut, ChevronDown } from "lucide-react";
 import { useAuth } from "@/src/features/auth/hooks/use-auth";
 import { toast } from "sonner";
-import { cn } from "@/src/shared/lib/cn";
 
 export function AdminHeader() {
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   useEffect(() => {
     const updateTime = () => {
@@ -45,7 +45,6 @@ export function AdminHeader() {
     }
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -59,9 +58,15 @@ export function AdminHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const initials = (user?.name ?? "A")
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm">
-      {/* LEFT: SEARCH */}
       <div className="w-[380px]">
         <Input
           placeholder="Search analytics, students or courses..."
@@ -69,41 +74,49 @@ export function AdminHeader() {
         />
       </div>
 
-      {/* RIGHT SIDE */}
       <div className="flex items-center gap-5">
-        {/* TIME */}
         <div className="text-sm font-medium text-gray-800">{time}</div>
-
-        {/* DATE */}
         <div className="text-sm text-gray-500">{date}</div>
 
-        {/* SETTINGS ICON (optional) */}
-        <button className="text-gray-400 hover:text-gray-700 transition-colors">
+        <Link
+          href="/settings"
+          className="text-gray-400 hover:text-gray-700 transition-colors"
+          aria-label="Settings"
+        >
           <Settings className="w-5 h-5" />
-        </button>
+        </Link>
 
-        {/* PROFILE / AVATAR WITH DROPDOWN */}
         <div
           className="relative cursor-pointer"
           onMouseEnter={() => setDropdownOpen(true)}
           onMouseLeave={() => setDropdownOpen(false)}
         >
           <div className="flex items-center gap-2">
-            <Avatar alt="A" fallback="A" />
+            <Avatar alt={user?.name ?? "Admin"} fallback={initials} />
             <ChevronDown className="w-4 h-4 text-gray-400" />
           </div>
 
           {dropdownOpen && (
             <div
               ref={dropdownRef}
-              className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50 animate-in fade-in slide-in-from-top-2"
+              className="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50"
               onMouseEnter={() => setDropdownOpen(true)}
               onMouseLeave={() => setDropdownOpen(false)}
             >
               <div className="px-4 py-2 border-b border-gray-100">
-                <p className="text-sm font-medium text-gray-800">Admin</p>
-                <p className="text-xs text-gray-500">admin@mcj.com</p>
+                <p className="text-sm font-medium text-gray-800">
+                  {user?.name ?? "Admin"}
+                </p>
+                <p className="text-xs text-gray-500">{user?.email ?? ""}</p>
               </div>
+
+              <Link
+                href="/settings"
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <Settings className="w-4 h-4" />
+                Security settings
+              </Link>
 
               <button
                 onClick={handleLogout}

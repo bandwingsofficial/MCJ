@@ -86,12 +86,29 @@ export class RefreshBranchUserTokenHandler {
             branchUser.permissions,
         });
 
-      branchUser.rotateRefreshToken(
-        hashToken(tokens.refreshToken),
-        tokens.refreshTokenExpiresAt,
-      );
+      const newHash = hashToken(tokens.refreshToken);
 
-      await this.branchUserRepo.save(branchUser);
+      const rotated =
+        await this.branchUserRepo.rotateRefreshTokenIfMatches(
+          {
+            branchUserId: branchUser.id,
+            expectedHash: incomingHash,
+            newHash,
+            expiresAt: tokens.refreshTokenExpiresAt,
+          },
+        );
+
+      if (!rotated) {
+        branchUser.revokeRefreshToken();
+        await this.branchUserRepo.save(branchUser);
+
+        throw new ValidationError(
+          'Refresh token already rotated',
+          ERROR_CODES.INVALID_TOKEN,
+          undefined,
+          401,
+        );
+      }
 
       return new RefreshBranchUserTokenResult(
         tokens.accessToken,

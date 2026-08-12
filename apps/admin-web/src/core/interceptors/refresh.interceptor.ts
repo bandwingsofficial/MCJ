@@ -7,13 +7,13 @@ import axios, {
 } from "axios";
 
 import { env } from "@/src/core/config/env";
-
 import { TokenStorage } from "@/src/core/storage/token-storage";
-
 import { RefreshTokenResponseDto } from "@/src/core/types/auth.types";
+import { useAuthStore } from "@/src/features/auth/store/auth.store";
+import { AuthStorage } from "@/src/features/auth/utils/auth-storage";
+import { clearAuthCaches } from "@/src/features/auth/utils/clear-auth-caches";
 
-interface RetryRequestConfig
-  extends InternalAxiosRequestConfig {
+interface RetryRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
@@ -21,9 +21,16 @@ let isRefreshing = false;
 
 let failedQueue: Array<{
   resolve: (token: string) => void;
-
   reject: (error: Error) => void;
 }> = [];
+
+const AUTH_SKIP_REFRESH_PATHS = [
+  "/admin/auth/login",
+  "/admin/auth/verify-totp",
+  "/auth/refresh",
+  "/auth/login",
+  "/auth/register",
+];
 
 const processQueue = (
   error: Error | null,
@@ -34,28 +41,40 @@ const processQueue = (
       promise.reject(error);
       return;
     }
-
     promise.resolve(token ?? "");
   });
-
   failedQueue = [];
 };
 
-export const setupRefreshInterceptor = (
-  api: AxiosInstance
-): void => {
+const shouldSkipRefresh = (url?: string): boolean => {
+  if (!url) {
+    return false;
+  }
+  return AUTH_SKIP_REFRESH_PATHS.some((path) => url.includes(path));
+};
+
+const forceLogout = (): void => {
+  TokenStorage.clear();
+  AuthStorage.clearMfaToken();
+  clearAuthCaches();
+  useAuthStore.getState().markUnauthenticated();
+
+  if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+    window.location.href = "/login";
+  }
+};
+
+export const setupRefreshInterceptor = (api: AxiosInstance): void => {
   api.interceptors.response.use(
     (response) => response,
-
-    async (
-      error: AxiosError
-    ): Promise<unknown> => {
-      const originalRequest =
-        error.config as RetryRequestConfig;
+    async (error: AxiosError): Promise<unknown> => {
+      const originalRequest = error.config as RetryRequestConfig | undefined;
 
       if (
+        !originalRequest ||
         error.response?.status !== 401 ||
-        originalRequest._retry
+        originalRequest._retry ||
+        shouldSkipRefresh(originalRequest.url)
       ) {
         return Promise.reject(error);
       }
@@ -63,88 +82,60 @@ export const setupRefreshInterceptor = (
       originalRequest._retry = true;
 
       if (isRefreshing) {
-        return new Promise(
-          (resolve, reject) => {
-            failedQueue.push({
-              resolve: (token) => {
-                if (
-                  originalRequest.headers
-                ) {
-                  originalRequest.headers.Authorization =
-                    `Bearer ${token}`;
-                }
-
-                resolve(
-                  api(originalRequest)
-                );
-              },
-              reject,
-            });
-          }
-        );
+        return new Promise((resolve, reject) => {
+          failedQueue.push({
+            resolve: (token) => {
+              if (originalRequest.headers) {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+              }
+              resolve(api(originalRequest));
+            },
+            reject,
+          });
+        });
       }
 
       isRefreshing = true;
+      useAuthStore.getState().setStatus("REFRESHING");
 
       try {
-        const refreshToken =
-          TokenStorage.getRefreshToken();
+        const refreshToken = TokenStorage.getRefreshToken();
 
         if (!refreshToken) {
-          throw new Error(
-            "Refresh token not found"
-          );
+          throw new Error("Refresh token not found");
         }
 
-        const response =
-          await axios.post<RefreshTokenResponseDto>(
-            `${env.apiBaseUrl}/auth/refresh`,
-            {
-              refreshToken,
-            }
-          );
-
-        const {
-          accessToken,
-          refreshToken:
-            newRefreshToken,
-        } = response.data.data;
-
-        TokenStorage.setAccessToken(
-          accessToken
+        const response = await axios.post<RefreshTokenResponseDto>(
+          `${env.apiBaseUrl}/auth/refresh`,
+          { refreshToken }
         );
 
-        TokenStorage.setRefreshToken(
-          newRefreshToken
-        );
+        const { accessToken, refreshToken: newRefreshToken } =
+          response.data.data;
 
-        processQueue(
-          null,
-          accessToken
-        );
+        TokenStorage.setAccessToken(accessToken);
+        TokenStorage.setRefreshToken(newRefreshToken);
 
-        if (
-          originalRequest.headers
-        ) {
-          originalRequest.headers.Authorization =
-            `Bearer ${accessToken}`;
+        processQueue(null, accessToken);
+
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        }
+
+        if (useAuthStore.getState().user) {
+          useAuthStore.getState().setStatus("AUTHENTICATED");
         }
 
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(
-          refreshError as Error,
+          refreshError instanceof Error
+            ? refreshError
+            : new Error("Refresh failed"),
           null
         );
-
-        TokenStorage.clear();
-
-        window.location.href =
-          "/admin/login";
-
-        return Promise.reject(
-          refreshError
-        );
+        forceLogout();
+        return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }

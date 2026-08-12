@@ -20,6 +20,7 @@ import {
 import { useVerifyTotp } from "@/src/features/auth/hooks/use-verify-totp";
 import { AuthStorage } from "@/src/features/auth/utils/auth-storage";
 import { useAuth } from "@/src/features/auth/hooks/use-auth";
+import { authService } from "@/src/features/auth/services/auth.service";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 export const TotpForm = () => {
@@ -40,7 +41,7 @@ export const TotpForm = () => {
     const token = AuthStorage.getMfaToken();
 
     if (!token) {
-      router.replace("/admin/login");
+      router.replace("/login");
     }
   }, [router]);
 
@@ -49,19 +50,32 @@ export const TotpForm = () => {
       const mfaToken = AuthStorage.getMfaToken();
 
       if (!mfaToken) {
+        router.replace("/login");
         return;
       }
 
       const response = await verifyTotp({
         mfaToken,
         totpCode: values.totpCode,
+        clientType: "ADMIN_WEB",
       });
+
+      let sessionId = response.data.sessionId;
+
+      try {
+        const profile = await authService.getProfile();
+        sessionId = profile.data.sessionId ?? sessionId;
+      } catch {
+        // Profile fetch is best-effort; tokens are already stored
+      }
 
       setUser({
         id: response.data.id,
         email: response.data.email,
         name: response.data.name,
         role: response.data.role,
+        sessionId,
+        mfaEnabled: true,
       });
 
       AuthStorage.clearMfaToken();
@@ -634,6 +648,19 @@ export const TotpForm = () => {
                   <Button type="submit" loading={loading}>
                     Verify
                   </Button>
+                </div>
+
+                <div className="mt-4 text-center">
+                  <button
+                    type="button"
+                    className="text-sm text-slate-400 underline-offset-2 hover:text-white hover:underline"
+                    onClick={() => {
+                      AuthStorage.clearMfaToken();
+                      router.replace("/login");
+                    }}
+                  >
+                    Back to login
+                  </button>
                 </div>
               </form>
 

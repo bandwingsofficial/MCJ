@@ -15,6 +15,7 @@ import { UserDomainService } from '../../domain/services/user-domain.service';
 
 import type { PasswordHasherPort } from '../ports/password-hasher.port';
 import type { TokenPort } from '../ports/token.port';
+import type { AuthRateLimiterPort } from '../ports/auth-rate-limiter.port';
 
 import { Email } from '../../domain/value-objects/email.vo';
 import { Phone } from '../../domain/value-objects/phone.vo';
@@ -24,6 +25,7 @@ import { AuditLog } from '../../domain/entities/audit-log.entity';
 import { User } from '../../domain/entities/user.entity';
 
 import { AuditAction } from '../../domain/enums/audit-action.enum';
+import { ClientType } from '../../domain/enums/client-type.enum';
 
 import { DomainError } from '../../domain/errors/domain.error';
 import { ERROR_CODES } from '../../domain/errors/error-codes';
@@ -37,6 +39,9 @@ import { hashToken } from '../utils/token.util';
 import { mapDomainError } from '../utils/map-domain-error.util';
 
 import { parseDeviceType } from '../utils/device.util';
+
+const LOGIN_MAX_ATTEMPTS = 10;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 
 export class LoginUserHandler {
   private readonly logger = new Logger(LoginUserHandler.name);
@@ -58,6 +63,9 @@ export class LoginUserHandler {
 
     @Inject(AUTH_TOKENS.PASSWORD_HASHER)
     private readonly passwordHasher: PasswordHasherPort,
+
+    @Inject(AUTH_TOKENS.AUTH_RATE_LIMITER)
+    private readonly rateLimiter: AuthRateLimiterPort,
   ) {}
 
   async execute(command: LoginUserCommand): Promise<LoginUserResult> {
@@ -76,6 +84,18 @@ export class LoginUserHandler {
       }
 
       const rawIdentifier = command.identifier.trim().toLowerCase();
+
+      this.rateLimiter.consume({
+        key: `login:ip:${command.ipAddress ?? 'unknown'}`,
+        maxAttempts: LOGIN_MAX_ATTEMPTS,
+        windowMs: LOGIN_WINDOW_MS,
+      });
+
+      this.rateLimiter.consume({
+        key: `login:id:${rawIdentifier}`,
+        maxAttempts: LOGIN_MAX_ATTEMPTS,
+        windowMs: LOGIN_WINDOW_MS,
+      });
 
       let user: User | null = null;
 
@@ -216,6 +236,8 @@ export class LoginUserHandler {
         userId: user.id,
 
         refreshTokenHash,
+
+        clientType: command.clientType ?? ClientType.WEB,
 
         userAgent: command.userAgent,
 

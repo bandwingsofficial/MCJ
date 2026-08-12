@@ -32,6 +32,8 @@ import { parseDeviceType } from '../../utils/device.util';
 import { hashToken } from '../../utils/token.util';
 import { mapDomainError } from '../../utils/map-domain-error.util';
 
+import { ClientType } from '../../../domain/enums/client-type.enum';
+
 export class VerifyAdminTotpHandler {
   private readonly logger = new Logger(VerifyAdminTotpHandler.name);
 
@@ -78,7 +80,7 @@ export class VerifyAdminTotpHandler {
       try {
         payload = await this.tokenPort.verifyMfaToken(command.mfaToken);
 
-        if (payload.type !== 'ADMIN_MFA') {
+        if (payload.typ !== 'mfa') {
           throw new UnauthorizedError(
             'Invalid MFA token',
             ERROR_CODES.INVALID_TOKEN,
@@ -191,6 +193,8 @@ export class VerifyAdminTotpHandler {
         userId: admin.id,
 
         refreshTokenHash,
+
+        clientType: command.clientType ?? ClientType.ADMIN_WEB,
 
         userAgent: command.userAgent,
 

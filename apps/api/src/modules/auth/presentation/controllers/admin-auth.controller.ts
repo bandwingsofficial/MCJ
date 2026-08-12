@@ -75,14 +75,16 @@ export class AdminAuthController {
 
     @Req() req: Request,
   ) {
-    const result = await this.verifyAdminTotpHandler.execute(
+      const result = await this.verifyAdminTotpHandler.execute(
       new VerifyAdminTotpCommand(
         dto.mfaToken,
 
         dto.totpCode,
 
-        getClientIp(req),
         getUserAgent(req),
+        getClientIp(req),
+
+        dto.clientType,
       ),
     );
 

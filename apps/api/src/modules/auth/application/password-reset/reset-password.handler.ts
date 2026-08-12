@@ -245,9 +245,6 @@ export class ResetPasswordHandler {
 
     await this.userRepo.updatePassword(user.id, newPasswordHash);
 
-    // Invalidate any lingering access-token version bookkeeping
-    await this.userRepo.incrementTokenVersion(user.id);
-
     // =====================
     // ✅ MARK TOKEN USED
     // =====================
@@ -258,6 +255,8 @@ export class ResetPasswordHandler {
 
     // =====================
     // 🔥 REVOKE SESSIONS
+    // Session revocation is the source of truth for credential invalidation.
+    // User.tokenVersion is unused and intentionally not consulted.
     // =====================
 
     await this.sessionRepo.revokeAllByUserId(user.id);
