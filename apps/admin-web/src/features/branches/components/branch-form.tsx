@@ -149,11 +149,13 @@ export function BranchForm({
     codeManuallyEditedRef.current = isEdit;
     lastSuggestedCodeRef.current =
       defaultValues.branchCode?.toUpperCase() ?? "";
-    setNameTouched(false);
-    setCodeTouched(false);
+    // Run availability with excludeId so the current branch name/code
+    // show as available rather than a false duplicate.
+    setNameTouched(true);
+    setCodeTouched(true);
     setNameAvailable(null);
-    setCodeAvailable(null);
     setNameAsyncError(null);
+    setCodeAvailable(null);
     setCodeAsyncError(null);
   }, [
     excludeId,
@@ -220,7 +222,7 @@ export function BranchForm({
     return () => clearTimeout(timer);
   }, [branchName, isEdit, setValue]);
 
-  // Live name uniqueness
+  // Live name uniqueness (case-insensitive via backend; exclude current id in edit)
   useEffect(() => {
     const trimmed = (branchName ?? "").trim();
 
@@ -246,11 +248,13 @@ export function BranchForm({
           return;
         }
 
-        setNameAvailable(
-          response.data.branchNameAvailable
-        );
+        const available = response.data.branchNameAvailable;
+        setNameAvailable(available);
         setNameAsyncError(
-          response.data.branchNameMessage
+          available === false
+            ? response.data.branchNameMessage ??
+                "Branch name already exists."
+            : null
         );
       } catch {
         if (requestId !== nameCheckIdRef.current) {
@@ -294,11 +298,13 @@ export function BranchForm({
           return;
         }
 
-        setCodeAvailable(
-          response.data.branchCodeAvailable
-        );
+        const available = response.data.branchCodeAvailable;
+        setCodeAvailable(available);
         setCodeAsyncError(
-          response.data.branchCodeMessage
+          available === false
+            ? response.data.branchCodeMessage ??
+                "Branch code already exists."
+            : null
         );
       } catch {
         if (requestId !== codeCheckIdRef.current) {
@@ -316,15 +322,53 @@ export function BranchForm({
     return () => clearTimeout(timer);
   }, [branchCode, excludeId, codeTouched]);
 
+  const applyConflictFromError = (error: unknown) => {
+    const message =
+      error instanceof Error ? error.message : "";
+    const lower = message.toLowerCase();
+
+    if (
+      lower.includes("branch name") ||
+      (lower.includes("name") && lower.includes("already exists"))
+    ) {
+      setNameTouched(true);
+      setNameAvailable(false);
+      setNameAsyncError(
+        "Branch name already exists."
+      );
+      return;
+    }
+
+    if (
+      lower.includes("branch code") ||
+      (lower.includes("code") && lower.includes("already exists"))
+    ) {
+      setCodeTouched(true);
+      setCodeAvailable(false);
+      setCodeAsyncError(
+        "Branch code already exists."
+      );
+      return;
+    }
+
+    if (lower.includes("already exists")) {
+      setNameTouched(true);
+      setNameAvailable(false);
+      setNameAsyncError(
+        message.trim() || "Branch name already exists."
+      );
+    }
+  };
+
   const nameRegister = register("branchName");
   const codeRegister = register("branchCode");
 
   const nameState: FieldVisualState = nameChecking
     ? "checking"
-    : !nameTouched
-      ? "neutral"
-      : nameAvailable === false || errors.branchName
-        ? "invalid"
+    : nameAvailable === false || errors.branchName
+      ? "invalid"
+      : !nameTouched
+        ? "neutral"
         : nameAvailable === true
           ? "valid"
           : errors.branchName
@@ -333,10 +377,10 @@ export function BranchForm({
 
   const codeState: FieldVisualState = codeChecking
     ? "checking"
-    : !codeTouched
-      ? "neutral"
-      : codeAvailable === false || errors.branchCode
-        ? "invalid"
+    : codeAvailable === false || errors.branchCode
+      ? "invalid"
+      : !codeTouched
+        ? "neutral"
         : codeAvailable === true
           ? "valid"
           : errors.branchCode
@@ -414,12 +458,69 @@ export function BranchForm({
     <form
       onSubmit={handleSubmit(async (formValues) => {
         if (
+          nameChecking ||
+          codeChecking ||
           nameAvailable === false ||
           codeAvailable === false
         ) {
           return;
         }
-        await onSubmit(formValues);
+
+        const trimmedName = formValues.branchName.trim();
+        const trimmedCode = formValues.branchCode.trim();
+
+        // Final authoritative availability check before submit (race-safe).
+        try {
+          setNameChecking(true);
+          setCodeChecking(true);
+
+          const response =
+            await branchService.checkAvailability({
+              branchName: trimmedName,
+              branchCode: trimmedCode,
+              excludeId,
+            });
+
+          if (response.data.branchNameAvailable === false) {
+            setNameTouched(true);
+            setNameAvailable(false);
+            setNameAsyncError(
+              response.data.branchNameMessage ??
+                "Branch name already exists."
+            );
+            return;
+          }
+
+          if (response.data.branchCodeAvailable === false) {
+            setCodeTouched(true);
+            setCodeAvailable(false);
+            setCodeAsyncError(
+              response.data.branchCodeMessage ??
+                "Branch code already exists."
+            );
+            return;
+          }
+
+          setNameAvailable(true);
+          setNameAsyncError(null);
+          setCodeAvailable(true);
+          setCodeAsyncError(null);
+        } catch {
+          // If the pre-check fails, still attempt submit and rely on backend.
+        } finally {
+          setNameChecking(false);
+          setCodeChecking(false);
+        }
+
+        try {
+          await onSubmit({
+            ...formValues,
+            branchName: trimmedName,
+            branchCode: trimmedCode,
+          });
+        } catch (error) {
+          applyConflictFromError(error);
+        }
       })}
       className="space-y-5"
     >
@@ -435,7 +536,7 @@ export function BranchForm({
         >
           <Input
             {...nameRegister}
-            placeholder="Branch Name"
+            placeholder="Enter branch name"
             className={validatedFieldInputClass(nameState)}
             onBlur={(event) => {
               nameRegister.onBlur(event);
@@ -461,7 +562,7 @@ export function BranchForm({
         >
           <Input
             {...codeRegister}
-            placeholder="Branch Code"
+            placeholder="Auto-generated branch code"
             className={validatedFieldInputClass(codeState)}
             onBlur={(event) => {
               codeRegister.onBlur(event);
@@ -494,7 +595,7 @@ export function BranchForm({
         >
           <Input
             {...emailField.inputProps}
-            placeholder="Email"
+            placeholder="Enter branch email"
           />
         </ValidatedField>
 
@@ -506,7 +607,7 @@ export function BranchForm({
         >
           <Input
             {...phoneField.inputProps}
-            placeholder="Phone"
+            placeholder="Enter branch phone number"
           />
         </ValidatedField>
 
@@ -516,12 +617,18 @@ export function BranchForm({
           state={address1Field.state}
           errorMessage={address1Field.errorMessage}
         >
-          <Input {...address1Field.inputProps} />
+          <Input
+            {...address1Field.inputProps}
+            placeholder="Enter address line 1"
+          />
         </ValidatedField>
 
         <div className="min-w-0">
           <Label>Address Line 2</Label>
-          <Input {...register("addressLine2")} />
+          <Input
+            {...register("addressLine2")}
+            placeholder="Enter address line 2 (optional)"
+          />
           <div className="mt-1 min-h-[1.25rem]" />
         </div>
 
@@ -531,7 +638,10 @@ export function BranchForm({
           state={cityField.state}
           errorMessage={cityField.errorMessage}
         >
-          <Input {...cityField.inputProps} />
+          <Input
+            {...cityField.inputProps}
+            placeholder="Enter city"
+          />
         </ValidatedField>
 
         <ValidatedField
@@ -540,7 +650,10 @@ export function BranchForm({
           state={stateField.state}
           errorMessage={stateField.errorMessage}
         >
-          <Input {...stateField.inputProps} />
+          <Input
+            {...stateField.inputProps}
+            placeholder="Enter state"
+          />
         </ValidatedField>
 
         <ValidatedField
@@ -549,7 +662,10 @@ export function BranchForm({
           state={countryField.state}
           errorMessage={countryField.errorMessage}
         >
-          <Input {...countryField.inputProps} />
+          <Input
+            {...countryField.inputProps}
+            placeholder="Enter country"
+          />
         </ValidatedField>
 
         <ValidatedField
@@ -558,7 +674,10 @@ export function BranchForm({
           state={postalField.state}
           errorMessage={postalField.errorMessage}
         >
-          <Input {...postalField.inputProps} />
+          <Input
+            {...postalField.inputProps}
+            placeholder="Enter postal code"
+          />
         </ValidatedField>
 
         <ValidatedField
@@ -571,6 +690,7 @@ export function BranchForm({
             type="number"
             step="any"
             {...latField.inputProps}
+            placeholder="Enter latitude"
           />
         </ValidatedField>
 
@@ -584,13 +704,17 @@ export function BranchForm({
             type="number"
             step="any"
             {...lngField.inputProps}
+            placeholder="Enter longitude"
           />
         </ValidatedField>
       </div>
 
       <div>
         <Label>Description</Label>
-        <Textarea {...register("description")} />
+        <Textarea
+          {...register("description")}
+          placeholder="Enter branch description (optional)"
+        />
         <FormError
           message={errors.description?.message}
         />

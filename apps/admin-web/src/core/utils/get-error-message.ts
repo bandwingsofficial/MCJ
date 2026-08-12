@@ -28,6 +28,15 @@ export const getErrorMessage = (error: unknown): string => {
     const message = data?.message;
 
     if (code && CODE_MESSAGES[code]) {
+      // Prefer explicit API messages (e.g. "Branch name already exists.")
+      if (
+        status &&
+        status < 500 &&
+        typeof message === "string" &&
+        message.trim()
+      ) {
+        return message;
+      }
       return CODE_MESSAGES[code];
     }
 

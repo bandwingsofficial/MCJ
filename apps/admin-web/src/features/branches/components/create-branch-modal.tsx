@@ -31,16 +31,9 @@ export function CreateBranchModal({
   const handleSubmit = async (
     values: CreateBranchFormValues
   ) => {
-    try {
-      await createBranch(values);
-
-      onSuccess();
-
-      onClose();
-    } catch {
-      // Error toast already handled
-      // inside useCreateBranch hook.
-    }
+    await createBranch(values);
+    onSuccess();
+    onClose();
   };
 
   return (
