@@ -27,6 +27,7 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 type DialogAction =
   | "delete"
+  | "deactivate"
   | "restore"
   | "permanent-delete"
   | null;
@@ -95,6 +96,13 @@ export function CategoriesPage() {
     setDialogAction("delete");
   };
 
+  const openDeactivateDialog = (
+    category: CategoryListItem
+  ) => {
+    setSelectedCategory(category);
+    setDialogAction("deactivate");
+  };
+
   const openRestoreDialog = (
     category: CategoryListItem
   ) => {
@@ -127,6 +135,12 @@ export function CategoriesPage() {
         switch (action) {
           case "delete":
             await deleteCategory(
+              category.id
+            );
+            break;
+
+          case "deactivate":
+            await deactivateCategory(
               category.id
             );
             break;
@@ -282,6 +296,12 @@ export function CategoriesPage() {
                 onDeactivate={async (
                   category
                 ) => {
+                  if (category.branchId) {
+                    openDeactivateDialog(
+                      category
+                    );
+                    return;
+                  }
                   await deactivateCategory(
                     category.id
                   );
@@ -402,7 +422,12 @@ export function CategoriesPage() {
             : dialogAction ===
                 "permanent-delete"
               ? "Permanently delete category?"
-              : "Delete category?"
+              : dialogAction ===
+                  "deactivate"
+                ? "Category is assigned to branches"
+                : selectedCategory?.branchId
+                  ? "Category is assigned to branches"
+                  : "Archive category?"
         }
         description={
           dialogAction === "restore"
@@ -410,7 +435,12 @@ export function CategoriesPage() {
             : dialogAction ===
                 "permanent-delete"
               ? "This action cannot be undone."
-              : "This category will be archived and will remain available for restoration."
+              : dialogAction ===
+                  "deactivate"
+                ? "This category is currently assigned to one or more branches. Deactivating it will also remove it from those branch assignments. Do you want to continue?"
+                : selectedCategory?.branchId
+                  ? "This category is currently assigned to one or more branches. Archiving it will remove it from those branch assignments. Continue?"
+                  : "This category will be archived and will remain available for restoration."
         }
         confirmLabel={
           dialogAction === "restore"
@@ -418,7 +448,10 @@ export function CategoriesPage() {
             : dialogAction ===
                 "permanent-delete"
               ? "Permanently Delete"
-              : "Delete"
+              : dialogAction ===
+                  "deactivate"
+                ? "Deactivate"
+                : "Archive"
         }
         loadingLabel={
           dialogAction ===

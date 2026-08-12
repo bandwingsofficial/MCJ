@@ -28,15 +28,18 @@ export class BulkDeactivateCategoryHandler {
         continue;
       }
 
+      const previousBranchId = category.branchId;
+
       if (category.displayOrder !== null) {
         await this.categoryRepo.closeDisplayOrderGap(
           category.displayOrder,
-          category.branchId,
+          previousBranchId,
         );
       }
 
       category.update({
         displayOrder: null,
+        branchId: null,
         updatedBy: command.updatedBy,
       });
 

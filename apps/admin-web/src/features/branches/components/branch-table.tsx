@@ -30,19 +30,11 @@ interface BranchTableProps {
 
   reorderDisabled?: boolean;
 
-  onEdit: (branch: BranchListItem) => void;
-
-  onView: (branch: BranchListItem) => void;
-
-  onDelete: (branch: BranchListItem) => void;
-
-  onRestore: (branch: BranchListItem) => void;
+  onManage: (branch: BranchListItem) => void;
 
   onActivate: (branch: BranchListItem) => void;
 
   onDeactivate: (branch: BranchListItem) => void;
-
-  onPermanentDelete: (branch: BranchListItem) => void;
 
   onReorder: (payload: {
     branchId: string;
@@ -62,13 +54,9 @@ export function BranchTable({
   branches,
   actionsDisabled = false,
   reorderDisabled = false,
-  onEdit,
-  onView,
-  onDelete,
-  onRestore,
+  onManage,
   onActivate,
   onDeactivate,
-  onPermanentDelete,
   onReorder,
 }: BranchTableProps) {
   const [rows, setRows] = useState(branches);
@@ -231,7 +219,13 @@ export function BranchTable({
               </TableCell>
 
               <TableCell className="text-[15px] font-medium text-slate-900">
-                {branch.branchName}
+                <button
+                  type="button"
+                  className="text-left text-[#2447A8] hover:underline"
+                  onClick={() => onManage(branch)}
+                >
+                  {branch.branchName}
+                </button>
               </TableCell>
 
               <TableCell>
@@ -255,13 +249,9 @@ export function BranchTable({
                   disabled={
                     actionsDisabled || isSavingOrder
                   }
-                  onEdit={onEdit}
-                  onView={onView}
-                  onDelete={onDelete}
-                  onRestore={onRestore}
+                  onManage={onManage}
                   onActivate={onActivate}
                   onDeactivate={onDeactivate}
-                  onPermanentDelete={onPermanentDelete}
                 />
               </TableCell>
             </TableRow>

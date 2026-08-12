@@ -84,7 +84,7 @@ export class AdminTrainerController {
         dto.linkedInUrl,
         dto.youtubeUrl,
         dto.instagramUrl,
-        dto.branchId,
+        dto.branchId ?? undefined,
         dto.averageRating,
         dto.totalReviews,
         dto.isFeatured,

@@ -123,6 +123,59 @@ export class PrismaBranchRepository
     };
   }
 
+  async getManagementCounts(branchId: string): Promise<{
+    students: number;
+    courses: number;
+    batches: number;
+    enrollments: number;
+    instructors: number;
+    categories: number;
+  }> {
+    const [
+      students,
+      courses,
+      batches,
+      enrollments,
+      instructors,
+      categories,
+    ] = await Promise.all([
+      this.prisma.student.count({
+        where: { branchId, isDeleted: false },
+      }),
+      this.prisma.courseBranch.count({
+        where: {
+          branchId,
+          course: { isDeleted: false },
+        },
+      }),
+      this.prisma.batch.count({
+        where: { branchId, isDeleted: false },
+      }),
+      this.prisma.enrollment.count({
+        where: { branchId, isDeleted: false },
+      }),
+      this.prisma.trainer.count({
+        where: { branchId, isDeleted: false },
+      }),
+      this.prisma.category.count({
+        where: {
+          branchId,
+          isDeleted: false,
+          status: 'ACTIVE',
+        },
+      }),
+    ]);
+
+    return {
+      students,
+      courses,
+      batches,
+      enrollments,
+      instructors,
+      categories,
+    };
+  }
+
   // =====================
   // 🔍 FINDERS
   // =====================

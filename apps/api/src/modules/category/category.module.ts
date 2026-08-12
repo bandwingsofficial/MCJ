@@ -86,16 +86,19 @@ import { BranchRepository } from '../branch/domain/repositories/branch.repositor
         categoryRepo: CategoryRepository,
         domainService: CategoryDomainService,
         uploadDomainService: UploadDomainService,
+        branchRepo: BranchRepository,
       ) =>
         new UpdateCategoryHandler(
           categoryRepo,
           domainService,
           uploadDomainService,
+          branchRepo,
         ),
       inject: [
         CATEGORY_TOKENS.CATEGORY_REPOSITORY,
         CategoryDomainService,
         UploadDomainService,
+        BRANCH_TOKENS.BRANCH_REPOSITORY,
       ],
     },
 

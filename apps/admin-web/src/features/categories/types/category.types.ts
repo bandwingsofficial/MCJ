@@ -55,7 +55,7 @@ export interface UpdateCategoryRequest {
 
   description?: string;
 
-  branchId?: string;
+  branchId?: string | null;
 
   status?: Exclude<CategoryStatus, "ARCHIVED">;
 

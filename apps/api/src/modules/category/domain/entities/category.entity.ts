@@ -100,7 +100,8 @@ export class Category {
     description?: string | null;
     thumbnailFileId?: string | null;
     thumbnailUrl?: string | null;
-    displayOrder?: number  | null;
+    displayOrder?: number | null;
+    branchId?: string | null;
     updatedBy?: string | null;
   }) {
     if (params.name !== undefined) {
@@ -125,8 +126,12 @@ export class Category {
     }
 
     if (params.displayOrder !== undefined) {
-  this.displayOrder = params.displayOrder;
-}
+      this.displayOrder = params.displayOrder;
+    }
+
+    if (params.branchId !== undefined) {
+      this.branchId = params.branchId;
+    }
 
     this.updatedBy = params.updatedBy ?? this.updatedBy;
     this.touch();

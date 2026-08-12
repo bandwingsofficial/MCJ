@@ -15,6 +15,7 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -169,10 +170,11 @@ export class CreateTrainerDto {
   @IsUrl()
   instagramUrl?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ nullable: true })
   @IsOptional()
+  @ValidateIf((_, value) => value !== null)
   @IsUUID()
-  branchId?: string;
+  branchId?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()

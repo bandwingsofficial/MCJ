@@ -58,6 +58,10 @@ class CourseService {
             filters.status ||
             undefined,
 
+          branchId:
+            filters.branchId ||
+            undefined,
+
           includeDeleted:
             filters.includeDeleted,
 

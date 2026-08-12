@@ -224,6 +224,7 @@ export class AdminCategoryController {
         dto.description,
         dto.thumbnailFileId,
         dto.displayOrder,
+        dto.branchId,
         user?.sub,
       ),
     );

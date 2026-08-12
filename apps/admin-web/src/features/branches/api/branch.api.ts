@@ -115,6 +115,22 @@ export const branchApi = {
     return response.data;
   },
 
+  async getBranchSummary(id: string) {
+    const response = await apiClient.get<
+      ApiResponse<{
+        branchId: string;
+        students: number;
+        courses: number;
+        batches: number;
+        enrollments: number;
+        instructors: number;
+        categories: number;
+      }>
+    >(`/admin/branches/${id}/summary`);
+
+    return response.data;
+  },
+
   async restoreBranch(id: string) {
     const response = await apiClient.patch(
       `/admin/branches/${id}/restore`

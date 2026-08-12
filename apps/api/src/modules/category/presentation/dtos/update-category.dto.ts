@@ -59,8 +59,9 @@ export class UpdateCategoryDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @ValidateIf((_, value) => value !== null)
   @IsUUID()
-  branchId?: string;
+  branchId?: string | null;
 
   @ApiPropertyOptional({
     description:

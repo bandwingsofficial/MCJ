@@ -35,6 +35,15 @@ export interface BranchRepository {
     branchId: string,
   ): Promise<BranchBlockingReferences>;
 
+  getManagementCounts(branchId: string): Promise<{
+    students: number;
+    courses: number;
+    batches: number;
+    enrollments: number;
+    instructors: number;
+    categories: number;
+  }>;
+
   findById(id: string): Promise<Branch | null>;
 
   findByBranchCode(

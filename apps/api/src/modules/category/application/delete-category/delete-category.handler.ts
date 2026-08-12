@@ -18,6 +18,16 @@ export class DeleteCategoryHandler {
     );
 
     const deletedDisplayOrder = category.displayOrder;
+    const previousBranchId = category.branchId;
+
+    // Clear branch assignment before soft-delete/archive.
+    if (previousBranchId != null) {
+      category.update({
+        branchId: null,
+        displayOrder: null,
+        updatedBy: command.deletedBy,
+      });
+    }
 
     category.softDelete(command.deletedBy);
 
@@ -26,7 +36,7 @@ export class DeleteCategoryHandler {
     if (deletedDisplayOrder != null) {
       await this.categoryRepo.closeDisplayOrderGap(
         deletedDisplayOrder,
-        category.branchId,
+        previousBranchId,
       );
     }
 

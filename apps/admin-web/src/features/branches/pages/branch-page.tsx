@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
@@ -14,10 +15,6 @@ import {
 } from "@/src/features/branches/types/branch.types";
 
 import { useBranches } from "@/src/features/branches/hooks/use-branches";
-import { useBranch } from "@/src/features/branches/hooks/use-branch";
-import { useDeleteBranch } from "@/src/features/branches/hooks/use-delete-branch";
-import { usePermanentDeleteBranch } from "@/src/features/branches/hooks/use-permanent-delete-branch";
-import { useRestoreBranch } from "@/src/features/branches/hooks/use-restore-branch";
 import { useUpdateStatus } from "@/src/features/branches/hooks/use-update-status";
 
 import { branchService } from "@/src/features/branches/services/branch.service";
@@ -26,14 +23,10 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { BranchFilters } from "@/src/features/branches/components/branch-filters";
 import { BranchTable } from "@/src/features/branches/components/branch-table";
 import { CreateBranchModal } from "@/src/features/branches/components/create-branch-modal";
-import { UpdateBranchModal } from "@/src/features/branches/components/update-branch-modal";
-import { BranchDetailsModal } from "@/src/features/branches/components/branch-details-modal";
-import { DeleteBranchDialog } from "@/src/features/branches/components/delete-branch-dialog";
-import { PermanentDeleteBranchDialog } from "@/src/features/branches/components/permanent-delete-branch-dialog";
-import { RestoreBranchDialog } from "@/src/features/branches/components/restore-branch-dialog";
 import { StatusBranchDialog } from "@/src/features/branches/components/status-branch-dialog";
 
 export default function BranchesPage() {
+  const router = useRouter();
   const {
     branches,
     total,
@@ -46,17 +39,8 @@ export default function BranchesPage() {
   } = useBranches();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
-  const [isViewOpen, setIsViewOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] =
-    useState(false);
-  const [isRestoreOpen, setIsRestoreOpen] = useState(false);
   const [isStatusOpen, setIsStatusOpen] = useState(false);
 
-  const [selectedBranchId, setSelectedBranchId] = useState<
-    string | null
-  >(null);
   const [selectedBranch, setSelectedBranch] =
     useState<BranchListItem | null>(null);
   const [statusTarget, setStatusTarget] = useState<
@@ -64,20 +48,6 @@ export default function BranchesPage() {
   >(null);
   const [isReordering, setIsReordering] = useState(false);
 
-  const {
-    branch,
-    isLoading: isBranchLoading,
-    setBranchData,
-  } = useBranch(selectedBranchId ?? undefined);
-
-  const { deleteBranch, isPending: isDeleting } =
-    useDeleteBranch();
-  const {
-    permanentDeleteBranch,
-    isPending: isPermanentlyDeleting,
-  } = usePermanentDeleteBranch();
-  const { restoreBranch, isPending: isRestoring } =
-    useRestoreBranch();
   const { updateStatus, isPending: isUpdatingStatus } =
     useUpdateStatus();
 
@@ -88,22 +58,7 @@ export default function BranchesPage() {
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
 
-  const currentBranch = useMemo(
-    () => branch ?? null,
-    [branch]
-  );
-
-  const actionLoading =
-    isDeleting ||
-    isPermanentlyDeleting ||
-    isRestoring ||
-    isUpdatingStatus ||
-    isReordering;
-
-  const clearSelection = () => {
-    setSelectedBranchId(null);
-    setBranchData(null);
-  };
+  const actionLoading = isUpdatingStatus || isReordering;
 
   const handleReorder = async (payload: {
     branchId: string;
@@ -199,29 +154,8 @@ export default function BranchesPage() {
                   !!(filters.search ?? "").trim() ||
                   isFetching
                 }
-                onEdit={(item) => {
-                  setIsViewOpen(false);
-                  setSelectedBranchId(item.id);
-                  setSelectedBranch(item);
-                  setIsUpdateOpen(true);
-                }}
-                onView={(item) => {
-                  setIsUpdateOpen(false);
-                  setSelectedBranchId(item.id);
-                  setSelectedBranch(item);
-                  setIsViewOpen(true);
-                }}
-                onDelete={(item) => {
-                  setSelectedBranch(item);
-                  setIsDeleteOpen(true);
-                }}
-                onPermanentDelete={(item) => {
-                  setSelectedBranch(item);
-                  setIsPermanentDeleteOpen(true);
-                }}
-                onRestore={(item) => {
-                  setSelectedBranch(item);
-                  setIsRestoreOpen(true);
+                onManage={(item) => {
+                  router.push(`/branches/${item.id}/manage`);
                 }}
                 onActivate={(item) => {
                   setSelectedBranch(item);
@@ -296,85 +230,6 @@ export default function BranchesPage() {
         onClose={() => setIsCreateOpen(false)}
         onSuccess={() => {
           void refetch();
-        }}
-      />
-
-      <UpdateBranchModal
-        open={isUpdateOpen}
-        branch={currentBranch}
-        isLoading={isBranchLoading}
-        onClose={() => {
-          setIsUpdateOpen(false);
-          clearSelection();
-        }}
-        onSuccess={async (updated) => {
-          setBranchData(updated);
-          await refetch();
-        }}
-      />
-
-      <BranchDetailsModal
-        open={isViewOpen}
-        branch={currentBranch}
-        isLoading={isBranchLoading}
-        onClose={() => {
-          setIsViewOpen(false);
-          clearSelection();
-        }}
-      />
-
-      <DeleteBranchDialog
-        open={isDeleteOpen}
-        branch={selectedBranch}
-        isLoading={isDeleting}
-        onClose={() => setIsDeleteOpen(false)}
-        onConfirm={async () => {
-          if (!selectedBranch) {
-            return;
-          }
-
-          await deleteBranch(selectedBranch.id);
-          setIsDeleteOpen(false);
-          await refetch();
-        }}
-      />
-
-      <PermanentDeleteBranchDialog
-        open={isPermanentDeleteOpen}
-        branch={selectedBranch}
-        isLoading={isPermanentlyDeleting}
-        onClose={() => setIsPermanentDeleteOpen(false)}
-        onConfirm={async () => {
-          if (!selectedBranch || isPermanentlyDeleting) {
-            return;
-          }
-
-          const ok = await permanentDeleteBranch(
-            selectedBranch.id
-          );
-
-          if (!ok) {
-            return;
-          }
-
-          setIsPermanentDeleteOpen(false);
-          await refetch();
-        }}
-      />
-
-      <RestoreBranchDialog
-        open={isRestoreOpen}
-        branch={selectedBranch}
-        isLoading={isRestoring}
-        onClose={() => setIsRestoreOpen(false)}
-        onConfirm={async () => {
-          if (!selectedBranch) {
-            return;
-          }
-
-          await restoreBranch(selectedBranch.id);
-          setIsRestoreOpen(false);
-          await refetch();
         }}
       />
 

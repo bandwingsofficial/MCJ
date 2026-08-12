@@ -244,6 +244,8 @@ export interface CourseFilters {
 
   status?: CourseStatus;
 
+  branchId?: string;
+
   skip: number;
 
   take: number;

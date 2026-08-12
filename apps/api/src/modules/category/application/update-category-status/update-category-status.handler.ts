@@ -18,7 +18,6 @@ export class UpdateCategoryStatusHandler {
       await this.categoryRepo.findById(command.id),
     );
 
-    // Prevent re-activating an already active category
     if (
       command.activate &&
       category.status === CategoryStatus.ACTIVE
@@ -28,7 +27,6 @@ export class UpdateCategoryStatusHandler {
       );
     }
 
-    // Prevent re-deactivating an already inactive category
     if (
       !command.activate &&
       category.status === CategoryStatus.INACTIVE
@@ -39,27 +37,33 @@ export class UpdateCategoryStatusHandler {
     }
 
     if (command.activate) {
+      // Do not restore previous branch assignment on reactivation.
       const nextDisplayOrder =
         (await this.categoryRepo.getMaxActiveDisplayOrder(
-          category.branchId,
+          null,
         )) + 1;
 
       category.update({
         displayOrder: nextDisplayOrder,
+        branchId: null,
         updatedBy: command.updatedBy,
       });
 
       category.activate(command.updatedBy);
     } else {
+      const previousBranchId = category.branchId;
+
       if (category.displayOrder !== null) {
         await this.categoryRepo.closeDisplayOrderGap(
           category.displayOrder,
-          category.branchId,
+          previousBranchId,
         );
       }
 
+      // Clear branch assignment so inactive categories leave Branch Management.
       category.update({
         displayOrder: null,
+        branchId: null,
         updatedBy: command.updatedBy,
       });
 

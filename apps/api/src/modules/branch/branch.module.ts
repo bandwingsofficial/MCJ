@@ -9,6 +9,7 @@ import { CreateBranchHandler } from './application/create-branch/create-branch.h
 import { DeleteBranchHandler } from './application/delete-branch/delete-branch.handler';
 import { PermanentDeleteBranchHandler } from './application/permanent-delete-branch/permanent-delete-branch.handler';
 import { GetBranchHandler } from './application/get-branch/get-branch.handler';
+import { GetBranchSummaryHandler } from './application/get-branch-summary/get-branch-summary.handler';
 import { ListBranchesHandler } from './application/list-branches/list-branches.handler';
 import { UpdateBranchHandler } from './application/update-branch/update-branch.handler';
 import { UpdateBranchStatusHandler } from './application/update-branch-status/update-branch-status.handler';
@@ -71,6 +72,22 @@ import { BRANCH_TOKENS } from './branch.tokens';
         domainService: BranchDomainService,
       ) =>
         new GetBranchHandler(
+          branchRepo,
+          domainService,
+        ),
+      inject: [
+        BRANCH_TOKENS.BRANCH_REPOSITORY,
+        BranchDomainService,
+      ],
+    },
+
+    {
+      provide: GetBranchSummaryHandler,
+      useFactory: (
+        branchRepo: BranchRepository,
+        domainService: BranchDomainService,
+      ) =>
+        new GetBranchSummaryHandler(
           branchRepo,
           domainService,
         ),

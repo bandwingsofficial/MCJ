@@ -94,6 +94,14 @@ class BranchService {
     }
   }
 
+  async getBranchSummary(id: string) {
+    try {
+      return await branchApi.getBranchSummary(id);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async restoreBranch(id: string) {
     try {
       return await branchApi.restoreBranch(id);

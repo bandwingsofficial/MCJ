@@ -23,12 +23,12 @@ export class RestoreCategoryHandler {
     );
 
     const nextDisplayOrder =
-      (await this.categoryRepo.getMaxDisplayOrder(
-        category.branchId,
-      )) + 1;
+      (await this.categoryRepo.getMaxDisplayOrder(null)) + 1;
 
+    // Do not restore previous branch assignment after archive.
     category.update({
       displayOrder: nextDisplayOrder,
+      branchId: null,
       updatedBy: command.updatedBy,
     });
 

@@ -37,6 +37,15 @@ export class BulkDeleteCategoryHandler {
 
       const deletedDisplayOrder =
         category.displayOrder;
+      const previousBranchId = category.branchId;
+
+      if (previousBranchId != null) {
+        category.update({
+          branchId: null,
+          displayOrder: null,
+          updatedBy: command.deletedBy,
+        });
+      }
 
       category.softDelete(command.deletedBy);
 
@@ -45,7 +54,7 @@ export class BulkDeleteCategoryHandler {
       if (deletedDisplayOrder !== null) {
         await this.categoryRepo.closeDisplayOrderGap(
           deletedDisplayOrder,
-          category.branchId,
+          previousBranchId,
         );
       }
 

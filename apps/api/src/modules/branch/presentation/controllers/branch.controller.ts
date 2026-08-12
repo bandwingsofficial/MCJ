@@ -16,6 +16,7 @@ import { CreateBranchHandler } from '../../application/create-branch/create-bran
 import { DeleteBranchHandler } from '../../application/delete-branch/delete-branch.handler';
 import { PermanentDeleteBranchHandler } from '../../application/permanent-delete-branch/permanent-delete-branch.handler';
 import { GetBranchHandler } from '../../application/get-branch/get-branch.handler';
+import { GetBranchSummaryHandler } from '../../application/get-branch-summary/get-branch-summary.handler';
 import { ListBranchesHandler } from '../../application/list-branches/list-branches.handler';
 import { UpdateBranchHandler } from '../../application/update-branch/update-branch.handler';
 import { UpdateBranchStatusHandler } from '../../application/update-branch-status/update-branch-status.handler';
@@ -27,6 +28,7 @@ import { CreateBranchCommand } from '../../application/create-branch/create-bran
 import { DeleteBranchCommand } from '../../application/delete-branch/delete-branch.command';
 import { PermanentDeleteBranchCommand } from '../../application/permanent-delete-branch/permanent-delete-branch.command';
 import { GetBranchQuery } from '../../application/get-branch/get-branch.query';
+import { GetBranchSummaryQuery } from '../../application/get-branch-summary/get-branch-summary.query';
 import { ListBranchesQuery } from '../../application/list-branches/list-branches.query';
 import { UpdateBranchCommand } from '../../application/update-branch/update-branch.command';
 import { UpdateBranchStatusCommand } from '../../application/update-branch-status/update-branch-status.command';
@@ -53,6 +55,8 @@ export class BranchController {
     private readonly listBranchesHandler: ListBranchesHandler,
 
     private readonly getBranchHandler: GetBranchHandler,
+
+    private readonly getBranchSummaryHandler: GetBranchSummaryHandler,
 
     private readonly updateBranchHandler: UpdateBranchHandler,
 
@@ -172,6 +176,19 @@ export class BranchController {
 
     return {
       message: 'Branches reordered successfully',
+      data: result,
+    };
+  }
+
+  @Get(':id/summary')
+  async getSummary(@Param('id') id: string) {
+    const result =
+      await this.getBranchSummaryHandler.execute(
+        new GetBranchSummaryQuery(id),
+      );
+
+    return {
+      message: 'Branch summary fetched successfully',
       data: result,
     };
   }

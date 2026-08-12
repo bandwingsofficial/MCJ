@@ -189,7 +189,7 @@ export interface UpdateTrainerRequest {
 
   instagramUrl?: string;
 
-  branchId?: string;
+  branchId?: string | null;
 
   averageRating?: number;
 

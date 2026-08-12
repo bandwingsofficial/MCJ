@@ -15,10 +15,25 @@ import type {
 } from "@/src/features/batches/types/batch.types";
 
 class BatchService {
-  async getBatches() {
+  async getBatches(filters?: {
+    search?: string;
+    branchId?: string;
+    includeDeleted?: boolean;
+    skip?: number;
+    take?: number;
+  }) {
     const { data } =
       await apiClient.get<BatchListResponse>(
         "/admin/batches",
+        {
+          params: {
+            search: filters?.search || undefined,
+            branchId: filters?.branchId || undefined,
+            includeDeleted: filters?.includeDeleted ?? false,
+            skip: filters?.skip,
+            take: filters?.take,
+          },
+        },
       );
 
     return data;
