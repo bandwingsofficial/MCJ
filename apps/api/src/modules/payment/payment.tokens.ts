@@ -1,0 +1,4 @@
+export const PAYMENT_TOKENS = {
+  PAYMENT_REPOSITORY: Symbol('PAYMENT_REPOSITORY'),
+  PAYMENT_GATEWAY: Symbol('PAYMENT_GATEWAY'),
+} as const;

@@ -1,0 +1,1270 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String                 @id @default(uuid())
+  name                  String
+  email                 String                 @unique
+  phone                 String?                @unique
+  passwordHash          String
+  role                  Role                   @default(STUDENT)
+  status                AccountStatus          @default(ACTIVE)
+  isEmailVerified       Boolean                @default(false)
+  tokenVersion          Int                    @default(0)
+  lastLoginAt           DateTime?
+  lastPasswordChangeAt  DateTime?
+  deletedAt             DateTime?
+  mfaEnabled            Boolean                @default(false)
+  mfaSecret             String?
+  mfaVerifiedAt         DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  auditLogs             AuditLog[]
+  communityPostComments CommunityPostComment[]
+  communityPostLikes    CommunityPostLike[]
+  passwordResets        PasswordResetToken[]
+  profile               Profile?
+  sessions              Session[]
+  student Student?
+
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model Session {
+  id               String     @id @default(uuid())
+  userId           String
+  refreshTokenHash String     @unique
+  deviceType       DeviceType @default(UNKNOWN)
+  userAgent        String?
+  ipAddress        String?
+  fingerprint      String?
+  isRevoked        Boolean    @default(false)
+  revokedAt        DateTime?
+  lastUsedAt       DateTime?
+  expiresAt        DateTime
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRevoked])
+  @@index([expiresAt])
+  @@index([lastUsedAt])
+  @@index([createdAt])
+}
+
+model PasswordResetToken {
+  id              String    @id @default(uuid())
+  userId          String
+  otpHash         String
+  attempts        Int       @default(0)
+  isUsed          Boolean   @default(false)
+  requestedFromIp String?
+  lastAttemptAt   DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([userId, createdAt])
+  @@index([isUsed])
+}
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  userId     String?
+  action     AuditAction
+  deviceType DeviceType  @default(UNKNOWN)
+  ipAddress  String?
+  userAgent  String?
+  sessionId  String?
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+  user       User?       @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([sessionId])
+}
+
+model Profile {
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  firstName    String?
+  lastName     String?
+  gender       Gender?
+  dob          DateTime?
+  profileImage String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  country      String?
+  postalCode   String?
+  bio          String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  email        String?
+  phone        String?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([city])
+  @@index([state])
+  @@index([country])
+}
+
+model Branch {
+  id             String         @id @default(uuid())
+  branchName     String
+  branchCode     String         @unique
+  email          String?
+  phone          String?
+  addressLine1   String?
+  addressLine2   String?
+  city           String?
+  state          String?
+  country        String?
+  postalCode     String?
+  latitude       Float?
+  longitude      Float?
+  status         BranchStatus   @default(ACTIVE)
+  description    String?
+  deletedAt      DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  batches        Batch[]
+  branchUsers    BranchUser[]
+  categories     Category[]
+  courseBranches CourseBranch[]
+  enrollments    Enrollment[]
+  students       Student[]
+  trainers       Trainer[]
+
+  @@index([branchName])
+  @@index([branchCode])
+  @@index([status])
+  @@index([deletedAt])
+  @@index([status, deletedAt])
+  @@index([city])
+  @@index([state])
+  @@index([country])
+  @@index([city, state, country])
+  @@index([createdAt])
+}
+
+model BranchUser {
+  id                    String         @id @default(uuid())
+  firstName             String
+  lastName              String?
+  email                 String         @unique
+  phone                 String?        @unique
+  password              String
+  role                  BranchUserRole @default(STAFF)
+  permissions           Permission[]   @default([])
+  branchId              String
+  isActive              Boolean        @default(true)
+  isDeleted             Boolean        @default(false)
+  lastLoginAt           DateTime?
+  refreshToken          String?
+  refreshTokenExpiresAt DateTime?
+  createdBy             String?
+  updatedBy             String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  branch                Branch         @relation(fields: [branchId], references: [id])
+
+  @@index([branchId])
+  @@index([branchId, isDeleted])
+  @@index([branchId, isActive, isDeleted])
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+  @@index([isActive])
+  @@index([isDeleted])
+  @@index([createdAt])
+}
+
+model Upload {
+  id                         String             @id @default(uuid())
+  bucket                     String
+  objectKey                  String             @unique
+  url                        String
+  mimeType                   String
+  extension                  String
+  originalName               String
+  storedName                 String
+  size                       Int
+  etag                       String?
+  checksum                   String?
+  folder                     String
+  provider                   UploadProvider     @default(AWS_S3)
+  visibility                 UploadVisibility   @default(PUBLIC)
+  metadata                   Json?
+  width                      Int?
+  height                     Int?
+  status                     UploadStatus       @default(ACTIVE)
+  createdBy                  String?
+  updatedBy                  String?
+  deletedAt                  DateTime?
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime           @updatedAt
+  categoryThumbnails         Category[]         @relation("CategoryThumbnailUpload")
+  communityPostMedia         CommunityPost[]    @relation("CommunityPostMedia")
+  courseThumbnails           Course[]           @relation("CourseThumbnail")
+  courseImages               CourseImage[]
+  courseMaterials            CourseMaterial[]
+  financialArticleBanners    FinancialArticle[] @relation("FinancialArticleBanner")
+  financialArticleThumbnails FinancialArticle[] @relation("FinancialArticleThumbnail")
+  jobApplicationResumes      JobApplication[]   @relation("JobApplicationResume")
+  studentProfileImages       Student[]          @relation("StudentProfileImage")
+  trainerProfileImages       Trainer[]          @relation("TrainerProfileImage")
+
+  @@index([storedName])
+  @@index([mimeType])
+  @@index([provider])
+  @@index([visibility])
+  @@index([folder])
+  @@index([status])
+  @@index([createdBy])
+  @@index([deletedAt])
+  @@index([createdAt])
+}
+
+model Category {
+  id                String             @id @default(uuid())
+  name              String
+  slug              String
+  description       String?
+  thumbnailFileId   String?
+  thumbnailUrl      String?
+  status            CategoryStatus     @default(ACTIVE)
+  displayOrder      Int?
+  branchId          String?
+  createdBy         String?
+  updatedBy         String?
+  isDeleted         Boolean            @default(false)
+  deletedAt         DateTime?
+  deletedBy         String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  branch            Branch?            @relation(fields: [branchId], references: [id])
+  thumbnailUpload   Upload?            @relation("CategoryThumbnailUpload", fields: [thumbnailFileId], references: [id], onDelete: SetNull)
+  courses           Course[]
+  enrollments       Enrollment[]
+  financialArticles FinancialArticle[]
+
+  @@unique([slug, branchId])
+  @@index([name])
+  @@index([slug])
+  @@index([status])
+  @@index([displayOrder])
+  @@index([branchId])
+  @@index([branchId, status, isDeleted])
+  @@index([isDeleted])
+  @@index([createdAt])
+}
+
+model Course {
+  id               String           @id @default(uuid())
+  title            String
+  slug             String
+  tagline          String?
+  shortDescription String?
+  description      String?
+  thumbnailFileId  String?
+  thumbnailUrl     String?
+  originalPrice    Decimal          @default(0) @db.Decimal(12, 2)
+  discountPrice    Decimal          @default(0) @db.Decimal(12, 2)
+  currency         String           @default("INR")
+  isFree           Boolean          @default(false)
+  duration         Int?
+  durationType     DurationType?
+  level            CourseLevel      @default(BEGINNER)
+  mode             CourseMode[]
+  language         String           @default("English")
+  averageRating    Float            @default(0)
+  totalReviews     Int              @default(0)
+  isFeatured       Boolean          @default(false)
+  isPopular        Boolean          @default(false)
+  displayOrder     Int?
+  metaTitle        String?
+  metaDescription  String?
+  metaKeywords     String?
+  categoryId       String
+  status           CourseStatus     @default(DRAFT)
+  createdBy        String?
+  updatedBy        String?
+  isDeleted        Boolean          @default(false)
+  deletedAt        DateTime?
+  deletedBy        String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  batches          Batch[]
+  category         Category         @relation(fields: [categoryId], references: [id])
+  thumbnailUpload  Upload?          @relation("CourseThumbnail", fields: [thumbnailFileId], references: [id], onDelete: SetNull)
+  courseBranches   CourseBranch[]
+  images           CourseImage[]
+  materials        CourseMaterial[]
+  modules          CourseModule[]
+  enrollments      Enrollment[]
+  lessonProgress   LessonProgress[]
+  trainers         TrainerCourse[]
+
+  @@index([title])
+  @@index([slug])
+  @@index([categoryId])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([isPopular])
+  @@index([displayOrder])
+  @@index([categoryId, status, isDeleted])
+  @@index([isDeleted])
+  @@index([createdAt])
+}
+
+model CourseBranch {
+  courseId String
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, branchId])
+  @@index([courseId])
+  @@index([branchId])
+}
+
+model CourseImage {
+  id           String   @id @default(uuid())
+  courseId     String
+  fileId       String
+  displayOrder Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  upload       Upload   @relation(fields: [fileId], references: [id], onDelete: Restrict)
+
+  @@index([courseId])
+  @@index([fileId])
+  @@index([displayOrder])
+}
+
+model CourseMaterial {
+  id           String       @id @default(uuid())
+  courseId     String
+  title        String
+  type         MaterialType
+  fileId       String?
+  externalUrl  String?
+  displayOrder Int?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  upload       Upload?      @relation(fields: [fileId], references: [id], onDelete: SetNull)
+
+  @@index([courseId])
+  @@index([fileId])
+  @@index([type])
+  @@index([displayOrder])
+}
+
+model CourseModule {
+  id           String         @id @default(uuid())
+  courseId     String
+  title        String
+  slug         String
+  description  String?
+  keySkills    String[]
+  thumbnailUrl String?
+  duration     Int?
+  displayOrder Int            @default(0)
+  createdBy    String?
+  updatedBy    String?
+  isDeleted    Boolean        @default(false)
+  deletedAt    DateTime?
+  deletedBy    String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  lessons      CourseLesson[]
+  course       Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, slug])
+  @@index([courseId])
+  @@index([slug])
+  @@index([displayOrder])
+  @@index([courseId, isDeleted])
+  @@index([isDeleted])
+  @@index([createdAt])
+}
+
+model CourseLesson {
+  id           String           @id @default(uuid())
+  moduleId     String
+  title        String
+  slug         String
+  description  String?
+  videoUrl     String?
+  isPreview    Boolean          @default(false)
+  duration     Int?
+  displayOrder Int              @default(0)
+  createdBy    String?
+  updatedBy    String?
+  isDeleted    Boolean          @default(false)
+  deletedAt    DateTime?
+  deletedBy    String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  module       CourseModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  resources    CourseResource[]
+  progress     LessonProgress[]
+
+  @@unique([moduleId, slug])
+  @@index([moduleId])
+  @@index([slug])
+  @@index([displayOrder])
+  @@index([moduleId, isDeleted])
+  @@index([isDeleted])
+  @@index([createdAt])
+}
+
+model CourseResource {
+  id           String       @id @default(uuid())
+  lessonId     String
+  title        String
+  type         ResourceType @default(OTHER)
+  fileUrl      String?
+  displayOrder Int          @default(0)
+  createdBy    String?
+  updatedBy    String?
+  isDeleted    Boolean      @default(false)
+  deletedAt    DateTime?
+  deletedBy    String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  lesson       CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@index([displayOrder])
+  @@index([type])
+  @@index([lessonId, isDeleted])
+  @@index([isDeleted])
+  @@index([createdAt])
+}
+
+model Trainer {
+  id                 String          @id @default(uuid())
+  firstName          String
+  lastName           String?
+  email              String?         @unique
+  phone              String?         @unique
+  gender             Gender?
+  bio                String?
+  qualification      String?
+  experienceYears    Int?
+  specialization     String?
+  skills             String[]        @default([])
+  profileImageFileId String?
+  profileImageUrl    String?
+  employeeCode       String?         @unique
+  trainerType        TrainerType     @default(FULL_TIME)
+  linkedInUrl        String?
+  youtubeUrl         String?
+  instagramUrl       String?
+  branchId           String?
+  averageRating      Float           @default(0)
+  totalReviews       Int             @default(0)
+  isFeatured         Boolean         @default(false)
+  status             TrainerStatus   @default(ACTIVE)
+  joinedAt           DateTime?
+  createdBy          String?
+  updatedBy          String?
+  isDeleted          Boolean         @default(false)
+  deletedAt          DateTime?
+  deletedBy          String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  batches            BatchTrainer[]
+  branch             Branch?         @relation(fields: [branchId], references: [id])
+  profileImageUpload Upload?         @relation("TrainerProfileImage", fields: [profileImageFileId], references: [id], onDelete: SetNull)
+  courses            TrainerCourse[]
+
+  @@index([firstName])
+  @@index([lastName])
+  @@index([email])
+  @@index([phone])
+  @@index([employeeCode])
+  @@index([trainerType])
+  @@index([branchId])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([branchId, status, isDeleted])
+  @@index([isDeleted])
+  @@index([createdAt])
+}
+
+model TrainerCourse {
+  id        String   @id @default(uuid())
+  trainerId String
+  courseId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  trainer   Trainer  @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+
+  @@unique([trainerId, courseId])
+  @@index([trainerId])
+  @@index([courseId])
+}
+
+model Batch {
+  id            String         @id @default(uuid())
+  name          String
+  code          String         @unique
+  slug          String
+  description   String?
+  courseId      String
+  branchId      String?
+  startDate     DateTime
+  endDate       DateTime?
+  startTime     String
+  endTime       String
+  daysOfWeek    DayOfWeek[]    @default([])
+  capacity      Int
+  enrolledCount Int            @default(0)
+  mode          CourseMode     @default(OFFLINE)
+  classroom     String?
+  meetingLink   String?
+  isFeatured    Boolean        @default(false)
+  status        BatchStatus    @default(UPCOMING)
+  createdBy     String?
+  updatedBy     String?
+  isDeleted     Boolean        @default(false)
+  deletedAt     DateTime?
+  deletedBy     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  isActive      Boolean        @default(true)
+  branch        Branch?        @relation(fields: [branchId], references: [id])
+  course        Course         @relation(fields: [courseId], references: [id])
+  trainers      BatchTrainer[]
+  enrollments   Enrollment[]
+
+  @@unique([slug, branchId])
+  @@index([name])
+  @@index([code])
+  @@index([slug])
+  @@index([courseId])
+  @@index([branchId])
+  @@index([status])
+  @@index([isActive])
+  @@index([isFeatured])
+  @@index([startDate])
+  @@index([branchId, status, isDeleted])
+  @@index([courseId, status, isDeleted])
+  @@index([isDeleted])
+  @@index([createdAt])
+}
+
+model BatchTrainer {
+  id        String   @id @default(uuid())
+  batchId   String
+  trainerId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  batch     Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  trainer   Trainer  @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, trainerId])
+  @@index([batchId])
+  @@index([trainerId])
+}
+
+model Student {
+  id                    String           @id @default(uuid())
+  firstName             String
+  lastName              String?
+  email                 String?          @unique
+  phone                 String?          @unique
+  gender                Gender?
+  dateOfBirth           DateTime?
+  addressLine1          String?
+  addressLine2          String?
+  city                  String?
+  state                 String?
+  country               String?
+  postalCode            String?
+  profileImageFileId    String?
+  profileImageUrl       String?
+  qualification         String?
+  collegeName           String?
+  specialization        String?
+  passingYear           Int?
+  parentName            String?
+  parentPhone           String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  studentCode           String           @unique
+  admissionDate         DateTime?
+  branchId              String
+  notes                 String?
+  status                StudentStatus    @default(LEAD)
+  createdBy             String?
+  updatedBy             String?
+  isDeleted             Boolean          @default(false)
+  deletedAt             DateTime?
+  deletedBy             String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  isActive              Boolean          @default(true)
+  enrollments           Enrollment[]
+  JobApplication        JobApplication[]
+  payments              Payment[]
+  Placement             Placement[]
+  lessonProgress        LessonProgress[]
+  branch                Branch           @relation(fields: [branchId], references: [id])
+  profileImageUpload    Upload?          @relation("StudentProfileImage", fields: [profileImageFileId], references: [id], onDelete: SetNull)
+  userId String @unique 
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([firstName])
+  @@index([lastName])
+  @@index([email])
+  @@index([phone])
+  @@index([studentCode])
+  @@index([branchId])
+  @@index([isActive])
+  @@index([status])
+  @@index([admissionDate])
+  @@index([branchId, status, isDeleted])
+  @@index([isDeleted])
+  @@index([createdAt])
+}
+
+model Enrollment {
+  id                     String           @id @default(uuid())
+  enrollmentNumber       String           @unique
+  studentId              String
+  branchId               String
+  categoryId             String
+  courseId               String
+  batchId                String
+  admissionDate          DateTime?
+  joiningDate            DateTime?
+  expectedCompletionDate DateTime?
+  feeAmount              Decimal          @default(0) @db.Decimal(12, 2)
+  discountAmount         Decimal          @default(0) @db.Decimal(12, 2)
+  finalAmount            Decimal          @default(0) @db.Decimal(12, 2)
+  paidAmount             Decimal          @default(0) @db.Decimal(12, 2)
+  dueAmount              Decimal          @default(0) @db.Decimal(12, 2)
+  paymentStatus          PaymentStatus    @default(UNPAID)
+  status                 EnrollmentStatus @default(PENDING)
+  source                 EnrollmentSource @default(ADMIN)
+  remarks                String?
+  isActive               Boolean          @default(false)
+  createdBy              String?
+  updatedBy              String?
+  isDeleted              Boolean          @default(false)
+  deletedAt              DateTime?
+  deletedBy              String?
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  batch                  Batch            @relation(fields: [batchId], references: [id])
+  branch                 Branch           @relation(fields: [branchId], references: [id])
+  category               Category         @relation(fields: [categoryId], references: [id])
+  course                 Course           @relation(fields: [courseId], references: [id])
+  student                Student          @relation(fields: [studentId], references: [id])
+  payments               Payment[]
+
+  @@unique([studentId, batchId])
+  @@index([studentId])
+  @@index([branchId])
+  @@index([categoryId])
+  @@index([courseId])
+  @@index([batchId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([isActive])
+  @@index([isDeleted])
+  @@index([createdAt])
+  @@index([branchId, status, isDeleted])
+}
+
+model LessonProgress {
+  id             String       @id @default(uuid())
+  studentId      String
+  courseId       String
+  lessonId       String
+  isCompleted    Boolean      @default(false)
+  watchedSeconds Int          @default(0)
+  completedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course         Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson         CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+  @@index([studentId, courseId])
+  @@index([courseId])
+  @@index([lessonId])
+}
+
+model Payment {
+  id               String                   @id @default(uuid())
+  paymentNumber    String                   @unique
+  enrollmentId     String
+  studentId        String
+  amount           Decimal                  @default(0) @db.Decimal(12, 2)
+  currency         String                   @default("INR")
+  paymentMethod    PaymentMethod
+  paymentStatus    PaymentTransactionStatus @default(PENDING)
+  gateway          PaymentGateway           @default(MANUAL)
+  gatewayOrderId   String?
+  gatewayPaymentId String?                  @unique
+  gatewaySignature String?
+  transactionId    String?
+  remarks          String?
+  paidAt           DateTime?
+  createdBy        String?
+  updatedBy        String?
+  isDeleted        Boolean                  @default(false)
+  deletedAt        DateTime?
+  deletedBy        String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  enrollment       Enrollment               @relation(fields: [enrollmentId], references: [id])
+  student          Student                  @relation(fields: [studentId], references: [id])
+
+  @@index([enrollmentId])
+  @@index([studentId])
+  @@index([paymentStatus])
+  @@index([paymentMethod])
+  @@index([gateway])
+  @@index([gatewayOrderId])
+  @@index([gatewayPaymentId])
+  @@index([transactionId])
+  @@index([isDeleted])
+  @@index([createdAt])
+  @@index([enrollmentId, paymentStatus])
+}
+
+model Job {
+  id                  String           @id @default(uuid())
+  title               String
+  slug                String           @unique
+  companyName         String
+  companyLogo         String?
+  companyWebsite      String?
+  companyDescription  String?
+  description         String?
+  shortDescription    String?
+  location            String?
+  city                String?
+  state               String?
+  country             String?
+  isRemote            Boolean          @default(false)
+  employmentType      EmploymentType
+  workingDays         WorkingDays
+  minExperience       Int?
+  maxExperience       Int?
+  minSalary           Decimal?         @db.Decimal(12, 2)
+  maxSalary           Decimal?         @db.Decimal(12, 2)
+  salaryCurrency      String           @default("INR")
+  vacancies           Int              @default(1)
+  applicationDeadline DateTime?
+  responsibilities    String[]
+  skills              String[]
+  eligibilityTitle    String?
+  interviewProcess    Json?
+  status              JobStatus        @default(DRAFT)
+  isActive            Boolean          @default(true)
+  createdBy           String?
+  updatedBy           String?
+  isDeleted           Boolean          @default(false)
+  deletedAt           DateTime?
+  deletedBy           String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  applications        JobApplication[]
+  placements          Placement[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([isActive])
+  @@index([isDeleted])
+  @@index([status, isActive, isDeleted])
+  @@index([employmentType])
+  @@index([createdAt])
+}
+
+model JobApplication {
+  id              String               @id @default(uuid())
+  jobId           String
+  studentId       String
+  resumeFileId    String?
+  coverLetter     String?
+  currentLocation String?
+  expectedSalary  Decimal?             @db.Decimal(12, 2)
+  remarks         String?
+  status          JobApplicationStatus @default(APPLIED)
+  createdBy       String?
+  updatedBy       String?
+  isDeleted       Boolean              @default(false)
+  deletedAt       DateTime?
+  deletedBy       String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  job             Job                  @relation(fields: [jobId], references: [id])
+  resumeUpload    Upload?              @relation("JobApplicationResume", fields: [resumeFileId], references: [id], onDelete: SetNull)
+  Student         Student              @relation(fields: [studentId], references: [id])
+  placement       Placement?
+
+  @@unique([jobId, studentId])
+  @@index([jobId])
+  @@index([status])
+  @@index([isDeleted])
+  @@index([createdAt])
+  @@index([jobId, status, isDeleted])
+  @@index([studentId])
+}
+
+model Placement {
+  id            String          @id @default(uuid())
+  jobId         String
+  applicationId String          @unique
+  studentId     String
+  companyName   String
+  designation   String?
+  salary        Decimal?        @db.Decimal(12, 2)
+  joiningDate   DateTime?
+  remarks       String?
+  status        PlacementStatus @default(PENDING)
+  createdBy     String?
+  updatedBy     String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  application   JobApplication  @relation(fields: [applicationId], references: [id])
+  job           Job             @relation(fields: [jobId], references: [id])
+  Student       Student         @relation(fields: [studentId], references: [id])
+
+  @@index([jobId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([studentId])
+}
+
+model FinancialArticle {
+  id               String                 @id @default(uuid())
+  title            String
+  slug             String                 @unique
+  shortDescription String?
+  content          String?
+  thumbnailFileId  String?
+  thumbnailUrl     String?
+  bannerFileId     String?
+  bannerUrl        String?
+  authorName       String                 @default("MCJ Team")
+  authorImage      String?
+  tags             String[]
+  categoryId       String
+  displayOrder     Int                    @default(0)
+  status           FinancialArticleStatus @default(DRAFT)
+  isActive         Boolean                @default(true)
+  publishedAt      DateTime?
+  createdBy        String?
+  updatedBy        String?
+  isDeleted        Boolean                @default(false)
+  deletedAt        DateTime?
+  deletedBy        String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  bannerUpload     Upload?                @relation("FinancialArticleBanner", fields: [bannerFileId], references: [id], onDelete: SetNull)
+  category         Category               @relation(fields: [categoryId], references: [id])
+  thumbnailUpload  Upload?                @relation("FinancialArticleThumbnail", fields: [thumbnailFileId], references: [id], onDelete: SetNull)
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([status])
+  @@index([isActive])
+  @@index([isDeleted])
+  @@index([displayOrder])
+  @@index([status, isActive, isDeleted])
+  @@index([createdAt])
+}
+
+model CommunityPost {
+  id           String                 @id @default(uuid())
+  type         CommunityPostType
+  caption      String?
+  mediaFileId  String?
+  mediaUrl     String?
+  thumbnailUrl String?
+  hashtags     String[]
+  mentions     String[]
+  location     String?
+  viewCount    Int                    @default(0)
+  likeCount    Int                    @default(0)
+  commentCount Int                    @default(0)
+  shareCount   Int                    @default(0)
+  status       CommunityPostStatus    @default(DRAFT)
+  isActive     Boolean                @default(true)
+  createdBy    String?
+  updatedBy    String?
+  isDeleted    Boolean                @default(false)
+  deletedAt    DateTime?
+  deletedBy    String?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  mediaUpload  Upload?                @relation("CommunityPostMedia", fields: [mediaFileId], references: [id], onDelete: SetNull)
+  comments     CommunityPostComment[]
+  likes        CommunityPostLike[]
+
+  @@index([status])
+  @@index([isActive])
+  @@index([isDeleted])
+  @@index([status, isActive, isDeleted])
+  @@index([createdAt])
+}
+
+model CommunityPostLike {
+  id        String        @id @default(uuid())
+  postId    String
+  userId    String
+  isDeleted Boolean       @default(false)
+  deletedAt DateTime?
+  createdAt DateTime      @default(now())
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@index([isDeleted])
+}
+
+model CommunityPostComment {
+  id        String                 @id @default(uuid())
+  postId    String
+  userId    String
+  parentId  String?
+  content   String
+  isBlocked Boolean                @default(false)
+  isDeleted Boolean                @default(false)
+  deletedAt DateTime?
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+  parent    CommunityPostComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   CommunityPostComment[] @relation("CommentReplies")
+  post      CommunityPost          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentId])
+  @@index([isDeleted])
+  @@index([isBlocked])
+  @@index([postId, isDeleted, isBlocked])
+  @@index([createdAt])
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum AuditAction {
+  REGISTER
+  LOGIN
+  LOGIN_FAILED
+  LOGOUT
+  LOGOUT_ALL
+  REFRESH
+  SESSION_REVOKED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_SUCCESS
+  PASSWORD_RESET_FAILED
+  ADMIN_LOGIN
+  ADMIN_LOGIN_FAILED
+  MFA_SETUP
+  MFA_VERIFIED
+  MFA_FAILED
+  ADMIN_MFA_FAILED
+  ADMIN_MFA_SUCCESS
+}
+
+enum DeviceType {
+  MOBILE
+  DESKTOP
+  TABLET
+  UNKNOWN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum BranchStatus {
+  ACTIVE
+  INACTIVE
+  CLOSED
+  UNDER_MAINTENANCE
+}
+
+enum BranchUserRole {
+  BRANCH_MANAGER
+  RECEPTIONIST
+  ACCOUNTANT
+  FACULTY_COORDINATOR
+  COUNSELOR
+  STAFF
+}
+
+enum Permission {
+  BRANCH_USER_CREATE
+  BRANCH_USER_READ
+  BRANCH_USER_UPDATE
+  BRANCH_USER_DELETE
+  BRANCH_USER_ACTIVATE
+  BRANCH_USER_DEACTIVATE
+  BRANCH_USER_ASSIGN_ROLE
+  BRANCH_USER_ASSIGN_PERMISSION
+  STUDENT_CREATE
+  STUDENT_READ
+  STUDENT_UPDATE
+  STUDENT_DELETE
+  COURSE_CREATE
+  COURSE_READ
+  COURSE_UPDATE
+  COURSE_DELETE
+  PAYMENT_CREATE
+  PAYMENT_READ
+  PAYMENT_UPDATE
+  PAYMENT_DELETE
+  REPORT_READ
+}
+
+enum CategoryStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum UploadStatus {
+  ACTIVE
+  DELETED
+}
+
+enum UploadProvider {
+  AWS_S3
+}
+
+enum UploadVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum CourseStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum DurationType {
+  DAYS
+  WEEKS
+  MONTHS
+  YEARS
+}
+
+enum CourseMode {
+  ONLINE
+  OFFLINE
+  HYBRID
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum MaterialType {
+  PDF
+  VIDEO
+  LINK
+  DOC
+}
+
+enum ResourceType {
+  PDF
+  PPT
+  DOC
+  ZIP
+  IMAGE
+  VIDEO
+  LINK
+  CODE
+  OTHER
+}
+
+enum TrainerStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+  ARCHIVED
+}
+
+enum TrainerType {
+  FULL_TIME
+  PART_TIME
+  VISITING
+  GUEST
+  ONLINE
+}
+
+enum BatchStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum StudentStatus {
+  LEAD
+  ENQUIRED
+  ADMITTED
+  COMPLETED
+  DROPPED
+  PLACED
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ADMITTED
+  ACTIVE
+  COMPLETED
+  DROPPED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
+enum EnrollmentSource {
+  ADMIN
+  PUBLIC
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  CARD
+  BANK_TRANSFER
+  CHEQUE
+  RAZORPAY
+}
+
+enum PaymentTransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum PaymentGateway {
+  MANUAL
+  RAZORPAY
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  INTERNSHIP
+  CONTRACT
+}
+
+enum WorkingDays {
+  ONE_DAY
+  TWO_DAYS
+  THREE_DAYS
+  FOUR_DAYS
+  FIVE_DAYS
+  SIX_DAYS
+  MONDAY_TO_FRIDAY
+  MONDAY_TO_SATURDAY
+}
+
+enum JobStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  EXPIRED
+}
+
+enum JobApplicationStatus {
+  APPLIED
+  SHORTLISTED
+  ASSESSMENT
+  INTERVIEW
+  SELECTED
+  REJECTED
+  PLACED
+}
+
+enum PlacementStatus {
+  PENDING
+  JOINED
+  NOT_JOINED
+}
+
+enum FinancialArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CommunityPostType {
+  IMAGE
+  VIDEO
+}
+
+enum CommunityPostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}

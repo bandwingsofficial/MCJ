@@ -1,0 +1,160 @@
+import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import type { BranchRepository } from '@modules/branch/domain/repositories/branch.repository';
+import { BranchStatus } from '@modules/branch/domain/enums/branch-status.enum';
+
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+
+import type { Student } from '../entities/student.entity';
+import type { StudentRepository } from '../repositories/student.repository';
+import { BranchNotFoundException } from '../errors/branch-not-found.exception';
+@Injectable()
+export class StudentDomainService {
+  async ensureExists(
+    student: Student | null,
+  ): Promise<Student> {
+    if (!student) {
+      throw new BaseException(
+        ERROR_CODES.STUDENT_NOT_FOUND,
+        'Student not found',
+        404,
+      );
+    }
+
+    return student;
+  }
+
+  async ensureEmailIsAvailable(
+    studentRepo: StudentRepository,
+    email?: string | null,
+    excludeId?: string,
+  ): Promise<void> {
+    if (!email) return;
+
+    const existing = await studentRepo.findByEmail(
+      email.trim().toLowerCase(),
+      true,
+    );
+
+    if (existing && existing.id !== excludeId) {
+      throw new BaseException(
+        ERROR_CODES.STUDENT_ALREADY_EXISTS,
+        'Student email already exists',
+        400,
+      );
+    }
+  }
+
+  async ensurePhoneIsAvailable(
+    studentRepo: StudentRepository,
+    phone?: string | null,
+    excludeId?: string,
+  ): Promise<void> {
+    if (!phone) return;
+
+    const normalized = phone.replace(/[\s-]/g, '').trim();
+    const existing = await studentRepo.findByPhone(
+      normalized,
+      true,
+    );
+
+    if (existing && existing.id !== excludeId) {
+      throw new BaseException(
+        ERROR_CODES.STUDENT_ALREADY_EXISTS,
+        'Student phone already exists',
+        400,
+      );
+    }
+  }
+
+  async ensureStudentCodeIsAvailable(
+    studentRepo: StudentRepository,
+    studentCode: string,
+    excludeId?: string,
+  ): Promise<void> {
+    const existing = await studentRepo.findByStudentCode(
+      studentCode.trim().toUpperCase(),
+      true,
+    );
+
+    if (existing && existing.id !== excludeId) {
+      throw new BaseException(
+        ERROR_CODES.STUDENT_ALREADY_EXISTS,
+        'Student code already exists',
+        400,
+      );
+    }
+  }
+
+  async ensureBranchExists(
+    branchRepo: BranchRepository,
+    branchId: string,
+  ): Promise<void> {
+    const branch = await branchRepo.findById(branchId);
+
+    if (!branch) {
+      throw new BranchNotFoundException(branchId);
+    }
+  }
+
+  ensureBranchAccess(
+    student: Student,
+    branchId?: string | null,
+  ): void {
+    if (!branchId || student.branchId === branchId) {
+      return;
+    }
+
+    throw new BaseException(
+      ERROR_CODES.BRANCH_ACCESS_DENIED,
+      'Branch access denied',
+      403,
+    );
+  }
+
+  async resolveDefaultBranchId(
+    branchRepo: BranchRepository,
+  ): Promise<string> {
+    const branches = await branchRepo.findAll({
+      status: BranchStatus.ACTIVE,
+      take: 1,
+    });
+
+    if (!branches.length) {
+      throw new BaseException(
+        ERROR_CODES.BRANCH_NOT_FOUND,
+        'No active branch available',
+        404,
+      );
+    }
+
+    return branches[0].id;
+  }
+
+  async generateUniqueStudentCode(
+    studentRepo: StudentRepository,
+  ): Promise<string> {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const studentCode = `STD-${randomUUID()
+        .replace(/-/g, '')
+        .slice(0, 10)
+        .toUpperCase()}`;
+
+      const existing = await studentRepo.findByStudentCode(
+        studentCode,
+        true,
+      );
+
+      if (!existing) {
+        return studentCode;
+      }
+    }
+
+    throw new BaseException(
+      ERROR_CODES.STUDENT_ALREADY_EXISTS,
+      'Unable to generate unique student code',
+      400,
+    );
+  }
+}

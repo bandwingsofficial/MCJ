@@ -1,0 +1,13 @@
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+
+export class S3UploadFailedException extends BaseException {
+  constructor(objectKey?: string) {
+    super(
+      ERROR_CODES.S3_UPLOAD_FAILED,
+      'File upload failed',
+      500,
+      objectKey ? { objectKey } : undefined,
+    );
+  }
+}

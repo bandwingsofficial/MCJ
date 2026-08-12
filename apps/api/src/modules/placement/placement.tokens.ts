@@ -1,0 +1,3 @@
+export const PLACEMENT_TOKENS = {
+  PLACEMENT_REPOSITORY: Symbol('PLACEMENT_REPOSITORY'),
+} as const;

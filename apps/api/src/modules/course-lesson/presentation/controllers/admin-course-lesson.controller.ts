@@ -1,0 +1,180 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+
+import { CurrentUser } from '@common/decorators/current-user.decorator';
+import type { AuthUser } from '@common/decorators/current-user.decorator';
+import { SuperAdminGuard } from '@common/guards/super-admin.guard';
+import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
+
+import { CreateCourseLessonCommand } from '../../application/create-course-lesson/create-course-lesson.command';
+import { CreateCourseLessonHandler } from '../../application/create-course-lesson/create-course-lesson.handler';
+import { DeleteCourseLessonCommand } from '../../application/delete-course-lesson/delete-course-lesson.command';
+import { DeleteCourseLessonHandler } from '../../application/delete-course-lesson/delete-course-lesson.handler';
+import { GetCourseLessonHandler } from '../../application/get-course-lesson/get-course-lesson.handler';
+import { GetCourseLessonQuery } from '../../application/get-course-lesson/get-course-lesson.query';
+import { ListCourseLessonsHandler } from '../../application/list-course-lessons/list-course-lessons.handler';
+import { ListCourseLessonsQuery } from '../../application/list-course-lessons/list-course-lessons.query';
+import { MoveCourseLessonCommand } from '../../application/move-course-lesson/move-course-lesson.command';
+import { MoveCourseLessonHandler } from '../../application/move-course-lesson/move-course-lesson.handler';
+import { RestoreCourseLessonCommand } from '../../application/restore-course-lesson/restore-course-lesson.command';
+import { RestoreCourseLessonHandler } from '../../application/restore-course-lesson/restore-course-lesson.handler';
+import { UpdateCourseLessonCommand } from '../../application/update-course-lesson/update-course-lesson.command';
+import { UpdateCourseLessonHandler } from '../../application/update-course-lesson/update-course-lesson.handler';
+import { CreateCourseLessonDto } from '../dtos/create-course-lesson.dto';
+import { ListCourseLessonsQueryDto } from '../dtos/list-course-lessons-query.dto';
+import { MoveCourseLessonDto } from '../dtos/move-course-lesson.dto';
+import { UpdateCourseLessonDto } from '../dtos/update-course-lesson.dto';
+
+@ApiTags('Admin Course Lessons')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, SuperAdminGuard)
+@Controller('admin/course-lessons')
+export class AdminCourseLessonController {
+  constructor(
+    private readonly createCourseLessonHandler: CreateCourseLessonHandler,
+    private readonly updateCourseLessonHandler: UpdateCourseLessonHandler,
+    private readonly listCourseLessonsHandler: ListCourseLessonsHandler,
+    private readonly getCourseLessonHandler: GetCourseLessonHandler,
+    private readonly deleteCourseLessonHandler: DeleteCourseLessonHandler,
+    private readonly restoreCourseLessonHandler: RestoreCourseLessonHandler,
+    private readonly moveCourseLessonHandler: MoveCourseLessonHandler,
+  ) {}
+
+  @Post()
+  async create(
+    @Body() dto: CreateCourseLessonDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.createCourseLessonHandler.execute(
+      new CreateCourseLessonCommand(
+        dto.moduleId,
+        dto.title,
+        dto.description,
+        dto.videoUrl,
+        dto.duration,
+        user?.sub,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Course lesson created successfully',
+      data: result,
+    };
+  }
+
+  @Get()
+  async list(@Query() query: ListCourseLessonsQueryDto) {
+    const result = await this.listCourseLessonsHandler.execute(
+      new ListCourseLessonsQuery(
+        query.moduleId,
+        query.search,
+        query.includeDeleted,
+        query.skip,
+        query.take,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Course lessons fetched successfully',
+      data: result,
+    };
+  }
+
+  @Get(':id')
+  async get(@Param('id') id: string) {
+    const result = await this.getCourseLessonHandler.execute(
+      new GetCourseLessonQuery(id, true),
+    );
+
+    return {
+      success: true,
+      message: 'Course lesson fetched successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateCourseLessonDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.updateCourseLessonHandler.execute(
+      new UpdateCourseLessonCommand(
+        id,
+        dto.title,
+        dto.description,
+        dto.videoUrl,
+        dto.duration,
+        user?.sub,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Course lesson updated successfully',
+      data: result,
+    };
+  }
+
+  @Delete(':id')
+  async delete(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.deleteCourseLessonHandler.execute(
+      new DeleteCourseLessonCommand(id, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: 'Course lesson deleted successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':id/restore')
+  async restore(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.restoreCourseLessonHandler.execute(
+      new RestoreCourseLessonCommand(id, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: 'Course lesson restored successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':id/move')
+  async move(
+    @Param('id') id: string,
+    @Body() dto: MoveCourseLessonDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.moveCourseLessonHandler.execute(
+      new MoveCourseLessonCommand(id, dto.newPosition, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: 'Course lesson moved successfully',
+      data: result,
+    };
+  }
+}

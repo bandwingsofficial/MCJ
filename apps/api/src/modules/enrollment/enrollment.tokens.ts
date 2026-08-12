@@ -1,0 +1,3 @@
+export const ENROLLMENT_TOKENS = {
+  ENROLLMENT_REPOSITORY: Symbol('ENROLLMENT_REPOSITORY'),
+} as const;

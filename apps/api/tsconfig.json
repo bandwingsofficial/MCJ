@@ -1,0 +1,49 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": false,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "types": ["node", "express", "multer"],
+    "baseUrl": "./src",
+
+    "paths": {
+      "@/*": ["*"],
+
+      "@common/*": ["common/*"],
+      "@modules/*": ["modules/*"],
+
+      "@auth/*": ["modules/auth/*"],
+      "@user/*": ["modules/user/*"],
+      "@profile/*": ["modules/profile/*"],
+      "@branch/*": ["modules/branch/*"],
+
+      "@config/*": ["config/*"],
+      "@shared/*": ["shared/*"],
+      "@utils/*": ["utils/*"],
+
+      "@database/*": ["database/*"],
+      "@prisma/*": ["prisma/*"]
+    },
+
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "noFallthroughCasesInSwitch": false
+  },
+  "include": ["src/**/*.ts", "prisma/**/*.ts"],
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+}

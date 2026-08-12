@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Razorpay Payment Test</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+
+<h2>Razorpay Payment Test</h2>
+
+<button onclick="payNow()">Pay ₹1100</button>
+
+<script>
+
+async function payNow() {
+
+    // values from create-order response
+    const orderId = "order_T32a9oj4E9JtAj";
+    const keyId = "rzp_test_RbAfDB5uwpOElJ";
+
+    const enrollmentId =
+        "8a453ad0-4560-473d-82df-7c77538c52fd";
+
+    const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1ZmZjMzZkOC00NTBhLTRkZDItYjg3Yi00MWIwYzY3ODY4MWYiLCJzZXNzaW9uSWQiOiI1NjdmMjc2OC0wMGZlLTRiMjAtYTg3ZC0yYTg2ODA0Y2FkYTIiLCJlbWFpbCI6ImFrMUBnbWFpbC5jb20iLCJyb2xlIjoiU1RVREVOVCIsImlhdCI6MTc4MTc3MzY4NywiZXhwIjoxNzgxNzc0NTg3fQ.Om6WPJ8xdYDVEz0OKwqjEhui7ojkUCyvdPVZ5eLpum4";
+
+    const options = {
+
+        key: keyId,
+
+        amount: 1100 * 100,
+
+        currency: "INR",
+
+        name: "MCJ Academy",
+
+        description: "Course Payment",
+
+        order_id: orderId,
+
+        handler: async function (response) {
+
+            console.log("Razorpay response:", response);
+
+            try {
+
+                const verifyResponse = await fetch(
+                    "http://localhost:4000/public/payments/verify",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
+
+                        body: JSON.stringify({
+
+                            enrollmentId,
+
+                            razorpayOrderId:
+                                response.razorpay_order_id,
+
+                            razorpayPaymentId:
+                                response.razorpay_payment_id,
+
+                            razorpaySignature:
+                                response.razorpay_signature
+                        })
+                    }
+                );
+
+                const result = await verifyResponse.json();
+
+                console.log(result);
+
+                alert(
+                    "Payment verified successfully!"
+                );
+
+            } catch (err) {
+
+                console.error(err);
+
+                alert(
+                    "Verification failed"
+                );
+            }
+        },
+
+        prefill: {
+            name: "Akshay",
+            email: "ak@hotmail.com",
+            contact: "+919876543211"
+        },
+
+        theme: {
+            color: "#3399cc"
+        }
+    };
+
+    const rzp = new Razorpay(options);
+
+    rzp.on('payment.failed', function (response) {
+
+        console.log(response);
+
+        alert(
+            "Payment failed"
+        );
+
+    });
+
+    rzp.open();
+}
+
+</script>
+
+</body>
+</html>
