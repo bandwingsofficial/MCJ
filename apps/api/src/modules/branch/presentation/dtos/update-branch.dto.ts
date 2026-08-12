@@ -3,11 +3,13 @@ import {
   IsEnum,
   IsLatitude,
   IsLongitude,
+  IsNumber,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 import { BranchStatus } from '../../domain/enums/branch-status.enum';
 
@@ -61,10 +63,14 @@ export class UpdateBranchDto {
   postalCode?: string | null;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
   @IsLatitude()
   latitude?: number | null;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
   @IsLongitude()
   longitude?: number | null;
 

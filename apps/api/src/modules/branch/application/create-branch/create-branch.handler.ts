@@ -8,18 +8,18 @@ import { CreateBranchCommand } from './create-branch.command';
 import { CreateBranchResult } from './create-branch.result';
 
 import type { BranchRepository } from '../../domain/repositories/branch.repository';
-
 import { Branch } from '../../domain/entities/branch.entity';
-
+import { BranchCode } from '../../domain/value-objects/branch-code.vo';
 import { BranchDomainService } from '../../domain/services/branch-domain.service';
+import { BranchStatus } from '../../domain/enums/branch-status.enum';
 
 import { BaseException } from '@common/exceptions/base.exception';
-
 import { ERROR_CODES } from '@common/constants/error-codes';
 
 import { ValidationError } from '../errors/validation.error';
 
 import { BRANCH_TOKENS } from '../../branch.tokens';
+import { Prisma } from '@prisma/client';
 
 export class CreateBranchHandler {
   private readonly logger = new Logger(
@@ -63,16 +63,34 @@ export class CreateBranchHandler {
       // 2️⃣ CHECK EXISTING
       // =====================
 
-      const existingBranch =
-        await this.branchRepo.findByBranchCode(
-          command.branchCode,
+      const normalizedCode = BranchCode.create(
+        command.branchCode,
+      ).getValue();
+
+      const codeTaken =
+        await this.branchRepo.existsByBranchCode(
+          normalizedCode,
         );
 
-        console.log(existingBranch);
-
-      this.domainService.ensureBranchDoesNotExist(
-        existingBranch,
+      this.domainService.ensureBranchCodeIsAvailable(
+        codeTaken,
       );
+
+      const existingByName =
+        await this.branchRepo.findByBranchNameInsensitive(
+          command.branchName,
+        );
+
+      this.domainService.ensureBranchNameIsAvailable(
+        existingByName,
+      );
+
+      const status = command.status;
+
+      const displayOrder =
+        !status || status === BranchStatus.ACTIVE
+          ? (await this.branchRepo.getMaxDisplayOrder()) + 1
+          : null;
 
       // =====================
       // 3️⃣ CREATE ENTITY
@@ -83,7 +101,7 @@ export class CreateBranchHandler {
 
         branchName: command.branchName,
 
-        branchCode: command.branchCode,
+        branchCode: normalizedCode,
 
         email: command.email,
         phone: command.phone,
@@ -107,10 +125,12 @@ export class CreateBranchHandler {
         longitude:
           command.longitude,
 
-        status: command.status,
+        status,
 
         description:
           command.description,
+
+        displayOrder,
       });
 
       // =====================
@@ -163,6 +183,31 @@ export class CreateBranchHandler {
         branch.updatedAt,
       );
     } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const target = Array.isArray(error.meta?.target)
+          ? error.meta.target.join(',')
+          : String(error.meta?.target ?? '');
+
+        if (target.toLowerCase().includes('branchcode')) {
+          throw new ValidationError(
+            'Branch code already exists.',
+            ERROR_CODES.BRANCH_ALREADY_EXISTS,
+            undefined,
+            409,
+          );
+        }
+
+        throw new ValidationError(
+          'Branch already exists.',
+          ERROR_CODES.BRANCH_ALREADY_EXISTS,
+          undefined,
+          409,
+        );
+      }
+
       // =====================
       // DOMAIN ERRORS
       // =====================

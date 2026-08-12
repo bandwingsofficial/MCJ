@@ -40,7 +40,7 @@ export class GetBranchHandler {
       }
 
       const branch =
-        await this.branchRepo.findById(
+        await this.branchRepo.findByIdIncludingDeleted(
           query.branchId,
         );
 
@@ -64,6 +64,7 @@ export class GetBranchHandler {
         branch.longitude,
         branch.status,
         branch.description,
+        branch.deletedAt,
         branch.createdAt,
         branch.updatedAt,
       );

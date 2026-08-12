@@ -7,11 +7,15 @@ import { BranchController } from './presentation/controllers/branch.controller';
 
 import { CreateBranchHandler } from './application/create-branch/create-branch.handler';
 import { DeleteBranchHandler } from './application/delete-branch/delete-branch.handler';
+import { PermanentDeleteBranchHandler } from './application/permanent-delete-branch/permanent-delete-branch.handler';
 import { GetBranchHandler } from './application/get-branch/get-branch.handler';
 import { ListBranchesHandler } from './application/list-branches/list-branches.handler';
 import { UpdateBranchHandler } from './application/update-branch/update-branch.handler';
 import { UpdateBranchStatusHandler } from './application/update-branch-status/update-branch-status.handler';
 import { RestoreBranchHandler } from './application/restore-branch/restore-branch.handler';
+import { SuggestBranchCodeHandler } from './application/suggest-branch-code/suggest-branch-code.handler';
+import { CheckBranchAvailabilityHandler } from './application/check-branch-availability/check-branch-availability.handler';
+import { ReorderBranchesHandler } from './application/reorder-branches/reorder-branches.handler';
 
 import type { BranchRepository } from './domain/repositories/branch.repository';
 import { BranchDomainService } from './domain/services/branch-domain.service';
@@ -129,6 +133,52 @@ import { BRANCH_TOKENS } from './branch.tokens';
         domainService: BranchDomainService,
       ) =>
         new DeleteBranchHandler(
+          branchRepo,
+          domainService,
+        ),
+      inject: [
+        BRANCH_TOKENS.BRANCH_REPOSITORY,
+        BranchDomainService,
+      ],
+    },
+
+    {
+      provide: PermanentDeleteBranchHandler,
+      useFactory: (
+        branchRepo: BranchRepository,
+        domainService: BranchDomainService,
+      ) =>
+        new PermanentDeleteBranchHandler(
+          branchRepo,
+          domainService,
+        ),
+      inject: [
+        BRANCH_TOKENS.BRANCH_REPOSITORY,
+        BranchDomainService,
+      ],
+    },
+
+    {
+      provide: SuggestBranchCodeHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new SuggestBranchCodeHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
+
+    {
+      provide: CheckBranchAvailabilityHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new CheckBranchAvailabilityHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
+
+    {
+      provide: ReorderBranchesHandler,
+      useFactory: (
+        branchRepo: BranchRepository,
+        domainService: BranchDomainService,
+      ) =>
+        new ReorderBranchesHandler(
           branchRepo,
           domainService,
         ),

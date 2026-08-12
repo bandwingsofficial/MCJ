@@ -15,7 +15,7 @@ interface UseUpdateBranchReturn {
   updateBranch: (
     id: string,
     payload: UpdateBranchRequest
-  ) => Promise<Branch | null>;
+  ) => Promise<Branch>;
 
   isPending: boolean;
 }
@@ -28,7 +28,7 @@ export const useUpdateBranch =
     const updateBranch = async (
       id: string,
       payload: UpdateBranchRequest
-    ): Promise<Branch | null> => {
+    ): Promise<Branch> => {
       try {
         setIsPending(true);
 
@@ -38,8 +38,15 @@ export const useUpdateBranch =
             payload
           );
 
+        if (!response?.data?.id) {
+          throw new Error(
+            "Branch update did not return saved data."
+          );
+        }
+
         appToast.success(
-          response.message
+          response.message ||
+            "Branch updated successfully"
         );
 
         return response.data;
@@ -51,7 +58,9 @@ export const useUpdateBranch =
 
         appToast.error(message);
 
-        return null;
+        throw error instanceof Error
+          ? error
+          : new Error(message);
       } finally {
         setIsPending(false);
       }

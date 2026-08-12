@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -13,87 +14,197 @@ import {
   BranchListItem,
 } from "@/src/features/branches/types/branch.types";
 
+const DEFAULT_PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 400;
+
 interface UseBranchesReturn {
   branches: BranchListItem[];
 
+  total: number;
+
+  /** Alias of total for legacy callers. */
   count: number;
 
+  isInitialLoading: boolean;
+
+  isFetching: boolean;
+
+  /** Alias of isInitialLoading for legacy callers. */
   isLoading: boolean;
 
   error: string | null;
 
   filters: BranchFilters;
 
-  setFilters: (
-    filters: BranchFilters
-  ) => void;
+  setFilters: (filters: BranchFilters) => void;
 
   refetch: () => Promise<void>;
 }
 
-export const useBranches =
-  (): UseBranchesReturn => {
-    const [branches, setBranches] =
-      useState<BranchListItem[]>([]);
+export const useBranches = (options?: {
+  pageSize?: number;
+  includeDeleted?: boolean;
+}): UseBranchesReturn => {
+  const defaultPageSize =
+    options?.pageSize ?? DEFAULT_PAGE_SIZE;
+  const defaultIncludeDeleted =
+    options?.includeDeleted ?? true;
 
-    const [count, setCount] =
-      useState(0);
+  const [branches, setBranches] = useState<
+    BranchListItem[]
+  >([]);
 
-    const [isLoading, setIsLoading] =
-      useState(true);
+  const [total, setTotal] = useState(0);
 
-    const [error, setError] =
-      useState<string | null>(null);
+  const [isInitialLoading, setIsInitialLoading] =
+    useState(true);
 
-    const [filters, setFilters] =
-      useState<BranchFilters>({
-        status: undefined,
-        search: "",
-        includeDeleted: false,
+  const [isFetching, setIsFetching] = useState(false);
+
+  const [error, setError] = useState<string | null>(
+    null
+  );
+
+  const [filters, setFiltersState] =
+    useState<BranchFilters>({
+      search: "",
+      status: undefined,
+      includeDeleted: defaultIncludeDeleted,
+      page: 1,
+      pageSize: defaultPageSize,
+    });
+
+  const [debouncedSearch, setDebouncedSearch] =
+    useState("");
+
+  const hasLoadedRef = useRef(false);
+  const requestIdRef = useRef(0);
+  const debounceRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+
+  const setFilters = useCallback(
+    (next: BranchFilters) => {
+      setFiltersState((prev) => {
+        const statusChanged =
+          next.status !== prev.status;
+        const pageSizeChanged =
+          next.pageSize !== prev.pageSize;
+
+        const shouldResetPage =
+          statusChanged || pageSizeChanged;
+
+        return {
+          ...next,
+          page: shouldResetPage ? 1 : next.page,
+        };
       });
+    },
+    []
+  );
 
-    const fetchBranches =
-      useCallback(async () => {
-        try {
-          setIsLoading(true);
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
 
-          setError(null);
+    debounceRef.current = setTimeout(() => {
+      const nextSearch = (filters.search ?? "").trim();
 
-          const response =
-            await branchService.getBranches(
-              filters
-            );
+      setDebouncedSearch((prev) =>
+        prev === nextSearch ? prev : nextSearch
+      );
 
-          setBranches(
-            response.data.items
-          );
+      setFiltersState((prev) =>
+        prev.page === 1
+          ? prev
+          : { ...prev, page: 1 }
+      );
+    }, SEARCH_DEBOUNCE_MS);
 
-          setCount(
-            response.data.count
-          );
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : "Failed to fetch branches";
-
-          setError(message);
-        } finally {
-          setIsLoading(false);
-        }
-      }, [filters]);
-
-    useEffect(() => {
-      void fetchBranches();
-    }, [fetchBranches]);
-
-    return {
-      branches,
-      count,
-      isLoading,
-      error,
-      filters,
-      setFilters,
-      refetch: fetchBranches,
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
     };
+  }, [filters.search]);
+
+  const fetchBranches = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const requestId = ++requestIdRef.current;
+      const silent = options?.silent === true;
+      const isFirstLoad = !hasLoadedRef.current;
+
+      try {
+        if (isFirstLoad) {
+          setIsInitialLoading(true);
+        } else if (!silent) {
+          setIsFetching(true);
+        }
+
+        const response =
+          await branchService.getBranches({
+            search: debouncedSearch,
+            status: filters.status,
+            includeDeleted: filters.includeDeleted,
+            page: filters.page ?? 1,
+            pageSize: filters.pageSize ?? DEFAULT_PAGE_SIZE,
+          });
+
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        setBranches(response.data.items);
+        setTotal(
+          response.data.meta?.total ??
+            response.data.count ??
+            response.data.items.length
+        );
+        setError(null);
+        hasLoadedRef.current = true;
+      } catch (err) {
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to fetch branches";
+
+        setError(message);
+      } finally {
+        if (requestId === requestIdRef.current) {
+          setIsInitialLoading(false);
+          setIsFetching(false);
+        }
+      }
+    },
+    [
+      debouncedSearch,
+      filters.status,
+      filters.includeDeleted,
+      filters.page,
+      filters.pageSize,
+    ]
+  );
+
+  useEffect(() => {
+    void fetchBranches();
+  }, [fetchBranches]);
+
+  return {
+    branches,
+    total,
+    count: total,
+    isInitialLoading,
+    isFetching,
+    /** Alias of isInitialLoading for legacy callers. */
+    isLoading: isInitialLoading,
+    error,
+    filters,
+    setFilters,
+    refetch: () => fetchBranches({ silent: false }),
   };
+};

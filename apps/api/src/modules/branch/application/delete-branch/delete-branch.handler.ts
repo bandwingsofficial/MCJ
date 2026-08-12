@@ -48,7 +48,16 @@ export class DeleteBranchHandler {
         branch,
       );
 
-      await this.branchRepo.delete(branch.id);
+      const deletedDisplayOrder = branch.displayOrder;
+
+      branch.softDelete();
+      await this.branchRepo.save(branch);
+
+      if (deletedDisplayOrder != null) {
+        await this.branchRepo.closeDisplayOrderGap(
+          deletedDisplayOrder,
+        );
+      }
 
       this.logger.log(
         `Branch soft deleted: ${branch.id}`,

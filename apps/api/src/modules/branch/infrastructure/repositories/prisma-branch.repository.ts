@@ -39,18 +39,16 @@ export class PrismaBranchRepository
     const data =
       BranchMapper.toPersistence(branch);
 
+    const { id, createdAt: _createdAt, ...updatable } = data;
+
     await this.prisma.branch.upsert({
       where: {
-        id: branch.id,
+        id,
       },
 
-      update: {
-        ...data,
-      },
+      update: updatable,
 
-      create: {
-        ...data,
-      },
+      create: data,
     });
   }
 
@@ -68,10 +66,61 @@ export class PrismaBranchRepository
 
       data: {
         status: BranchStatus.INACTIVE,
+        displayOrder: null,
         deletedAt: new Date(),
         updatedAt: new Date(),
       },
     });
+  }
+
+  async deletePermanent(branchId: string): Promise<void> {
+    this.logger.log(
+      `🗑️ Permanently deleting branch: ${branchId}`,
+    );
+
+    await this.prisma.branch.delete({
+      where: { id: branchId },
+    });
+  }
+
+  async countBlockingReferences(
+    branchId: string,
+  ): Promise<{
+    branchUsers: number;
+    students: number;
+    trainers: number;
+    enrollments: number;
+    batches: number;
+    categories: number;
+    courseBranches: number;
+  }> {
+    const [
+      branchUsers,
+      students,
+      trainers,
+      enrollments,
+      batches,
+      categories,
+      courseBranches,
+    ] = await Promise.all([
+      this.prisma.branchUser.count({ where: { branchId } }),
+      this.prisma.student.count({ where: { branchId } }),
+      this.prisma.trainer.count({ where: { branchId } }),
+      this.prisma.enrollment.count({ where: { branchId } }),
+      this.prisma.batch.count({ where: { branchId } }),
+      this.prisma.category.count({ where: { branchId } }),
+      this.prisma.courseBranch.count({ where: { branchId } }),
+    ]);
+
+    return {
+      branchUsers,
+      students,
+      trainers,
+      enrollments,
+      batches,
+      categories,
+      courseBranches,
+    };
   }
 
   // =====================
@@ -109,6 +158,30 @@ export class PrismaBranchRepository
     : null;
 }
 
+  async findByBranchNameInsensitive(
+    branchName: string,
+    excludeId?: string,
+  ): Promise<Branch | null> {
+    const normalized = branchName.trim();
+
+    const record =
+      await this.prisma.branch.findFirst({
+        where: {
+          branchName: {
+            equals: normalized,
+            mode: 'insensitive',
+          },
+          ...(excludeId
+            ? { id: { not: excludeId } }
+            : {}),
+        },
+      });
+
+    return record
+      ? BranchMapper.toDomain(record)
+      : null;
+  }
+
   async findAll(
     filters: BranchListFilters = {},
   ): Promise<Branch[]> {
@@ -119,9 +192,17 @@ export class PrismaBranchRepository
       await this.prisma.branch.findMany({
         where,
 
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: [
+          {
+            displayOrder: {
+              sort: 'asc',
+              nulls: 'last',
+            },
+          },
+          {
+            createdAt: 'asc',
+          },
+        ],
 
         skip: filters.skip,
 
@@ -131,6 +212,14 @@ export class PrismaBranchRepository
     return records.map(
       BranchMapper.toDomain,
     );
+  }
+
+  async count(
+    filters: BranchListFilters = {},
+  ): Promise<number> {
+    return this.prisma.branch.count({
+      where: this.buildWhereClause(filters),
+    });
   }
 
   async findByIdIncludingDeleted(
@@ -166,16 +255,156 @@ export class PrismaBranchRepository
 
   async existsByBranchCode(
     branchCode: string,
+    excludeId?: string,
   ): Promise<boolean> {
+    const normalized = branchCode.trim().toUpperCase();
+
     const count =
       await this.prisma.branch.count({
         where: {
-          branchCode,
-          deletedAt: null,
+          branchCode: normalized,
+          ...(excludeId
+            ? { id: { not: excludeId } }
+            : {}),
         },
       });
 
     return count > 0;
+  }
+
+  async getMaxNumericSuffixForPrefix(
+    prefix: string,
+  ): Promise<number> {
+    const normalized = prefix.trim().toUpperCase();
+
+    if (!normalized) {
+      return 0;
+    }
+
+    const records = await this.prisma.branch.findMany({
+      where: {
+        branchCode: {
+          startsWith: normalized,
+        },
+      },
+      select: {
+        branchCode: true,
+      },
+    });
+
+    let max = 0;
+    const pattern = new RegExp(
+      `^${normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d+)$`,
+    );
+
+    for (const record of records) {
+      const match = record.branchCode.match(pattern);
+      if (!match) {
+        continue;
+      }
+      const value = Number(match[1]);
+      if (!Number.isNaN(value) && value > max) {
+        max = value;
+      }
+    }
+
+    return max;
+  }
+
+  async getMaxDisplayOrder(): Promise<number> {
+    const result = await this.prisma.branch.aggregate({
+      where: {
+        deletedAt: null,
+        displayOrder: { not: null },
+      },
+      _max: {
+        displayOrder: true,
+      },
+    });
+
+    return result._max.displayOrder ?? 0;
+  }
+
+  async getMaxActiveDisplayOrder(): Promise<number> {
+    const result = await this.prisma.branch.aggregate({
+      where: {
+        deletedAt: null,
+        status: BranchStatus.ACTIVE,
+        displayOrder: { not: null },
+      },
+      _max: {
+        displayOrder: true,
+      },
+    });
+
+    return result._max.displayOrder ?? 0;
+  }
+
+  async closeDisplayOrderGap(
+    deletedDisplayOrder: number,
+  ): Promise<void> {
+    await this.prisma.branch.updateMany({
+      where: {
+        deletedAt: null,
+        displayOrder: {
+          gt: deletedDisplayOrder,
+        },
+      },
+      data: {
+        displayOrder: {
+          decrement: 1,
+        },
+      },
+    });
+  }
+
+  async moveDisplayOrder(
+    branchId: string,
+    oldOrder: number,
+    newOrder: number,
+  ): Promise<void> {
+    if (oldOrder === newOrder) {
+      return;
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      if (newOrder < oldOrder) {
+        await tx.branch.updateMany({
+          where: {
+            deletedAt: null,
+            displayOrder: {
+              gte: newOrder,
+              lt: oldOrder,
+            },
+          },
+          data: {
+            displayOrder: {
+              increment: 1,
+            },
+          },
+        });
+      } else {
+        await tx.branch.updateMany({
+          where: {
+            deletedAt: null,
+            displayOrder: {
+              gt: oldOrder,
+              lte: newOrder,
+            },
+          },
+          data: {
+            displayOrder: {
+              decrement: 1,
+            },
+          },
+        });
+      }
+
+      await tx.branch.update({
+        where: { id: branchId },
+        data: { displayOrder: newOrder },
+      });
+    });
   }
 
   // =====================
@@ -295,13 +524,14 @@ export class PrismaBranchRepository
   ): Prisma.BranchWhereInput {
     const where: Prisma.BranchWhereInput = {};
 
-    if (!filters.includeDeleted) {
+    if (filters.status === 'ARCHIVED') {
+      where.deletedAt = { not: null };
+    } else if (filters.status) {
       where.deletedAt = null;
-    }
-
-    if (filters.status) {
       where.status =
         filters.status as Prisma.BranchWhereInput['status'];
+    } else if (!filters.includeDeleted) {
+      where.deletedAt = null;
     }
 
     if (filters.city) {

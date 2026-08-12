@@ -14,17 +14,25 @@ import { JwtAuthGuard } from '../../../auth/presentation/guards/jwt-auth.guard';
 
 import { CreateBranchHandler } from '../../application/create-branch/create-branch.handler';
 import { DeleteBranchHandler } from '../../application/delete-branch/delete-branch.handler';
+import { PermanentDeleteBranchHandler } from '../../application/permanent-delete-branch/permanent-delete-branch.handler';
 import { GetBranchHandler } from '../../application/get-branch/get-branch.handler';
 import { ListBranchesHandler } from '../../application/list-branches/list-branches.handler';
 import { UpdateBranchHandler } from '../../application/update-branch/update-branch.handler';
 import { UpdateBranchStatusHandler } from '../../application/update-branch-status/update-branch-status.handler';
+import { SuggestBranchCodeHandler } from '../../application/suggest-branch-code/suggest-branch-code.handler';
+import { CheckBranchAvailabilityHandler } from '../../application/check-branch-availability/check-branch-availability.handler';
+import { ReorderBranchesHandler } from '../../application/reorder-branches/reorder-branches.handler';
 
 import { CreateBranchCommand } from '../../application/create-branch/create-branch.command';
 import { DeleteBranchCommand } from '../../application/delete-branch/delete-branch.command';
+import { PermanentDeleteBranchCommand } from '../../application/permanent-delete-branch/permanent-delete-branch.command';
 import { GetBranchQuery } from '../../application/get-branch/get-branch.query';
 import { ListBranchesQuery } from '../../application/list-branches/list-branches.query';
 import { UpdateBranchCommand } from '../../application/update-branch/update-branch.command';
 import { UpdateBranchStatusCommand } from '../../application/update-branch-status/update-branch-status.command';
+import { SuggestBranchCodeQuery } from '../../application/suggest-branch-code/suggest-branch-code.query';
+import { CheckBranchAvailabilityQuery } from '../../application/check-branch-availability/check-branch-availability.query';
+import { ReorderBranchesCommand } from '../../application/reorder-branches/reorder-branches.command';
 
 import { BranchStatus } from '../../domain/enums/branch-status.enum';
 
@@ -32,6 +40,7 @@ import { CreateBranchDto } from '../dtos/create-branch.dto';
 import { ListBranchesQueryDto } from '../dtos/list-branches-query.dto';
 import { UpdateBranchDto } from '../dtos/update-branch.dto';
 import { UpdateBranchStatusDto } from '../dtos/update-branch-status.dto';
+import { ReorderBranchesDto } from '../dtos/reorder-branches.dto';
 import { RestoreBranchCommand } from '../../application/restore-branch/restore-branch.command';
 import { RestoreBranchHandler } from '../../application/restore-branch/restore-branch.handler';
 
@@ -51,7 +60,15 @@ export class BranchController {
 
     private readonly deleteBranchHandler: DeleteBranchHandler,
 
+    private readonly permanentDeleteBranchHandler: PermanentDeleteBranchHandler,
+
     private readonly restoreBranchHandler: RestoreBranchHandler,
+
+    private readonly suggestBranchCodeHandler: SuggestBranchCodeHandler,
+
+    private readonly checkBranchAvailabilityHandler: CheckBranchAvailabilityHandler,
+
+    private readonly reorderBranchesHandler: ReorderBranchesHandler,
   ) {}
 
   @Post()
@@ -95,7 +112,7 @@ export class BranchController {
           query.city,
           query.state,
           query.country,
-          query.includeDeleted ?? false,
+          query.includeDeleted ?? true,
           query.skip ?? 0,
           query.take ?? 50,
         ),
@@ -103,6 +120,58 @@ export class BranchController {
 
     return {
       message: 'Branches fetched successfully',
+      data: result,
+    };
+  }
+
+  @Get('suggest-code')
+  async suggestCode(
+    @Query('branchName') branchName?: string,
+  ) {
+    const result =
+      await this.suggestBranchCodeHandler.execute(
+        new SuggestBranchCodeQuery(branchName ?? ''),
+      );
+
+    return {
+      message: 'Branch code suggested successfully',
+      data: result,
+    };
+  }
+
+  @Get('check-availability')
+  async checkAvailability(
+    @Query('branchCode') branchCode?: string,
+    @Query('branchName') branchName?: string,
+    @Query('excludeId') excludeId?: string,
+  ) {
+    const result =
+      await this.checkBranchAvailabilityHandler.execute(
+        new CheckBranchAvailabilityQuery(
+          branchCode,
+          branchName,
+          excludeId,
+        ),
+      );
+
+    return {
+      message: 'Branch availability checked successfully',
+      data: result,
+    };
+  }
+
+  @Patch('reorder')
+  async reorder(@Body() dto: ReorderBranchesDto) {
+    const result =
+      await this.reorderBranchesHandler.execute(
+        new ReorderBranchesCommand(
+          dto.branchId,
+          dto.newDisplayOrder,
+        ),
+      );
+
+    return {
+      message: 'Branches reordered successfully',
       data: result,
     };
   }
@@ -221,6 +290,19 @@ async restore(
     data: result,
   };
 }
+
+  @Delete(':id/permanent')
+  async permanentDelete(@Param('id') id: string) {
+    const result =
+      await this.permanentDeleteBranchHandler.execute(
+        new PermanentDeleteBranchCommand(id),
+      );
+
+    return {
+      message: 'Branch permanently deleted successfully',
+      data: result,
+    };
+  }
 
   @Delete(':id')
   async delete(@Param('id') id: string) {

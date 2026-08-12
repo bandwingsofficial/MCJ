@@ -4,7 +4,7 @@ import { Branch } from '../entities/branch.entity';
 import { BranchStatus } from '../enums/branch-status.enum';
 
 export interface BranchListFilters {
-  status?: BranchStatus;
+  status?: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED';
   search?: string;
   city?: string;
   state?: string;
@@ -14,18 +14,26 @@ export interface BranchListFilters {
   take?: number;
 }
 
-export interface BranchRepository {
-  // =====================
-  // 💾 PERSISTENCE
-  // =====================
+export interface BranchBlockingReferences {
+  branchUsers: number;
+  students: number;
+  trainers: number;
+  enrollments: number;
+  batches: number;
+  categories: number;
+  courseBranches: number;
+}
 
+export interface BranchRepository {
   save(branch: Branch): Promise<void>;
 
   delete(branchId: string): Promise<void>;
 
-  // =====================
-  // 🔍 FINDERS
-  // =====================
+  deletePermanent(branchId: string): Promise<void>;
+
+  countBlockingReferences(
+    branchId: string,
+  ): Promise<BranchBlockingReferences>;
 
   findById(id: string): Promise<Branch | null>;
 
@@ -33,27 +41,45 @@ export interface BranchRepository {
     branchCode: string,
   ): Promise<Branch | null>;
 
+  findByBranchNameInsensitive(
+    branchName: string,
+    excludeId?: string,
+  ): Promise<Branch | null>;
+
   findAll(
     filters?: BranchListFilters,
   ): Promise<Branch[]>;
 
-  findByIdIncludingDeleted(
-  id: string,
-): Promise<Branch | null>;
+  count(filters?: BranchListFilters): Promise<number>;
 
-  // =====================
-  // ✅ EXISTENCE CHECKS
-  // =====================
+  findByIdIncludingDeleted(
+    id: string,
+  ): Promise<Branch | null>;
 
   existsById(id: string): Promise<boolean>;
 
   existsByBranchCode(
     branchCode: string,
+    excludeId?: string,
   ): Promise<boolean>;
 
-  // =====================
-  // 🧠 BRANCH OPERATIONS
-  // =====================
+  getMaxNumericSuffixForPrefix(
+    prefix: string,
+  ): Promise<number>;
+
+  getMaxDisplayOrder(): Promise<number>;
+
+  getMaxActiveDisplayOrder(): Promise<number>;
+
+  closeDisplayOrderGap(
+    deletedDisplayOrder: number,
+  ): Promise<void>;
+
+  moveDisplayOrder(
+    branchId: string,
+    oldOrder: number,
+    newOrder: number,
+  ): Promise<void>;
 
   updateEmail(
     branchId: string,

@@ -25,17 +25,21 @@ export class ListBranchesHandler {
   ): Promise<ListBranchesResult> {
     this.logger.log('List branches request received');
 
-    const branches =
-      await this.branchRepo.findAll({
-        status: query.status,
-        search: query.search,
-        city: query.city,
-        state: query.state,
-        country: query.country,
-        includeDeleted: query.includeDeleted,
-        skip: query.skip,
-        take: query.take,
-      });
+    const filters = {
+      status: query.status,
+      search: query.search,
+      city: query.city,
+      state: query.state,
+      country: query.country,
+      includeDeleted: query.includeDeleted,
+      skip: query.skip,
+      take: query.take,
+    };
+
+    const [branches, total] = await Promise.all([
+      this.branchRepo.findAll(filters),
+      this.branchRepo.count(filters),
+    ]);
 
     const items = branches.map(
       (branch) =>
@@ -49,14 +53,17 @@ export class ListBranchesHandler {
           branch.state,
           branch.country,
           branch.status,
+          branch.displayOrder,
+          branch.deletedAt,
           branch.createdAt,
           branch.updatedAt,
         ),
     );
 
-    return new ListBranchesResult(
-      items,
-      items.length,
-    );
+    return new ListBranchesResult(items, total, {
+      total,
+      skip: query.skip ?? 0,
+      take: query.take ?? 50,
+    });
   }
 }

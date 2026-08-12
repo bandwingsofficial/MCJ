@@ -7,13 +7,7 @@ import { Branch } from '../../domain/entities/branch.entity';
 import { BranchStatus } from '../../domain/enums/branch-status.enum';
 
 export class BranchMapper {
-  // =====================
-  // 🔵 DB → DOMAIN
-  // =====================
-
-  static toDomain(
-    record: PrismaBranch,
-  ): Branch {
+  static toDomain(record: PrismaBranch): Branch {
     return Branch.reconstitute({
       id: record.id,
 
@@ -35,10 +29,11 @@ export class BranchMapper {
       latitude: record.latitude,
       longitude: record.longitude,
 
-      status:
-        record.status as BranchStatus,
+      status: record.status as BranchStatus,
 
       description: record.description,
+
+      displayOrder: record.displayOrder ?? null,
 
       deletedAt: record.deletedAt,
 
@@ -47,48 +42,36 @@ export class BranchMapper {
     });
   }
 
-  // =====================
-  // 🟢 DOMAIN → DB
-  // =====================
-
-  static toPersistence(
-    branch: Branch,
-  ) {
+  static toPersistence(branch: Branch) {
     return {
       id: branch.id,
 
-      branchName:
-        branch.branchName.getValue(),
+      branchName: branch.branchName.getValue(),
 
-      branchCode:
-        branch.branchCode.getValue(),
+      branchCode: branch.branchCode.getValue(),
 
-      email:
-        branch.email?.getValue() ?? null,
+      email: branch.email?.getValue() ?? null,
 
-      phone:
-        branch.phone?.getValue() ?? null,
+      phone: branch.phone?.getValue() ?? null,
 
-      addressLine1:
-        branch.addressLine1,
+      addressLine1: branch.addressLine1,
 
-      addressLine2:
-        branch.addressLine2,
+      addressLine2: branch.addressLine2,
 
       city: branch.city,
       state: branch.state,
       country: branch.country,
 
-      postalCode:
-        branch.postalCode,
+      postalCode: branch.postalCode,
 
       latitude: branch.latitude,
       longitude: branch.longitude,
 
       status: branch.status,
 
-      description:
-        branch.description,
+      description: branch.description,
+
+      displayOrder: branch.displayOrder,
 
       deletedAt: branch.deletedAt,
 

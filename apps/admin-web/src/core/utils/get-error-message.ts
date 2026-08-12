@@ -16,6 +16,8 @@ const CODE_MESSAGES: Record<string, string> = {
   ADMIN_MFA_REQUIRED: "Multi-factor authentication is required.",
   CATEGORY_ALREADY_EXISTS: "Category already exists.",
   CATEGORY_NOT_FOUND: "Category not found.",
+  BRANCH_ALREADY_EXISTS: "Branch already exists.",
+  BRANCH_NOT_FOUND: "Branch not found.",
 };
 
 export const getErrorMessage = (error: unknown): string => {

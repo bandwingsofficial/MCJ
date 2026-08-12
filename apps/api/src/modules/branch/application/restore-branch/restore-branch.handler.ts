@@ -60,7 +60,11 @@ export class RestoreBranchHandler {
       // 3️⃣ RESTORE
       // =====================
 
+      const nextDisplayOrder =
+        (await this.branchRepo.getMaxDisplayOrder()) + 1;
+
       branch.restore();
+      branch.changeDisplayOrder(nextDisplayOrder);
 
       // =====================
       // 4️⃣ SAVE

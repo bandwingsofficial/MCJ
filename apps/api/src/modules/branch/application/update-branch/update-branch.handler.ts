@@ -14,6 +14,7 @@ import { ERROR_CODES } from '@common/constants/error-codes';
 import { ValidationError } from '../errors/validation.error';
 
 import { BRANCH_TOKENS } from '../../branch.tokens';
+import { Prisma } from '@prisma/client';
 
 export class UpdateBranchHandler {
   private readonly logger = new Logger(UpdateBranchHandler.name);
@@ -41,6 +42,23 @@ export class UpdateBranchHandler {
       this.domainService.ensureBranchExists(branch);
 
       if (command.branchName !== undefined) {
+        const nextName = command.branchName.trim();
+        const currentName = branch.branchName.getValue();
+
+        if (
+          nextName.toLowerCase() !== currentName.toLowerCase()
+        ) {
+          const existingByName =
+            await this.branchRepo.findByBranchNameInsensitive(
+              nextName,
+              branch.id,
+            );
+
+          this.domainService.ensureBranchNameIsAvailable(
+            existingByName,
+          );
+        }
+
         branch.changeBranchName(command.branchName);
       }
 
@@ -48,10 +66,15 @@ export class UpdateBranchHandler {
         const nextCode = BranchCode.create(command.branchCode).getValue();
 
         if (nextCode !== branch.branchCode.getValue()) {
-          const existingBranch =
-            await this.branchRepo.findByBranchCode(nextCode);
+          const codeTaken =
+            await this.branchRepo.existsByBranchCode(
+              nextCode,
+              branch.id,
+            );
 
-          this.domainService.ensureBranchDoesNotExist(existingBranch);
+          this.domainService.ensureBranchCodeIsAvailable(
+            codeTaken,
+          );
 
           branch.changeBranchCode(nextCode);
         }
@@ -65,14 +88,23 @@ export class UpdateBranchHandler {
         branch.changePhone(command.phone);
       }
 
-      branch.updateAddress({
-        addressLine1: command.addressLine1,
-        addressLine2: command.addressLine2,
-        city: command.city,
-        state: command.state,
-        country: command.country,
-        postalCode: command.postalCode,
-      });
+      if (
+        command.addressLine1 !== undefined ||
+        command.addressLine2 !== undefined ||
+        command.city !== undefined ||
+        command.state !== undefined ||
+        command.country !== undefined ||
+        command.postalCode !== undefined
+      ) {
+        branch.updateAddress({
+          addressLine1: command.addressLine1,
+          addressLine2: command.addressLine2,
+          city: command.city,
+          state: command.state,
+          country: command.country,
+          postalCode: command.postalCode,
+        });
+      }
 
       if (command.latitude !== undefined || command.longitude !== undefined) {
         branch.updateLocation({
@@ -113,6 +145,31 @@ export class UpdateBranchHandler {
         branch.updatedAt,
       );
     } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const target = Array.isArray(error.meta?.target)
+          ? error.meta.target.join(',')
+          : String(error.meta?.target ?? '');
+
+        if (target.toLowerCase().includes('branchcode')) {
+          throw new ValidationError(
+            'Branch code already exists.',
+            ERROR_CODES.BRANCH_ALREADY_EXISTS,
+            undefined,
+            409,
+          );
+        }
+
+        throw new ValidationError(
+          'Branch already exists.',
+          ERROR_CODES.BRANCH_ALREADY_EXISTS,
+          undefined,
+          409,
+        );
+      }
+
       if (error instanceof BaseException) {
         throw new ValidationError(
           error.message,

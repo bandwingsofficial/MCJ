@@ -1,6 +1,13 @@
 "use client";
 
 import {
+  useEffect,
+  useState,
+} from "react";
+
+import { GripVertical } from "lucide-react";
+
+import {
   Table,
   TableBody,
   TableCell,
@@ -9,216 +16,257 @@ import {
   TableRow,
 } from "@/src/shared/components/ui/table";
 
-import { Dropdown } from "@/src/shared/components/ui/dropdown";
+import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
-import { Button } from "@/src/shared/components/ui/button";
-
-import { MoreVertical } from "lucide-react";
-
-import {
-  BranchListItem,
-} from "@/src/features/branches/types/branch.types";
+import type { BranchListItem } from "@/src/features/branches/types/branch.types";
 
 import { BranchStatusBadge } from "./branch-status-badge";
+import { BranchActions } from "./branch-actions";
 
 interface BranchTableProps {
   branches: BranchListItem[];
 
-  onView: (
-    branch: BranchListItem
-  ) => void;
+  actionsDisabled?: boolean;
 
-  onEdit: (
-    branch: BranchListItem
-  ) => void;
+  reorderDisabled?: boolean;
 
-  onDelete: (
-    branch: BranchListItem
-  ) => void;
+  onEdit: (branch: BranchListItem) => void;
 
-  onPermanentDelete: (
-    branch: BranchListItem
-  ) => void;
+  onView: (branch: BranchListItem) => void;
 
-  onRestore: (
-    branch: BranchListItem
-  ) => void;
+  onDelete: (branch: BranchListItem) => void;
 
-  onToggleStatus: (
-    branch: BranchListItem
-  ) => void;
+  onRestore: (branch: BranchListItem) => void;
+
+  onActivate: (branch: BranchListItem) => void;
+
+  onDeactivate: (branch: BranchListItem) => void;
+
+  onPermanentDelete: (branch: BranchListItem) => void;
+
+  onReorder: (payload: {
+    branchId: string;
+    newDisplayOrder: number;
+  }) => Promise<void>;
+}
+
+function canReorder(branch: BranchListItem): boolean {
+  return (
+    !branch.deletedAt &&
+    branch.status === "ACTIVE" &&
+    branch.displayOrder != null
+  );
 }
 
 export function BranchTable({
   branches,
-  onView,
+  actionsDisabled = false,
+  reorderDisabled = false,
   onEdit,
+  onView,
   onDelete,
-  onPermanentDelete,
   onRestore,
-  onToggleStatus,
+  onActivate,
+  onDeactivate,
+  onPermanentDelete,
+  onReorder,
 }: BranchTableProps) {
+  const [rows, setRows] = useState(branches);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<
+    string | null
+  >(null);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+
+  useEffect(() => {
+    setRows(branches);
+  }, [branches]);
+
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        title="No Branches Found"
+        description="Create your first branch to get started."
+      />
+    );
+  }
+
+  const handleDrop = async (targetId: string) => {
+    if (
+      !dragId ||
+      dragId === targetId ||
+      isSavingOrder ||
+      reorderDisabled
+    ) {
+      setDragId(null);
+      setDropTargetId(null);
+      return;
+    }
+
+    const previous = rows;
+    const next = [...rows];
+    const fromIndex = next.findIndex(
+      (item) => item.id === dragId
+    );
+    const toIndex = next.findIndex(
+      (item) => item.id === targetId
+    );
+
+    if (fromIndex < 0 || toIndex < 0) {
+      setDragId(null);
+      setDropTargetId(null);
+      return;
+    }
+
+    const source = next[fromIndex];
+    const target = next[toIndex];
+
+    if (
+      !canReorder(source) ||
+      !canReorder(target) ||
+      target.displayOrder == null
+    ) {
+      setDragId(null);
+      setDropTargetId(null);
+      return;
+    }
+
+    const newDisplayOrder = target.displayOrder;
+
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    setRows(next);
+
+    try {
+      setIsSavingOrder(true);
+      await onReorder({
+        branchId: source.id,
+        newDisplayOrder,
+      });
+    } catch {
+      setRows(previous);
+    } finally {
+      setIsSavingOrder(false);
+      setDragId(null);
+      setDropTargetId(null);
+    }
+  };
+
   return (
-    <Table>
+    <Table className="rounded-none border-0">
       <TableHeader>
         <TableRow>
-          <TableHead className="py-1">
-            Branch Name
+          <TableHead className="w-10">
+            <span className="sr-only">Reorder</span>
           </TableHead>
-
-          <TableHead className="py-1">
-            Code
-          </TableHead>
-
-          <TableHead className="py-1">
-            Email
-          </TableHead>
-
-          <TableHead className="py-1">
-            Phone
-          </TableHead>
-
-          <TableHead className="py-1">
-            City
-          </TableHead>
-
-          <TableHead className="py-1">
-            State
-          </TableHead>
-
-          <TableHead className="py-1">
-            Status
-          </TableHead>
-
-          <TableHead className="py-1">
+          <TableHead>Code</TableHead>
+          <TableHead>Name</TableHead>
+          <TableHead>City</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Order</TableHead>
+          <TableHead className="text-right">
             Actions
           </TableHead>
         </TableRow>
       </TableHeader>
 
       <TableBody>
-        {branches.map(
-          (branch) => (
+        {rows.map((branch) => {
+          const draggable =
+            canReorder(branch) &&
+            !reorderDisabled &&
+            !isSavingOrder;
+
+          return (
             <TableRow
               key={branch.id}
+              draggable={draggable}
+              onDragStart={() => {
+                if (!draggable) {
+                  return;
+                }
+                setDragId(branch.id);
+              }}
+              onDragOver={(event) => {
+                if (!draggable || !dragId) {
+                  return;
+                }
+                event.preventDefault();
+                setDropTargetId(branch.id);
+              }}
+              onDragLeave={() => {
+                if (dropTargetId === branch.id) {
+                  setDropTargetId(null);
+                }
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                void handleDrop(branch.id);
+              }}
+              onDragEnd={() => {
+                setDragId(null);
+                setDropTargetId(null);
+              }}
+              className={`${
+                dropTargetId === branch.id
+                  ? "bg-slate-50"
+                  : ""
+              } ${
+                dragId === branch.id ? "opacity-60" : ""
+              }`}
             >
-              <TableCell className="py-1">
-                {
-                  branch.branchName
-                }
+              <TableCell className="w-10">
+                {draggable ? (
+                  <GripVertical
+                    className="h-3.5 w-3.5 cursor-grab text-slate-400"
+                    aria-label="Drag to reorder"
+                  />
+                ) : (
+                  <span className="inline-block w-3.5" />
+                )}
               </TableCell>
 
-              <TableCell className="py-1">
-                {
-                  branch.branchCode
-                }
+              <TableCell className="text-[15px] font-medium text-slate-900">
+                {branch.branchCode}
               </TableCell>
 
-              <TableCell className="py-1">
-                {branch.email}
+              <TableCell className="text-[15px] font-medium text-slate-900">
+                {branch.branchName}
               </TableCell>
 
-              <TableCell className="py-1">
-                {branch.phone}
+              <TableCell>
+                {branch.city ?? "—"}
               </TableCell>
 
-              <TableCell className="py-1">
-                {branch.city}
-              </TableCell>
-
-              <TableCell className="py-1">
-                {branch.state}
-              </TableCell>
-
-              <TableCell className="py-1">
+              <TableCell>
                 <BranchStatusBadge
-                  status={
-                    branch.status
-                  }
+                  status={branch.status}
+                  deletedAt={branch.deletedAt}
                 />
               </TableCell>
 
-              <TableCell className="py-1">
-                <Dropdown
-                  trigger={
-                    <Button
-                      variant="outline"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
+              <TableCell>
+                {branch.displayOrder ?? "—"}
+              </TableCell>
+
+              <TableCell className="text-right">
+                <BranchActions
+                  branch={branch}
+                  disabled={
+                    actionsDisabled || isSavingOrder
                   }
-                  items={[
-                    {
-                      label:
-                        "View",
-                      onClick:
-                        () =>
-                          onView(
-                            branch
-                          ),
-                    },
-
-                    {
-                      label:
-                        "Edit",
-                      onClick:
-                        () =>
-                          onEdit(
-                            branch
-                          ),
-                    },
-
-                    {
-                      label:
-                        branch.status ===
-                        "ACTIVE"
-                          ? "Deactivate"
-                          : "Activate",
-
-                      onClick:
-                        () =>
-                          onToggleStatus(
-                            branch
-                          ),
-                    },
-
-                    {
-                      label:
-                        "Delete",
-
-                      onClick:
-                        () =>
-                          onDelete(
-                            branch
-                          ),
-                    },
-                    {
-                      label:
-                        "Delete permanently",
-
-                      onClick:
-                        () =>
-                          onPermanentDelete(
-                            branch
-                          ),
-                    },
-
-                    {
-                      label:
-                        "Restore",
-
-                      onClick:
-                        () =>
-                          onRestore(
-                            branch
-                          ),
-                    },
-                  ]}
+                  onEdit={onEdit}
+                  onView={onView}
+                  onDelete={onDelete}
+                  onRestore={onRestore}
+                  onActivate={onActivate}
+                  onDeactivate={onDeactivate}
+                  onPermanentDelete={onPermanentDelete}
                 />
               </TableCell>
             </TableRow>
-          )
-        )}
+          );
+        })}
       </TableBody>
     </Table>
   );

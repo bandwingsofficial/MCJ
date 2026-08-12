@@ -1,27 +1,14 @@
 "use client";
 
 import { SearchInput } from "@/src/shared/components/ui/search-input";
-
 import { AppSelect } from "@/src/shared/components/ui/select";
 
-import { Checkbox } from "@/src/shared/components/ui/checkbox";
-
-import { Label } from "@/src/shared/components/ui/label";
-
-import type {
-  BranchFilters as BranchFiltersType,
-} from "@/src/features/branches/types/branch.types";
-
-import {
-  BRANCH_STATUS_OPTIONS,
-} from "@/src/features/branches/constants/branch.constants";
+import type { BranchFilters as BranchFiltersType } from "@/src/features/branches/types/branch.types";
 
 interface BranchFiltersProps {
   filters: BranchFiltersType;
 
-  onChange: (
-    filters: BranchFiltersType
-  ) => void;
+  onChange: (filters: BranchFiltersType) => void;
 }
 
 export function BranchFilters({
@@ -29,24 +16,13 @@ export function BranchFilters({
   onChange,
 }: BranchFiltersProps) {
   return (
-    <div 
-      className="
-        flex 
-        flex-col 
-        gap-3 
-        sm:flex-row 
-        sm:items-center 
-        w-full
-      "
-    >
-      <div className="flex-1 min-w-[200px]">
+    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+      <div className="min-w-0 flex-1">
         <SearchInput
-          value={
-            filters.search ?? ""
-          }
-          onChange={(
-            value: string
-          ) =>
+          value={filters.search ?? ""}
+          placeholder="Search branches..."
+          className="!h-10 rounded-lg !py-2 pl-9 text-[15px]"
+          onChange={(value: string) =>
             onChange({
               ...filters,
               search: value,
@@ -55,53 +31,29 @@ export function BranchFilters({
         />
       </div>
 
-      <div className="w-full sm:w-[180px]">
+      <div className="w-full shrink-0 sm:w-48">
         <AppSelect
-          placeholder="Select Status"
-          value={
-            filters.status
-          }
-          onValueChange={(
-            value
-          ) =>
+          value={filters.status ?? "ALL"}
+          triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
+          onValueChange={(value) =>
             onChange({
               ...filters,
               status:
-                value as
-                  | "ACTIVE"
-                  | "INACTIVE",
+                value === "ALL"
+                  ? undefined
+                  : (value as
+                      | "ACTIVE"
+                      | "INACTIVE"
+                      | "ARCHIVED"),
             })
           }
-          options={
-            BRANCH_STATUS_OPTIONS
-          }
+          options={[
+            { label: "All Status", value: "ALL" },
+            { label: "Active", value: "ACTIVE" },
+            { label: "Inactive", value: "INACTIVE" },
+            { label: "Archived", value: "ARCHIVED" },
+          ]}
         />
-      </div>
-
-      <div className="flex items-center gap-2 select-none shrink-0 h-10 px-1">
-        <Checkbox
-          checked={
-            filters.includeDeleted ?? false
-          }
-          onCheckedChange={(
-            checked
-          ) =>
-            onChange({
-              ...filters,
-              includeDeleted:
-                Boolean(
-                  checked
-                ),
-            })
-          }
-        />
-
-        <Label
-          htmlFor="branch-include-deleted"
-          className="text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground transition-colors select-none"
-        >
-          Include Deleted
-        </Label>
       </div>
     </div>
   );

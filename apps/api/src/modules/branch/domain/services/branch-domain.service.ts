@@ -14,11 +14,36 @@ export class BranchDomainService {
 
   ensureBranchDoesNotExist(
     branch: Branch | null,
+    message = 'Branch already exists',
   ): void {
     if (branch) {
       throw new BaseException(
         ERROR_CODES.BRANCH_ALREADY_EXISTS,
-        'Branch already exists',
+        message,
+        409,
+      );
+    }
+  }
+
+  ensureBranchCodeIsAvailable(
+    exists: boolean,
+  ): void {
+    if (exists) {
+      throw new BaseException(
+        ERROR_CODES.BRANCH_ALREADY_EXISTS,
+        'Branch code already exists.',
+        409,
+      );
+    }
+  }
+
+  ensureBranchNameIsAvailable(
+    branch: Branch | null,
+  ): void {
+    if (branch) {
+      throw new BaseException(
+        ERROR_CODES.BRANCH_ALREADY_EXISTS,
+        'Branch name already exists.',
         409,
       );
     }

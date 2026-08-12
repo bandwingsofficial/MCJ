@@ -1,59 +1,71 @@
 import { z } from "zod";
 
-export const createBranchSchema =
-  z.object({
-    branchName: z
-      .string()
-      .trim()
-      .min(3, "Branch name is required"),
+export const createBranchSchema = z.object({
+  branchName: z
+    .string()
+    .trim()
+    .min(3, "Branch name is required"),
 
-    branchCode: z
-      .string()
-      .trim()
-      .min(2, "Branch code is required"),
+  branchCode: z
+    .string()
+    .trim()
+    .min(2, "Branch code is required")
+    .regex(
+      /^[A-Za-z0-9_-]{2,20}$/,
+      "Invalid branch code format"
+    ),
 
-    email: z
-      .string()
-      .email("Invalid email"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required.")
+    .email("Invalid email address."),
 
-    phone: z
-      .string()
-      .min(10, "Invalid phone"),
+  phone: z
+    .string()
+    .trim()
+    .min(1, "Phone is required.")
+    .min(10, "Invalid phone number."),
 
-    addressLine1: z
-      .string()
-      .min(2),
+  addressLine1: z
+    .string()
+    .trim()
+    .min(2, "Address Line 1 is required."),
 
-    addressLine2:
-      z.string().optional(),
+  addressLine2: z.string().optional(),
 
-    city: z.string().min(2),
+  city: z.string().trim().min(2, "City is required."),
 
-    state: z.string().min(2),
+  state: z.string().trim().min(2, "State is required."),
 
-    country: z.string().min(2),
+  country: z
+    .string()
+    .trim()
+    .min(2, "Country is required."),
 
-    postalCode: z.string().min(3),
+  postalCode: z
+    .string()
+    .trim()
+    .min(3, "Postal Code is required."),
 
-    latitude:
-      z.coerce.number(),
+  latitude: z.coerce.number({
+    message: "Latitude is required.",
+  }),
 
-    longitude:
-      z.coerce.number(),
+  longitude: z.coerce.number({
+    message: "Longitude is required.",
+  }),
 
-    description:
-      z.string().optional(),
-  });
+  description: z.string().optional(),
+});
 
 export const updateBranchSchema =
   createBranchSchema.partial();
 
-export type CreateBranchFormValues =
-  z.infer<
-    typeof createBranchSchema
-  >;
+export type CreateBranchFormValues = z.infer<
+  typeof createBranchSchema
+>;
 
-export type UpdateBranchFormValues =
-  z.infer<
-    typeof updateBranchSchema
-  >;
+export type UpdateBranchFormValues = z.infer<
+  typeof updateBranchSchema
+>;

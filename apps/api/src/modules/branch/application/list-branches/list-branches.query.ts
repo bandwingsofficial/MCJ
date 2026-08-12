@@ -1,8 +1,6 @@
-import { BranchStatus } from '../../domain/enums/branch-status.enum';
-
 export class ListBranchesQuery {
   constructor(
-    public readonly status?: BranchStatus,
+    public readonly status?: 'ACTIVE' | 'INACTIVE' | 'ARCHIVED',
 
     public readonly search?: string,
 
@@ -10,7 +8,7 @@ export class ListBranchesQuery {
     public readonly state?: string,
     public readonly country?: string,
 
-    public readonly includeDeleted: boolean = false,
+    public readonly includeDeleted: boolean = true,
 
     public readonly skip: number = 0,
     public readonly take: number = 50,

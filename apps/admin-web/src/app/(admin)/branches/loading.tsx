@@ -1,9 +1,4 @@
-import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
-
 export default function Loading() {
-  return (
-    <div className="space-y-6">
-      <SkeletonTable rows={10} />
-    </div>
-  );
+  // Keep route transition silent — page handles its own initial skeleton.
+  return null;
 }

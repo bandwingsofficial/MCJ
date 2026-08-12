@@ -17,6 +17,10 @@ export class ListBranchItemResult {
 
     public readonly status: BranchStatus,
 
+    public readonly displayOrder: number | null,
+
+    public readonly deletedAt: Date | null,
+
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
   ) {}
@@ -27,5 +31,11 @@ export class ListBranchesResult {
     public readonly items: ListBranchItemResult[],
 
     public readonly count: number,
+
+    public readonly meta: {
+      total: number;
+      skip: number;
+      take: number;
+    },
   ) {}
 }

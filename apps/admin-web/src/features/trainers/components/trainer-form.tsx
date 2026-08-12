@@ -64,7 +64,10 @@ const [
   );
 
   // Dynamically load remote data sources
-  const { branches, isLoading: branchesLoading } = useBranches();
+  const { branches, isLoading: branchesLoading } = useBranches({
+    pageSize: 100,
+    includeDeleted: false,
+  });
   const { courses, isLoading: coursesLoading } = useCourses();
   
   const {

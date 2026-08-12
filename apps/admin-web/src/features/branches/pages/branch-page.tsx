@@ -3,170 +3,126 @@
 import { useMemo, useState } from "react";
 
 import { Button } from "@/src/shared/components/ui/button";
-
-import { PageHeader } from "@/src/shared/components/ui/page-header";
-
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
-
-import { ErrorState } from "@/src/shared/components/ui/error-state";
-
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
+import { ErrorState } from "@/src/shared/components/ui/error-state";
+import { Pagination } from "@/src/shared/components/ui/pagination";
+import { Card } from "@/src/shared/components/ui/card";
+import { appToast } from "@/src/shared/components/ui/toast";
 
 import {
-  Branch,
   BranchListItem,
 } from "@/src/features/branches/types/branch.types";
 
 import { useBranches } from "@/src/features/branches/hooks/use-branches";
-
 import { useBranch } from "@/src/features/branches/hooks/use-branch";
-
 import { useDeleteBranch } from "@/src/features/branches/hooks/use-delete-branch";
-
+import { usePermanentDeleteBranch } from "@/src/features/branches/hooks/use-permanent-delete-branch";
 import { useRestoreBranch } from "@/src/features/branches/hooks/use-restore-branch";
-
 import { useUpdateStatus } from "@/src/features/branches/hooks/use-update-status";
 
+import { branchService } from "@/src/features/branches/services/branch.service";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
+
 import { BranchFilters } from "@/src/features/branches/components/branch-filters";
-
 import { BranchTable } from "@/src/features/branches/components/branch-table";
-
 import { CreateBranchModal } from "@/src/features/branches/components/create-branch-modal";
-
 import { UpdateBranchModal } from "@/src/features/branches/components/update-branch-modal";
-
-import { BranchDetailsDrawer } from "@/src/features/branches/components/branch-details-drawer";
-
+import { BranchDetailsModal } from "@/src/features/branches/components/branch-details-modal";
 import { DeleteBranchDialog } from "@/src/features/branches/components/delete-branch-dialog";
-
+import { PermanentDeleteBranchDialog } from "@/src/features/branches/components/permanent-delete-branch-dialog";
 import { RestoreBranchDialog } from "@/src/features/branches/components/restore-branch-dialog";
-
 import { StatusBranchDialog } from "@/src/features/branches/components/status-branch-dialog";
-import { Card } from "@/src/shared/components/ui/card";
 
 export default function BranchesPage() {
   const {
     branches,
-    count,
+    total,
     filters,
     setFilters,
-    isLoading,
+    isInitialLoading,
+    isFetching,
     error,
     refetch,
   } = useBranches();
 
-  const [isCreateOpen, setIsCreateOpen] =
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] =
     useState(false);
+  const [isRestoreOpen, setIsRestoreOpen] = useState(false);
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
 
-  const [isUpdateOpen, setIsUpdateOpen] =
-    useState(false);
-
-  const [isDrawerOpen, setIsDrawerOpen] =
-    useState(false);
-
-  const [isDeleteOpen, setIsDeleteOpen] =
-    useState(false);
-
-  const [isRestoreOpen, setIsRestoreOpen] =
-    useState(false);
-
-  const [isStatusOpen, setIsStatusOpen] =
-    useState(false);
-
-  const [selectedBranchId, setSelectedBranchId] =
-    useState<string | null>(null);
-
+  const [selectedBranchId, setSelectedBranchId] = useState<
+    string | null
+  >(null);
   const [selectedBranch, setSelectedBranch] =
     useState<BranchListItem | null>(null);
+  const [statusTarget, setStatusTarget] = useState<
+    "ACTIVE" | "INACTIVE" | null
+  >(null);
+  const [isReordering, setIsReordering] = useState(false);
 
   const {
     branch,
-  } = useBranch(
-    selectedBranchId ?? undefined
+    isLoading: isBranchLoading,
+    setBranchData,
+  } = useBranch(selectedBranchId ?? undefined);
+
+  const { deleteBranch, isPending: isDeleting } =
+    useDeleteBranch();
+  const {
+    permanentDeleteBranch,
+    isPending: isPermanentlyDeleting,
+  } = usePermanentDeleteBranch();
+  const { restoreBranch, isPending: isRestoring } =
+    useRestoreBranch();
+  const { updateStatus, isPending: isUpdatingStatus } =
+    useUpdateStatus();
+
+  const pageSize = filters.pageSize ?? 20;
+  const page = filters.page ?? 1;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+
+  const currentBranch = useMemo(
+    () => branch ?? null,
+    [branch]
   );
 
-  const {
-    deleteBranch,
-    isPending: isDeleting,
-  } = useDeleteBranch();
+  const actionLoading =
+    isDeleting ||
+    isPermanentlyDeleting ||
+    isRestoring ||
+    isUpdatingStatus ||
+    isReordering;
 
-  const {
-    restoreBranch,
-    isPending: isRestoring,
-  } = useRestoreBranch();
+  const clearSelection = () => {
+    setSelectedBranchId(null);
+    setBranchData(null);
+  };
 
-  const {
-    updateStatus,
-    isPending: isUpdatingStatus,
-  } = useUpdateStatus();
-
-  const handleRefresh =
-    async () => {
+  const handleReorder = async (payload: {
+    branchId: string;
+    newDisplayOrder: number;
+  }) => {
+    try {
+      setIsReordering(true);
+      await branchService.reorderBranches(payload);
+      appToast.success("Branch order updated");
       await refetch();
-    };
-
-  const handleView = (
-    branch: BranchListItem
-  ) => {
-    setSelectedBranchId(branch.id);
-
-    setIsDrawerOpen(true);
+    } catch (err) {
+      appToast.error(getErrorMessage(err));
+      throw err;
+    } finally {
+      setIsReordering(false);
+    }
   };
 
-  const handleEdit = (
-    branch: BranchListItem
-  ) => {
-    setSelectedBranchId(branch.id);
-
-    setSelectedBranch(branch);
-
-    setIsUpdateOpen(true);
-  };
-
-  const handleDelete = (
-    branch: BranchListItem
-  ) => {
-    setSelectedBranch(branch);
-
-    setIsDeleteOpen(true);
-  };
-
-  const handlePermanentDelete = (
-    branch: BranchListItem
-  ) => {
-    setSelectedBranch(branch);
-
-    setIsDeleteOpen(true);
-  };
-
-  const handleRestore = (
-    branch: BranchListItem
-  ) => {
-    setSelectedBranch(branch);
-
-    setIsRestoreOpen(true);
-  };
-
-  const handleStatus = (
-    branch: BranchListItem
-  ) => {
-    setSelectedBranch(branch);
-
-    setIsStatusOpen(true);
-  };
-
-  const currentBranch =
-    useMemo(() => {
-      return branch ?? null;
-    }, [branch]);
-
-  if (isLoading) {
-    return (
-      <SkeletonTable rows={10} />
-    );
-  }
-
-  if (error) {
+  if (error && branches.length === 0 && !isInitialLoading) {
     return (
       <ErrorState
         title="Failed To Load Branches"
@@ -179,107 +135,230 @@ export default function BranchesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Branches"
-        description={`Manage organization branches (${count})`}
-        actions={
-          <Button
-            onClick={() =>
-              setIsCreateOpen(true)
-            }
-          >
-            Create Branch
-          </Button>
-        }
-      />
-   <Card>
-            <div className="p-0">
-      <BranchFilters
-        filters={filters}
-        onChange={setFilters}
-      />
-      </div>
-              </Card>
+    <>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">
+            Branches
+          </h1>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Manage organization branches
+          </p>
+        </div>
 
-      {branches.length === 0 ? (
-        <EmptyState
-          title="No Branches Found"
-          description="Create your first branch to get started."
-          action={
-            <Button
-              onClick={() =>
-                setIsCreateOpen(true)
-              }
-            >
-              Create Branch
-            </Button>
-          }
-        />
-      ) : (
-        <BranchTable
-          branches={branches}
-          onView={handleView}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onPermanentDelete={handlePermanentDelete}
-          onRestore={handleRestore}
-          onToggleStatus={
-            handleStatus
-          }
-        />
-      )}
+        <Button
+          onClick={() => setIsCreateOpen(true)}
+          className="h-9 rounded-lg px-4"
+        >
+          Create Branch
+        </Button>
+      </div>
+
+      <div className="space-y-3">
+        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+          <BranchFilters
+            filters={filters}
+            onChange={setFilters}
+          />
+        </div>
+
+        {isInitialLoading ? (
+          <SkeletonTable rows={10} />
+        ) : (
+          <Card className="overflow-hidden p-0 shadow-sm">
+            {error && (
+              <div className="border-b border-red-100 bg-red-50 px-3.5 py-2 text-sm text-red-700">
+                {error}{" "}
+                <button
+                  type="button"
+                  className="font-medium underline"
+                  onClick={() => {
+                    void refetch();
+                  }}
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            <div aria-busy={isFetching} className="relative">
+              {isFetching && (
+                <span className="sr-only">
+                  Updating branches
+                </span>
+              )}
+
+              <BranchTable
+                branches={branches}
+                actionsDisabled={
+                  actionLoading || isFetching
+                }
+                reorderDisabled={
+                  isReordering ||
+                  !!filters.status ||
+                  !!(filters.search ?? "").trim() ||
+                  isFetching
+                }
+                onEdit={(item) => {
+                  setIsViewOpen(false);
+                  setSelectedBranchId(item.id);
+                  setSelectedBranch(item);
+                  setIsUpdateOpen(true);
+                }}
+                onView={(item) => {
+                  setIsUpdateOpen(false);
+                  setSelectedBranchId(item.id);
+                  setSelectedBranch(item);
+                  setIsViewOpen(true);
+                }}
+                onDelete={(item) => {
+                  setSelectedBranch(item);
+                  setIsDeleteOpen(true);
+                }}
+                onPermanentDelete={(item) => {
+                  setSelectedBranch(item);
+                  setIsPermanentDeleteOpen(true);
+                }}
+                onRestore={(item) => {
+                  setSelectedBranch(item);
+                  setIsRestoreOpen(true);
+                }}
+                onActivate={(item) => {
+                  setSelectedBranch(item);
+                  setStatusTarget("ACTIVE");
+                  setIsStatusOpen(true);
+                }}
+                onDeactivate={(item) => {
+                  setSelectedBranch(item);
+                  setStatusTarget("INACTIVE");
+                  setIsStatusOpen(true);
+                }}
+                onReorder={handleReorder}
+              />
+            </div>
+
+            <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+              {total > 0 ? (
+                <>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-slate-600">
+                    <span className="leading-9">
+                      Showing {from}–{to} of {total}
+                    </span>
+
+                    <label className="flex items-center gap-2 leading-9">
+                      <span className="whitespace-nowrap">
+                        Rows per page
+                      </span>
+                      <select
+                        className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-[15px]"
+                        value={pageSize}
+                        onChange={(event) =>
+                          setFilters({
+                            ...filters,
+                            pageSize: Number(
+                              event.target.value
+                            ),
+                          })
+                        }
+                      >
+                        {[10, 20, 50].map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <Pagination
+                    page={page}
+                    totalPages={totalPages}
+                    onPageChange={(nextPage) =>
+                      setFilters({
+                        ...filters,
+                        page: nextPage,
+                      })
+                    }
+                  />
+                </>
+              ) : (
+                <p className="text-[15px] leading-9 text-slate-500">
+                  No branches to paginate
+                </p>
+              )}
+            </div>
+          </Card>
+        )}
+      </div>
 
       <CreateBranchModal
         open={isCreateOpen}
-        onClose={() =>
-          setIsCreateOpen(false)
-        }
+        onClose={() => setIsCreateOpen(false)}
         onSuccess={() => {
-          void handleRefresh();
+          void refetch();
         }}
       />
 
       <UpdateBranchModal
         open={isUpdateOpen}
-        branch={
-          currentBranch as Branch
-        }
-        onClose={() =>
-          setIsUpdateOpen(false)
-        }
-        onSuccess={() => {
-          void handleRefresh();
+        branch={currentBranch}
+        isLoading={isBranchLoading}
+        onClose={() => {
+          setIsUpdateOpen(false);
+          clearSelection();
+        }}
+        onSuccess={async (updated) => {
+          setBranchData(updated);
+          await refetch();
         }}
       />
 
-      <BranchDetailsDrawer
-        open={isDrawerOpen}
+      <BranchDetailsModal
+        open={isViewOpen}
         branch={currentBranch}
-        onClose={() =>
-          setIsDrawerOpen(false)
-        }
+        isLoading={isBranchLoading}
+        onClose={() => {
+          setIsViewOpen(false);
+          clearSelection();
+        }}
       />
 
       <DeleteBranchDialog
         open={isDeleteOpen}
         branch={selectedBranch}
         isLoading={isDeleting}
-        onClose={() =>
-          setIsDeleteOpen(false)
-        }
+        onClose={() => setIsDeleteOpen(false)}
         onConfirm={async () => {
           if (!selectedBranch) {
             return;
           }
 
-          await deleteBranch(
+          await deleteBranch(selectedBranch.id);
+          setIsDeleteOpen(false);
+          await refetch();
+        }}
+      />
+
+      <PermanentDeleteBranchDialog
+        open={isPermanentDeleteOpen}
+        branch={selectedBranch}
+        isLoading={isPermanentlyDeleting}
+        onClose={() => setIsPermanentDeleteOpen(false)}
+        onConfirm={async () => {
+          if (!selectedBranch || isPermanentlyDeleting) {
+            return;
+          }
+
+          const ok = await permanentDeleteBranch(
             selectedBranch.id
           );
 
-          setIsDeleteOpen(false);
+          if (!ok) {
+            return;
+          }
 
-          await handleRefresh();
+          setIsPermanentDeleteOpen(false);
+          await refetch();
         }}
       />
 
@@ -287,51 +366,40 @@ export default function BranchesPage() {
         open={isRestoreOpen}
         branch={selectedBranch}
         isLoading={isRestoring}
-        onClose={() =>
-          setIsRestoreOpen(false)
-        }
+        onClose={() => setIsRestoreOpen(false)}
         onConfirm={async () => {
           if (!selectedBranch) {
             return;
           }
 
-          await restoreBranch(
-            selectedBranch.id
-          );
-
+          await restoreBranch(selectedBranch.id);
           setIsRestoreOpen(false);
-
-          await handleRefresh();
+          await refetch();
         }}
       />
 
       <StatusBranchDialog
         open={isStatusOpen}
         branch={selectedBranch}
-        isLoading={
-          isUpdatingStatus
-        }
-        onClose={() =>
-          setIsStatusOpen(false)
-        }
+        isLoading={isUpdatingStatus}
+        onClose={() => {
+          setIsStatusOpen(false);
+          setStatusTarget(null);
+        }}
         onConfirm={async () => {
-          if (!selectedBranch) {
+          if (!selectedBranch || !statusTarget) {
             return;
           }
 
           await updateStatus(
             selectedBranch.id,
-            selectedBranch.status ===
-              "ACTIVE"
-              ? "INACTIVE"
-              : "ACTIVE"
+            statusTarget
           );
-
           setIsStatusOpen(false);
-
-          await handleRefresh();
+          setStatusTarget(null);
+          await refetch();
         }}
       />
-    </div>
+    </>
   );
 }

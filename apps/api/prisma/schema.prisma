@@ -144,6 +144,7 @@ model Branch {
   longitude      Float?
   status         BranchStatus   @default(ACTIVE)
   description    String?
+  displayOrder   Int?
   deletedAt      DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
@@ -160,6 +161,7 @@ model Branch {
   @@index([status])
   @@index([deletedAt])
   @@index([status, deletedAt])
+  @@index([displayOrder])
   @@index([city])
   @@index([state])
   @@index([country])

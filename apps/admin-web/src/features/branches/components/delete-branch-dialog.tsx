@@ -26,10 +26,13 @@ export function DeleteBranchDialog({
   return (
     <ConfirmDialog
       open={open}
-      title="Delete Branch"
-      description={`Are you sure you want to delete ${
-        branch?.branchName ?? ""
-      }?`}
+      title="Archive branch?"
+      description={`This branch will be archived and will remain available for restoration.${
+        branch?.branchName
+          ? ` (${branch.branchName})`
+          : ""
+      }`}
+      confirmLabel="Archive"
       loading={isLoading}
       onCancel={onClose}
       onConfirm={() => {

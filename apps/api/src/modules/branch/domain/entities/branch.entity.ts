@@ -34,15 +34,13 @@ export class Branch {
 
     public description: string | null,
 
+    public displayOrder: number | null,
+
     public deletedAt: Date | null,
 
     public readonly createdAt: Date,
     public updatedAt: Date,
   ) {}
-
-  // =====================
-  // 🟢 FACTORY
-  // =====================
 
   static create(params: {
     id: string;
@@ -68,6 +66,8 @@ export class Branch {
     status?: BranchStatus;
 
     description?: string;
+
+    displayOrder?: number | null;
   }): Branch {
     return new Branch(
       params.id,
@@ -100,16 +100,14 @@ export class Branch {
 
       params.description?.trim() ?? null,
 
+      params.displayOrder ?? null,
+
       null,
 
       new Date(),
       new Date(),
     );
   }
-
-  // =====================
-  // 🔵 RECONSTITUTE
-  // =====================
 
   static reconstitute(params: {
     id: string;
@@ -135,6 +133,8 @@ export class Branch {
     status: BranchStatus;
 
     description: string | null;
+
+    displayOrder: number | null;
 
     deletedAt: Date | null;
 
@@ -172,6 +172,8 @@ export class Branch {
 
       params.description,
 
+      params.displayOrder,
+
       params.deletedAt,
 
       params.createdAt,
@@ -179,43 +181,33 @@ export class Branch {
     );
   }
 
-  // =====================
-  // 🧠 BRANCH BEHAVIOR
-  // =====================
-
   changeBranchName(branchName: string) {
-    this.branchName =
-      BranchName.create(branchName);
-
+    this.branchName = BranchName.create(branchName);
     this.touch();
   }
 
   changeBranchCode(branchCode: string) {
-    this.branchCode =
-      BranchCode.create(branchCode);
-
+    this.branchCode = BranchCode.create(branchCode);
     this.touch();
   }
 
   changeEmail(email: string | null) {
-    this.email = email
-      ? BranchEmail.create(email)
-      : null;
-
+    this.email = email ? BranchEmail.create(email) : null;
     this.touch();
   }
 
   changePhone(phone: string | null) {
-    this.phone = phone
-      ? BranchPhone.create(phone)
-      : null;
-
+    this.phone = phone ? BranchPhone.create(phone) : null;
     this.touch();
   }
 
   changeStatus(status: BranchStatus) {
     this.status = status;
+    this.touch();
+  }
 
+  changeDisplayOrder(displayOrder: number | null) {
+    this.displayOrder = displayOrder;
     this.touch();
   }
 
@@ -227,19 +219,21 @@ export class Branch {
     this.changeStatus(BranchStatus.INACTIVE);
   }
 
+  softDelete() {
+    this.deletedAt = new Date();
+    this.status = BranchStatus.INACTIVE;
+    this.displayOrder = null;
+    this.touch();
+  }
+
   restore() {
-  this.deletedAt = null;
-  this.status = BranchStatus.ACTIVE;
+    this.deletedAt = null;
+    this.status = BranchStatus.ACTIVE;
+    this.touch();
+  }
 
-  this.touch();
-}
-
-  changeDescription(
-    description: string | null,
-  ) {
-    this.description =
-      description?.trim() ?? null;
-
+  changeDescription(description: string | null) {
+    this.description = description?.trim() ?? null;
     this.touch();
   }
 
@@ -279,18 +273,15 @@ export class Branch {
     }
 
     if (params.city !== undefined) {
-      this.city =
-        params.city?.trim() ?? null;
+      this.city = params.city?.trim() ?? null;
     }
 
     if (params.state !== undefined) {
-      this.state =
-        params.state?.trim() ?? null;
+      this.state = params.state?.trim() ?? null;
     }
 
     if (params.country !== undefined) {
-      this.country =
-        params.country?.trim() ?? null;
+      this.country = params.country?.trim() ?? null;
     }
 
     if (params.postalCode !== undefined) {
@@ -300,10 +291,6 @@ export class Branch {
 
     this.touch();
   }
-
-  // =====================
-  // 🧠 BUSINESS RULES
-  // =====================
 
   isActive(): boolean {
     return this.status === BranchStatus.ACTIVE;
@@ -323,10 +310,6 @@ export class Branch {
   hasContactInfo(): boolean {
     return !!this.email || !!this.phone;
   }
-
-  // =====================
-  // 🛠️ INTERNAL
-  // =====================
 
   private touch() {
     this.updatedAt = new Date();

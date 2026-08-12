@@ -10,8 +10,6 @@ export * from "./components/create-branch-modal";
 
 export * from "./components/update-branch-modal";
 
-export * from "./components/branch-details-drawer";
-
 export * from "./components/delete-branch-dialog";
 
 export * from "./components/restore-branch-dialog";

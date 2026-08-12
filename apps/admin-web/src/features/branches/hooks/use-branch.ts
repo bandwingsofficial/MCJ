@@ -17,7 +17,10 @@ interface UseBranchReturn {
 
   error: string | null;
 
-  refetch: () => Promise<void>;
+  refetch: () => Promise<Branch | null>;
+
+  /** Replace local detail cache after a successful mutation. */
+  setBranchData: (branch: Branch | null) => void;
 }
 
 export const useBranch = (
@@ -27,46 +30,60 @@ export const useBranch = (
     useState<Branch | null>(null);
 
   const [isLoading, setIsLoading] =
-    useState(true);
+    useState(false);
 
   const [error, setError] =
     useState<string | null>(null);
 
-  const fetchBranch =
-    useCallback(async () => {
-      if (!id) return;
+  const fetchBranch = useCallback(async () => {
+    if (!id) {
+      setBranch(null);
+      setError(null);
+      setIsLoading(false);
+      return null;
+    }
 
-      try {
-        setIsLoading(true);
+    try {
+      setIsLoading(true);
+      setError(null);
 
-        setError(null);
+      const response =
+        await branchService.getBranch(id);
 
-        const response =
-          await branchService.getBranch(
-            id
-          );
+      setBranch(response.data);
+      return response.data;
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to load branch";
 
-        setBranch(response.data);
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Failed to load branch";
-
-        setError(message);
-      } finally {
-        setIsLoading(false);
-      }
-    }, [id]);
+      setError(message);
+      setBranch(null);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id]);
 
   useEffect(() => {
+    // Drop stale detail immediately when switching/clearing selection.
+    setBranch(null);
+    setError(null);
+
+    if (!id) {
+      setIsLoading(false);
+      return;
+    }
+
     void fetchBranch();
-  }, [fetchBranch]);
+  }, [id, fetchBranch]);
 
   return {
     branch,
     isLoading,
     error,
     refetch: fetchBranch,
+    setBranchData: setBranch,
   };
 };

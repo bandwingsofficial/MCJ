@@ -50,6 +50,7 @@ export function CreateBranchModal({
       onClose={onClose}
     >
       <BranchForm
+        key={open ? "create-branch-open" : "create-branch-closed"}
         submitLabel="Create Branch"
         isSubmitting={isPending}
         onSubmit={handleSubmit}
