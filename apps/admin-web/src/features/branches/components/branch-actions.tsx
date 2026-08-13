@@ -2,7 +2,7 @@
 
 import {
   CircleCheck,
-  CircleSlash,
+  Power,
   Settings2,
 } from "lucide-react";
 
@@ -66,7 +66,7 @@ export function BranchActions({
           aria-label="Deactivate branch"
           className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
         >
-          <CircleSlash className={iconClass} />
+          <Power className={iconClass} />
         </Button>
       ) : (
         <Button

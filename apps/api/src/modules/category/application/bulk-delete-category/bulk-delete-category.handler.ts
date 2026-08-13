@@ -35,17 +35,16 @@ export class BulkDeleteCategoryHandler {
         continue;
       }
 
-      const deletedDisplayOrder =
-        category.displayOrder;
-      const previousBranchId = category.branchId;
+      const deletedDisplayOrder = category.displayOrder;
 
-      if (previousBranchId != null) {
-        category.update({
-          branchId: null,
-          displayOrder: null,
-          updatedBy: command.deletedBy,
-        });
-      }
+      await this.categoryRepo.removeBranchAssignments(
+        category.id,
+      );
+
+      category.update({
+        displayOrder: null,
+        updatedBy: command.deletedBy,
+      });
 
       category.softDelete(command.deletedBy);
 
@@ -54,7 +53,6 @@ export class BulkDeleteCategoryHandler {
       if (deletedDisplayOrder !== null) {
         await this.categoryRepo.closeDisplayOrderGap(
           deletedDisplayOrder,
-          previousBranchId,
         );
       }
 
@@ -64,6 +62,8 @@ export class BulkDeleteCategoryHandler {
         deletedAt: category.deletedAt,
       });
     }
+
+    await this.categoryRepo.normalizeOrderedDisplayOrders();
 
     return new BulkDeleteCategoryResult(results);
   }

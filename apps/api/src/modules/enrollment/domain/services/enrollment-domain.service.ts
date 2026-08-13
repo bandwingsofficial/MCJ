@@ -338,7 +338,13 @@ export class EnrollmentDomainService {
       throw new StudentBranchMismatchException();
     }
 
-    if (category.branchId && category.branchId !== branchId) {
+    const isCategoryAssigned =
+      await repos.categoryRepo.isAssignedToBranch(
+        category.id,
+        branchId,
+      );
+
+    if (!isCategoryAssigned) {
       throw new CategoryBranchMismatchException();
     }
 

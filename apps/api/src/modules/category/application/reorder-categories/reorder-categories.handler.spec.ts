@@ -15,7 +15,6 @@ describe('ReorderCategoriesHandler', () => {
       thumbnailUrl: null,
       status: CategoryStatus.ACTIVE,
       displayOrder,
-      branchId: null,
       createdBy: 'admin',
       updatedBy: null,
       isDeleted: false,
@@ -31,6 +30,9 @@ describe('ReorderCategoriesHandler', () => {
       findById: jest.fn().mockResolvedValue(category),
       getMaxDisplayOrder: jest.fn().mockResolvedValue(4),
       moveDisplayOrder: jest.fn().mockResolvedValue(undefined),
+      normalizeOrderedDisplayOrders: jest
+        .fn()
+        .mockResolvedValue(undefined),
     };
     const domainService = new CategoryDomainService();
     const handler = new ReorderCategoriesHandler(
@@ -46,7 +48,6 @@ describe('ReorderCategoriesHandler', () => {
       'cat-1',
       3,
       1,
-      null,
     );
     expect(result.displayOrder).toBe(1);
   });

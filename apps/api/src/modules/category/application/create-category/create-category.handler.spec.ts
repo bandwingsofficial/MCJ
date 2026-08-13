@@ -12,6 +12,9 @@ describe('CreateCategoryHandler', () => {
       findBySlug: jest.fn().mockResolvedValue(null),
       getMaxDisplayOrder: jest.fn().mockResolvedValue(2),
       incrementDisplayOrdersFrom: jest.fn(),
+      normalizeOrderedDisplayOrders: jest
+        .fn()
+        .mockResolvedValue(undefined),
       save: jest.fn().mockResolvedValue(undefined),
       ...repoOverrides,
     };

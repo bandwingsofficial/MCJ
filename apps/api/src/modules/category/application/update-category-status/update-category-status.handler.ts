@@ -37,33 +37,31 @@ export class UpdateCategoryStatusHandler {
     }
 
     if (command.activate) {
-      // Do not restore previous branch assignment on reactivation.
+      // Do not restore previous branch assignments on reactivation.
       const nextDisplayOrder =
-        (await this.categoryRepo.getMaxActiveDisplayOrder(
-          null,
-        )) + 1;
+        (await this.categoryRepo.getMaxActiveDisplayOrder()) +
+        1;
 
       category.update({
         displayOrder: nextDisplayOrder,
-        branchId: null,
         updatedBy: command.updatedBy,
       });
 
       category.activate(command.updatedBy);
     } else {
-      const previousBranchId = category.branchId;
-
       if (category.displayOrder !== null) {
         await this.categoryRepo.closeDisplayOrderGap(
           category.displayOrder,
-          previousBranchId,
         );
       }
 
-      // Clear branch assignment so inactive categories leave Branch Management.
+      // Clear all BranchCategory rows so inactive categories leave Branch Management.
+      await this.categoryRepo.removeBranchAssignments(
+        category.id,
+      );
+
       category.update({
         displayOrder: null,
-        branchId: null,
         updatedBy: command.updatedBy,
       });
 
@@ -71,6 +69,7 @@ export class UpdateCategoryStatusHandler {
     }
 
     await this.categoryRepo.save(category);
+    await this.categoryRepo.normalizeOrderedDisplayOrders();
 
     return UpdateCategoryStatusResult.fromEntity(
       category,

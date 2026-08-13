@@ -18,16 +18,16 @@ export class DeleteCategoryHandler {
     );
 
     const deletedDisplayOrder = category.displayOrder;
-    const previousBranchId = category.branchId;
 
-    // Clear branch assignment before soft-delete/archive.
-    if (previousBranchId != null) {
-      category.update({
-        branchId: null,
-        displayOrder: null,
-        updatedBy: command.deletedBy,
-      });
-    }
+    // Remove branch assignments before soft-delete/archive.
+    await this.categoryRepo.removeBranchAssignments(
+      category.id,
+    );
+
+    category.update({
+      displayOrder: null,
+      updatedBy: command.deletedBy,
+    });
 
     category.softDelete(command.deletedBy);
 
@@ -36,9 +36,10 @@ export class DeleteCategoryHandler {
     if (deletedDisplayOrder != null) {
       await this.categoryRepo.closeDisplayOrderGap(
         deletedDisplayOrder,
-        previousBranchId,
       );
     }
+
+    await this.categoryRepo.normalizeOrderedDisplayOrders();
 
     return new DeleteCategoryResult(
       category.id,

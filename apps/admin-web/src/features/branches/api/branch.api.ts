@@ -131,6 +131,38 @@ export const branchApi = {
     return response.data;
   },
 
+  async assignCategories(
+    branchId: string,
+    categoryIds: string[]
+  ) {
+    const response = await apiClient.post<
+      ApiResponse<{
+        branchId: string;
+        assignedCount: number;
+        categoryIds: string[];
+      }>
+    >(`/admin/branches/${branchId}/categories/assign`, {
+      categoryIds,
+    });
+
+    return response.data;
+  },
+
+  async unassignCategory(
+    branchId: string,
+    categoryId: string
+  ) {
+    const response = await apiClient.delete<
+      ApiResponse<{
+        branchId: string;
+        categoryId: string;
+        unassigned: boolean;
+      }>
+    >(`/admin/branches/${branchId}/categories/${categoryId}`);
+
+    return response.data;
+  },
+
   async restoreBranch(id: string) {
     const response = await apiClient.patch(
       `/admin/branches/${id}/restore`

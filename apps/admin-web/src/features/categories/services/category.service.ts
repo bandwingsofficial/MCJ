@@ -177,6 +177,48 @@ class CategoryService {
     return response.data;
   }
 
+  async getCategoryDependencies(id: string): Promise<
+    ApiSuccessResponse<{
+      categoryId: string;
+      categoryName: string;
+      canDelete: boolean;
+      removable: {
+        branches: number;
+        courses: number;
+        enrollments: number;
+        articles: number;
+      };
+      blocking: {
+        branches: number;
+        courses: number;
+        enrollments: number;
+        articles: number;
+      };
+    }>
+  > {
+    const response = await apiClient.get<
+      ApiSuccessResponse<{
+        categoryId: string;
+        categoryName: string;
+        canDelete: boolean;
+        removable: {
+          branches: number;
+          courses: number;
+          enrollments: number;
+          articles: number;
+        };
+        blocking: {
+          branches: number;
+          courses: number;
+          enrollments: number;
+          articles: number;
+        };
+      }>
+    >(`${this.basePath}/${id}/dependencies`);
+
+    return response.data;
+  }
+
   async reorderCategories(
     payload: ReorderCategoriesRequest
   ): Promise<

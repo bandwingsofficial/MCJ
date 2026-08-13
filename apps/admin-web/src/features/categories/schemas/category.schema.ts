@@ -25,8 +25,6 @@ export const createCategorySchema =
       )
       .optional(),
 
-    branchId: z.string().optional(),
-
     status: z.enum([
       "ACTIVE",
       "INACTIVE",

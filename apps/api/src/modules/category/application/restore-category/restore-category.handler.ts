@@ -23,18 +23,18 @@ export class RestoreCategoryHandler {
     );
 
     const nextDisplayOrder =
-      (await this.categoryRepo.getMaxDisplayOrder(null)) + 1;
+      (await this.categoryRepo.getMaxDisplayOrder()) + 1;
 
-    // Do not restore previous branch assignment after archive.
+    // Do not restore previous branch assignments after archive.
     category.update({
       displayOrder: nextDisplayOrder,
-      branchId: null,
       updatedBy: command.updatedBy,
     });
 
     category.restore(command.updatedBy);
 
     await this.categoryRepo.save(category);
+    await this.categoryRepo.normalizeOrderedDisplayOrders();
 
     return RestoreCategoryResult.fromEntity(category);
   }

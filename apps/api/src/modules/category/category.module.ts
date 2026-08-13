@@ -22,11 +22,15 @@ import { BulkDeleteCategoryHandler } from './application/bulk-delete-category/bu
 import { BulkRestoreCategoryHandler } from './application/bulk-restore-category/bulk-restore-category.handler';
 import { BulkPermanentDeleteCategoryHandler } from './application/bulk-permanent-delete-category/bulk-permanent-delete-category.handler';
 import { ReorderCategoriesHandler } from './application/reorder-categories/reorder-categories.handler';
+import { GetCategoryDependenciesHandler } from './application/get-category-dependencies/get-category-dependencies.handler';
+import { AssignCategoriesToBranchHandler } from './application/assign-categories-to-branch/assign-categories-to-branch.handler';
+import { UnassignCategoryFromBranchHandler } from './application/unassign-category-from-branch/unassign-category-from-branch.handler';
 
 import type { CategoryRepository } from './domain/repositories/category.repository';
 import { CategoryDomainService } from './domain/services/category-domain.service';
 import { PrismaCategoryRepository } from './infrastructure/repositories/prisma-category.repository';
 import { AdminCategoryController } from './presentation/controllers/admin-category.controller';
+import { BranchCategoryController } from './presentation/controllers/branch-category.controller';
 import { CategoryController } from './presentation/controllers/category.controller';
 import { SuperAdminGuard } from '@common/guards/super-admin.guard';
 
@@ -44,6 +48,7 @@ import { BranchRepository } from '../branch/domain/repositories/branch.repositor
 
   controllers: [
     AdminCategoryController,
+    BranchCategoryController,
     CategoryController,
   ],
 
@@ -63,19 +68,16 @@ import { BranchRepository } from '../branch/domain/repositories/branch.repositor
       useFactory: (
         categoryRepo: CategoryRepository,
         domainService: CategoryDomainService,
-        branchRepo: BranchRepository,
         uploadDomainService: UploadDomainService,
       ) =>
         new CreateCategoryHandler(
           categoryRepo,
           domainService,
-          branchRepo,
           uploadDomainService,
         ),
       inject: [
         CATEGORY_TOKENS.CATEGORY_REPOSITORY,
         CategoryDomainService,
-        BRANCH_TOKENS.BRANCH_REPOSITORY,
         UploadDomainService,
       ],
     },
@@ -86,19 +88,16 @@ import { BranchRepository } from '../branch/domain/repositories/branch.repositor
         categoryRepo: CategoryRepository,
         domainService: CategoryDomainService,
         uploadDomainService: UploadDomainService,
-        branchRepo: BranchRepository,
       ) =>
         new UpdateCategoryHandler(
           categoryRepo,
           domainService,
           uploadDomainService,
-          branchRepo,
         ),
       inject: [
         CATEGORY_TOKENS.CATEGORY_REPOSITORY,
         CategoryDomainService,
         UploadDomainService,
-        BRANCH_TOKENS.BRANCH_REPOSITORY,
       ],
     },
 
@@ -284,6 +283,57 @@ import { BranchRepository } from '../branch/domain/repositories/branch.repositor
       inject: [
         CATEGORY_TOKENS.CATEGORY_REPOSITORY,
         CategoryDomainService,
+      ],
+    },
+
+    {
+      provide: GetCategoryDependenciesHandler,
+      useFactory: (
+        categoryRepo: CategoryRepository,
+        domainService: CategoryDomainService,
+      ) =>
+        new GetCategoryDependenciesHandler(
+          categoryRepo,
+          domainService,
+        ),
+      inject: [
+        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
+        CategoryDomainService,
+      ],
+    },
+
+    {
+      provide: AssignCategoriesToBranchHandler,
+      useFactory: (
+        categoryRepo: CategoryRepository,
+        branchRepo: BranchRepository,
+      ) =>
+        new AssignCategoriesToBranchHandler(
+          categoryRepo,
+          branchRepo,
+        ),
+      inject: [
+        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
+        BRANCH_TOKENS.BRANCH_REPOSITORY,
+      ],
+    },
+
+    {
+      provide: UnassignCategoryFromBranchHandler,
+      useFactory: (
+        categoryRepo: CategoryRepository,
+        domainService: CategoryDomainService,
+        branchRepo: BranchRepository,
+      ) =>
+        new UnassignCategoryFromBranchHandler(
+          categoryRepo,
+          domainService,
+          branchRepo,
+        ),
+      inject: [
+        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
+        CategoryDomainService,
+        BRANCH_TOKENS.BRANCH_REPOSITORY,
       ],
     },
   ],

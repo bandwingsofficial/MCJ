@@ -108,7 +108,6 @@ export function CategoryForm({
       defaultValues: {
         name: "",
         description: "",
-        branchId: undefined,
         status: "ACTIVE",
         ...defaultValues,
       },

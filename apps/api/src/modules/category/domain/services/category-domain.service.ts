@@ -26,12 +26,10 @@ export class CategoryDomainService {
   async ensureSlugIsAvailable(
     categoryRepo: CategoryRepository,
     slug: string,
-    branchId?: string | null,
     excludeId?: string,
   ): Promise<void> {
     const existing = await categoryRepo.findBySlug(
       slug,
-      branchId,
       true,
     );
 
@@ -47,12 +45,10 @@ export class CategoryDomainService {
   async ensureNameIsAvailable(
     categoryRepo: CategoryRepository,
     name: string,
-    branchId?: string | null,
     excludeId?: string,
   ): Promise<void> {
     const existing = await categoryRepo.findByNameInsensitive(
       CategoryName.normalize(name),
-      branchId,
       true,
     );
 
@@ -71,7 +67,6 @@ export class CategoryDomainService {
   ): Promise<void> {
     const nameOwner = await categoryRepo.findByNameInsensitive(
       category.name.getValue(),
-      category.branchId,
       true,
     );
 
@@ -85,7 +80,6 @@ export class CategoryDomainService {
 
     const slugOwner = await categoryRepo.findBySlug(
       category.slug.getValue(),
-      category.branchId,
       true,
     );
 

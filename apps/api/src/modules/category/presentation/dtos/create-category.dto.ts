@@ -56,11 +56,6 @@ export class CreateCategoryDto {
   )
   displayOrder?: number;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsUUID()
-  branchId?: string;
-
   @ApiPropertyOptional({
     description:
       'Upload file ID returned from POST /admin/uploads',

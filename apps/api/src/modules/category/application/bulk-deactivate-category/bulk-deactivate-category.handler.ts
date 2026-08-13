@@ -22,24 +22,23 @@ export class BulkDeactivateCategoryHandler {
         await this.categoryRepo.findById(id),
       );
 
-      // Skip already inactive categories
       if (category.status === CategoryStatus.INACTIVE) {
         categories.push(category);
         continue;
       }
 
-      const previousBranchId = category.branchId;
-
       if (category.displayOrder !== null) {
         await this.categoryRepo.closeDisplayOrderGap(
           category.displayOrder,
-          previousBranchId,
         );
       }
 
+      await this.categoryRepo.removeBranchAssignments(
+        category.id,
+      );
+
       category.update({
         displayOrder: null,
-        branchId: null,
         updatedBy: command.updatedBy,
       });
 
@@ -49,6 +48,8 @@ export class BulkDeactivateCategoryHandler {
 
       categories.push(category);
     }
+
+    await this.categoryRepo.normalizeOrderedDisplayOrders();
 
     return BulkDeactivateCategoryResult.fromEntities(
       categories,

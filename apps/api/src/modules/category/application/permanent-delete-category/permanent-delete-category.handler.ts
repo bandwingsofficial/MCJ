@@ -33,6 +33,31 @@ function isForeignKeyRestrictError(error: unknown): boolean {
   );
 }
 
+function formatBlockingMessage(refs: {
+  courses: number;
+  enrollments: number;
+  articles: number;
+}): string {
+  const parts: string[] = [];
+  if (refs.courses > 0) {
+    parts.push(
+      `${refs.courses} course${refs.courses === 1 ? '' : 's'}`,
+    );
+  }
+  if (refs.enrollments > 0) {
+    parts.push(
+      `${refs.enrollments} enrollment${refs.enrollments === 1 ? '' : 's'}`,
+    );
+  }
+  if (refs.articles > 0) {
+    parts.push(
+      `${refs.articles} article${refs.articles === 1 ? '' : 's'}`,
+    );
+  }
+
+  return `Cannot permanently delete this category because it is still referenced by ${parts.join(', ')}. Reassign those records to another category first.`;
+}
+
 export class PermanentDeleteCategoryHandler {
   constructor(
     private readonly categoryRepo: CategoryRepository,
@@ -58,39 +83,29 @@ export class PermanentDeleteCategoryHandler {
       );
     }
 
+    // Re-check immediately before delete (race-safe).
     const refs = await this.categoryRepo.countBlockingReferences(
       category.id,
     );
+
+    // Required FKs: Course / Enrollment / FinancialArticle.categoryId
     const blockingCount =
       refs.courses + refs.enrollments + refs.articles;
 
     if (blockingCount > 0) {
-      const parts: string[] = [];
-      if (refs.courses > 0) {
-        parts.push(
-          `${refs.courses} course${refs.courses === 1 ? '' : 's'}`,
-        );
-      }
-      if (refs.enrollments > 0) {
-        parts.push(
-          `${refs.enrollments} enrollment${refs.enrollments === 1 ? '' : 's'}`,
-        );
-      }
-      if (refs.articles > 0) {
-        parts.push(
-          `${refs.articles} article${refs.articles === 1 ? '' : 's'}`,
-        );
-      }
-
       throw new BaseException(
         ERROR_CODES.VALIDATION_ERROR,
-        `Cannot permanently delete this category because it is still linked to ${parts.join(', ')}. Reassign or remove those records first.`,
+        formatBlockingMessage(refs),
         409,
       );
     }
 
+    // BranchCategory rows are removable; required FKs already blocked above.
+    await this.categoryRepo.removeBranchAssignments(
+      category.id,
+    );
+
     const thumbnailFileId = category.thumbnailFileId;
-    const displayOrder = category.displayOrder;
 
     try {
       await this.categoryRepo.deletePermanent(command.id);
@@ -98,7 +113,7 @@ export class PermanentDeleteCategoryHandler {
       if (isForeignKeyRestrictError(error)) {
         throw new BaseException(
           ERROR_CODES.VALIDATION_ERROR,
-          'Cannot permanently delete this category because it is still referenced by other records.',
+          'Cannot permanently delete this category because it is still referenced by other records. Reassign those records first.',
           409,
         );
       }
@@ -106,15 +121,6 @@ export class PermanentDeleteCategoryHandler {
       throw error;
     }
 
-    if (displayOrder != null) {
-      await this.categoryRepo.closeDisplayOrderGap(
-        displayOrder,
-        category.branchId,
-      );
-    }
-
-    // Soft-delete thumbnail after category removal so S3 failures
-    // do not turn a successful category delete into a 500 response.
     if (thumbnailFileId) {
       try {
         await this.uploadDomainService.softDelete(thumbnailFileId);

@@ -9,8 +9,6 @@ import { UploadDomainService } from '@/modules/uploads/domain/services/upload-do
 
 import { CreateCategoryCommand } from './create-category.command';
 import { CreateCategoryResult } from './create-category.result';
-import { BranchRepository } from '@/modules/branch/domain/repositories/branch.repository';
-import { BranchNotFoundException } from '@/modules/student/domain/errors/branch-not-found.exception';
 
 const CATEGORY_UPLOAD_FOLDER = 'categories';
 const CATEGORY_THUMBNAIL_FILE_NAME = 'thumbnail';
@@ -21,7 +19,6 @@ export class CreateCategoryHandler {
   constructor(
     private readonly categoryRepo: CategoryRepository,
     private readonly domainService: CategoryDomainService,
-    private readonly branchRepo: BranchRepository,
     private readonly uploadDomainService: UploadDomainService,
   ) {}
 
@@ -35,44 +32,18 @@ export class CreateCategoryHandler {
     await this.domainService.ensureNameIsAvailable(
       this.categoryRepo,
       command.name,
-      command.branchId ?? null,
     );
 
     await this.domainService.ensureSlugIsAvailable(
       this.categoryRepo,
       slug,
-      command.branchId ?? null,
     );
 
-    if (command.branchId) {
-      const branch = await this.branchRepo.findById(
-        command.branchId,
-      );
+    // Always append to the global sequence — do not accept client displayOrder.
+    const maxDisplayOrder =
+      await this.categoryRepo.getMaxDisplayOrder();
 
-      if (!branch) {
-        throw new BranchNotFoundException(
-          command.branchId,
-        );
-      }
-    }
-
-    let displayOrder: number;
-
-    if (command.displayOrder == null) {
-      const maxDisplayOrder =
-        await this.categoryRepo.getMaxDisplayOrder(
-          command.branchId ?? null,
-        );
-
-      displayOrder = maxDisplayOrder + 1;
-    } else {
-      displayOrder = command.displayOrder;
-
-      await this.categoryRepo.incrementDisplayOrdersFrom(
-        displayOrder,
-        command.branchId ?? null,
-      );
-    }
+    const displayOrder = maxDisplayOrder + 1;
 
     const categoryId = randomUUID();
     let thumbnailFileId: string | null = null;
@@ -100,11 +71,12 @@ export class CreateCategoryHandler {
       thumbnailUrl,
       status: command.status,
       displayOrder,
-      branchId: command.branchId,
       createdBy: command.createdBy,
     });
 
     await this.categoryRepo.save(category);
+
+    await this.categoryRepo.normalizeOrderedDisplayOrders();
 
     this.logger.log(
       `✅ Category created: ${category.id}`,

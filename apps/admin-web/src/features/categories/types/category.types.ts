@@ -20,8 +20,6 @@ export interface Category {
 
   displayOrder: number | null;
 
-  branchId: string | null;
-
   createdBy: string;
 
   updatedBy: string | null;
@@ -43,8 +41,6 @@ export interface CreateCategoryRequest {
 
   description?: string;
 
-  branchId?: string;
-
   status?: Exclude<CategoryStatus, "ARCHIVED">;
 
   thumbnailFileId?: string | null;
@@ -54,8 +50,6 @@ export interface UpdateCategoryRequest {
   name?: string;
 
   description?: string;
-
-  branchId?: string | null;
 
   status?: Exclude<CategoryStatus, "ARCHIVED">;
 
@@ -75,8 +69,6 @@ export interface CategoryListItem {
 
   displayOrder: number | null;
 
-  branchId: string | null;
-
   isDeleted: boolean;
 
   createdAt: string;
@@ -92,12 +84,13 @@ export type CategoryListResponse =
 export interface CategoryListMeta {
   total: number;
   skip: number;
-  take: number | null;
+  take: number;
 }
 
 export interface CategoryFilters {
   search: string;
 
+  /** Filter to categories assigned to this branch via BranchCategory. */
   branchId?: string;
 
   status?: CategoryStatus;

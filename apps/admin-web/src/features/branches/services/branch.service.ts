@@ -102,6 +102,34 @@ class BranchService {
     }
   }
 
+  async assignCategories(
+    branchId: string,
+    categoryIds: string[]
+  ) {
+    try {
+      return await branchApi.assignCategories(
+        branchId,
+        categoryIds
+      );
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async unassignCategory(
+    branchId: string,
+    categoryId: string
+  ) {
+    try {
+      return await branchApi.unassignCategory(
+        branchId,
+        categoryId
+      );
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async restoreBranch(id: string) {
     try {
       return await branchApi.restoreBranch(id);

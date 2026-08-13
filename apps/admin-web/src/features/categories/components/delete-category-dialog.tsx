@@ -15,6 +15,10 @@ interface Props {
 
   loadingLabel?: string;
 
+  showCancel?: boolean;
+
+  confirmVariant?: "primary" | "danger" | "outline";
+
   onConfirm: () => void;
 
   onCancel: () => void;
@@ -27,6 +31,8 @@ export function DeleteCategoryDialog({
   description,
   confirmLabel = "Confirm",
   loadingLabel,
+  showCancel = true,
+  confirmVariant = "danger",
   onConfirm,
   onCancel,
 }: Props) {
@@ -38,6 +44,8 @@ export function DeleteCategoryDialog({
       description={description}
       confirmLabel={confirmLabel}
       loadingLabel={loadingLabel}
+      showCancel={showCancel}
+      confirmVariant={confirmVariant}
       onConfirm={onConfirm}
       onCancel={onCancel}
     />

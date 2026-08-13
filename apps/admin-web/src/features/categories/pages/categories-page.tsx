@@ -72,6 +72,26 @@ export function CategoriesPage() {
     setDialogAction,
   ] = useState<DialogAction>(null);
 
+  const [dependencySummary, setDependencySummary] =
+    useState<{
+      canDelete: boolean;
+      removable: {
+        branches: number;
+        courses: number;
+        enrollments: number;
+        articles: number;
+      };
+      blocking: {
+        branches: number;
+        courses: number;
+        enrollments: number;
+        articles: number;
+      };
+    } | null>(null);
+
+  const [dependencyLoading, setDependencyLoading] =
+    useState(false);
+
   const [
     isReordering,
     setIsReordering,
@@ -89,18 +109,74 @@ export function CategoriesPage() {
     setEditOpen(true);
   };
 
-  const openDeleteDialog = (
+  const openDeactivateDialog = async (
     category: CategoryListItem
   ) => {
     setSelectedCategory(category);
-    setDialogAction("delete");
+    setDependencySummary(null);
+    setDependencyLoading(true);
+    setDialogAction("deactivate");
+
+    try {
+      const response =
+        await categoryService.getCategoryDependencies(
+          category.id
+        );
+      setDependencySummary({
+        canDelete: response.data.canDelete,
+        removable: response.data.removable,
+        blocking: response.data.blocking,
+      });
+
+      if (response.data.removable.branches === 0) {
+        setDialogAction(null);
+        setSelectedCategory(null);
+        setDependencySummary(null);
+        await deactivateCategory(category.id);
+        await refetch();
+      }
+    } catch (error) {
+      appToast.error(
+        getErrorMessage(error) ||
+          "Unable to verify category assignments. Please try again."
+      );
+      setDialogAction(null);
+      setSelectedCategory(null);
+      setDependencySummary(null);
+    } finally {
+      setDependencyLoading(false);
+    }
   };
 
-  const openDeactivateDialog = (
+  const openDeleteDialog = async (
     category: CategoryListItem
   ) => {
     setSelectedCategory(category);
-    setDialogAction("deactivate");
+    setDependencySummary(null);
+    setDependencyLoading(true);
+    setDialogAction("delete");
+
+    try {
+      const response =
+        await categoryService.getCategoryDependencies(
+          category.id
+        );
+      setDependencySummary({
+        canDelete: response.data.canDelete,
+        removable: response.data.removable,
+        blocking: response.data.blocking,
+      });
+    } catch (error) {
+      appToast.error(
+        getErrorMessage(error) ||
+          "Unable to verify category assignments. Please try again."
+      );
+      setDialogAction(null);
+      setSelectedCategory(null);
+      setDependencySummary(null);
+    } finally {
+      setDependencyLoading(false);
+    }
   };
 
   const openRestoreDialog = (
@@ -110,16 +186,41 @@ export function CategoriesPage() {
     setDialogAction("restore");
   };
 
-  const openPermanentDeleteDialog = (
+  const openPermanentDeleteDialog = async (
     category: CategoryListItem
   ) => {
     setSelectedCategory(category);
+    setDependencySummary(null);
+    setDependencyLoading(true);
     setDialogAction("permanent-delete");
+
+    try {
+      const response =
+        await categoryService.getCategoryDependencies(
+          category.id
+        );
+      setDependencySummary({
+        canDelete: response.data.canDelete,
+        removable: response.data.removable,
+        blocking: response.data.blocking,
+      });
+    } catch (error) {
+      appToast.error(
+        getErrorMessage(error) ||
+          "Unable to verify category dependencies. Please try again."
+      );
+      setDialogAction(null);
+      setSelectedCategory(null);
+    } finally {
+      setDependencyLoading(false);
+    }
   };
 
   const closeDialog = () => {
     setDialogAction(null);
     setSelectedCategory(null);
+    setDependencySummary(null);
+    setDependencyLoading(false);
   };
 
   const handleConfirmAction =
@@ -152,6 +253,12 @@ export function CategoriesPage() {
             break;
 
           case "permanent-delete":
+            if (
+              dependencySummary &&
+              !dependencySummary.canDelete
+            ) {
+              return;
+            }
             await permanentlyDeleteCategory(
               category.id
             );
@@ -293,19 +400,10 @@ export function CategoriesPage() {
                   );
                   await refetch();
                 }}
-                onDeactivate={async (
-                  category
-                ) => {
-                  if (category.branchId) {
-                    openDeactivateDialog(
-                      category
-                    );
-                    return;
-                  }
-                  await deactivateCategory(
-                    category.id
+                onDeactivate={(category) => {
+                  void openDeactivateDialog(
+                    category
                   );
-                  await refetch();
                 }}
                 onDelete={
                   openDeleteDialog
@@ -352,7 +450,7 @@ export function CategoriesPage() {
                           })
                         }
                       >
-                        {[10, 20, 50].map(
+                        {[10, 20, 50, 100].map(
                           (size) => (
                             <option
                               key={size}
@@ -415,51 +513,185 @@ export function CategoriesPage() {
 
       <DeleteCategoryDialog
         open={dialogAction !== null}
-        loading={actionLoading}
+        loading={
+          actionLoading ||
+          ((dialogAction === "permanent-delete" ||
+            dialogAction === "deactivate" ||
+            dialogAction === "delete") &&
+            dependencyLoading)
+        }
         title={
           dialogAction === "restore"
             ? "Restore category?"
-            : dialogAction ===
-                "permanent-delete"
-              ? "Permanently delete category?"
-              : dialogAction ===
-                  "deactivate"
+            : dialogAction === "permanent-delete"
+              ? dependencyLoading
+                ? "Permanently delete category?"
+                : dependencySummary &&
+                    !dependencySummary.canDelete
+                  ? "Cannot permanently delete category"
+                  : "Permanently delete category?"
+              : dialogAction === "deactivate"
                 ? "Category is assigned to branches"
-                : selectedCategory?.branchId
+                : dependencySummary &&
+                    dependencySummary.removable.branches > 0
                   ? "Category is assigned to branches"
                   : "Archive category?"
         }
         description={
           dialogAction === "restore"
             ? "This category will become active again and will be placed at the end of the category order."
-            : dialogAction ===
-                "permanent-delete"
-              ? "This action cannot be undone."
-              : dialogAction ===
-                  "deactivate"
-                ? "This category is currently assigned to one or more branches. Deactivating it will also remove it from those branch assignments. Do you want to continue?"
-                : selectedCategory?.branchId
-                  ? "This category is currently assigned to one or more branches. Archiving it will remove it from those branch assignments. Continue?"
+            : dialogAction === "permanent-delete"
+              ? dependencyLoading
+                ? "Checking category dependencies..."
+                : (() => {
+                    if (!dependencySummary) {
+                      return "Unable to verify category dependencies. Please try again.";
+                    }
+
+                    const name =
+                      selectedCategory?.name ??
+                      "This category";
+
+                    if (!dependencySummary.canDelete) {
+                      const lines: string[] = [];
+                      if (
+                        dependencySummary.blocking.courses >
+                        0
+                      ) {
+                        lines.push(
+                          `Courses        ${dependencySummary.blocking.courses}`
+                        );
+                      }
+                      if (
+                        dependencySummary.blocking
+                          .enrollments > 0
+                      ) {
+                        lines.push(
+                          `Enrollments    ${dependencySummary.blocking.enrollments}`
+                        );
+                      }
+                      if (
+                        dependencySummary.blocking.articles >
+                        0
+                      ) {
+                        lines.push(
+                          `Articles       ${dependencySummary.blocking.articles}`
+                        );
+                      }
+
+                      return `${name} is referenced by required records:\n\n${lines.join("\n")}\n\nThese must be reassigned to another category before this category can be deleted.`;
+                    }
+
+                    const removableLines: string[] = [];
+                    if (
+                      dependencySummary.removable.branches >
+                      0
+                    ) {
+                      removableLines.push(
+                        `Branches       ${dependencySummary.removable.branches}`
+                      );
+                    }
+                    if (
+                      dependencySummary.removable.courses > 0
+                    ) {
+                      removableLines.push(
+                        `Courses        ${dependencySummary.removable.courses}`
+                      );
+                    }
+                    if (
+                      dependencySummary.removable
+                        .enrollments > 0
+                    ) {
+                      removableLines.push(
+                        `Enrollments    ${dependencySummary.removable.enrollments}`
+                      );
+                    }
+                    if (
+                      dependencySummary.removable.articles >
+                      0
+                    ) {
+                      removableLines.push(
+                        `Articles       ${dependencySummary.removable.articles}`
+                      );
+                    }
+
+                    if (removableLines.length > 0) {
+                      const branchCount =
+                        dependencySummary.removable.branches;
+                      const branchSentence =
+                        branchCount > 0
+                          ? `${name} is assigned to ${branchCount} branch${branchCount === 1 ? "" : "es"}.\n\nPermanently deleting this Category will remove its Category assignments.`
+                          : `${name} is currently used by:\n\n${removableLines.join("\n")}\n\nThese Category assignments will be removed.`;
+
+                      return `${branchSentence}\n\nThis action cannot be undone.\n\nAre you sure you want to continue?`;
+                    }
+
+                    return "This action cannot be undone.\n\nAre you sure you want to continue?";
+                  })()
+              : dialogAction === "deactivate"
+                ? (() => {
+                    const branchCount =
+                      dependencySummary?.removable.branches ??
+                      0;
+                    const name =
+                      selectedCategory?.name ??
+                      "This category";
+                    return `${name} is currently assigned to ${branchCount} branch${branchCount === 1 ? "" : "es"}.\n\nDeactivating it will remove it from those Branch assignments.\n\nDo you want to continue?`;
+                  })()
+                : dependencySummary &&
+                    dependencySummary.removable.branches > 0
+                  ? (() => {
+                      const branchCount =
+                        dependencySummary.removable.branches;
+                      const name =
+                        selectedCategory?.name ??
+                        "This category";
+                      return `${name} is currently assigned to ${branchCount} branch${branchCount === 1 ? "" : "es"}.\n\nArchiving it will remove it from those Branch assignments. Continue?`;
+                    })()
                   : "This category will be archived and will remain available for restoration."
         }
         confirmLabel={
           dialogAction === "restore"
             ? "Restore"
-            : dialogAction ===
-                "permanent-delete"
-              ? "Permanently Delete"
-              : dialogAction ===
-                  "deactivate"
+            : dialogAction === "permanent-delete"
+              ? dependencySummary &&
+                !dependencySummary.canDelete
+                ? "Close"
+                : "Permanently Delete"
+              : dialogAction === "deactivate"
                 ? "Deactivate"
                 : "Archive"
         }
+        confirmVariant={
+          dialogAction === "permanent-delete" &&
+          dependencySummary &&
+          !dependencySummary.canDelete
+            ? "outline"
+            : "danger"
+        }
+        showCancel={
+          !(
+            dialogAction === "permanent-delete" &&
+            dependencySummary &&
+            !dependencySummary.canDelete
+          )
+        }
         loadingLabel={
-          dialogAction ===
-          "permanent-delete"
-            ? "Permanently Deleting..."
+          dialogAction === "permanent-delete"
+            ? dependencyLoading
+              ? "Checking..."
+              : "Permanently Deleting..."
             : undefined
         }
         onConfirm={() => {
+          if (
+            dialogAction === "permanent-delete" &&
+            dependencySummary &&
+            !dependencySummary.canDelete
+          ) {
+            closeDialog();
+            return;
+          }
           void handleConfirmAction();
         }}
         onCancel={closeDialog}

@@ -15,7 +15,6 @@ describe('PermanentDeleteCategoryHandler', () => {
       thumbnailUrl: null,
       status: CategoryStatus.ARCHIVED,
       displayOrder: null,
-      branchId: null,
       createdBy: 'admin',
       updatedBy: null,
       isDeleted: true,
@@ -33,7 +32,9 @@ describe('PermanentDeleteCategoryHandler', () => {
         courses: 0,
         enrollments: 0,
         articles: 0,
+        branches: 0,
       }),
+      removeBranchAssignments: jest.fn().mockResolvedValue(0),
       deletePermanent: jest.fn().mockResolvedValue(undefined),
       closeDisplayOrderGap: jest.fn(),
     };
@@ -63,6 +64,7 @@ describe('PermanentDeleteCategoryHandler', () => {
         courses: 1,
         enrollments: 0,
         articles: 0,
+        branches: 0,
       }),
       deletePermanent: jest.fn(),
     };
@@ -80,6 +82,34 @@ describe('PermanentDeleteCategoryHandler', () => {
       message: expect.stringContaining('1 course'),
     });
     expect(categoryRepo.deletePermanent).not.toHaveBeenCalled();
+  });
+
+  it('allows permanent delete when only a branch assignment exists', async () => {
+    const category = makeArchived();
+    const categoryRepo = {
+      findById: jest.fn().mockResolvedValue(category),
+      countBlockingReferences: jest.fn().mockResolvedValue({
+        courses: 0,
+        enrollments: 0,
+        articles: 0,
+        branches: 1,
+      }),
+      removeBranchAssignments: jest.fn().mockResolvedValue(1),
+      deletePermanent: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const handler = new PermanentDeleteCategoryHandler(
+      categoryRepo as never,
+      new CategoryDomainService(),
+      { softDelete: jest.fn() } as never,
+    );
+
+    const result = await handler.execute(
+      new PermanentDeleteCategoryCommand('cat-1'),
+    );
+
+    expect(categoryRepo.deletePermanent).toHaveBeenCalledWith('cat-1');
+    expect(result.permanentlyDeleted).toBe(true);
   });
 
   it('rejects permanent delete for non-archived categories', async () => {

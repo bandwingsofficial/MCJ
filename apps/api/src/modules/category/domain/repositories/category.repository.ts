@@ -2,6 +2,7 @@ import { Category } from '../entities/category.entity';
 import { CategoryStatus } from '../enums/category-status.enum';
 
 export interface CategoryListFilters {
+  /** When set, only categories assigned to this branch via BranchCategory. */
   branchId?: string;
   status?: CategoryStatus;
   search?: string;
@@ -21,13 +22,11 @@ export interface CategoryRepository {
 
   findBySlug(
     slug: string,
-    branchId?: string | null,
     includeDeleted?: boolean,
   ): Promise<Category | null>;
 
   findByNameInsensitive(
     name: string,
-    branchId?: string | null,
     includeDeleted?: boolean,
   ): Promise<Category | null>;
 
@@ -41,50 +40,50 @@ export interface CategoryRepository {
     courses: number;
     enrollments: number;
     articles: number;
+    branches: number;
   }>;
 
   deletePermanent(id: string): Promise<void>;
 
-  // Display Order Methods
-  getMaxDisplayOrder(
-    branchId?: string | null,
-  ): Promise<number>;
-  getMaxActiveDisplayOrder(
-    branchId?: string | null,
+  removeBranchAssignments(categoryId: string): Promise<number>;
+
+  assignCategoriesToBranch(
+    branchId: string,
+    categoryIds: string[],
   ): Promise<number>;
 
-  incrementDisplayOrdersFrom(
-    displayOrder: number,
-    branchId?: string | null,
+  unassignCategoryFromBranch(
+    branchId: string,
+    categoryId: string,
   ): Promise<void>;
+
+  isAssignedToBranch(
+    categoryId: string,
+    branchId: string,
+  ): Promise<boolean>;
+
+  // Display Order Methods (global sequence)
+  getMaxDisplayOrder(): Promise<number>;
+  getMaxActiveDisplayOrder(): Promise<number>;
+
+  incrementDisplayOrdersFrom(displayOrder: number): Promise<void>;
 
   shiftDisplayOrders(
     oldOrder: number,
     newOrder: number,
-    branchId?: string | null,
   ): Promise<void>;
 
   closeDisplayOrderGap(
     deletedDisplayOrder: number,
-    branchId?: string | null,
   ): Promise<void>;
 
-  /**
-   * Move one ordered category to a new display order inside a transaction.
-   */
   moveDisplayOrder(
     categoryId: string,
     oldOrder: number,
     newOrder: number,
-    branchId?: string | null,
   ): Promise<void>;
 
-  /**
-   * Persist a contiguous 1..n display order for the given IDs
-   * (non-archived / ordered categories only). Runs in a transaction.
-   */
-  reorderOrderedCategories(
-    orderedIds: string[],
-    branchId?: string | null,
-  ): Promise<void>;
+  reorderOrderedCategories(orderedIds: string[]): Promise<void>;
+
+  normalizeOrderedDisplayOrders(): Promise<void>;
 }

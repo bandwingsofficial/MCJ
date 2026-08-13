@@ -44,6 +44,10 @@ export class BulkPermanentDeleteCategoryHandler {
         batch.map(async (category) => {
           const displayOrder = category.displayOrder;
 
+          await this.categoryRepo.removeBranchAssignments(
+            category.id,
+          );
+
           await this.categoryRepo.deletePermanent(
             category.id,
           );
@@ -51,7 +55,6 @@ export class BulkPermanentDeleteCategoryHandler {
           if (displayOrder != null) {
             await this.categoryRepo.closeDisplayOrderGap(
               displayOrder,
-              category.branchId,
             );
           }
         }),

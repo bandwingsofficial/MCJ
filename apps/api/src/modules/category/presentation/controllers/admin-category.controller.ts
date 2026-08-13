@@ -54,6 +54,7 @@ import { BulkRestoreCategoryHandler } from '../../application/bulk-restore-categ
 
 import { ReorderCategoriesCommand } from '../../application/reorder-categories/reorder-categories.command';
 import { ReorderCategoriesHandler } from '../../application/reorder-categories/reorder-categories.handler';
+import { GetCategoryDependenciesHandler } from '../../application/get-category-dependencies/get-category-dependencies.handler';
 
 import { BulkActivateCategoryDto } from '../dtos/bulk-activate-category.dto';
 import { BulkDeactivateCategoryDto } from '../dtos/bulk-deactivate-category.dto';
@@ -85,6 +86,7 @@ export class AdminCategoryController {
     private readonly bulkRestoreCategoryHandler: BulkRestoreCategoryHandler,
     private readonly bulkPermanentDeleteCategoryHandler: BulkPermanentDeleteCategoryHandler,
     private readonly reorderCategoriesHandler: ReorderCategoriesHandler,
+    private readonly getCategoryDependenciesHandler: GetCategoryDependenciesHandler,
   ) {}
 
   @Post()
@@ -101,7 +103,6 @@ export class AdminCategoryController {
         dto.thumbnailFileId,
         dto.status,
         dto.displayOrder,
-        dto.branchId,
         user?.sub,
       ),
     );
@@ -197,6 +198,22 @@ export class AdminCategoryController {
     };
   }
 
+  @Get(':id/dependencies')
+  @ApiResponse({
+    status: 200,
+    description: 'Category dependency counts',
+  })
+  async getDependencies(@Param('id') id: string) {
+    const result =
+      await this.getCategoryDependenciesHandler.execute(id);
+
+    return {
+      success: true,
+      message: 'Category dependencies retrieved',
+      data: result,
+    };
+  }
+
   @Get(':id')
   async get(@Param('id') id: string) {
     const result = await this.getCategoryHandler.execute(
@@ -224,7 +241,6 @@ export class AdminCategoryController {
         dto.description,
         dto.thumbnailFileId,
         dto.displayOrder,
-        dto.branchId,
         user?.sub,
       ),
     );

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Card } from "@/src/shared/components/ui/card";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
 import { appToast } from "@/src/shared/components/ui/toast";
@@ -15,13 +14,10 @@ import { useDeleteBranch } from "@/src/features/branches/hooks/use-delete-branch
 import { usePermanentDeleteBranch } from "@/src/features/branches/hooks/use-permanent-delete-branch";
 import { useRestoreBranch } from "@/src/features/branches/hooks/use-restore-branch";
 import { UpdateBranchModal } from "@/src/features/branches/components/update-branch-modal";
-import { BranchDetailsModal } from "@/src/features/branches/components/branch-details-modal";
 import { DeleteBranchDialog } from "@/src/features/branches/components/delete-branch-dialog";
 import { PermanentDeleteBranchDialog } from "@/src/features/branches/components/permanent-delete-branch-dialog";
 import { RestoreBranchDialog } from "@/src/features/branches/components/restore-branch-dialog";
-import { BranchStatusBadge } from "@/src/features/branches/components/branch-status-badge";
 import { BranchManageHeader } from "@/src/features/branches/components/manage/branch-manage-header";
-import { BranchStatCards } from "@/src/features/branches/components/manage/branch-stat-cards";
 import { BranchManageWorkspace } from "@/src/features/branches/components/manage/branch-manage-workspace";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
@@ -56,7 +52,6 @@ export function BranchManagePage({ branchId }: Props) {
   } = usePermanentDeleteBranch();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isViewOpen, setIsViewOpen] = useState(false);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isRestoreOpen, setIsRestoreOpen] = useState(false);
   const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] =
@@ -104,7 +99,6 @@ export function BranchManagePage({ branchId }: Props) {
         branch={branch}
         actionsDisabled={actionsDisabled}
         onEdit={() => setIsEditOpen(true)}
-        onView={() => setIsViewOpen(true)}
         onArchive={() => setIsArchiveOpen(true)}
         onRestore={() => setIsRestoreOpen(true)}
         onPermanentDelete={() =>
@@ -112,47 +106,10 @@ export function BranchManagePage({ branchId }: Props) {
         }
       />
 
-      <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-slate-900">
-                {branch.branchName}
-              </h2>
-              <BranchStatusBadge
-                status={branch.status}
-                deletedAt={branch.deletedAt}
-              />
-            </div>
-            <p className="mt-1 text-sm font-medium tracking-wide text-slate-600">
-              {branch.branchCode}
-            </p>
-            <p className="mt-1 text-sm text-slate-500">
-              {[branch.city, branch.state]
-                .filter(Boolean)
-                .join(", ") || "—"}
-            </p>
-          </div>
-          <div className="grid gap-1 text-sm text-slate-600 sm:text-right">
-            <p>{branch.email || "No email"}</p>
-            <p>{branch.phone || "No phone"}</p>
-            <p className="max-w-sm sm:ml-auto">
-              {[branch.addressLine1, branch.addressLine2]
-                .filter(Boolean)
-                .join(", ") || "No address"}
-            </p>
-          </div>
-        </div>
-      </Card>
-
-      <BranchStatCards
-        summary={summary}
-        isLoading={summaryLoading}
-      />
-
       <BranchManageWorkspace
         branch={branch}
         summary={summary}
+        summaryLoading={summaryLoading}
         onSummaryRefresh={refetchSummary}
       />
 
@@ -165,12 +122,6 @@ export function BranchManagePage({ branchId }: Props) {
           await refetch();
           await refetchSummary();
         }}
-      />
-
-      <BranchDetailsModal
-        open={isViewOpen}
-        branch={branch}
-        onClose={() => setIsViewOpen(false)}
       />
 
       <DeleteBranchDialog

@@ -14,7 +14,6 @@ export class CategoryMapper {
       thumbnailUrl: record.thumbnailUrl,
       status: record.status as CategoryStatus,
       displayOrder: record.displayOrder ?? null,
-      branchId: record.branchId,
       createdBy: record.createdBy,
       updatedBy: record.updatedBy,
       isDeleted: record.isDeleted,
@@ -36,9 +35,7 @@ export class CategoryMapper {
       thumbnailFileId: category.thumbnailFileId,
       thumbnailUrl: category.thumbnailUrl,
       status: category.status,
-      displayOrder:
-  category.displayOrder ?? undefined,
-      branchId: category.branchId,
+      displayOrder: category.displayOrder ?? undefined,
       createdBy: category.createdBy,
       updatedBy: category.updatedBy,
       isDeleted: category.isDeleted,

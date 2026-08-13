@@ -8,7 +8,6 @@ export class CreateCategoryCommand {
     public readonly thumbnailFileId?: string,
     public readonly status?: CategoryStatus,
     public readonly displayOrder?: number,
-    public readonly branchId?: string,
     public readonly createdBy?: string,
   ) {}
 }

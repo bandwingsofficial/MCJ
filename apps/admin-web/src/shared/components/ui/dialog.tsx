@@ -17,6 +17,11 @@ interface ConfirmDialogProps {
 
   loadingLabel?: string;
 
+  /** When false, only the primary action button is shown (e.g. Close). */
+  showCancel?: boolean;
+
+  confirmVariant?: "primary" | "danger" | "outline";
+
   onConfirm: () => void;
 
   onCancel: () => void;
@@ -29,6 +34,8 @@ export function ConfirmDialog({
   loading,
   confirmLabel = "Confirm",
   loadingLabel,
+  showCancel = true,
+  confirmVariant = "danger",
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -49,26 +56,28 @@ export function ConfirmDialog({
             {title}
           </AlertDialog.Title>
 
-          <AlertDialog.Description className="mt-2 text-sm text-slate-500">
+          <AlertDialog.Description className="mt-2 whitespace-pre-line text-sm text-slate-500">
             {description}
           </AlertDialog.Description>
 
           <div className="mt-6 flex justify-end gap-2">
-            <AlertDialog.Cancel asChild>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={loading}
-                onClick={onCancel}
-              >
-                Cancel
-              </Button>
-            </AlertDialog.Cancel>
+            {showCancel ? (
+              <AlertDialog.Cancel asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={loading}
+                  onClick={onCancel}
+                >
+                  Cancel
+                </Button>
+              </AlertDialog.Cancel>
+            ) : null}
 
             <Button
               type="button"
               loading={loading}
-              variant="danger"
+              variant={confirmVariant}
               disabled={loading}
               onClick={(event) => {
                 event.preventDefault();

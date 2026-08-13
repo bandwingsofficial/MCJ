@@ -108,7 +108,9 @@ export class PrismaBranchRepository
       this.prisma.trainer.count({ where: { branchId } }),
       this.prisma.enrollment.count({ where: { branchId } }),
       this.prisma.batch.count({ where: { branchId } }),
-      this.prisma.category.count({ where: { branchId } }),
+      this.prisma.branchCategory.count({
+        where: { branchId },
+      }),
       this.prisma.courseBranch.count({ where: { branchId } }),
     ]);
 
@@ -157,11 +159,13 @@ export class PrismaBranchRepository
       this.prisma.trainer.count({
         where: { branchId, isDeleted: false },
       }),
-      this.prisma.category.count({
+      this.prisma.branchCategory.count({
         where: {
           branchId,
-          isDeleted: false,
-          status: 'ACTIVE',
+          category: {
+            isDeleted: false,
+            status: 'ACTIVE',
+          },
         },
       }),
     ]);

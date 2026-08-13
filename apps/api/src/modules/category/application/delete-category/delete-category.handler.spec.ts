@@ -15,7 +15,6 @@ describe('DeleteCategoryHandler', () => {
       thumbnailUrl: null,
       status: CategoryStatus.ACTIVE,
       displayOrder: 2,
-      branchId: null,
       createdBy: 'admin',
       updatedBy: null,
       isDeleted: false,
@@ -28,7 +27,11 @@ describe('DeleteCategoryHandler', () => {
     const categoryRepo = {
       findById: jest.fn().mockResolvedValue(category),
       save: jest.fn().mockResolvedValue(undefined),
+      removeBranchAssignments: jest.fn().mockResolvedValue(0),
       closeDisplayOrderGap: jest.fn().mockResolvedValue(undefined),
+      normalizeOrderedDisplayOrders: jest
+        .fn()
+        .mockResolvedValue(undefined),
     };
 
     const handler = new DeleteCategoryHandler(
@@ -46,7 +49,6 @@ describe('DeleteCategoryHandler', () => {
     expect(category.displayOrder).toBeNull();
     expect(categoryRepo.closeDisplayOrderGap).toHaveBeenCalledWith(
       2,
-      null,
     );
   });
 });

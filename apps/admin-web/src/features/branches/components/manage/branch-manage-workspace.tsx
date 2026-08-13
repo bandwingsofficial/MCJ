@@ -19,7 +19,7 @@ import {
 
 import type { Branch } from "@/src/features/branches/types/branch.types";
 import type { BranchSummaryCounts } from "@/src/features/branches/hooks/use-branch-summary";
-import { BranchStatusBadge } from "@/src/features/branches/components/branch-status-badge";
+import { branchService } from "@/src/features/branches/services/branch.service";
 import { categoryService } from "@/src/features/categories/services/category.service";
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
 import { courseService } from "@/src/features/courses/services/course.service";
@@ -38,10 +38,12 @@ import {
   AssignEntitiesModal,
   type AssignableItem,
 } from "./assign-entities-modal";
+import { BranchOverviewSummary } from "./branch-overview-summary";
 
 interface Props {
   branch: Branch;
   summary: BranchSummaryCounts | null;
+  summaryLoading?: boolean;
   onSummaryRefresh: () => Promise<void>;
 }
 
@@ -55,46 +57,25 @@ type TabKey =
   | "instructors"
   | "reports";
 
-function formatAddress(branch: Branch) {
-  return [
-    branch.addressLine1,
-    branch.addressLine2,
-    branch.city,
-    branch.state,
-    branch.country,
-    branch.postalCode,
-  ]
-    .filter(Boolean)
-    .join(", ");
-}
-
 export function BranchManageWorkspace({
   branch,
   summary,
+  summaryLoading = false,
   onSummaryRefresh,
 }: Props) {
   const branchId = branch.id;
   const isArchived = Boolean(branch.deletedAt);
-  const assignmentsDisabled =
-    isArchived || branch.status !== "ACTIVE";
+  const assignmentsDisabled = isArchived || branch.status !== "ACTIVE";
 
   const [tab, setTab] = useState<TabKey>("overview");
   const [search, setSearch] = useState("");
 
-  const [categories, setCategories] = useState<
-    CategoryListItem[]
-  >([]);
-  const [courses, setCourses] = useState<CourseListItem[]>(
-    []
-  );
+  const [categories, setCategories] = useState<CategoryListItem[]>([]);
+  const [courses, setCourses] = useState<CourseListItem[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [enrollments, setEnrollments] = useState<
-    Enrollment[]
-  >([]);
-  const [instructors, setInstructors] = useState<
-    TrainerListItem[]
-  >([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [instructors, setInstructors] = useState<TrainerListItem[]>([]);
 
   const [listLoading, setListLoading] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
@@ -102,20 +83,18 @@ export function BranchManageWorkspace({
     "categories" | "courses" | "instructors" | null
   >(null);
   const [assignSearch, setAssignSearch] = useState("");
-  const [assignCandidates, setAssignCandidates] = useState<
-    AssignableItem[]
-  >([]);
+  const [assignCandidates, setAssignCandidates] = useState<AssignableItem[]>(
+    [],
+  );
   const [assignLoading, setAssignLoading] = useState(false);
-  const [assignSubmitting, setAssignSubmitting] =
-    useState(false);
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
 
   const [unassignTarget, setUnassignTarget] = useState<{
     kind: "categories" | "courses" | "instructors";
     id: string;
     label: string;
   } | null>(null);
-  const [unassignLoading, setUnassignLoading] =
-    useState(false);
+  const [unassignLoading, setUnassignLoading] = useState(false);
 
   const loadTabData = useCallback(async () => {
     setListLoading(true);
@@ -130,9 +109,8 @@ export function BranchManageWorkspace({
         });
         setCategories(
           (response.data ?? []).filter(
-            (item) =>
-              !item.isDeleted && item.status === "ACTIVE"
-          )
+            (item) => !item.isDeleted && item.status === "ACTIVE",
+          ),
         );
       }
 
@@ -166,13 +144,12 @@ export function BranchManageWorkspace({
       }
 
       if (tab === "enrollments") {
-        const response =
-          await enrollmentService.getEnrollments({
-            search,
-            branchId,
-            skip: 0,
-            take: 100,
-          });
+        const response = await enrollmentService.getEnrollments({
+          search,
+          branchId,
+          skip: 0,
+          take: 100,
+        });
         setEnrollments(response.data.items ?? []);
       }
 
@@ -197,9 +174,7 @@ export function BranchManageWorkspace({
     void loadTabData();
   }, [loadTabData]);
 
-  const openAssign = async (
-    kind: "categories" | "courses" | "instructors"
-  ) => {
+  const openAssign = async (kind: "categories" | "courses" | "instructors") => {
     setAssignKind(kind);
     setAssignOpen(true);
     setAssignSearch("");
@@ -209,29 +184,24 @@ export function BranchManageWorkspace({
         const response = await categoryService.getCategories({
           search: "",
           status: "ACTIVE",
-          branchId: undefined,
           page: 1,
           pageSize: 200,
         });
-        const assignedIds = new Set(
-          categories.map((item) => item.id)
-        );
+        const assignedIds = new Set(categories.map((item) => item.id));
         setAssignCandidates(
           (response.data ?? [])
             .filter(
               (item) =>
                 !item.isDeleted &&
                 item.status === "ACTIVE" &&
-                !assignedIds.has(item.id) &&
-                (item.branchId == null ||
-                  item.branchId === "")
+                !assignedIds.has(item.id),
             )
             .map((item) => ({
               id: item.id,
               label: item.name,
               meta: item.status,
               imageUrl: item.thumbnailUrl,
-            }))
+            })),
         );
       }
 
@@ -250,7 +220,7 @@ export function BranchManageWorkspace({
               id: item.id,
               label: item.title,
               meta: item.status,
-            }))
+            })),
         );
       }
 
@@ -261,24 +231,19 @@ export function BranchManageWorkspace({
           skip: 0,
           take: 200,
         });
-        const assigned = new Set(
-          instructors.map((item) => item.id)
-        );
+        const assigned = new Set(instructors.map((item) => item.id));
         setAssignCandidates(
           (response.data ?? [])
             .filter(
               (item) =>
                 !assigned.has(item.id) &&
-                (item.branchId == null ||
-                  item.branchId === "")
+                (item.branchId == null || item.branchId === ""),
             )
             .map((item) => ({
               id: item.id,
-              label: [item.firstName, item.lastName]
-                .filter(Boolean)
-                .join(" "),
+              label: [item.firstName, item.lastName].filter(Boolean).join(" "),
               meta: item.email ?? item.status,
-            }))
+            })),
         );
       }
     } catch (error) {
@@ -297,11 +262,7 @@ export function BranchManageWorkspace({
     setAssignSubmitting(true);
     try {
       if (assignKind === "categories") {
-        for (const id of ids) {
-          await categoryService.updateCategory(id, {
-            branchId,
-          });
-        }
+        await branchService.assignCategories(branchId, ids);
         appToast.success("Categories assigned");
       }
 
@@ -314,9 +275,7 @@ export function BranchManageWorkspace({
                 branches?: { id: string }[];
               }
             ).branches?.map((b) => b.id) ?? [];
-          const next = Array.from(
-            new Set([...existing, branchId])
-          );
+          const next = Array.from(new Set([...existing, branchId]));
           await courseService.updateCourse(id, {
             branchIds: next,
           });
@@ -352,16 +311,11 @@ export function BranchManageWorkspace({
     setUnassignLoading(true);
     try {
       if (unassignTarget.kind === "categories") {
-        await categoryService.updateCategory(
-          unassignTarget.id,
-          { branchId: null }
-        );
+        await branchService.unassignCategory(branchId, unassignTarget.id);
       }
 
       if (unassignTarget.kind === "courses") {
-        const detail = await courseService.getCourse(
-          unassignTarget.id
-        );
+        const detail = await courseService.getCourse(unassignTarget.id);
         const existing =
           (
             detail.data as {
@@ -374,10 +328,9 @@ export function BranchManageWorkspace({
       }
 
       if (unassignTarget.kind === "instructors") {
-        await trainerService.updateTrainer(
-          unassignTarget.id,
-          { branchId: null }
-        );
+        await trainerService.updateTrainer(unassignTarget.id, {
+          branchId: null,
+        });
       }
 
       appToast.success("Assignment removed");
@@ -395,7 +348,7 @@ export function BranchManageWorkspace({
     kind: "categories" | "courses" | "instructors" | null,
     assignLabel: string,
     createHref?: string,
-    createLabel?: string
+    createLabel?: string,
   ) => (
     <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1 sm:max-w-sm">
@@ -409,21 +362,22 @@ export function BranchManageWorkspace({
         {createHref && createLabel ? (
           <Link
             href={createHref}
-            className="inline-flex h-10 items-center rounded-xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
-            <Plus className="mr-1.5 h-4 w-4" />
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
             {createLabel}
           </Link>
         ) : null}
         {kind ? (
           <Button
             type="button"
+            size="sm"
             disabled={assignmentsDisabled}
             onClick={() => {
               void openAssign(kind);
             }}
           >
-            <Plus className="mr-1.5 h-4 w-4" />
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
             {assignLabel}
           </Button>
         ) : null}
@@ -440,7 +394,7 @@ export function BranchManageWorkspace({
           setTab(value as TabKey);
         }}
       >
-        <TabsList className="mb-4 flex h-auto w-full flex-wrap justify-start gap-1 rounded-xl border border-slate-200 bg-white p-1">
+        <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
           {(
             [
               ["overview", "Overview"],
@@ -456,58 +410,75 @@ export function BranchManageWorkspace({
             <TabsTrigger
               key={value}
               value={value}
-              className="rounded-lg px-3 py-1.5 text-sm data-[state=active]:bg-[#2447A8] data-[state=active]:text-white"
+              className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2447A8] data-[state=active]:bg-transparent data-[state=active]:text-[#2447A8] data-[state=active]:shadow-none"
             >
               {label}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
-          <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-              Branch Information
+        <TabsContent value="overview" className="space-y-3">
+          <BranchOverviewSummary summary={summary} isLoading={summaryLoading} />
+
+          <Card className="rounded-xl border border-slate-200/80 p-4 shadow-sm">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Additional Details
             </h2>
             <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div>
-                <dt className="text-xs text-slate-500">Name</dt>
-                <dd className="text-[15px] font-medium text-slate-900">
-                  {branch.branchName}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs text-slate-500">Code</dt>
-                <dd className="text-[15px] font-medium text-slate-900">
-                  {branch.branchCode}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs text-slate-500">Status</dt>
-                <dd className="mt-0.5">
-                  <BranchStatusBadge
-                    status={branch.status}
-                    deletedAt={branch.deletedAt}
-                  />
+              <div className="sm:col-span-2">
+                <dt className="text-xs text-slate-500">Description</dt>
+                <dd className="mt-0.5 text-sm text-slate-800">
+                  {branch.description?.trim() || "—"}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs text-slate-500">Email</dt>
-                <dd className="text-[15px] font-medium text-slate-900">
+                <dd className="mt-0.5 break-all text-sm font-medium text-slate-900">
                   {branch.email || "—"}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs text-slate-500">Phone</dt>
-                <dd className="text-[15px] font-medium text-slate-900">
+                <dd className="mt-0.5 text-sm font-medium text-slate-900">
                   {branch.phone || "—"}
                 </dd>
               </div>
               <div className="sm:col-span-2">
-                <dt className="text-xs text-slate-500">
-                  Address
-                </dt>
-                <dd className="text-[15px] font-medium text-slate-900">
-                  {formatAddress(branch) || "—"}
+                <dt className="text-xs text-slate-500">Address</dt>
+                <dd className="mt-0.5 text-sm font-medium text-slate-900">
+                  {[
+                    branch.addressLine1,
+                    branch.addressLine2,
+                    [branch.city, branch.state].filter(Boolean).join(", "),
+                    branch.postalCode,
+                    branch.country,
+                  ]
+                    .filter(Boolean)
+                    .join(", ") || "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-slate-500">Country</dt>
+                <dd className="mt-0.5 text-sm font-medium text-slate-900">
+                  {branch.country || "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-slate-500">Postal Code</dt>
+                <dd className="mt-0.5 text-sm font-medium text-slate-900">
+                  {branch.postalCode || "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-slate-500">Latitude</dt>
+                <dd className="mt-0.5 text-sm font-medium text-slate-900">
+                  {branch.latitude ?? "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-slate-500">Longitude</dt>
+                <dd className="mt-0.5 text-sm font-medium text-slate-900">
+                  {branch.longitude ?? "—"}
                 </dd>
               </div>
             </dl>
@@ -515,100 +486,174 @@ export function BranchManageWorkspace({
         </TabsContent>
 
         <TabsContent value="categories">
-          <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-            {sectionToolbar(
-              "categories",
-              "Assign Categories"
-            )}
-            {listLoading ? (
-              <p className="py-8 text-center text-sm text-slate-500">
-                Loading categories...
-              </p>
-            ) : categories.length === 0 ? (
-              <EmptyState
-                title="No categories assigned"
-                description="No categories have been assigned to this branch yet."
-              />
-            ) : (
-              <ul className="divide-y divide-slate-200">
-                {categories.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex items-center justify-between gap-3 py-2.5"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                        {item.thumbnailUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={item.thumbnailUrl}
-                            alt={item.name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-[10px] font-medium text-slate-400">
-                            IMG
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-[15px] font-medium text-slate-900">
-                          {item.name}
-                        </p>
-                        <p className="text-xs text-emerald-600">
-                          Active
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={assignmentsDisabled}
-                      onClick={() =>
-                        setUnassignTarget({
-                          kind: "categories",
-                          id: item.id,
-                          label: item.name,
-                        })
-                      }
-                    >
-                      Unassign
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </TabsContent>
+  <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
+    {sectionToolbar("categories", "Assign Categories")}
 
-        <TabsContent value="courses">
-          <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-            {sectionToolbar("courses", "Assign Course")}
-            {listLoading ? (
-              <p className="py-8 text-center text-sm text-slate-500">
-                Loading courses...
-              </p>
-            ) : courses.length === 0 ? (
-              <EmptyState
-                title="No courses assigned"
-                description="No courses have been assigned to this branch yet."
-              />
-            ) : (
-              <ul className="divide-y divide-slate-200">
-                {courses.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex items-center justify-between gap-3 py-2.5"
+    {listLoading ? (
+      <p className="py-8 text-center text-sm text-slate-500">
+        Loading categories...
+      </p>
+    ) : categories.length === 0 ? (
+      <EmptyState
+        title="No categories assigned"
+        description="No categories have been assigned to this branch yet."
+      />
+    ) : (
+      <div className="overflow-x-auto rounded-xl border border-slate-200">
+        <table className="w-full min-w-[600px]">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Image
+              </th>
+
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Name
+              </th>
+
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Status
+              </th>
+
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Action
+              </th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-slate-200">
+            {categories.map((item) => (
+              <tr
+                key={item.id}
+                className="transition-colors hover:bg-slate-50"
+              >
+                {/* Image */}
+                <td className="px-4 py-3">
+                  <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                    {item.thumbnailUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.thumbnailUrl}
+                        alt={item.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-[10px] font-medium text-slate-400">
+                        IMG
+                      </span>
+                    )}
+                  </div>
+                </td>
+
+                {/* Name */}
+                <td className="px-4 py-3">
+                  <p className="truncate text-sm font-medium text-slate-900">
+                    {item.name}
+                  </p>
+                </td>
+
+                {/* Status */}
+                <td className="px-4 py-3">
+                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                    Active
+                  </span>
+                </td>
+
+                {/* Action */}
+                <td className="px-4 py-3 text-right">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={assignmentsDisabled}
+                    onClick={() =>
+                      setUnassignTarget({
+                        kind: "categories",
+                        id: item.id,
+                        label: item.name,
+                      })
+                    }
                   >
-                    <div>
-                      <p className="text-[15px] font-medium text-slate-900">
-                        {item.title}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {item.status}
-                      </p>
-                    </div>
+                    Unassign
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </Card>
+</TabsContent>
+
+      <TabsContent value="courses" className="w-full min-w-0">
+  <Card className="w-full min-w-0 rounded-xl border border-slate-200 p-4 shadow-sm">
+    {sectionToolbar("courses", "Assign Course")}
+
+    {listLoading ? (
+      <p className="py-6 text-center text-sm text-slate-500">
+        Loading courses...
+      </p>
+    ) : (
+      <div className="w-full min-w-0 rounded-xl border border-slate-200">
+        <table className="w-full table-fixed border-collapse">
+          <colgroup>
+            <col className="w-[55%]" />
+            <col className="w-[20%]" />
+            <col className="w-[25%]" />
+          </colgroup>
+
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Course
+              </th>
+
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Status
+              </th>
+
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Action
+              </th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-slate-200">
+            {courses.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={3}
+                  className="px-4 py-5 text-center"
+                >
+                  <p className="text-sm font-medium text-slate-700">
+                    No courses assigned yet
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    Assign a course to this branch to see it here.
+                  </p>
+                </td>
+              </tr>
+            ) : (
+              courses.map((item) => (
+                <tr
+                  key={item.id}
+                  className="transition-colors hover:bg-slate-50"
+                >
+                  <td className="min-w-0 overflow-hidden px-4 py-3">
+                    <p className="truncate text-sm font-medium text-slate-900">
+                      {item.title}
+                    </p>
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                      {item.status}
+                    </span>
+                  </td>
+
+                  <td className="px-4 py-3 text-right">
                     <Button
                       type="button"
                       variant="outline"
@@ -624,226 +669,468 @@ export function BranchManageWorkspace({
                     >
                       Unassign
                     </Button>
-                  </li>
-                ))}
-              </ul>
+                  </td>
+                </tr>
+              ))
             )}
-          </Card>
-        </TabsContent>
+          </tbody>
+        </table>
+      </div>
+    )}
+  </Card>
+</TabsContent>
 
-        <TabsContent value="batches">
-          <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-            {sectionToolbar(
-              null,
-              "",
-              `/batches/create`,
-              "Create Batch"
-            )}
-            {listLoading ? (
-              <p className="py-8 text-center text-sm text-slate-500">
-                Loading batches...
-              </p>
-            ) : batches.length === 0 ? (
-              <EmptyState
-                title="No batches"
-                description="No batches belong to this branch yet."
-              />
+        <TabsContent value="batches" className="w-full min-w-0">
+  <Card className="w-full min-w-0 rounded-xl border border-slate-200 p-4 shadow-sm">
+    {sectionToolbar(null, "", `/batches/create`, "Create Batch")}
+
+    {listLoading ? (
+      <p className="py-6 text-center text-sm text-slate-500">
+        Loading batches...
+      </p>
+    ) : (
+      <div className="w-full min-w-0 rounded-xl border border-slate-200">
+        <table className="w-full table-fixed border-collapse">
+          <colgroup>
+            <col className="w-[30%]" />
+            <col className="w-[25%]" />
+            <col className="w-[15%]" />
+            <col className="w-[20%]" />
+            <col className="w-[10%]" />
+          </colgroup>
+
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Batch
+              </th>
+
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Course
+              </th>
+
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Status
+              </th>
+
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Enrollment
+              </th>
+
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Action
+              </th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-slate-200">
+            {batches.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-4 py-5 text-center"
+                >
+                  <p className="text-sm font-medium text-slate-700">
+                    No batches assigned yet
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    No batches belong to this branch yet.
+                  </p>
+                </td>
+              </tr>
             ) : (
-              <ul className="divide-y divide-slate-200">
-                {batches.map((item) => (
-                  <li key={item.id} className="py-2.5">
-                    <p className="text-[15px] font-medium text-slate-900">
+              batches.map((item) => (
+                <tr
+                  key={item.id}
+                  className="transition-colors hover:bg-slate-50"
+                >
+                  {/* Batch */}
+                  <td className="min-w-0 overflow-hidden px-4 py-3">
+                    <p className="truncate text-sm font-medium text-slate-900">
                       {item.name}
                     </p>
-                    <p className="text-xs text-slate-500">
-                      {item.course?.title ?? item.courseId} ·{" "}
-                      {item.status} · enrolled{" "}
-                      {item.enrolledCount}/{item.capacity}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </TabsContent>
+                  </td>
 
-        <TabsContent value="students">
-          <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-            {sectionToolbar(
-              null,
-              "",
-              `/students/create`,
-              "Add Student"
-            )}
-            {listLoading ? (
-              <p className="py-8 text-center text-sm text-slate-500">
-                Loading students...
-              </p>
-            ) : students.length === 0 ? (
-              <EmptyState
-                title="No students"
-                description="No students belong to this branch yet."
-              />
-            ) : (
-              <ul className="divide-y divide-slate-200">
-                {students.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex items-center justify-between gap-3 py-2.5"
-                  >
-                    <div>
-                      <p className="text-[15px] font-medium text-slate-900">
-                        {[item.firstName, item.lastName]
-                          .filter(Boolean)
-                          .join(" ")}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {item.email ?? "—"} · {item.status}
-                      </p>
-                    </div>
-                    <Link
-                      href={`/students/${item.id}`}
-                      className="text-sm font-medium text-[#2447A8] hover:underline"
+                  {/* Course */}
+                  <td className="min-w-0 overflow-hidden px-4 py-3">
+                    <p className="truncate text-sm text-slate-700">
+                      {item.course?.title ?? item.courseId}
+                    </p>
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-4 py-3">
+                    <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                      {item.status}
+                    </span>
+                  </td>
+
+                  {/* Enrollment */}
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-slate-700">
+                      {item.enrolledCount}/{item.capacity}
+                    </span>
+                  </td>
+
+                  {/* Action */}
+                  <td className="px-4 py-3 text-right">
+                    <a
+                      href={`/batches/${item.id}`}
+                      className="text-sm font-medium text-blue-700 hover:text-blue-800"
                     >
                       View
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+                    </a>
+                  </td>
+                </tr>
+              ))
             )}
-          </Card>
-        </TabsContent>
+          </tbody>
+        </table>
+      </div>
+    )}
+  </Card>
+</TabsContent>
 
-        <TabsContent value="enrollments">
-          <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-            {sectionToolbar(
-              null,
-              "",
-              `/enrollments/create`,
-              "Create Enrollment"
-            )}
-            {listLoading ? (
-              <p className="py-8 text-center text-sm text-slate-500">
-                Loading enrollments...
-              </p>
-            ) : enrollments.length === 0 ? (
-              <EmptyState
-                title="No enrollments"
-                description="No enrollments for this branch yet."
-              />
+        <TabsContent value="students" className="w-full min-w-0">
+  <Card className="w-full min-w-0 rounded-xl border border-slate-200 p-4 shadow-sm">
+    {sectionToolbar(null, "", `/students/create`, "Add Student")}
+
+    {listLoading ? (
+      <p className="py-6 text-center text-sm text-slate-500">
+        Loading students...
+      </p>
+    ) : (
+      <div className="w-full min-w-0 rounded-xl border border-slate-200">
+        <table className="w-full table-fixed border-collapse">
+          <colgroup>
+            <col className="w-[35%]" />
+            <col className="w-[35%]" />
+            <col className="w-[15%]" />
+            <col className="w-[15%]" />
+          </colgroup>
+
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Student
+              </th>
+
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Email
+              </th>
+
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Status
+              </th>
+
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Action
+              </th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-slate-200">
+            {students.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="px-4 py-5 text-center"
+                >
+                  <p className="text-sm font-medium text-slate-700">
+                    No students assigned yet
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    No students belong to this branch yet.
+                  </p>
+                </td>
+              </tr>
             ) : (
-              <ul className="divide-y divide-slate-200">
-                {enrollments.map((item) => (
-                  <li key={item.id} className="py-2.5">
-                    <p className="text-[15px] font-medium text-slate-900">
+              students.map((item) => {
+                const studentName = [
+                  item.firstName,
+                  item.lastName,
+                ]
+                  .filter(Boolean)
+                  .join(" ");
+
+                return (
+                  <tr
+                    key={item.id}
+                    className="transition-colors hover:bg-slate-50"
+                  >
+                    {/* Student */}
+                    <td className="min-w-0 overflow-hidden px-4 py-3">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {studentName || "—"}
+                      </p>
+                    </td>
+
+                    {/* Email */}
+                    <td className="min-w-0 overflow-hidden px-4 py-3">
+                      <p className="truncate text-sm text-slate-700">
+                        {item.email ?? "—"}
+                      </p>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3">
+                      <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                        {item.status}
+                      </span>
+                    </td>
+
+                    {/* Action */}
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/students/${item.id}`}
+                        className="text-sm font-medium text-[#2447A8] hover:underline"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </Card>
+</TabsContent>
+
+       <TabsContent value="enrollments" className="w-full min-w-0">
+  <Card className="w-full min-w-0 rounded-xl border border-slate-200 p-4 shadow-sm">
+    {sectionToolbar(
+      null,
+      "",
+      `/enrollments/create`,
+      "Create Enrollment",
+    )}
+
+    {listLoading ? (
+      <p className="py-6 text-center text-sm text-slate-500">
+        Loading enrollments...
+      </p>
+    ) : (
+      <div className="w-full min-w-0 rounded-xl border border-slate-200">
+        <table className="w-full table-fixed border-collapse">
+          <colgroup>
+            <col className="w-[45%]" />
+            <col className="w-[25%]" />
+            <col className="w-[30%]" />
+          </colgroup>
+
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Enrollment
+              </th>
+
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Status
+              </th>
+
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Payment Status
+              </th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-slate-200">
+            {enrollments.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={3}
+                  className="px-4 py-5 text-center"
+                >
+                  <p className="text-sm font-medium text-slate-700">
+                    No enrollments assigned yet
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    No enrollments for this branch yet.
+                  </p>
+                </td>
+              </tr>
+            ) : (
+              enrollments.map((item) => (
+                <tr
+                  key={item.id}
+                  className="transition-colors hover:bg-slate-50"
+                >
+                  <td className="min-w-0 overflow-hidden px-4 py-3">
+                    <p className="truncate text-sm font-medium text-slate-900">
                       {item.enrollmentNumber}
                     </p>
-                    <p className="text-xs text-slate-500">
-                      {item.status} · {item.paymentStatus}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </TabsContent>
+                  </td>
 
-        <TabsContent value="instructors">
-          <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-            {sectionToolbar(
-              "instructors",
-              "Assign Instructor"
-            )}
-            {listLoading ? (
-              <p className="py-8 text-center text-sm text-slate-500">
-                Loading instructors...
-              </p>
-            ) : instructors.length === 0 ? (
-              <EmptyState
-                title="No instructors"
-                description="No instructors have been assigned to this branch yet."
-              />
-            ) : (
-              <ul className="divide-y divide-slate-200">
-                {instructors.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex items-center justify-between gap-3 py-2.5"
-                  >
-                    <div>
-                      <p className="text-[15px] font-medium text-slate-900">
-                        {[item.firstName, item.lastName]
-                          .filter(Boolean)
-                          .join(" ")}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {item.email ?? "—"} · {item.status}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={assignmentsDisabled}
-                      onClick={() =>
-                        setUnassignTarget({
-                          kind: "instructors",
-                          id: item.id,
-                          label: [
-                            item.firstName,
-                            item.lastName,
-                          ]
-                            .filter(Boolean)
-                            .join(" "),
-                        })
-                      }
-                    >
-                      Unassign
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </TabsContent>
+                  <td className="px-4 py-3">
+                    <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                      {item.status}
+                    </span>
+                  </td>
 
-        <TabsContent value="reports">
-          <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-              Branch Reports
-            </h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Counts below are live aggregates from existing
-              branch-linked records. Trend charts are not
-              shown because dedicated analytics endpoints are
-              not available yet.
-            </p>
-            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
-              {(
-                [
-                  ["Students", summary?.students],
-                  ["Courses", summary?.courses],
-                  ["Batches", summary?.batches],
-                  ["Enrollments", summary?.enrollments],
-                  ["Instructors", summary?.instructors],
-                  ["Categories", summary?.categories],
-                ] as const
-              ).map(([label, value]) => (
-                <div
-                  key={label}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-3"
+                  <td className="px-4 py-3">
+                    <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                      {item.paymentStatus}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </Card>
+</TabsContent>
+
+       <TabsContent value="instructors" className="w-full min-w-0">
+  <Card className="w-full min-w-0 rounded-xl border border-slate-200 p-4 shadow-sm">
+    {sectionToolbar("instructors", "Assign Instructor")}
+
+    {listLoading ? (
+      <p className="py-6 text-center text-sm text-slate-500">
+        Loading instructors...
+      </p>
+    ) : (
+      <div className="w-full min-w-0 rounded-xl border border-slate-200">
+        <table className="w-full table-fixed border-collapse">
+          <colgroup>
+            <col className="w-[35%]" />
+            <col className="w-[35%]" />
+            <col className="w-[15%]" />
+            <col className="w-[15%]" />
+          </colgroup>
+
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Instructor
+              </th>
+
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Email
+              </th>
+
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Status
+              </th>
+
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Action
+              </th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-slate-200">
+            {instructors.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="px-4 py-5 text-center"
                 >
-                  <p className="text-xs text-slate-500">
-                    {label}
+                  <p className="text-sm font-medium text-slate-700">
+                    No instructors assigned yet
                   </p>
-                  <p className="text-xl font-bold text-slate-900">
-                    {value ?? 0}
+
+                  <p className="mt-1 text-xs text-slate-500">
+                    No instructors have been assigned to this branch yet.
                   </p>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </TabsContent>
+                </td>
+              </tr>
+            ) : (
+              instructors.map((item) => {
+                const instructorName = [
+                  item.firstName,
+                  item.lastName,
+                ]
+                  .filter(Boolean)
+                  .join(" ");
+
+                return (
+                  <tr
+                    key={item.id}
+                    className="transition-colors hover:bg-slate-50"
+                  >
+                    {/* Instructor */}
+                    <td className="min-w-0 overflow-hidden px-4 py-3">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {instructorName || "—"}
+                      </p>
+                    </td>
+
+                    {/* Email */}
+                    <td className="min-w-0 overflow-hidden px-4 py-3">
+                      <p className="truncate text-sm text-slate-700">
+                        {item.email ?? "—"}
+                      </p>
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3">
+                      <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                        {item.status}
+                      </span>
+                    </td>
+
+                    {/* Action */}
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={assignmentsDisabled}
+                        onClick={() =>
+                          setUnassignTarget({
+                            kind: "instructors",
+                            id: item.id,
+                            label: instructorName,
+                          })
+                        }
+                      >
+                        Unassign
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </Card>
+</TabsContent>
+
+       <TabsContent value="reports" className="w-full min-w-0">
+  <Card className="w-full min-w-0 rounded-xl border border-slate-200 p-4 shadow-sm">
+    <div className="flex items-center justify-between gap-4">
+      <div className="min-w-0">
+        <h2 className="text-sm font-semibold text-slate-900">
+          Branch Reports
+        </h2>
+
+        <p className="mt-1 text-xs text-slate-500">
+          Dedicated analytics and trend reports are not available yet.
+        </p>
+      </div>
+    </div>
+
+    <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-5 text-center">
+      <p className="text-sm font-medium text-slate-700">
+        Reports coming soon
+      </p>
+
+      <p className="mt-1 text-xs text-slate-500">
+        Use the Overview tab to view the current branch summary and counts.
+      </p>
+    </div>
+  </Card>
+</TabsContent>
       </Tabs>
 
       <AssignEntitiesModal
@@ -860,6 +1147,14 @@ export function BranchManageWorkspace({
         isSubmitting={assignSubmitting}
         search={assignSearch}
         onSearchChange={setAssignSearch}
+        searchPlaceholder={
+          assignKind === "categories" ? "Search categories..." : "Search..."
+        }
+        emptyMessage={
+          assignKind === "categories"
+            ? "No active unassigned categories available"
+            : "No matching records"
+        }
         onClose={() => {
           setAssignOpen(false);
           setAssignKind(null);

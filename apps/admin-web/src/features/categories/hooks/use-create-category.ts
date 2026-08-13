@@ -63,12 +63,6 @@ export const useCreateCategory =
               );
               return null;
 
-            case "BRANCH_NOT_FOUND":
-              appToast.error(
-                "Selected branch not found"
-              );
-              return null;
-
             default:
               appToast.error(
                 message ??

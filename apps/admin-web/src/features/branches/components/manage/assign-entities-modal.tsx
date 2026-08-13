@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
@@ -24,6 +24,8 @@ interface Props {
   onSearchChange: (value: string) => void;
   onClose: () => void;
   onAssign: (ids: string[]) => Promise<void>;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
 }
 
 export function AssignEntitiesModal({
@@ -36,8 +38,16 @@ export function AssignEntitiesModal({
   onSearchChange,
   onClose,
   onAssign,
+  searchPlaceholder = "Search...",
+  emptyMessage = "No matching records",
 }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      setSelected([]);
+    }
+  }, [open]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -74,7 +84,7 @@ export function AssignEntitiesModal({
       <div className="space-y-4">
         <SearchInput
           value={search}
-          placeholder="Search..."
+          placeholder={searchPlaceholder}
           onChange={onSearchChange}
         />
 
@@ -85,7 +95,7 @@ export function AssignEntitiesModal({
             </p>
           ) : filtered.length === 0 ? (
             <p className="px-2 py-6 text-center text-sm text-slate-500">
-              No matching records
+              {emptyMessage}
             </p>
           ) : (
             filtered.map((item) => {
@@ -137,6 +147,7 @@ export function AssignEntitiesModal({
             <Button
               type="button"
               variant="outline"
+              size="sm"
               disabled={isSubmitting}
               onClick={() => {
                 setSelected([]);
@@ -147,6 +158,7 @@ export function AssignEntitiesModal({
             </Button>
             <Button
               type="button"
+              size="sm"
               loading={isSubmitting}
               disabled={
                 isSubmitting || selected.length === 0

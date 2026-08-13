@@ -39,9 +39,7 @@ export class ReorderCategoriesHandler {
       );
     }
 
-    const maxOrder = await this.categoryRepo.getMaxDisplayOrder(
-      category.branchId,
-    );
+    const maxOrder = await this.categoryRepo.getMaxDisplayOrder();
 
     if (command.newDisplayOrder > maxOrder) {
       throw new BaseException(
@@ -62,8 +60,9 @@ export class ReorderCategoriesHandler {
       category.id,
       category.displayOrder,
       command.newDisplayOrder,
-      category.branchId,
     );
+
+    await this.categoryRepo.normalizeOrderedDisplayOrders();
 
     return new ReorderCategoriesResult(
       category.id,

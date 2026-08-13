@@ -12,7 +12,6 @@ export class Category {
     public thumbnailUrl: string | null,
     public status: CategoryStatus,
     public displayOrder: number | null,
-    public branchId: string | null,
     public readonly createdBy: string | null,
     public updatedBy: string | null,
     public isDeleted: boolean,
@@ -31,7 +30,6 @@ export class Category {
     thumbnailUrl?: string | null;
     status?: CategoryStatus;
     displayOrder?: number | null;
-    branchId?: string | null;
     createdBy?: string | null;
   }): Category {
     return new Category(
@@ -45,7 +43,6 @@ export class Category {
       params.thumbnailUrl ?? null,
       params.status ?? CategoryStatus.ACTIVE,
       params.displayOrder ?? null,
-      params.branchId ?? null,
       params.createdBy ?? null,
       null,
       false,
@@ -65,7 +62,6 @@ export class Category {
     thumbnailUrl: string | null;
     status: CategoryStatus;
     displayOrder: number | null;
-    branchId: string | null;
     createdBy: string | null;
     updatedBy: string | null;
     isDeleted: boolean;
@@ -83,7 +79,6 @@ export class Category {
       params.thumbnailUrl,
       params.status,
       params.displayOrder,
-      params.branchId,
       params.createdBy,
       params.updatedBy,
       params.isDeleted,
@@ -101,7 +96,6 @@ export class Category {
     thumbnailFileId?: string | null;
     thumbnailUrl?: string | null;
     displayOrder?: number | null;
-    branchId?: string | null;
     updatedBy?: string | null;
   }) {
     if (params.name !== undefined) {
@@ -127,10 +121,6 @@ export class Category {
 
     if (params.displayOrder !== undefined) {
       this.displayOrder = params.displayOrder;
-    }
-
-    if (params.branchId !== undefined) {
-      this.branchId = params.branchId;
     }
 
     this.updatedBy = params.updatedBy ?? this.updatedBy;

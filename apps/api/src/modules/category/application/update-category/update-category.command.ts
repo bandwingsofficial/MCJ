@@ -6,7 +6,6 @@ export class UpdateCategoryCommand {
     public readonly description?: string | null,
     public readonly thumbnailFileId?: string | null,
     public readonly displayOrder?: number,
-    public readonly branchId?: string | null,
     public readonly updatedBy?: string,
   ) {}
 }

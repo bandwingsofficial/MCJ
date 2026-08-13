@@ -15,7 +15,6 @@ describe('RestoreCategoryHandler', () => {
       thumbnailUrl: null,
       status: CategoryStatus.ARCHIVED,
       displayOrder: null,
-      branchId: null,
       createdBy: 'admin',
       updatedBy: null,
       isDeleted: true,
@@ -31,6 +30,9 @@ describe('RestoreCategoryHandler', () => {
       findBySlug: jest.fn().mockResolvedValue(category),
       getMaxDisplayOrder: jest.fn().mockResolvedValue(3),
       save: jest.fn().mockResolvedValue(undefined),
+      normalizeOrderedDisplayOrders: jest
+        .fn()
+        .mockResolvedValue(undefined),
     };
 
     const handler = new RestoreCategoryHandler(

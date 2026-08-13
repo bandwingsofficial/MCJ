@@ -17,7 +17,6 @@ describe('CategoryDomainService', () => {
       thumbnailUrl: null,
       status: CategoryStatus.ARCHIVED,
       displayOrder: null,
-      branchId: null,
       createdBy: 'admin',
       updatedBy: null,
       isDeleted: true,
@@ -43,11 +42,11 @@ describe('CategoryDomainService', () => {
     });
 
     await expect(
-      domain.ensureNameIsAvailable(repo, 'abc', null),
+      domain.ensureNameIsAvailable(repo, 'abc'),
     ).rejects.toBeInstanceOf(BaseException);
 
     await expect(
-      domain.ensureNameIsAvailable(repo, 'abc', null),
+      domain.ensureNameIsAvailable(repo, 'abc'),
     ).rejects.toMatchObject({ statusCode: 409 });
   });
 
@@ -58,7 +57,7 @@ describe('CategoryDomainService', () => {
     });
 
     await expect(
-      domain.ensureNameIsAvailable(repo, 'ABC', null, 'cat-1'),
+      domain.ensureNameIsAvailable(repo, 'ABC', 'cat-1'),
     ).resolves.toBeUndefined();
   });
 

@@ -55,13 +55,11 @@ export class PrismaCategoryRepository
 
   async findBySlug(
     slug: string,
-    branchId?: string | null,
     includeDeleted = false,
   ): Promise<Category | null> {
     const record = await this.prisma.category.findFirst({
       where: {
         slug,
-        branchId: branchId ?? null,
         ...(includeDeleted ? {} : { isDeleted: false }),
       },
     });
@@ -71,7 +69,6 @@ export class PrismaCategoryRepository
 
   async findByNameInsensitive(
     name: string,
-    branchId?: string | null,
     includeDeleted = false,
   ): Promise<Category | null> {
     const normalized = CategoryName.normalize(name);
@@ -79,7 +76,6 @@ export class PrismaCategoryRepository
 
     const record = await this.prisma.category.findFirst({
       where: {
-        branchId: branchId ?? null,
         ...(includeDeleted ? {} : { isDeleted: false }),
         name: {
           equals: normalized,
@@ -92,10 +88,8 @@ export class PrismaCategoryRepository
       return CategoryMapper.toDomain(record);
     }
 
-    // Legacy rows may still have uncollapsed whitespace
     const candidates = await this.prisma.category.findMany({
       where: {
-        branchId: branchId ?? null,
         ...(includeDeleted ? {} : { isDeleted: false }),
       },
       take: 500,
@@ -140,30 +134,122 @@ export class PrismaCategoryRepository
     courses: number;
     enrollments: number;
     articles: number;
+    branches: number;
   }> {
-    const [courses, enrollments, articles] = await Promise.all([
-      this.prisma.course.count({ where: { categoryId: id } }),
-      this.prisma.enrollment.count({ where: { categoryId: id } }),
-      this.prisma.financialArticle.count({
-        where: { categoryId: id },
-      }),
-    ]);
+    const [courses, enrollments, articles, branches] =
+      await Promise.all([
+        this.prisma.course.count({ where: { categoryId: id } }),
+        this.prisma.enrollment.count({
+          where: { categoryId: id },
+        }),
+        this.prisma.financialArticle.count({
+          where: { categoryId: id },
+        }),
+        this.prisma.branchCategory.count({
+          where: { categoryId: id },
+        }),
+      ]);
 
-    return { courses, enrollments, articles };
+    return {
+      courses,
+      enrollments,
+      articles,
+      branches,
+    };
   }
 
-  async deletePermanent(id: string): Promise<void> {
-    await this.prisma.category.delete({
-      where: { id },
+  async removeBranchAssignments(
+    categoryId: string,
+  ): Promise<number> {
+    const result = await this.prisma.branchCategory.deleteMany({
+      where: { categoryId },
+    });
+    return result.count;
+  }
+
+  async assignCategoriesToBranch(
+    branchId: string,
+    categoryIds: string[],
+  ): Promise<number> {
+    const uniqueIds = [...new Set(categoryIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return 0;
+    }
+
+    const result = await this.prisma.branchCategory.createMany({
+      data: uniqueIds.map((categoryId) => ({
+        branchId,
+        categoryId,
+      })),
+      skipDuplicates: true,
+    });
+
+    return result.count;
+  }
+
+  async unassignCategoryFromBranch(
+    branchId: string,
+    categoryId: string,
+  ): Promise<void> {
+    await this.prisma.branchCategory.deleteMany({
+      where: { branchId, categoryId },
     });
   }
 
-  async getMaxDisplayOrder(
-    branchId?: string | null,
-  ): Promise<number> {
+  async isAssignedToBranch(
+    categoryId: string,
+    branchId: string,
+  ): Promise<boolean> {
+    const row = await this.prisma.branchCategory.findUnique({
+      where: {
+        branchId_categoryId: {
+          branchId,
+          categoryId,
+        },
+      },
+      select: { id: true },
+    });
+
+    return Boolean(row);
+  }
+
+  async deletePermanent(id: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.category.delete({
+        where: { id },
+      });
+
+      const ordered = await tx.category.findMany({
+        where: {
+          isDeleted: false,
+          displayOrder: { not: null },
+        },
+        select: { id: true },
+        orderBy: [
+          { displayOrder: 'asc' },
+          { createdAt: 'asc' },
+        ],
+      });
+
+      for (let i = 0; i < ordered.length; i++) {
+        await tx.category.update({
+          where: { id: ordered[i].id },
+          data: { displayOrder: -(i + 1) },
+        });
+      }
+
+      for (let i = 0; i < ordered.length; i++) {
+        await tx.category.update({
+          where: { id: ordered[i].id },
+          data: { displayOrder: i + 1 },
+        });
+      }
+    });
+  }
+
+  async getMaxDisplayOrder(): Promise<number> {
     const result = await this.prisma.category.aggregate({
       where: {
-        branchId: branchId ?? null,
         isDeleted: false,
         displayOrder: { not: null },
       },
@@ -177,11 +263,9 @@ export class PrismaCategoryRepository
 
   async incrementDisplayOrdersFrom(
     displayOrder: number,
-    branchId?: string | null,
   ): Promise<void> {
     await this.prisma.category.updateMany({
       where: {
-        branchId: branchId ?? null,
         isDeleted: false,
         displayOrder: {
           gte: displayOrder,
@@ -198,7 +282,6 @@ export class PrismaCategoryRepository
   async shiftDisplayOrders(
     oldOrder: number,
     newOrder: number,
-    branchId?: string | null,
   ): Promise<void> {
     if (oldOrder === newOrder) {
       return;
@@ -207,7 +290,6 @@ export class PrismaCategoryRepository
     if (newOrder < oldOrder) {
       await this.prisma.category.updateMany({
         where: {
-          branchId: branchId ?? null,
           isDeleted: false,
           displayOrder: {
             gte: newOrder,
@@ -223,7 +305,6 @@ export class PrismaCategoryRepository
     } else {
       await this.prisma.category.updateMany({
         where: {
-          branchId: branchId ?? null,
           isDeleted: false,
           displayOrder: {
             gt: oldOrder,
@@ -241,11 +322,9 @@ export class PrismaCategoryRepository
 
   async closeDisplayOrderGap(
     deletedDisplayOrder: number,
-    branchId?: string | null,
   ): Promise<void> {
     await this.prisma.category.updateMany({
       where: {
-        branchId: branchId ?? null,
         isDeleted: false,
         displayOrder: {
           gt: deletedDisplayOrder,
@@ -259,14 +338,12 @@ export class PrismaCategoryRepository
     });
   }
 
-  async getMaxActiveDisplayOrder(
-    branchId?: string | null,
-  ): Promise<number> {
+  async getMaxActiveDisplayOrder(): Promise<number> {
     const result = await this.prisma.category.aggregate({
       where: {
-        branchId: branchId ?? null,
         isDeleted: false,
         status: CategoryStatus.ACTIVE,
+        displayOrder: { not: null },
       },
       _max: {
         displayOrder: true,
@@ -280,7 +357,6 @@ export class PrismaCategoryRepository
     categoryId: string,
     oldOrder: number,
     newOrder: number,
-    branchId?: string | null,
   ): Promise<void> {
     if (oldOrder === newOrder) {
       return;
@@ -290,7 +366,6 @@ export class PrismaCategoryRepository
       if (newOrder < oldOrder) {
         await tx.category.updateMany({
           where: {
-            branchId: branchId ?? null,
             isDeleted: false,
             displayOrder: {
               gte: newOrder,
@@ -306,7 +381,6 @@ export class PrismaCategoryRepository
       } else {
         await tx.category.updateMany({
           where: {
-            branchId: branchId ?? null,
             isDeleted: false,
             displayOrder: {
               gt: oldOrder,
@@ -330,7 +404,6 @@ export class PrismaCategoryRepository
 
   async reorderOrderedCategories(
     orderedIds: string[],
-    branchId?: string | null,
   ): Promise<void> {
     const uniqueIds = [...new Set(orderedIds)];
 
@@ -345,7 +418,6 @@ export class PrismaCategoryRepository
     await this.prisma.$transaction(async (tx) => {
       const ordered = await tx.category.findMany({
         where: {
-          branchId: branchId ?? null,
           isDeleted: false,
           displayOrder: { not: null },
         },
@@ -384,6 +456,36 @@ export class PrismaCategoryRepository
     });
   }
 
+  async normalizeOrderedDisplayOrders(): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const ordered = await tx.category.findMany({
+        where: {
+          isDeleted: false,
+          displayOrder: { not: null },
+        },
+        select: { id: true },
+        orderBy: [
+          { displayOrder: 'asc' },
+          { createdAt: 'asc' },
+        ],
+      });
+
+      for (let i = 0; i < ordered.length; i++) {
+        await tx.category.update({
+          where: { id: ordered[i].id },
+          data: { displayOrder: -(i + 1) },
+        });
+      }
+
+      for (let i = 0; i < ordered.length; i++) {
+        await tx.category.update({
+          where: { id: ordered[i].id },
+          data: { displayOrder: i + 1 },
+        });
+      }
+    });
+  }
+
   private buildWhere(
     filters: CategoryListFilters,
   ): Prisma.CategoryWhereInput {
@@ -400,7 +502,9 @@ export class PrismaCategoryRepository
     }
 
     if (filters.branchId !== undefined) {
-      where.branchId = filters.branchId;
+      where.branchCategories = {
+        some: { branchId: filters.branchId },
+      };
     }
 
     if (filters.search) {

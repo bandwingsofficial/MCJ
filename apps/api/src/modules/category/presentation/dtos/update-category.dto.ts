@@ -57,12 +57,6 @@ export class UpdateCategoryDto {
   )
   displayOrder?: number;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @ValidateIf((_, value) => value !== null)
-  @IsUUID()
-  branchId?: string | null;
-
   @ApiPropertyOptional({
     description:
       'Upload file ID from POST /admin/uploads, or null to remove image',

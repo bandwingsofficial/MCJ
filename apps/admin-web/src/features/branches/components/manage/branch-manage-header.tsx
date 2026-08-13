@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
-  Eye,
+  Archive,
   Pencil,
   RotateCcw,
   Trash2,
@@ -18,7 +16,6 @@ import { BranchStatusBadge } from "@/src/features/branches/components/branch-sta
 interface Props {
   branch: Branch;
   onEdit: () => void;
-  onView: () => void;
   onArchive: () => void;
   onRestore: () => void;
   onPermanentDelete: () => void;
@@ -28,20 +25,21 @@ interface Props {
 export function BranchManageHeader({
   branch,
   onEdit,
-  onView,
   onArchive,
   onRestore,
   onPermanentDelete,
   actionsDisabled = false,
 }: Props) {
-  const router = useRouter();
   const isArchived = Boolean(branch.deletedAt);
   const location = [branch.city, branch.state]
     .filter(Boolean)
     .join(", ");
+  const meta = [branch.branchCode, location]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <nav className="flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
         <Link
           href="/branches"
@@ -57,85 +55,70 @@ export function BranchManageHeader({
         <span className="text-slate-900">Management</span>
       </nav>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
             {branch.branchName}
           </h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-sm font-semibold tracking-wide text-slate-700">
-              {branch.branchCode}
-            </span>
+          {meta ? (
+            <p className="mt-1 text-sm text-slate-500">
+              {meta}
+            </p>
+          ) : null}
+          <div className="mt-2">
             <BranchStatusBadge
               status={branch.status}
               deletedAt={branch.deletedAt}
             />
-            {location ? (
-              <span className="text-sm text-slate-500">
-                {location}
-              </span>
-            ) : null}
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push("/branches")}
-          >
-            <ArrowLeft className="mr-1.5 h-4 w-4" />
-            Back to Branches
-          </Button>
-
-          <Button
-            type="button"
-            variant="outline"
-            disabled={actionsDisabled}
-            onClick={onView}
-          >
-            <Eye className="mr-1.5 h-4 w-4" />
-            View Details
-          </Button>
-
-          {!isArchived ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {isArchived ? (
             <>
               <Button
                 type="button"
+                size="sm"
                 disabled={actionsDisabled}
-                onClick={onEdit}
+                onClick={onRestore}
+                className="border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
               >
-                <Pencil className="mr-1.5 h-4 w-4" />
-                Edit Branch
+                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                Restore
               </Button>
               <Button
                 type="button"
-                variant="outline"
+                size="sm"
+                variant="danger"
                 disabled={actionsDisabled}
-                onClick={onArchive}
+                onClick={onPermanentDelete}
               >
-                Archive
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Permanently Delete
               </Button>
             </>
           ) : (
             <>
               <Button
                 type="button"
+                size="sm"
+                variant="outline"
                 disabled={actionsDisabled}
-                onClick={onRestore}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                onClick={onEdit}
               >
-                <RotateCcw className="mr-1.5 h-4 w-4" />
-                Restore
+                <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                Edit
               </Button>
               <Button
                 type="button"
-                variant="danger"
+                size="sm"
+                variant="outline"
                 disabled={actionsDisabled}
-                onClick={onPermanentDelete}
+                onClick={onArchive}
+                className="border-amber-200 text-amber-800 hover:bg-amber-50"
               >
-                <Trash2 className="mr-1.5 h-4 w-4" />
-                Permanently Delete
+                <Archive className="mr-1.5 h-3.5 w-3.5" />
+                Archive
               </Button>
             </>
           )}
