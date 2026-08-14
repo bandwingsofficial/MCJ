@@ -1,9 +1,25 @@
-export class BulkDeleteBranchesResult {
-  constructor(
-    public readonly success: boolean,
+import {
+  BulkBranchOperationSummary,
+  BulkBranchItemResult,
+} from '../shared/bulk-branch-operation.result';
 
-    public readonly deleted: number,
+export class BulkDeleteBranchesResult extends BulkBranchOperationSummary {
+  static fromItemResults(
+    requestedCount: number,
+    results: BulkBranchItemResult[],
+  ): BulkDeleteBranchesResult {
+    const summary = BulkBranchOperationSummary.fromItemResults(
+      requestedCount,
+      results,
+    );
 
-    public readonly message: string,
-  ) {}
+    return new BulkDeleteBranchesResult(
+      summary.requestedCount,
+      summary.processedCount,
+      summary.successCount,
+      summary.failedCount,
+      summary.results,
+      summary.failures,
+    );
+  }
 }

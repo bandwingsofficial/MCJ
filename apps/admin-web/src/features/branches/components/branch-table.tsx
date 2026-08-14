@@ -2,10 +2,13 @@
 
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 
 import { GripVertical } from "lucide-react";
+
+import { Checkbox } from "@/src/shared/components/ui/checkbox";
 
 import {
   Table,
@@ -26,7 +29,13 @@ import { BranchActions } from "./branch-actions";
 interface BranchTableProps {
   branches: BranchListItem[];
 
+  selectedBranchIds?: string[];
+
+  onSelectionChange?: (ids: string[]) => void;
+
   actionsDisabled?: boolean;
+
+  selectionDisabled?: boolean;
 
   reorderDisabled?: boolean;
 
@@ -52,7 +61,10 @@ function canReorder(branch: BranchListItem): boolean {
 
 export function BranchTable({
   branches,
+  selectedBranchIds = [],
+  onSelectionChange,
   actionsDisabled = false,
+  selectionDisabled = false,
   reorderDisabled = false,
   onManage,
   onActivate,
@@ -65,10 +77,58 @@ export function BranchTable({
     string | null
   >(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const selectAllRef = useRef<HTMLInputElement | null>(null);
+
+  const safeSelectedIds = selectedBranchIds ?? [];
+  const selectionEnabled = Boolean(onSelectionChange);
+  const visibleIds = rows.map((branch) => branch.id);
+  const selectedVisibleCount = visibleIds.filter((id) =>
+    safeSelectedIds.includes(id)
+  ).length;
+  const allVisibleSelected =
+    visibleIds.length > 0 &&
+    selectedVisibleCount === visibleIds.length;
+  const someVisibleSelected =
+    selectedVisibleCount > 0 && !allVisibleSelected;
 
   useEffect(() => {
     setRows(branches);
   }, [branches]);
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someVisibleSelected;
+    }
+  }, [someVisibleSelected, allVisibleSelected]);
+
+  const toggleRow = (branchId: string, checked: boolean) => {
+    if (!onSelectionChange || selectionDisabled) {
+      return;
+    }
+
+    const next = checked
+      ? Array.from(new Set([...safeSelectedIds, branchId]))
+      : safeSelectedIds.filter((id) => id !== branchId);
+
+    onSelectionChange(next);
+  };
+
+  const toggleAllVisible = (checked: boolean) => {
+    if (!onSelectionChange || selectionDisabled) {
+      return;
+    }
+
+    if (!checked) {
+      onSelectionChange(
+        safeSelectedIds.filter((id) => !visibleIds.includes(id))
+      );
+      return;
+    }
+
+    onSelectionChange(
+      Array.from(new Set([...safeSelectedIds, ...visibleIds]))
+    );
+  };
 
   if (rows.length === 0) {
     return (
@@ -84,7 +144,8 @@ export function BranchTable({
       !dragId ||
       dragId === targetId ||
       isSavingOrder ||
-      reorderDisabled
+      reorderDisabled ||
+      safeSelectedIds.length > 0
     ) {
       setDragId(null);
       setDropTargetId(null);
@@ -140,10 +201,31 @@ export function BranchTable({
     }
   };
 
+  const dragDisabled =
+    reorderDisabled ||
+    isSavingOrder ||
+    safeSelectedIds.length > 0;
+
   return (
     <Table className="rounded-none border-0">
       <TableHeader>
         <TableRow>
+          {selectionEnabled ? (
+            <TableHead className="w-10">
+              <input
+                ref={selectAllRef}
+                type="checkbox"
+                className="h-4 w-4 rounded border-slate-300"
+                checked={allVisibleSelected}
+                disabled={selectionDisabled}
+                onChange={(event) => {
+                  toggleAllVisible(event.target.checked);
+                }}
+                aria-label="Select all branches on this page"
+              />
+            </TableHead>
+          ) : null}
+
           <TableHead className="w-10">
             <span className="sr-only">Reorder</span>
           </TableHead>
@@ -161,9 +243,7 @@ export function BranchTable({
       <TableBody>
         {rows.map((branch) => {
           const draggable =
-            canReorder(branch) &&
-            !reorderDisabled &&
-            !isSavingOrder;
+            canReorder(branch) && !dragDisabled;
 
           return (
             <TableRow
@@ -203,6 +283,20 @@ export function BranchTable({
                 dragId === branch.id ? "opacity-60" : ""
               }`}
             >
+              {selectionEnabled ? (
+                <TableCell className="w-10">
+                  <Checkbox
+                    checked={safeSelectedIds.includes(
+                      branch.id
+                    )}
+                    disabled={selectionDisabled}
+                    onCheckedChange={(checked) => {
+                      toggleRow(branch.id, checked);
+                    }}
+                  />
+                </TableCell>
+              ) : null}
+
               <TableCell className="w-10">
                 {draggable ? (
                   <GripVertical

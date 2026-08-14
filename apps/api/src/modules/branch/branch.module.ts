@@ -209,65 +209,32 @@ import { BRANCH_TOKENS } from './branch.tokens';
       ],
     },
     {
-  provide: BulkUpdateBranchStatusHandler,
-  useFactory: (
-    branchRepo: BranchRepository,
-    domainService: BranchDomainService,
-  ) =>
-    new BulkUpdateBranchStatusHandler(
-      branchRepo,
-      domainService,
-    ),
-  inject: [
-    BRANCH_TOKENS.BRANCH_REPOSITORY,
-    BranchDomainService,
-  ],
-},
+      provide: BulkUpdateBranchStatusHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new BulkUpdateBranchStatusHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
 
-{
-  provide: BulkDeleteBranchesHandler,
-  useFactory: (
-    branchRepo: BranchRepository,
-    domainService: BranchDomainService,
-  ) =>
-    new BulkDeleteBranchesHandler(
-      branchRepo,
-      domainService,
-    ),
-  inject: [
-    BRANCH_TOKENS.BRANCH_REPOSITORY,
-    BranchDomainService,
-  ],
-},
+    {
+      provide: BulkDeleteBranchesHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new BulkDeleteBranchesHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
 
-{
-  provide: BulkRestoreBranchesHandler,
-  useFactory: (
-    branchRepo: BranchRepository,
-  ) =>
-    new BulkRestoreBranchesHandler(
-      branchRepo,
-    ),
-  inject: [
-    BRANCH_TOKENS.BRANCH_REPOSITORY,
-  ],
-},
+    {
+      provide: BulkRestoreBranchesHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new BulkRestoreBranchesHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
 
-{
-  provide: BulkPermanentDeleteBranchesHandler,
-  useFactory: (
-    branchRepo: BranchRepository,
-    domainService: BranchDomainService,
-  ) =>
-    new BulkPermanentDeleteBranchesHandler(
-      branchRepo,
-      domainService,
-    ),
-  inject: [
-    BRANCH_TOKENS.BRANCH_REPOSITORY,
-    BranchDomainService,
-  ],
-},
+    {
+      provide: BulkPermanentDeleteBranchesHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new BulkPermanentDeleteBranchesHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
   ],
   exports: [BRANCH_TOKENS.BRANCH_REPOSITORY],
 })

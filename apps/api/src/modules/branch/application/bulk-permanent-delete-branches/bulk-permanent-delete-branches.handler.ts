@@ -5,10 +5,12 @@ import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
 
 import type { BranchRepository } from '../../domain/repositories/branch.repository';
-import { BranchDomainService } from '../../domain/services/branch-domain.service';
 import { BRANCH_TOKENS } from '../../branch.tokens';
 
 import { ValidationError } from '../errors/validation.error';
+import { formatBranchBlockingMessage } from '../shared/format-branch-blocking-message';
+import type { BulkBranchItemResult } from '../shared/bulk-branch-operation.result';
+import { parseBulkBranchIds } from '../shared/parse-bulk-branch-ids';
 
 import { BulkPermanentDeleteBranchesCommand } from './bulk-permanent-delete-branches.command';
 import { BulkPermanentDeleteBranchesResult } from './bulk-permanent-delete-branches.result';
@@ -43,8 +45,6 @@ export class BulkPermanentDeleteBranchesHandler {
   constructor(
     @Inject(BRANCH_TOKENS.BRANCH_REPOSITORY)
     private readonly branchRepo: BranchRepository,
-
-    private readonly domainService: BranchDomainService,
   ) {}
 
   async execute(
@@ -55,32 +55,8 @@ export class BulkPermanentDeleteBranchesHandler {
         'Bulk permanent delete branches request received',
       );
 
-      if (
-        !command.branchIds ||
-        command.branchIds.length === 0
-      ) {
-        throw new ValidationError(
-          'At least one branch id is required',
-          ERROR_CODES.VALIDATION_ERROR,
-        );
-      }
-
-      const branchIds = [
-        ...new Set(
-          command.branchIds
-            .map((id) => id?.trim())
-            .filter(Boolean),
-        ),
-      ];
-
-      if (branchIds.length === 0) {
-        throw new ValidationError(
-          'At least one valid branch id is required',
-          ERROR_CODES.VALIDATION_ERROR,
-        );
-      }
-
-      let permanentlyDeleted = 0;
+      const branchIds = parseBulkBranchIds(command.branchIds);
+      const itemResults: BulkBranchItemResult[] = [];
 
       for (const branchId of branchIds) {
         const branch =
@@ -88,14 +64,23 @@ export class BulkPermanentDeleteBranchesHandler {
             branchId,
           );
 
-        this.domainService.ensureBranchExists(branch);
+        if (!branch) {
+          itemResults.push({
+            branchId,
+            success: false,
+            message: 'Branch not found',
+          });
+          continue;
+        }
 
         if (!branch.isDeleted()) {
-          throw new BaseException(
-            ERROR_CODES.VALIDATION_ERROR,
-            'Only archived branches can be permanently deleted',
-            400,
-          );
+          itemResults.push({
+            branchId,
+            success: false,
+            message:
+              'Only archived branches can be permanently deleted',
+          });
+          continue;
         }
 
         const refs =
@@ -103,111 +88,60 @@ export class BulkPermanentDeleteBranchesHandler {
             branch.id,
           );
 
-        const blockingParts: string[] = [];
+        const blockingMessage =
+          formatBranchBlockingMessage(refs);
 
-        if (refs.branchUsers > 0) {
-          blockingParts.push(
-            `${refs.branchUsers} branch user${
-              refs.branchUsers === 1 ? '' : 's'
-            }`,
-          );
-        }
-
-        if (refs.students > 0) {
-          blockingParts.push(
-            `${refs.students} student${
-              refs.students === 1 ? '' : 's'
-            }`,
-          );
-        }
-
-        if (refs.trainers > 0) {
-          blockingParts.push(
-            `${refs.trainers} trainer${
-              refs.trainers === 1 ? '' : 's'
-            }`,
-          );
-        }
-
-        if (refs.enrollments > 0) {
-          blockingParts.push(
-            `${refs.enrollments} enrollment${
-              refs.enrollments === 1 ? '' : 's'
-            }`,
-          );
-        }
-
-        if (refs.batches > 0) {
-          blockingParts.push(
-            `${refs.batches} batch${
-              refs.batches === 1 ? '' : 'es'
-            }`,
-          );
-        }
-
-        if (refs.categories > 0) {
-          blockingParts.push(
-            `${refs.categories} categor${
-              refs.categories === 1 ? 'y' : 'ies'
-            }`,
-          );
-        }
-
-        if (refs.courseBranches > 0) {
-          blockingParts.push(
-            `${refs.courseBranches} course link${
-              refs.courseBranches === 1 ? '' : 's'
-            }`,
-          );
-        }
-
-        if (blockingParts.length > 0) {
-          throw new BaseException(
-            ERROR_CODES.VALIDATION_ERROR,
-            `Cannot permanently delete this branch because it is still linked to ${blockingParts.join(
-              ', ',
-            )}. Reassign or remove those records first.`,
-            409,
-          );
+        if (blockingMessage) {
+          itemResults.push({
+            branchId,
+            success: false,
+            message: blockingMessage,
+          });
+          continue;
         }
 
         const displayOrder = branch.displayOrder;
 
         try {
-          await this.branchRepo.deletePermanent(
-            branch.id,
-          );
-        } catch (error) {
-          if (isForeignKeyRestrictError(error)) {
-            throw new BaseException(
-              ERROR_CODES.VALIDATION_ERROR,
-              'Cannot permanently delete this branch because it is still referenced by other records.',
-              409,
+          await this.branchRepo.deletePermanent(branch.id);
+
+          if (displayOrder != null) {
+            await this.branchRepo.closeDisplayOrderGap(
+              displayOrder,
             );
           }
 
-          throw error;
-        }
+          itemResults.push({
+            branchId,
+            success: true,
+            message: 'Branch permanently deleted successfully',
+          });
 
-        if (displayOrder != null) {
-          await this.branchRepo.closeDisplayOrderGap(
-            displayOrder,
+          this.logger.log(
+            `Branch permanently deleted: ${branch.id}`,
           );
+        } catch (error) {
+          if (isForeignKeyRestrictError(error)) {
+            itemResults.push({
+              branchId,
+              success: false,
+              message:
+                'Cannot permanently delete this branch because it is still referenced by other records.',
+            });
+            continue;
+          }
+
+          itemResults.push({
+            branchId,
+            success: false,
+            message: 'Unable to permanently delete branch',
+          });
         }
-
-        permanentlyDeleted++;
-
-        this.logger.log(
-          `Branch permanently deleted: ${branch.id}`,
-        );
       }
 
-      return new BulkPermanentDeleteBranchesResult(
-        true,
-        permanentlyDeleted,
-        `${permanentlyDeleted} branch${
-          permanentlyDeleted === 1 ? '' : 'es'
-        } permanently deleted successfully`,
+      return BulkPermanentDeleteBranchesResult.fromItemResults(
+        branchIds.length,
+        itemResults,
       );
     } catch (error) {
       if (error instanceof BaseException) {

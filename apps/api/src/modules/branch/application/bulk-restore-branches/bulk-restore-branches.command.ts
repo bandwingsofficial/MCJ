@@ -1,5 +1,5 @@
 export class BulkRestoreBranchesCommand {
   constructor(
-    public readonly ids: string[],
+    public readonly branchIds: string[],
   ) {}
 }

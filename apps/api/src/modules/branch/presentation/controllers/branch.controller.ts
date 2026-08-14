@@ -50,6 +50,7 @@ import { ReorderBranchesCommand } from '../../application/reorder-branches/reord
 
 import { BranchStatus } from '../../domain/enums/branch-status.enum';
 import { BulkBranchIdsDto } from '../dtos/bulk-branch-ids.dto';
+import { BulkUpdateBranchStatusDto } from '../dtos/bulk-update-branch-status.dto';
 
 import { CreateBranchDto } from '../dtos/create-branch.dto';
 import { ListBranchesQueryDto } from '../dtos/list-branches-query.dto';
@@ -86,13 +87,14 @@ export class BranchController {
     private readonly checkBranchAvailabilityHandler: CheckBranchAvailabilityHandler,
 
     private readonly reorderBranchesHandler: ReorderBranchesHandler,
+
     private readonly bulkUpdateBranchStatusHandler: BulkUpdateBranchStatusHandler,
 
-private readonly bulkDeleteBranchesHandler: BulkDeleteBranchesHandler,
+    private readonly bulkDeleteBranchesHandler: BulkDeleteBranchesHandler,
 
-private readonly bulkRestoreBranchesHandler: BulkRestoreBranchesHandler,
+    private readonly bulkRestoreBranchesHandler: BulkRestoreBranchesHandler,
 
-private readonly bulkPermanentDeleteBranchesHandler: BulkPermanentDeleteBranchesHandler,
+    private readonly bulkPermanentDeleteBranchesHandler: BulkPermanentDeleteBranchesHandler,
   ) {}
 
   @Post()
@@ -199,92 +201,96 @@ private readonly bulkPermanentDeleteBranchesHandler: BulkPermanentDeleteBranches
       data: result,
     };
   }
+  @Patch('bulk/status')
+  async bulkUpdateStatus(
+    @Body() dto: BulkUpdateBranchStatusDto,
+  ) {
+    const result =
+      await this.bulkUpdateBranchStatusHandler.execute(
+        new BulkUpdateBranchStatusCommand(
+          dto.branchIds,
+          dto.status,
+        ),
+      );
+
+    return {
+      message: 'Branch statuses updated successfully',
+      data: result,
+    };
+  }
+
   @Patch('bulk/activate')
-async bulkActivate(
-  @Body() dto: BulkBranchIdsDto,
-) {
-  const result =
-    await this.bulkUpdateBranchStatusHandler.execute(
-      new BulkUpdateBranchStatusCommand(
-        dto.branchIds,
-        BranchStatus.ACTIVE,
-      ),
-    );
+  async bulkActivate(@Body() dto: BulkBranchIdsDto) {
+    const result =
+      await this.bulkUpdateBranchStatusHandler.execute(
+        new BulkUpdateBranchStatusCommand(
+          dto.branchIds,
+          BranchStatus.ACTIVE,
+        ),
+      );
 
-  return {
-    message: `${result.updated} branches activated successfully`,
-    data: result,
-  };
-}
+    return {
+      message: 'Branch statuses updated successfully',
+      data: result,
+    };
+  }
 
-@Patch('bulk/deactivate')
-async bulkDeactivate(
-  @Body() dto: BulkBranchIdsDto,
-) {
-  const result =
-    await this.bulkUpdateBranchStatusHandler.execute(
-      new BulkUpdateBranchStatusCommand(
-        dto.branchIds,
-        BranchStatus.INACTIVE,
-      ),
-    );
+  @Patch('bulk/deactivate')
+  async bulkDeactivate(@Body() dto: BulkBranchIdsDto) {
+    const result =
+      await this.bulkUpdateBranchStatusHandler.execute(
+        new BulkUpdateBranchStatusCommand(
+          dto.branchIds,
+          BranchStatus.INACTIVE,
+        ),
+      );
 
-  return {
-    message: `${result.updated} branches deactivated successfully`,
-    data: result,
-  };
-}
+    return {
+      message: 'Branch statuses updated successfully',
+      data: result,
+    };
+  }
 
-@Patch('bulk/restore')
-async bulkRestore(
-  @Body() dto: BulkBranchIdsDto,
-) {
-  const result =
-    await this.bulkRestoreBranchesHandler.execute(
-      new BulkRestoreBranchesCommand(
-        dto.branchIds,
-      ),
-    );
+  @Patch('bulk/restore')
+  async bulkRestore(@Body() dto: BulkBranchIdsDto) {
+    const result =
+      await this.bulkRestoreBranchesHandler.execute(
+        new BulkRestoreBranchesCommand(dto.branchIds),
+      );
 
-  return {
-    message: result.message,
-    data: result,
-  };
-}
+    return {
+      message: 'Branches restored successfully',
+      data: result,
+    };
+  }
 
-@Delete('bulk')
-async bulkDelete(
-  @Body() dto: BulkBranchIdsDto,
-) {
-  const result =
-    await this.bulkDeleteBranchesHandler.execute(
-      new BulkDeleteBranchesCommand(
-        dto.branchIds,
-      ),
-    );
+  @Delete('bulk')
+  async bulkDelete(@Body() dto: BulkBranchIdsDto) {
+    const result =
+      await this.bulkDeleteBranchesHandler.execute(
+        new BulkDeleteBranchesCommand(dto.branchIds),
+      );
 
-  return {
-    message: result.message,
-    data: result,
-  };
-}
+    return {
+      message: 'Branches deleted successfully',
+      data: result,
+    };
+  }
 
-@Delete('bulk/permanent')
-async bulkPermanentDelete(
-  @Body() dto: BulkBranchIdsDto,
-) {
-  const result =
-    await this.bulkPermanentDeleteBranchesHandler.execute(
-      new BulkPermanentDeleteBranchesCommand(
-        dto.branchIds,
-      ),
-    );
+  @Delete('bulk/permanent')
+  async bulkPermanentDelete(@Body() dto: BulkBranchIdsDto) {
+    const result =
+      await this.bulkPermanentDeleteBranchesHandler.execute(
+        new BulkPermanentDeleteBranchesCommand(
+          dto.branchIds,
+        ),
+      );
 
-  return {
-    message: result.message,
-    data: result,
-  };
-}
+    return {
+      message: 'Branches permanently deleted successfully',
+      data: result,
+    };
+  }
 
   @Get(':id/summary')
   async getSummary(@Param('id') id: string) {

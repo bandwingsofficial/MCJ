@@ -175,3 +175,19 @@ export interface ApiResponse<T> {
 
   data: T;
 }
+
+export interface BulkBranchItemResult {
+  branchId: string;
+  success: boolean;
+  message: string;
+  status?: BranchStatus;
+}
+
+export interface BulkBranchOperationResult {
+  requestedCount: number;
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  results: BulkBranchItemResult[];
+  failures: BulkBranchItemResult[];
+}

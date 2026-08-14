@@ -5,6 +5,7 @@ import {
   Branch,
   BranchFilters,
   BranchListResponse,
+  BulkBranchOperationResult,
   CheckBranchAvailabilityResponse,
   CreateBranchRequest,
   SuggestBranchCodeResponse,
@@ -181,6 +182,50 @@ export const branchApi = {
         displayOrder: number;
       }>
     >("/admin/branches/reorder", payload);
+
+    return response.data;
+  },
+
+  async bulkUpdateStatus(
+    branchIds: string[],
+    status: "ACTIVE" | "INACTIVE"
+  ) {
+    const response = await apiClient.patch<
+      ApiResponse<BulkBranchOperationResult>
+    >("/admin/branches/bulk/status", {
+      branchIds,
+      status,
+    });
+
+    return response.data;
+  },
+
+  async bulkDeleteBranches(branchIds: string[]) {
+    const response = await apiClient.delete<
+      ApiResponse<BulkBranchOperationResult>
+    >("/admin/branches/bulk", {
+      data: { branchIds },
+    });
+
+    return response.data;
+  },
+
+  async bulkRestoreBranches(branchIds: string[]) {
+    const response = await apiClient.patch<
+      ApiResponse<BulkBranchOperationResult>
+    >("/admin/branches/bulk/restore", {
+      branchIds,
+    });
+
+    return response.data;
+  },
+
+  async bulkPermanentDeleteBranches(branchIds: string[]) {
+    const response = await apiClient.delete<
+      ApiResponse<BulkBranchOperationResult>
+    >("/admin/branches/bulk/permanent", {
+      data: { branchIds },
+    });
 
     return response.data;
   },

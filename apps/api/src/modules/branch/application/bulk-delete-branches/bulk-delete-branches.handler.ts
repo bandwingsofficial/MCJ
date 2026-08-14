@@ -1,18 +1,18 @@
 import { Inject, Logger } from '@nestjs/common';
 
-import { BulkDeleteBranchesCommand } from './bulk-delete-branches.command';
-import { BulkDeleteBranchesResult } from './bulk-delete-branches.result';
+import { BaseException } from '@common/exceptions/base.exception';
 
+import type { Branch } from '../../domain/entities/branch.entity';
 import type { BranchRepository } from '../../domain/repositories/branch.repository';
 
-import { BranchDomainService } from '../../domain/services/branch-domain.service';
-
-import { BaseException } from '@common/exceptions/base.exception';
-import { ERROR_CODES } from '@common/constants/error-codes';
-
 import { ValidationError } from '../errors/validation.error';
+import type { BulkBranchItemResult } from '../shared/bulk-branch-operation.result';
+import { parseBulkBranchIds } from '../shared/parse-bulk-branch-ids';
 
 import { BRANCH_TOKENS } from '../../branch.tokens';
+
+import { BulkDeleteBranchesCommand } from './bulk-delete-branches.command';
+import { BulkDeleteBranchesResult } from './bulk-delete-branches.result';
 
 export class BulkDeleteBranchesHandler {
   private readonly logger = new Logger(
@@ -22,8 +22,6 @@ export class BulkDeleteBranchesHandler {
   constructor(
     @Inject(BRANCH_TOKENS.BRANCH_REPOSITORY)
     private readonly branchRepo: BranchRepository,
-
-    private readonly domainService: BranchDomainService,
   ) {}
 
   async execute(
@@ -34,67 +32,77 @@ export class BulkDeleteBranchesHandler {
         'Bulk delete branches request received',
       );
 
-      if (
-        !command.branchIds ||
-        command.branchIds.length === 0
-      ) {
-        throw new ValidationError(
-          'At least one branch id is required',
-          ERROR_CODES.VALIDATION_ERROR,
-        );
-      }
-
-      const branchIds = [
-        ...new Set(
-          command.branchIds
-            .map((id) => id?.trim())
-            .filter(Boolean),
-        ),
-      ];
-
-      if (branchIds.length === 0) {
-        throw new ValidationError(
-          'At least one valid branch id is required',
-          ERROR_CODES.VALIDATION_ERROR,
-        );
-      }
-
-      let deleted = 0;
+      const branchIds = parseBulkBranchIds(command.branchIds);
+      const itemResults: BulkBranchItemResult[] = [];
+      const branchesToDelete: Branch[] = [];
 
       for (const branchId of branchIds) {
         const branch =
-          await this.branchRepo.findById(branchId);
-
-        this.domainService.ensureBranchExists(
-          branch,
-        );
-
-        const deletedDisplayOrder =
-          branch.displayOrder;
-
-        branch.softDelete();
-
-        await this.branchRepo.save(branch);
-
-        if (deletedDisplayOrder != null) {
-          await this.branchRepo.closeDisplayOrderGap(
-            deletedDisplayOrder,
+          await this.branchRepo.findByIdIncludingDeleted(
+            branchId,
           );
+
+        if (!branch) {
+          itemResults.push({
+            branchId,
+            success: false,
+            message: 'Branch not found',
+          });
+          continue;
         }
 
-        deleted++;
+        if (branch.isDeleted()) {
+          itemResults.push({
+            branchId,
+            success: true,
+            message: 'Branch is already archived',
+          });
+          continue;
+        }
 
-        this.logger.log(
-          `Branch soft deleted: ${branch.id}`,
-        );
+        branchesToDelete.push(branch);
       }
 
-      return new BulkDeleteBranchesResult(
-        true,
-        deleted,
-        `${deleted} branch${
-          deleted === 1 ? '' : 'es'
-        } deleted successfully`,
+      branchesToDelete.sort((left, right) => {
+        const leftOrder = left.displayOrder ?? -1;
+        const rightOrder = right.displayOrder ?? -1;
+        return rightOrder - leftOrder;
+      });
+
+      for (const branch of branchesToDelete) {
+        try {
+          const deletedDisplayOrder = branch.displayOrder;
+
+          branch.softDelete();
+          await this.branchRepo.save(branch);
+
+          if (deletedDisplayOrder != null) {
+            await this.branchRepo.closeDisplayOrderGap(
+              deletedDisplayOrder,
+            );
+          }
+
+          itemResults.push({
+            branchId: branch.id,
+            success: true,
+            message: 'Branch archived successfully',
+          });
+
+          this.logger.log(
+            `Branch soft deleted: ${branch.id}`,
+          );
+        } catch {
+          itemResults.push({
+            branchId: branch.id,
+            success: false,
+            message: 'Unable to archive branch',
+          });
+        }
+      }
+
+      return BulkDeleteBranchesResult.fromItemResults(
+        branchIds.length,
+        itemResults,
       );
     } catch (error) {
       if (error instanceof BaseException) {

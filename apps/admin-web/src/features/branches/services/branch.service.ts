@@ -149,6 +149,46 @@ class BranchService {
     }
   }
 
+  async bulkUpdateStatus(
+    branchIds: string[],
+    status: "ACTIVE" | "INACTIVE"
+  ) {
+    try {
+      return await branchApi.bulkUpdateStatus(
+        branchIds,
+        status
+      );
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async bulkDeleteBranches(branchIds: string[]) {
+    try {
+      return await branchApi.bulkDeleteBranches(branchIds);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async bulkRestoreBranches(branchIds: string[]) {
+    try {
+      return await branchApi.bulkRestoreBranches(branchIds);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async bulkPermanentDeleteBranches(branchIds: string[]) {
+    try {
+      return await branchApi.bulkPermanentDeleteBranches(
+        branchIds
+      );
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   private handleError(error: unknown): Error {
     if (error instanceof AxiosError) {
       return new Error(getErrorMessage(error));
