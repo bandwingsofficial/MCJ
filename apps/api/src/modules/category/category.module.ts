@@ -16,6 +16,7 @@ import { PermanentDeleteCategoryHandler } from './application/permanent-delete-c
 import { RestoreCategoryHandler } from './application/restore-category/restore-category.handler';
 import { UpdateCategoryHandler } from './application/update-category/update-category.handler';
 import { UpdateCategoryStatusHandler } from './application/update-category-status/update-category-status.handler';
+import { BulkUpdateCategoryStatusHandler } from './application/bulk-update-category-status/bulk-update-category-status.handler';
 import { BulkActivateCategoryHandler } from './application/bulk-activate-category/bulk-activate-category.handler';
 import { BulkDeactivateCategoryHandler } from './application/bulk-deactivate-category/bulk-deactivate-category.handler';
 import { BulkDeleteCategoryHandler } from './application/bulk-delete-category/bulk-delete-category.handler';
@@ -193,34 +194,22 @@ import { BranchRepository } from '../branch/domain/repositories/branch.repositor
       provide: BulkPermanentDeleteCategoryHandler,
       useFactory: (
         categoryRepo: CategoryRepository,
-        domainService: CategoryDomainService,
         uploadDomainService: UploadDomainService,
       ) =>
         new BulkPermanentDeleteCategoryHandler(
           categoryRepo,
-          domainService,
           uploadDomainService,
         ),
       inject: [
         CATEGORY_TOKENS.CATEGORY_REPOSITORY,
-        CategoryDomainService,
         UploadDomainService,
       ],
     },
     {
       provide: BulkDeleteCategoryHandler,
-      useFactory: (
-        categoryRepo: CategoryRepository,
-        domainService: CategoryDomainService,
-      ) =>
-        new BulkDeleteCategoryHandler(
-          categoryRepo,
-          domainService,
-        ),
-      inject: [
-        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
-        CategoryDomainService,
-      ],
+      useFactory: (categoryRepo: CategoryRepository) =>
+        new BulkDeleteCategoryHandler(categoryRepo),
+      inject: [CATEGORY_TOKENS.CATEGORY_REPOSITORY],
     },
 
     {
@@ -239,35 +228,32 @@ import { BranchRepository } from '../branch/domain/repositories/branch.repositor
       ],
     },
     {
+      provide: BulkUpdateCategoryStatusHandler,
+      useFactory: (categoryRepo: CategoryRepository) =>
+        new BulkUpdateCategoryStatusHandler(categoryRepo),
+      inject: [CATEGORY_TOKENS.CATEGORY_REPOSITORY],
+    },
+
+    {
       provide: BulkActivateCategoryHandler,
       useFactory: (
-        categoryRepo: CategoryRepository,
-        domainService: CategoryDomainService,
+        bulkUpdateStatusHandler: BulkUpdateCategoryStatusHandler,
       ) =>
         new BulkActivateCategoryHandler(
-          categoryRepo,
-          domainService,
+          bulkUpdateStatusHandler,
         ),
-      inject: [
-        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
-        CategoryDomainService,
-      ],
+      inject: [BulkUpdateCategoryStatusHandler],
     },
 
     {
       provide: BulkDeactivateCategoryHandler,
       useFactory: (
-        categoryRepo: CategoryRepository,
-        domainService: CategoryDomainService,
+        bulkUpdateStatusHandler: BulkUpdateCategoryStatusHandler,
       ) =>
         new BulkDeactivateCategoryHandler(
-          categoryRepo,
-          domainService,
+          bulkUpdateStatusHandler,
         ),
-      inject: [
-        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
-        CategoryDomainService,
-      ],
+      inject: [BulkUpdateCategoryStatusHandler],
     },
 
     {

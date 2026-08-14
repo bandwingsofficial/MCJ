@@ -1,25 +1,25 @@
-import { Category } from '../../domain/entities/category.entity';
+import {
+  BulkCategoryItemResult,
+  BulkCategoryOperationSummary,
+} from '../shared/bulk-category-operation.result';
 
-export class BulkRestoreCategoryResult {
-  constructor(
-    public readonly categories: {
-      id: string;
-      name: string;
-      status: string;
-      displayOrder: number | null;
-    }[],
-  ) {}
+export class BulkRestoreCategoriesResult extends BulkCategoryOperationSummary {
+  static fromItemResults(
+    requestedCount: number,
+    results: BulkCategoryItemResult[],
+  ): BulkRestoreCategoriesResult {
+    const summary = BulkCategoryOperationSummary.fromItemResults(
+      requestedCount,
+      results,
+    );
 
-  static fromEntities(
-    categories: Category[],
-  ): BulkRestoreCategoryResult {
-    return new BulkRestoreCategoryResult(
-      categories.map((category) => ({
-        id: category.id,
-        name: category.name.getValue(),
-        status: category.status,
-        displayOrder: category.displayOrder,
-      })),
+    return new BulkRestoreCategoriesResult(
+      summary.requestedCount,
+      summary.processedCount,
+      summary.successCount,
+      summary.failedCount,
+      summary.results,
+      summary.failures,
     );
   }
 }

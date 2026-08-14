@@ -1,5 +1,7 @@
 import { apiClient } from "@/src/core/api/axios";
 
+import { categoryApi } from "@/src/features/categories/api/category.api";
+
 import type {
   ApiSuccessResponse,
   CategoryDetails,
@@ -12,6 +14,8 @@ import type {
   CategoryPermanentDeleteResponse,
   ReorderCategoriesRequest,
   CategoryListMeta,
+  BulkCategoryOperationResult,
+  CategoryStatus,
 } from "@/src/features/categories/types/category.types";
 
 class CategoryService {
@@ -239,6 +243,31 @@ class CategoryService {
       );
 
     return response.data;
+  }
+
+  async bulkUpdateStatus(
+    categoryIds: string[],
+    status: Exclude<CategoryStatus, "ARCHIVED">
+  ): Promise<ApiSuccessResponse<BulkCategoryOperationResult>> {
+    return categoryApi.bulkUpdateStatus(categoryIds, status);
+  }
+
+  async bulkDeleteCategories(
+    categoryIds: string[]
+  ): Promise<ApiSuccessResponse<BulkCategoryOperationResult>> {
+    return categoryApi.bulkDeleteCategories(categoryIds);
+  }
+
+  async bulkRestoreCategories(
+    categoryIds: string[]
+  ): Promise<ApiSuccessResponse<BulkCategoryOperationResult>> {
+    return categoryApi.bulkRestoreCategories(categoryIds);
+  }
+
+  async bulkPermanentDeleteCategories(
+    categoryIds: string[]
+  ): Promise<ApiSuccessResponse<BulkCategoryOperationResult>> {
+    return categoryApi.bulkPermanentDeleteCategories(categoryIds);
   }
 
   async uploadCategoryImage(

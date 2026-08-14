@@ -1,6 +1,6 @@
 export class BulkDeleteCategoryCommand {
   constructor(
-    public readonly ids: string[],
+    public readonly categoryIds: string[],
     public readonly deletedBy?: string,
   ) {}
 }

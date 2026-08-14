@@ -1,11 +1,22 @@
-import { Category } from '../../domain/entities/category.entity';
+import { Logger } from '@nestjs/common';
+
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+
 import type { CategoryRepository } from '../../domain/repositories/category.repository';
 import { CategoryDomainService } from '../../domain/services/category-domain.service';
 
+import type { BulkCategoryItemResult } from '../shared/bulk-category-operation.result';
+import { parseBulkCategoryIds } from '../shared/parse-bulk-category-ids';
+
 import { BulkRestoreCategoryCommand } from './bulk-restore-category.command';
-import { BulkRestoreCategoryResult } from './bulk-restore-category.result';
+import { BulkRestoreCategoriesResult } from './bulk-restore-category.result';
 
 export class BulkRestoreCategoryHandler {
+  private readonly logger = new Logger(
+    BulkRestoreCategoryHandler.name,
+  );
+
   constructor(
     private readonly categoryRepo: CategoryRepository,
     private readonly domainService: CategoryDomainService,
@@ -13,39 +24,77 @@ export class BulkRestoreCategoryHandler {
 
   async execute(
     command: BulkRestoreCategoryCommand,
-  ): Promise<BulkRestoreCategoryResult> {
-    const categories: Category[] = [];
+  ): Promise<BulkRestoreCategoriesResult> {
+    this.logger.log('Bulk restore categories request received');
 
-    let displayOrder =
-      await this.categoryRepo.getMaxDisplayOrder();
+    const categoryIds = parseBulkCategoryIds(command.categoryIds);
+    const itemResults: BulkCategoryItemResult[] = [];
 
-    for (const id of command.ids) {
-      const category =
-        await this.domainService.ensureExists(
-          await this.categoryRepo.findById(id, true),
-        );
+    for (const categoryId of categoryIds) {
+      const category = await this.categoryRepo.findById(
+        categoryId,
+        true,
+      );
 
-      if (!category.isDeleted) {
-        categories.push(category);
+      if (!category) {
+        itemResults.push({
+          categoryId,
+          success: false,
+          message: 'Category not found',
+        });
         continue;
       }
 
-      displayOrder++;
+      if (!category.isDeleted) {
+        itemResults.push({
+          categoryId,
+          success: false,
+          message: 'Category is already active',
+        });
+        continue;
+      }
 
-      category.update({
-        displayOrder,
-        updatedBy: command.updatedBy,
-      });
+      try {
+        await this.domainService.ensureCanRestore(
+          this.categoryRepo,
+          category,
+        );
 
-      category.restore(command.updatedBy);
+        const nextDisplayOrder =
+          (await this.categoryRepo.getMaxDisplayOrder()) + 1;
 
-      await this.categoryRepo.save(category);
+        category.update({
+          displayOrder: nextDisplayOrder,
+          updatedBy: command.updatedBy,
+        });
+        category.restore(command.updatedBy);
+        await this.categoryRepo.save(category);
 
-      categories.push(category);
+        itemResults.push({
+          categoryId,
+          success: true,
+          message: 'Category restored successfully',
+          status: category.status,
+        });
+      } catch (error) {
+        const message =
+          error instanceof BaseException
+            ? error.message
+            : 'Unable to restore category';
+
+        itemResults.push({
+          categoryId,
+          success: false,
+          message,
+        });
+      }
     }
 
-    return BulkRestoreCategoryResult.fromEntities(
-      categories,
+    await this.categoryRepo.normalizeOrderedDisplayOrders();
+
+    return BulkRestoreCategoriesResult.fromItemResults(
+      categoryIds.length,
+      itemResults,
     );
   }
 }

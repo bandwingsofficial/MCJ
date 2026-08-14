@@ -1,22 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Pagination } from "@/src/shared/components/ui/pagination";
 import { Card } from "@/src/shared/components/ui/card";
+import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { appToast } from "@/src/shared/components/ui/toast";
 
 import { useCategories } from "@/src/features/categories/hooks/use-categories";
 import { useCategoryActions } from "@/src/features/categories/hooks/use-category-actions";
+import { useBulkUpdateStatus } from "@/src/features/categories/hooks/use-bulk-update-status";
+import { useBulkDeleteCategories } from "@/src/features/categories/hooks/use-bulk-delete-categories";
+import { useBulkRestoreCategories } from "@/src/features/categories/hooks/use-bulk-restore-categories";
+import { useBulkPermanentDeleteCategories } from "@/src/features/categories/hooks/use-bulk-permanent-delete-categories";
 
 import { CategoryFilters } from "@/src/features/categories/components/category-filters";
 import { CategoryTable } from "@/src/features/categories/components/category-table";
 import { CreateCategoryModal } from "@/src/features/categories/components/create-category-modal";
 import { EditCategoryModal } from "@/src/features/categories/components/edit-category-modal";
 import { DeleteCategoryDialog } from "@/src/features/categories/components/delete-category-dialog";
+import {
+  CategoryBulkActionsToolbar,
+  type BulkCategoryAction,
+} from "@/src/features/categories/components/category-bulk-actions-toolbar";
 
 import { categoryService } from "@/src/features/categories/services/category.service";
 
@@ -24,6 +33,14 @@ import type {
   CategoryListItem,
 } from "@/src/features/categories/types/category.types";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import {
+  formatBulkResultToast,
+  getEligibleActivateIds,
+  getEligibleDeactivateIds,
+  getEligibleDeleteIds,
+  getEligiblePermanentDeleteIds,
+  getEligibleRestoreIds,
+} from "@/src/features/categories/utils/category-bulk.utils";
 
 type DialogAction =
   | "delete"
@@ -52,6 +69,28 @@ export function CategoriesPage() {
     permanentlyDeleteCategory,
     isLoading: actionLoading,
   } = useCategoryActions();
+
+  const {
+    bulkUpdateStatus,
+    isPending: isBulkUpdatingStatus,
+  } = useBulkUpdateStatus();
+  const {
+    bulkDeleteCategories,
+    isPending: isBulkDeleting,
+  } = useBulkDeleteCategories();
+  const {
+    bulkRestoreCategories,
+    isPending: isBulkRestoring,
+  } = useBulkRestoreCategories();
+  const {
+    bulkPermanentDeleteCategories,
+    isPending: isBulkPermanentDeleting,
+  } = useBulkPermanentDeleteCategories();
+
+  const [selectedCategoryIds, setSelectedCategoryIds] =
+    useState<string[]>([]);
+  const [bulkConfirmAction, setBulkConfirmAction] =
+    useState<BulkCategoryAction | null>(null);
 
   const [createOpen, setCreateOpen] =
     useState(false);
@@ -96,6 +135,78 @@ export function CategoriesPage() {
     isReordering,
     setIsReordering,
   ] = useState(false);
+
+  const bulkActionLoading =
+    isBulkUpdatingStatus ||
+    isBulkDeleting ||
+    isBulkRestoring ||
+    isBulkPermanentDeleting;
+
+  const tableActionLoading =
+    actionLoading || isReordering || bulkActionLoading;
+
+  const eligibleBulkIds = useMemo(() => {
+    if (!bulkConfirmAction) {
+      return [];
+    }
+
+    switch (bulkConfirmAction) {
+      case "activate":
+        return getEligibleActivateIds(
+          categories,
+          selectedCategoryIds
+        );
+      case "deactivate":
+        return getEligibleDeactivateIds(
+          categories,
+          selectedCategoryIds
+        );
+      case "delete":
+        return getEligibleDeleteIds(
+          categories,
+          selectedCategoryIds
+        );
+      case "restore":
+        return getEligibleRestoreIds(
+          categories,
+          selectedCategoryIds
+        );
+      case "permanent-delete":
+        return getEligiblePermanentDeleteIds(
+          categories,
+          selectedCategoryIds
+        );
+      default:
+        return [];
+    }
+  }, [
+    bulkConfirmAction,
+    categories,
+    selectedCategoryIds,
+  ]);
+
+  useEffect(() => {
+    setSelectedCategoryIds([]);
+  }, [
+    filters.page,
+    filters.pageSize,
+    filters.status,
+    filters.search,
+  ]);
+
+  useEffect(() => {
+    const maxPage = Math.max(
+      1,
+      Math.ceil(total / filters.pageSize)
+    );
+
+    if (filters.page > maxPage) {
+      setFilters({
+        ...filters,
+        page: maxPage,
+      });
+    }
+  }, [total, filters, setFilters]);
 
   const totalPages = Math.max(
     1,
@@ -295,6 +406,140 @@ export function CategoriesPage() {
     }
   };
 
+  const handleBulkConfirm = async () => {
+    if (!bulkConfirmAction || eligibleBulkIds.length === 0) {
+      setBulkConfirmAction(null);
+      return;
+    }
+
+    let result = null;
+
+    switch (bulkConfirmAction) {
+      case "activate":
+        result = await bulkUpdateStatus(
+          eligibleBulkIds,
+          "ACTIVE"
+        );
+        if (result) {
+          appToast.success(
+            formatBulkResultToast(
+              result,
+              "categor(ies) activated successfully"
+            )
+          );
+        }
+        break;
+
+      case "deactivate":
+        result = await bulkUpdateStatus(
+          eligibleBulkIds,
+          "INACTIVE"
+        );
+        if (result) {
+          appToast.success(
+            formatBulkResultToast(
+              result,
+              "categor(ies) deactivated successfully"
+            )
+          );
+        }
+        break;
+
+      case "delete":
+        result = await bulkDeleteCategories(eligibleBulkIds);
+        if (result) {
+          appToast.success(
+            formatBulkResultToast(
+              result,
+              "categor(ies) archived successfully"
+            )
+          );
+        }
+        break;
+
+      case "restore":
+        result = await bulkRestoreCategories(eligibleBulkIds);
+        if (result) {
+          appToast.success(
+            formatBulkResultToast(
+              result,
+              "categor(ies) restored successfully"
+            )
+          );
+        }
+        break;
+
+      case "permanent-delete":
+        result = await bulkPermanentDeleteCategories(
+          eligibleBulkIds
+        );
+        if (result) {
+          appToast.success(
+            formatBulkResultToast(
+              result,
+              "categor(ies) permanently deleted"
+            )
+          );
+        }
+        break;
+    }
+
+    if (result) {
+      setSelectedCategoryIds([]);
+      setBulkConfirmAction(null);
+      await refetch();
+    }
+  };
+
+  const bulkDialogCopy = useMemo(() => {
+    const count = eligibleBulkIds.length;
+
+    switch (bulkConfirmAction) {
+      case "activate":
+        return {
+          title: "Activate selected categories?",
+          description: `Activate ${count} selected categor${count === 1 ? "y" : "ies"}?`,
+          confirmLabel: "Activate",
+          confirmVariant: "primary" as const,
+        };
+      case "deactivate":
+        return {
+          title: "Deactivate selected categories?",
+          description: `Deactivate ${count} selected categor${count === 1 ? "y" : "ies"}? They will be removed from branch assignments and active ordering.`,
+          confirmLabel: "Deactivate",
+          confirmVariant: "danger" as const,
+        };
+      case "delete":
+        return {
+          title: "Archive selected categories?",
+          description: `Archive ${count} selected categor${count === 1 ? "y" : "ies"}? They can be restored later.`,
+          confirmLabel: "Archive",
+          confirmVariant: "danger" as const,
+        };
+      case "restore":
+        return {
+          title: "Restore selected categories?",
+          description: `Restore ${count} archived categor${count === 1 ? "y" : "ies"}?`,
+          confirmLabel: "Restore",
+          confirmVariant: "primary" as const,
+        };
+      case "permanent-delete":
+        return {
+          title: "Permanently delete selected categories?",
+          description: `You are about to permanently delete ${count} categor${count === 1 ? "y" : "ies"}. This action cannot be undone.`,
+          confirmLabel: "Permanently Delete",
+          confirmVariant: "danger" as const,
+        };
+      default:
+        return {
+          title: "",
+          description: "",
+          confirmLabel: "Confirm",
+          confirmVariant: "primary" as const,
+        };
+    }
+  }, [bulkConfirmAction, eligibleBulkIds.length]);
+
   // Hard error only when we have nothing to show yet.
   if (error && categories.length === 0 && !isInitialLoading) {
     return (
@@ -336,6 +581,7 @@ export function CategoriesPage() {
             setCreateOpen(true)
           }
           className="h-9 rounded-lg px-4"
+          disabled={bulkActionLoading}
         >
           Create Category
         </Button>
@@ -348,6 +594,13 @@ export function CategoriesPage() {
             onChange={setFilters}
           />
         </div>
+
+        <CategoryBulkActionsToolbar
+          categories={categories}
+          selectedCategoryIds={selectedCategoryIds}
+          disabled={tableActionLoading || isFetching}
+          onAction={setBulkConfirmAction}
+        />
 
         {isInitialLoading ? (
           <SkeletonTable rows={10} />
@@ -380,16 +633,21 @@ export function CategoriesPage() {
 
               <CategoryTable
                 categories={categories}
+                selectedCategoryIds={selectedCategoryIds}
+                onSelectionChange={setSelectedCategoryIds}
                 actionsDisabled={
-                  actionLoading ||
-                  isReordering ||
+                  tableActionLoading ||
                   isFetching
+                }
+                selectionDisabled={
+                  tableActionLoading || isFetching
                 }
                 reorderDisabled={
                   isReordering ||
                   !!filters.status ||
                   !!filters.search.trim() ||
-                  isFetching
+                  isFetching ||
+                  selectedCategoryIds.length > 0
                 }
                 onEdit={handleEdit}
                 onActivate={async (
@@ -436,6 +694,7 @@ export function CategoriesPage() {
                         value={
                           filters.pageSize
                         }
+                        disabled={bulkActionLoading}
                         onChange={(
                           event
                         ) =>
@@ -695,6 +954,23 @@ export function CategoriesPage() {
           void handleConfirmAction();
         }}
         onCancel={closeDialog}
+      />
+
+      <ConfirmDialog
+        open={bulkConfirmAction !== null}
+        title={bulkDialogCopy.title}
+        description={bulkDialogCopy.description}
+        confirmLabel={bulkDialogCopy.confirmLabel}
+        confirmVariant={bulkDialogCopy.confirmVariant}
+        loading={bulkActionLoading}
+        onConfirm={() => {
+          void handleBulkConfirm();
+        }}
+        onCancel={() => {
+          if (!bulkActionLoading) {
+            setBulkConfirmAction(null);
+          }
+        }}
       />
     </>
   );

@@ -52,12 +52,15 @@ import { BulkPermanentDeleteCategoryHandler } from '../../application/bulk-perma
 import { BulkRestoreCategoryCommand } from '../../application/bulk-restore-category/bulk-restore-category.command';
 import { BulkRestoreCategoryHandler } from '../../application/bulk-restore-category/bulk-restore-category.handler';
 
+import { BulkUpdateCategoryStatusCommand } from '../../application/bulk-update-category-status/bulk-update-category-status.command';
+import { BulkUpdateCategoryStatusHandler } from '../../application/bulk-update-category-status/bulk-update-category-status.handler';
+
 import { ReorderCategoriesCommand } from '../../application/reorder-categories/reorder-categories.command';
 import { ReorderCategoriesHandler } from '../../application/reorder-categories/reorder-categories.handler';
 import { GetCategoryDependenciesHandler } from '../../application/get-category-dependencies/get-category-dependencies.handler';
 
-import { BulkActivateCategoryDto } from '../dtos/bulk-activate-category.dto';
-import { BulkDeactivateCategoryDto } from '../dtos/bulk-deactivate-category.dto';
+import { BulkCategoryIdsDto } from '../dtos/bulk-category-ids.dto';
+import { BulkUpdateCategoryStatusDto } from '../dtos/bulk-update-category-status.dto';
 import { CreateCategoryDto } from '../dtos/create-category.dto';
 import { ListCategoriesQueryDto } from '../dtos/list-categories-query.dto';
 import { UpdateCategoryDto } from '../dtos/update-category.dto';
@@ -65,6 +68,12 @@ import { BulkDeleteCategoryDto } from '../dtos/bulk-delete-category.dto';
 import { BulkPermanentDeleteCategoryDto } from '../dtos/bulk-permanent-delete-category.dto';
 import { BulkRestoreCategoryDto } from '../dtos/bulk-restore-category.dto';
 import { ReorderCategoriesDto } from '../dtos/reorder-categories.dto';
+
+function resolveCategoryIds(
+  dto: { categoryIds?: string[]; ids?: string[] },
+): string[] {
+  return dto.categoryIds ?? dto.ids ?? [];
+}
 
 @ApiTags('Admin Categories')
 @ApiBearerAuth()
@@ -80,6 +89,7 @@ export class AdminCategoryController {
     private readonly restoreCategoryHandler: RestoreCategoryHandler,
     private readonly permanentDeleteCategoryHandler: PermanentDeleteCategoryHandler,
     private readonly updateCategoryStatusHandler: UpdateCategoryStatusHandler,
+    private readonly bulkUpdateCategoryStatusHandler: BulkUpdateCategoryStatusHandler,
     private readonly bulkActivateCategoryHandler: BulkActivateCategoryHandler,
     private readonly bulkDeactivateCategoryHandler: BulkDeactivateCategoryHandler,
     private readonly bulkDeleteCategoryHandler: BulkDeleteCategoryHandler,
@@ -110,39 +120,6 @@ export class AdminCategoryController {
     return {
       success: true,
       message: 'Category created successfully',
-      data: result,
-    };
-  }
-
-  @Patch('bulk-restore')
-  async bulkRestore(
-    @Body() dto: BulkRestoreCategoryDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    const result = await this.bulkRestoreCategoryHandler.execute(
-      new BulkRestoreCategoryCommand(dto.ids, user?.sub),
-    );
-
-    return {
-      success: true,
-      message: 'Categories restored successfully',
-      data: result,
-    };
-  }
-
-  @Delete('bulk-permanent-delete')
-  async bulkPermanentDelete(
-    @Body() dto: BulkPermanentDeleteCategoryDto,
-  ) {
-    const result =
-      await this.bulkPermanentDeleteCategoryHandler.execute(
-        new BulkPermanentDeleteCategoryCommand(dto.ids),
-      );
-
-    return {
-      success: true,
-      message:
-        'Categories permanently deleted successfully',
       data: result,
     };
   }
@@ -194,6 +171,178 @@ export class AdminCategoryController {
     return {
       success: true,
       message: 'Categories reordered successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/status')
+  async bulkUpdateStatus(
+    @Body() dto: BulkUpdateCategoryStatusDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result =
+      await this.bulkUpdateCategoryStatusHandler.execute(
+        new BulkUpdateCategoryStatusCommand(
+          dto.categoryIds,
+          dto.status,
+          user?.sub,
+        ),
+      );
+
+    return {
+      success: true,
+      message: 'Category statuses updated successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/activate')
+  async bulkActivate(
+    @Body() dto: BulkCategoryIdsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.bulkActivateCategoryHandler.execute(
+      new BulkActivateCategoryCommand(
+        dto.categoryIds,
+        user?.sub,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Categories activated successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/deactivate')
+  async bulkDeactivate(
+    @Body() dto: BulkCategoryIdsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result =
+      await this.bulkDeactivateCategoryHandler.execute(
+        new BulkDeactivateCategoryCommand(
+          dto.categoryIds,
+          user?.sub,
+        ),
+      );
+
+    return {
+      success: true,
+      message: 'Categories deactivated successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/restore')
+  async bulkRestore(
+    @Body() dto: BulkCategoryIdsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.bulkRestoreCategoryHandler.execute(
+      new BulkRestoreCategoryCommand(
+        dto.categoryIds,
+        user?.sub,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Categories restored successfully',
+      data: result,
+    };
+  }
+
+  @Delete('bulk')
+  async bulkDelete(
+    @Body() dto: BulkCategoryIdsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.bulkDeleteCategoryHandler.execute(
+      new BulkDeleteCategoryCommand(
+        dto.categoryIds,
+        user?.sub,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Categories deleted successfully',
+      data: result,
+    };
+  }
+
+  @Delete('bulk/permanent')
+  async bulkPermanentDelete(
+    @Body() dto: BulkCategoryIdsDto,
+  ) {
+    const result =
+      await this.bulkPermanentDeleteCategoryHandler.execute(
+        new BulkPermanentDeleteCategoryCommand(
+          dto.categoryIds,
+        ),
+      );
+
+    return {
+      success: true,
+      message: 'Categories permanently deleted successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk-restore')
+  async bulkRestoreLegacy(
+    @Body() dto: BulkRestoreCategoryDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.bulkRestoreCategoryHandler.execute(
+      new BulkRestoreCategoryCommand(
+        resolveCategoryIds(dto),
+        user?.sub,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Categories restored successfully',
+      data: result,
+    };
+  }
+
+  @Delete('bulk-permanent-delete')
+  async bulkPermanentDeleteLegacy(
+    @Body() dto: BulkPermanentDeleteCategoryDto,
+  ) {
+    const result =
+      await this.bulkPermanentDeleteCategoryHandler.execute(
+        new BulkPermanentDeleteCategoryCommand(
+          resolveCategoryIds(dto),
+        ),
+      );
+
+    return {
+      success: true,
+      message: 'Categories permanently deleted successfully',
+      data: result,
+    };
+  }
+
+  @Delete('bulk-delete')
+  async bulkDeleteLegacy(
+    @Body() dto: BulkDeleteCategoryDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.bulkDeleteCategoryHandler.execute(
+      new BulkDeleteCategoryCommand(
+        resolveCategoryIds(dto),
+        user?.sub,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Categories deleted successfully',
       data: result,
     };
   }
@@ -252,22 +401,6 @@ export class AdminCategoryController {
     };
   }
 
-  @Delete('bulk-delete')
-  async bulkDelete(
-    @Body() dto: BulkDeleteCategoryDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    const result = await this.bulkDeleteCategoryHandler.execute(
-      new BulkDeleteCategoryCommand(dto.ids, user?.sub),
-    );
-
-    return {
-      success: true,
-      message: 'Categories deleted successfully',
-      data: result,
-    };
-  }
-
   @Delete(':id/permanent')
   async permanentDelete(@Param('id') id: string) {
     const result = await this.permanentDeleteCategoryHandler.execute(
@@ -303,38 +436,6 @@ export class AdminCategoryController {
     return {
       success: true,
       message: 'Category restored successfully',
-      data: result,
-    };
-  }
-
-  @Patch('bulk/activate')
-  async bulkActivate(
-    @Body() dto: BulkActivateCategoryDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    const result = await this.bulkActivateCategoryHandler.execute(
-      new BulkActivateCategoryCommand(dto.ids, user?.sub),
-    );
-
-    return {
-      success: true,
-      message: 'Categories activated successfully',
-      data: result,
-    };
-  }
-
-  @Patch('bulk/deactivate')
-  async bulkDeactivate(
-    @Body() dto: BulkDeactivateCategoryDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    const result = await this.bulkDeactivateCategoryHandler.execute(
-      new BulkDeactivateCategoryCommand(dto.ids, user?.sub),
-    );
-
-    return {
-      success: true,
-      message: 'Categories deactivated successfully',
       data: result,
     };
   }

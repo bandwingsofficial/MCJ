@@ -1,70 +1,105 @@
+import { Logger } from '@nestjs/common';
+
+import type { Category } from '../../domain/entities/category.entity';
 import type { CategoryRepository } from '../../domain/repositories/category.repository';
-import { CategoryDomainService } from '../../domain/services/category-domain.service';
+
+import type { BulkCategoryItemResult } from '../shared/bulk-category-operation.result';
+import { parseBulkCategoryIds } from '../shared/parse-bulk-category-ids';
 
 import { BulkDeleteCategoryCommand } from './bulk-delete-category.command';
-import { BulkDeleteCategoryResult } from './bulk-delete-category.result';
+import { BulkDeleteCategoriesResult } from './bulk-delete-category.result';
 
 export class BulkDeleteCategoryHandler {
+  private readonly logger = new Logger(
+    BulkDeleteCategoryHandler.name,
+  );
+
   constructor(
     private readonly categoryRepo: CategoryRepository,
-    private readonly domainService: CategoryDomainService,
   ) {}
 
   async execute(
     command: BulkDeleteCategoryCommand,
-  ): Promise<BulkDeleteCategoryResult> {
-    const results: {
-      id: string;
-      isDeleted: boolean;
-      deletedAt: Date | null;
-    }[] = [];
+  ): Promise<BulkDeleteCategoriesResult> {
+    this.logger.log('Bulk delete categories request received');
 
-    for (const id of command.ids) {
-      const category =
-        await this.domainService.ensureExists(
-          await this.categoryRepo.findById(id),
-        );
+    const categoryIds = parseBulkCategoryIds(command.categoryIds);
+    const itemResults: BulkCategoryItemResult[] = [];
+    const categoriesToDelete: Category[] = [];
 
-      if (category.isDeleted) {
-        results.push({
-          id: category.id,
-          isDeleted: true,
-          deletedAt: category.deletedAt,
+    for (const categoryId of categoryIds) {
+      const category = await this.categoryRepo.findById(
+        categoryId,
+        true,
+      );
+
+      if (!category) {
+        itemResults.push({
+          categoryId,
+          success: false,
+          message: 'Category not found',
         });
-
         continue;
       }
 
-      const deletedDisplayOrder = category.displayOrder;
-
-      await this.categoryRepo.removeBranchAssignments(
-        category.id,
-      );
-
-      category.update({
-        displayOrder: null,
-        updatedBy: command.deletedBy,
-      });
-
-      category.softDelete(command.deletedBy);
-
-      await this.categoryRepo.save(category);
-
-      if (deletedDisplayOrder !== null) {
-        await this.categoryRepo.closeDisplayOrderGap(
-          deletedDisplayOrder,
-        );
+      if (category.isDeleted) {
+        itemResults.push({
+          categoryId,
+          success: true,
+          message: 'Category is already archived',
+        });
+        continue;
       }
 
-      results.push({
-        id: category.id,
-        isDeleted: true,
-        deletedAt: category.deletedAt,
-      });
+      categoriesToDelete.push(category);
+    }
+
+    categoriesToDelete.sort((left, right) => {
+      const leftOrder = left.displayOrder ?? -1;
+      const rightOrder = right.displayOrder ?? -1;
+      return rightOrder - leftOrder;
+    });
+
+    for (const category of categoriesToDelete) {
+      try {
+        const deletedDisplayOrder = category.displayOrder;
+
+        await this.categoryRepo.removeBranchAssignments(
+          category.id,
+        );
+
+        category.update({
+          displayOrder: null,
+          updatedBy: command.deletedBy,
+        });
+        category.softDelete(command.deletedBy);
+        await this.categoryRepo.save(category);
+
+        if (deletedDisplayOrder !== null) {
+          await this.categoryRepo.closeDisplayOrderGap(
+            deletedDisplayOrder,
+          );
+        }
+
+        itemResults.push({
+          categoryId: category.id,
+          success: true,
+          message: 'Category archived successfully',
+        });
+      } catch {
+        itemResults.push({
+          categoryId: category.id,
+          success: false,
+          message: 'Unable to archive category',
+        });
+      }
     }
 
     await this.categoryRepo.normalizeOrderedDisplayOrders();
 
-    return new BulkDeleteCategoryResult(results);
+    return BulkDeleteCategoriesResult.fromItemResults(
+      categoryIds.length,
+      itemResults,
+    );
   }
 }

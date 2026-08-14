@@ -149,3 +149,19 @@ export interface ReorderCategoriesRequest {
   categoryId: string;
   newDisplayOrder: number;
 }
+
+export interface BulkCategoryItemResult {
+  categoryId: string;
+  success: boolean;
+  message: string;
+  status?: CategoryStatus;
+}
+
+export interface BulkCategoryOperationResult {
+  requestedCount: number;
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  results: BulkCategoryItemResult[];
+  failures: BulkCategoryItemResult[];
+}

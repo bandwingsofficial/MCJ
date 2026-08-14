@@ -1,5 +1,5 @@
 export class BulkPermanentDeleteCategoryCommand {
   constructor(
-    public readonly ids: string[],
+    public readonly categoryIds: string[],
   ) {}
 }

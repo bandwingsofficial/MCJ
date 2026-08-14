@@ -2,12 +2,15 @@
 
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 
 import Image from "next/image";
 
 import { GripVertical } from "lucide-react";
+
+import { Checkbox } from "@/src/shared/components/ui/checkbox";
 
 import {
   Table,
@@ -31,7 +34,13 @@ import type {
 interface Props {
   categories: CategoryListItem[];
 
+  selectedCategoryIds?: string[];
+
+  onSelectionChange?: (ids: string[]) => void;
+
   actionsDisabled?: boolean;
+
+  selectionDisabled?: boolean;
 
   reorderDisabled?: boolean;
 
@@ -77,7 +86,10 @@ function canReorder(
 
 export function CategoryTable({
   categories,
+  selectedCategoryIds = [],
+  onSelectionChange,
   actionsDisabled = false,
+  selectionDisabled = false,
   reorderDisabled = false,
   onEdit,
   onActivate,
@@ -99,9 +111,58 @@ export function CategoryTable({
   const [isSavingOrder, setIsSavingOrder] =
     useState(false);
 
+  const selectAllRef = useRef<HTMLInputElement | null>(null);
+
+  const safeSelectedIds = selectedCategoryIds ?? [];
+  const selectionEnabled = Boolean(onSelectionChange);
+  const visibleIds = rows.map((category) => category.id);
+  const selectedVisibleCount = visibleIds.filter((id) =>
+    safeSelectedIds.includes(id)
+  ).length;
+  const allVisibleSelected =
+    visibleIds.length > 0 &&
+    selectedVisibleCount === visibleIds.length;
+  const someVisibleSelected =
+    selectedVisibleCount > 0 && !allVisibleSelected;
+
   useEffect(() => {
     setRows(categories);
   }, [categories]);
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someVisibleSelected;
+    }
+  }, [someVisibleSelected, allVisibleSelected]);
+
+  const toggleRow = (categoryId: string, checked: boolean) => {
+    if (!onSelectionChange || selectionDisabled) {
+      return;
+    }
+
+    const next = checked
+      ? Array.from(new Set([...safeSelectedIds, categoryId]))
+      : safeSelectedIds.filter((id) => id !== categoryId);
+
+    onSelectionChange(next);
+  };
+
+  const toggleAllVisible = (checked: boolean) => {
+    if (!onSelectionChange || selectionDisabled) {
+      return;
+    }
+
+    if (!checked) {
+      onSelectionChange(
+        safeSelectedIds.filter((id) => !visibleIds.includes(id))
+      );
+      return;
+    }
+
+    onSelectionChange(
+      Array.from(new Set([...safeSelectedIds, ...visibleIds]))
+    );
+  };
 
   if (rows.length === 0) {
     return (
@@ -119,7 +180,8 @@ export function CategoryTable({
       !dragId ||
       dragId === targetId ||
       isSavingOrder ||
-      reorderDisabled
+      reorderDisabled ||
+      safeSelectedIds.length > 0
     ) {
       setDragId(null);
       setDropTargetId(null);
@@ -175,10 +237,31 @@ export function CategoryTable({
     }
   };
 
+  const dragDisabled =
+    reorderDisabled ||
+    isSavingOrder ||
+    safeSelectedIds.length > 0;
+
   return (
     <Table className="rounded-none border-0">
       <TableHeader>
         <TableRow>
+          {selectionEnabled ? (
+            <TableHead className="w-10">
+              <input
+                ref={selectAllRef}
+                type="checkbox"
+                className="h-4 w-4 rounded border-slate-300"
+                checked={allVisibleSelected}
+                disabled={selectionDisabled}
+                onChange={(event) => {
+                  toggleAllVisible(event.target.checked);
+                }}
+                aria-label="Select all categories on this page"
+              />
+            </TableHead>
+          ) : null}
+
           <TableHead className="w-10">
             <span className="sr-only">
               Reorder
@@ -199,8 +282,7 @@ export function CategoryTable({
         {rows.map((category) => {
           const draggable =
             canReorder(category) &&
-            !reorderDisabled &&
-            !isSavingOrder;
+            !dragDisabled;
 
           return (
             <TableRow
@@ -245,6 +327,20 @@ export function CategoryTable({
                   : ""
               }`}
             >
+              {selectionEnabled ? (
+                <TableCell className="w-10">
+                  <Checkbox
+                    checked={safeSelectedIds.includes(
+                      category.id
+                    )}
+                    disabled={selectionDisabled}
+                    onCheckedChange={(checked) => {
+                      toggleRow(category.id, Boolean(checked));
+                    }}
+                  />
+                </TableCell>
+              ) : null}
+
               <TableCell className="w-10">
                 {draggable ? (
                   <GripVertical className="h-3.5 w-3.5 cursor-grab text-slate-400" />
