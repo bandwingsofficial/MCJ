@@ -17,6 +17,10 @@ import { RestoreBranchHandler } from './application/restore-branch/restore-branc
 import { SuggestBranchCodeHandler } from './application/suggest-branch-code/suggest-branch-code.handler';
 import { CheckBranchAvailabilityHandler } from './application/check-branch-availability/check-branch-availability.handler';
 import { ReorderBranchesHandler } from './application/reorder-branches/reorder-branches.handler';
+import { BulkUpdateBranchStatusHandler } from './application/bulk-update-branch-status/bulk-update-branch-status.handler';
+import { BulkDeleteBranchesHandler } from './application/bulk-delete-branches/bulk-delete-branches.handler';
+import { BulkRestoreBranchesHandler } from './application/bulk-restore-branches/bulk-restore-branches.handler';
+import { BulkPermanentDeleteBranchesHandler } from './application/bulk-permanent-delete-branches/bulk-permanent-delete-branches.handler';
 
 import type { BranchRepository } from './domain/repositories/branch.repository';
 import { BranchDomainService } from './domain/services/branch-domain.service';
@@ -204,6 +208,66 @@ import { BRANCH_TOKENS } from './branch.tokens';
         BranchDomainService,
       ],
     },
+    {
+  provide: BulkUpdateBranchStatusHandler,
+  useFactory: (
+    branchRepo: BranchRepository,
+    domainService: BranchDomainService,
+  ) =>
+    new BulkUpdateBranchStatusHandler(
+      branchRepo,
+      domainService,
+    ),
+  inject: [
+    BRANCH_TOKENS.BRANCH_REPOSITORY,
+    BranchDomainService,
+  ],
+},
+
+{
+  provide: BulkDeleteBranchesHandler,
+  useFactory: (
+    branchRepo: BranchRepository,
+    domainService: BranchDomainService,
+  ) =>
+    new BulkDeleteBranchesHandler(
+      branchRepo,
+      domainService,
+    ),
+  inject: [
+    BRANCH_TOKENS.BRANCH_REPOSITORY,
+    BranchDomainService,
+  ],
+},
+
+{
+  provide: BulkRestoreBranchesHandler,
+  useFactory: (
+    branchRepo: BranchRepository,
+  ) =>
+    new BulkRestoreBranchesHandler(
+      branchRepo,
+    ),
+  inject: [
+    BRANCH_TOKENS.BRANCH_REPOSITORY,
+  ],
+},
+
+{
+  provide: BulkPermanentDeleteBranchesHandler,
+  useFactory: (
+    branchRepo: BranchRepository,
+    domainService: BranchDomainService,
+  ) =>
+    new BulkPermanentDeleteBranchesHandler(
+      branchRepo,
+      domainService,
+    ),
+  inject: [
+    BRANCH_TOKENS.BRANCH_REPOSITORY,
+    BranchDomainService,
+  ],
+},
   ],
   exports: [BRANCH_TOKENS.BRANCH_REPOSITORY],
 })

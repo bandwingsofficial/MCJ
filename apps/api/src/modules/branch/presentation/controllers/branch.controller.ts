@@ -24,6 +24,18 @@ import { SuggestBranchCodeHandler } from '../../application/suggest-branch-code/
 import { CheckBranchAvailabilityHandler } from '../../application/check-branch-availability/check-branch-availability.handler';
 import { ReorderBranchesHandler } from '../../application/reorder-branches/reorder-branches.handler';
 
+import { BulkUpdateBranchStatusHandler } from '../../application/bulk-update-branch-status/bulk-update-branch-status.handler';
+import { BulkUpdateBranchStatusCommand } from '../../application/bulk-update-branch-status/bulk-update-branch-status.command';
+
+import { BulkDeleteBranchesHandler } from '../../application/bulk-delete-branches/bulk-delete-branches.handler';
+import { BulkDeleteBranchesCommand } from '../../application/bulk-delete-branches/bulk-delete-branches.command';
+
+import { BulkRestoreBranchesHandler } from '../../application/bulk-restore-branches/bulk-restore-branches.handler';
+import { BulkRestoreBranchesCommand } from '../../application/bulk-restore-branches/bulk-restore-branches.command';
+
+import { BulkPermanentDeleteBranchesHandler } from '../../application/bulk-permanent-delete-branches/bulk-permanent-delete-branches.handler';
+import { BulkPermanentDeleteBranchesCommand } from '../../application/bulk-permanent-delete-branches/bulk-permanent-delete-branches.command';
+
 import { CreateBranchCommand } from '../../application/create-branch/create-branch.command';
 import { DeleteBranchCommand } from '../../application/delete-branch/delete-branch.command';
 import { PermanentDeleteBranchCommand } from '../../application/permanent-delete-branch/permanent-delete-branch.command';
@@ -37,6 +49,7 @@ import { CheckBranchAvailabilityQuery } from '../../application/check-branch-ava
 import { ReorderBranchesCommand } from '../../application/reorder-branches/reorder-branches.command';
 
 import { BranchStatus } from '../../domain/enums/branch-status.enum';
+import { BulkBranchIdsDto } from '../dtos/bulk-branch-ids.dto';
 
 import { CreateBranchDto } from '../dtos/create-branch.dto';
 import { ListBranchesQueryDto } from '../dtos/list-branches-query.dto';
@@ -73,6 +86,13 @@ export class BranchController {
     private readonly checkBranchAvailabilityHandler: CheckBranchAvailabilityHandler,
 
     private readonly reorderBranchesHandler: ReorderBranchesHandler,
+    private readonly bulkUpdateBranchStatusHandler: BulkUpdateBranchStatusHandler,
+
+private readonly bulkDeleteBranchesHandler: BulkDeleteBranchesHandler,
+
+private readonly bulkRestoreBranchesHandler: BulkRestoreBranchesHandler,
+
+private readonly bulkPermanentDeleteBranchesHandler: BulkPermanentDeleteBranchesHandler,
   ) {}
 
   @Post()
@@ -179,6 +199,92 @@ export class BranchController {
       data: result,
     };
   }
+  @Patch('bulk/activate')
+async bulkActivate(
+  @Body() dto: BulkBranchIdsDto,
+) {
+  const result =
+    await this.bulkUpdateBranchStatusHandler.execute(
+      new BulkUpdateBranchStatusCommand(
+        dto.branchIds,
+        BranchStatus.ACTIVE,
+      ),
+    );
+
+  return {
+    message: `${result.updated} branches activated successfully`,
+    data: result,
+  };
+}
+
+@Patch('bulk/deactivate')
+async bulkDeactivate(
+  @Body() dto: BulkBranchIdsDto,
+) {
+  const result =
+    await this.bulkUpdateBranchStatusHandler.execute(
+      new BulkUpdateBranchStatusCommand(
+        dto.branchIds,
+        BranchStatus.INACTIVE,
+      ),
+    );
+
+  return {
+    message: `${result.updated} branches deactivated successfully`,
+    data: result,
+  };
+}
+
+@Patch('bulk/restore')
+async bulkRestore(
+  @Body() dto: BulkBranchIdsDto,
+) {
+  const result =
+    await this.bulkRestoreBranchesHandler.execute(
+      new BulkRestoreBranchesCommand(
+        dto.branchIds,
+      ),
+    );
+
+  return {
+    message: result.message,
+    data: result,
+  };
+}
+
+@Delete('bulk')
+async bulkDelete(
+  @Body() dto: BulkBranchIdsDto,
+) {
+  const result =
+    await this.bulkDeleteBranchesHandler.execute(
+      new BulkDeleteBranchesCommand(
+        dto.branchIds,
+      ),
+    );
+
+  return {
+    message: result.message,
+    data: result,
+  };
+}
+
+@Delete('bulk/permanent')
+async bulkPermanentDelete(
+  @Body() dto: BulkBranchIdsDto,
+) {
+  const result =
+    await this.bulkPermanentDeleteBranchesHandler.execute(
+      new BulkPermanentDeleteBranchesCommand(
+        dto.branchIds,
+      ),
+    );
+
+  return {
+    message: result.message,
+    data: result,
+  };
+}
 
   @Get(':id/summary')
   async getSummary(@Param('id') id: string) {
