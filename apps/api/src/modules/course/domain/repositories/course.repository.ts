@@ -24,6 +24,16 @@ export interface CourseManagementCounts {
   quizzes: number;
 }
 
+export interface CourseTrainerRecord {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  employeeCode: string | null;
+  specialization: string | null;
+  phone: string | null;
+  status: string;
+}
+
 export interface CourseRepository {
   save(course: Course): Promise<void>;
   findById(
@@ -56,5 +66,19 @@ export interface CourseRepository {
   getManagementCounts(
     courseId: string,
   ): Promise<CourseManagementCounts>;
+  findAssignedTrainers(
+    courseId: string,
+  ): Promise<CourseTrainerRecord[]>;
+  findAvailableActiveTrainers(
+    courseId: string,
+  ): Promise<CourseTrainerRecord[]>;
+  assignTrainersToCourse(
+    courseId: string,
+    trainerIds: string[],
+  ): Promise<number>;
+  removeTrainerFromCourse(
+    courseId: string,
+    trainerId: string,
+  ): Promise<void>;
   deletePermanent(id: string): Promise<void>;
 }

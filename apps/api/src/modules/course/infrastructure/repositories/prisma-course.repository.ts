@@ -1,6 +1,8 @@
 import { Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, TrainerStatus } from '@prisma/client';
 
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { Course } from '../../domain/entities/course.entity';
@@ -8,6 +10,7 @@ import { CourseStatus } from '../../domain/enums/course-status.enum';
 import {
   CourseListFilters,
   CourseRepository,
+  CourseTrainerRecord,
 } from '../../domain/repositories/course.repository';
 import { CourseMapper } from '../mappers/course.mapper';
 
@@ -362,6 +365,166 @@ if (course.branchIds.length) {
       lessons,
       quizzes,
     };
+  }
+
+  async findAssignedTrainers(
+    courseId: string,
+  ): Promise<CourseTrainerRecord[]> {
+    const rows = await this.prisma.trainerCourse.findMany({
+      where: { courseId },
+      include: {
+        trainer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employeeCode: true,
+            specialization: true,
+            phone: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return rows.map((row) => ({
+      id: row.trainer.id,
+      firstName: row.trainer.firstName,
+      lastName: row.trainer.lastName,
+      employeeCode: row.trainer.employeeCode,
+      specialization: row.trainer.specialization,
+      phone: row.trainer.phone,
+      status: row.trainer.status,
+    }));
+  }
+
+  async findAvailableActiveTrainers(
+    courseId: string,
+  ): Promise<CourseTrainerRecord[]> {
+    const assigned = await this.prisma.trainerCourse.findMany({
+      where: { courseId },
+      select: { trainerId: true },
+    });
+    const assignedIds = assigned.map((row) => row.trainerId);
+
+    const trainers = await this.prisma.trainer.findMany({
+      where: {
+        status: TrainerStatus.ACTIVE,
+        isDeleted: false,
+        ...(assignedIds.length > 0
+          ? { id: { notIn: assignedIds } }
+          : {}),
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        employeeCode: true,
+        specialization: true,
+        phone: true,
+        status: true,
+      },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+    });
+
+    return trainers.map((trainer) => ({
+      id: trainer.id,
+      firstName: trainer.firstName,
+      lastName: trainer.lastName,
+      employeeCode: trainer.employeeCode,
+      specialization: trainer.specialization,
+      phone: trainer.phone,
+      status: trainer.status,
+    }));
+  }
+
+  async assignTrainersToCourse(
+    courseId: string,
+    trainerIds: string[],
+  ): Promise<number> {
+    const uniqueIds = Array.from(new Set(trainerIds));
+
+    if (uniqueIds.length === 0) {
+      return 0;
+    }
+
+    const trainers = await this.prisma.trainer.findMany({
+      where: {
+        id: { in: uniqueIds },
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (trainers.length !== uniqueIds.length) {
+      throw new BaseException(
+        ERROR_CODES.TRAINER_NOT_FOUND,
+        'One or more trainers were not found',
+        404,
+      );
+    }
+
+    const inactiveTrainer = trainers.find(
+      (trainer) => trainer.status !== TrainerStatus.ACTIVE,
+    );
+
+    if (inactiveTrainer) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Only active trainers can be assigned to a course',
+        400,
+      );
+    }
+
+    const existing = await this.prisma.trainerCourse.findMany({
+      where: {
+        courseId,
+        trainerId: { in: uniqueIds },
+      },
+      select: { trainerId: true },
+    });
+    const existingIds = new Set(
+      existing.map((row) => row.trainerId),
+    );
+    const toCreate = uniqueIds.filter((id) => !existingIds.has(id));
+
+    if (toCreate.length === 0) {
+      return 0;
+    }
+
+    await this.prisma.trainerCourse.createMany({
+      data: toCreate.map((trainerId) => ({
+        trainerId,
+        courseId,
+      })),
+      skipDuplicates: true,
+    });
+
+    return toCreate.length;
+  }
+
+  async removeTrainerFromCourse(
+    courseId: string,
+    trainerId: string,
+  ): Promise<void> {
+    const result = await this.prisma.trainerCourse.deleteMany({
+      where: {
+        courseId,
+        trainerId,
+      },
+    });
+
+    if (result.count === 0) {
+      throw new BaseException(
+        ERROR_CODES.TRAINER_NOT_FOUND,
+        'Trainer is not assigned to this course',
+        404,
+      );
+    }
   }
 
   async deletePermanent(id: string): Promise<void> {

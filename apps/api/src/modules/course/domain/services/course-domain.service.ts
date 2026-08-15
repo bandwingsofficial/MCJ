@@ -77,4 +77,8 @@ export class CourseDomainService {
       500,
     );
   }
+
+  uniqueIds(ids: string[]): string[] {
+    return Array.from(new Set(ids));
+  }
 }

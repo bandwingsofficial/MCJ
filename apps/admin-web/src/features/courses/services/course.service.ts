@@ -12,7 +12,9 @@ import type {
   CourseFilters,
   CourseListItem,
   CourseListResponse,
+  AssignCourseTrainersData,
   CourseSummary,
+  CourseTrainersListData,
   CreateCourseRequest,
   DeactivateCourseResponse,
   DeleteCourseResponse,
@@ -309,6 +311,56 @@ class CourseService {
       const response = await apiClient.get<
         ApiSuccessResponse<{ courseCode: string }>
       >(`${this.basePath}/suggest-code`);
+
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getCourseTrainers(courseId: string) {
+    try {
+      const response = await apiClient.get<
+        ApiSuccessResponse<CourseTrainersListData>
+      >(`${this.basePath}/${courseId}/trainers`);
+
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getAvailableCourseTrainers(courseId: string) {
+    try {
+      const response = await apiClient.get<
+        ApiSuccessResponse<CourseTrainersListData>
+      >(`${this.basePath}/${courseId}/available-trainers`);
+
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async assignCourseTrainers(courseId: string, trainerIds: string[]) {
+    try {
+      const response = await apiClient.patch<
+        ApiSuccessResponse<AssignCourseTrainersData>
+      >(`${this.basePath}/${courseId}/assign-trainers`, {
+        trainerIds,
+      });
+
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async removeCourseTrainer(courseId: string, trainerId: string) {
+    try {
+      const response = await apiClient.delete<
+        ApiSuccessResponse<{ courseId: string; trainerId: string }>
+      >(`${this.basePath}/${courseId}/trainers/${trainerId}`);
 
       return response.data;
     } catch (error) {
