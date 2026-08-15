@@ -39,16 +39,19 @@ import {
   type AssignableItem,
 } from "./assign-entities-modal";
 import { BranchOverviewSummary } from "./branch-overview-summary";
+import { BranchManageUsersPanel } from "./branch-manage-users-panel";
 
 interface Props {
   branch: Branch;
   summary: BranchSummaryCounts | null;
   summaryLoading?: boolean;
   onSummaryRefresh: () => Promise<void>;
+  onTabChange?: (tab: TabKey) => void;
 }
 
 type TabKey =
   | "overview"
+  | "users"
   | "categories"
   | "courses"
   | "batches"
@@ -62,6 +65,7 @@ export function BranchManageWorkspace({
   summary,
   summaryLoading = false,
   onSummaryRefresh,
+  onTabChange,
 }: Props) {
   const branchId = branch.id;
   const isArchived = Boolean(branch.deletedAt);
@@ -391,13 +395,16 @@ export function BranchManageWorkspace({
         value={tab}
         onValueChange={(value) => {
           setSearch("");
-          setTab(value as TabKey);
+          const nextTab = value as TabKey;
+          setTab(nextTab);
+          onTabChange?.(nextTab);
         }}
       >
         <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
           {(
             [
               ["overview", "Overview"],
+              ["users", "Users"],
               ["categories", "Categories"],
               ["courses", "Courses"],
               ["batches", "Batches"],
@@ -483,6 +490,15 @@ export function BranchManageWorkspace({
               </div>
             </dl>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="users" className="space-y-3">
+          <BranchManageUsersPanel
+            branchId={branchId}
+            branchName={branch.branchName}
+            branchCode={branch.branchCode}
+            disabled={assignmentsDisabled}
+          />
         </TabsContent>
 
         <TabsContent value="categories">

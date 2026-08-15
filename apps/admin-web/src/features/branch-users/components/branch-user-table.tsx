@@ -9,60 +9,44 @@ import {
   TableRow,
 } from "@/src/shared/components/ui/table";
 
-import {
-  BranchUserListItem,
-} from "@/src/features/branch-users/types/branch-user.types";
+import type { BranchUserListItem } from "@/src/features/branch-users/types/branch-user.types";
 
 import { BranchUserStatusBadge } from "./branch-user-status-badge";
 import { BranchUserActions } from "./branch-user-actions";
 
 interface Props {
   branchUsers: BranchUserListItem[];
-  includeDeleted?: boolean;
+  actionsDisabled?: boolean;
   onEdit: (branchUser: BranchUserListItem) => void;
   onActivate: (branchUser: BranchUserListItem) => void;
   onDeactivate: (branchUser: BranchUserListItem) => void;
-  onResetPassword: (branchUser: BranchUserListItem) => void;
   onDelete: (branchUser: BranchUserListItem) => void;
+  onResetPassword: (branchUser: BranchUserListItem) => void;
   onRestore: (branchUser: BranchUserListItem) => void;
+  onPermanentDelete: (branchUser: BranchUserListItem) => void;
 }
 
-export const BranchUserTable = ({
+export function BranchUserTable({
   branchUsers,
-  includeDeleted = false,
+  actionsDisabled = false,
   onEdit,
   onActivate,
   onDeactivate,
-  onResetPassword,
   onDelete,
+  onResetPassword,
   onRestore,
-}: Props) => {
+  onPermanentDelete,
+}: Props) {
   return (
-    <Table>
+    <Table className="rounded-none border-0">
       <TableHeader>
         <TableRow>
-          <TableHead className="font-semibold text-xs tracking-wider text-muted-foreground uppercase">
-            Name
-          </TableHead>
-          <TableHead className="font-semibold text-xs tracking-wider text-muted-foreground uppercase">
-            Email
-          </TableHead>
-          <TableHead className="font-semibold text-xs tracking-wider text-muted-foreground uppercase">
-            Phone
-          </TableHead>
-          <TableHead className="font-semibold text-xs tracking-wider text-muted-foreground uppercase">
-            Role
-          </TableHead>
-          <TableHead className="font-semibold text-xs tracking-wider text-muted-foreground uppercase">
-            Branch Code
-          </TableHead>
-          <TableHead className="font-semibold text-xs tracking-wider text-muted-foreground uppercase">
-            Status
-          </TableHead>
-          <TableHead className="font-semibold text-xs tracking-wider text-muted-foreground uppercase">
-            Last Login
-          </TableHead>
-          <TableHead className="text-right font-semibold text-xs tracking-wider text-muted-foreground uppercase">
+          <TableHead className="min-w-[12rem]">Email</TableHead>
+          <TableHead className="w-[8.5rem]">Phone</TableHead>
+          <TableHead className="min-w-[9rem]">Role</TableHead>
+          <TableHead className="w-[6.5rem]">Status</TableHead>
+          <TableHead className="min-w-[9rem]">Last Login</TableHead>
+          <TableHead className="w-[11.5rem] text-right">
             Actions
           </TableHead>
         </TableRow>
@@ -71,52 +55,48 @@ export const BranchUserTable = ({
       <TableBody>
         {branchUsers.map((branchUser) => (
           <TableRow key={branchUser.id}>
-            <TableCell className="font-medium">
-              {branchUser.firstName} {branchUser.lastName}
-            </TableCell>
-
-            <TableCell>
+            <TableCell className="text-[15px] font-medium text-slate-900">
               {branchUser.email}
             </TableCell>
 
-            <TableCell>
-              {branchUser.phone || "-"}
+            <TableCell className="text-[15px] text-slate-700">
+              {branchUser.phone || "—"}
             </TableCell>
 
-            <TableCell>
+            <TableCell className="text-[15px] text-slate-700">
               {branchUser.role}
             </TableCell>
 
-            <TableCell className="font-mono text-xs text-muted-foreground">
-              {branchUser.branchCode} -
-              {branchUser.branchName}
-            </TableCell>
-
             <TableCell>
-              <BranchUserStatusBadge 
-                isActive={branchUser.isActive} 
+              <BranchUserStatusBadge
+                isActive={branchUser.isActive}
+                isDeleted={Boolean(branchUser.isDeleted)}
               />
             </TableCell>
 
-            <TableCell className="text-muted-foreground">
+            <TableCell className="text-[15px] text-slate-600">
               {branchUser.lastLoginAt
-                ? new Date(branchUser.lastLoginAt).toLocaleString(undefined, {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })
-                : "-"}
+                ? new Date(branchUser.lastLoginAt).toLocaleString(
+                    undefined,
+                    {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    },
+                  )
+                : "—"}
             </TableCell>
 
             <TableCell className="text-right">
               <BranchUserActions
-                isActive={branchUser.isActive}
-                isDeleted={includeDeleted && !branchUser.isActive}
-                onEdit={() => onEdit(branchUser)}
-                onActivate={() => onActivate(branchUser)}
-                onDeactivate={() => onDeactivate(branchUser)}
-                onResetPassword={() => onResetPassword(branchUser)}
-                onDelete={() => onDelete(branchUser)}
-                onRestore={() => onRestore(branchUser)}
+                branchUser={branchUser}
+                disabled={actionsDisabled}
+                onEdit={onEdit}
+                onActivate={onActivate}
+                onDeactivate={onDeactivate}
+                onDelete={onDelete}
+                onResetPassword={onResetPassword}
+                onRestore={onRestore}
+                onPermanentDelete={onPermanentDelete}
               />
             </TableCell>
           </TableRow>
@@ -124,4 +104,4 @@ export const BranchUserTable = ({
       </TableBody>
     </Table>
   );
-};
+}

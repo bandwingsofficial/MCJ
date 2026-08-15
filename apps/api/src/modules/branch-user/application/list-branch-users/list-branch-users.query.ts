@@ -7,6 +7,7 @@ export class ListBranchUsersQuery {
     public readonly isActive?: boolean,
     public readonly search?: string,
     public readonly includeDeleted: boolean = false,
+    public readonly isDeleted?: boolean,
     public readonly skip: number = 0,
     public readonly take: number = 50,
   ) {}

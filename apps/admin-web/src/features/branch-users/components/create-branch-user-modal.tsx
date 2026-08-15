@@ -15,6 +15,11 @@ interface BranchOption {
   value: string;
 }
 
+interface FixedBranch {
+  id: string;
+  label: string;
+}
+
 interface Props {
   open: boolean;
 
@@ -22,14 +27,17 @@ interface Props {
 
   onSuccess: () => void;
 
-  branchOptions: BranchOption[];
+  branchOptions?: BranchOption[];
+
+  fixedBranch?: FixedBranch;
 }
 
 export function CreateBranchUserModal({
   open,
   onClose,
   onSuccess,
-  branchOptions,
+  branchOptions = [],
+  fixedBranch,
 }: Props) {
   const {
     createBranchUser,
@@ -40,9 +48,10 @@ export function CreateBranchUserModal({
     values: CreateBranchUserFormValues
   ) => {
     const success =
-      await createBranchUser(
-        values
-      );
+      await createBranchUser({
+        ...values,
+        branchId: fixedBranch?.id ?? values.branchId,
+      });
 
     if (!success) {
       return;
@@ -56,13 +65,14 @@ export function CreateBranchUserModal({
   return (
     <Modal
       open={open}
-      title="Create Branch User"
+      title="Create User"
       onClose={onClose}
     >
       <BranchUserForm
         branchOptions={
           branchOptions
         }
+        fixedBranch={fixedBranch}
         isSubmitting={
           isLoading
         }

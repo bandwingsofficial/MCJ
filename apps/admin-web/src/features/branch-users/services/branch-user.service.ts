@@ -36,14 +36,47 @@ class BranchUserService {
   ): Promise<
     ApiSuccessResponse<BranchUserListResponse>
   > {
+    const skip =
+      (filters.page - 1) * filters.pageSize;
+
+    const statusParams = (() => {
+      if (!filters.status) {
+        return {
+          includeDeleted: true,
+        };
+      }
+
+      if (filters.status === "ACTIVE") {
+        return {
+          isActive: true,
+          isDeleted: false,
+        };
+      }
+
+      if (filters.status === "INACTIVE") {
+        return {
+          isActive: false,
+          isDeleted: false,
+        };
+      }
+
+      return {
+        isDeleted: true,
+      };
+    })();
+
     const response =
       await apiClient.get<
         ApiSuccessResponse<BranchUserListResponse>
       >(this.basePath, {
         params: {
-  includeDeleted:
-    filters.includeDeleted,
-},
+          branchId: filters.branchId || undefined,
+          search: filters.search.trim() || undefined,
+          role: filters.role || undefined,
+          ...statusParams,
+          skip,
+          take: filters.pageSize,
+        },
       });
 
     return response.data;
@@ -125,26 +158,30 @@ class BranchUserService {
   }
 
   async resetPassword(
-  id: string,
-  newPassword: string
-): Promise<void> {
-  console.log(
-    "RESET PASSWORD URL",
-    `${this.basePath}/${id}/reset-password`
-  );
+    id: string,
+    newPassword: string
+  ): Promise<void> {
+    await apiClient.patch(
+      `${this.basePath}/${id}/reset-password`,
+      {
+        newPassword,
+      }
+    );
+  }
 
-  await apiClient.patch(
-    `${this.basePath}/${id}/reset-password`,
-    {
-      newPassword,
-    }
-  );
-}
   async deleteBranchUser(
     id: string
   ): Promise<void> {
     await apiClient.delete(
       `${this.basePath}/${id}`
+    );
+  }
+
+  async permanentlyDeleteBranchUser(
+    id: string
+  ): Promise<void> {
+    await apiClient.delete(
+      `${this.basePath}/${id}/permanent`
     );
   }
 }

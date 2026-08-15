@@ -91,6 +91,7 @@ export class AdminBranchUserController {
           query.isActive,
           query.search,
           query.includeDeleted ?? false,
+          query.isDeleted,
           query.skip ?? 0,
           query.take ?? 50,
         ),

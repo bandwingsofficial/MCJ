@@ -56,6 +56,9 @@ export function BranchManagePage({ branchId }: Props) {
   const [isRestoreOpen, setIsRestoreOpen] = useState(false);
   const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] =
     useState(false);
+  const [activeSection, setActiveSection] = useState<string | undefined>(
+    undefined,
+  );
 
   const actionsDisabled =
     isArchiving || isRestoring || isPermanentlyDeleting;
@@ -97,6 +100,7 @@ export function BranchManagePage({ branchId }: Props) {
     <div className="space-y-4">
       <BranchManageHeader
         branch={branch}
+        activeSection={activeSection}
         actionsDisabled={actionsDisabled}
         onEdit={() => setIsEditOpen(true)}
         onArchive={() => setIsArchiveOpen(true)}
@@ -111,6 +115,11 @@ export function BranchManagePage({ branchId }: Props) {
         summary={summary}
         summaryLoading={summaryLoading}
         onSummaryRefresh={refetchSummary}
+        onTabChange={(tab) => {
+          setActiveSection(
+            tab === "users" ? "Users" : undefined,
+          );
+        }}
       />
 
       <UpdateBranchModal

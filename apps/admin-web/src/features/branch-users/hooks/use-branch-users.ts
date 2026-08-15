@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -13,12 +14,21 @@ import {
   BranchUserListItem,
 } from "@/src/features/branch-users/types/branch-user.types";
 
+const DEFAULT_PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 400;
+
+interface UseBranchUsersOptions {
+  branchId?: string;
+}
+
 interface UseBranchUsersReturn {
   branchUsers: BranchUserListItem[];
 
   count: number;
 
   isLoading: boolean;
+
+  isInitialLoading: boolean;
 
   error: string | null;
 
@@ -31,75 +41,178 @@ interface UseBranchUsersReturn {
   refetch: () => Promise<void>;
 }
 
-export const useBranchUsers =
-  (): UseBranchUsersReturn => {
-    const [
-      branchUsers,
-      setBranchUsers,
-    ] = useState<
-      BranchUserListItem[]
-    >([]);
+export const useBranchUsers = (
+  options: UseBranchUsersOptions = {},
+): UseBranchUsersReturn => {
+  const { branchId } = options;
 
-    const [count, setCount] =
-      useState(0);
+  const [
+    branchUsers,
+    setBranchUsers,
+  ] = useState<
+    BranchUserListItem[]
+  >([]);
 
-    const [isLoading, setIsLoading] =
-      useState(true);
+  const [count, setCount] =
+    useState(0);
 
-    const [error, setError] =
-      useState<string | null>(null);
+  const [isInitialLoading, setIsInitialLoading] =
+    useState(true);
 
-    const [filters, setFilters] =
-      useState<BranchUserFilters>({
-        search: "",
-        includeDeleted: false,
-        role: undefined,
-        status: undefined,
+  const [isLoading, setIsLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  const [filters, setFiltersState] =
+    useState<BranchUserFilters>({
+      branchId,
+      search: "",
+      role: undefined,
+      status: undefined,
+      page: 1,
+      pageSize: DEFAULT_PAGE_SIZE,
+    });
+
+  const [debouncedSearch, setDebouncedSearch] =
+    useState("");
+
+  const hasLoadedRef = useRef(false);
+  const requestIdRef = useRef(0);
+  const debounceRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+
+  useEffect(() => {
+    setFiltersState((prev) => ({
+      ...prev,
+      branchId,
+      page: 1,
+    }));
+  }, [branchId]);
+
+  const setFilters = useCallback(
+    (next: BranchUserFilters) => {
+      setFiltersState((prev) => {
+        const shouldResetPage =
+          next.search !== prev.search ||
+          next.role !== prev.role ||
+          next.status !== prev.status ||
+          next.pageSize !== prev.pageSize ||
+          next.branchId !== prev.branchId;
+
+        return {
+          ...next,
+          branchId: branchId ?? next.branchId,
+          page: shouldResetPage ? 1 : next.page,
+        };
       });
+    },
+    [branchId],
+  );
 
-    const fetchBranchUsers =
-      useCallback(async () => {
-        try {
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    debounceRef.current = setTimeout(() => {
+      const nextSearch = filters.search.trim();
+
+      setDebouncedSearch((prev) =>
+        prev === nextSearch ? prev : nextSearch
+      );
+
+      setFiltersState((prev) =>
+        prev.page === 1
+          ? prev
+          : { ...prev, page: 1 }
+      );
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [filters.search]);
+
+  const fetchBranchUsers = useCallback(
+    async () => {
+      const requestId = ++requestIdRef.current;
+      const isFirstLoad = !hasLoadedRef.current;
+
+      try {
+        if (isFirstLoad) {
+          setIsInitialLoading(true);
+        } else {
           setIsLoading(true);
+        }
 
-          setError(null);
+        setError(null);
 
-          const response =
-            await branchUserService.getBranchUsers(
-              filters
-            );
+        const response =
+          await branchUserService.getBranchUsers({
+            ...filters,
+            branchId: branchId ?? filters.branchId,
+            search: debouncedSearch,
+          });
 
-          setBranchUsers(
-            response.data.items
-          );
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
 
-          setCount(
-            response.data.count
-          );
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : "Failed to fetch branch users";
+        setBranchUsers(
+          response.data.items
+        );
 
-          setError(message);
-        } finally {
+        setCount(
+          response.data.count
+        );
+
+        hasLoadedRef.current = true;
+      } catch (fetchError) {
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        const message =
+          fetchError instanceof Error
+            ? fetchError.message
+            : "Failed to fetch users";
+
+        setError(message);
+      } finally {
+        if (requestId === requestIdRef.current) {
+          setIsInitialLoading(false);
           setIsLoading(false);
         }
-      }, [filters]);
+      }
+    },
+    [
+      branchId,
+      debouncedSearch,
+      filters.branchId,
+      filters.page,
+      filters.pageSize,
+      filters.role,
+      filters.status,
+    ],
+  );
 
-    useEffect(() => {
-      void fetchBranchUsers();
-    }, [fetchBranchUsers]);
+  useEffect(() => {
+    void fetchBranchUsers();
+  }, [fetchBranchUsers]);
 
-    return {
-      branchUsers,
-      count,
-      isLoading,
-      error,
-      filters,
-      setFilters,
-      refetch:
-        fetchBranchUsers,
-    };
+  return {
+    branchUsers,
+    count,
+    isLoading,
+    isInitialLoading,
+    error,
+    filters,
+    setFilters,
+    refetch: fetchBranchUsers,
   };
+};

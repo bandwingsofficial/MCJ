@@ -121,6 +121,14 @@ export class PrismaBranchUserRepository
     );
   }
 
+  async count(
+    filters: BranchUserListFilters = {},
+  ): Promise<number> {
+    return this.prisma.branchUser.count({
+      where: this.buildWhere(filters),
+    });
+  }
+
   async findByIdIncludingDeleted(
   id: string,
 ): Promise<BranchUser | null> {
@@ -196,7 +204,11 @@ export class PrismaBranchUserRepository
   ): Prisma.BranchUserWhereInput {
     const where: Prisma.BranchUserWhereInput = {};
 
-    if (!filters.includeDeleted) {
+    if (filters.isDeleted === true) {
+      where.isDeleted = true;
+    } else if (filters.isDeleted === false) {
+      where.isDeleted = false;
+    } else if (!filters.includeDeleted) {
       where.isDeleted = false;
     }
 

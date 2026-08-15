@@ -1,5 +1,10 @@
 // src/features/branch-users/types/branch-user.types.ts
 
+export type BranchUserFilterStatus =
+  | "ACTIVE"
+  | "INACTIVE"
+  | "DELETED";
+
 export type BranchUserRole =
   | "BRANCH_MANAGER"
   | "RECEPTIONIST"
@@ -30,6 +35,8 @@ export interface BranchUser {
   branchCode: string;
 
   isActive: boolean;
+
+  isDeleted?: boolean;
 
   lastLoginAt: string | null;
 
@@ -101,6 +108,8 @@ export interface BranchUserListItem {
   
   isActive: boolean;
 
+  isDeleted?: boolean;
+
   lastLoginAt: string | null;
 
   createdAt: string;
@@ -115,13 +124,17 @@ export interface BranchUserListResponse {
 }
 
 export interface BranchUserFilters {
-  search: string;
+  branchId?: string;
 
-  includeDeleted: boolean;
+  search: string;
 
   role?: BranchUserRole;
 
-  status?: "ACTIVE" | "INACTIVE";
+  status?: BranchUserFilterStatus;
+
+  page: number;
+
+  pageSize: number;
 }
 
 export interface ApiSuccessResponse<T> {

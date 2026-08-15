@@ -16,6 +16,7 @@ export class ListBranchUserItemResult {
     public readonly branchCode: string,
 
     public readonly isActive: boolean,
+    public readonly isDeleted: boolean,
     public readonly lastLoginAt: Date | null,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,

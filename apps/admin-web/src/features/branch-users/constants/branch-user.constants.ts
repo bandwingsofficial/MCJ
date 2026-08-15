@@ -51,11 +51,14 @@ export const BRANCH_USER_STATUS_OPTIONS = [
     label: "Inactive",
     value: "INACTIVE",
   },
+  {
+    label: "Deleted",
+    value: "DELETED",
+  },
 ] as const;
 
 export const BRANCH_USER_SEARCH_DEBOUNCE_MS = 500;
 
 export const BRANCH_USER_DEFAULT_FILTERS = {
   search: "",
-  includeDeleted: false,
 } as const;

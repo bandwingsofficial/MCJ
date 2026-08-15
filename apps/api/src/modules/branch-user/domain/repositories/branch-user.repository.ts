@@ -9,6 +9,7 @@ export interface BranchUserListFilters {
   isActive?: boolean;
   search?: string;
   includeDeleted?: boolean;
+  isDeleted?: boolean;
   skip?: number;
   take?: number;
 }
@@ -29,6 +30,10 @@ export interface BranchUserRepository {
   findAll(
     filters?: BranchUserListFilters,
   ): Promise<BranchUser[]>;
+
+  count(
+    filters?: BranchUserListFilters,
+  ): Promise<number>;
 
   findByIdIncludingDeleted(
   id: string,

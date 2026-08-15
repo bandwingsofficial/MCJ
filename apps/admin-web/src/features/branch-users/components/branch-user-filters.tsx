@@ -1,6 +1,5 @@
 "use client";
 
-import { Checkbox } from "@/src/shared/components/ui/checkbox";
 import { SearchInput } from "@/src/shared/components/ui/search-input";
 import { AppSelect } from "@/src/shared/components/ui/select";
 
@@ -21,24 +20,17 @@ interface Props {
   ) => void;
 }
 
-export const BranchUserFiltersBar = ({
+export function BranchUserFiltersBar({
   filters,
   onChange,
-}: Props) => {
+}: Props) {
   return (
-    <div 
-      className="
-        flex 
-        flex-col 
-        gap-3 
-        sm:flex-row 
-        sm:items-center 
-        w-full
-      "
-    >
-      <div className="flex-1 min-w-[240px]">
+    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="min-w-0 flex-1">
         <SearchInput
           value={filters.search}
+          placeholder="Search users..."
+          className="!h-10 rounded-lg !py-2 pl-9 text-[15px]"
           onChange={(value) =>
             onChange({
               ...filters,
@@ -48,7 +40,7 @@ export const BranchUserFiltersBar = ({
         />
       </div>
 
-      <div className="w-full sm:w-[200px]">
+      <div className="w-full shrink-0 sm:w-48">
         <AppSelect
           value={filters.role ?? "ALL"}
           onValueChange={(value) =>
@@ -70,7 +62,7 @@ export const BranchUserFiltersBar = ({
         />
       </div>
 
-      <div className="w-full sm:w-[200px]">
+      <div className="w-full shrink-0 sm:w-48">
         <AppSelect
           value={filters.status ?? "ALL"}
           onValueChange={(value) =>
@@ -79,42 +71,12 @@ export const BranchUserFiltersBar = ({
               status:
                 value === "ALL"
                   ? undefined
-                  : (value as
-                      | "ACTIVE"
-                      | "INACTIVE"),
+                  : (value as BranchUserFilters["status"]),
             })
           }
-          options={[
-            ...BRANCH_USER_STATUS_OPTIONS,
-          ]}
+          options={[...BRANCH_USER_STATUS_OPTIONS]}
         />
-      </div>
-
-      <div className="flex items-center gap-2 select-none shrink-0 py-1 sm:py-0">
-        <Checkbox
-          checked={
-            filters.includeDeleted
-          }
-          onCheckedChange={(
-            checked
-          ) =>
-            onChange({
-              ...filters,
-              includeDeleted:
-                Boolean(
-                  checked
-                ),
-            })
-          }
-        />
-
-        <label 
-          htmlFor="include-deleted-checkbox" 
-          className="text-sm font-medium cursor-pointer text-foreground"
-        >
-          Include Deleted
-        </label>
       </div>
     </div>
   );
-};
+}

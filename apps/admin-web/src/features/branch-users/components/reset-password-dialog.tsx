@@ -19,8 +19,6 @@ interface Props {
 
   userId: string;
 
-  userName: string;
-
   onClose: () => void;
 
   onSuccess: () => void;
@@ -29,7 +27,6 @@ interface Props {
 export function ResetPasswordDialog({
   open,
   userId,
-  userName,
   onClose,
   onSuccess,
 }: Props) {
@@ -99,14 +96,6 @@ export function ResetPasswordDialog({
       onClose={onClose}
     >
       <div className="space-y-5">
-        <p className="text-sm text-gray-600">
-          Set a new password for
-          <span className="font-semibold">
-            {" "}
-            {userName}
-          </span>
-        </p>
-
         <div>
           <Label required>
             New Password

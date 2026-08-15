@@ -1,100 +1,148 @@
 "use client";
 
-import { MoreVertical } from "lucide-react";
+import {
+  KeyRound,
+  Pencil,
+  Power,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 
-import { Dropdown } from "@/src/shared/components/ui/dropdown";
+import type { BranchUserListItem } from "@/src/features/branch-users/types/branch-user.types";
+
+const iconBtnClass =
+  "h-10 w-10 shrink-0 rounded-lg p-0";
+
+const iconClass = "h-[1.35rem] w-[1.35rem]";
 
 interface Props {
-  isActive: boolean;
+  branchUser: BranchUserListItem;
 
-  isDeleted?: boolean;
+  disabled?: boolean;
 
-  onEdit: () => void;
+  onEdit: (branchUser: BranchUserListItem) => void;
 
-  onActivate: () => void;
+  onActivate: (branchUser: BranchUserListItem) => void;
 
-  onDeactivate: () => void;
+  onDeactivate: (branchUser: BranchUserListItem) => void;
 
-  onResetPassword: () => void;
+  onDelete: (branchUser: BranchUserListItem) => void;
 
-  onDelete: () => void;
+  onResetPassword: (branchUser: BranchUserListItem) => void;
 
-  onRestore: () => void;
+  onRestore: (branchUser: BranchUserListItem) => void;
+
+  onPermanentDelete: (branchUser: BranchUserListItem) => void;
 }
 
-export const BranchUserActions = ({
-  isActive,
-  isDeleted = false,
+export function BranchUserActions({
+  branchUser,
+  disabled = false,
   onEdit,
   onActivate,
   onDeactivate,
-  onResetPassword,
   onDelete,
+  onResetPassword,
   onRestore,
-}: Props) => {
+  onPermanentDelete,
+}: Props) {
+  const isDeleted = Boolean(branchUser.isDeleted);
+
   if (isDeleted) {
     return (
-      <Dropdown
-        trigger={
-          <Button variant="outline">
-            <MoreVertical
-              size={18}
-            />
-          </Button>
-        }
-        items={[
-          {
-            label: "Restore",
-            onClick: onRestore,
-          },
-        ]}
-      />
+      <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={disabled}
+          onClick={() => onRestore(branchUser)}
+          title="Restore user"
+          aria-label="Restore user"
+          className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
+        >
+          <RotateCcw className={iconClass} />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={disabled}
+          onClick={() => onPermanentDelete(branchUser)}
+          title="Permanently delete user"
+          aria-label="Permanently delete user"
+          className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
+        >
+          <Trash2 className={iconClass} />
+        </Button>
+      </div>
     );
   }
 
   return (
-    <Dropdown
-      trigger={
-        <Button variant="outline">
-          <MoreVertical
-            size={18}
-          />
+    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+      {branchUser.isActive ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={disabled}
+          onClick={() => onDeactivate(branchUser)}
+          title="Deactivate user"
+          aria-label="Deactivate user"
+          className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
+        >
+          <Power className={iconClass} />
         </Button>
-      }
-      items={[
-        {
-          label: "Edit",
-          onClick: onEdit,
-        },
+      ) : (
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={disabled}
+          onClick={() => onActivate(branchUser)}
+          title="Activate user"
+          aria-label="Activate user"
+          className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
+        >
+          <Power className={iconClass} />
+        </Button>
+      )}
 
-        isActive
-          ? {
-              label:
-                "Deactivate",
-              onClick:
-                onDeactivate,
-            }
-          : {
-              label:
-                "Activate",
-              onClick:
-                onActivate,
-            },
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={disabled}
+        onClick={() => onEdit(branchUser)}
+        title="Edit user"
+        aria-label="Edit user"
+        className={`${iconBtnClass} text-slate-700 hover:bg-slate-100`}
+      >
+        <Pencil className={iconClass} />
+      </Button>
 
-        {
-          label:
-            "Reset Password",
-          onClick:
-            onResetPassword,
-        },
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={disabled}
+        onClick={() => onDelete(branchUser)}
+        title="Delete user"
+        aria-label="Delete user"
+        className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
+      >
+        <Trash2 className={iconClass} />
+      </Button>
 
-        {
-          label: "Delete",
-          onClick: onDelete,
-        },
-      ]}
-    />
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={disabled}
+        onClick={() => onResetPassword(branchUser)}
+        title="Reset password"
+        aria-label="Reset password"
+        className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+      >
+        <KeyRound className={iconClass} />
+      </Button>
+    </div>
   );
-};
+}

@@ -1,5 +1,5 @@
-import { BranchUsersPage } from "@/src/features/branch-users/pages/branch-users-page";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <BranchUsersPage />;
+  redirect("/branches");
 }

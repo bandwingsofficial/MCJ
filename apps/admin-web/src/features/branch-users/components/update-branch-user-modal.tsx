@@ -17,12 +17,19 @@ interface BranchOption {
   value: string;
 }
 
+interface FixedBranch {
+  id: string;
+  label: string;
+}
+
 interface Props {
   open: boolean;
 
   branchUser: BranchUser;
 
-  branchOptions: BranchOption[];
+  branchOptions?: BranchOption[];
+
+  fixedBranch?: FixedBranch;
 
   onClose: () => void;
 
@@ -32,7 +39,8 @@ interface Props {
 export function UpdateBranchUserModal({
   open,
   branchUser,
-  branchOptions,
+  branchOptions = [],
+  fixedBranch,
   onClose,
   onSuccess,
 }: Props) {
@@ -42,12 +50,19 @@ export function UpdateBranchUserModal({
   } = useUpdateBranchUser();
 
   const handleSubmit = async (
-  values: UpdateBranchUserFormValues
-) => {
+    values: UpdateBranchUserFormValues
+  ) => {
+    const payload = fixedBranch
+      ? {
+          ...values,
+          branchId: fixedBranch.id,
+        }
+      : values;
+
     const success =
       await updateBranchUser(
         branchUser.id,
-        values
+        payload
       );
 
     if (!success) {
@@ -62,7 +77,7 @@ export function UpdateBranchUserModal({
   return (
     <Modal
       open={open}
-      title="Update Branch User"
+      title="Update User"
       onClose={onClose}
     >
       <BranchUserForm
@@ -70,6 +85,7 @@ export function UpdateBranchUserModal({
         branchOptions={
           branchOptions
         }
+        fixedBranch={fixedBranch}
         defaultValues={{
           firstName:
             branchUser.firstName,
@@ -82,7 +98,7 @@ export function UpdateBranchUserModal({
           role:
             branchUser.role,
           branchId:
-            branchUser.branchId,
+            fixedBranch?.id ?? branchUser.branchId,
           permissions:
             branchUser.permissions,
         }}

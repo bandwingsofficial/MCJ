@@ -15,6 +15,7 @@ import { BranchStatusBadge } from "@/src/features/branches/components/branch-sta
 
 interface Props {
   branch: Branch;
+  activeSection?: string;
   onEdit: () => void;
   onArchive: () => void;
   onRestore: () => void;
@@ -24,6 +25,7 @@ interface Props {
 
 export function BranchManageHeader({
   branch,
+  activeSection,
   onEdit,
   onArchive,
   onRestore,
@@ -53,6 +55,14 @@ export function BranchManageHeader({
         </span>
         <span aria-hidden>›</span>
         <span className="text-slate-900">Management</span>
+        {activeSection ? (
+          <>
+            <span aria-hidden>›</span>
+            <span className="font-medium text-slate-700">
+              {activeSection}
+            </span>
+          </>
+        ) : null}
       </nav>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

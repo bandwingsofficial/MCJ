@@ -39,7 +39,12 @@ type BranchUserFormValues =
 interface BranchUserFormProps {
   defaultValues?: Partial<BranchUserFormValues>;
 
-  branchOptions: BranchOption[];
+  branchOptions?: BranchOption[];
+
+  fixedBranch?: {
+    id: string;
+    label: string;
+  };
 
   isSubmitting: boolean;
 
@@ -54,7 +59,8 @@ interface BranchUserFormProps {
 
 export function BranchUserForm({
   defaultValues,
-  branchOptions,
+  branchOptions = [],
+  fixedBranch,
   isSubmitting,
   submitLabel,
   isEdit = false,
@@ -80,7 +86,7 @@ export function BranchUserForm({
       email: "",
       phone: "",
       role: "BRANCH_MANAGER",
-      branchId: "",
+      branchId: fixedBranch?.id ?? "",
       permissions: [],
       ...(isEdit
         ? {}
@@ -96,7 +102,7 @@ export function BranchUserForm({
       email: "",
       phone: "",
       role: "BRANCH_MANAGER",
-      branchId: "",
+      branchId: fixedBranch?.id ?? "",
       permissions: [],
       ...(isEdit
         ? {}
@@ -105,9 +111,18 @@ export function BranchUserForm({
     } as any);
   }, [
     defaultValues,
+    fixedBranch?.id,
     isEdit,
     reset,
   ]);
+
+  useEffect(() => {
+    if (fixedBranch?.id) {
+      setValue("branchId", fixedBranch.id, {
+        shouldValidate: true,
+      });
+    }
+  }, [fixedBranch?.id, setValue]);
 
   useEffect(() => {
     setValue(
@@ -118,26 +133,13 @@ export function BranchUserForm({
       }
     );
   }, [setValue]);
+
   return (
     <form
-  onSubmit={handleSubmit(
-    (data) => {
-      console.log("FORM DATA", data);
-      console.log(
-  "UPDATE SUBMIT DATA",
-  data
-);
-
-void onSubmit(data);
-    },
-    (errors) => {
-  console.log(
-    "FORM ERRORS",
-    errors
-  );
-}
-  )}
->
+      onSubmit={handleSubmit((data) => {
+        void onSubmit(data);
+      })}
+    >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <Label required>
@@ -230,12 +232,12 @@ void onSubmit(data);
             />
 
             <FormError
-  message={
-    !isEdit
-      ? (errors as any).password?.message
-      : undefined
-  }
-/>
+              message={
+                !isEdit
+                  ? (errors as any).password?.message
+                  : undefined
+              }
+            />
           </div>
         )}
 
@@ -244,28 +246,36 @@ void onSubmit(data);
             Branch
           </Label>
 
-          <AppSelect
-            value={
-              watch(
-                "branchId"
-              ) ?? ""
-            }
-            onValueChange={(
-              value
-            ) =>
-              setValue(
-                "branchId",
-                value,
-                {
-                  shouldValidate:
-                    true,
-                }
-              )
-            }
-            options={
-              branchOptions
-            }
-          />
+          {fixedBranch ? (
+            <Input
+              value={fixedBranch.label}
+              readOnly
+              disabled
+            />
+          ) : (
+            <AppSelect
+              value={
+                watch(
+                  "branchId"
+                ) ?? ""
+              }
+              onValueChange={(
+                value
+              ) =>
+                setValue(
+                  "branchId",
+                  value,
+                  {
+                    shouldValidate:
+                      true,
+                  }
+                )
+              }
+              options={
+                branchOptions
+              }
+            />
+          )}
 
           <FormError
             message={
@@ -298,8 +308,8 @@ void onSubmit(data);
               )
             }
             options={[
-  ...BRANCH_USER_ROLE_OPTIONS,
-]}
+              ...BRANCH_USER_ROLE_OPTIONS,
+            ]}
           />
 
           <FormError
@@ -315,6 +325,7 @@ void onSubmit(data);
         type="submit"
         loading={isSubmitting}
         disabled={isSubmitting}
+        className="mt-4"
       >
         {submitLabel}
       </Button>
