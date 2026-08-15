@@ -209,7 +209,7 @@ export function EnrollmentForm({
 );
 
 setBatches(
-  batchesResponse.data,
+  batchesResponse.data.items ?? [],
 );
 
         } catch {

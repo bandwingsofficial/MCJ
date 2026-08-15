@@ -275,32 +275,6 @@ export interface CourseSummary {
   quizzes: number;
 }
 
-export interface CourseTrainerAssignment {
-  id: string;
-
-  firstName: string;
-
-  lastName: string | null;
-
-  employeeCode: string | null;
-
-  specialization: string | null;
-
-  phone: string | null;
-
-  status: string;
-}
-
-export interface CourseTrainersListData {
-  items: CourseTrainerAssignment[];
-}
-
-export interface AssignCourseTrainersData {
-  assignedCount: number;
-
-  items: CourseTrainerAssignment[];
-}
-
 export interface CreateCourseRequest {
   title: string;
 

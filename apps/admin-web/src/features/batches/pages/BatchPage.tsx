@@ -1,410 +1,487 @@
 "use client";
 
-import {
-  useMemo,
-  useState,
-} from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import * as Dialog from "@radix-ui/react-dialog";
 
-import { PageHeader } from "@/src/shared/components/ui/page-header";
+import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
+import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Pagination } from "@/src/shared/components/ui/pagination";
+import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { appToast } from "@/src/shared/components/ui/toast";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
+import { useBatches } from "@/src/features/batches/hooks/useBatches";
+import { useActivateBatch } from "@/src/features/batches/hooks/useActivateBatch";
+import { useDeactivateBatch } from "@/src/features/batches/hooks/useDeactivateBatch";
+import { batchService } from "@/src/features/batches/services/batch.service";
+
+import { BatchFilters } from "@/src/features/batches/components/batch-filters";
+import { BatchTable } from "@/src/features/batches/components/BatchTable";
 import {
-  useActivateBatch,
-  useBatch,
-  useBatches,
-  useDeactivateBatch,
-  useDeleteBatch,
-  useRestoreBatch,
-} from "@/src/features/batches";
+  BatchBulkActionsToolbar,
+  type BulkBatchAction,
+} from "@/src/features/batches/components/batch-bulk-actions-toolbar";
+import { CreateBatchModal } from "@/src/features/batches/components/create-batch-modal";
 
 import type {
-  BatchMode,
-  BatchStatus,
+  BatchListItem,
+  BranchOption,
+  CourseOption,
+  TrainerOption,
 } from "@/src/features/batches/types/batch.types";
-
-import { BatchFilters } from "@/src/features/batches/components/BatchFilters";
-import { BatchTable } from "@/src/features/batches/components/BatchTable";
-import { BatchSkeleton } from "@/src/features/batches/components/BatchSkeleton";
-import { EmptyBatch } from "@/src/features/batches/components/EmptyBatch";
-import { BatchDeleteDialog } from "@/src/features/batches/components/BatchDeleteDialog";
-import { BatchDetailsDrawer } from "@/src/features/batches/components/BatchDetailsDrawer";
-import { BatchForm } from "@/src/features/batches/components/BatchForm";
+import {
+  formatBulkResultToast,
+  getEligibleActivateIds,
+  getEligibleDeactivateIds,
+  getEligibleDeleteIds,
+  getEligiblePermanentDeleteIds,
+  getEligibleRestoreIds,
+} from "@/src/features/batches/utils/batch-bulk.utils";
 
 export function BatchPage() {
   const router = useRouter();
+
   const {
     batches,
-    isLoading,
+    total,
+    filters,
+    setFilters,
+    isInitialLoading,
+    isFetching,
     error,
     refetch,
   } = useBatches();
 
-  const {
-    deleteBatch,
-    isLoading:
-      isDeleting,
-  } = useDeleteBatch();
-  const {
-  activateBatch,
-} = useActivateBatch();
+  const { activateBatch, isLoading: isActivating } = useActivateBatch();
+  const { deactivateBatch, isLoading: isDeactivating } = useDeactivateBatch();
 
-const {
-  deactivateBatch,
-} = useDeactivateBatch();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
+  const [bulkConfirmAction, setBulkConfirmAction] =
+    useState<BulkBatchAction | null>(null);
+  const [statusTarget, setStatusTarget] = useState<{
+    batch: BatchListItem;
+    action: "activate" | "deactivate";
+  } | null>(null);
+  const [isReordering, setIsReordering] = useState(false);
+  const [isBulkLoading, setIsBulkLoading] = useState(false);
 
-const {
-  restoreBatch,
-} = useRestoreBatch();
+  const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [trainers, setTrainers] = useState<TrainerOption[]>([]);
 
-  const [
-    selectedBatchId,
-    setSelectedBatchId,
-  ] = useState("");
+  const pageSize = filters.pageSize ?? 20;
+  const page = filters.page ?? 1;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
 
-  const [
-    deleteOpen,
-    setDeleteOpen,
-  ] = useState(false);
-
-  const [
-    detailsOpen,
-    setDetailsOpen,
-  ] = useState(false);
-
-  const [filters, setFilters] =
-    useState<{
-      mode?: BatchMode;
-      status?: BatchStatus;
-      isActive?: boolean;
-      includeDeleted: boolean;
-    }>({
-      mode: undefined,
-      status: undefined,
-      isActive: undefined,
-      includeDeleted: false,
-    });
-
-  const [
-    createOpen,
-    setCreateOpen,
-  ] = useState(false);
-
-  const [
-    editOpen,
-    setEditOpen,
-  ] = useState(false);
-
-  const {
-    batch,
-  } = useBatch(
-    selectedBatchId,
+  const hasActiveFilters = Boolean(
+    (filters.search ?? "").trim() ||
+      filters.courseId ||
+      filters.branchId ||
+      filters.trainerId ||
+      filters.mode ||
+      filters.status ||
+      filters.includeDeleted,
   );
 
-  const filteredBatches =
-  useMemo(() => {
-    if (!batches) return [];
-    return batches.filter(
-      (batch) => {
-        if (
-          filters.mode &&
-          batch.mode !==
-            filters.mode
-        ) {
-          return false;
-        }
+  const actionLoading =
+    isActivating ||
+    isDeactivating ||
+    isReordering ||
+    isBulkLoading;
 
-        if (
-          filters.status &&
-          batch.status !==
-            filters.status
-        ) {
-          return false;
-        }
+  const reorderDisabled =
+    hasActiveFilters || Boolean((filters.search ?? "").trim());
 
-        if (
-          filters.isActive !==
-            undefined &&
-          batch.isActive !==
-            filters.isActive
-        ) {
-          return false;
-        }
-
-        if (!filters.includeDeleted) {
-  if (batch.isDeleted) {
-    return false;
-  }
-}
-
-        return true;
-      },
-    );
-  }, [batches, filters]);
-
-  const handleDelete =
-    async () => {
+  useEffect(() => {
+    const loadFilterOptions = async () => {
       try {
-        await deleteBatch(
-          selectedBatchId,
-        );
+        const [courseItems, branchItems, trainerItems] = await Promise.all([
+          batchService.getCourses(),
+          batchService.getBranches(),
+          batchService.getActiveTrainers(),
+        ]);
 
-        appToast.success(
-          "Batch deleted successfully",
+        setCourses(courseItems);
+        setBranches(branchItems);
+        setTrainers(
+          trainerItems.map((trainer) => ({
+            id: trainer.id,
+            firstName: trainer.firstName,
+            lastName: trainer.lastName,
+            employeeCode: trainer.employeeCode,
+          })),
         );
-
-        setDeleteOpen(
-          false,
-        );
-
-        await refetch();
       } catch {
-        appToast.error(
-          "Failed to delete batch",
-        );
+        // Filter dropdowns are optional; list still works without them.
       }
     };
 
-    const handleActivate = async (
-  id: string,
-) => {
-  try {
-    await activateBatch(id);
+    void loadFilterOptions();
+  }, []);
 
-    appToast.success(
-      "Batch activated successfully",
-    );
+  useEffect(() => {
+    setSelectedBatchIds([]);
+  }, [
+    filters.page,
+    filters.pageSize,
+    filters.status,
+    filters.includeDeleted,
+    filters.search,
+    filters.courseId,
+    filters.branchId,
+    filters.trainerId,
+    filters.mode,
+  ]);
 
-    await refetch();
-  } catch {
-    appToast.error(
-      "Failed to activate batch",
-    );
-  }
-};
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(total / pageSize));
+    if (page > maxPage) {
+      setFilters({ ...filters, page: maxPage });
+    }
+  }, [total, page, pageSize, filters, setFilters]);
 
-const handleDeactivate =
-  async (id: string) => {
+  const eligibleBulkIds = useMemo(() => {
+    if (!bulkConfirmAction) {
+      return [];
+    }
+
+    switch (bulkConfirmAction) {
+      case "activate":
+        return getEligibleActivateIds(batches, selectedBatchIds);
+      case "deactivate":
+        return getEligibleDeactivateIds(batches, selectedBatchIds);
+      case "delete":
+        return getEligibleDeleteIds(batches, selectedBatchIds);
+      case "restore":
+        return getEligibleRestoreIds(batches, selectedBatchIds);
+      case "permanent-delete":
+        return getEligiblePermanentDeleteIds(batches, selectedBatchIds);
+      default:
+        return [];
+    }
+  }, [bulkConfirmAction, batches, selectedBatchIds]);
+
+  const handleReorder = async (payload: {
+    batchId: string;
+    newDisplayOrder: number;
+  }) => {
     try {
-      await deactivateBatch(id);
-
-      appToast.success(
-        "Batch deactivated successfully",
-      );
-
+      setIsReordering(true);
+      await batchService.reorderBatches(payload);
+      appToast.success("Batch order updated");
       await refetch();
-    } catch {
-      appToast.error(
-        "Failed to deactivate batch",
-      );
+    } catch (err) {
+      appToast.error(getErrorMessage(err));
+      throw err;
+    } finally {
+      setIsReordering(false);
     }
   };
 
-const handleRestore =
-  async (id: string) => {
+  const handleBulkConfirm = async () => {
+    if (!bulkConfirmAction || eligibleBulkIds.length === 0) {
+      setBulkConfirmAction(null);
+      return;
+    }
+
     try {
-      await restoreBatch(id);
+      setIsBulkLoading(true);
+      let result = null;
 
-      appToast.success(
-        "Batch restored successfully",
-      );
+      switch (bulkConfirmAction) {
+        case "activate":
+          result = await batchService.bulkActivate(eligibleBulkIds);
+          appToast.success(
+            formatBulkResultToast(result.data, "batch(es) activated successfully"),
+          );
+          break;
+        case "deactivate":
+          result = await batchService.bulkDeactivate(eligibleBulkIds);
+          appToast.success(
+            formatBulkResultToast(
+              result.data,
+              "batch(es) deactivated successfully",
+            ),
+          );
+          break;
+        case "delete":
+          result = await batchService.bulkDelete(eligibleBulkIds);
+          appToast.success(
+            formatBulkResultToast(result.data, "batch(es) archived successfully"),
+          );
+          break;
+        case "restore":
+          result = await batchService.bulkRestore(eligibleBulkIds);
+          appToast.success(
+            formatBulkResultToast(result.data, "batch(es) restored successfully"),
+          );
+          break;
+        case "permanent-delete":
+          result = await batchService.bulkPermanentDelete(eligibleBulkIds);
+          appToast.success(
+            formatBulkResultToast(
+              result.data,
+              "batch(es) permanently deleted",
+            ),
+          );
+          break;
+      }
 
+      setSelectedBatchIds([]);
+      setBulkConfirmAction(null);
       await refetch();
-    } catch {
-      appToast.error(
-        "Failed to restore batch",
-      );
+    } catch (err) {
+      appToast.error(getErrorMessage(err));
+    } finally {
+      setIsBulkLoading(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <BatchSkeleton />
-    );
-  }
+  const bulkDialogCopy = useMemo(() => {
+    const count = eligibleBulkIds.length;
 
-  if (error) {
+    switch (bulkConfirmAction) {
+      case "activate":
+        return {
+          title: "Activate selected batches?",
+          description: `Activate ${count} selected batch${count === 1 ? "" : "es"}?`,
+          confirmLabel: "Activate",
+        };
+      case "deactivate":
+        return {
+          title: "Deactivate selected batches?",
+          description: `Deactivate ${count} selected batch${count === 1 ? "" : "es"}?`,
+          confirmLabel: "Deactivate",
+        };
+      case "delete":
+        return {
+          title: "Archive selected batches?",
+          description: `Archive ${count} selected batch${count === 1 ? "" : "es"}? They can be restored later.`,
+          confirmLabel: "Archive",
+        };
+      case "restore":
+        return {
+          title: "Restore selected batches?",
+          description: `Restore ${count} archived batch${count === 1 ? "" : "es"}?`,
+          confirmLabel: "Restore",
+        };
+      case "permanent-delete":
+        return {
+          title: "Permanently delete selected batches?",
+          description: `You are about to permanently delete ${count} batch${count === 1 ? "" : "es"}. This action cannot be undone.`,
+          confirmLabel: "Permanently Delete",
+        };
+      default:
+        return { title: "", description: "", confirmLabel: "Confirm" };
+    }
+  }, [bulkConfirmAction, eligibleBulkIds.length]);
+
+  if (error && batches.length === 0 && !isInitialLoading) {
     return (
       <ErrorState
         title="Failed To Load Batches"
-        description={
-          error
-        }
-        onRetry={
-          refetch
-        }
+        description={error}
+        onRetry={() => {
+          void refetch();
+        }}
       />
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Container to align PageHeader and Create button exactly to the right side */}
-      <Dialog.Root open={createOpen} onOpenChange={setCreateOpen}>
-        <div className="flex items-center justify-between">
-          <PageHeader
-            title="Batches"
-            description="Manage batches"
-          />
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-          >
-            Create Batch
-          </button>
+    <>
+      {error && batches.length > 0 ? (
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          {error}
         </div>
-
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 w-[95%] max-w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-4 shadow-xl z-50 overflow-hidden outline-none">
-            <div className="mb-3">
-              <Dialog.Title className="text-base font-semibold text-slate-900">
-                Create Batch
-              </Dialog.Title>
-            </div>
-            <BatchForm 
-              mode="create" 
-              onSuccess={() => {
-                setCreateOpen(false);
-                void refetch();
-              }}
-            />
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-
-      {/* Edit Modal Wrapper */}
-      <Dialog.Root open={editOpen} onOpenChange={setEditOpen}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 w-[95%] max-w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-4 shadow-xl z-50 overflow-hidden outline-none">
-            <div className="mb-3">
-              <Dialog.Title className="text-base font-semibold text-slate-900">
-                Edit Batch
-              </Dialog.Title>
-            </div>
-            {batch && selectedBatchId && (
-              <BatchForm 
-                mode="edit" 
-                batch={batch}
-                onSuccess={() => {
-                  setEditOpen(false);
-                  void refetch();
-                }}
-              />
-            )}
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      ) : null}
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Batches</h1>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Manage course batches and schedules
+          </p>
+        </div>
+        <Button type="button" onClick={() => setIsCreateOpen(true)}>
+          + Create Batch
+        </Button>
+      </div>
 
       <BatchFilters
-        mode={filters.mode}
-        status={filters.status}
-        isActive={filters.isActive}
-        includeDeleted={
-          filters.includeDeleted
-        }
-        onModeChange={(value) =>
+        filters={filters}
+        courses={courses}
+        branches={branches}
+        trainers={trainers}
+        onChange={setFilters}
+        onReset={() =>
           setFilters({
-            ...filters,
-            mode:
-              value === "ALL" || value === "ALL"
-                ? undefined
-                : (value as BatchMode),
-          })
-        }
-        onStatusChange={(value) =>
-          setFilters({
-            ...filters,
-            status:
-              value === "ALL" || value === "ALL"
-                ? undefined
-                : (value as BatchStatus),
-          })
-        }
-        onActiveChange={(value) =>
-          setFilters({
-            ...filters,
-            isActive:
-              value === "ALL" || value === "All"
-                ? undefined
-                : value === "true",
-          })
-        }
-        onIncludeDeletedChange={(
-          checked,
-        ) =>
-          setFilters({
-            ...filters,
-            includeDeleted: checked,
+            search: "",
+            courseId: undefined,
+            branchId: undefined,
+            trainerId: undefined,
+            mode: undefined,
+            status: undefined,
+            includeDeleted: false,
+            page: 1,
+            pageSize,
           })
         }
       />
 
-      <Card>
-        {filteredBatches.length ===
-        0 ? (
-          <EmptyBatch />
+      <BatchBulkActionsToolbar
+        batches={batches}
+        selectedBatchIds={selectedBatchIds}
+        disabled={actionLoading}
+        onAction={setBulkConfirmAction}
+      />
+
+      <Card className="mt-4 overflow-hidden">
+        {isInitialLoading ? (
+          <div className="p-4">
+            <SkeletonTable />
+          </div>
         ) : (
-          <BatchTable
-  batches={filteredBatches}
-  onView={(id) => {
-    setSelectedBatchId(id);
-    setDetailsOpen(true);
-  }}
-  onEdit={(id) => {
-    setSelectedBatchId(id);
-    setEditOpen(true);
-  }}
-  onDelete={(id) => {
-    setSelectedBatchId(id);
-    setDeleteOpen(true);
-  }}
-  onActivate={handleActivate}
-  onDeactivate={handleDeactivate}
-  onRestore={handleRestore}
-/>
+          <div className="overflow-x-auto">
+            <BatchTable
+              batches={batches}
+              selectedBatchIds={selectedBatchIds}
+              onSelectionChange={setSelectedBatchIds}
+              actionsDisabled={actionLoading}
+              reorderDisabled={reorderDisabled}
+              emptyTitle={
+                hasActiveFilters
+                  ? "No batches match your current filters"
+                  : "No Batches Found"
+              }
+              emptyDescription={
+                hasActiveFilters
+                  ? "Try adjusting your search or filter criteria."
+                  : "Create your first batch to get started."
+              }
+              onManage={(batch) => router.push(`/batches/${batch.id}/manage`)}
+              onActivate={(batch) =>
+                setStatusTarget({ batch, action: "activate" })
+              }
+              onDeactivate={(batch) =>
+                setStatusTarget({ batch, action: "deactivate" })
+              }
+              onReorder={handleReorder}
+            />
+          </div>
         )}
+
+        {isFetching && !isInitialLoading ? (
+          <p className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
+            Updating batches...
+          </p>
+        ) : null}
       </Card>
 
-      <Pagination
-        page={1}
-        totalPages={1}
-        onPageChange={() => {}}
+      <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-between">
+        {total > 0 ? (
+          <>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600">
+              <span>
+                Showing {from}–{to} of {total}
+              </span>
+              <label className="flex items-center gap-2">
+                <span className="whitespace-nowrap">Rows per page</span>
+                <select
+                  className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm"
+                  value={pageSize}
+                  disabled={actionLoading}
+                  onChange={(event) =>
+                    setFilters({
+                      ...filters,
+                      pageSize: Number(event.target.value),
+                      page: 1,
+                    })
+                  }
+                >
+                  {[10, 20, 50].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={(nextPage) =>
+                setFilters({ ...filters, page: nextPage })
+              }
+            />
+          </>
+        ) : (
+          <p className="text-sm text-slate-600">Showing 0 batches</p>
+        )}
+      </div>
+
+      <CreateBatchModal
+        open={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onSuccess={async () => {
+          await refetch();
+        }}
       />
 
-      <BatchDeleteDialog
-        open={
-          deleteOpen
+      <ConfirmDialog
+        open={Boolean(statusTarget)}
+        title={
+          statusTarget?.action === "activate"
+            ? "Activate batch?"
+            : "Deactivate batch?"
         }
-        isLoading={
-          isDeleting
+        description={
+          statusTarget
+            ? `${statusTarget.action === "activate" ? "Activate" : "Deactivate"} "${statusTarget.batch.name}"?`
+            : ""
         }
-        onConfirm={
-          handleDelete
+        confirmLabel={
+          statusTarget?.action === "activate" ? "Activate" : "Deactivate"
         }
-        onCancel={() =>
-          setDeleteOpen(
-            false,
-          )
-        }
+        loading={isActivating || isDeactivating}
+        onCancel={() => setStatusTarget(null)}
+        onConfirm={async () => {
+          if (!statusTarget) {
+            return;
+          }
+
+          try {
+            if (statusTarget.action === "activate") {
+              await activateBatch(statusTarget.batch.id);
+              appToast.success("Batch activated successfully");
+            } else {
+              await deactivateBatch(statusTarget.batch.id);
+              appToast.success("Batch deactivated successfully");
+            }
+
+            setStatusTarget(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
+        }}
       />
 
-      <BatchDetailsDrawer
-        open={
-          detailsOpen
-        }
-        batch={batch}
-        onClose={() =>
-          setDetailsOpen(
-            false,
-          )
-        }
+      <ConfirmDialog
+        open={bulkConfirmAction !== null}
+        title={bulkDialogCopy.title}
+        description={bulkDialogCopy.description}
+        confirmLabel={bulkDialogCopy.confirmLabel}
+        loading={isBulkLoading}
+        onCancel={() => setBulkConfirmAction(null)}
+        onConfirm={() => {
+          void handleBulkConfirm();
+        }}
       />
-    </div>
+    </>
   );
 }

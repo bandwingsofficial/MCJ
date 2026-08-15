@@ -11,6 +11,8 @@ import { BatchStatus } from '../../domain/enums/batch-status.enum';
 import { DayOfWeek } from '../../domain/enums/day-of-week.enum';
 
 export type BatchWithRelations = PrismaBatch & {
+  displayOrder?: number | null;
+
   course: {
     id: string;
     title: string;
@@ -72,6 +74,7 @@ export class BatchMapper {
     meetingLink: record.meetingLink,
     isFeatured: record.isFeatured,
     isActive: record.isActive,
+    displayOrder: record.displayOrder,
     status: record.status as BatchStatus,
 
     trainers: record.trainers.map(
@@ -132,6 +135,7 @@ export class BatchMapper {
       meetingLink: batch.meetingLink,
       isFeatured: batch.isFeatured,
       isActive: batch.isActive,
+      displayOrder: batch.displayOrder,
       status: batch.status,
       createdBy: batch.createdBy,
       updatedBy: batch.updatedBy,
@@ -140,6 +144,6 @@ export class BatchMapper {
       deletedBy: batch.deletedBy,
       createdAt: batch.createdAt,
       updatedAt: batch.updatedAt,
-    };
+    } as Prisma.BatchUncheckedCreateInput;
   }
 }

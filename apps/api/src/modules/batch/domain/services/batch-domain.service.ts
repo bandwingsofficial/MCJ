@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 import type { TrainerRepository } from '@modules/trainer/domain/repositories/trainer.repository';
+import { TrainerStatus } from '@modules/trainer/domain/enums/trainer-status.enum';
 
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
 
 import type { Batch } from '../entities/batch.entity';
 import type { BatchRepository } from '../repositories/batch.repository';
+import { formatBatchCode } from '../utils/batch-code.util';
 import { CourseNotFoundException } from '../errors/course-not-found.exception';
 import { TrainerNotFoundException } from '../errors/trainer-not-found.exception';
 
@@ -47,9 +49,9 @@ export class BatchDomainService {
     excludeId?: string,
   ): Promise<void> {
     const existing = await batchRepo.findBySlug(
-  slug,
-  true,
-);
+      slug,
+      true,
+    );
     if (existing && existing.id !== excludeId) {
       throw new BaseException(
         ERROR_CODES.BATCH_ALREADY_EXISTS,
@@ -83,25 +85,73 @@ export class BatchDomainService {
     }
   }
 
+  async ensureActiveTrainers(
+    trainerRepo: TrainerRepository,
+    trainerIds: string[],
+  ): Promise<void> {
+    for (const trainerId of trainerIds) {
+      const trainer = await trainerRepo.findById(trainerId);
+
+      if (!trainer) {
+        throw new TrainerNotFoundException(trainerId);
+      }
+
+      if (trainer.isDeleted) {
+        throw new BaseException(
+          ERROR_CODES.TRAINER_NOT_FOUND,
+          `Trainer ${trainerId} is not available`,
+          400,
+        );
+      }
+
+      if (trainer.status !== TrainerStatus.ACTIVE) {
+        throw new BaseException(
+          ERROR_CODES.VALIDATION_ERROR,
+          'Only active trainers can be assigned to a batch',
+          400,
+        );
+      }
+    }
+  }
+
+  async generateUniqueBatchCode(
+    batchRepo: BatchRepository,
+  ): Promise<string> {
+    const maxNumber = await batchRepo.getMaxBatchCodeNumber();
+
+    for (let offset = 1; offset <= 50; offset++) {
+      const candidate = formatBatchCode(maxNumber + offset);
+      const existing = await batchRepo.findByCode(candidate, true);
+
+      if (!existing) {
+        return candidate;
+      }
+    }
+
+    throw new BaseException(
+      ERROR_CODES.VALIDATION_ERROR,
+      'Unable to generate a unique batch code',
+      500,
+    );
+  }
+
   validateSchedule(params: {
     startDate: Date;
     endDate?: Date | null;
-    startTime: string;
-    endTime: string;
     daysOfWeek: unknown[];
   }): void {
-    if (params.endDate && params.endDate < params.startDate) {
+    if (!params.endDate) {
       throw new BaseException(
         ERROR_CODES.VALIDATION_ERROR,
-        'Batch end date cannot be before start date',
+        'Batch end date is required',
         400,
       );
     }
 
-    if (params.endTime <= params.startTime) {
+    if (params.endDate < params.startDate) {
       throw new BaseException(
         ERROR_CODES.VALIDATION_ERROR,
-        'Batch end time must be after start time',
+        'Batch end date cannot be before start date',
         400,
       );
     }

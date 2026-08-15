@@ -23,10 +23,12 @@ export class AssignBatchTrainersHandler {
     );
     const trainerIds = this.domainService.uniqueIds(command.trainerIds);
 
-    await this.domainService.ensureTrainersExist(
-      this.trainerRepo,
-      trainerIds,
-    );
+    if (trainerIds.length > 0) {
+      await this.domainService.ensureActiveTrainers(
+        this.trainerRepo,
+        trainerIds,
+      );
+    }
 
     batch.update({
       trainers: trainerIds.map((trainerId) =>
@@ -39,13 +41,13 @@ export class AssignBatchTrainersHandler {
       updatedBy: command.updatedBy,
     });
 
-   await this.batchRepo.save(batch);
+    await this.batchRepo.save(batch);
 
-const updatedBatch =
-  await this.domainService.ensureExists(
-    await this.batchRepo.findById(batch.id),
-  );
+    const updatedBatch =
+      await this.domainService.ensureExists(
+        await this.batchRepo.findById(batch.id),
+      );
 
-return GetBatchResult.fromEntity(updatedBatch);
+    return GetBatchResult.fromEntity(updatedBatch);
   }
 }

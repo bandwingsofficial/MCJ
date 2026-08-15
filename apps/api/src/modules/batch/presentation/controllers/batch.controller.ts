@@ -30,6 +30,8 @@ export class BatchController {
       new ListBatchesQuery(
         query.courseId,
         query.branchId,
+        query.trainerId,
+        query.mode,
         query.status,
         query.search,
         query.isFeatured,

@@ -1,4 +1,4 @@
-import { Module, forwardRef  } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { SuperAdminGuard } from '@common/guards/super-admin.guard';
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
@@ -14,12 +14,19 @@ import type { TrainerRepository } from '../trainer/domain/repositories/trainer.r
 
 import { BATCH_TOKENS } from './batch.tokens';
 import { AssignBatchTrainersHandler } from './application/assign-batch-trainers/assign-batch-trainers.handler';
+import { BulkDeleteBatchesHandler } from './application/bulk-delete-batches/bulk-delete-batches.handler';
+import { BulkPermanentDeleteBatchesHandler } from './application/bulk-permanent-delete-batches/bulk-permanent-delete-batches.handler';
+import { BulkRestoreBatchesHandler } from './application/bulk-restore-batches/bulk-restore-batches.handler';
+import { BulkUpdateBatchStatusHandler } from './application/bulk-update-batch-status/bulk-update-batch-status.handler';
 import { CreateBatchHandler } from './application/create-batch/create-batch.handler';
 import { DeleteBatchHandler } from './application/delete-batch/delete-batch.handler';
 import { GetBatchHandler } from './application/get-batch/get-batch.handler';
+import { GetBatchSummaryHandler } from './application/get-batch-summary/get-batch-summary.handler';
 import { ListBatchesHandler } from './application/list-batches/list-batches.handler';
 import { PermanentDeleteBatchHandler } from './application/permanent-delete-batch/permanent-delete-batch.handler';
+import { ReorderBatchesHandler } from './application/reorder-batches/reorder-batches.handler';
 import { RestoreBatchHandler } from './application/restore-batch/restore-batch.handler';
+import { SuggestBatchCodeHandler } from './application/suggest-batch-code/suggest-batch-code.handler';
 import { UpdateBatchHandler } from './application/update-batch/update-batch.handler';
 import { UpdateBatchStatusHandler } from './application/update-batch-status/update-batch-status.handler';
 import type { BatchRepository } from './domain/repositories/batch.repository';
@@ -131,6 +138,19 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
     },
 
     {
+      provide: GetBatchSummaryHandler,
+      useFactory: (
+        batchRepo: BatchRepository,
+        domainService: BatchDomainService,
+      ) =>
+        new GetBatchSummaryHandler(batchRepo, domainService),
+      inject: [
+        BATCH_TOKENS.BATCH_REPOSITORY,
+        BatchDomainService,
+      ],
+    },
+
+    {
       provide: DeleteBatchHandler,
       useFactory: (
         batchRepo: BatchRepository,
@@ -211,6 +231,54 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
         TRAINER_TOKENS.TRAINER_REPOSITORY,
         BatchDomainService,
       ],
+    },
+
+    {
+      provide: SuggestBatchCodeHandler,
+      useFactory: (batchRepo: BatchRepository) =>
+        new SuggestBatchCodeHandler(batchRepo),
+      inject: [BATCH_TOKENS.BATCH_REPOSITORY],
+    },
+
+    {
+      provide: ReorderBatchesHandler,
+      useFactory: (
+        batchRepo: BatchRepository,
+        domainService: BatchDomainService,
+      ) =>
+        new ReorderBatchesHandler(batchRepo, domainService),
+      inject: [
+        BATCH_TOKENS.BATCH_REPOSITORY,
+        BatchDomainService,
+      ],
+    },
+
+    {
+      provide: BulkUpdateBatchStatusHandler,
+      useFactory: (batchRepo: BatchRepository) =>
+        new BulkUpdateBatchStatusHandler(batchRepo),
+      inject: [BATCH_TOKENS.BATCH_REPOSITORY],
+    },
+
+    {
+      provide: BulkDeleteBatchesHandler,
+      useFactory: (batchRepo: BatchRepository) =>
+        new BulkDeleteBatchesHandler(batchRepo),
+      inject: [BATCH_TOKENS.BATCH_REPOSITORY],
+    },
+
+    {
+      provide: BulkRestoreBatchesHandler,
+      useFactory: (batchRepo: BatchRepository) =>
+        new BulkRestoreBatchesHandler(batchRepo),
+      inject: [BATCH_TOKENS.BATCH_REPOSITORY],
+    },
+
+    {
+      provide: BulkPermanentDeleteBatchesHandler,
+      useFactory: (batchRepo: BatchRepository) =>
+        new BulkPermanentDeleteBatchesHandler(batchRepo),
+      inject: [BATCH_TOKENS.BATCH_REPOSITORY],
     },
   ],
 

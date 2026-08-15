@@ -11,25 +11,33 @@ export class UpdateBatchStatusHandler {
   ) {}
 
   async execute(
-  command: UpdateBatchStatusCommand,
-): Promise<GetBatchResult> {
-  const batch = await this.domainService.ensureExists(
-    await this.batchRepo.findById(command.id),
-  );
-
-  if (command.activate) {
-    batch.activate(command.updatedBy);
-  } else {
-    batch.deactivate(command.updatedBy);
-  }
-
-  await this.batchRepo.save(batch);
-
-  const updatedBatch =
-    await this.domainService.ensureExists(
-      await this.batchRepo.findById(batch.id),
+    command: UpdateBatchStatusCommand,
+  ): Promise<GetBatchResult> {
+    const batch = await this.domainService.ensureExists(
+      await this.batchRepo.findById(command.id),
     );
 
-  return GetBatchResult.fromEntity(updatedBatch);
-}
+    if (command.activate) {
+      if (!batch.isActive) {
+        batch.changeDisplayOrder(
+          (await this.batchRepo.getMaxDisplayOrder()) + 1,
+        );
+      }
+      batch.activate(command.updatedBy);
+    } else {
+      if (batch.displayOrder != null) {
+        await this.batchRepo.closeDisplayOrderGap(batch.displayOrder);
+      }
+      batch.deactivate(command.updatedBy);
+    }
+
+    await this.batchRepo.save(batch);
+
+    const updatedBatch =
+      await this.domainService.ensureExists(
+        await this.batchRepo.findById(batch.id),
+      );
+
+    return GetBatchResult.fromEntity(updatedBatch);
+  }
 }

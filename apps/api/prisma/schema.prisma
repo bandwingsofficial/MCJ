@@ -632,6 +632,7 @@ model Batch {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   isActive      Boolean        @default(true)
+  displayOrder  Int?
   branch        Branch?        @relation(fields: [branchId], references: [id])
   course        Course         @relation(fields: [courseId], references: [id])
   trainers      BatchTrainer[]
@@ -651,6 +652,7 @@ model Batch {
   @@index([courseId, status, isDeleted])
   @@index([isDeleted])
   @@index([createdAt])
+  @@index([displayOrder])
 }
 
 model BatchTrainer {

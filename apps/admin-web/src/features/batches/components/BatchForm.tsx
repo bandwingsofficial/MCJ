@@ -1,100 +1,112 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FocusEvent,
+} from "react";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
-import { FormError } from "@/src/shared/components/ui/form-error";
 import { Input } from "@/src/shared/components/ui/input";
-import { Label } from "@/src/shared/components/ui/label";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { Textarea } from "@/src/shared/components/ui/textarea";
+import { WordCount } from "@/src/shared/components/ui/word-count";
+import {
+  ValidatedField,
+  validatedFieldInputClass,
+  type FieldVisualState,
+} from "@/src/shared/components/ui/validated-field";
+import { truncateToMaxWords } from "@/src/shared/utils/word-count";
 import { appToast } from "@/src/shared/components/ui/toast";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import {
   DAYS_OF_WEEK,
   BATCH_MODES,
+  BATCH_STATUSES,
 } from "@/src/features/batches/constants/batch.constants";
-
 import {
   batchSchema,
-  BatchFormValues,
+  type BatchFormValues,
 } from "@/src/features/batches/schemas/batch.schema";
-
-import { batchMapper } from "@/src/features/batches/utils/batch.mapper";
-
-import { useCreateBatch } from "@/src/features/batches/hooks/useCreateBatch";
-import { useUpdateBatch } from "@/src/features/batches/hooks/useUpdateBatch";
-
 import { batchService } from "@/src/features/batches/services/batch.service";
-
-/* Temporary types until Course/Branch/Trainer modules are integrated */
-
 import type {
-  Batch,
   BranchOption,
   CourseOption,
-  TrainerOption,
 } from "@/src/features/batches/types/batch.types";
-import { Loader } from "lucide-react";
-
+import {
+  countWords,
+  DESCRIPTION_WORD_LIMIT,
+} from "@/src/features/batches/utils/batch-form.utils";
+import {
+  BATCH_BRANCH_NONE,
+  fromBranchSelectValue,
+  toBranchSelectValue,
+  uniqueSelectOptions,
+} from "@/src/features/batches/utils/batch-select.utils";
 
 interface BatchFormProps {
-  mode: "create" | "edit";
-  batch?: Batch;
-  onSuccess?: () => void;
+  isEdit?: boolean;
+  defaultValues?: Partial<BatchFormValues>;
+  isSubmitting: boolean;
+  submitLabel: string;
+  loadingLabel?: string;
+  onSubmit: (values: BatchFormValues) => Promise<void>;
+  onCancel?: () => void;
 }
 
+const EMPTY_DEFAULTS: BatchFormValues = {
+  name: "",
+  code: "",
+  description: "",
+  courseId: "",
+  branchId: "",
+  startDate: "",
+  endDate: "",
+  daysOfWeek: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+  capacity: 1,
+  enrolledCount: 0,
+  mode: "ONLINE",
+  status: "UPCOMING",
+  classroom: "",
+  meetingLink: "",
+  isFeatured: false,
+};
+
+const GRID_CLASS = "grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2";
+
+type SyncFieldName = keyof BatchFormValues;
+
 export function BatchForm({
-  mode,
-  batch,
-  onSuccess,
+  isEdit = false,
+  defaultValues,
+  isSubmitting,
+  submitLabel,
+  loadingLabel,
+  onCancel,
+  onSubmit,
 }: BatchFormProps) {
-  const { createBatch, isLoading: isCreating } =
-    useCreateBatch();
-
-  const { updateBatch, isLoading: isUpdating } =
-    useUpdateBatch();
-
+  const suggestRequestIdRef = useRef(0);
   const [courses, setCourses] = useState<CourseOption[]>([]);
-
   const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+  const [isSuggestingCode, setIsSuggestingCode] = useState(false);
 
-  const [trainers, setTrainers] = useState<TrainerOption[]>([]);
-  const [isLoadingOptions, setIsLoadingOptions] =
-  useState(true);
-
-  const isSubmitting =
-    isCreating || isUpdating;
-
-  const defaultValues = useMemo<BatchFormValues>(() => {
-    if (mode === "edit" && batch) {
-      return batchMapper.toForm(batch) as unknown as BatchFormValues;
-    }
-
-    return {
-      name: "",
-      code: "",
-      description: "",
-      courseId: "",
-      branchId: "",
-      startDate: "",
-      endDate: "",
-      startTime: "",
-      endTime: "",
-      daysOfWeek: [],
-      capacity: 1,
-      enrolledCount: 0,
-      mode: "ONLINE",
-      classroom: "",
-      meetingLink: "",
-      isFeatured: false,
-      trainerIds: [],
-    } as unknown as BatchFormValues;
-  }, [mode, batch]);
+  const mergedDefaults = useMemo(
+    () => ({
+      ...EMPTY_DEFAULTS,
+      ...defaultValues,
+    }),
+    [defaultValues],
+  );
 
   const {
     register,
@@ -102,530 +114,483 @@ export function BatchForm({
     setValue,
     watch,
     reset,
-    formState: {
-      errors,
-    },
+    trigger,
+    formState: { errors, touchedFields, dirtyFields, isSubmitted },
   } = useForm<BatchFormValues>({
     resolver: zodResolver(batchSchema) as any,
-    defaultValues,
+    mode: "onTouched",
+    reValidateMode: "onChange",
+    defaultValues: mergedDefaults,
   });
 
-  useEffect(() => {
-    reset(defaultValues);
-  }, [defaultValues, reset]);
-
-  const selectedMode = watch("mode");
-
-  const selectedDays =
-    watch("daysOfWeek") || [];
-
-  const selectedTrainerIds =
-    watch("trainerIds") || [];
-
-  const featured =
-    watch("isFeatured");
+  const values = watch();
+  const selectedMode = values.mode;
+  const selectedDays = values.daysOfWeek ?? [];
+  const descriptionWords = countWords(values.description ?? "");
 
   useEffect(() => {
-    const loadOptions =
-      async () => {
-      try {
-        setIsLoadingOptions(true);
-        const [
-          courseResponse,
-          branchResponse,
-          trainerResponse,
-        ] = await Promise.all([
-          batchService.getCourses(),
-          batchService.getBranches(),
-          batchService.getTrainers(),
-        ]);
+    reset(mergedDefaults);
+  }, [mergedDefaults, reset]);
 
-        setCourses(courseResponse);
+  useEffect(() => {
+    const loadOptions = async () => {
+      setIsLoadingOptions(true);
 
-        setBranches(branchResponse);
+      const [coursesResult, branchesResult] = await Promise.allSettled([
+        batchService.getCourses(),
+        batchService.getBranches(),
+      ]);
 
-        setTrainers(trainerResponse);
-      } catch {
-        appToast.error(
-          "Failed to load form data",
-        );
-      } finally {
-        setIsLoadingOptions(false);
+      if (coursesResult.status === "fulfilled") {
+        setCourses(coursesResult.value);
+      } else {
+        appToast.error(getErrorMessage(coursesResult.reason));
       }
+
+      if (branchesResult.status === "fulfilled") {
+        setBranches(branchesResult.value);
+      } else {
+        appToast.error(getErrorMessage(branchesResult.reason));
+      }
+
+      setIsLoadingOptions(false);
     };
 
     void loadOptions();
   }, []);
 
-  const onSubmit = async (
-    values: BatchFormValues,
-  ) => {
-    try {
-      if (
-        mode === "create"
-      ) {
-        await createBatch(values);
-
-        appToast.success(
-          "Batch created successfully",
-        );
-
-        reset();
-      } else if (
-        batch
-      ) {
-        await updateBatch(
-          batch.id,
-          values,
-        );
-
-        appToast.success(
-          "Batch updated successfully",
-        );
-      }
-      onSuccess?.();
-    } catch {
-      appToast.error(
-        "Unable to save batch",
-      );
+  useEffect(() => {
+    if (isEdit || isLoadingOptions) {
+      return;
     }
+
+    const requestId = ++suggestRequestIdRef.current;
+
+    const suggestCode = async () => {
+      try {
+        setIsSuggestingCode(true);
+        const response = await batchService.suggestBatchCode();
+
+        if (requestId !== suggestRequestIdRef.current) {
+          return;
+        }
+
+        setValue("code", response.data.batchCode, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+      } catch (error) {
+        if (requestId === suggestRequestIdRef.current) {
+          appToast.error(getErrorMessage(error));
+        }
+      } finally {
+        if (requestId === suggestRequestIdRef.current) {
+          setIsSuggestingCode(false);
+        }
+      }
+    };
+
+    void suggestCode();
+  }, [isEdit, isLoadingOptions, setValue]);
+
+  const getFieldState = (
+    name: SyncFieldName,
+    options?: { forceValid?: boolean },
+  ): FieldVisualState => {
+    if (name === "code" && isSuggestingCode) {
+      return "checking";
+    }
+
+    if (options?.forceValid) {
+      const raw = values[name];
+      const hasValue =
+        typeof raw === "string"
+          ? raw.trim().length > 0
+          : raw !== undefined && raw !== null;
+
+      if (hasValue && !errors[name]) {
+        return "valid";
+      }
+    }
+
+    const interacted =
+      isEdit ||
+      Boolean(touchedFields[name]) ||
+      Boolean(dirtyFields[name]) ||
+      isSubmitted;
+
+    if (!interacted) {
+      return "neutral";
+    }
+
+    if (errors[name]) {
+      return "invalid";
+    }
+
+    const raw = values[name];
+
+    if (raw === undefined || raw === null) {
+      return "neutral";
+    }
+
+    if (typeof raw === "string" && raw.trim() === "") {
+      return name === "branchId" || name === "description" ? "neutral" : "invalid";
+    }
+
+    if (Array.isArray(raw) && raw.length === 0) {
+      return "invalid";
+    }
+
+    return "valid";
   };
+
+  const inputClass = (name: SyncFieldName, options?: { forceValid?: boolean }) =>
+    validatedFieldInputClass(getFieldState(name, options));
+
+  const registerField = (name: SyncFieldName) => {
+    const registration = register(name);
+
+    return {
+      ...registration,
+      className: inputClass(name),
+      onBlur: (event: FocusEvent<HTMLInputElement>) => {
+        registration.onBlur(event);
+        void trigger(name);
+      },
+      onChange: (event: ChangeEvent<HTMLInputElement>) => {
+        registration.onChange(event);
+        void trigger(name);
+      },
+    };
+  };
+
+  const selectClass = (name: SyncFieldName) =>
+    validatedFieldInputClass(getFieldState(name), "w-full min-w-0");
+
+  const toggleDay = (day: BatchFormValues["daysOfWeek"][number]) => {
+    const next = selectedDays.includes(day)
+      ? selectedDays.filter((item) => item !== day)
+      : [...selectedDays, day];
+
+    setValue("daysOfWeek", next, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  };
+
+  const courseOptions = uniqueSelectOptions(
+    courses.map((course) => ({
+      label: course.code ? `${course.title} (${course.code})` : course.title,
+      value: course.id,
+    })),
+  );
+
+  const branchOptions = uniqueSelectOptions([
+    { label: "Select branch (optional)", value: BATCH_BRANCH_NONE },
+    ...branches.map((branch) => ({
+      label: `${branch.branchName} (${branch.branchCode})`,
+      value: branch.id,
+    })),
+  ]);
+
+  const handleFormSubmit = handleSubmit(async (formValues) => {
+    await onSubmit(formValues);
+  });
 
   if (isLoadingOptions) {
     return (
-      <div className="flex justify-center py-6">
-        <Loader className="h-6 w-6 animate-spin" />
+      <div className="flex justify-center py-10">
+        <Loader className="h-6 w-6 animate-spin text-slate-400" />
       </div>
     );
   }
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="space-y-4"
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[70vh] overflow-y-auto px-1 py-1">
-        <div className="grid gap-1">
-          <Label required className="text-xs">
-             Batch Name
-          </Label>
+    <form onSubmit={handleFormSubmit} className="flex min-h-0 flex-1 flex-col">
+      <div className={`${GRID_CLASS} min-h-0 flex-1 overflow-y-auto`}>
+        <ValidatedField
+          label="Batch Name"
+          required
+          state={getFieldState("name")}
+          errorMessage={errors.name?.message}
+        >
           <Input
             placeholder="Enter batch name"
-            className="h-9 text-sm"
-            {...register("name")}
+            autoComplete="off"
+            {...registerField("name")}
           />
-          <FormError
-            message={errors.name?.message}
-          />
-        </div>
+        </ValidatedField>
 
-        <div className="grid gap-1">
-          <Label required className="text-xs">
-             Batch Code
-          </Label>
+        <ValidatedField
+          label="Batch Code"
+          required
+          state={getFieldState("code", { forceValid: true })}
+          checkingMessage="Generating code..."
+          errorMessage={errors.code?.message}
+        >
           <Input
-            placeholder="Enter batch code"
-            className="h-9 text-sm"
+            readOnly
+            placeholder="BCH0001"
+            autoComplete="off"
+            className={validatedFieldInputClass(
+              getFieldState("code", { forceValid: true }),
+              "bg-slate-50",
+            )}
             {...register("code")}
           />
-          <FormError
-            message={errors.code?.message}
-          />
-        </div>
+        </ValidatedField>
 
-        <div className="grid gap-1 md:col-span-2">
-          <Label className="text-xs">
-             Description
-          </Label>
-          <Textarea
-            placeholder="Enter description"
-            className="min-h-[60px] text-sm py-1.5"
-            {...register("description")}
-          />
-          <FormError
-            message={
-              errors.description?.message
-            }
-          />
-        </div>
-
-        <div className="grid gap-1">
-          <Label required className="text-xs">
-             Course
-          </Label>
+        <ValidatedField
+          label="Course"
+          required
+          state={getFieldState("courseId")}
+          errorMessage={errors.courseId?.message}
+        >
           <AppSelect
-            value={watch("courseId")}
-            onValueChange={(value) =>
-              setValue(
-                "courseId",
-                value,
-                {
-                  shouldValidate: true,
-                },
-              )
-            }
-            options={courses.map(
-              (course) => ({
-                label: course.title,
-                value: course.id,
-              }),
-            )}
+            value={values.courseId?.trim() ? values.courseId : undefined}
+            placeholder="Select course"
+            onValueChange={(value) => {
+              setValue("courseId", value, {
+                shouldValidate: true,
+                shouldDirty: true,
+              });
+            }}
+            options={courseOptions}
+            triggerClassName={selectClass("courseId")}
           />
-          <FormError
-            message={
-              errors.courseId?.message
-            }
-          />
-        </div>
+        </ValidatedField>
 
-        <div className="grid gap-1">
-          <Label className="text-xs">
-             Branch
-          </Label>
+        <ValidatedField
+          label="Branch"
+          state={getFieldState("branchId")}
+          errorMessage={errors.branchId?.message}
+        >
           <AppSelect
-            value={watch("branchId")}
+            value={toBranchSelectValue(values.branchId)}
+            placeholder="Select branch"
             onValueChange={(value) =>
-              setValue(
-                "branchId",
-                value,
-                {
-                  shouldValidate: true,
-                },
-              )
+              setValue("branchId", fromBranchSelectValue(value), {
+                shouldValidate: true,
+                shouldDirty: true,
+              })
             }
-            options={branches.map(
-              (branch) => ({
-                label:
-                  branch.branchName,
-                value: branch.id,
-              }),
-            )}
+            options={branchOptions}
+            triggerClassName={selectClass("branchId")}
           />
-          <FormError
-            message={
-              errors.branchId?.message
-            }
-          />
-        </div>
+        </ValidatedField>
 
-        <div className="grid gap-1">
-          <Label required className="text-xs">
-             Start Date
-          </Label>
-          <Input
-            type="date"
-            className="h-9 text-sm"
-            {...register("startDate")}
-          />
-          <FormError
-            message={
-              errors.startDate?.message
-            }
-          />
-        </div>
-
-        <div className="grid gap-1">
-          <Label className="text-xs">
-             End Date
-          </Label>
-          <Input
-            type="date"
-            className="h-9 text-sm"
-            {...register("endDate")}
-          />
-          <FormError
-            message={errors.endDate?.message}
-          />
-        </div>
-
-        <div className="grid gap-1">
-          <Label required className="text-xs">
-             Start Time
-          </Label>
-          <Input
-            type="time"
-            className="h-9 text-sm"
-            {...register("startTime")}
-          />
-          <FormError
-            message={errors.startTime?.message}
-          />
-        </div>
-
-        <div className="grid gap-1">
-          <Label required className="text-xs">
-             End Time
-          </Label>
-          <Input
-            type="time"
-            className="h-9 text-sm"
-            {...register("endTime")}
-          />
-          <FormError
-            message={
-              errors.endTime?.message
-            }
-          />
-        </div>
-
-        <div className="grid gap-1">
-          <Label required className="text-xs">
-             Capacity
-          </Label>
-          <Input
-            type="number"
-            min={1}
-            className="h-9 text-sm"
-            {...register("capacity", {
-              valueAsNumber: true,
-            })}
-          />
-          <FormError
-            message={
-              errors.capacity?.message
-            }
-          />
-        </div>
-
-        <div className="grid gap-1">
-          <Label className="text-xs">
-             Enrolled Count
-          </Label>
-          <Input
-            type="number"
-            min={0}
-            className="h-9 text-sm"
-            {...register("enrolledCount", {
-              valueAsNumber: true,
-            })}
-          />
-          <FormError
-            message={
-              errors.enrolledCount
-                ?.message
-            }
-          />
-        </div>
-
-        <div className="grid gap-1">
-          <Label required className="text-xs">
-             Batch Mode
-          </Label>
+        <ValidatedField
+          label="Batch Type"
+          required
+          state={getFieldState("mode")}
+          errorMessage={errors.mode?.message}
+        >
           <AppSelect
             value={selectedMode}
             onValueChange={(value) =>
-              setValue(
-                "mode",
-                value as
-                  BatchFormValues["mode"],
-                {
-                  shouldValidate: true,
-                },
-              )
+              setValue("mode", value as BatchFormValues["mode"], {
+                shouldValidate: true,
+                shouldDirty: true,
+              })
             }
-            options={BATCH_MODES}
+            options={uniqueSelectOptions(BATCH_MODES)}
+            triggerClassName={selectClass("mode")}
           />
-          <FormError
-            message={
-              errors.mode?.message
-            }
-          />
-        </div>
+        </ValidatedField>
 
-        {selectedMode !== "ONLINE" && (
-          <div className="grid gap-1">
-            <Label required className="text-xs">
-               Classroom
-            </Label>
+        <ValidatedField
+          label="Status"
+          required
+          state={getFieldState("status")}
+          errorMessage={errors.status?.message}
+        >
+          <AppSelect
+            value={values.status}
+            onValueChange={(value) =>
+              setValue("status", value as BatchFormValues["status"], {
+                shouldValidate: true,
+                shouldDirty: true,
+              })
+            }
+            options={uniqueSelectOptions(BATCH_STATUSES)}
+            triggerClassName={selectClass("status")}
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Start Date"
+          required
+          state={getFieldState("startDate")}
+          errorMessage={errors.startDate?.message}
+        >
+          <Input type="date" autoComplete="off" {...registerField("startDate")} />
+        </ValidatedField>
+
+        <ValidatedField
+          label="End Date"
+          required
+          state={getFieldState("endDate")}
+          errorMessage={errors.endDate?.message}
+        >
+          <Input type="date" autoComplete="off" {...registerField("endDate")} />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Capacity"
+          required
+          state={getFieldState("capacity")}
+          errorMessage={errors.capacity?.message}
+        >
+          <Input
+            type="number"
+            min={1}
+            autoComplete="off"
+            {...register("capacity", {
+              valueAsNumber: true,
+              onBlur: () => {
+                void trigger("capacity");
+              },
+              onChange: () => {
+                void trigger("capacity");
+              },
+            })}
+            className={inputClass("capacity")}
+          />
+        </ValidatedField>
+
+        {isEdit ? (
+          <ValidatedField label="Enrolled Count" state="neutral">
+            <Input
+              type="number"
+              min={0}
+              autoComplete="off"
+              {...register("enrolledCount", { valueAsNumber: true })}
+            />
+          </ValidatedField>
+        ) : null}
+
+        {selectedMode !== "ONLINE" ? (
+          <ValidatedField
+            label="Classroom"
+            required
+            state={getFieldState("classroom")}
+            errorMessage={errors.classroom?.message}
+          >
             <Input
               placeholder="Enter classroom"
-              className="h-9 text-sm"
-              {...register("classroom")}
+              autoComplete="off"
+              {...registerField("classroom")}
             />
-            <FormError
-              message={
-                errors.classroom?.message
-              }
-            />
-          </div>
-        )}
+          </ValidatedField>
+        ) : null}
 
-        {selectedMode !== "OFFLINE" && (
-          <div className="grid gap-1">
-            <Label required className="text-xs">
-               Meeting Link
-            </Label>
+        {selectedMode !== "OFFLINE" ? (
+          <ValidatedField
+            label="Meeting Link"
+            required={selectedMode === "ONLINE"}
+            state={getFieldState("meetingLink")}
+            errorMessage={errors.meetingLink?.message}
+          >
             <Input
               placeholder="https://..."
-              className="h-9 text-sm"
-              {...register("meetingLink")}
+              autoComplete="off"
+              {...registerField("meetingLink")}
             />
-            <FormError
-              message={
-                errors.meetingLink
-                  ?.message
-              }
-            />
-          </div>
-        )}
+          </ValidatedField>
+        ) : null}
 
-        <div className="space-y-1 md:col-span-2 py-1">
-          <Label className="text-xs">
-             Featured Batch
-          </Label>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              checked={featured}
-              onCheckedChange={(
-                checked,
-              ) =>
-                setValue(
-                  "isFeatured",
-                  Boolean(checked),
-                  {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  },
-                )
-              }
-            />
-            <span className="text-xs text-muted-foreground">
-               Show this batch on homepage
-            </span>
-          </div>
-        </div>
-
-        <div className="space-y-1 md:col-span-2 py-1">
-          <Label required className="text-xs">
-             Batch Days
-          </Label>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {DAYS_OF_WEEK.map(
-              (day) => (
-                <div
+        <div className="md:col-span-2">
+          <ValidatedField
+            label="Batch Days"
+            required
+            state={getFieldState("daysOfWeek")}
+            errorMessage={errors.daysOfWeek?.message}
+          >
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {DAYS_OF_WEEK.map((day) => (
+                <label
                   key={day.value}
-                  className="flex items-center gap-2"
+                  className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"
                 >
                   <Checkbox
-                    checked={selectedDays.includes(
-                      day.value,
-                    )}
-                    onCheckedChange={(
-                      checked,
-                    ) => {
-                      if (checked) {
-                        setValue(
-                          "daysOfWeek",
-                          [
-                            ...selectedDays,
-                            day.value,
-                          ],
-                          {
-                            shouldValidate:
-                              true,
-                          },
-                        );
-                      } else {
-                        setValue(
-                          "daysOfWeek",
-                          selectedDays.filter(
-                            (item) =>
-                              item !==
-                              day.value,
-                          ),
-                          {
-                            shouldValidate:
-                              true,
-                          },
-                        );
-                      }
-                    }}
+                    checked={selectedDays.includes(day.value)}
+                    onCheckedChange={() => toggleDay(day.value)}
                   />
-                  <span className="text-xs">
-                     {day.label}
-                  </span>
-                </div>
-              ),
-            )}
-          </div>
-          <FormError
-            message={
-              errors.daysOfWeek?.message
+                  <span>{day.label}</span>
+                </label>
+              ))}
+            </div>
+          </ValidatedField>
+        </div>
+
+        <div className="md:col-span-2">
+          <ValidatedField
+            label="Description"
+            state={getFieldState("description")}
+            errorMessage={
+              descriptionWords > DESCRIPTION_WORD_LIMIT
+                ? `Description cannot exceed ${DESCRIPTION_WORD_LIMIT} words`
+                : errors.description?.message
             }
+          >
+            <Textarea
+              placeholder="Optional batch description"
+              autoComplete="off"
+              className={validatedFieldInputClass(
+                getFieldState("description"),
+                "min-h-[88px]",
+              )}
+              value={values.description ?? ""}
+              onChange={(event) => {
+                const next = truncateToMaxWords(
+                  event.target.value,
+                  DESCRIPTION_WORD_LIMIT,
+                );
+                setValue("description", next, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+              }}
+              onBlur={() => {
+                void trigger("description");
+              }}
+            />
+          </ValidatedField>
+          <WordCount
+            value={values.description ?? ""}
+            maxWords={DESCRIPTION_WORD_LIMIT}
+            className="mt-1"
           />
         </div>
 
-        <div className="space-y-1 md:col-span-2 py-1">
-          <Label className="text-xs">
-             Trainers
-          </Label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {trainers.map(
-              (trainer) => (
-                <div
-                  key={trainer.id}
-                  className="flex items-center gap-2"
-                >
-                  <Checkbox
-                    checked={selectedTrainerIds.includes(
-                      trainer.id,
-                    )}
-                    onCheckedChange={(
-                      checked,
-                    ) => {
-                      if (checked) {
-                        setValue(
-                          "trainerIds",
-                          [
-                            ...selectedTrainerIds,
-                            trainer.id,
-                          ],
-                          {
-                            shouldValidate:true,
-                            shouldDirty:true,
-                          },
-                        );
-                      } else {
-                        setValue(
-                          "trainerIds",
-                          selectedTrainerIds.filter(
-                            (
-                              id,
-                            ) =>
-                              id !==
-                              trainer.id,
-                          ),
-                          {
-                            shouldValidate:
-                              true,
-                          },
-                        );
-                      }
-                    }}
-                  />
-                  <span className="text-xs">
-                     {trainer.firstName}{" "}
-                     {trainer.lastName ??
-                       ""}
-                  </span>
-                </div>
-              ),
-            )}
-          </div>
+        <div className="md:col-span-2">
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <Checkbox
+              checked={values.isFeatured}
+              onCheckedChange={(checked) =>
+                setValue("isFeatured", Boolean(checked), {
+                  shouldDirty: true,
+                })
+              }
+            />
+            Show this batch on homepage
+          </label>
         </div>
       </div>
 
-      <div className="flex justify-end pt-2 border-t mt-2">
-        <Button
-          type="submit"
-          size="sm"
-          loading={isSubmitting}
-          disabled={isSubmitting}
-          className="h-9 px-4 text-sm"
-        >
-          {mode === "create"
-            ? "Create Batch"
-            : "Update Batch"}
+      <div className="mt-4 flex shrink-0 justify-end gap-2 border-t border-slate-200 pt-4">
+        {onCancel ? (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isSubmitting}
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+        ) : null}
+        <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
+          {isSubmitting ? (loadingLabel ?? `${submitLabel}...`) : submitLabel}
         </Button>
       </div>
     </form>

@@ -64,7 +64,8 @@ export class CreateBatchDto {
   @Transform(({ value }) => trimOrUndefined(value))
   name!: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
   @MaxLength(60)
   @Transform(({ value }) =>
@@ -72,7 +73,7 @@ export class CreateBatchDto {
       ? value.trim().toUpperCase()
       : value,
   )
-  code!: string;
+  code?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -105,18 +106,19 @@ export class CreateBatchDto {
   @IsDateString()
   startDate!: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsDateString()
-  endDate?: string;
+  endDate!: string;
 
-  @ApiProperty({ example: '09:30' })
+  @ApiPropertyOptional({ example: '09:30' })
+  @IsOptional()
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
-  startTime!: string;
+  startTime?: string;
 
-  @ApiProperty({ example: '11:30' })
+  @ApiPropertyOptional({ example: '17:30' })
+  @IsOptional()
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
-  endTime!: string;
+  endTime?: string;
 
   @ApiProperty({
     enum: DayOfWeek,

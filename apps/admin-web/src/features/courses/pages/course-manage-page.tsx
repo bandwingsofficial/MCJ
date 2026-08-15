@@ -136,7 +136,6 @@ export function CourseManagePage({ courseId }: Props) {
         onTabChange={(tab) => {
           const labels: Record<string, string> = {
             modules: "Modules",
-            trainers: "Trainers",
             preview: "Preview",
           };
           setActiveSection(labels[tab]);

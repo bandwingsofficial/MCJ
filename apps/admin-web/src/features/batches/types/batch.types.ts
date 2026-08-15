@@ -1,19 +1,15 @@
 // src/features/batches/types/batch.types.ts
 
-/* ---------------------------------- */
-/* Enums                              */
-/* ---------------------------------- */
-
-export type BatchMode =
-  | "ONLINE"
-  | "OFFLINE"
-  | "HYBRID";
+export type BatchMode = "ONLINE" | "OFFLINE" | "HYBRID";
 
 export type BatchStatus =
   | "UPCOMING"
   | "ONGOING"
   | "COMPLETED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "ARCHIVED";
+
+export type BatchFilterStatus = BatchStatus;
 
 export type DayOfWeek =
   | "MONDAY"
@@ -24,13 +20,10 @@ export type DayOfWeek =
   | "SATURDAY"
   | "SUNDAY";
 
-/* ---------------------------------- */
-/* Related Models                     */
-/* ---------------------------------- */
-
 export interface BatchCourse {
   id: string;
   title: string;
+  code?: string | null;
 }
 
 export interface BatchBranch {
@@ -42,251 +35,186 @@ export interface BatchBranch {
 export interface BatchTrainer {
   id: string;
   firstName: string;
-  lastName: string;
-  employeeCode: string;
+  lastName: string | null;
+  employeeCode: string | null;
+  specialization?: string | null;
+  status?: string;
 }
-
-/* ---------------------------------- */
-/* Batch Model                        */
-/* ---------------------------------- */
 
 export interface Batch {
   id: string;
-
   name: string;
-
   code: string;
-
   slug: string;
-
   description: string | null;
-
   courseId: string;
-
   branchId: string | null;
-
   course?: BatchCourse | null;
-
   branch?: BatchBranch | null;
-
   startDate: string;
-
   endDate: string | null;
-
   startTime: string;
-
   endTime: string;
-
   daysOfWeek: DayOfWeek[];
-
   capacity: number;
-
   enrolledCount: number;
-
   mode: BatchMode;
-
   classroom: string | null;
-
   meetingLink: string | null;
-
   isFeatured: boolean;
-
   isActive?: boolean;
-
   status: BatchStatus;
-
+  displayOrder?: number | null;
   trainers: BatchTrainer[];
-
-  createdBy: string;
-
+  createdBy: string | null;
   updatedBy: string | null;
-
   createdAt: string;
-
   updatedAt: string;
-
   isDeleted: boolean;
-
   deletedAt: string | null;
 }
 
-/* ---------------------------------- */
-/* Create DTO                         */
-/* ---------------------------------- */
+export type BatchListItem = Batch;
+
+export interface BatchFilters {
+  search?: string;
+  courseId?: string;
+  branchId?: string;
+  trainerId?: string;
+  mode?: BatchMode;
+  status?: BatchFilterStatus;
+  includeDeleted?: boolean;
+  page?: number;
+  pageSize?: number;
+}
 
 export interface CreateBatchRequest {
   name: string;
-
-  code: string;
-
+  code?: string;
   description?: string;
-
   courseId: string;
-
   branchId?: string;
-
   startDate: string;
-
-  endDate?: string;
-
-  startTime: string;
-
-  endTime: string;
-
+  endDate: string;
   daysOfWeek: DayOfWeek[];
-
   capacity: number;
-
   enrolledCount?: number;
-
   mode: BatchMode;
-
   classroom?: string;
-
   meetingLink?: string;
-
   isFeatured?: boolean;
-
-  trainerIds?: string[];
+  status?: BatchStatus;
 }
 
-/* ---------------------------------- */
-/* Update DTO                         */
-/* ---------------------------------- */
+export interface UpdateBatchRequest extends Partial<CreateBatchRequest> {}
 
-export interface UpdateBatchRequest
-  extends Partial<CreateBatchRequest> {}
+export interface AssignBatchTrainersRequest {
+  trainerIds: string[];
+}
 
-/* ---------------------------------- */
-/* API Response                       */
-/* ---------------------------------- */
+export interface ReorderBatchRequest {
+  batchId: string;
+  newDisplayOrder: number;
+}
 
-export interface BatchResponse {
+export interface SuggestBatchCodeResponse {
+  batchCode: string;
+}
+
+export interface BatchSummary {
+  batchId: string;
+  studentsCount: number;
+  trainerCount: number;
+  enrolledCount: number;
+  capacity: number;
+  attendancePresent: number;
+  attendanceAbsent: number;
+}
+
+export interface ApiSuccessResponse<T> {
   success: boolean;
-
   message: string;
-
-  data: Batch;
+  data: T;
 }
 
 export interface BatchListResponse {
-  success: boolean;
-
-  message: string;
-
-  data: Batch[];
+  items: BatchListItem[];
+  count: number;
 }
-
-/* ---------------------------------- */
-/* Delete Response                    */
-/* ---------------------------------- */
 
 export interface DeleteBatchResponse {
-  success: boolean;
-
-  message: string;
-
-  data: {
-    id: string;
-    deleted: boolean;
-    deletedAt: string;
-  };
+  id: string;
+  deleted: boolean;
+  deletedAt: string;
 }
-
-/* ---------------------------------- */
-/* Permanent Delete Response          */
-/* ---------------------------------- */
 
 export interface PermanentDeleteBatchResponse {
-  success: boolean;
-
-  message: string;
-
-  data: {
-    id: string;
-    permanentlyDeleted: boolean;
-  };
+  id: string;
+  permanentlyDeleted: boolean;
 }
-/* ---------------------------------- */
-/* Dropdown Option Models             */
-/* ---------------------------------- */
+
+export interface BulkBatchItemResult {
+  batchId: string;
+  success: boolean;
+  message: string;
+  isActive?: boolean;
+}
+
+export interface BulkBatchOperationResult {
+  requestedCount: number;
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  results: BulkBatchItemResult[];
+  failures: BulkBatchItemResult[];
+}
 
 export interface CourseOption {
   id: string;
-
   title: string;
+  code?: string | null;
 }
 
 export interface BranchOption {
   id: string;
-
   branchName: string;
-
   branchCode: string;
 }
 
 export interface TrainerOption {
   id: string;
-
   firstName: string;
-
   lastName: string | null;
-
   employeeCode: string | null;
 }
 
-/* ---------------------------------- */
-/* Dropdown Responses                 */
-/* ---------------------------------- */
-
 export interface CourseListResponse {
   success: boolean;
-
   message: string;
-
-  data: CourseOption[];
-}
-
-export interface BranchListItem {
-  id: string;
-
-  branchName: string;
-
-  branchCode: string;
-
-  email: string;
-
-  phone: string;
-
-  city: string;
-
-  state: string;
-
-  country: string;
-
-  status: string;
-
-  createdAt: string;
-
-  updatedAt: string;
-}
-
-export interface BranchListResponse {
-  success: boolean;
-
-  message: string;
-
   data: {
-    items: BranchListItem[];
-
+    items: CourseOption[];
     count: number;
   };
 }
 
-export interface TrainerListResponse {
-  success: boolean;
-
-  message: string;
-
-  data: TrainerOption[];
+export interface BranchListItem {
+  id: string;
+  branchName: string;
+  branchCode: string;
+  status: string;
 }
+
+export interface BranchListResponse {
+  success: boolean;
+  message: string;
+  data: {
+    items: BranchListItem[];
+    count: number;
+  };
+}
+
+/** @deprecated Use ApiSuccessResponse */
+export interface BatchResponse extends ApiSuccessResponse<Batch> {}
+
+/** @deprecated Use BatchListResponse */
+export interface BatchListLegacyResponse extends ApiSuccessResponse<Batch[]> {}

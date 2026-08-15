@@ -5,6 +5,10 @@ import type {
   BatchStatus,
   DayOfWeek,
 } from "@/src/features/batches/types/batch.types";
+import {
+  DELETED_BATCHES_FILTER,
+  type BatchStatusFilterValue,
+} from "@/src/features/batches/utils/batch-list.utils";
 
 export const BATCH_MODES: {
   label: string;
@@ -24,6 +28,7 @@ export const BATCH_MODES: {
   },
 ];
 
+/** Lifecycle statuses supported by the batch API. */
 export const BATCH_STATUSES: {
   label: string;
   value: BatchStatus;
@@ -43,6 +48,22 @@ export const BATCH_STATUSES: {
   {
     label: "Cancelled",
     value: "CANCELLED",
+  },
+  {
+    label: "Archived",
+    value: "ARCHIVED",
+  },
+];
+
+/** Unique values for the batch list status filter dropdown. */
+export const BATCH_STATUS_FILTER_OPTIONS: {
+  label: string;
+  value: BatchStatusFilterValue;
+}[] = [
+  ...BATCH_STATUSES,
+  {
+    label: "Deleted",
+    value: DELETED_BATCHES_FILTER,
   },
 ];
 

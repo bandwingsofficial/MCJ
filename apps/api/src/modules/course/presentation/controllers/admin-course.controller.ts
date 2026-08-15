@@ -60,15 +60,6 @@ import { ReorderCoursesDto } from '../dtos/reorder-courses.dto';
 import { UpdateCourseDto } from '../dtos/update-course.dto';
 import { SuggestCourseCodeHandler } from '../../application/suggest-course-code/suggest-course-code.handler';
 import { SuggestCourseCodeQuery } from '../../application/suggest-course-code/suggest-course-code.query';
-import { GetCourseTrainersHandler } from '../../application/get-course-trainers/get-course-trainers.handler';
-import { GetCourseTrainersQuery } from '../../application/get-course-trainers/get-course-trainers.query';
-import { GetAvailableCourseTrainersHandler } from '../../application/get-available-course-trainers/get-available-course-trainers.handler';
-import { GetAvailableCourseTrainersQuery } from '../../application/get-available-course-trainers/get-available-course-trainers.query';
-import { AssignCourseTrainersHandler } from '../../application/assign-course-trainers/assign-course-trainers.handler';
-import { AssignCourseTrainersCommand } from '../../application/assign-course-trainers/assign-course-trainers.command';
-import { RemoveCourseTrainerHandler } from '../../application/remove-course-trainer/remove-course-trainer.handler';
-import { RemoveCourseTrainerCommand } from '../../application/remove-course-trainer/remove-course-trainer.command';
-import { AssignCourseTrainersDto } from '../dtos/assign-course-trainers.dto';
 
 @ApiTags('Admin Courses')
 @ApiBearerAuth()
@@ -91,10 +82,6 @@ export class AdminCourseController {
     private readonly bulkPermanentDeleteCoursesHandler: BulkPermanentDeleteCoursesHandler,
     private readonly getCourseSummaryHandler: GetCourseSummaryHandler,
     private readonly suggestCourseCodeHandler: SuggestCourseCodeHandler,
-    private readonly getCourseTrainersHandler: GetCourseTrainersHandler,
-    private readonly getAvailableCourseTrainersHandler: GetAvailableCourseTrainersHandler,
-    private readonly assignCourseTrainersHandler: AssignCourseTrainersHandler,
-    private readonly removeCourseTrainerHandler: RemoveCourseTrainerHandler,
   ) {}
 
   @Post()
@@ -250,70 +237,6 @@ export class AdminCourseController {
       success: true,
       message: 'Course summary fetched successfully',
       data: result,
-    };
-  }
-
-  @Get(':id/trainers')
-  async getTrainers(@Param('id') id: string) {
-    const result = await this.getCourseTrainersHandler.execute(
-      new GetCourseTrainersQuery(id),
-    );
-
-    return {
-      success: true,
-      message: 'Course trainers fetched successfully',
-      data: result,
-    };
-  }
-
-  @Get(':id/available-trainers')
-  async getAvailableTrainers(@Param('id') id: string) {
-    const result =
-      await this.getAvailableCourseTrainersHandler.execute(
-        new GetAvailableCourseTrainersQuery(id),
-      );
-
-    return {
-      success: true,
-      message: 'Available trainers fetched successfully',
-      data: result,
-    };
-  }
-
-  @Patch(':id/assign-trainers')
-  async assignTrainers(
-    @Param('id') id: string,
-    @Body() dto: AssignCourseTrainersDto,
-  ) {
-    const result = await this.assignCourseTrainersHandler.execute(
-      new AssignCourseTrainersCommand(id, dto.trainerIds),
-    );
-
-    return {
-      success: true,
-      message:
-        result.assignedCount > 1
-          ? `${result.assignedCount} trainers assigned successfully`
-          : result.assignedCount === 1
-            ? '1 trainer assigned successfully'
-            : 'Trainers assigned successfully',
-      data: result,
-    };
-  }
-
-  @Delete(':id/trainers/:trainerId')
-  async removeTrainer(
-    @Param('id') id: string,
-    @Param('trainerId') trainerId: string,
-  ) {
-    await this.removeCourseTrainerHandler.execute(
-      new RemoveCourseTrainerCommand(id, trainerId),
-    );
-
-    return {
-      success: true,
-      message: 'Trainer removed from course successfully',
-      data: { courseId: id, trainerId },
     };
   }
 

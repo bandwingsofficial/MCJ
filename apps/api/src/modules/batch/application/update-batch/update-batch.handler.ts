@@ -68,8 +68,6 @@ export class UpdateBatchHandler {
     this.domainService.validateSchedule({
       startDate: command.startDate ?? batch.startDate,
       endDate: command.endDate ?? batch.endDate,
-      startTime: command.startTime ?? batch.startTime,
-      endTime: command.endTime ?? batch.endTime,
       daysOfWeek: command.daysOfWeek ?? batch.daysOfWeek,
     });
 

@@ -34,52 +34,67 @@ export class CreateBatchHandler {
     );
 
     if (command.branchId) {
-  const branch = await this.branchRepo.findById(
-    command.branchId,
-  );
+      const branch = await this.branchRepo.findById(
+        command.branchId,
+      );
 
-  if (!branch) {
-    throw new BranchNotFoundException(
-      command.branchId,
-    );
-  }
-}
+      if (!branch) {
+        throw new BranchNotFoundException(
+          command.branchId,
+        );
+      }
+    }
 
     const trainerIds = this.domainService.uniqueIds(
       command.trainerIds,
     );
-    await this.domainService.ensureTrainersExist(
-      this.trainerRepo,
-      trainerIds,
-    );
+
+    if (trainerIds.length > 0) {
+      await this.domainService.ensureActiveTrainers(
+        this.trainerRepo,
+        trainerIds,
+      );
+    }
 
     const slug = command.slug
       ? Slug.create(command.slug).getValue()
       : Slug.fromName(command.name).getValue();
 
+    const code =
+      command.code?.trim()
+        ? command.code.trim().toUpperCase()
+        : await this.domainService.generateUniqueBatchCode(
+            this.batchRepo,
+          );
+
     await this.domainService.ensureCodeIsAvailable(
       this.batchRepo,
-      command.code,
+      code,
     );
     await this.domainService.ensureSlugIsAvailable(
       this.batchRepo,
-      slug
+      slug,
     );
     this.domainService.validateSchedule(command);
+
+    const isActive = command.isActive ?? true;
+    const displayOrder = isActive
+      ? (await this.batchRepo.getMaxDisplayOrder()) + 1
+      : null;
 
     const batchId = randomUUID();
     const batch = Batch.create({
       id: batchId,
       name: command.name,
-      code: command.code,
+      code,
       slug,
       description: command.description,
       courseId: command.courseId,
       branchId: command.branchId,
       startDate: command.startDate,
       endDate: command.endDate,
-      startTime: command.startTime,
-      endTime: command.endTime,
+      startTime: command.startTime ?? '00:00',
+      endTime: command.endTime ?? '23:59',
       daysOfWeek: command.daysOfWeek,
       capacity: command.capacity,
       enrolledCount: command.enrolledCount,
@@ -87,6 +102,8 @@ export class CreateBatchHandler {
       classroom: command.classroom,
       meetingLink: command.meetingLink,
       isFeatured: command.isFeatured,
+      isActive,
+      displayOrder,
       status: command.status,
       trainers: trainerIds.map((trainerId) =>
         BatchTrainer.create({
@@ -100,13 +117,13 @@ export class CreateBatchHandler {
 
     await this.batchRepo.save(batch);
 
-const savedBatch =
-  await this.domainService.ensureExists(
-    await this.batchRepo.findById(batch.id),
-  );
+    const savedBatch =
+      await this.domainService.ensureExists(
+        await this.batchRepo.findById(batch.id),
+      );
 
-this.logger.log(`✅ Batch created: ${batch.id}`);
+    this.logger.log(`✅ Batch created: ${batch.id}`);
 
-return GetBatchResult.fromEntity(savedBatch);
+    return GetBatchResult.fromEntity(savedBatch);
   }
 }

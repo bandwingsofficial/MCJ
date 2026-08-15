@@ -17,15 +17,21 @@ export class RestoreBatchHandler {
       await this.batchRepo.findById(command.id, true),
     );
 
-   batch.restore(command.updatedBy);
+    batch.restore(command.updatedBy);
 
-await this.batchRepo.save(batch);
+    if (batch.isActive) {
+      batch.changeDisplayOrder(
+        (await this.batchRepo.getMaxDisplayOrder()) + 1,
+      );
+    }
 
-const restoredBatch =
-  await this.domainService.ensureExists(
-    await this.batchRepo.findById(batch.id, true),
-  );
+    await this.batchRepo.save(batch);
 
-return GetBatchResult.fromEntity(restoredBatch);
+    const restoredBatch =
+      await this.domainService.ensureExists(
+        await this.batchRepo.findById(batch.id, true),
+      );
+
+    return GetBatchResult.fromEntity(restoredBatch);
   }
 }

@@ -134,7 +134,7 @@ export function BranchManageWorkspace({
           branchId,
           includeDeleted: false,
         });
-        setBatches(response.data ?? []);
+        setBatches(response.data.items ?? []);
       }
 
       if (tab === "students") {

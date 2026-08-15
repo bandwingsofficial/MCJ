@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
+import { parseBatchCodeNumber } from '../../domain/utils/batch-code.util';
 
 import { Batch } from '../../domain/entities/batch.entity';
 import {
@@ -61,6 +62,10 @@ export class PrismaBatchRepository implements BatchRepository {
     return record ? BatchMapper.toDomain(record) : null;
   }
 
+  async findByIdIncludingDeleted(id: string): Promise<Batch | null> {
+    return this.findById(id, true);
+  }
+
   async findByCode(
     code: string,
     includeDeleted = false,
@@ -77,19 +82,19 @@ export class PrismaBatchRepository implements BatchRepository {
   }
 
   async findBySlug(
-  slug: string,
-  includeDeleted = false,
-): Promise<Batch | null> {
-  const record = await this.prisma.batch.findFirst({
-    where: {
-      slug,
-      ...(includeDeleted ? {} : { isDeleted: false }),
-    },
-    include: this.includeRelations(),
-  });
+    slug: string,
+    includeDeleted = false,
+  ): Promise<Batch | null> {
+    const record = await this.prisma.batch.findFirst({
+      where: {
+        slug,
+        ...(includeDeleted ? {} : { isDeleted: false }),
+      },
+      include: this.includeRelations(),
+    });
 
-  return record ? BatchMapper.toDomain(record) : null;
-}
+    return record ? BatchMapper.toDomain(record) : null;
+  }
 
   async findAll(
     filters: BatchListFilters = {},
@@ -98,14 +103,169 @@ export class PrismaBatchRepository implements BatchRepository {
       where: this.buildWhere(filters),
       include: this.includeRelations(),
       orderBy: [
+        { displayOrder: { sort: 'asc', nulls: 'last' } },
         { startDate: 'asc' },
         { createdAt: 'desc' },
-      ],
+      ] as Prisma.BatchOrderByWithRelationInput[],
       skip: filters.skip,
       take: filters.take,
     });
 
     return records.map(BatchMapper.toDomain);
+  }
+
+  async count(filters: BatchListFilters = {}): Promise<number> {
+    return this.prisma.batch.count({
+      where: this.buildWhere(filters),
+    });
+  }
+
+  async getMaxDisplayOrder(): Promise<number> {
+    const result = await this.prisma.batch.aggregate({
+      where: {
+        isDeleted: false,
+        isActive: true,
+        displayOrder: { not: null },
+      } as Prisma.BatchWhereInput,
+      _max: {
+        displayOrder: true,
+      } as Prisma.BatchMaxAggregateInputType,
+    });
+
+    const maxOrder = (result._max as { displayOrder?: number | null })
+      .displayOrder;
+
+    return maxOrder ?? 0;
+  }
+
+  async getMaxBatchCodeNumber(): Promise<number> {
+    const records = await this.prisma.batch.findMany({
+      where: {
+        code: {
+          startsWith: 'BCH',
+        },
+      },
+      select: {
+        code: true,
+      },
+    });
+
+    let max = 0;
+
+    for (const record of records) {
+      const value = parseBatchCodeNumber(record.code);
+
+      if (value !== null && value > max) {
+        max = value;
+      }
+    }
+
+    return max;
+  }
+
+  async closeDisplayOrderGap(
+    deletedDisplayOrder: number,
+  ): Promise<void> {
+    await this.prisma.batch.updateMany({
+      where: {
+        isDeleted: false,
+        displayOrder: {
+          gt: deletedDisplayOrder,
+        },
+      } as Prisma.BatchWhereInput,
+      data: {
+        displayOrder: {
+          decrement: 1,
+        },
+      } as Prisma.BatchUpdateManyMutationInput,
+    });
+  }
+
+  async moveDisplayOrder(
+    batchId: string,
+    oldOrder: number,
+    newOrder: number,
+  ): Promise<void> {
+    if (oldOrder === newOrder) {
+      return;
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      if (newOrder < oldOrder) {
+        await tx.batch.updateMany({
+          where: {
+            isDeleted: false,
+            displayOrder: {
+              gte: newOrder,
+              lt: oldOrder,
+            },
+          } as Prisma.BatchWhereInput,
+          data: {
+            displayOrder: {
+              increment: 1,
+            },
+          } as Prisma.BatchUpdateManyMutationInput,
+        });
+      } else {
+        await tx.batch.updateMany({
+          where: {
+            isDeleted: false,
+            displayOrder: {
+              gt: oldOrder,
+              lte: newOrder,
+            },
+          } as Prisma.BatchWhereInput,
+          data: {
+            displayOrder: {
+              decrement: 1,
+            },
+          } as Prisma.BatchUpdateManyMutationInput,
+        });
+      }
+
+      await tx.batch.update({
+        where: { id: batchId },
+        data: { displayOrder: newOrder } as Prisma.BatchUpdateInput,
+      });
+    });
+  }
+
+  async getSummaryCounts(batchId: string): Promise<{
+    studentsCount: number;
+    trainerCount: number;
+    enrolledCount: number;
+    capacity: number;
+    attendancePresent: number;
+    attendanceAbsent: number;
+  }> {
+    const batch = await this.prisma.batch.findUnique({
+      where: { id: batchId },
+      select: {
+        enrolledCount: true,
+        capacity: true,
+      },
+    });
+
+    const [studentsCount, trainerCount] = await Promise.all([
+      this.prisma.enrollment.count({
+        where: {
+          batchId,
+          isDeleted: false,
+        },
+      }),
+      this.prisma.batchTrainer.count({
+        where: { batchId },
+      }),
+    ]);
+
+    return {
+      studentsCount,
+      trainerCount,
+      enrolledCount: batch?.enrolledCount ?? 0,
+      capacity: batch?.capacity ?? 0,
+      attendancePresent: 0,
+      attendanceAbsent: 0,
+    };
   }
 
   async deletePermanent(id: string): Promise<void> {
@@ -114,39 +274,39 @@ export class PrismaBatchRepository implements BatchRepository {
     });
   }
 
-private includeRelations() {
-  return {
-    course: {
-      select: {
-        id: true,
-        title: true,
-        slug: true,
+  private includeRelations() {
+    return {
+      course: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+        },
       },
-    },
 
-    branch: {
-      select: {
-        id: true,
-        branchName: true,
-        branchCode: true,
+      branch: {
+        select: {
+          id: true,
+          branchName: true,
+          branchCode: true,
+        },
       },
-    },
 
-    trainers: {
-      orderBy: { createdAt: 'desc' as const },
-      include: {
-        trainer: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            employeeCode: true,
+      trainers: {
+        orderBy: { createdAt: 'desc' as const },
+        include: {
+          trainer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              employeeCode: true,
+            },
           },
         },
       },
-    },
-  };
-}
+    };
+  }
 
   private buildWhere(
     filters: BatchListFilters,
@@ -164,8 +324,17 @@ private includeRelations() {
     }
 
     if (filters.courseId) where.courseId = filters.courseId;
-    if (filters.branchId !== undefined) where.branchId = filters.branchId;
+    if (filters.branchId) where.branchId = filters.branchId;
+    if (filters.mode) where.mode = filters.mode;
     if (filters.isFeatured !== undefined) where.isFeatured = filters.isFeatured;
+
+    if (filters.trainerId) {
+      where.trainers = {
+        some: {
+          trainerId: filters.trainerId,
+        },
+      };
+    }
 
     if (filters.search) {
       where.OR = [

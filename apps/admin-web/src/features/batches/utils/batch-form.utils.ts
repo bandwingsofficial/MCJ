@@ -1,0 +1,44 @@
+import type { BatchFormValues } from "@/src/features/batches/schemas/batch.schema";
+import type {
+  CreateBatchRequest,
+  UpdateBatchRequest,
+} from "@/src/features/batches/types/batch.types";
+
+export const DESCRIPTION_WORD_LIMIT = 150;
+
+export function countWords(value: string): number {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return 0;
+  }
+
+  return trimmed.split(/\s+/).length;
+}
+
+export function toCreateBatchRequest(
+  values: BatchFormValues,
+): CreateBatchRequest {
+  return {
+    name: values.name.trim(),
+    code: values.code.trim().toUpperCase(),
+    description: values.description?.trim() || undefined,
+    courseId: values.courseId,
+    branchId: values.branchId || undefined,
+    startDate: values.startDate,
+    endDate: values.endDate,
+    daysOfWeek: values.daysOfWeek,
+    capacity: values.capacity,
+    enrolledCount: values.enrolledCount ?? 0,
+    mode: values.mode,
+    status: values.status,
+    classroom: values.classroom?.trim() || undefined,
+    meetingLink: values.meetingLink?.trim() || undefined,
+    isFeatured: values.isFeatured,
+  };
+}
+
+export function toUpdateBatchRequest(
+  values: BatchFormValues,
+): UpdateBatchRequest {
+  return toCreateBatchRequest(values);
+}

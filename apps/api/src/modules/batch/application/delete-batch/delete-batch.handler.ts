@@ -17,8 +17,14 @@ export class DeleteBatchHandler {
       await this.batchRepo.findById(command.id),
     );
 
+    const deletedDisplayOrder = batch.displayOrder;
+
     batch.softDelete(command.deletedBy);
     await this.batchRepo.save(batch);
+
+    if (deletedDisplayOrder != null) {
+      await this.batchRepo.closeDisplayOrderGap(deletedDisplayOrder);
+    }
 
     return new DeleteBatchResult(
       batch.id,

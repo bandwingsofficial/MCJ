@@ -17,7 +17,6 @@ import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/cours
 
 import { CourseOverviewSummary } from "./course-overview-summary";
 import { CourseManageModulesPanel } from "./course-manage-modules-panel";
-import { CourseManageTrainersPanel } from "./course-manage-trainers-panel";
 import { CourseManagePreviewPanel } from "./course-manage-preview-panel";
 
 interface Props {
@@ -29,7 +28,7 @@ interface Props {
   onTabChange?: (tab: TabKey) => void;
 }
 
-export type TabKey = "overview" | "modules" | "trainers" | "preview";
+export type TabKey = "overview" | "modules" | "preview";
 
 function formatDuration(
   duration: number | null,
@@ -80,7 +79,6 @@ export function CourseManageWorkspace({
           [
             ["overview", "Overview"],
             ["modules", "Modules"],
-            ["trainers", "Trainers"],
             ["preview", "Preview"],
           ] as const
         ).map(([value, label]) => (
@@ -157,14 +155,6 @@ export function CourseManageWorkspace({
         <CourseManageModulesPanel
           courseId={courseId}
           course={course}
-          disabled={contentDisabled}
-          onRefresh={onSummaryRefresh}
-        />
-      </TabsContent>
-
-      <TabsContent value="trainers">
-        <CourseManageTrainersPanel
-          courseId={courseId}
           disabled={contentDisabled}
           onRefresh={onSummaryRefresh}
         />

@@ -29,9 +29,10 @@ export function CourseManageBatchesPanel({ courseId }: Props) {
         courseId,
         search,
         includeDeleted: false,
-        take: 200,
+        page: 1,
+        pageSize: 200,
       });
-      setBatches(response.data ?? []);
+      setBatches(response.data.items ?? []);
     } catch (error) {
       appToast.error(getErrorMessage(error));
     } finally {

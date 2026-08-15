@@ -35,10 +35,6 @@ import { PermanentDeleteCourseHandler } from './application/permanent-delete-cou
 import { ReorderCoursesHandler } from './application/reorder-courses/reorder-courses.handler';
 import { RestoreCourseHandler } from './application/restore-course/restore-course.handler';
 import { SuggestCourseCodeHandler } from './application/suggest-course-code/suggest-course-code.handler';
-import { GetCourseTrainersHandler } from './application/get-course-trainers/get-course-trainers.handler';
-import { GetAvailableCourseTrainersHandler } from './application/get-available-course-trainers/get-available-course-trainers.handler';
-import { AssignCourseTrainersHandler } from './application/assign-course-trainers/assign-course-trainers.handler';
-import { RemoveCourseTrainerHandler } from './application/remove-course-trainer/remove-course-trainer.handler';
 import { UpdateCourseHandler } from './application/update-course/update-course.handler';
 import { UpdateCourseStatusHandler } from './application/update-course-status/update-course-status.handler';
 import type { CourseRepository } from './domain/repositories/course.repository';
@@ -404,61 +400,6 @@ import { BranchModule } from '../branch/branch.module';
       useFactory: (courseRepo: CourseRepository) =>
         new SuggestCourseCodeHandler(courseRepo),
       inject: [COURSE_TOKENS.COURSE_REPOSITORY],
-    },
-
-    {
-      provide: GetCourseTrainersHandler,
-      useFactory: (
-        courseRepo: CourseRepository,
-        domainService: CourseDomainService,
-      ) =>
-        new GetCourseTrainersHandler(courseRepo, domainService),
-      inject: [
-        COURSE_TOKENS.COURSE_REPOSITORY,
-        CourseDomainService,
-      ],
-    },
-
-    {
-      provide: GetAvailableCourseTrainersHandler,
-      useFactory: (
-        courseRepo: CourseRepository,
-        domainService: CourseDomainService,
-      ) =>
-        new GetAvailableCourseTrainersHandler(
-          courseRepo,
-          domainService,
-        ),
-      inject: [
-        COURSE_TOKENS.COURSE_REPOSITORY,
-        CourseDomainService,
-      ],
-    },
-
-    {
-      provide: AssignCourseTrainersHandler,
-      useFactory: (
-        courseRepo: CourseRepository,
-        domainService: CourseDomainService,
-      ) =>
-        new AssignCourseTrainersHandler(courseRepo, domainService),
-      inject: [
-        COURSE_TOKENS.COURSE_REPOSITORY,
-        CourseDomainService,
-      ],
-    },
-
-    {
-      provide: RemoveCourseTrainerHandler,
-      useFactory: (
-        courseRepo: CourseRepository,
-        domainService: CourseDomainService,
-      ) =>
-        new RemoveCourseTrainerHandler(courseRepo, domainService),
-      inject: [
-        COURSE_TOKENS.COURSE_REPOSITORY,
-        CourseDomainService,
-      ],
     },
   ],
 

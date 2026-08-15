@@ -9,6 +9,7 @@ import {
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { PaginationQueryDto } from '@common/pagination/pagination-query.dto';
+import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
 import { BatchStatus } from '../../domain/enums/batch-status.enum';
 
 const toBoolean = (value: unknown) =>
@@ -24,6 +25,16 @@ export class ListBatchesQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsUUID()
   branchId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  trainerId?: string;
+
+  @ApiPropertyOptional({ enum: CourseMode })
+  @IsOptional()
+  @IsEnum(CourseMode)
+  mode?: CourseMode;
 
   @ApiPropertyOptional({ enum: BatchStatus })
   @IsOptional()

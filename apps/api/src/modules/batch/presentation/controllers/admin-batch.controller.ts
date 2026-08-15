@@ -23,25 +23,42 @@ import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 
 import { AssignBatchTrainersCommand } from '../../application/assign-batch-trainers/assign-batch-trainers.command';
 import { AssignBatchTrainersHandler } from '../../application/assign-batch-trainers/assign-batch-trainers.handler';
+import { BulkDeleteBatchesCommand } from '../../application/bulk-delete-batches/bulk-delete-batches.command';
+import { BulkDeleteBatchesHandler } from '../../application/bulk-delete-batches/bulk-delete-batches.handler';
+import { BulkPermanentDeleteBatchesCommand } from '../../application/bulk-permanent-delete-batches/bulk-permanent-delete-batches.command';
+import { BulkPermanentDeleteBatchesHandler } from '../../application/bulk-permanent-delete-batches/bulk-permanent-delete-batches.handler';
+import { BulkRestoreBatchesCommand } from '../../application/bulk-restore-batches/bulk-restore-batches.command';
+import { BulkRestoreBatchesHandler } from '../../application/bulk-restore-batches/bulk-restore-batches.handler';
+import { BulkUpdateBatchStatusCommand } from '../../application/bulk-update-batch-status/bulk-update-batch-status.command';
+import { BulkUpdateBatchStatusHandler } from '../../application/bulk-update-batch-status/bulk-update-batch-status.handler';
 import { CreateBatchCommand } from '../../application/create-batch/create-batch.command';
 import { CreateBatchHandler } from '../../application/create-batch/create-batch.handler';
 import { DeleteBatchCommand } from '../../application/delete-batch/delete-batch.command';
 import { DeleteBatchHandler } from '../../application/delete-batch/delete-batch.handler';
 import { GetBatchHandler } from '../../application/get-batch/get-batch.handler';
 import { GetBatchQuery } from '../../application/get-batch/get-batch.query';
+import { GetBatchSummaryHandler } from '../../application/get-batch-summary/get-batch-summary.handler';
+import { GetBatchSummaryQuery } from '../../application/get-batch-summary/get-batch-summary.query';
 import { ListBatchesHandler } from '../../application/list-batches/list-batches.handler';
 import { ListBatchesQuery } from '../../application/list-batches/list-batches.query';
 import { PermanentDeleteBatchCommand } from '../../application/permanent-delete-batch/permanent-delete-batch.command';
 import { PermanentDeleteBatchHandler } from '../../application/permanent-delete-batch/permanent-delete-batch.handler';
+import { ReorderBatchesCommand } from '../../application/reorder-batches/reorder-batches.command';
+import { ReorderBatchesHandler } from '../../application/reorder-batches/reorder-batches.handler';
 import { RestoreBatchCommand } from '../../application/restore-batch/restore-batch.command';
 import { RestoreBatchHandler } from '../../application/restore-batch/restore-batch.handler';
+import { SuggestBatchCodeHandler } from '../../application/suggest-batch-code/suggest-batch-code.handler';
+import { SuggestBatchCodeQuery } from '../../application/suggest-batch-code/suggest-batch-code.query';
 import { UpdateBatchCommand } from '../../application/update-batch/update-batch.command';
 import { UpdateBatchHandler } from '../../application/update-batch/update-batch.handler';
 import { UpdateBatchStatusCommand } from '../../application/update-batch-status/update-batch-status.command';
 import { UpdateBatchStatusHandler } from '../../application/update-batch-status/update-batch-status.handler';
 import { AssignBatchTrainersDto } from '../dtos/assign-batch-trainers.dto';
+import { BulkBatchIdsDto } from '../dtos/bulk-batch-ids.dto';
+import { BulkUpdateBatchStatusDto } from '../dtos/bulk-update-batch-status.dto';
 import { CreateBatchDto } from '../dtos/create-batch.dto';
 import { ListBatchesQueryDto } from '../dtos/list-batches-query.dto';
+import { ReorderBatchesDto } from '../dtos/reorder-batches.dto';
 import { UpdateBatchDto } from '../dtos/update-batch.dto';
 
 @ApiTags('Admin Batches')
@@ -54,11 +71,18 @@ export class AdminBatchController {
     private readonly updateBatchHandler: UpdateBatchHandler,
     private readonly listBatchesHandler: ListBatchesHandler,
     private readonly getBatchHandler: GetBatchHandler,
+    private readonly getBatchSummaryHandler: GetBatchSummaryHandler,
     private readonly deleteBatchHandler: DeleteBatchHandler,
     private readonly restoreBatchHandler: RestoreBatchHandler,
     private readonly permanentDeleteBatchHandler: PermanentDeleteBatchHandler,
     private readonly updateBatchStatusHandler: UpdateBatchStatusHandler,
     private readonly assignBatchTrainersHandler: AssignBatchTrainersHandler,
+    private readonly suggestBatchCodeHandler: SuggestBatchCodeHandler,
+    private readonly reorderBatchesHandler: ReorderBatchesHandler,
+    private readonly bulkUpdateBatchStatusHandler: BulkUpdateBatchStatusHandler,
+    private readonly bulkDeleteBatchesHandler: BulkDeleteBatchesHandler,
+    private readonly bulkRestoreBatchesHandler: BulkRestoreBatchesHandler,
+    private readonly bulkPermanentDeleteBatchesHandler: BulkPermanentDeleteBatchesHandler,
   ) {}
 
   @Post()
@@ -71,23 +95,24 @@ export class AdminBatchController {
     const result = await this.createBatchHandler.execute(
       new CreateBatchCommand(
         dto.name,
-        dto.code,
         dto.courseId,
         new Date(dto.startDate),
-        dto.startTime,
-        dto.endTime,
         dto.daysOfWeek,
         dto.capacity,
+        dto.code,
         dto.slug,
         dto.description,
         dto.branchId,
-        dto.endDate ? new Date(dto.endDate) : undefined,
+        new Date(dto.endDate),
+        dto.startTime,
+        dto.endTime,
         dto.enrolledCount,
         dto.mode,
         dto.classroom,
         dto.meetingLink,
         dto.isFeatured,
         dto.status,
+        undefined,
         dto.trainerIds ?? [],
         user?.sub,
       ),
@@ -106,6 +131,8 @@ export class AdminBatchController {
       new ListBatchesQuery(
         query.courseId,
         query.branchId,
+        query.trainerId,
+        query.mode,
         query.status,
         query.search,
         query.isFeatured,
@@ -119,6 +146,154 @@ export class AdminBatchController {
     return {
       success: true,
       message: 'Batches fetched successfully',
+      data: result,
+    };
+  }
+
+  @Get('suggest-code')
+  async suggestCode() {
+    const result = await this.suggestBatchCodeHandler.execute(
+      new SuggestBatchCodeQuery(),
+    );
+
+    return {
+      success: true,
+      message: 'Batch code suggested successfully',
+      data: result,
+    };
+  }
+
+  @Patch('reorder')
+  async reorder(@Body() dto: ReorderBatchesDto) {
+    const result = await this.reorderBatchesHandler.execute(
+      new ReorderBatchesCommand(
+        dto.batchId,
+        dto.newDisplayOrder,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Batches reordered successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/status')
+  async bulkUpdateStatus(
+    @Body() dto: BulkUpdateBatchStatusDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.bulkUpdateBatchStatusHandler.execute(
+      new BulkUpdateBatchStatusCommand(
+        dto.batchIds,
+        dto.isActive,
+        user?.sub,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Batch statuses updated successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/activate')
+  async bulkActivate(
+    @Body() dto: BulkBatchIdsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.bulkUpdateBatchStatusHandler.execute(
+      new BulkUpdateBatchStatusCommand(
+        dto.batchIds,
+        true,
+        user?.sub,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Batch statuses updated successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/deactivate')
+  async bulkDeactivate(
+    @Body() dto: BulkBatchIdsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.bulkUpdateBatchStatusHandler.execute(
+      new BulkUpdateBatchStatusCommand(
+        dto.batchIds,
+        false,
+        user?.sub,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Batch statuses updated successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/restore')
+  async bulkRestore(
+    @Body() dto: BulkBatchIdsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.bulkRestoreBatchesHandler.execute(
+      new BulkRestoreBatchesCommand(dto.batchIds, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: 'Batches restored successfully',
+      data: result,
+    };
+  }
+
+  @Delete('bulk')
+  async bulkDelete(
+    @Body() dto: BulkBatchIdsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.bulkDeleteBatchesHandler.execute(
+      new BulkDeleteBatchesCommand(dto.batchIds, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: 'Batches archived successfully',
+      data: result,
+    };
+  }
+
+  @Delete('bulk/permanent')
+  async bulkPermanentDelete(@Body() dto: BulkBatchIdsDto) {
+    const result =
+      await this.bulkPermanentDeleteBatchesHandler.execute(
+        new BulkPermanentDeleteBatchesCommand(dto.batchIds),
+      );
+
+    return {
+      success: true,
+      message: 'Batches permanently deleted successfully',
+      data: result,
+    };
+  }
+
+  @Get(':id/summary')
+  async getSummary(@Param('id') id: string) {
+    const result = await this.getBatchSummaryHandler.execute(
+      new GetBatchSummaryQuery(id),
+    );
+
+    return {
+      success: true,
+      message: 'Batch summary fetched successfully',
       data: result,
     };
   }

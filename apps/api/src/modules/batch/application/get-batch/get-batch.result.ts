@@ -49,6 +49,7 @@ export class GetBatchResult {
     public readonly meetingLink: string | null,
     public readonly isFeatured: boolean,
     public readonly isActive: boolean,
+    public readonly displayOrder: number | null,
     public readonly status: BatchStatus,
     public readonly trainers: BatchTrainerResult[],
     public readonly createdBy: string | null,
@@ -93,6 +94,7 @@ export class GetBatchResult {
       batch.meetingLink,
       batch.isFeatured,
       batch.isActive,
+      batch.displayOrder,
       batch.status,
       batch.trainers.map(
         (trainer) =>

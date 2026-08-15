@@ -39,6 +39,7 @@ public branch: {
     public meetingLink: string | null,
     public isFeatured: boolean,
     public isActive: boolean,
+    public displayOrder: number | null,
     public status: BatchStatus,
     public trainers: BatchTrainer[],
     public readonly createdBy: string | null,
@@ -77,6 +78,7 @@ public branch: {
     params.meetingLink ?? null,
     params.isFeatured ?? false,
     params.isActive ?? true,
+    params.displayOrder ?? null,
     params.status ?? BatchStatus.UPCOMING,
     params.trainers ?? [],
     params.createdBy ?? null,
@@ -115,6 +117,7 @@ public branch: {
     params.meetingLink,
     params.isFeatured,
     params.isActive,
+    params.displayOrder,
     params.status,
     params.trainers,
     params.createdBy,
@@ -180,13 +183,20 @@ if (params.branchId !== undefined) {
 
   deactivate(updatedBy?: string | null) {
     this.isActive = false;
+    this.displayOrder = null;
     this.updatedBy = updatedBy ?? this.updatedBy;
+    this.touch();
+  }
+
+  changeDisplayOrder(displayOrder: number | null) {
+    this.displayOrder = displayOrder;
     this.touch();
   }
 
   softDelete(deletedBy?: string | null) {
     this.isDeleted = true;
     this.status = BatchStatus.ARCHIVED;
+    this.displayOrder = null;
     this.deletedAt = new Date();
     this.deletedBy = deletedBy ?? null;
     this.touch();
@@ -236,6 +246,7 @@ branch?: {
   meetingLink?: string | null;
   isFeatured?: boolean;
   isActive?: boolean;
+  displayOrder?: number | null;
   status?: BatchStatus;
   trainers?: BatchTrainer[];
   createdBy?: string | null;
@@ -280,6 +291,7 @@ export interface BatchReconstituteParams
   isDeleted: boolean;
   deletedAt: Date | null;
   deletedBy: string | null;
+  displayOrder: number | null;
   createdAt: Date;
   updatedAt: Date;
 }

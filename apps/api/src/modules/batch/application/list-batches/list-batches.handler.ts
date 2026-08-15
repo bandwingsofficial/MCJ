@@ -2,16 +2,19 @@ import type { BatchRepository } from '../../domain/repositories/batch.repository
 import { GetBatchResult } from '../get-batch/get-batch.result';
 
 import { ListBatchesQuery } from './list-batches.query';
+import { ListBatchesResult } from './list-batches.result';
 
 export class ListBatchesHandler {
   constructor(private readonly batchRepo: BatchRepository) {}
 
   async execute(
     query: ListBatchesQuery,
-  ): Promise<GetBatchResult[]> {
-    const batches = await this.batchRepo.findAll({
+  ): Promise<ListBatchesResult> {
+    const filters = {
       courseId: query.courseId,
       branchId: query.branchId,
+      trainerId: query.trainerId,
+      mode: query.mode,
       status: query.status,
       search: query.search,
       isFeatured: query.isFeatured,
@@ -19,8 +22,16 @@ export class ListBatchesHandler {
       onlyActive: query.onlyActive,
       skip: query.skip,
       take: query.take,
-    });
+    };
 
-    return batches.map(GetBatchResult.fromEntity);
+    const [batches, count] = await Promise.all([
+      this.batchRepo.findAll(filters),
+      this.batchRepo.count(filters),
+    ]);
+
+    return new ListBatchesResult(
+      batches.map(GetBatchResult.fromEntity),
+      count,
+    );
   }
 }
