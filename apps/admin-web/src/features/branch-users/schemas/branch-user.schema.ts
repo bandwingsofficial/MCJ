@@ -6,8 +6,15 @@ import {
 
 const phoneRegex = /^[6-9]\d{9}$/;
 
-const passwordRegex =
+export const passwordRegex =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+
+export const branchUserPasswordSchema = z
+  .string()
+  .regex(
+    passwordRegex,
+    "Password must contain uppercase, lowercase, number and special character"
+  );
 
 export const createBranchUserSchema =
   z.object({
@@ -49,12 +56,7 @@ export const createBranchUserSchema =
         "Enter valid mobile number"
       ),
 
-    password: z
-      .string()
-      .regex(
-        passwordRegex,
-        "Password must contain uppercase, lowercase, number and special character"
-      ),
+    password: branchUserPasswordSchema,
 
     role: z.enum(
       BRANCH_USER_ROLES,
@@ -72,6 +74,69 @@ export const createBranchUserSchema =
     permissions: z.array(
       z.string()
     ),
+  });
+
+export const createBranchUserFormSchema =
+  createBranchUserSchema
+    .extend({
+      confirmPassword: z
+        .string()
+        .min(
+          1,
+          "Confirm password is required"
+        ),
+    })
+    .refine(
+      (data) =>
+        data.password ===
+        data.confirmPassword,
+      {
+        message:
+          "Passwords do not match.",
+        path: ["confirmPassword"],
+      }
+    );
+
+export const resetPasswordFormSchema = z
+  .object({
+    newPassword: branchUserPasswordSchema,
+    confirmPassword: z
+      .string()
+      .min(
+        1,
+        "Confirm password is required"
+      ),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.confirmPassword.trim()) {
+      return;
+    }
+
+    if (
+      !passwordRegex.test(
+        data.newPassword
+      )
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Password must contain uppercase, lowercase, number and special character",
+        path: ["confirmPassword"],
+      });
+      return;
+    }
+
+    if (
+      data.newPassword !==
+      data.confirmPassword
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Passwords do not match.",
+        path: ["confirmPassword"],
+      });
+    }
   });
 
 export const updateBranchUserSchema =
@@ -112,10 +177,15 @@ export const updateBranchUserSchema =
 
 export type CreateBranchUserFormValues =
   z.infer<
-    typeof createBranchUserSchema
+    typeof createBranchUserFormSchema
   >;
 
 export type UpdateBranchUserFormValues =
   z.infer<
     typeof updateBranchUserSchema
+  >;
+
+export type ResetPasswordFormValues =
+  z.infer<
+    typeof resetPasswordFormSchema
   >;

@@ -47,15 +47,15 @@ export function CreateBranchUserModal({
   const handleSubmit = async (
     values: CreateBranchUserFormValues
   ) => {
-    const success =
-      await createBranchUser({
-        ...values,
-        branchId: fixedBranch?.id ?? values.branchId,
-      });
+    const {
+      confirmPassword: _confirmPassword,
+      ...payload
+    } = values;
 
-    if (!success) {
-      return;
-    }
+    await createBranchUser({
+      ...payload,
+      branchId: fixedBranch?.id ?? values.branchId,
+    });
 
     onSuccess();
 
@@ -69,6 +69,11 @@ export function CreateBranchUserModal({
       onClose={onClose}
     >
       <BranchUserForm
+        key={
+          open
+            ? "create-branch-user-open"
+            : "create-branch-user-closed"
+        }
         branchOptions={
           branchOptions
         }

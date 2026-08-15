@@ -13,17 +13,9 @@ import { CreateBranchUserRequest } from "@/src/features/branch-users/types/branc
 interface UseCreateBranchUserReturn {
   createBranchUser: (
     payload: CreateBranchUserRequest
-  ) => Promise<boolean>;
+  ) => Promise<void>;
 
   isLoading: boolean;
-}
-
-interface ApiErrorResponse {
-  success?: boolean;
-
-  message?: string;
-
-  error?: string;
 }
 
 export const useCreateBranchUser =
@@ -34,7 +26,7 @@ export const useCreateBranchUser =
     const createBranchUser =
       async (
         payload: CreateBranchUserRequest
-      ): Promise<boolean> => {
+      ): Promise<void> => {
         try {
           setIsLoading(true);
 
@@ -45,8 +37,6 @@ export const useCreateBranchUser =
           appToast.success(
             "Branch user created successfully"
           );
-
-          return true;
         } catch (error) {
           let message =
             "Failed to create branch user";
@@ -71,7 +61,9 @@ export const useCreateBranchUser =
             message
           );
 
-          return false;
+          return Promise.reject(
+            new Error(message)
+          );
         } finally {
           setIsLoading(false);
         }
