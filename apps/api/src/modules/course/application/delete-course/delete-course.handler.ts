@@ -19,6 +19,8 @@ export class DeleteCourseHandler {
       await this.courseRepo.findById(command.id),
     );
 
+    const deletedDisplayOrder = course.displayOrder;
+
     course.softDelete(command.deletedBy);
     await this.courseRepo.save(course);
 
@@ -26,6 +28,12 @@ export class DeleteCourseHandler {
       course.id,
       command.deletedBy,
     );
+
+    if (deletedDisplayOrder != null) {
+      await this.courseRepo.closeDisplayOrderGap(
+        deletedDisplayOrder,
+      );
+    }
 
     return new DeleteCourseResult(
       course.id,

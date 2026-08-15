@@ -19,14 +19,20 @@ import { STUDENT_TOKENS } from '../student/student.tokens';
 import type { StudentRepository } from '../student/domain/repositories/student.repository';
 
 import { COURSE_TOKENS } from './course.tokens';
+import { BulkDeleteCoursesHandler } from './application/bulk-delete-courses/bulk-delete-courses.handler';
+import { BulkPermanentDeleteCoursesHandler } from './application/bulk-permanent-delete-courses/bulk-permanent-delete-courses.handler';
+import { BulkRestoreCoursesHandler } from './application/bulk-restore-courses/bulk-restore-courses.handler';
+import { BulkUpdateCourseStatusHandler } from './application/bulk-update-course-status/bulk-update-course-status.handler';
 import { CreateCourseHandler } from './application/create-course/create-course.handler';
 import { DeleteCourseHandler } from './application/delete-course/delete-course.handler';
 import { GetCourseBySlugHandler } from './application/get-course-by-slug/get-course-by-slug.handler';
+import { GetCourseSummaryHandler } from './application/get-course-summary/get-course-summary.handler';
 import { GetPublicCourseModulesHandler } from './application/get-public-course-modules/get-public-course-modules.handler';
 import { GetPreviewLessonHandler } from './application/get-preview-lesson/get-preview-lesson.handler';
 import { GetCourseHandler } from './application/get-course/get-course.handler';
 import { ListCoursesHandler } from './application/list-courses/list-courses.handler';
 import { PermanentDeleteCourseHandler } from './application/permanent-delete-course/permanent-delete-course.handler';
+import { ReorderCoursesHandler } from './application/reorder-courses/reorder-courses.handler';
 import { RestoreCourseHandler } from './application/restore-course/restore-course.handler';
 import { UpdateCourseHandler } from './application/update-course/update-course.handler';
 import { UpdateCourseStatusHandler } from './application/update-course-status/update-course-status.handler';
@@ -119,20 +125,23 @@ import { BranchModule } from '../branch/branch.module';
     },
 
     {
-  provide: ListCoursesHandler,
-  useFactory: (
-    courseRepo: CourseRepository,
-    branchRepo: BranchRepository,
-  ) =>
-    new ListCoursesHandler(
-      courseRepo,
-      branchRepo,
-    ),
-  inject: [
-    COURSE_TOKENS.COURSE_REPOSITORY,
-    BRANCH_TOKENS.BRANCH_REPOSITORY,
-  ],
-},
+      provide: ListCoursesHandler,
+      useFactory: (
+        courseRepo: CourseRepository,
+        branchRepo: BranchRepository,
+        categoryRepo: CategoryRepository,
+      ) =>
+        new ListCoursesHandler(
+          courseRepo,
+          branchRepo,
+          categoryRepo,
+        ),
+      inject: [
+        COURSE_TOKENS.COURSE_REPOSITORY,
+        BRANCH_TOKENS.BRANCH_REPOSITORY,
+        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
+      ],
+    },
 
     {
       provide: GetCourseHandler,
@@ -304,6 +313,78 @@ import { BranchModule } from '../branch/branch.module';
         COURSE_TOKENS.COURSE_REPOSITORY,
         CourseDomainService,
         BRANCH_TOKENS.BRANCH_REPOSITORY,
+      ],
+    },
+
+    {
+      provide: ReorderCoursesHandler,
+      useFactory: (
+        courseRepo: CourseRepository,
+        domainService: CourseDomainService,
+      ) =>
+        new ReorderCoursesHandler(courseRepo, domainService),
+      inject: [
+        COURSE_TOKENS.COURSE_REPOSITORY,
+        CourseDomainService,
+      ],
+    },
+
+    {
+      provide: BulkUpdateCourseStatusHandler,
+      useFactory: (courseRepo: CourseRepository) =>
+        new BulkUpdateCourseStatusHandler(courseRepo),
+      inject: [COURSE_TOKENS.COURSE_REPOSITORY],
+    },
+
+    {
+      provide: BulkDeleteCoursesHandler,
+      useFactory: (
+        courseRepo: CourseRepository,
+        hierarchyService: CourseHierarchyService,
+      ) =>
+        new BulkDeleteCoursesHandler(
+          courseRepo,
+          hierarchyService,
+        ),
+      inject: [
+        COURSE_TOKENS.COURSE_REPOSITORY,
+        CourseHierarchyService,
+      ],
+    },
+
+    {
+      provide: BulkRestoreCoursesHandler,
+      useFactory: (
+        courseRepo: CourseRepository,
+        hierarchyService: CourseHierarchyService,
+      ) =>
+        new BulkRestoreCoursesHandler(
+          courseRepo,
+          hierarchyService,
+        ),
+      inject: [
+        COURSE_TOKENS.COURSE_REPOSITORY,
+        CourseHierarchyService,
+      ],
+    },
+
+    {
+      provide: BulkPermanentDeleteCoursesHandler,
+      useFactory: (courseRepo: CourseRepository) =>
+        new BulkPermanentDeleteCoursesHandler(courseRepo),
+      inject: [COURSE_TOKENS.COURSE_REPOSITORY],
+    },
+
+    {
+      provide: GetCourseSummaryHandler,
+      useFactory: (
+        courseRepo: CourseRepository,
+        domainService: CourseDomainService,
+      ) =>
+        new GetCourseSummaryHandler(courseRepo, domainService),
+      inject: [
+        COURSE_TOKENS.COURSE_REPOSITORY,
+        CourseDomainService,
       ],
     },
   ],

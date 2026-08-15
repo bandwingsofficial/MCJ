@@ -14,17 +14,42 @@ export interface CourseListFilters {
   take?: number;
 }
 
+export interface CourseManagementCounts {
+  batches: number;
+  students: number;
+  instructors: number;
+  branches: number;
+  modules: number;
+  lessons: number;
+  quizzes: number;
+}
+
 export interface CourseRepository {
   save(course: Course): Promise<void>;
   findById(
     id: string,
     includeDeleted?: boolean,
   ): Promise<Course | null>;
+  findByIdIncludingDeleted(
+    id: string,
+  ): Promise<Course | null>;
   findBySlug(
-  slug: string,
-  includeDeleted?: boolean,
-): Promise<Course | null>;
+    slug: string,
+    includeDeleted?: boolean,
+  ): Promise<Course | null>;
 
   findAll(filters?: CourseListFilters): Promise<Course[]>;
+  count(filters?: CourseListFilters): Promise<number>;
+  getMaxDisplayOrder(): Promise<number>;
+  getMaxActiveDisplayOrder(): Promise<number>;
+  closeDisplayOrderGap(deletedDisplayOrder: number): Promise<void>;
+  moveDisplayOrder(
+    courseId: string,
+    oldOrder: number,
+    newOrder: number,
+  ): Promise<void>;
+  getManagementCounts(
+    courseId: string,
+  ): Promise<CourseManagementCounts>;
   deletePermanent(id: string): Promise<void>;
 }

@@ -1,53 +1,45 @@
 "use client";
 
-import { useEffect } from "react";
-import {
-  useForm,
-} from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@/src/shared/components/ui/button";
-import { FormError } from "@/src/shared/components/ui/form-error";
 import { Input } from "@/src/shared/components/ui/input";
-import { Label } from "@/src/shared/components/ui/label";
 import { Modal } from "@/src/shared/components/ui/model";
 import { Textarea } from "@/src/shared/components/ui/textarea";
+import { WordCount } from "@/src/shared/components/ui/word-count";
+import {
+  ValidatedField,
+  validatedFieldInputClass,
+} from "@/src/shared/components/ui/validated-field";
+import { truncateToMaxWords } from "@/src/shared/utils/word-count";
 
 import {
   createCourseModuleSchema,
   CreateCourseModuleForm,
 } from "@/src/features/course-modules/schemas/course-module.schema";
-
-import type {
-  CourseModule,
-} from "@/src/features/course-modules/types/course-module.types";
+import type { CourseModule } from "@/src/features/course-modules/types/course-module.types";
+import {
+  getSyncFieldState,
+  MODULE_WORD_LIMITS,
+} from "@/src/features/course-modules/utils/module-form-validation";
 
 interface CourseModuleFormProps {
   open: boolean;
-
   loading?: boolean;
-
   module?: CourseModule;
-
   courseId: string;
-
   onClose: () => void;
-
-  onSubmit: (
-    values: CreateCourseModuleForm
-  ) => Promise<void>;
+  onSubmit: (values: CreateCourseModuleForm) => Promise<void>;
 }
 
-const defaultValues: CreateCourseModuleForm =
-  {
-    courseId: "",
-
-    title: "",
-
-    description: "",
-
-    keySkills: [],
-  };
+const defaultValues: CreateCourseModuleForm = {
+  courseId: "",
+  title: "",
+  description: "",
+  keySkills: [],
+};
 
 export function CourseModuleForm({
   open,
@@ -57,226 +49,150 @@ export function CourseModuleForm({
   onClose,
   onSubmit,
 }: CourseModuleFormProps) {
+  const isEdit = Boolean(module);
+  const [editValidationReady, setEditValidationReady] = useState(false);
+
   const {
     register,
     handleSubmit,
     reset,
+    trigger,
     watch,
     setValue,
-    formState: {
-      errors,
-    },
+    formState: { errors, touchedFields, isSubmitted },
   } = useForm<CreateCourseModuleForm>({
-    
-    resolver: zodResolver(
-      createCourseModuleSchema
-    ),
-    
-
+    resolver: zodResolver(createCourseModuleSchema),
+    mode: "onTouched",
+    reValidateMode: "onChange",
     defaultValues,
   });
 
-  useEffect(() => {
-  register("courseId");
-}, [register]);
-
-  const keySkills = watch("keySkills");
+  const titleValue = watch("title");
+  const descriptionValue = watch("description");
+  const showValidation = Boolean(isSubmitted || editValidationReady);
 
   useEffect(() => {
     if (!open) {
+      setEditValidationReady(false);
       return;
     }
 
     if (module) {
       reset({
-  courseId: module.courseId,
-  title: module.title,
-  description:
-    module.description ?? "",
-  keySkills:
-    module.keySkills ?? [],
-});
-
+        courseId: module.courseId,
+        title: module.title,
+        description: module.description ?? "",
+        keySkills: module.keySkills ?? [],
+      });
       return;
     }
 
-   reset({
-  courseId: courseId,
-  title: "",
-  description: "",
-  keySkills: [],
-});
-  }, [
-    open,
-    module,
-    courseId,
-    reset,
-  ]);
+    reset({
+      courseId,
+      title: "",
+      description: "",
+      keySkills: [],
+    });
+  }, [open, module, courseId, reset]);
 
-  const submitForm =
-    async (
-      values: CreateCourseModuleForm
-    ) => {
-      await onSubmit(values);
-    };
+  useEffect(() => {
+    if (!open || !module || editValidationReady) {
+      return;
+    }
+
+    void trigger().then(() => {
+      setEditValidationReady(true);
+    });
+  }, [open, module, editValidationReady, trigger]);
+
+  const titleState = getSyncFieldState(
+    Boolean(touchedFields.title || showValidation),
+    errors.title?.message,
+    titleValue,
+    { required: true },
+  );
+
+  const descriptionState = getSyncFieldState(
+    Boolean(touchedFields.description || showValidation),
+    errors.description?.message,
+    descriptionValue,
+  );
 
   return (
     <Modal
       open={open}
-      title={
-        module
-          ? "Edit Module"
-          : "Create Module"
-      }
+      title={isEdit ? "Edit Module" : "Create Module"}
       onClose={onClose}
     >
       <form
-  onSubmit={handleSubmit(
-    submitForm,
-    (errors) => {
-      console.log(
-        "Validation Errors",
-        errors
-      );
-    }
-  )}
->
-  <input
-  type="hidden"
-  {...register("courseId")}
-/>
-        <div>
-          <Label required>
-            Module Title
-          </Label>
+        className="space-y-4"
+        onSubmit={handleSubmit(async (values) => {
+          await onSubmit({
+            ...values,
+            courseId: values.courseId || courseId,
+            keySkills: values.keySkills ?? [],
+          });
+        })}
+      >
+        <input type="hidden" {...register("courseId")} />
 
+        <ValidatedField
+          label="Module Name"
+          required
+          state={titleState}
+          errorMessage={errors.title?.message}
+        >
           <Input
-            placeholder="Enter module title"
-            {...register(
-              "title"
-            )}
+            placeholder="Enter module name"
+            className={validatedFieldInputClass(titleState)}
+            disabled={loading}
+            {...register("title")}
           />
+        </ValidatedField>
 
-          <FormError
-            message={
-              errors.title
-                ?.message
-            }
-          />
-        </div>
-
-        <div>
-          <Label>
-            Description
-          </Label>
-
+        <ValidatedField
+          label="Description"
+          state={descriptionState}
+          errorMessage={errors.description?.message}
+        >
           <Textarea
+            rows={4}
             placeholder="Enter module description"
-            {...register(
-              "description"
-            )}
+            className={validatedFieldInputClass(descriptionState)}
+            disabled={loading}
+            value={descriptionValue}
+            onChange={(event) => {
+              const next = truncateToMaxWords(
+                event.target.value,
+                MODULE_WORD_LIMITS.moduleDescription,
+              );
+              setValue("description", next, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+              });
+            }}
+            onBlur={() => {
+              void trigger("description");
+            }}
           />
-
-          <FormError
-            message={
-              errors
-                .description
-                ?.message
-            }
+          <WordCount
+            value={descriptionValue}
+            maxWords={MODULE_WORD_LIMITS.moduleDescription}
           />
-        </div>
+        </ValidatedField>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label>
-              Key Skills
-            </Label>
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                setValue("keySkills", [...keySkills, ""])
-              }
-            >
-              Add Skill
-            </Button>
-          </div>
-          <div className="space-y-3">
-            {keySkills.length ===
-              0 && (
-              <p className="text-sm text-muted-foreground">
-                No key skills
-                added.
-              </p>
-            )}
-
-            {keySkills.map(
-              (
-                _,
-                index
-              ) => (
-                <div
-                  key={index}
-                  className="flex items-start gap-2"
-                >
-                  <Input
-                    placeholder={`Skill ${
-                      index + 1
-                    }`}
-                    {...register(`keySkills.${index}`)}
-                  />
-
-                  <Button
-                    type="button"
-                    variant="danger"
-                    onClick={() =>
-                      setValue(
-                        "keySkills",
-                        keySkills.filter((_, i) => i !== index)
-                      )
-                    }
-                  >
-                    Remove
-                  </Button>
-                </div>
-              )
-            )}
-
-            <FormError
-              message={
-                errors
-                  .keySkills
-                  ?.message
-              }
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 border-t pt-6">
+        <div className="flex justify-end gap-3 border-t pt-4">
           <Button
             type="button"
             variant="outline"
-            onClick={
-              onClose
-            }
-            disabled={
-              loading
-            }
+            onClick={onClose}
+            disabled={loading}
           >
             Cancel
           </Button>
-
-          <Button
-  type="submit"
-  loading={loading}
-  onClick={() =>
-    console.log("Submit Button Clicked")
-  }
->
-            {module
-              ? "Update Module"
-              : "Create Module"}
+          <Button type="submit" loading={loading}>
+            {isEdit ? "Update Module" : "Create Module"}
           </Button>
         </div>
       </form>

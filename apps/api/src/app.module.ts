@@ -13,6 +13,7 @@ import { CommunityPostModule } from './modules/community-post/community-post.mod
 import { CourseModuleModule } from './modules/course-module/course-module.module';
 import { CourseLessonModule } from './modules/course-lesson/course-lesson.module';
 import { CourseResourceModule } from './modules/course-resource/course-resource.module';
+import { CourseQuizModule } from './modules/course-quiz/course-quiz.module';
 import { EnrollmentModule } from './modules/enrollment/enrollment.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { FinancialArticleModule } from './modules/financial-article/financial-article.module';
@@ -40,6 +41,7 @@ import { TrainerModule } from './modules/trainer/trainer.module';
     CourseModuleModule,
     CourseLessonModule,
     CourseResourceModule,
+    CourseQuizModule,
     TrainerModule,
     BatchModule,
     StudentModule,

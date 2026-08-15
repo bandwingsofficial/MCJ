@@ -8,18 +8,24 @@ interface Props {
   onClose: () => void;
 
   onConfirm: () => void;
+
+  isLoading?: boolean;
 }
 
 export function CourseDeactivateDialog({
   open,
   onClose,
   onConfirm,
+  isLoading = false,
 }: Props) {
   return (
     <ConfirmDialog
       open={open}
-      title="Deactivate Course"
+      title="Deactivate course?"
       description="Students will no longer be able to access this course."
+      confirmLabel="Deactivate"
+      confirmVariant="danger"
+      loading={isLoading}
       onConfirm={onConfirm}
       onCancel={onClose}
     />

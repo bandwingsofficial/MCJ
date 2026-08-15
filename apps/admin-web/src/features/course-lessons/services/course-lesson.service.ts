@@ -94,6 +94,42 @@ class CourseLessonService {
 
     return data;
   }
+
+  async deactivateCourseLesson(id: string) {
+    const { data } = await apiClient.patch<CourseLessonResponse>(
+      `${this.basePath}/${id}/deactivate`,
+    );
+
+    return data;
+  }
+
+  async activateCourseLesson(id: string) {
+    const { data } = await apiClient.patch<CourseLessonResponse>(
+      `${this.basePath}/${id}/activate`,
+    );
+
+    return data;
+  }
+
+  async uploadLessonVideo(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", "course-lessons");
+    formData.append("fileName", file.name);
+
+    const response = await apiClient.post(
+      "/admin/uploads",
+      formData,
+      {
+        headers: {
+          "Content-Type": undefined,
+        },
+        transformRequest: [(data) => data],
+      },
+    );
+
+    return response.data;
+  }
 }
 
 export const courseLessonService =

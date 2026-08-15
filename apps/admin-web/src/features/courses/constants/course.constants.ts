@@ -33,15 +33,18 @@ export const COURSE_STATUSES =
     "ARCHIVED",
   ] as const satisfies readonly CourseStatus[];
 
-export const DEFAULT_COURSE_FILTERS =
-  {
-    search: "",
+export const DEFAULT_COURSE_PAGE_SIZE = 20;
 
-    includeDeleted: false,
+export const DEFAULT_COURSE_FILTERS = {
+  search: "",
 
-    status: undefined,
+  categoryId: undefined,
 
-    skip: 0,
+  level: undefined,
 
-    take: 10,
-  };
+  status: undefined,
+
+  page: 1,
+
+  pageSize: DEFAULT_COURSE_PAGE_SIZE,
+};

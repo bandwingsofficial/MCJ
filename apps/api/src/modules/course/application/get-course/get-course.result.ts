@@ -142,6 +142,7 @@ export class GetCourseResult {
     public readonly deletedAt: Date | null,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
+    public readonly categoryName?: string | null,
   ) {}
 
   static fromEntity(
@@ -156,6 +157,7 @@ export class GetCourseResult {
       isEnrolled?: boolean | null;
       isAdmitted?: boolean | null;
       publicView?: boolean;
+      categoryName?: string | null;
     } = {},
   ): GetCourseResult {
     const publicView = options.publicView ?? false;
@@ -237,6 +239,7 @@ export class GetCourseResult {
       course.deletedAt,
       course.createdAt,
       course.updatedAt,
+      options.categoryName,
     );
   }
 }

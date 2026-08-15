@@ -26,14 +26,26 @@ import type {
 } from '../../application/create-course/create-course.command';
 import { CreateCourseCommand } from '../../application/create-course/create-course.command';
 import { CreateCourseHandler } from '../../application/create-course/create-course.handler';
+import { BulkDeleteCoursesCommand } from '../../application/bulk-delete-courses/bulk-delete-courses.command';
+import { BulkDeleteCoursesHandler } from '../../application/bulk-delete-courses/bulk-delete-courses.handler';
+import { BulkPermanentDeleteCoursesCommand } from '../../application/bulk-permanent-delete-courses/bulk-permanent-delete-courses.command';
+import { BulkPermanentDeleteCoursesHandler } from '../../application/bulk-permanent-delete-courses/bulk-permanent-delete-courses.handler';
+import { BulkRestoreCoursesCommand } from '../../application/bulk-restore-courses/bulk-restore-courses.command';
+import { BulkRestoreCoursesHandler } from '../../application/bulk-restore-courses/bulk-restore-courses.handler';
+import { BulkUpdateCourseStatusCommand } from '../../application/bulk-update-course-status/bulk-update-course-status.command';
+import { BulkUpdateCourseStatusHandler } from '../../application/bulk-update-course-status/bulk-update-course-status.handler';
 import { DeleteCourseCommand } from '../../application/delete-course/delete-course.command';
 import { DeleteCourseHandler } from '../../application/delete-course/delete-course.handler';
 import { GetCourseHandler } from '../../application/get-course/get-course.handler';
 import { GetCourseQuery } from '../../application/get-course/get-course.query';
+import { GetCourseSummaryHandler } from '../../application/get-course-summary/get-course-summary.handler';
+import { GetCourseSummaryQuery } from '../../application/get-course-summary/get-course-summary.query';
 import { ListCoursesHandler } from '../../application/list-courses/list-courses.handler';
 import { ListCoursesQuery } from '../../application/list-courses/list-courses.query';
 import { PermanentDeleteCourseCommand } from '../../application/permanent-delete-course/permanent-delete-course.command';
 import { PermanentDeleteCourseHandler } from '../../application/permanent-delete-course/permanent-delete-course.handler';
+import { ReorderCoursesCommand } from '../../application/reorder-courses/reorder-courses.command';
+import { ReorderCoursesHandler } from '../../application/reorder-courses/reorder-courses.handler';
 import { RestoreCourseCommand } from '../../application/restore-course/restore-course.command';
 import { RestoreCourseHandler } from '../../application/restore-course/restore-course.handler';
 import { UpdateCourseCommand } from '../../application/update-course/update-course.command';
@@ -41,7 +53,10 @@ import { UpdateCourseHandler } from '../../application/update-course/update-cour
 import { UpdateCourseStatusCommand } from '../../application/update-course-status/update-course-status.command';
 import { UpdateCourseStatusHandler } from '../../application/update-course-status/update-course-status.handler';
 import { CreateCourseDto } from '../dtos/create-course.dto';
+import { BulkCourseIdsDto } from '../dtos/bulk-course-ids.dto';
+import { BulkUpdateCourseStatusDto } from '../dtos/bulk-update-course-status.dto';
 import { ListCoursesQueryDto } from '../dtos/list-courses-query.dto';
+import { ReorderCoursesDto } from '../dtos/reorder-courses.dto';
 import { UpdateCourseDto } from '../dtos/update-course.dto';
 
 @ApiTags('Admin Courses')
@@ -58,6 +73,12 @@ export class AdminCourseController {
     private readonly restoreCourseHandler: RestoreCourseHandler,
     private readonly permanentDeleteCourseHandler: PermanentDeleteCourseHandler,
     private readonly updateCourseStatusHandler: UpdateCourseStatusHandler,
+    private readonly reorderCoursesHandler: ReorderCoursesHandler,
+    private readonly bulkUpdateCourseStatusHandler: BulkUpdateCourseStatusHandler,
+    private readonly bulkDeleteCoursesHandler: BulkDeleteCoursesHandler,
+    private readonly bulkRestoreCoursesHandler: BulkRestoreCoursesHandler,
+    private readonly bulkPermanentDeleteCoursesHandler: BulkPermanentDeleteCoursesHandler,
+    private readonly getCourseSummaryHandler: GetCourseSummaryHandler,
   ) {}
 
   @Post()
@@ -127,6 +148,91 @@ export class AdminCourseController {
     return {
       success: true,
       message: 'Courses fetched successfully',
+      data: result,
+    };
+  }
+
+  @Patch('reorder')
+  async reorder(@Body() dto: ReorderCoursesDto) {
+    const result = await this.reorderCoursesHandler.execute(
+      new ReorderCoursesCommand(
+        dto.courseId,
+        dto.newDisplayOrder,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Courses reordered successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/status')
+  async bulkUpdateStatus(@Body() dto: BulkUpdateCourseStatusDto) {
+    const result = await this.bulkUpdateCourseStatusHandler.execute(
+      new BulkUpdateCourseStatusCommand(
+        dto.courseIds,
+        dto.status,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Course statuses updated successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/restore')
+  async bulkRestore(@Body() dto: BulkCourseIdsDto) {
+    const result = await this.bulkRestoreCoursesHandler.execute(
+      new BulkRestoreCoursesCommand(dto.courseIds),
+    );
+
+    return {
+      success: true,
+      message: 'Courses restored successfully',
+      data: result,
+    };
+  }
+
+  @Delete('bulk')
+  async bulkDelete(@Body() dto: BulkCourseIdsDto) {
+    const result = await this.bulkDeleteCoursesHandler.execute(
+      new BulkDeleteCoursesCommand(dto.courseIds),
+    );
+
+    return {
+      success: true,
+      message: 'Courses deleted successfully',
+      data: result,
+    };
+  }
+
+  @Delete('bulk/permanent')
+  async bulkPermanentDelete(@Body() dto: BulkCourseIdsDto) {
+    const result =
+      await this.bulkPermanentDeleteCoursesHandler.execute(
+        new BulkPermanentDeleteCoursesCommand(dto.courseIds),
+      );
+
+    return {
+      success: true,
+      message: 'Courses permanently deleted successfully',
+      data: result,
+    };
+  }
+
+  @Get(':id/summary')
+  async getSummary(@Param('id') id: string) {
+    const result = await this.getCourseSummaryHandler.execute(
+      new GetCourseSummaryQuery(id),
+    );
+
+    return {
+      success: true,
+      message: 'Course summary fetched successfully',
       data: result,
     };
   }

@@ -105,6 +105,12 @@ if (course.branchIds.length) {
     return record ? CourseMapper.toDomain(record) : null;
   }
 
+  async findByIdIncludingDeleted(
+    id: string,
+  ): Promise<Course | null> {
+    return this.findById(id, true);
+  }
+
   async findBySlug(
     slug: string,
     includeDeleted = false,
@@ -127,7 +133,12 @@ if (course.branchIds.length) {
       where: this.buildWhere(filters),
       include: this.includeRelations(),
       orderBy: [
-        { displayOrder: 'asc' },
+        {
+          displayOrder: {
+            sort: 'asc',
+            nulls: 'last',
+          },
+        },
         { createdAt: 'desc' },
       ],
       skip: filters.skip,
@@ -135,6 +146,175 @@ if (course.branchIds.length) {
     });
 
     return records.map(CourseMapper.toDomain);
+  }
+
+  async count(filters: CourseListFilters = {}): Promise<number> {
+    return this.prisma.course.count({
+      where: this.buildWhere(filters),
+    });
+  }
+
+  async getMaxDisplayOrder(): Promise<number> {
+    const result = await this.prisma.course.aggregate({
+      where: {
+        isDeleted: false,
+        displayOrder: { not: null },
+      },
+      _max: {
+        displayOrder: true,
+      },
+    });
+
+    return result._max.displayOrder ?? 0;
+  }
+
+  async getMaxActiveDisplayOrder(): Promise<number> {
+    const result = await this.prisma.course.aggregate({
+      where: {
+        isDeleted: false,
+        status: CourseStatus.ACTIVE,
+        displayOrder: { not: null },
+      },
+      _max: {
+        displayOrder: true,
+      },
+    });
+
+    return result._max.displayOrder ?? 0;
+  }
+
+  async closeDisplayOrderGap(
+    deletedDisplayOrder: number,
+  ): Promise<void> {
+    await this.prisma.course.updateMany({
+      where: {
+        isDeleted: false,
+        displayOrder: {
+          gt: deletedDisplayOrder,
+        },
+      },
+      data: {
+        displayOrder: {
+          decrement: 1,
+        },
+      },
+    });
+  }
+
+  async moveDisplayOrder(
+    courseId: string,
+    oldOrder: number,
+    newOrder: number,
+  ): Promise<void> {
+    if (oldOrder === newOrder) {
+      return;
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      if (newOrder < oldOrder) {
+        await tx.course.updateMany({
+          where: {
+            isDeleted: false,
+            displayOrder: {
+              gte: newOrder,
+              lt: oldOrder,
+            },
+          },
+          data: {
+            displayOrder: {
+              increment: 1,
+            },
+          },
+        });
+      } else {
+        await tx.course.updateMany({
+          where: {
+            isDeleted: false,
+            displayOrder: {
+              gt: oldOrder,
+              lte: newOrder,
+            },
+          },
+          data: {
+            displayOrder: {
+              decrement: 1,
+            },
+          },
+        });
+      }
+
+      await tx.course.update({
+        where: { id: courseId },
+        data: { displayOrder: newOrder },
+      });
+    });
+  }
+
+  async getManagementCounts(courseId: string): Promise<{
+    batches: number;
+    students: number;
+    instructors: number;
+    branches: number;
+    modules: number;
+    lessons: number;
+    quizzes: number;
+  }> {
+    const [
+      batches,
+      students,
+      instructors,
+      branches,
+      modules,
+      lessons,
+      quizzes,
+    ] = await Promise.all([
+      this.prisma.batch.count({
+        where: { courseId, isDeleted: false },
+      }),
+      this.prisma.enrollment.count({
+        where: { courseId, isDeleted: false },
+      }),
+      this.prisma.trainerCourse.count({
+        where: { courseId },
+      }),
+      this.prisma.courseBranch.count({
+        where: { courseId },
+      }),
+      this.prisma.courseModule.count({
+        where: { courseId, isDeleted: false },
+      }),
+      this.prisma.courseLesson.count({
+        where: {
+          isDeleted: false,
+          module: {
+            courseId,
+            isDeleted: false,
+          },
+        },
+      }),
+      this.prisma.courseQuiz.count({
+        where: {
+          isDeleted: false,
+          lesson: {
+            isDeleted: false,
+            module: {
+              courseId,
+              isDeleted: false,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      batches,
+      students,
+      instructors,
+      branches,
+      modules,
+      lessons,
+      quizzes,
+    };
   }
 
   async deletePermanent(id: string): Promise<void> {

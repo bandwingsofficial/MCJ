@@ -3,6 +3,10 @@ import { z } from "zod";
 import {
   COURSE_MODULE_CONSTANTS,
 } from "@/src/features/course-modules/constants/course-module.constants";
+import {
+  MODULE_WORD_LIMITS,
+  wordLimitRefine,
+} from "@/src/features/course-modules/utils/module-form-validation";
 
 export const createCourseModuleSchema =
   z.object({
@@ -26,11 +30,9 @@ export const createCourseModuleSchema =
 
     description: z
       .string()
-      .trim()
-      .max(
-        COURSE_MODULE_CONSTANTS.MAX_DESCRIPTION_LENGTH,
-        `Description cannot exceed ${COURSE_MODULE_CONSTANTS.MAX_DESCRIPTION_LENGTH} characters.`
-      ),
+      .refine(wordLimitRefine(MODULE_WORD_LIMITS.moduleDescription), {
+        message: `Description must not exceed ${MODULE_WORD_LIMITS.moduleDescription} words.`,
+      }),
 
     keySkills: z
       .array(

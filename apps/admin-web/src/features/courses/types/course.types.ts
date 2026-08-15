@@ -22,6 +22,11 @@ export type CourseStatus =
   | "INACTIVE"
   | "ARCHIVED";
 
+export type CourseFilterStatus =
+  | "ACTIVE"
+  | "INACTIVE"
+  | "ARCHIVED";
+
 export interface Course {
   id: string;
 
@@ -90,6 +95,66 @@ export interface Course {
   updatedAt: string;
 }
 
+export interface CourseBranch {
+  id: string;
+
+  branchName: string;
+
+  branchCode: string;
+}
+
+export interface CourseResourceTree {
+  id: string;
+
+  title: string;
+
+  type: string;
+
+  fileUrl: string | null;
+
+  displayOrder: number;
+}
+
+export interface CourseLessonQuizTree {
+  id: string;
+  title: string;
+  status: "DRAFT" | "PUBLISHED";
+  passingScore: number | null;
+  timeLimitMinutes: number | null;
+}
+
+export interface CourseLessonTree {
+  id: string;
+
+  title: string;
+
+  videoUrl: string | null;
+
+  duration: number | null;
+
+  displayOrder: number;
+
+  isPreview: boolean;
+
+  resources: CourseResourceTree[];
+
+  quiz?: CourseLessonQuizTree | null;
+}
+
+export interface CourseModuleTree {
+  id: string;
+
+  title: string;
+
+  description: string | null;
+
+  keySkills: string[];
+
+  displayOrder: number;
+
+  lessons: CourseLessonTree[];
+}
+
 export interface CourseDetails
   extends Course {
   createdBy: string;
@@ -99,6 +164,20 @@ export interface CourseDetails
   isDeleted: boolean;
 
   deletedAt: string | null;
+
+  branches?: CourseBranch[];
+
+  categoryName?: string | null;
+
+  modes?: CourseMode[];
+
+  modules?: CourseModuleTree[];
+
+  moduleCount?: number;
+
+  lessonCount?: number;
+
+  previewLessonCount?: number;
 }
 
 export interface CourseListItem {
@@ -120,17 +199,29 @@ export interface CourseListItem {
 
   level: CourseLevel;
 
-  mode: CourseMode;
+  mode?: CourseMode;
+
+  modes?: CourseMode[];
 
   language: string;
 
   categoryId: string;
 
+  categoryName?: string | null;
+
   branchId: string | null;
 
   status: CourseStatus;
 
-  displayOrder: number;
+  duration?: number | null;
+
+  durationType?: CourseDurationType | null;
+
+  displayOrder?: number | null;
+
+  isDeleted?: boolean;
+
+  deletedAt?: string | null;
 
   createdAt: string;
 
@@ -145,6 +236,30 @@ export interface CourseListResponse {
   items: CourseListItem[];
 
   count: number;
+
+  meta?: {
+    total: number;
+    skip: number;
+    take: number;
+  };
+}
+
+export interface CourseSummary {
+  courseId: string;
+
+  batches: number;
+
+  students: number;
+
+  instructors: number;
+
+  branches: number;
+
+  modules: number;
+
+  lessons: number;
+
+  quizzes: number;
 }
 
 export interface CreateCourseRequest {
@@ -234,21 +349,28 @@ export interface UpdateCourseRequest {
 
   status?: CourseStatus;
 
+  isFeatured?: boolean;
+
+  isPopular?: boolean;
+
   materialsMeta?: string;
 }
 
 export interface CourseFilters {
-  search: string;
+  search?: string;
 
-  includeDeleted: boolean;
+  categoryId?: string;
 
-  status?: CourseStatus;
-
+  /** Optional for branch manage workspace callers. */
   branchId?: string;
 
-  skip: number;
+  level?: CourseLevel;
 
-  take: number;
+  status?: CourseFilterStatus;
+
+  page?: number;
+
+  pageSize?: number;
 }
 
 export interface ApiSuccessResponse<T> {
@@ -315,4 +437,20 @@ export interface PermanentDeleteCourseResponse {
   id: string;
 
   permanentlyDeleted: boolean;
+}
+
+export interface BulkCourseItemResult {
+  courseId: string;
+  success: boolean;
+  message: string;
+  status?: CourseStatus;
+}
+
+export interface BulkCourseOperationResult {
+  requestedCount: number;
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  results: BulkCourseItemResult[];
+  failures: BulkCourseItemResult[];
 }

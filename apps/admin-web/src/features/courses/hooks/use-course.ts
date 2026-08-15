@@ -20,6 +20,8 @@ interface UseCourseReturn {
   error: string | null;
 
   refetch: () => Promise<void>;
+
+  setCourseData: (course: CourseDetails) => void;
 }
 
 export const useCourse = (
@@ -73,10 +75,15 @@ export const useCourse = (
     void fetchCourse();
   }, [fetchCourse]);
 
+  const setCourseData = (next: CourseDetails) => {
+    setCourse(next);
+  };
+
   return {
     course,
     isLoading,
     error,
     refetch: fetchCourse,
+    setCourseData,
   };
 };

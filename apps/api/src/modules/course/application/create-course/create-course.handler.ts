@@ -7,6 +7,7 @@ import { CourseImage } from '../../domain/entities/course-image.entity';
 import { CourseMaterial } from '../../domain/entities/course-material.entity';
 import { Course } from '../../domain/entities/course.entity';
 import type { CourseRepository } from '../../domain/repositories/course.repository';
+import { CourseStatus } from '../../domain/enums/course-status.enum';
 import { CourseDomainService } from '../../domain/services/course-domain.service';
 import { Slug } from '../../domain/value-objects/slug.vo';
 
@@ -157,6 +158,13 @@ export class CreateCourseHandler {
       );
     }
 
+    const status = command.status ?? CourseStatus.DRAFT;
+    const displayOrder =
+      command.displayOrder ??
+      (status === CourseStatus.ACTIVE
+        ? (await this.courseRepo.getMaxActiveDisplayOrder()) + 1
+        : null);
+
     const course = Course.create({
       id: courseId,
       title: command.title,
@@ -179,7 +187,7 @@ export class CreateCourseHandler {
       totalReviews: command.totalReviews,
       isFeatured: command.isFeatured,
       isPopular: command.isPopular,
-      displayOrder: command.displayOrder,
+      displayOrder,
       metaTitle: command.metaTitle ?? command.title,
       metaDescription:
         command.metaDescription ??
@@ -190,7 +198,7 @@ export class CreateCourseHandler {
         command.title.split(' ').join(','),
       categoryId: command.categoryId,
       branchIds: command.branchIds,
-      status: command.status,
+      status,
       images,
       materials,
       createdBy: command.createdBy,

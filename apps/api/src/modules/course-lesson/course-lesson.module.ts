@@ -16,6 +16,8 @@ import { GetCourseLessonHandler } from './application/get-course-lesson/get-cour
 import { ListCourseLessonsHandler } from './application/list-course-lessons/list-course-lessons.handler';
 import { MoveCourseLessonHandler } from './application/move-course-lesson/move-course-lesson.handler';
 import { RestoreCourseLessonHandler } from './application/restore-course-lesson/restore-course-lesson.handler';
+import { DeactivateCourseLessonHandler } from './application/deactivate-course-lesson/deactivate-course-lesson.handler';
+import { ActivateCourseLessonHandler } from './application/activate-course-lesson/activate-course-lesson.handler';
 import { UpdateCourseLessonHandler } from './application/update-course-lesson/update-course-lesson.handler';
 import type { CourseLessonRepository } from './domain/repositories/course-lesson.repository';
 import { CourseLessonDomainService } from './domain/services/course-lesson-domain.service';
@@ -124,6 +126,38 @@ import { CourseLessonController } from './presentation/controllers/course-lesson
         domainService: CourseLessonDomainService,
       ) =>
         new RestoreCourseLessonHandler(
+          courseLessonRepo,
+          domainService,
+        ),
+      inject: [
+        COURSE_LESSON_TOKENS.COURSE_LESSON_REPOSITORY,
+        CourseLessonDomainService,
+      ],
+    },
+
+    {
+      provide: DeactivateCourseLessonHandler,
+      useFactory: (
+        courseLessonRepo: CourseLessonRepository,
+        domainService: CourseLessonDomainService,
+      ) =>
+        new DeactivateCourseLessonHandler(
+          courseLessonRepo,
+          domainService,
+        ),
+      inject: [
+        COURSE_LESSON_TOKENS.COURSE_LESSON_REPOSITORY,
+        CourseLessonDomainService,
+      ],
+    },
+
+    {
+      provide: ActivateCourseLessonHandler,
+      useFactory: (
+        courseLessonRepo: CourseLessonRepository,
+        domainService: CourseLessonDomainService,
+      ) =>
+        new ActivateCourseLessonHandler(
           courseLessonRepo,
           domainService,
         ),

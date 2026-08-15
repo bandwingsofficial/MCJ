@@ -18,15 +18,15 @@ interface CourseModuleListProps {
     module: CourseModule,
   ) => void;
 
-  onMove: (
+  onDeactivate: (
+    module: CourseModule,
+  ) => void;
+
+  onActivate: (
     module: CourseModule,
   ) => void;
 
   onDelete: (
-    module: CourseModule,
-  ) => void;
-
-  onRestore: (
     module: CourseModule,
   ) => void;
 }
@@ -36,9 +36,9 @@ export function CourseModuleList({
   modules,
   onCreate,
   onEdit,
-  onMove,
+  onDeactivate,
+  onActivate,
   onDelete,
-  onRestore,
 }: CourseModuleListProps) {
   if (
     modules.length === 0
@@ -59,9 +59,9 @@ export function CourseModuleList({
             courseId={courseId}
             module={module}
             onEdit={onEdit}
-            onMove={onMove}
+            onDeactivate={onDeactivate}
+            onActivate={onActivate}
             onDelete={onDelete}
-            onRestore={onRestore}
           />
         ),
       )}

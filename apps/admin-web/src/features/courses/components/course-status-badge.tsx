@@ -8,43 +8,73 @@ import type {
 
 interface Props {
   status: CourseStatus;
+  deletedAt?: string | null;
+  isDeleted?: boolean;
 }
 
 export function CourseStatusBadge({
   status,
+  deletedAt,
+  isDeleted,
 }: Props) {
+  if (deletedAt || isDeleted) {
+    return (
+      <Badge
+        variant="danger"
+        className="px-2.5 py-0.5 text-sm"
+      >
+        Archived
+      </Badge>
+    );
+  }
+
   switch (status) {
     case "ACTIVE":
       return (
-        <Badge variant="success">
+        <Badge
+          variant="success"
+          className="px-2.5 py-0.5 text-sm"
+        >
           Active
         </Badge>
       );
 
     case "INACTIVE":
       return (
-        <Badge variant="danger">
+        <Badge
+          variant="warning"
+          className="px-2.5 py-0.5 text-sm"
+        >
           Inactive
         </Badge>
       );
 
     case "DRAFT":
       return (
-        <Badge variant="warning">
+        <Badge
+          variant="default"
+          className="px-2.5 py-0.5 text-sm"
+        >
           Draft
         </Badge>
       );
 
     case "ARCHIVED":
       return (
-        <Badge variant="default">
+        <Badge
+          variant="danger"
+          className="px-2.5 py-0.5 text-sm"
+        >
           Archived
         </Badge>
       );
 
     default:
       return (
-        <Badge variant="default">
+        <Badge
+          variant="default"
+          className="px-2.5 py-0.5 text-sm"
+        >
           {status}
         </Badge>
       );

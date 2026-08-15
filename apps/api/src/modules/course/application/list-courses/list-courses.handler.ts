@@ -1,3 +1,5 @@
+import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
+
 import type { CourseRepository } from '../../domain/repositories/course.repository';
 import {
   GetCourseResult,
@@ -5,6 +7,7 @@ import {
 } from '../get-course/get-course.result';
 
 import { ListCoursesQuery } from './list-courses.query';
+import { ListCoursesResult } from './list-courses.result';
 
 import { BranchRepository } from '@/modules/branch/domain/repositories/branch.repository';
 import { BranchNotFoundException } from '@/modules/branch/domain/errors/branch-not-found.exception';
@@ -13,12 +16,13 @@ export class ListCoursesHandler {
   constructor(
     private readonly courseRepo: CourseRepository,
     private readonly branchRepo: BranchRepository,
+    private readonly categoryRepo: CategoryRepository,
   ) {}
 
   async execute(
     query: ListCoursesQuery,
-  ): Promise<GetCourseResult[]> {
-    const courses = await this.courseRepo.findAll({
+  ): Promise<ListCoursesResult> {
+    const filters = {
       categoryId: query.categoryId,
       branchId: query.branchId,
       status: query.status,
@@ -29,9 +33,16 @@ export class ListCoursesHandler {
       onlyActive: query.onlyActive,
       skip: query.skip,
       take: query.take,
-    });
+    };
 
-    return Promise.all(
+    const [courses, total] = await Promise.all([
+      this.courseRepo.findAll(filters),
+      this.courseRepo.count(filters),
+    ]);
+
+    const categoryNameCache = new Map<string, string | null>();
+
+    const items = await Promise.all(
       courses.map(async (course) => {
         const branchEntities = await Promise.all(
           course.branchIds.map(async (branchId) => {
@@ -57,11 +68,22 @@ export class ListCoursesHandler {
             ),
         );
 
-        return GetCourseResult.fromEntity(
-          course,
-          branches,
-        );
+        let categoryName = categoryNameCache.get(course.categoryId);
+
+        if (categoryName === undefined) {
+          const category = await this.categoryRepo.findById(
+            course.categoryId,
+          );
+          categoryName = category?.name.getValue() ?? null;
+          categoryNameCache.set(course.categoryId, categoryName);
+        }
+
+        return GetCourseResult.fromEntity(course, branches, {
+          categoryName,
+        });
       }),
     );
+
+    return new ListCoursesResult(items, total);
   }
 }

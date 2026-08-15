@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import {
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -7,6 +8,8 @@ import {
   Min,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+
+import { LessonContentType } from '../../domain/enums/lesson-content-type.enum';
 
 export class UpdateCourseLessonDto {
   @ApiPropertyOptional({ example: 'What is Java?' })
@@ -35,6 +38,11 @@ export class UpdateCourseLessonDto {
     typeof value === 'string' ? value.trim() : value,
   )
   videoUrl?: string;
+
+  @ApiPropertyOptional({ enum: LessonContentType })
+  @IsOptional()
+  @IsEnum(LessonContentType)
+  contentType?: LessonContentType;
 
   @ApiPropertyOptional()
   @IsOptional()

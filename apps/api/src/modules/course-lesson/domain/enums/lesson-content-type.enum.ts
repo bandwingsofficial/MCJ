@@ -1,0 +1,5 @@
+export enum LessonContentType {
+  LESSON = 'LESSON',
+  SELF_PACED_VIDEO = 'SELF_PACED_VIDEO',
+  LIVE_RECORDED_VIDEO = 'LIVE_RECORDED_VIDEO',
+}

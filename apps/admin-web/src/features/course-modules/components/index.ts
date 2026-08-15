@@ -4,6 +4,10 @@ export * from "./CourseModuleCard";
 
 export * from "./CourseModuleDeleteDialog";
 
+export * from "./CourseModuleStatusBadge";
+
+export * from "./CourseModuleStatusDialog";
+
 export * from "./CourseModuleEmpty";
 
 export * from "./CourseModuleFilters";

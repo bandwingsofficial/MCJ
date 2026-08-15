@@ -28,6 +28,10 @@ import { MoveCourseLessonCommand } from '../../application/move-course-lesson/mo
 import { MoveCourseLessonHandler } from '../../application/move-course-lesson/move-course-lesson.handler';
 import { RestoreCourseLessonCommand } from '../../application/restore-course-lesson/restore-course-lesson.command';
 import { RestoreCourseLessonHandler } from '../../application/restore-course-lesson/restore-course-lesson.handler';
+import { DeactivateCourseLessonCommand } from '../../application/deactivate-course-lesson/deactivate-course-lesson.command';
+import { DeactivateCourseLessonHandler } from '../../application/deactivate-course-lesson/deactivate-course-lesson.handler';
+import { ActivateCourseLessonCommand } from '../../application/activate-course-lesson/activate-course-lesson.command';
+import { ActivateCourseLessonHandler } from '../../application/activate-course-lesson/activate-course-lesson.handler';
 import { UpdateCourseLessonCommand } from '../../application/update-course-lesson/update-course-lesson.command';
 import { UpdateCourseLessonHandler } from '../../application/update-course-lesson/update-course-lesson.handler';
 import { CreateCourseLessonDto } from '../dtos/create-course-lesson.dto';
@@ -47,6 +51,8 @@ export class AdminCourseLessonController {
     private readonly getCourseLessonHandler: GetCourseLessonHandler,
     private readonly deleteCourseLessonHandler: DeleteCourseLessonHandler,
     private readonly restoreCourseLessonHandler: RestoreCourseLessonHandler,
+    private readonly deactivateCourseLessonHandler: DeactivateCourseLessonHandler,
+    private readonly activateCourseLessonHandler: ActivateCourseLessonHandler,
     private readonly moveCourseLessonHandler: MoveCourseLessonHandler,
   ) {}
 
@@ -62,6 +68,7 @@ export class AdminCourseLessonController {
         dto.description,
         dto.videoUrl,
         dto.duration,
+        dto.contentType,
         user?.sub,
       ),
     );
@@ -118,6 +125,7 @@ export class AdminCourseLessonController {
         dto.description,
         dto.videoUrl,
         dto.duration,
+        dto.contentType,
         user?.sub,
       ),
     );
@@ -141,6 +149,38 @@ export class AdminCourseLessonController {
     return {
       success: true,
       message: 'Course lesson deleted successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':id/deactivate')
+  async deactivate(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.deactivateCourseLessonHandler.execute(
+      new DeactivateCourseLessonCommand(id, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: 'Course lesson deactivated successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':id/activate')
+  async activate(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.activateCourseLessonHandler.execute(
+      new ActivateCourseLessonCommand(id, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: 'Course lesson activated successfully',
       data: result,
     };
   }

@@ -1,0 +1,129 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+
+import { Card } from "@/src/shared/components/ui/card";
+import { EmptyState } from "@/src/shared/components/ui/empty-state";
+import { SearchInput } from "@/src/shared/components/ui/search-input";
+import { appToast } from "@/src/shared/components/ui/toast";
+
+import { batchService } from "@/src/features/batches/services/batch.service";
+import type { Batch } from "@/src/features/batches/types/batch.types";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
+
+interface Props {
+  courseId: string;
+}
+
+export function CourseManageBatchesPanel({ courseId }: Props) {
+  const [search, setSearch] = useState("");
+  const [batches, setBatches] = useState<Batch[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadBatches = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await batchService.getBatches({
+        courseId,
+        search,
+        includeDeleted: false,
+        take: 200,
+      });
+      setBatches(response.data ?? []);
+    } catch (error) {
+      appToast.error(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [courseId, search]);
+
+  useEffect(() => {
+    void loadBatches();
+  }, [loadBatches]);
+
+  return (
+    <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1 sm:max-w-sm">
+          <SearchInput
+            value={search}
+            placeholder="Search batches..."
+            onChange={setSearch}
+          />
+        </div>
+        <Link
+          href="/batches/create"
+          className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          <Plus className="mr-1.5 h-3.5 w-3.5" />
+          Create Batch
+        </Link>
+      </div>
+
+      {isLoading ? (
+        <p className="py-8 text-center text-sm text-slate-500">
+          Loading batches...
+        </p>
+      ) : batches.length === 0 ? (
+        <EmptyState
+          title="No batches for this course"
+          description="Create a batch linked to this course to schedule live classes."
+        />
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <table className="w-full min-w-[640px]">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Batch
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Branch
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Enrollment
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {batches.map((batch) => (
+                <tr key={batch.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                    {batch.name}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-700">
+                    {batch.branch?.branchName ?? batch.branchId}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                      {batch.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-700">
+                    {batch.enrolledCount}/{batch.capacity}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      href={`/batches/${batch.id}`}
+                      className="text-sm font-medium text-[#2447A8] hover:underline"
+                    >
+                      View
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}

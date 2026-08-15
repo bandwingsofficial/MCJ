@@ -1,5 +1,10 @@
 // src/features/course-lessons/types/course-lesson.types.ts
 
+export type LessonContentType =
+  | "LESSON"
+  | "SELF_PACED_VIDEO"
+  | "LIVE_RECORDED_VIDEO";
+
 export interface CourseLesson {
   id: string;
 
@@ -12,6 +17,8 @@ export interface CourseLesson {
   description: string | null;
 
   videoUrl: string | null;
+
+  contentType?: LessonContentType;
 
   duration: number | null;
 
@@ -38,6 +45,10 @@ export interface CreateCourseLessonRequest {
   description?: string;
 
   videoUrl?: string;
+
+  duration?: number;
+
+  contentType?: LessonContentType;
 }
 
 export interface UpdateCourseLessonRequest {
@@ -46,6 +57,10 @@ export interface UpdateCourseLessonRequest {
   description?: string;
 
   videoUrl?: string;
+
+  duration?: number | null;
+
+  contentType?: LessonContentType;
 }
 
 export interface MoveCourseLessonRequest {

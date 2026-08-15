@@ -1,44 +1,51 @@
 "use client";
 
 import { SearchInput } from "@/src/shared/components/ui/search-input";
-
 import { AppSelect } from "@/src/shared/components/ui/select";
+import { Button } from "@/src/shared/components/ui/button";
 
-import { Switch } from "@/src/shared/components/ui/switch";
-
-import { Label } from "@/src/shared/components/ui/label";
+import {
+  COURSE_LEVELS,
+} from "@/src/features/courses/constants/course.constants";
+import {
+  DEFAULT_COURSE_FILTERS,
+} from "@/src/features/courses/constants/course.constants";
 
 import type {
-  CourseFilters,
+  CourseFilters as CourseFiltersType,
 } from "@/src/features/courses/types/course.types";
 
-interface Props {
-  filters: CourseFilters;
+interface SelectOption {
+  label: string;
+  value: string;
+}
 
-  onChange: (
-    filters: CourseFilters
-  ) => void;
+interface CourseFiltersProps {
+  filters: CourseFiltersType;
+  categoryOptions: SelectOption[];
+  onChange: (filters: CourseFiltersType) => void;
 }
 
 export function CourseFilters({
   filters,
+  categoryOptions,
   onChange,
-}: Props) {
+}: CourseFiltersProps) {
+  const hasActiveFilters = Boolean(
+    (filters.search ?? "").trim() ||
+      filters.categoryId ||
+      filters.level ||
+      filters.status
+  );
+
   return (
-    <div 
-      className="
-        flex 
-        flex-col 
-        gap-3 
-        sm:flex-row 
-        sm:items-center 
-        w-full
-      "
-    >
-      <div className="flex-1 min-w-[200px]">
+    <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
+      <div className="min-w-0 flex-1">
         <SearchInput
-          value={filters.search}
-          onChange={(value) =>
+          value={filters.search ?? ""}
+          placeholder="Search courses..."
+          className="!h-10 rounded-lg !py-2 pl-9 text-[15px]"
+          onChange={(value: string) =>
             onChange({
               ...filters,
               search: value,
@@ -47,72 +54,84 @@ export function CourseFilters({
         />
       </div>
 
-      <div className="w-full sm:w-[180px]">
+      <div className="w-full shrink-0 sm:w-48">
         <AppSelect
-          placeholder="Select Status"
-          value={
-            filters.status ??
-            "ALL"
+          value={filters.categoryId ?? "ALL"}
+          triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
+          onValueChange={(value) =>
+            onChange({
+              ...filters,
+              categoryId:
+                value === "ALL" ? undefined : value,
+            })
           }
-          onValueChange={(
-            value
-          ) =>
+          options={[
+            { label: "All Categories", value: "ALL" },
+            ...categoryOptions,
+          ]}
+        />
+      </div>
+
+      <div className="w-full shrink-0 sm:w-44">
+        <AppSelect
+          value={filters.status ?? "ALL"}
+          triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
+          onValueChange={(value) =>
             onChange({
               ...filters,
               status:
                 value === "ALL"
                   ? undefined
-                  : (value as CourseFilters["status"]),
+                  : (value as CourseFiltersType["status"]),
             })
           }
           options={[
-            {
-              label: "All Status",
-              value: "ALL",
-            },
-            {
-              label: "Draft",
-              value: "DRAFT",
-            },
-            {
-              label: "Active",
-              value: "ACTIVE",
-            },
-            {
-              label: "Inactive",
-              value: "INACTIVE",
-            },
-            {
-              label: "Archived",
-              value: "ARCHIVED",
-            },
+            { label: "All Status", value: "ALL" },
+            { label: "Active", value: "ACTIVE" },
+            { label: "Inactive", value: "INACTIVE" },
+            { label: "Archived", value: "ARCHIVED" },
           ]}
         />
       </div>
 
-      <div className="flex items-center gap-3 select-none shrink-0 h-10 px-1">
-        <Switch
-          checked={
-            filters.includeDeleted
-          }
-          onCheckedChange={(
-            checked
-          ) =>
+      <div className="w-full shrink-0 sm:w-44">
+        <AppSelect
+          value={filters.level ?? "ALL"}
+          triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
+          onValueChange={(value) =>
             onChange({
               ...filters,
-              includeDeleted:
-                checked,
+              level:
+                value === "ALL"
+                  ? undefined
+                  : (value as CourseFiltersType["level"]),
             })
           }
+          options={[
+            { label: "All Types", value: "ALL" },
+            ...COURSE_LEVELS.map((level) => ({
+              label: level.replaceAll("_", " "),
+              value: level,
+            })),
+          ]}
         />
-
-        <Label
-          htmlFor="course-include-deleted"
-          className="text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground transition-colors select-none"
-        >
-          Include Deleted
-        </Label>
       </div>
+
+      {hasActiveFilters ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 shrink-0 rounded-lg px-3 text-[15px]"
+          onClick={() =>
+            onChange({
+              ...DEFAULT_COURSE_FILTERS,
+              pageSize: filters.pageSize,
+            })
+          }
+        >
+          Reset
+        </Button>
+      ) : null}
     </div>
   );
 }

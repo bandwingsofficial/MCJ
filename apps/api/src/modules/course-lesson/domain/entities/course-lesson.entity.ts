@@ -2,6 +2,8 @@ import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
 import { Slug } from '@common/value-objects/slug.vo';
 
+import { LessonContentType } from '../enums/lesson-content-type.enum';
+
 export class CourseLesson {
   private constructor(
     public readonly id: string,
@@ -10,6 +12,7 @@ export class CourseLesson {
     public slug: Slug,
     public description: string | null,
     public videoUrl: string | null,
+    public contentType: LessonContentType,
     public duration: number | null,
     public displayOrder: number,
     public readonly createdBy: string | null,
@@ -31,6 +34,7 @@ export class CourseLesson {
         : Slug.fromTitle(params.title),
       params.description ?? null,
       params.videoUrl ?? null,
+      params.contentType ?? LessonContentType.LESSON,
       params.duration ?? null,
       params.displayOrder ?? 0,
       params.createdBy ?? null,
@@ -53,6 +57,7 @@ export class CourseLesson {
       Slug.create(params.slug),
       params.description,
       params.videoUrl,
+      params.contentType,
       params.duration,
       params.displayOrder,
       params.createdBy,
@@ -80,6 +85,9 @@ export class CourseLesson {
     }
     if (params.videoUrl !== undefined) {
       this.videoUrl = params.videoUrl;
+    }
+    if (params.contentType !== undefined) {
+      this.contentType = params.contentType;
     }
     if (params.duration !== undefined) {
       this.duration = params.duration;
@@ -136,6 +144,7 @@ export interface CourseLessonCreateParams {
   slug?: string;
   description?: string | null;
   videoUrl?: string | null;
+  contentType?: LessonContentType;
   duration?: number | null;
   displayOrder?: number;
   createdBy?: string | null;
@@ -146,6 +155,7 @@ export interface CourseLessonUpdateParams {
   slug?: string;
   description?: string | null;
   videoUrl?: string | null;
+  contentType?: LessonContentType;
   duration?: number | null;
   updatedBy?: string | null;
 }
@@ -157,6 +167,7 @@ export interface CourseLessonReconstituteParams {
   slug: string;
   description: string | null;
   videoUrl: string | null;
+  contentType: LessonContentType;
   duration: number | null;
   displayOrder: number;
   createdBy: string | null;

@@ -112,6 +112,23 @@ class TrainerService {
     }
   }
 
+  async assignTrainerCourses(
+    id: string,
+    courseIds: string[],
+  ) {
+    try {
+      const response = await apiClient.patch<
+        ApiSuccessResponse<TrainerDetails>
+      >(`${this.basePath}/${id}/assign-courses`, {
+        courseIds,
+      });
+
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async updateTrainer(
     id: string,
     payload: UpdateTrainerRequest

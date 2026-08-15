@@ -1,0 +1,3 @@
+export const COURSE_QUIZ_TOKENS = {
+  COURSE_QUIZ_REPOSITORY: Symbol('COURSE_QUIZ_REPOSITORY'),
+} as const;

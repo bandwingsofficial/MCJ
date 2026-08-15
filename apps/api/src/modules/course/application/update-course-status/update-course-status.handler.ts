@@ -25,8 +25,22 @@ export class UpdateCourseStatusHandler {
     );
 
     if (command.activate) {
+      if (course.displayOrder == null) {
+        const nextDisplayOrder =
+          (await this.courseRepo.getMaxActiveDisplayOrder()) + 1;
+
+        course.changeDisplayOrder(nextDisplayOrder);
+      }
+
       course.activate(command.updatedBy);
     } else {
+      if (course.displayOrder != null) {
+        await this.courseRepo.closeDisplayOrderGap(
+          course.displayOrder,
+        );
+      }
+
+      course.changeDisplayOrder(null);
       course.deactivate(command.updatedBy);
     }
 

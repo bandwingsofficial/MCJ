@@ -4,17 +4,16 @@ import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 
 interface CourseLessonDeleteDialogProps {
   open: boolean;
-
   loading: boolean;
-
+  lessonTitle?: string;
   onClose: () => void;
-
   onConfirm: () => void;
 }
 
 export function CourseLessonDeleteDialog({
   open,
   loading,
+  lessonTitle,
   onClose,
   onConfirm,
 }: CourseLessonDeleteDialogProps) {
@@ -22,7 +21,11 @@ export function CourseLessonDeleteDialog({
     <ConfirmDialog
       open={open}
       title="Delete Lesson"
-      description="This lesson will be moved to deleted items. You can restore it later."
+      description={
+        lessonTitle
+          ? `Are you sure you want to delete "${lessonTitle}"?`
+          : "Are you sure you want to delete this lesson?"
+      }
       loading={loading}
       onCancel={onClose}
       onConfirm={onConfirm}

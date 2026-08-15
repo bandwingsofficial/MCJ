@@ -1,151 +1,36 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Settings } from "lucide-react";
 
-import { Dropdown } from "@/src/shared/components/ui/dropdown";
-import { Button } from "@/src/shared/components/ui/button";
+import type { CourseListItem } from "@/src/features/courses/types/course.types";
 
-import {
-  CourseListItem,
-} from "@/src/features/courses/types/course.types";
+const iconBtnClass =
+  "h-10 w-10 shrink-0 rounded-lg p-0";
+
+const iconClass = "h-[1.35rem] w-[1.35rem]";
 
 interface Props {
   course: CourseListItem;
-
-  onView: (
-    course: CourseListItem
-  ) => void;
-
-  onEdit: (
-    course: CourseListItem
-  ) => void;
-
-  onDelete: (
-    course: CourseListItem
-  ) => void;
-
-  onRestore: (
-    course: CourseListItem
-  ) => void;
-
-  onActivate: (
-    course: CourseListItem
-  ) => void;
-
-  onDeactivate: (
-    course: CourseListItem
-  ) => void;
-
-  onPermanentDelete: (
-    course: CourseListItem
-  ) => void;
+  disabled?: boolean;
 }
 
 export function CourseActions({
   course,
-  onView,
-  onEdit,
-  onDelete,
-  onRestore,
-  onActivate,
-  onDeactivate,
-  onPermanentDelete,
+  disabled = false,
 }: Props) {
-  const router =
-    useRouter();
-
-  const items = [
-    {
-      label: "View",
-      onClick: () =>
-        onView(course),
-    },
-
-    {
-      label: "Modules",
-      onClick: () =>
-        router.push(
-          `/courses/${course.id}/modules`
-        ),
-    },
-
-    {
-      label: "Edit",
-      onClick: () =>
-        onEdit(course),
-    },
-  ];
-
-  if (
-    course.status ===
-    "ACTIVE"
-  ) {
-    items.push({
-      label: "Deactivate",
-      onClick: () =>
-        onDeactivate(
-          course
-        ),
-    });
-  }
-
-  if (
-    course.status ===
-      "INACTIVE" ||
-    course.status ===
-      "DRAFT"
-  ) {
-    items.push({
-      label: "Activate",
-      onClick: () =>
-        onActivate(
-          course
-        ),
-    });
-  }
-
-  if (
-    course.status !==
-    "ARCHIVED"
-  ) {
-    items.push({
-      label: "Delete",
-      onClick: () =>
-        onDelete(course),
-    });
-  }
-
-  if (
-    course.status ===
-    "ARCHIVED"
-  ) {
-    items.push(
-      {
-        label: "Restore",
-        onClick: () =>
-          onRestore(
-            course
-          ),
-      },
-      {
-        label:
-          "Permanent Delete",
-        onClick: () =>
-          onPermanentDelete(
-            course
-          ),
-      }
-    );
-  }
-
   return (
-    <Dropdown
-      trigger={
-        <Button variant="outline">
-          Actions
-        </Button>
-      }
-      items={items}
-    />
+    <div className="flex items-center justify-end whitespace-nowrap">
+      <Link
+        href={`/courses/${course.id}/manage`}
+        title="Manage course"
+        aria-label="Manage course"
+        className={`inline-flex items-center justify-center ${iconBtnClass} text-slate-700 hover:bg-slate-100 ${
+          disabled ? "pointer-events-none opacity-50" : ""
+        }`}
+      >
+        <Settings className={iconClass} />
+      </Link>
+    </div>
   );
 }

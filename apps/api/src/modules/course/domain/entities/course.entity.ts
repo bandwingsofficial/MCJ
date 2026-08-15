@@ -194,9 +194,15 @@ export class Course {
     this.touch();
   }
 
+  changeDisplayOrder(displayOrder: number | null) {
+    this.displayOrder = displayOrder;
+    this.touch();
+  }
+
   softDelete(deletedBy?: string | null) {
     this.isDeleted = true;
     this.status = CourseStatus.ARCHIVED;
+    this.displayOrder = null;
     this.deletedAt = new Date();
     this.deletedBy = deletedBy ?? null;
     this.touch();

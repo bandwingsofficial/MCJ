@@ -39,6 +39,7 @@ export class UpdateCourseLessonHandler {
       slug: command.title !== undefined ? nextSlug : undefined,
       description: command.description,
       videoUrl: command.videoUrl,
+      contentType: command.contentType,
       duration: command.duration,
       updatedBy: command.updatedBy,
     });

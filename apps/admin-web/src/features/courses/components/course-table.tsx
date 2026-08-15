@@ -1,7 +1,15 @@
 "use client";
 
-import Image from "next/image";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
+import Link from "next/link";
+import { GripVertical } from "lucide-react";
+
+import { Checkbox } from "@/src/shared/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -10,219 +18,334 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/shared/components/ui/table";
+import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
-import {
-  CourseListItem,
-} from "@/src/features/courses/types/course.types";
+import type { CourseListItem } from "@/src/features/courses/types/course.types";
+import { isArchivedCourse } from "@/src/features/courses/utils/course-bulk.utils";
 
 import { CourseStatusBadge } from "./course-status-badge";
-
 import { CourseActions } from "./course-actions";
 
-interface Props {
+interface CourseTableProps {
   courses: CourseListItem[];
+  selectedCourseIds?: string[];
+  onSelectionChange?: (ids: string[]) => void;
+  actionsDisabled?: boolean;
+  selectionDisabled?: boolean;
+  reorderDisabled?: boolean;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  onReorder: (payload: {
+    courseId: string;
+    newDisplayOrder: number;
+  }) => Promise<void>;
+}
 
-  onView: (
-    course: CourseListItem
-  ) => void;
+function canReorder(course: CourseListItem): boolean {
+  return (
+    !isArchivedCourse(course) &&
+    course.status === "ACTIVE" &&
+    course.displayOrder != null
+  );
+}
 
-  onEdit: (
-    course: CourseListItem
-  ) => void;
+function formatDuration(course: CourseListItem): string {
+  if (course.duration == null) {
+    return "—";
+  }
 
-  onDelete: (
-    course: CourseListItem
-  ) => void;
+  const unit = course.durationType
+    ? course.durationType.toLowerCase()
+    : "";
 
-  onRestore: (
-    course: CourseListItem
-  ) => void;
-
-  onActivate: (
-    course: CourseListItem
-  ) => void;
-
-  onDeactivate: (
-    course: CourseListItem
-  ) => void;
-
-  onPermanentDelete: (
-    course: CourseListItem
-  ) => void;
+  return unit
+    ? `${course.duration} ${unit}`
+    : String(course.duration);
 }
 
 export function CourseTable({
   courses,
-  onView,
-  onEdit,
-  onDelete,
-  onRestore,
-  onActivate,
-  onDeactivate,
-  onPermanentDelete,
-}: Props) {
+  selectedCourseIds = [],
+  onSelectionChange,
+  actionsDisabled = false,
+  selectionDisabled = false,
+  reorderDisabled = false,
+  emptyTitle = "No Courses Found",
+  emptyDescription = "Create your first course to get started.",
+  onReorder,
+}: CourseTableProps) {
+  const [rows, setRows] = useState(courses);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<
+    string | null
+  >(null);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const selectAllRef = useRef<HTMLInputElement | null>(null);
+
+  const safeSelectedIds = selectedCourseIds ?? [];
+  const selectionEnabled = Boolean(onSelectionChange);
+  const visibleIds = rows.map((course) => course.id);
+  const selectedVisibleCount = visibleIds.filter((id) =>
+    safeSelectedIds.includes(id)
+  ).length;
+  const allVisibleSelected =
+    visibleIds.length > 0 &&
+    selectedVisibleCount === visibleIds.length;
+  const someVisibleSelected =
+    selectedVisibleCount > 0 && !allVisibleSelected;
+
+  useEffect(() => {
+    setRows(courses);
+  }, [courses]);
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someVisibleSelected;
+    }
+  }, [someVisibleSelected, allVisibleSelected]);
+
+  const toggleRow = (courseId: string, checked: boolean) => {
+    if (!onSelectionChange || selectionDisabled) {
+      return;
+    }
+
+    const next = checked
+      ? Array.from(new Set([...safeSelectedIds, courseId]))
+      : safeSelectedIds.filter((id) => id !== courseId);
+
+    onSelectionChange(next);
+  };
+
+  const toggleAllVisible = (checked: boolean) => {
+    if (!onSelectionChange || selectionDisabled) {
+      return;
+    }
+
+    if (!checked) {
+      onSelectionChange(
+        safeSelectedIds.filter((id) => !visibleIds.includes(id))
+      );
+      return;
+    }
+
+    onSelectionChange(
+      Array.from(new Set([...safeSelectedIds, ...visibleIds]))
+    );
+  };
+
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        title={emptyTitle}
+        description={emptyDescription}
+      />
+    );
+  }
+
+  const handleDrop = async (targetId: string) => {
+    if (
+      !dragId ||
+      dragId === targetId ||
+      isSavingOrder ||
+      reorderDisabled ||
+      safeSelectedIds.length > 0
+    ) {
+      setDragId(null);
+      setDropTargetId(null);
+      return;
+    }
+
+    const previous = rows;
+    const next = [...rows];
+    const fromIndex = next.findIndex((item) => item.id === dragId);
+    const toIndex = next.findIndex((item) => item.id === targetId);
+
+    if (fromIndex < 0 || toIndex < 0) {
+      setDragId(null);
+      setDropTargetId(null);
+      return;
+    }
+
+    const source = next[fromIndex];
+    const target = next[toIndex];
+
+    if (
+      !canReorder(source) ||
+      !canReorder(target) ||
+      target.displayOrder == null
+    ) {
+      setDragId(null);
+      setDropTargetId(null);
+      return;
+    }
+
+    const newDisplayOrder = target.displayOrder;
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    setRows(next);
+
+    try {
+      setIsSavingOrder(true);
+      await onReorder({
+        courseId: source.id,
+        newDisplayOrder,
+      });
+    } catch {
+      setRows(previous);
+    } finally {
+      setIsSavingOrder(false);
+      setDragId(null);
+      setDropTargetId(null);
+    }
+  };
+
+  const dragDisabled =
+    reorderDisabled ||
+    isSavingOrder ||
+    safeSelectedIds.length > 0;
+
   return (
-    <Table>
+    <Table className="rounded-none border-0">
       <TableHeader>
         <TableRow>
-          <TableHead>
-            Image
-          </TableHead>
+          {selectionEnabled ? (
+            <TableHead className="w-10">
+              <input
+                ref={selectAllRef}
+                type="checkbox"
+                className="h-4 w-4 rounded border-slate-300"
+                checked={allVisibleSelected}
+                disabled={selectionDisabled}
+                onChange={(event) => {
+                  toggleAllVisible(event.target.checked);
+                }}
+                aria-label="Select all courses on this page"
+              />
+            </TableHead>
+          ) : null}
 
-          <TableHead>
-            Title
+          <TableHead className="w-10">
+            <span className="sr-only">Reorder</span>
           </TableHead>
-
-          <TableHead>
-            Mode
-          </TableHead>
-
-          <TableHead>
-            Level
-          </TableHead>
-
-          <TableHead>
-            Price
-          </TableHead>
-
-          <TableHead>
-            Language
-          </TableHead>
-
-          <TableHead>
-            Status
-          </TableHead>
-
-          <TableHead>
-            Created At
-          </TableHead>
-
-          <TableHead>
-            Actions
-          </TableHead>
+          <TableHead>Code</TableHead>
+          <TableHead>Name</TableHead>
+          <TableHead>Category</TableHead>
+          <TableHead>Type</TableHead>
+          <TableHead>Duration</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
 
       <TableBody>
-        {courses.map(
-          (course) => (
+        {rows.map((course) => {
+          const draggable =
+            canReorder(course) && !dragDisabled;
+
+          return (
             <TableRow
               key={course.id}
+              draggable={draggable}
+              onDragStart={() => {
+                if (!draggable) {
+                  return;
+                }
+                setDragId(course.id);
+              }}
+              onDragOver={(event) => {
+                if (!draggable || !dragId) {
+                  return;
+                }
+                event.preventDefault();
+                setDropTargetId(course.id);
+              }}
+              onDragLeave={() => {
+                if (dropTargetId === course.id) {
+                  setDropTargetId(null);
+                }
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                void handleDrop(course.id);
+              }}
+              onDragEnd={() => {
+                setDragId(null);
+                setDropTargetId(null);
+              }}
+              className={`${
+                dropTargetId === course.id ? "bg-slate-50" : ""
+              } ${dragId === course.id ? "opacity-60" : ""}`}
             >
-              <TableCell>
-                {course.thumbnailUrl ? (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-white p-1">
-                    <Image
-                      src={
-                        course.thumbnailUrl
-                      }
-                      alt={
-                        course.title
-                      }
-                      width={60}
-                      height={60}
-                      className="h-full w-full object-contain"
-                    />
-                  </div>
+              {selectionEnabled ? (
+                <TableCell className="w-10">
+                  <Checkbox
+                    checked={safeSelectedIds.includes(course.id)}
+                    disabled={selectionDisabled}
+                    onCheckedChange={(checked) => {
+                      toggleRow(course.id, checked);
+                    }}
+                  />
+                </TableCell>
+              ) : null}
+
+              <TableCell className="w-10">
+                {draggable ? (
+                  <GripVertical
+                    className="h-3.5 w-3.5 cursor-grab text-slate-400"
+                    aria-label="Drag to reorder"
+                  />
                 ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">
-                    N/A
-                  </div>
+                  <span className="inline-block w-3.5" />
                 )}
               </TableCell>
 
-              <TableCell>
-                <div>
-                  <p className="font-medium">
-                    {
-                      course.title
-                    }
-                  </p>
+              <TableCell className="font-mono text-sm text-slate-700">
+                {course.slug}
+              </TableCell>
 
-                  <p className="text-xs text-muted-foreground">
-                    {
-                      course.slug
-                    }
-                  </p>
-                </div>
+              <TableCell className="text-[15px] font-medium text-slate-900">
+                <Link
+                  href={`/courses/${course.id}/manage`}
+                  className="hover:text-[#2447A8] hover:underline"
+                >
+                  {course.title}
+                </Link>
+                {course.tagline ? (
+                  <div className="text-xs font-normal text-slate-500">
+                    {course.tagline}
+                  </div>
+                ) : null}
               </TableCell>
 
               <TableCell>
-                {(course as any).modes &&
-                (course as any).modes
-                  .length > 0
-                  ? (
-                      course as any
-                    ).modes.join(
-                      ", "
-                    )
-                  : course.mode ||
-                    "-"}
+                {course.categoryName?.trim()
+                  ? course.categoryName
+                  : "—"}
               </TableCell>
 
               <TableCell>
-                {
-                  course.level
-                }
+                {course.level.replaceAll("_", " ")}
               </TableCell>
 
-              <TableCell>
-                {course.isFree
-                  ? "Free"
-                  : `₹${course.discountPrice}`}
-              </TableCell>
-
-              <TableCell>
-                {
-                  course.language
-                }
-              </TableCell>
+              <TableCell>{formatDuration(course)}</TableCell>
 
               <TableCell>
                 <CourseStatusBadge
-                  status={
-                    course.status
-                  }
+                  status={course.status}
+                  deletedAt={course.deletedAt}
+                  isDeleted={course.isDeleted}
                 />
               </TableCell>
 
-              <TableCell>
-                {new Date(
-                  course.createdAt
-                ).toLocaleDateString()}
-              </TableCell>
-
-              <TableCell>
+              <TableCell className="text-right">
                 <CourseActions
-                  course={
-                    course
-                  }
-                  onView={
-                    onView
-                  }
-                  onEdit={
-                    onEdit
-                  }
-                  onDelete={
-                    onDelete
-                  }
-                  onRestore={
-                    onRestore
-                  }
-                  onActivate={
-                    onActivate
-                  }
-                  onDeactivate={
-                    onDeactivate
-                  }
-                  onPermanentDelete={
-                    onPermanentDelete
-                  }
+                  course={course}
+                  disabled={actionsDisabled || isSavingOrder}
                 />
               </TableCell>
             </TableRow>
-          )
-        )}
+          );
+        })}
       </TableBody>
     </Table>
   );

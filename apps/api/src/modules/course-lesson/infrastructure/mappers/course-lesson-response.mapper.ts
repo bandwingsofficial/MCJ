@@ -13,6 +13,7 @@ export class CourseLessonResponseMapper {
       lesson.slug.getValue(),
       lesson.description,
       publicView ? null : lesson.videoUrl,
+      lesson.contentType,
       lesson.duration,
       lesson.displayOrder,
       lesson.createdBy,

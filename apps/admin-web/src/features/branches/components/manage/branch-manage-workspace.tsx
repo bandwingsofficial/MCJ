@@ -121,12 +121,11 @@ export function BranchManageWorkspace({
       if (tab === "courses" || tab === "overview") {
         const response = await courseService.getCourses({
           search: tab === "courses" ? search : "",
-          includeDeleted: false,
           branchId,
-          skip: 0,
-          take: 100,
+          page: 1,
+          pageSize: 100,
         });
-        setCourses(response.data ?? []);
+        setCourses(response.data.items ?? []);
       }
 
       if (tab === "batches") {
@@ -211,13 +210,12 @@ export function BranchManageWorkspace({
       if (kind === "courses") {
         const response = await courseService.getCourses({
           search: "",
-          includeDeleted: false,
-          skip: 0,
-          take: 200,
+          page: 1,
+          pageSize: 200,
         });
         const assigned = new Set(courses.map((c) => c.id));
         setAssignCandidates(
-          (response.data ?? [])
+          (response.data.items ?? [])
             .filter((item) => !assigned.has(item.id))
             .map((item) => ({
               id: item.id,

@@ -5,6 +5,9 @@ export const DEFAULT_ALLOWED_MIME_TYPES = [
   'image/webp',
   'image/avif',
   'application/pdf',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
 ] as const;
 
 export const DEFAULT_BLOCKED_EXTENSIONS = [

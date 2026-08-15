@@ -2,27 +2,29 @@
 
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 
-interface CourseModuleDeleteDialogProps {
+interface Props {
   open: boolean;
-
+  moduleTitle?: string;
   loading?: boolean;
-
   onClose: () => void;
-
   onConfirm: () => void;
 }
 
 export function CourseModuleDeleteDialog({
   open,
+  moduleTitle,
   loading = false,
   onClose,
   onConfirm,
-}: CourseModuleDeleteDialogProps) {
+}: Props) {
   return (
     <ConfirmDialog
       open={open}
-      title="Delete Course Module"
-      description="Are you sure you want to delete this course module? You can restore it later."
+      title="Delete Module?"
+      description={`Are you sure you want to delete "${
+        moduleTitle ?? "this module"
+      }"? This action will remove the module from the course.`}
+      confirmLabel="Delete"
       loading={loading}
       onConfirm={onConfirm}
       onCancel={onClose}

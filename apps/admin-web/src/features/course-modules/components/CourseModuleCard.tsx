@@ -18,18 +18,18 @@ interface CourseModuleCardProps {
   courseId: string;
   module: CourseModule;
   onEdit: (module: CourseModule) => void;
-  onMove: (module: CourseModule) => void;
+  onDeactivate: (module: CourseModule) => void;
+  onActivate: (module: CourseModule) => void;
   onDelete: (module: CourseModule) => void;
-  onRestore: (module: CourseModule) => void;
 }
 
 export function CourseModuleCard({
   module,
   courseId,
   onEdit,
-  onMove,
+  onDeactivate,
+  onActivate,
   onDelete,
-  onRestore,
 }: CourseModuleCardProps) {
   return (
     <Card className="p-6">
@@ -68,9 +68,9 @@ export function CourseModuleCard({
           courseId={courseId}
           module={module}
           onEdit={onEdit}
-          onMove={onMove}
+          onDeactivate={onDeactivate}
+          onActivate={onActivate}
           onDelete={onDelete}
-          onRestore={onRestore}
         />
       </div>
 

@@ -138,12 +138,13 @@ export function CourseModulesPage({
 
     setFormOpen(true);
   }}
-  onMove={(module) => {
-    setSelectedModule(
-      module,
-    );
-
-    setMoveOpen(true);
+  onDeactivate={(module) => {
+    setSelectedModule(module);
+    setDeleteOpen(true);
+  }}
+  onActivate={async (module) => {
+    await restoreCourseModule(module.id);
+    await refetch();
   }}
   onDelete={(module) => {
     setSelectedModule(
@@ -151,15 +152,6 @@ export function CourseModulesPage({
     );
 
     setDeleteOpen(true);
-  }}
-  onRestore={async (
-    module,
-  ) => {
-    await restoreCourseModule(
-      module.id,
-    );
-
-    await refetch();
   }}
 />
 

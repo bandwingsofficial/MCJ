@@ -433,6 +433,7 @@ model CourseLesson {
   description  String?
   videoUrl     String?
   isPreview    Boolean          @default(false)
+  contentType  LessonContentType @default(LESSON)
   duration     Int?
   displayOrder Int              @default(0)
   createdBy    String?
@@ -444,6 +445,7 @@ model CourseLesson {
   updatedAt    DateTime         @updatedAt
   module       CourseModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   resources    CourseResource[]
+  quiz         CourseQuiz?
   progress     LessonProgress[]
 
   @@unique([moduleId, slug])
@@ -477,6 +479,60 @@ model CourseResource {
   @@index([lessonId, isDeleted])
   @@index([isDeleted])
   @@index([createdAt])
+}
+
+model CourseQuiz {
+  id               String     @id @default(uuid())
+  lessonId         String     @unique
+  title            String
+  description      String?
+  status           QuizStatus @default(DRAFT)
+  passingScore     Int?
+  timeLimitMinutes Int?
+  displayOrder     Int        @default(0)
+  createdBy        String?
+  updatedBy        String?
+  isDeleted        Boolean    @default(false)
+  deletedAt        DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  lesson           CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions        CourseQuizQuestion[]
+
+  @@index([lessonId])
+  @@index([isDeleted])
+  @@index([status])
+  @@index([displayOrder])
+  @@index([createdAt])
+}
+
+model CourseQuizQuestion {
+  id           String           @id @default(uuid())
+  quizId       String
+  questionText String
+  type         QuizQuestionType @default(MULTIPLE_CHOICE)
+  explanation  String?
+  points       Int              @default(1)
+  displayOrder Int              @default(0)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  quiz         CourseQuiz       @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options      CourseQuizOption[]
+
+  @@index([quizId])
+  @@index([displayOrder])
+}
+
+model CourseQuizOption {
+  id           String             @id @default(uuid())
+  questionId   String
+  optionText   String
+  isCorrect    Boolean            @default(false)
+  displayOrder Int                @default(0)
+  question     CourseQuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@index([displayOrder])
 }
 
 model Trainer {
@@ -1136,6 +1192,12 @@ enum CourseLevel {
   ADVANCED
 }
 
+enum LessonContentType {
+  LESSON
+  SELF_PACED_VIDEO
+  LIVE_RECORDED_VIDEO
+}
+
 enum MaterialType {
   PDF
   VIDEO
@@ -1153,6 +1215,17 @@ enum ResourceType {
   LINK
   CODE
   OTHER
+}
+
+enum QuizQuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  MULTIPLE_SELECT
+}
+
+enum QuizStatus {
+  DRAFT
+  PUBLISHED
 }
 
 enum TrainerStatus {

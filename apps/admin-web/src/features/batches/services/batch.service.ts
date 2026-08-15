@@ -21,6 +21,7 @@ import type {
 class BatchService {
   async getBatches(filters?: {
     search?: string;
+    courseId?: string;
     branchId?: string;
     includeDeleted?: boolean;
     skip?: number;
@@ -32,6 +33,7 @@ class BatchService {
         {
           params: {
             search: filters?.search || undefined,
+            courseId: filters?.courseId || undefined,
             branchId: filters?.branchId || undefined,
             includeDeleted: filters?.includeDeleted ?? false,
             skip: filters?.skip,

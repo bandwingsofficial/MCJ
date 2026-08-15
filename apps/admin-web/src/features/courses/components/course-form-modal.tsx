@@ -36,7 +36,7 @@ interface Props {
 
   onClose: () => void;
 
-  onSuccess: () => Promise<void>;
+  onSuccess: (createdCourseId?: string) => Promise<void>;
 }
 
 export function CourseFormModal({
@@ -99,8 +99,10 @@ export function CourseFormModal({
           appToast.success(
             "Course updated successfully"
           );
+
+          await onSuccess();
         } else {
-          await createCourse({
+          const created = await createCourse({
             ...values,
             thumbnailFileId,
           });
@@ -108,9 +110,9 @@ export function CourseFormModal({
           appToast.success(
             "Course created successfully"
           );
-        }
 
-        await onSuccess();
+          await onSuccess(created.id);
+        }
 
         onClose();
       } catch (error) {

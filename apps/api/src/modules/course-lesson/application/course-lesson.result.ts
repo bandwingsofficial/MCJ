@@ -6,6 +6,7 @@ export class CourseLessonResult {
     public readonly slug: string,
     public readonly description: string | null,
     public readonly videoUrl: string | null,
+    public readonly contentType: string,
     public readonly duration: number | null,
     public readonly displayOrder: number,
     public readonly createdBy: string | null,

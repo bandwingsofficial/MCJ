@@ -1,3 +1,5 @@
+import { LessonContentType } from '../../domain/enums/lesson-content-type.enum';
+
 export class CreateCourseLessonCommand {
   constructor(
     public readonly moduleId: string,
@@ -5,6 +7,7 @@ export class CreateCourseLessonCommand {
     public readonly description?: string,
     public readonly videoUrl?: string,
     public readonly duration?: number,
+    public readonly contentType?: LessonContentType,
     public readonly createdBy?: string,
   ) {}
 }

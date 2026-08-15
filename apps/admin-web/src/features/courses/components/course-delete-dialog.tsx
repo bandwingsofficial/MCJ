@@ -16,12 +16,16 @@ export function CourseDeleteDialog({
   open,
   onClose,
   onConfirm,
+  isLoading = false,
 }: Props) {
   return (
     <ConfirmDialog
       open={open}
-      title="Delete Course"
-      description="This action will move the course to archived state."
+      title="Archive course?"
+      description="This action will move the course to archived state. You can restore it later."
+      confirmLabel="Archive"
+      confirmVariant="danger"
+      loading={isLoading}
       onConfirm={onConfirm}
       onCancel={onClose}
     />

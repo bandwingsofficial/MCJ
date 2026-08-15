@@ -69,6 +69,7 @@ export class CreateCourseLessonHandler {
       slug,
       description: command.description,
       videoUrl: command.videoUrl,
+      contentType: command.contentType,
       duration: command.duration,
       displayOrder,
       createdBy: command.createdBy,
