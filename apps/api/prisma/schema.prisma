@@ -295,6 +295,7 @@ model BranchCategory {
 
 model Course {
   id               String           @id @default(uuid())
+  code             String           @unique
   title            String
   slug             String
   tagline          String?
@@ -340,6 +341,7 @@ model Course {
   trainers         TrainerCourse[]
 
   @@index([title])
+  @@index([code])
   @@index([slug])
   @@index([categoryId])
   @@index([status])

@@ -25,6 +25,7 @@ export class CourseMapper {
   static toDomain(record: CourseWithRelations): Course {
     return Course.reconstitute({
       id: record.id,
+      code: record.code,
       title: record.title,
       slug: record.slug,
       tagline: record.tagline,
@@ -93,6 +94,7 @@ export class CourseMapper {
   ): Prisma.CourseUncheckedCreateInput {
     return {
       id: course.id,
+      code: course.code,
       title: course.title.getValue(),
       slug: course.slug.getValue(),
       tagline: course.tagline,

@@ -16,7 +16,7 @@ export function CourseModuleStatusBadge({ module }: Props) {
       variant={isArchived ? "danger" : "success"}
       className="px-2.5 py-0.5 text-sm"
     >
-      {isArchived ? "Archived" : "Active"}
+      {isArchived ? "Inactive" : "Active"}
     </Badge>
   );
 }

@@ -13,6 +13,7 @@ import {
 import type { CourseDetails } from "@/src/features/courses/types/course.types";
 import type { CourseSummary } from "@/src/features/courses/types/course.types";
 import { computeCourseContentStats } from "@/src/features/courses/utils/course-content-stats.util";
+import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
 
 import { CourseOverviewSummary } from "./course-overview-summary";
 import { CourseManageModulesPanel } from "./course-manage-modules-panel";
@@ -41,10 +42,7 @@ function formatDuration(
 }
 
 function formatCourseType(course: CourseDetails) {
-  if (course.modes?.length) {
-    return course.modes.join(", ");
-  }
-  return course.mode ?? "—";
+  return course.level?.replaceAll("_", " ") ?? "—";
 }
 
 export function CourseManageWorkspace({
@@ -60,8 +58,7 @@ export function CourseManageWorkspace({
 
   const [tab, setTab] = useState<TabKey>("overview");
 
-  const categoryName =
-    course.categoryName?.trim() || course.categoryId || "—";
+  const categoryName = getCourseCategoryDisplayName(course);
 
   const contentStats = useMemo(
     () => computeCourseContentStats(course, summary),
@@ -104,7 +101,7 @@ export function CourseManageWorkspace({
             <div>
               <dt className="text-xs text-slate-500">Course Code</dt>
               <dd className="mt-0.5 text-sm font-medium text-slate-900">
-                {course.slug}
+                {course.code ?? course.slug}
               </dd>
             </div>
             <div>

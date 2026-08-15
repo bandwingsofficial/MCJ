@@ -34,6 +34,7 @@ import { ListCoursesHandler } from './application/list-courses/list-courses.hand
 import { PermanentDeleteCourseHandler } from './application/permanent-delete-course/permanent-delete-course.handler';
 import { ReorderCoursesHandler } from './application/reorder-courses/reorder-courses.handler';
 import { RestoreCourseHandler } from './application/restore-course/restore-course.handler';
+import { SuggestCourseCodeHandler } from './application/suggest-course-code/suggest-course-code.handler';
 import { UpdateCourseHandler } from './application/update-course/update-course.handler';
 import { UpdateCourseStatusHandler } from './application/update-course-status/update-course-status.handler';
 import type { CourseRepository } from './domain/repositories/course.repository';
@@ -149,6 +150,7 @@ import { BranchModule } from '../branch/branch.module';
         courseRepo: CourseRepository,
         domainService: CourseDomainService,
         branchRepo: BranchRepository,
+        categoryRepo: CategoryRepository,
         hierarchyService: CourseHierarchyService,
         studentRepo: StudentRepository,
         enrollmentRepo: EnrollmentRepository,
@@ -157,6 +159,7 @@ import { BranchModule } from '../branch/branch.module';
           courseRepo,
           domainService,
           branchRepo,
+          categoryRepo,
           hierarchyService,
           studentRepo,
           enrollmentRepo,
@@ -165,6 +168,7 @@ import { BranchModule } from '../branch/branch.module';
         COURSE_TOKENS.COURSE_REPOSITORY,
         CourseDomainService,
         BRANCH_TOKENS.BRANCH_REPOSITORY,
+        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
         CourseHierarchyService,
         STUDENT_TOKENS.STUDENT_REPOSITORY,
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
@@ -177,6 +181,7 @@ import { BranchModule } from '../branch/branch.module';
         courseRepo: CourseRepository,
         domainService: CourseDomainService,
         branchRepo: BranchRepository,
+        categoryRepo: CategoryRepository,
         hierarchyService: CourseHierarchyService,
         studentRepo: StudentRepository,
         enrollmentRepo: EnrollmentRepository,
@@ -185,6 +190,7 @@ import { BranchModule } from '../branch/branch.module';
           courseRepo,
           domainService,
           branchRepo,
+          categoryRepo,
           hierarchyService,
           studentRepo,
           enrollmentRepo,
@@ -193,6 +199,7 @@ import { BranchModule } from '../branch/branch.module';
         COURSE_TOKENS.COURSE_REPOSITORY,
         CourseDomainService,
         BRANCH_TOKENS.BRANCH_REPOSITORY,
+        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
         CourseHierarchyService,
         STUDENT_TOKENS.STUDENT_REPOSITORY,
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
@@ -386,6 +393,13 @@ import { BranchModule } from '../branch/branch.module';
         COURSE_TOKENS.COURSE_REPOSITORY,
         CourseDomainService,
       ],
+    },
+
+    {
+      provide: SuggestCourseCodeHandler,
+      useFactory: (courseRepo: CourseRepository) =>
+        new SuggestCourseCodeHandler(courseRepo),
+      inject: [COURSE_TOKENS.COURSE_REPOSITORY],
     },
   ],
 

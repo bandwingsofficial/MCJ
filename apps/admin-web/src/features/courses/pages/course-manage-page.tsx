@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useCategories } from "@/src/features/categories/hooks/use-categories";
-import { useBranches } from "@/src/features/branches/hooks/use-branches";
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
@@ -26,6 +25,7 @@ import { CourseDeleteDialog } from "@/src/features/courses/components/course-del
 import { CourseRestoreDialog } from "@/src/features/courses/components/course-restore-dialog";
 import { CourseManageHeader } from "@/src/features/courses/components/manage/course-manage-header";
 import { CourseManageWorkspace } from "@/src/features/courses/components/manage/course-manage-workspace";
+import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 interface Props {
@@ -35,7 +35,6 @@ interface Props {
 export function CourseManagePage({ courseId }: Props) {
   const router = useRouter();
   const { categories } = useCategories();
-  const { branches } = useBranches();
 
   const {
     course,
@@ -82,23 +81,10 @@ export function CourseManagePage({ courseId }: Props) {
     [categories],
   );
 
-  const branchOptions = useMemo(
-    () =>
-      branches.map((branch) => ({
-        label: branch.branchName,
-        value: branch.id,
-      })),
-    [branches],
+  const categoryName = useMemo(
+    () => getCourseCategoryDisplayName(course),
+    [course],
   );
-
-  const categoryName = useMemo(() => {
-    if (course?.categoryName) {
-      return course.categoryName;
-    }
-    return (
-      categories.find((item) => item.id === course?.categoryId)?.name ?? null
-    );
-  }, [categories, course]);
 
   const actionsDisabled =
     isArchiving ||
@@ -160,7 +146,6 @@ export function CourseManagePage({ courseId }: Props) {
         open={isEditOpen}
         course={course}
         categoryOptions={categoryOptions}
-        branchOptions={branchOptions}
         onClose={() => setIsEditOpen(false)}
         onSuccess={async () => {
           await refetch();

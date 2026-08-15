@@ -10,6 +10,7 @@ import { Slug } from '../../domain/value-objects/slug.vo';
 import {
   GetCourseResult,
   CourseBranchResult,
+  CourseCategoryResult,
 } from '../get-course/get-course.result';
 
 import { UpdateCourseCommand } from './update-course.command';
@@ -297,7 +298,20 @@ export class UpdateCourseHandler {
         ),
     );
 
-    return GetCourseResult.fromEntity(course, branches);
+    const categoryEntity = await this.categoryRepo.findById(
+      course.categoryId,
+    );
+    const category = categoryEntity
+      ? new CourseCategoryResult(
+          categoryEntity.id,
+          categoryEntity.name.getValue(),
+        )
+      : null;
+
+    return GetCourseResult.fromEntity(course, branches, {
+      category,
+      categoryName: category?.name ?? null,
+    });
   }
 
   private collectFileIds(course: {

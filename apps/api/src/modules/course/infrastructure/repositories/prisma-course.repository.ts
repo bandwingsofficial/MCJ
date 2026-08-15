@@ -183,6 +183,53 @@ if (course.branchIds.length) {
     return result._max.displayOrder ?? 0;
   }
 
+  async getMaxCourseCodeNumber(): Promise<number> {
+    const records = await this.prisma.course.findMany({
+      where: {
+        code: {
+          startsWith: 'CR',
+        },
+      },
+      select: {
+        code: true,
+      },
+    });
+
+    let max = 0;
+
+    for (const record of records) {
+      const match = record.code.match(/^CR(\d{4})$/i);
+
+      if (!match) {
+        continue;
+      }
+
+      const value = Number(match[1]);
+
+      if (!Number.isNaN(value) && value > max) {
+        max = value;
+      }
+    }
+
+    return max;
+  }
+
+  async existsByCourseCode(
+    courseCode: string,
+    excludeId?: string,
+  ): Promise<boolean> {
+    const normalized = courseCode.trim().toUpperCase();
+
+    const count = await this.prisma.course.count({
+      where: {
+        code: normalized,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    });
+
+    return count > 0;
+  }
+
   async closeDisplayOrderGap(
     deletedDisplayOrder: number,
   ): Promise<void> {

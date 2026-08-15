@@ -1,5 +1,6 @@
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
+import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
 import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-status.enum';
 import type { EnrollmentRepository } from '@modules/enrollment/domain/repositories/enrollment.repository';
 import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
@@ -13,6 +14,7 @@ import { CourseDomainService } from '../../domain/services/course-domain.service
 import {
   GetCourseResult,
   CourseBranchResult,
+  CourseCategoryResult,
 } from '../get-course/get-course.result';
 
 import { GetCourseBySlugQuery } from './get-course-by-slug.query';
@@ -24,6 +26,7 @@ export class GetCourseBySlugHandler {
     private readonly courseRepo: CourseRepository,
     private readonly domainService: CourseDomainService,
     private readonly branchRepo: BranchRepository,
+    private readonly categoryRepo: CategoryRepository,
     private readonly hierarchyService: CourseHierarchyService,
     private readonly studentRepo: StudentRepository,
     private readonly enrollmentRepo: EnrollmentRepository,
@@ -84,6 +87,16 @@ export class GetCourseBySlugHandler {
       course.id,
     );
 
+    const categoryEntity = await this.categoryRepo.findById(
+      course.categoryId,
+    );
+    const category = categoryEntity
+      ? new CourseCategoryResult(
+          categoryEntity.id,
+          categoryEntity.name.getValue(),
+        )
+      : null;
+
     return GetCourseResult.fromEntity(course, branches, {
       modules,
       previewModules,
@@ -93,6 +106,8 @@ export class GetCourseBySlugHandler {
       isEnrolled: enrollmentFlags.isEnrolled,
       isAdmitted: enrollmentFlags.isAdmitted,
       publicView: !query.includeProtectedContent,
+      category,
+      categoryName: category?.name ?? null,
     });
   }
 

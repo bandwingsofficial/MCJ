@@ -31,6 +31,7 @@ import {
   getModuleContentCounts,
 } from "@/src/features/courses/utils/course-content-stats.util";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { formatContentOrderNumber } from "@/src/shared/utils/content-order";
 
 interface Props {
   courseId: string;
@@ -38,8 +39,6 @@ interface Props {
   disabled?: boolean;
   onRefresh?: () => Promise<void>;
 }
-
-import { formatContentOrderNumber } from "@/src/shared/utils/content-order";
 
 export function CourseManageModulesPanel({
   courseId,
@@ -187,20 +186,6 @@ export function CourseManageModulesPanel({
           <EmptyState
             title="No modules yet"
             description="Add your first module to start building course content."
-            action={
-              <Button
-                type="button"
-                size="sm"
-                disabled={disabled}
-                onClick={() => {
-                  setSelectedModule(null);
-                  setFormOpen(true);
-                }}
-              >
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
-                Add Module
-              </Button>
-            }
           />
         ) : (
           <div className="space-y-2">

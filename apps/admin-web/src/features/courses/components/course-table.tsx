@@ -21,6 +21,7 @@ import {
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
+import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
 import { isArchivedCourse } from "@/src/features/courses/utils/course-bulk.utils";
 
 import { CourseStatusBadge } from "./course-status-badge";
@@ -80,6 +81,7 @@ export function CourseTable({
     string | null
   >(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const reorderInFlightRef = useRef(false);
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
   const safeSelectedIds = selectedCourseIds ?? [];
@@ -148,6 +150,7 @@ export function CourseTable({
       dragId === targetId ||
       isSavingOrder ||
       reorderDisabled ||
+      reorderInFlightRef.current ||
       safeSelectedIds.length > 0
     ) {
       setDragId(null);
@@ -185,6 +188,7 @@ export function CourseTable({
     setRows(next);
 
     try {
+      reorderInFlightRef.current = true;
       setIsSavingOrder(true);
       await onReorder({
         courseId: source.id,
@@ -193,6 +197,7 @@ export function CourseTable({
     } catch {
       setRows(previous);
     } finally {
+      reorderInFlightRef.current = false;
       setIsSavingOrder(false);
       setDragId(null);
       setDropTargetId(null);
@@ -300,7 +305,7 @@ export function CourseTable({
               </TableCell>
 
               <TableCell className="font-mono text-sm text-slate-700">
-                {course.slug}
+                {course.code ?? course.slug}
               </TableCell>
 
               <TableCell className="text-[15px] font-medium text-slate-900">
@@ -318,9 +323,7 @@ export function CourseTable({
               </TableCell>
 
               <TableCell>
-                {course.categoryName?.trim()
-                  ? course.categoryName
-                  : "—"}
+                {getCourseCategoryDisplayName(course)}
               </TableCell>
 
               <TableCell>

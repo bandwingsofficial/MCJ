@@ -1,23 +1,16 @@
 "use client";
 
-import { Modal } from "@/src/shared/components/ui/model";
+import { useEffect, useState } from "react";
 
+import { Modal } from "@/src/shared/components/ui/model";
 import { appToast } from "@/src/shared/components/ui/toast";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { CourseForm } from "@/src/features/courses/components/course-form";
-
-import {
-  CreateCourseFormValues,
-} from "@/src/features/courses/schemas/course.schema";
-
-import {
-  CourseDetails,
-} from "@/src/features/courses/types/course.types";
-
+import { CreateCourseFormValues } from "@/src/features/courses/schemas/course.schema";
+import { CourseDetails } from "@/src/features/courses/types/course.types";
 import { useCreateCourse } from "@/src/features/courses/hooks/use-create-course";
-
 import { useUpdateCourse } from "@/src/features/courses/hooks/use-update-course";
-
 import { courseService } from "@/src/features/courses/services/course.service";
 
 interface SelectOption {
@@ -27,15 +20,9 @@ interface SelectOption {
 
 interface Props {
   open: boolean;
-
   course?: CourseDetails | null;
-
   categoryOptions: SelectOption[];
-
-  branchOptions: SelectOption[];
-
   onClose: () => void;
-
   onSuccess: (createdCourseId?: string) => Promise<void>;
 }
 
@@ -43,198 +30,158 @@ export function CourseFormModal({
   open,
   course,
   categoryOptions,
-  branchOptions,
   onClose,
   onSuccess,
 }: Props) {
-  const {
-    createCourse,
-    isLoading: isCreating,
-  } = useCreateCourse();
+  const { createCourse, isLoading: isCreating } = useCreateCourse();
+  const { updateCourse, isLoading: isUpdating } = useUpdateCourse();
 
-  const {
-    updateCourse,
-    isLoading: isUpdating,
-  } = useUpdateCourse();
+  const [suggestedCode, setSuggestedCode] = useState<string | null>(null);
+  const [isSuggestingCode, setIsSuggestingCode] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  const isEditMode =
-    Boolean(course);
+  const isEditMode = Boolean(course);
+  const isLoading = isCreating || isUpdating;
 
-  const isLoading =
-    isCreating ||
-    isUpdating;
+  useEffect(() => {
+    if (!open || isEditMode) {
+      return;
+    }
 
-  const handleSubmit =
-    async (
-      values: CreateCourseFormValues,
-      image: File | null
-    ) => {
+    let cancelled = false;
+
+    const loadSuggestedCode = async () => {
       try {
-        let thumbnailFileId:
-          | string
-          | undefined;
-
-        if (image) {
-          const uploadResponse =
-            await courseService.uploadCourseImage(
-              image
-            );
-
-          thumbnailFileId =
-            uploadResponse.data.fileId;
+        setIsSuggestingCode(true);
+        const response = await courseService.suggestCourseCode();
+        if (!cancelled) {
+          setSuggestedCode(response.data.courseCode);
         }
-
-        if (
-          isEditMode &&
-          course
-        ) {
-          await updateCourse(
-            course.id,
-            {
-              ...values,
-              thumbnailFileId,
-            }
-          );
-
-          appToast.success(
-            "Course updated successfully"
-          );
-
-          await onSuccess();
-        } else {
-          const created = await createCourse({
-            ...values,
-            thumbnailFileId,
-          });
-
-          appToast.success(
-            "Course created successfully"
-          );
-
-          await onSuccess(created.id);
-        }
-
-        onClose();
       } catch (error) {
-        appToast.error(
-          error instanceof Error
-            ? error.message
-            : "Something went wrong"
-        );
+        if (!cancelled) {
+          setSuggestedCode(null);
+          appToast.error(getErrorMessage(error));
+        }
+      } finally {
+        if (!cancelled) {
+          setIsSuggestingCode(false);
+        }
       }
     };
+
+    void loadSuggestedCode();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, isEditMode]);
+
+  const handleSubmit = async (
+    values: CreateCourseFormValues,
+    image: File | null,
+    removeImage: boolean,
+  ) => {
+    try {
+      let thumbnailFileId: string | undefined;
+
+      if (image) {
+        setIsUploadingImage(true);
+        const uploadResponse = await courseService.uploadCourseImage(image);
+        thumbnailFileId = uploadResponse.data.fileId;
+      }
+
+      const payload = {
+        title: values.title,
+        tagline: values.tagline?.trim() || undefined,
+        shortDescription: values.shortDescription?.trim() || undefined,
+        description: values.description?.trim() || undefined,
+        categoryId: values.categoryId,
+        originalPrice: Number(values.originalPrice),
+        discountPrice: Number(values.discountPrice),
+        currency: values.currency,
+        isFree: values.isFree,
+        duration: Number(values.duration),
+        durationType: values.durationType,
+        level: values.level,
+        modes: values.modes,
+        language: values.language,
+        displayOrder: values.displayOrder,
+        slug: values.slug?.trim() || undefined,
+        metaTitle: values.metaTitle?.trim() || undefined,
+        metaDescription: values.metaDescription?.trim() || undefined,
+        metaKeywords: values.metaKeywords?.trim() || undefined,
+        thumbnailFileId:
+          removeImage && isEditMode ? undefined : thumbnailFileId,
+      };
+
+      if (isEditMode && course) {
+        await updateCourse(course.id, payload);
+        appToast.success("Course updated successfully");
+        await onSuccess();
+      } else {
+        const created = await createCourse(payload);
+        appToast.success("Course created successfully");
+        await onSuccess(created.id);
+      }
+
+      onClose();
+    } catch (error) {
+      appToast.error(getErrorMessage(error));
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   return (
     <Modal
       open={open}
-      title={
-        isEditMode
-          ? "Edit Course"
-          : "Create Course"
-      }
+      title={isEditMode ? "Edit Course" : "Create Course"}
       onClose={onClose}
+      contentClassName="min-w-0"
     >
-      <CourseForm
-        defaultValues={
-          course
-            ? {
-                title:
-                  course.title,
-
-                tagline:
-                  course.tagline ??
-                  undefined,
-
-                shortDescription:
-                  course.shortDescription ??
-                  undefined,
-
-                description:
-                  course.description ??
-                  undefined,
-
-                categoryId:
-                  course.categoryId,
-
-                branchIds:
-                  course.branchId
-                    ? [
-                        course.branchId,
-                      ]
-                    : [],
-
-                originalPrice:
-                  course.originalPrice,
-
-                discountPrice:
-                  course.discountPrice,
-
-                currency:
-                  course.currency,
-
-                isFree:
-                  course.isFree,
-
-                duration:
-                  course.duration ??
-                  undefined,
-
-                durationType:
-                  course.durationType ??
-                  undefined,
-
-                level:
-                  course.level,
-
-                modes:
-                  course.mode
-                    ? [
-                        course.mode,
-                      ]
-                    : [],
-
-                language:
-                  course.language,
-
-                displayOrder:
-                  course.displayOrder,
-
-                metaTitle:
-                  course.metaTitle ??
-                  undefined,
-
-                metaDescription:
-                  course.metaDescription ??
-                  undefined,
-
-                metaKeywords:
-                  course.metaKeywords ??
-                  undefined,
-
-                thumbnailUrl:
-                  course.thumbnailUrl ??
-                  undefined,
-              }
-            : undefined
-        }
-        categoryOptions={
-          categoryOptions
-        }
-        branchOptions={
-          branchOptions
-        }
-        isLoading={
-          isLoading
-        }
-        submitLabel={
-          isEditMode
-            ? "Update Course"
-            : "Create Course"
-        }
-        onSubmit={
-          handleSubmit
-        }
-      />
+      <div className="min-w-0 overflow-x-hidden">
+        <CourseForm
+          key={course?.id ?? (open ? "create" : "closed")}
+          courseCode={isEditMode ? course?.code : suggestedCode}
+          isEdit={isEditMode}
+          categoryOptions={categoryOptions}
+          isLoading={isLoading}
+          isUploadingImage={isUploadingImage || isSuggestingCode}
+          submitLabel={isEditMode ? "Update Course" : "Create Course"}
+          loadingLabel={
+            isEditMode ? "Updating Course..." : "Creating Course..."
+          }
+          onCancel={onClose}
+          defaultValues={
+            course
+              ? {
+                  title: course.title,
+                  tagline: course.tagline ?? "",
+                  shortDescription: course.shortDescription ?? "",
+                  description: course.description ?? "",
+                  categoryId: course.categoryId,
+                  originalPrice: course.originalPrice,
+                  discountPrice: course.discountPrice,
+                  currency: course.currency,
+                  isFree: course.isFree,
+                  duration: course.duration ?? 1,
+                  durationType: course.durationType ?? "MONTHS",
+                  level: course.level,
+                  modes: course.mode ? [course.mode] : ["ONLINE"],
+                  language: course.language,
+                  displayOrder: course.displayOrder,
+                  slug: course.slug ?? "",
+                  metaTitle: course.metaTitle ?? "",
+                  metaDescription: course.metaDescription ?? "",
+                  metaKeywords: course.metaKeywords ?? "",
+                  thumbnailUrl: course.thumbnailUrl,
+                  status: course.status,
+                }
+              : undefined
+          }
+          onSubmit={handleSubmit}
+        />
+      </div>
     </Modal>
   );
 }

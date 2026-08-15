@@ -21,6 +21,13 @@ export class CourseBranchResult {
   ) {}
 }
 
+export class CourseCategoryResult {
+  constructor(
+    public readonly id: string,
+    public readonly name: string,
+  ) {}
+}
+
 export class CourseMaterialResult {
   constructor(
     public readonly id: string,
@@ -99,6 +106,7 @@ export class CourseModuleTreeResult {
 export class GetCourseResult {
   constructor(
     public readonly id: string,
+    public readonly code: string,
     public readonly title: string,
     public readonly slug: string,
     public readonly tagline: string | null,
@@ -125,6 +133,7 @@ export class GetCourseResult {
     public readonly metaDescription: string | null,
     public readonly metaKeywords: string | null,
     public readonly categoryId: string,
+    public readonly category: CourseCategoryResult | null,
     public readonly branches: CourseBranchResult[],
     public readonly status: CourseStatus,
     public readonly images: CourseImageResult[],
@@ -158,6 +167,7 @@ export class GetCourseResult {
       isAdmitted?: boolean | null;
       publicView?: boolean;
       categoryName?: string | null;
+      category?: CourseCategoryResult | null;
     } = {},
   ): GetCourseResult {
     const publicView = options.publicView ?? false;
@@ -187,8 +197,18 @@ export class GetCourseResult {
             ),
         );
 
+    const category =
+      options.category ??
+      (options.categoryName
+        ? new CourseCategoryResult(
+            course.categoryId,
+            options.categoryName,
+          )
+        : null);
+
     return new GetCourseResult(
       course.id,
+      course.code,
       course.title.getValue(),
       course.slug.getValue(),
       course.tagline,
@@ -215,6 +235,7 @@ export class GetCourseResult {
       course.metaDescription,
       course.metaKeywords,
       course.categoryId,
+      category,
       branches,
       course.status,
       course.images.map(

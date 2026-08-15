@@ -16,6 +16,11 @@ export type CourseDurationType =
   | "MONTHS"
   | "YEARS";
 
+export interface CourseCategory {
+  id: string;
+  name: string;
+}
+
 export type CourseStatus =
   | "DRAFT"
   | "ACTIVE"
@@ -29,6 +34,8 @@ export type CourseFilterStatus =
 
 export interface Course {
   id: string;
+
+  code: string;
 
   title: string;
 
@@ -81,6 +88,8 @@ export interface Course {
   metaKeywords: string | null;
 
   categoryId: string;
+
+  category?: CourseCategory | null;
 
   branchId: string | null;
 
@@ -183,6 +192,8 @@ export interface CourseDetails
 export interface CourseListItem {
   id: string;
 
+  code: string;
+
   title: string;
 
   slug: string;
@@ -206,6 +217,8 @@ export interface CourseListItem {
   language: string;
 
   categoryId: string;
+
+  category?: CourseCategory | null;
 
   categoryName?: string | null;
 
@@ -291,6 +304,8 @@ export interface CreateCourseRequest {
 
   displayOrder?: number;
 
+  slug?: string;
+
   metaTitle?: string;
 
   metaDescription?: string;
@@ -336,6 +351,8 @@ export interface UpdateCourseRequest {
   language?: string;
 
   displayOrder?: number;
+
+  slug?: string;
 
   metaTitle?: string;
 

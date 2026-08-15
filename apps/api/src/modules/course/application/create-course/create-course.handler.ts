@@ -14,6 +14,7 @@ import { Slug } from '../../domain/value-objects/slug.vo';
 import {
   GetCourseResult,
   CourseBranchResult,
+  CourseCategoryResult,
 } from '../get-course/get-course.result';
 
 import { CreateCourseCommand } from './create-course.command';
@@ -83,6 +84,10 @@ export class CreateCourseHandler {
     );
 
     const courseId = randomUUID();
+    const courseCode =
+      await this.domainService.generateUniqueCourseCode(
+        this.courseRepo,
+      );
     let thumbnailFileId: string | null = null;
     let thumbnailUrl: string | null = null;
 
@@ -167,6 +172,7 @@ export class CreateCourseHandler {
 
     const course = Course.create({
       id: courseId,
+      code: courseCode,
       title: command.title,
       slug,
       tagline: command.tagline,
@@ -229,6 +235,19 @@ export class CreateCourseHandler {
 
     this.logger.log(`✅ Course created: ${course.id}`);
 
-    return GetCourseResult.fromEntity(course, branches);
+    const categoryEntity = await this.categoryRepo.findById(
+      course.categoryId,
+    );
+    const category = categoryEntity
+      ? new CourseCategoryResult(
+          categoryEntity.id,
+          categoryEntity.name.getValue(),
+        )
+      : null;
+
+    return GetCourseResult.fromEntity(course, branches, {
+      category,
+      categoryName: category?.name ?? null,
+    });
   }
 }

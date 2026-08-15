@@ -13,6 +13,7 @@ import { CourseMaterial } from './course-material.entity';
 export class Course {
   private constructor(
     public readonly id: string,
+    public readonly code: string,
     public title: CourseTitle,
     public slug: Slug,
     public tagline: string | null,
@@ -54,6 +55,7 @@ export class Course {
   static create(params: CourseCreateParams): Course {
     return new Course(
       params.id,
+      params.code,
       CourseTitle.create(params.title),
       params.slug
         ? Slug.create(params.slug)
@@ -98,6 +100,7 @@ export class Course {
   static reconstitute(params: CourseReconstituteParams): Course {
     return new Course(
       params.id,
+      params.code,
       CourseTitle.create(params.title),
       Slug.create(params.slug),
       params.tagline,
@@ -232,6 +235,7 @@ export class Course {
 
 export interface CourseCreateParams {
   id: string;
+  code: string;
   title: string;
   slug?: string;
   tagline?: string | null;

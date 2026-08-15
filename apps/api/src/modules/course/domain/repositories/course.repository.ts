@@ -42,6 +42,11 @@ export interface CourseRepository {
   count(filters?: CourseListFilters): Promise<number>;
   getMaxDisplayOrder(): Promise<number>;
   getMaxActiveDisplayOrder(): Promise<number>;
+  getMaxCourseCodeNumber(): Promise<number>;
+  existsByCourseCode(
+    courseCode: string,
+    excludeId?: string,
+  ): Promise<boolean>;
   closeDisplayOrderGap(deletedDisplayOrder: number): Promise<void>;
   moveDisplayOrder(
     courseId: string,

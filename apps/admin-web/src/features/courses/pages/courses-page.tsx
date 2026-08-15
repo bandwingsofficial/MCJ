@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useCategories } from "@/src/features/categories/hooks/use-categories";
-import { useBranches } from "@/src/features/branches/hooks/use-branches";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
@@ -55,7 +54,6 @@ export function CoursesPage() {
   } = useCourses();
 
   const { categories } = useCategories();
-  const { branches } = useBranches();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedCourseIds, setSelectedCourseIds] = useState<
@@ -99,15 +97,6 @@ export function CoursesPage() {
         value: category.id,
       })),
     [categories]
-  );
-
-  const branchOptions = useMemo(
-    () =>
-      branches.map((branch) => ({
-        label: branch.branchName,
-        value: branch.id,
-      })),
-    [branches]
   );
 
   const hasActiveFilters = Boolean(
@@ -478,7 +467,6 @@ export function CoursesPage() {
       <CourseFormModal
         open={isCreateOpen}
         categoryOptions={categoryOptions}
-        branchOptions={branchOptions}
         onClose={() => setIsCreateOpen(false)}
         onSuccess={async (createdCourseId) => {
           await refetch();

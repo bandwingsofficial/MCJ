@@ -7,6 +7,7 @@ import type { CategoryRepository } from '@modules/category/domain/repositories/c
 import type { Course } from '../entities/course.entity';
 import type { CourseRepository } from '../repositories/course.repository';
 import { CategoryNotFoundException } from '../errors/category-not-found.exception';
+import { formatCourseCode } from '../utils/course-code.util';
 
 @Injectable()
 export class CourseDomainService {
@@ -54,5 +55,26 @@ export class CourseDomainService {
     if (!category) {
       throw new CategoryNotFoundException();
     }
+  }
+
+  async generateUniqueCourseCode(
+    courseRepo: CourseRepository,
+  ): Promise<string> {
+    const maxNumber = await courseRepo.getMaxCourseCodeNumber();
+
+    for (let offset = 1; offset <= 50; offset++) {
+      const candidate = formatCourseCode(maxNumber + offset);
+      const exists = await courseRepo.existsByCourseCode(candidate);
+
+      if (!exists) {
+        return candidate;
+      }
+    }
+
+    throw new BaseException(
+      ERROR_CODES.VALIDATION_ERROR,
+      'Unable to generate a unique course code',
+      500,
+    );
   }
 }

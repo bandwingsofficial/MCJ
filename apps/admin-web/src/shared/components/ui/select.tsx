@@ -36,14 +36,17 @@ export function AppSelect({
     >
       <SelectPrimitive.Trigger
         className={cn(
-          "flex h-11 w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 text-sm",
+          "flex h-11 w-full min-w-0 max-w-full items-center justify-between gap-2 overflow-hidden rounded-xl border border-slate-300 bg-white px-4 text-sm",
           "focus:outline-none focus:ring-2 focus:ring-[#2447A8]",
           triggerClassName
         )}
       >
-        <SelectPrimitive.Value placeholder={placeholder} />
+        <SelectPrimitive.Value
+          placeholder={placeholder}
+          className="min-w-0 truncate text-left"
+        />
 
-        <ChevronDown className="h-4 w-4" />
+        <ChevronDown className="h-4 w-4 shrink-0" />
       </SelectPrimitive.Trigger>
 
       <SelectPrimitive.Portal>

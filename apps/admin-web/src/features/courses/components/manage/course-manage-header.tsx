@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import {
+  CircleCheck,
   Eye,
-  MoreVertical,
   Pencil,
+  Power,
+  RotateCcw,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
-import { Dropdown } from "@/src/shared/components/ui/dropdown";
 
 import type { CourseDetails } from "@/src/features/courses/types/course.types";
 import { CourseStatusBadge } from "@/src/features/courses/components/course-status-badge";
@@ -39,40 +41,7 @@ export function CourseManageHeader({
   actionsDisabled = false,
 }: Props) {
   const isArchived = Boolean(course.deletedAt || course.isDeleted);
-  const meta = [course.slug, categoryName].filter(Boolean).join(" · ");
-
-  const lifecycleItems = isArchived
-    ? [
-        {
-          label: "Restore",
-          onClick: onRestore,
-        },
-        {
-          label: "Permanently Delete",
-          onClick: onPermanentDelete,
-          destructive: true,
-        },
-      ]
-    : [
-        ...(course.status === "ACTIVE"
-          ? [
-              {
-                label: "Deactivate",
-                onClick: onDeactivate,
-              },
-            ]
-          : [
-              {
-                label: "Activate",
-                onClick: onActivate,
-              },
-            ]),
-        {
-          label: "Archive",
-          onClick: onArchive,
-          destructive: true,
-        },
-      ];
+  const meta = [course.code ?? course.slug, categoryName].filter(Boolean).join(" · ");
 
   return (
     <div className="space-y-3">
@@ -85,7 +54,7 @@ export function CourseManageHeader({
         </Link>
         <span aria-hidden>›</span>
         <span className="font-medium text-slate-700">
-          {course.title} ({course.slug})
+          {course.title} ({course.code ?? course.slug})
         </span>
         <span aria-hidden>›</span>
         <span className="text-slate-900">Management</span>
@@ -117,43 +86,89 @@ export function CourseManageHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`/courses/${course.id}/preview`}
-            className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            <Eye className="mr-1.5 h-3.5 w-3.5" />
-            Preview Course
-          </Link>
+          {isArchived ? (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                disabled={actionsDisabled}
+                onClick={onRestore}
+                className="border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+              >
+                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                Restore
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="danger"
+                disabled={actionsDisabled}
+                onClick={onPermanentDelete}
+              >
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Permanently Delete
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link
+                href={`/courses/${course.id}/preview`}
+                className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                <Eye className="mr-1.5 h-3.5 w-3.5" />
+                Preview Course
+              </Link>
 
-          {!isArchived ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={actionsDisabled}
-              onClick={onEdit}
-            >
-              <Pencil className="mr-1.5 h-3.5 w-3.5" />
-              Edit Course
-            </Button>
-          ) : null}
-
-          <Dropdown
-            trigger={
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
                 disabled={actionsDisabled}
-                title="Course actions"
-                aria-label="Course actions"
-                className="h-9 w-9 px-0"
+                onClick={onEdit}
               >
-                <MoreVertical className="h-4 w-4" />
+                <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                Edit Course
               </Button>
-            }
-            items={lifecycleItems}
-          />
+
+              {course.status === "ACTIVE" ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={actionsDisabled}
+                  onClick={onDeactivate}
+                  className="border-red-200 text-red-700 hover:bg-red-50"
+                >
+                  <Power className="mr-1.5 h-3.5 w-3.5" />
+                  Deactivate
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={actionsDisabled}
+                  onClick={onActivate}
+                  className="border-emerald-200 text-emerald-800 hover:bg-emerald-50"
+                >
+                  <CircleCheck className="mr-1.5 h-3.5 w-3.5" />
+                  Activate
+                </Button>
+              )}
+
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={actionsDisabled}
+                onClick={onArchive}
+                className="border-amber-200 text-amber-800 hover:bg-amber-50"
+              >
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Delete
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -102,25 +102,22 @@ export function ModuleResourcesTab({
 
   const pagedRows = paginateRows(filteredRows, page, pageSize);
   const orderOffset = (page - 1) * pageSize;
-  const hasRows = filteredRows.length > 0;
 
   return (
     <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-sm font-semibold text-slate-900">Resources</h2>
-        {hasRows ? (
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => {
-              setSelected(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Add Resource
-          </Button>
-        ) : null}
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => {
+            setSelected(null);
+            setFormOpen(true);
+          }}
+        >
+          <Plus className="mr-1.5 h-3.5 w-3.5" />
+          Add Resource
+        </Button>
       </div>
 
       <ModuleContentFilters
@@ -170,20 +167,7 @@ export function ModuleResourcesTab({
           },
         ]}
         emptyTitle="No resources yet"
-        emptyDescription="Add notes, PDFs, or other supported learning material."
-        emptyAction={
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => {
-              setSelected(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Add Resource
-          </Button>
-        }
+        emptyDescription="Add a resource to provide additional learning material."
         renderActions={(row) => (
           <ModuleContentActions
             isArchived={row.isArchived}

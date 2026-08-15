@@ -4,6 +4,7 @@ import type { CourseRepository } from '../../domain/repositories/course.reposito
 import {
   GetCourseResult,
   CourseBranchResult,
+  CourseCategoryResult,
 } from '../get-course/get-course.result';
 
 import { ListCoursesQuery } from './list-courses.query';
@@ -40,7 +41,7 @@ export class ListCoursesHandler {
       this.courseRepo.count(filters),
     ]);
 
-    const categoryNameCache = new Map<string, string | null>();
+    const categoryCache = new Map<string, CourseCategoryResult | null>();
 
     const items = await Promise.all(
       courses.map(async (course) => {
@@ -68,18 +69,24 @@ export class ListCoursesHandler {
             ),
         );
 
-        let categoryName = categoryNameCache.get(course.categoryId);
+        let category = categoryCache.get(course.categoryId);
 
-        if (categoryName === undefined) {
-          const category = await this.categoryRepo.findById(
+        if (category === undefined) {
+          const categoryEntity = await this.categoryRepo.findById(
             course.categoryId,
           );
-          categoryName = category?.name.getValue() ?? null;
-          categoryNameCache.set(course.categoryId, categoryName);
+          category = categoryEntity
+            ? new CourseCategoryResult(
+                categoryEntity.id,
+                categoryEntity.name.getValue(),
+              )
+            : null;
+          categoryCache.set(course.categoryId, category);
         }
 
         return GetCourseResult.fromEntity(course, branches, {
-          categoryName,
+          category,
+          categoryName: category?.name ?? null,
         });
       }),
     );

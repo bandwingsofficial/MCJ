@@ -13,6 +13,8 @@ interface ModalProps {
   children: React.ReactNode;
 
   onClose: () => void;
+
+  contentClassName?: string;
 }
 
 export function Modal({
@@ -20,6 +22,7 @@ export function Modal({
   title,
   children,
   onClose,
+  contentClassName,
 }: ModalProps) {
   return (
     <Dialog.Root
@@ -36,11 +39,12 @@ export function Modal({
         <Dialog.Content
   className={cn(
     "fixed left-1/2 top-1/2 z-50",
-    "w-full max-w-4xl",
+    "w-[calc(100vw-2rem)] max-w-5xl",
     "-translate-x-1/2 -translate-y-1/2",
     "max-h-[90vh]",
-    "overflow-y-auto",
-    "rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+    "overflow-x-hidden overflow-y-auto",
+    "rounded-2xl border border-slate-200 bg-white p-6 shadow-xl",
+    contentClassName,
   )}
 >
           <div className="mb-5 flex items-center justify-between">

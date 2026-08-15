@@ -304,6 +304,18 @@ class CourseService {
     }
   }
 
+  async suggestCourseCode() {
+    try {
+      const response = await apiClient.get<
+        ApiSuccessResponse<{ courseCode: string }>
+      >(`${this.basePath}/suggest-code`);
+
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async uploadCourseImage(file: File) {
     const formData = new FormData();
     formData.append("file", file);

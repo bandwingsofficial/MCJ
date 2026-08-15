@@ -58,6 +58,8 @@ import { BulkUpdateCourseStatusDto } from '../dtos/bulk-update-course-status.dto
 import { ListCoursesQueryDto } from '../dtos/list-courses-query.dto';
 import { ReorderCoursesDto } from '../dtos/reorder-courses.dto';
 import { UpdateCourseDto } from '../dtos/update-course.dto';
+import { SuggestCourseCodeHandler } from '../../application/suggest-course-code/suggest-course-code.handler';
+import { SuggestCourseCodeQuery } from '../../application/suggest-course-code/suggest-course-code.query';
 
 @ApiTags('Admin Courses')
 @ApiBearerAuth()
@@ -79,6 +81,7 @@ export class AdminCourseController {
     private readonly bulkRestoreCoursesHandler: BulkRestoreCoursesHandler,
     private readonly bulkPermanentDeleteCoursesHandler: BulkPermanentDeleteCoursesHandler,
     private readonly getCourseSummaryHandler: GetCourseSummaryHandler,
+    private readonly suggestCourseCodeHandler: SuggestCourseCodeHandler,
   ) {}
 
   @Post()
@@ -233,6 +236,19 @@ export class AdminCourseController {
     return {
       success: true,
       message: 'Course summary fetched successfully',
+      data: result,
+    };
+  }
+
+  @Get('suggest-code')
+  async suggestCode() {
+    const result = await this.suggestCourseCodeHandler.execute(
+      new SuggestCourseCodeQuery(),
+    );
+
+    return {
+      success: true,
+      message: 'Course code suggested successfully',
       data: result,
     };
   }

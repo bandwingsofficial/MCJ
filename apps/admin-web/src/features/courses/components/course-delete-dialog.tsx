@@ -21,9 +21,9 @@ export function CourseDeleteDialog({
   return (
     <ConfirmDialog
       open={open}
-      title="Archive course?"
-      description="This action will move the course to archived state. You can restore it later."
-      confirmLabel="Archive"
+      title="Delete course?"
+      description="This will move the course to an archived state. You can restore it later from the course management page."
+      confirmLabel="Delete"
       confirmVariant="danger"
       loading={isLoading}
       onConfirm={onConfirm}
