@@ -13,12 +13,18 @@ import { UploadDomainService } from '../uploads/domain/services/upload-domain.se
 
 import { TRAINER_TOKENS } from './trainer.tokens';
 import { AssignTrainerCoursesHandler } from './application/assign-trainer-courses/assign-trainer-courses.handler';
+import { BulkDeleteTrainersHandler } from './application/bulk-delete-trainers/bulk-delete-trainers.handler';
+import { BulkPermanentDeleteTrainersHandler } from './application/bulk-permanent-delete-trainers/bulk-permanent-delete-trainers.handler';
+import { BulkRestoreTrainersHandler } from './application/bulk-restore-trainers/bulk-restore-trainers.handler';
+import { BulkUpdateTrainerStatusHandler } from './application/bulk-update-trainer-status/bulk-update-trainer-status.handler';
 import { CreateTrainerHandler } from './application/create-trainer/create-trainer.handler';
 import { DeleteTrainerHandler } from './application/delete-trainer/delete-trainer.handler';
 import { GetTrainerHandler } from './application/get-trainer/get-trainer.handler';
 import { ListTrainersHandler } from './application/list-trainers/list-trainers.handler';
 import { PermanentDeleteTrainerHandler } from './application/permanent-delete-trainer/permanent-delete-trainer.handler';
+import { ReorderTrainersHandler } from './application/reorder-trainers/reorder-trainers.handler';
 import { RestoreTrainerHandler } from './application/restore-trainer/restore-trainer.handler';
+import { SuggestTrainerCodeHandler } from './application/suggest-trainer-code/suggest-trainer-code.handler';
 import { UpdateTrainerHandler } from './application/update-trainer/update-trainer.handler';
 import { UpdateTrainerStatusHandler } from './application/update-trainer-status/update-trainer-status.handler';
 import type { TrainerRepository } from './domain/repositories/trainer.repository';
@@ -206,6 +212,54 @@ import { BranchModule } from '../branch/branch.module';
         COURSE_TOKENS.COURSE_REPOSITORY,
         TrainerDomainService,
       ],
+    },
+
+    {
+      provide: SuggestTrainerCodeHandler,
+      useFactory: (trainerRepo: TrainerRepository) =>
+        new SuggestTrainerCodeHandler(trainerRepo),
+      inject: [TRAINER_TOKENS.TRAINER_REPOSITORY],
+    },
+
+    {
+      provide: ReorderTrainersHandler,
+      useFactory: (
+        trainerRepo: TrainerRepository,
+        domainService: TrainerDomainService,
+      ) =>
+        new ReorderTrainersHandler(trainerRepo, domainService),
+      inject: [
+        TRAINER_TOKENS.TRAINER_REPOSITORY,
+        TrainerDomainService,
+      ],
+    },
+
+    {
+      provide: BulkUpdateTrainerStatusHandler,
+      useFactory: (trainerRepo: TrainerRepository) =>
+        new BulkUpdateTrainerStatusHandler(trainerRepo),
+      inject: [TRAINER_TOKENS.TRAINER_REPOSITORY],
+    },
+
+    {
+      provide: BulkDeleteTrainersHandler,
+      useFactory: (trainerRepo: TrainerRepository) =>
+        new BulkDeleteTrainersHandler(trainerRepo),
+      inject: [TRAINER_TOKENS.TRAINER_REPOSITORY],
+    },
+
+    {
+      provide: BulkRestoreTrainersHandler,
+      useFactory: (trainerRepo: TrainerRepository) =>
+        new BulkRestoreTrainersHandler(trainerRepo),
+      inject: [TRAINER_TOKENS.TRAINER_REPOSITORY],
+    },
+
+    {
+      provide: BulkPermanentDeleteTrainersHandler,
+      useFactory: (trainerRepo: TrainerRepository) =>
+        new BulkPermanentDeleteTrainersHandler(trainerRepo),
+      inject: [TRAINER_TOKENS.TRAINER_REPOSITORY],
     },
   ],
 

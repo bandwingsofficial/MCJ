@@ -161,11 +161,10 @@ export function BranchManageWorkspace({
         const response = await trainerService.getTrainers({
           search,
           branchId,
-          includeDeleted: false,
-          skip: 0,
-          take: 100,
+          page: 1,
+          pageSize: 100,
         });
-        setInstructors(response.data ?? []);
+        setInstructors(response.data.items ?? []);
       }
     } catch (error) {
       appToast.error(getErrorMessage(error));
@@ -230,14 +229,12 @@ export function BranchManageWorkspace({
 
       if (kind === "instructors") {
         const response = await trainerService.getTrainers({
-          search: "",
-          includeDeleted: false,
-          skip: 0,
-          take: 200,
+          page: 1,
+          pageSize: 200,
         });
         const assigned = new Set(instructors.map((item) => item.id));
         setAssignCandidates(
-          (response.data ?? [])
+          (response.data.items ?? [])
             .filter(
               (item) =>
                 !assigned.has(item.id) &&

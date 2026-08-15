@@ -5,130 +5,126 @@ import {
   TRAINER_TYPES,
 } from "@/src/features/trainers/constants/trainer.constants";
 
-const phoneRegex =
-  /^[6-9]\d{9}$/;
+import {
+  countWords,
+  MAX_BIO_WORDS,
+} from "@/src/features/trainers/utils/word-count.util";
 
-export const createTrainerSchema =
-  z.object({
-    firstName: z
-      .string()
-      .trim()
-      .min(
-        1,
-        "First name is required"
-      )
-      .max(
-        100,
-        "Maximum 100 characters allowed"
-      ),
-      
+const phoneRegex = /^[6-9]\d{9}$/;
 
-    lastName: z.string().optional().or(z.literal("")),
+const optionalUrl = z
+  .string()
+  .url("Enter a valid URL")
+  .optional()
+  .or(z.literal(""));
 
-    email: z
-      .string()
-      .email(
-        "Enter valid email address"
-      )
-      .optional()
-      .or(z.literal("")),
+const optionalEmail = z
+  .string()
+  .email("Enter valid email address")
+  .optional()
+  .or(z.literal(""));
 
-    phone: z
-      .string()
-      .regex(
-        phoneRegex,
-        "Enter valid mobile number"
-      )
-      .optional()
-      .or(z.literal("")),
-      profileImageFileId:
-z.string().optional(),
+const optionalPhone = z
+  .string()
+  .regex(phoneRegex, "Enter valid mobile number")
+  .optional()
+  .or(z.literal(""));
 
-    gender: z
-      .enum(TRAINER_GENDERS)
-      .optional(),
+export const createTrainerSchema = z.object({
+  firstName: z
+    .string()
+    .trim()
+    .min(1, "First name is required")
+    .max(100, "Maximum 100 characters allowed"),
 
-    bio: z.string().optional().or(z.literal("")),
+  lastName: z.string().optional().or(z.literal("")),
 
-    qualification:
-      z.string().optional().or(z.literal("")),
+  email: optionalEmail,
 
-    experienceYears: z
-      .number()
-      .min(0)
-      .optional(),
+  phone: optionalPhone,
 
-    specialization:
-      z.string().optional().or(z.literal("")),
+  profileImageFileId: z.string().optional(),
 
-    skills: z
-      .array(z.string())
-      .default([]),
+  employeeCode: z.string().optional(),
 
-    employeeCode:
-      z.string().optional().or(z.literal("")),
+  gender: z.enum(TRAINER_GENDERS).optional(),
 
-    trainerType: z.enum(
-      TRAINER_TYPES
+  bio: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine(
+      (value) =>
+        countWords(value ?? "") <= MAX_BIO_WORDS,
+      {
+        message: `Biography must not exceed ${MAX_BIO_WORDS} words`,
+      }
     ),
 
-    linkedInUrl: z
-      .string()
-      .url()
-      .optional()
-      .or(z.literal("")),
+  qualification: z.string().optional().or(z.literal("")),
 
-    youtubeUrl: z
-      .string()
-      .url()
-      .optional()
-      .or(z.literal("")),
+  experienceYears: z.preprocess(
+    (value) => {
+      if (
+        value === "" ||
+        value === null ||
+        value === undefined
+      ) {
+        return undefined;
+      }
 
-    instagramUrl: z
-      .string()
-      .url()
-      .optional()
-      .or(z.literal("")),
+      if (
+        typeof value === "number" &&
+        Number.isNaN(value)
+      ) {
+        return undefined;
+      }
 
-    branchId: z
-      .string()
-      .uuid()
-      .optional()
-      .or(z.literal("")),
-
-    averageRating: z
-      .number()
-      .min(0)
-      .max(5)
-      .optional(),
-
-    totalReviews: z
-      .number()
-      .min(0)
-      .optional(),
-
-    isFeatured:
-      z.boolean(),
-
-    joinedAt:
-      z.string().optional().or(z.literal("")),
-
-    courseIds: z
-      .array(
-        z.string().uuid()
+      return value;
+    },
+    z
+      .number({
+        message: "Enter a valid number of years",
+      })
+      .min(
+        0,
+        "Experience must be at least 0 years"
       )
-      .default([]),
-  });
+      .optional()
+  ),
 
-export const updateTrainerSchema =
-  createTrainerSchema.partial();
+  specialization: z.string().optional().or(z.literal("")),
 
-export type CreateTrainerFormValues =
-  z.infer<
-    typeof createTrainerSchema
-  >;
+  skills: z.array(z.string()).default([]),
 
-export type UpdateTrainerFormValues =
-  z.infer<
-    typeof updateTrainerSchema
-  >;
+  trainerType: z.enum(TRAINER_TYPES),
+
+  linkedInUrl: optionalUrl,
+
+  youtubeUrl: optionalUrl,
+
+  instagramUrl: optionalUrl,
+
+  isFeatured: z.boolean(),
+
+  joinedAt: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine(
+      (value) =>
+        !value ||
+        /^\d{4}-\d{2}-\d{2}$/.test(value),
+      {
+        message: "Enter a valid date",
+      }
+    ),
+});
+
+export const updateTrainerSchema = createTrainerSchema;
+
+export type CreateTrainerFormValues = z.infer<
+  typeof createTrainerSchema
+>;
+
+export type UpdateTrainerFormValues = CreateTrainerFormValues;

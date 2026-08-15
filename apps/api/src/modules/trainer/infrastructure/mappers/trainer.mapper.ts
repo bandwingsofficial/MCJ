@@ -59,6 +59,7 @@ export class TrainerMapper {
       totalReviews: record.totalReviews,
       isFeatured: record.isFeatured,
       status: record.status as TrainerStatus,
+      displayOrder: record.displayOrder,
       joinedAt: record.joinedAt,
       courses: record.courses.map(
   (course) =>
@@ -118,6 +119,7 @@ export class TrainerMapper {
       totalReviews: trainer.totalReviews,
       isFeatured: trainer.isFeatured,
       status: trainer.status,
+      displayOrder: trainer.displayOrder,
       joinedAt: trainer.joinedAt,
       createdBy: trainer.createdBy,
       updatedBy: trainer.updatedBy,

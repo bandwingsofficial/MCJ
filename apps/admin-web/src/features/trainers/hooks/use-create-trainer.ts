@@ -13,6 +13,9 @@ import type {
 interface UseCreateTrainerReturn {
   isLoading: boolean;
 
+  /** Alias of isLoading for parity with branch hooks. */
+  isPending: boolean;
+
   createTrainer: (
     payload: CreateTrainerRequest,
     image?: File | null
@@ -79,6 +82,7 @@ export const useCreateTrainer =
 
     return {
       isLoading,
+      isPending: isLoading,
       createTrainer,
     };
   };

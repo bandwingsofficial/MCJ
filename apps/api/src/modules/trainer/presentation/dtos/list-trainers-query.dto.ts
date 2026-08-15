@@ -47,4 +47,14 @@ export class ListTrainersQueryDto extends PaginationQueryDto {
   @IsBoolean()
   @Transform(({ value }) => value === true || value === 'true')
   includeDeleted?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    return undefined;
+  })
+  isDeleted?: boolean;
 }

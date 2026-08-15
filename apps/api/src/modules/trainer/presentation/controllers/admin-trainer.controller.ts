@@ -22,6 +22,14 @@ import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 
 import { AssignTrainerCoursesCommand } from '../../application/assign-trainer-courses/assign-trainer-courses.command';
 import { AssignTrainerCoursesHandler } from '../../application/assign-trainer-courses/assign-trainer-courses.handler';
+import { BulkDeleteTrainersCommand } from '../../application/bulk-delete-trainers/bulk-delete-trainers.command';
+import { BulkDeleteTrainersHandler } from '../../application/bulk-delete-trainers/bulk-delete-trainers.handler';
+import { BulkPermanentDeleteTrainersCommand } from '../../application/bulk-permanent-delete-trainers/bulk-permanent-delete-trainers.command';
+import { BulkPermanentDeleteTrainersHandler } from '../../application/bulk-permanent-delete-trainers/bulk-permanent-delete-trainers.handler';
+import { BulkRestoreTrainersCommand } from '../../application/bulk-restore-trainers/bulk-restore-trainers.command';
+import { BulkRestoreTrainersHandler } from '../../application/bulk-restore-trainers/bulk-restore-trainers.handler';
+import { BulkUpdateTrainerStatusCommand } from '../../application/bulk-update-trainer-status/bulk-update-trainer-status.command';
+import { BulkUpdateTrainerStatusHandler } from '../../application/bulk-update-trainer-status/bulk-update-trainer-status.handler';
 import { CreateTrainerCommand } from '../../application/create-trainer/create-trainer.command';
 import { CreateTrainerHandler } from '../../application/create-trainer/create-trainer.handler';
 import { DeleteTrainerCommand } from '../../application/delete-trainer/delete-trainer.command';
@@ -32,15 +40,23 @@ import { ListTrainersHandler } from '../../application/list-trainers/list-traine
 import { ListTrainersQuery } from '../../application/list-trainers/list-trainers.query';
 import { PermanentDeleteTrainerCommand } from '../../application/permanent-delete-trainer/permanent-delete-trainer.command';
 import { PermanentDeleteTrainerHandler } from '../../application/permanent-delete-trainer/permanent-delete-trainer.handler';
+import { ReorderTrainersCommand } from '../../application/reorder-trainers/reorder-trainers.command';
+import { ReorderTrainersHandler } from '../../application/reorder-trainers/reorder-trainers.handler';
 import { RestoreTrainerCommand } from '../../application/restore-trainer/restore-trainer.command';
 import { RestoreTrainerHandler } from '../../application/restore-trainer/restore-trainer.handler';
+import { SuggestTrainerCodeHandler } from '../../application/suggest-trainer-code/suggest-trainer-code.handler';
+import { SuggestTrainerCodeQuery } from '../../application/suggest-trainer-code/suggest-trainer-code.query';
 import { UpdateTrainerCommand } from '../../application/update-trainer/update-trainer.command';
 import { UpdateTrainerHandler } from '../../application/update-trainer/update-trainer.handler';
 import { UpdateTrainerStatusCommand } from '../../application/update-trainer-status/update-trainer-status.command';
 import { UpdateTrainerStatusHandler } from '../../application/update-trainer-status/update-trainer-status.handler';
+import { TrainerStatus } from '../../domain/enums/trainer-status.enum';
 import { AssignTrainerCoursesDto } from '../dtos/assign-trainer-courses.dto';
+import { BulkTrainerIdsDto } from '../dtos/bulk-trainer-ids.dto';
+import { BulkUpdateTrainerStatusDto } from '../dtos/bulk-update-trainer-status.dto';
 import { CreateTrainerDto } from '../dtos/create-trainer.dto';
 import { ListTrainersQueryDto } from '../dtos/list-trainers-query.dto';
+import { ReorderTrainersDto } from '../dtos/reorder-trainers.dto';
 import { UpdateTrainerDto } from '../dtos/update-trainer.dto';
 
 @ApiTags('Admin Trainers')
@@ -58,6 +74,12 @@ export class AdminTrainerController {
     private readonly permanentDeleteTrainerHandler: PermanentDeleteTrainerHandler,
     private readonly updateTrainerStatusHandler: UpdateTrainerStatusHandler,
     private readonly assignTrainerCoursesHandler: AssignTrainerCoursesHandler,
+    private readonly suggestTrainerCodeHandler: SuggestTrainerCodeHandler,
+    private readonly reorderTrainersHandler: ReorderTrainersHandler,
+    private readonly bulkUpdateTrainerStatusHandler: BulkUpdateTrainerStatusHandler,
+    private readonly bulkDeleteTrainersHandler: BulkDeleteTrainersHandler,
+    private readonly bulkRestoreTrainersHandler: BulkRestoreTrainersHandler,
+    private readonly bulkPermanentDeleteTrainersHandler: BulkPermanentDeleteTrainersHandler,
   ) {}
 
   @Post()
@@ -112,6 +134,7 @@ export class AdminTrainerController {
         query.search,
         query.isFeatured,
         query.includeDeleted,
+        query.isDeleted,
         false,
         query.skip,
         query.take,
@@ -121,6 +144,123 @@ export class AdminTrainerController {
     return {
       success: true,
       message: 'Trainers fetched successfully',
+      data: result,
+    };
+  }
+
+  @Get('suggest-code')
+  async suggestCode() {
+    const result = await this.suggestTrainerCodeHandler.execute(
+      new SuggestTrainerCodeQuery(),
+    );
+
+    return {
+      success: true,
+      message: 'Trainer code suggested successfully',
+      data: result,
+    };
+  }
+
+  @Patch('reorder')
+  async reorder(@Body() dto: ReorderTrainersDto) {
+    const result = await this.reorderTrainersHandler.execute(
+      new ReorderTrainersCommand(
+        dto.trainerId,
+        dto.newDisplayOrder,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Trainers reordered successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/status')
+  async bulkUpdateStatus(@Body() dto: BulkUpdateTrainerStatusDto) {
+    const result = await this.bulkUpdateTrainerStatusHandler.execute(
+      new BulkUpdateTrainerStatusCommand(
+        dto.trainerIds,
+        dto.status,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Trainer statuses updated successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/activate')
+  async bulkActivate(@Body() dto: BulkTrainerIdsDto) {
+    const result = await this.bulkUpdateTrainerStatusHandler.execute(
+      new BulkUpdateTrainerStatusCommand(
+        dto.trainerIds,
+        TrainerStatus.ACTIVE,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Trainer statuses updated successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/deactivate')
+  async bulkDeactivate(@Body() dto: BulkTrainerIdsDto) {
+    const result = await this.bulkUpdateTrainerStatusHandler.execute(
+      new BulkUpdateTrainerStatusCommand(
+        dto.trainerIds,
+        TrainerStatus.INACTIVE,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Trainer statuses updated successfully',
+      data: result,
+    };
+  }
+
+  @Patch('bulk/restore')
+  async bulkRestore(@Body() dto: BulkTrainerIdsDto) {
+    const result = await this.bulkRestoreTrainersHandler.execute(
+      new BulkRestoreTrainersCommand(dto.trainerIds),
+    );
+
+    return {
+      success: true,
+      message: 'Trainers restored successfully',
+      data: result,
+    };
+  }
+
+  @Delete('bulk')
+  async bulkDelete(@Body() dto: BulkTrainerIdsDto) {
+    const result = await this.bulkDeleteTrainersHandler.execute(
+      new BulkDeleteTrainersCommand(dto.trainerIds),
+    );
+
+    return {
+      success: true,
+      message: 'Trainers deleted successfully',
+      data: result,
+    };
+  }
+
+  @Delete('bulk/permanent')
+  async bulkPermanentDelete(@Body() dto: BulkTrainerIdsDto) {
+    const result =
+      await this.bulkPermanentDeleteTrainersHandler.execute(
+        new BulkPermanentDeleteTrainersCommand(dto.trainerIds),
+      );
+
+    return {
+      success: true,
+      message: 'Trainers permanently deleted successfully',
       data: result,
     };
   }

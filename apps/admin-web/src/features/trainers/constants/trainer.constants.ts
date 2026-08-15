@@ -23,5 +23,4 @@ export const TRAINER_STATUSES = [
   "INACTIVE",
 ] as const satisfies readonly TrainerStatus[];
 
-export const DEFAULT_TRAINER_PAGE_SIZE =
-  10;
+export const DEFAULT_TRAINER_PAGE_SIZE = 20;

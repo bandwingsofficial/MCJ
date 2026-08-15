@@ -29,6 +29,7 @@ export class TrainerController {
         query.search,
         query.isFeatured,
         false,
+        undefined,
         true,
         query.skip,
         query.take,

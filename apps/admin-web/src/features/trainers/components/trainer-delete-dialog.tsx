@@ -21,8 +21,8 @@ export function TrainerDeleteDialog({
   return (
     <ConfirmDialog
       open={open}
-      title="Delete Trainer"
-      description="Are you sure you want to delete this trainer?"
+      title="Archive Trainer"
+      description="Archive this trainer? They can be restored later."
       onConfirm={
         onConfirm
       }

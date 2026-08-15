@@ -14,6 +14,11 @@ export type TrainerStatus =
   | "ACTIVE"
   | "INACTIVE";
 
+export type TrainerFilterStatus =
+  | "ACTIVE"
+  | "INACTIVE"
+  | "ARCHIVED";
+
 export interface TrainerCourse {
   id: string;
 
@@ -67,6 +72,8 @@ export interface Trainer {
 
   status: TrainerStatus;
 
+  displayOrder?: number | null;
+
   joinedAt: string | null;
 
   courses: TrainerCourse[];
@@ -84,38 +91,74 @@ export interface Trainer {
   updatedAt: string;
 }
 
-export interface TrainerListItem
-  extends Trainer {}
+export interface TrainerListItem {
+  id: string;
 
-export interface TrainerDetails
-  extends Trainer {}
+  firstName: string;
+
+  lastName: string | null;
+
+  email: string | null;
+
+  phone: string | null;
+
+  specialization: string | null;
+
+  employeeCode: string | null;
+
+  trainerType: TrainerType;
+
+  profileImageUrl: string | null;
+
+  branchId?: string | null;
+
+  status: TrainerStatus;
+
+  displayOrder?: number | null;
+
+  deletedAt?: string | null;
+
+  isDeleted?: boolean;
+
+  createdAt: string;
+
+  updatedAt: string;
+}
+
+export interface TrainerDetails extends Trainer {}
 
 export interface TrainerFilters {
-  search: string;
+  search?: string;
 
+  /** Optional for non-trainers-page callers (e.g. branch manage). */
   branchId?: string;
 
   trainerType?: TrainerType;
 
-  status?: TrainerStatus;
+  status?: TrainerFilterStatus;
 
-  includeDeleted: boolean;
+  page?: number;
 
-  skip: number;
-
-  take: number;
+  pageSize?: number;
 }
 
 export interface TrainerListResponse {
   items: TrainerListItem[];
 
   count: number;
+
+  meta?: {
+    total: number;
+    skip: number;
+    take: number;
+  };
 }
 
 export interface CreateTrainerRequest {
   firstName: string;
 
   lastName?: string;
+
   profileImageFileId?: string;
 
   email?: string;
@@ -144,21 +187,14 @@ export interface CreateTrainerRequest {
 
   instagramUrl?: string;
 
-  branchId?: string;
-
-  averageRating?: number;
-
-  totalReviews?: number;
-
   isFeatured?: boolean;
 
   joinedAt?: string;
-
-  courseIds?: string[];
 }
 
 export interface UpdateTrainerRequest {
   firstName?: string;
+
   profileImageFileId?: string;
 
   lastName?: string;
@@ -217,15 +253,9 @@ export interface ApiErrorResponse {
 
   message?: string;
 
-  errors?: Record<
-    string,
-    string[]
-  >;
+  errors?: Record<string, string[]>;
 
-  meta?: Record<
-    string,
-    string
-  >;
+  meta?: Record<string, string>;
 }
 
 export interface TrainerDeleteResponse {
@@ -240,4 +270,24 @@ export interface TrainerPermanentDeleteResponse {
   id: string;
 
   permanentlyDeleted: boolean;
+}
+
+export interface SuggestTrainerCodeResponse {
+  employeeCode: string;
+}
+
+export interface BulkTrainerItemResult {
+  trainerId: string;
+  success: boolean;
+  message: string;
+  status?: TrainerStatus;
+}
+
+export interface BulkTrainerOperationResult {
+  requestedCount: number;
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  results: BulkTrainerItemResult[];
+  failures: BulkTrainerItemResult[];
 }

@@ -9,6 +9,7 @@ export class ListTrainersQuery {
     public readonly search?: string,
     public readonly isFeatured?: boolean,
     public readonly includeDeleted = false,
+    public readonly isDeleted?: boolean,
     public readonly onlyActive = false,
     public readonly skip?: number,
     public readonly take?: number,

@@ -18,8 +18,19 @@ export class UpdateTrainerStatusHandler {
     );
 
     if (command.activate) {
+      const nextDisplayOrder =
+        (await this.trainerRepo.getMaxActiveDisplayOrder()) + 1;
+
+      trainer.changeDisplayOrder(nextDisplayOrder);
       trainer.activate(command.updatedBy);
     } else {
+      if (trainer.displayOrder != null) {
+        await this.trainerRepo.closeDisplayOrderGap(
+          trainer.displayOrder,
+        );
+      }
+
+      trainer.changeDisplayOrder(null);
       trainer.deactivate(command.updatedBy);
     }
 

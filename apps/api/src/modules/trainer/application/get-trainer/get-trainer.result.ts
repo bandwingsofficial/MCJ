@@ -43,6 +43,7 @@ export class GetTrainerResult {
     public readonly totalReviews: number,
     public readonly isFeatured: boolean,
     public readonly status: TrainerStatus,
+    public readonly displayOrder: number | null,
     public readonly joinedAt: Date | null,
     public readonly courses: TrainerCourseResult[],
     public readonly createdBy: string | null,
@@ -84,6 +85,7 @@ export class GetTrainerResult {
       trainer.totalReviews,
       trainer.isFeatured,
       trainer.status,
+      trainer.displayOrder,
       trainer.joinedAt,
       trainer.courses.map(
   (course) =>

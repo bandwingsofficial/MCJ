@@ -38,6 +38,7 @@ public averageRating: number,
     public totalReviews: number,
     public isFeatured: boolean,
     public status: TrainerStatus,
+    public displayOrder: number | null,
     public joinedAt: Date | null,
     public courses: TrainerCourse[],
     public readonly createdBy: string | null,
@@ -75,6 +76,7 @@ public averageRating: number,
       params.totalReviews ?? 0,
       params.isFeatured ?? false,
       params.status ?? TrainerStatus.ACTIVE,
+      params.displayOrder ?? null,
       params.joinedAt ?? null,
       params.courses ?? [],
       params.createdBy ?? null,
@@ -113,6 +115,7 @@ public averageRating: number,
       params.totalReviews,
       params.isFeatured,
       params.status,
+      params.displayOrder,
       params.joinedAt,
       params.courses,
       params.createdBy,
@@ -168,9 +171,15 @@ public averageRating: number,
     this.touch();
   }
 
+  changeDisplayOrder(displayOrder: number | null) {
+    this.displayOrder = displayOrder;
+    this.touch();
+  }
+
   softDelete(deletedBy?: string | null) {
     this.isDeleted = true;
     this.status = TrainerStatus.ARCHIVED;
+    this.displayOrder = null;
     this.deletedAt = new Date();
     this.deletedBy = deletedBy ?? null;
     this.touch();
@@ -219,6 +228,7 @@ export interface TrainerCreateParams {
   totalReviews?: number;
   isFeatured?: boolean;
   status?: TrainerStatus;
+  displayOrder?: number | null;
   joinedAt?: Date | null;
   courses?: TrainerCourse[];
   createdBy?: string | null;
@@ -271,6 +281,7 @@ export interface TrainerReconstituteParams
   branchCode: string;
 } | null;
   branchId: string | null;
+  displayOrder: number | null;
   joinedAt: Date | null;
   updatedBy: string | null;
   isDeleted: boolean;

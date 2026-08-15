@@ -5,9 +5,14 @@ import { UploadDomainService } from '@modules/uploads/domain/services/upload-dom
 
 import { TrainerCourse } from '../../domain/entities/trainer-course.entity';
 import { Trainer } from '../../domain/entities/trainer.entity';
+import { TrainerStatus } from '../../domain/enums/trainer-status.enum';
 import type { TrainerRepository } from '../../domain/repositories/trainer.repository';
 import { TrainerDomainService } from '../../domain/services/trainer-domain.service';
 import { GetTrainerResult } from '../get-trainer/get-trainer.result';
+import {
+  buildTrainerEmployeeCode,
+  TRAINER_EMPLOYEE_CODE_PREFIX,
+} from '../suggest-trainer-code/build-trainer-employee-code';
 
 import { CreateTrainerCommand } from './create-trainer.command';
 import { BranchRepository } from '@/modules/branch/domain/repositories/branch.repository';
@@ -47,9 +52,17 @@ export class CreateTrainerHandler {
       command.phone,
     );
 
+    const employeeCode = command.employeeCode?.trim()
+      ? command.employeeCode.trim()
+      : buildTrainerEmployeeCode(
+          await this.trainerRepo.getMaxNumericSuffixForPrefix(
+            TRAINER_EMPLOYEE_CODE_PREFIX,
+          ),
+        );
+
     await this.domainService.ensureEmployeeCodeIsAvailable(
       this.trainerRepo,
-      command.employeeCode,
+      employeeCode,
     );
 
     const courseIds = this.domainService.uniqueCourseIds(
@@ -77,6 +90,12 @@ export class CreateTrainerHandler {
       profileImageUrl = upload.url;
     }
 
+    const status = command.status ?? TrainerStatus.ACTIVE;
+    const displayOrder =
+      status === TrainerStatus.ACTIVE
+        ? (await this.trainerRepo.getMaxActiveDisplayOrder()) + 1
+        : null;
+
     const trainer = Trainer.create({
       id: trainerId,
       firstName: command.firstName,
@@ -91,7 +110,7 @@ export class CreateTrainerHandler {
       skills: command.skills,
       profileImageFileId,
       profileImageUrl,
-      employeeCode: command.employeeCode,
+      employeeCode,
       trainerType: command.trainerType,
       linkedInUrl: command.linkedInUrl,
       youtubeUrl: command.youtubeUrl,
@@ -100,7 +119,8 @@ export class CreateTrainerHandler {
       averageRating: command.averageRating,
       totalReviews: command.totalReviews,
       isFeatured: command.isFeatured,
-      status: command.status,
+      status,
+      displayOrder,
       joinedAt: command.joinedAt,
       courses: courseIds.map((courseId) =>
         TrainerCourse.create({

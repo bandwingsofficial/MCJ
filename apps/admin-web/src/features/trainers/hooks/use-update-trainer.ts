@@ -13,6 +13,9 @@ import type {
 interface UseUpdateTrainerReturn {
   isLoading: boolean;
 
+  /** Alias of isLoading for parity with branch hooks. */
+  isPending: boolean;
+
   updateTrainer: (
     id: string,
     payload: UpdateTrainerRequest,
@@ -50,7 +53,7 @@ export const useUpdateTrainer =
               );
 
             requestPayload.profileImageFileId =
-              uploadResponse.data.id;
+              uploadResponse.data.fileId;
           }
 
           const response =
@@ -81,6 +84,7 @@ export const useUpdateTrainer =
 
     return {
       isLoading,
+      isPending: isLoading,
       updateTrainer,
     };
   };

@@ -1,5 +1,3 @@
-import { UploadDomainService } from '@modules/uploads/domain/services/upload-domain.service';
-
 import type { TrainerRepository } from '../../domain/repositories/trainer.repository';
 import { TrainerDomainService } from '../../domain/services/trainer-domain.service';
 import { GetTrainerResult } from '../get-trainer/get-trainer.result';
@@ -19,7 +17,12 @@ export class RestoreTrainerHandler {
       await this.trainerRepo.findById(command.id, true),
     );
 
+    const nextDisplayOrder =
+      (await this.trainerRepo.getMaxDisplayOrder()) + 1;
+
     trainer.restore(command.updatedBy);
+    trainer.changeDisplayOrder(nextDisplayOrder);
+
     await this.trainerRepo.save(trainer);
 
     return GetTrainerResult.fromEntity(trainer);

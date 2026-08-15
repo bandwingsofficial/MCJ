@@ -20,8 +20,13 @@ export class PermanentDeleteTrainerHandler {
       await this.trainerRepo.findById(command.id, true),
     );
     const profileImageFileId = trainer.profileImageFileId;
+    const displayOrder = trainer.displayOrder;
 
     await this.trainerRepo.deletePermanent(trainer.id);
+
+    if (displayOrder != null) {
+      await this.trainerRepo.closeDisplayOrderGap(displayOrder);
+    }
 
     if (profileImageFileId) {
       await this.uploadDomainService.permanentDelete(

@@ -9,6 +9,7 @@ export interface TrainerListFilters {
   search?: string;
   isFeatured?: boolean;
   includeDeleted?: boolean;
+  isDeleted?: boolean;
   onlyActive?: boolean;
   skip?: number;
   take?: number;
@@ -20,20 +21,31 @@ export interface TrainerRepository {
     id: string,
     includeDeleted?: boolean,
   ): Promise<Trainer | null>;
+  findByIdIncludingDeleted(
+    id: string,
+  ): Promise<Trainer | null>;
   findByEmail(
     email: string,
     includeDeleted?: boolean,
   ): Promise<Trainer | null>;
-
   findByPhone(
-  phone: string,
-  includeDeleted?: boolean,
-): Promise<Trainer | null>;
-
+    phone: string,
+    includeDeleted?: boolean,
+  ): Promise<Trainer | null>;
   findByEmployeeCode(
     employeeCode: string,
     includeDeleted?: boolean,
   ): Promise<Trainer | null>;
   findAll(filters?: TrainerListFilters): Promise<Trainer[]>;
+  count(filters?: TrainerListFilters): Promise<number>;
+  getMaxNumericSuffixForPrefix(prefix: string): Promise<number>;
+  getMaxDisplayOrder(): Promise<number>;
+  getMaxActiveDisplayOrder(): Promise<number>;
+  closeDisplayOrderGap(deletedDisplayOrder: number): Promise<void>;
+  moveDisplayOrder(
+    trainerId: string,
+    oldOrder: number,
+    newOrder: number,
+  ): Promise<void>;
   deletePermanent(id: string): Promise<void>;
 }

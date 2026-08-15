@@ -503,6 +503,7 @@ model Trainer {
   totalReviews       Int             @default(0)
   isFeatured         Boolean         @default(false)
   status             TrainerStatus   @default(ACTIVE)
+  displayOrder       Int?
   joinedAt           DateTime?
   createdBy          String?
   updatedBy          String?
@@ -527,6 +528,7 @@ model Trainer {
   @@index([isFeatured])
   @@index([branchId, status, isDeleted])
   @@index([isDeleted])
+  @@index([displayOrder])
   @@index([createdAt])
 }
 

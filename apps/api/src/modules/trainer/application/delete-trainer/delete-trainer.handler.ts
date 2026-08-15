@@ -17,8 +17,16 @@ export class DeleteTrainerHandler {
       await this.trainerRepo.findById(command.id),
     );
 
+    const deletedDisplayOrder = trainer.displayOrder;
+
     trainer.softDelete(command.deletedBy);
     await this.trainerRepo.save(trainer);
+
+    if (deletedDisplayOrder != null) {
+      await this.trainerRepo.closeDisplayOrderGap(
+        deletedDisplayOrder,
+      );
+    }
 
     return new DeleteTrainerResult(
       trainer.id,

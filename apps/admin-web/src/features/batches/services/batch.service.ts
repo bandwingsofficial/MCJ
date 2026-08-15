@@ -3,6 +3,11 @@
 import { apiClient } from "@/src/core/api/axios";
 
 import type {
+  TrainerListItem,
+  TrainerListResponse as TrainerListPayload,
+} from "@/src/features/trainers/types/trainer.types";
+
+import type {
   BatchListResponse,
   BatchResponse,
   BranchListResponse,
@@ -10,7 +15,6 @@ import type {
   CreateBatchRequest,
   DeleteBatchResponse,
   PermanentDeleteBatchResponse,
-  TrainerListResponse,
   UpdateBatchRequest,
 } from "@/src/features/batches/types/batch.types";
 
@@ -138,13 +142,18 @@ async getBranches() {
   return data.data.items;
 }
 
-async getTrainers() {
-  const { data } =
-    await apiClient.get<TrainerListResponse>(
-      "/admin/trainers",
-    );
+async getTrainers(): Promise<TrainerListItem[]> {
+  const { data } = await apiClient.get<{
+    data: TrainerListPayload | TrainerListItem[];
+  }>("/admin/trainers");
 
-  return data.data;
+  const payload = data.data;
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  return payload.items ?? [];
 }
 }
 
