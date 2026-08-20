@@ -221,11 +221,24 @@ export class Course {
   }
 
   getTotalDiscount(): number {
-    return Math.max(
-      this.originalPrice.getValue() -
-        this.discountPrice.getValue(),
-      0,
-    );
+    const fee = this.originalPrice.getValue();
+    const value = this.discountPrice.getValue();
+
+    if (value <= 0) {
+      return 0;
+    }
+
+    // Default discount amount (Course Management "Default Discount").
+    if (value <= fee) {
+      return value;
+    }
+
+    // Legacy records may store the final sale price instead of the amount.
+    return Math.max(fee - value, 0);
+  }
+
+  getDefaultDiscountAmount(): number {
+    return this.getTotalDiscount();
   }
 
   private touch() {

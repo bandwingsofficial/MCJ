@@ -7,6 +7,7 @@ import { Badge } from "@/src/shared/components/ui/badge";
 import { Separator } from "@/src/shared/components/ui/separator";
 
 import { Enrollment } from "../../types";
+import { formatCurrency } from "../../utils/format-payment";
 
 interface EnrollmentDetailsDrawerProps {
   open: boolean;
@@ -177,10 +178,7 @@ export function EnrollmentDetailsDrawer({
                 Fee
               </span>
 
-              <p>
-                ₹
-                {enrollment.feeAmount.toLocaleString()}
-              </p>
+              <p>{formatCurrency(enrollment.feeAmount)}</p>
             </div>
 
             <div>
@@ -188,10 +186,7 @@ export function EnrollmentDetailsDrawer({
                 Discount
               </span>
 
-              <p>
-                ₹
-                {(enrollment.discountAmount ?? 0).toLocaleString()}
-              </p>
+              <p>{formatCurrency(enrollment.discountAmount)}</p>
             </div>
 
             <div>
@@ -199,10 +194,7 @@ export function EnrollmentDetailsDrawer({
                 Final
               </span>
 
-              <p>
-                ₹
-                {enrollment.finalAmount.toLocaleString()}
-              </p>
+              <p>{formatCurrency(enrollment.finalAmount)}</p>
             </div>
 
             <div>

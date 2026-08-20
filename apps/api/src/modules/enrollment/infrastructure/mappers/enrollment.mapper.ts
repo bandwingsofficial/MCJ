@@ -7,9 +7,9 @@ import { Enrollment } from '../../domain/entities/enrollment.entity';
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { PaymentStatus } from '../../domain/enums/payment-status.enum';
+import { toMoneyNumber } from './enrollment-money.utils';
 
-const toNumber = (value: Prisma.Decimal): number =>
-  Number(value);
+const toNumber = toMoneyNumber;
 
 export class EnrollmentMapper {
   static toDomain(record: PrismaEnrollment): Enrollment {

@@ -739,6 +739,10 @@ export function CourseForm({
       </div>
 
       <div className={GRID_CLASS}>
+        <div className={`${CELL_CLASS} md:col-span-2`}>
+          <h3 className="text-sm font-semibold text-slate-900">Pricing</h3>
+        </div>
+
         <div className={CELL_CLASS}>
           <ValidatedField
             label="Pricing Type"
@@ -764,20 +768,27 @@ export function CourseForm({
 
         <div className={CELL_CLASS}>
           <ValidatedField
-            label="Original Price"
+            label="Course Fee"
             required={!pricesDisabled}
             state={originalPriceState}
             errorMessage={errors.originalPrice?.message}
           >
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              disabled={pricesDisabled}
-              placeholder="Enter course price"
-              className={inputClass(originalPriceState)}
-              {...register("originalPrice", { valueAsNumber: true })}
-            />
+            <div className="relative">
+              {!pricesDisabled ? (
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                  ₹
+                </span>
+              ) : null}
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                disabled={pricesDisabled}
+                placeholder={pricesDisabled ? "Free course" : "Enter course fee"}
+                className={`${inputClass(originalPriceState)} ${pricesDisabled ? "" : "pl-7"}`}
+                {...register("originalPrice", { valueAsNumber: true })}
+              />
+            </div>
           </ValidatedField>
         </div>
       </div>
@@ -785,20 +796,29 @@ export function CourseForm({
       <div className={GRID_CLASS}>
         <div className={CELL_CLASS}>
           <ValidatedField
-            label="Discount Price"
+            label="Default Discount"
             required={!pricesDisabled}
             state={discountPriceState}
             errorMessage={errors.discountPrice?.message}
           >
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              disabled={pricesDisabled}
-              placeholder="Enter discount price"
-              className={inputClass(discountPriceState)}
-              {...register("discountPrice", { valueAsNumber: true })}
-            />
+            <div className="relative">
+              {!pricesDisabled ? (
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                  ₹
+                </span>
+              ) : null}
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                disabled={pricesDisabled}
+                placeholder={
+                  pricesDisabled ? "Free course" : "Enter default discount"
+                }
+                className={`${inputClass(discountPriceState)} ${pricesDisabled ? "" : "pl-7"}`}
+                {...register("discountPrice", { valueAsNumber: true })}
+              />
+            </div>
           </ValidatedField>
         </div>
 

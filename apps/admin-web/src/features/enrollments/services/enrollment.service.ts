@@ -1,5 +1,7 @@
 // src/features/enrollments/services/enrollment.service.ts
 
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
+
 import { enrollmentApi } from "../api";
 
 import {
@@ -9,94 +11,130 @@ import {
   UpdateEnrollmentStatusRequest,
 } from "../types";
 
+function wrapError(error: unknown): Error {
+  return new Error(getErrorMessage(error));
+}
+
 export const enrollmentService = {
   async getEnrollments(
     filters: EnrollmentFilters,
   ) {
-    const response =
-      await enrollmentApi.getEnrollments(
-        filters,
-      );
+    try {
+      const response =
+        await enrollmentApi.getEnrollments(
+          filters,
+        );
 
-    return response.data;
+      return response.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
   },
 
   async getEnrollment(id: string) {
-    const response =
-      await enrollmentApi.getEnrollment(
-        id,
-      );
+    try {
+      const response =
+        await enrollmentApi.getEnrollment(
+          id,
+        );
 
-    return response.data;
+      return response.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
   },
 
   async createEnrollment(
     payload: CreateEnrollmentRequest,
   ) {
-    const response =
-      await enrollmentApi.createEnrollment(
-        payload,
-      );
+    try {
+      const response =
+        await enrollmentApi.createEnrollment(
+          payload,
+        );
 
-    return response.data;
+      return response.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
   },
 
   async updateEnrollment(
     id: string,
     payload: UpdateEnrollmentRequest,
   ) {
-    const response =
-      await enrollmentApi.updateEnrollment(
-        id,
-        payload,
-      );
+    try {
+      const response =
+        await enrollmentApi.updateEnrollment(
+          id,
+          payload,
+        );
 
-    return response.data;
+      return response.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
   },
 
   async updateStatus(
     id: string,
     payload: UpdateEnrollmentStatusRequest,
   ) {
-    const response =
-      await enrollmentApi.updateStatus(
-        id,
-        payload,
-      );
+    try {
+      const response =
+        await enrollmentApi.updateStatus(
+          id,
+          payload,
+        );
 
-    return response.data;
+      return response.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
   },
 
   async deleteEnrollment(
     id: string,
   ) {
-    const response =
-      await enrollmentApi.deleteEnrollment(
-        id,
-      );
+    try {
+      const response =
+        await enrollmentApi.deleteEnrollment(
+          id,
+        );
 
-    return response.data;
+      return response.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
   },
 
   async restoreEnrollment(
     id: string,
   ) {
-    const response =
-      await enrollmentApi.restoreEnrollment(
-        id,
-      );
+    try {
+      const response =
+        await enrollmentApi.restoreEnrollment(
+          id,
+        );
 
-    return response.data;
+      return response.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
   },
 
   async permanentDeleteEnrollment(
     id: string,
   ) {
-    const response =
-      await enrollmentApi.permanentDeleteEnrollment(
-        id,
-      );
+    try {
+      const response =
+        await enrollmentApi.permanentDeleteEnrollment(
+          id,
+        );
 
-    return response.data;
+      return response.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
   },
 };

@@ -9,6 +9,8 @@ import { Separator } from "@/src/shared/components/ui/separator";
 import {
   CourseDetails,
 } from "@/src/features/courses/types/course.types";
+import { formatCourseFee } from "@/src/features/courses/utils/format-course-fee.util";
+import { formatCurrency } from "@/src/features/enrollments/utils/format-payment";
 
 import { CourseStatusBadge } from "./course-status-badge";
 
@@ -117,23 +119,21 @@ export function CourseViewSheet({
           <div className="space-y-3 p-4">
             <div>
               <p className="text-sm text-muted-foreground">
-                Original Price
+                Course Fee
               </p>
 
-              <p>
-                ₹
-                {course.originalPrice}
-              </p>
+              <p>{formatCourseFee(course)}</p>
             </div>
 
             <div>
               <p className="text-sm text-muted-foreground">
-                Discount Price
+                Default Discount
               </p>
 
               <p>
-                ₹
-                {course.discountPrice}
+                {course.isFree
+                  ? "—"
+                  : formatCurrency(course.discountPrice)}
               </p>
             </div>
 

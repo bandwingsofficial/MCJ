@@ -13,6 +13,7 @@ import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Separator } from "@/src/shared/components/ui/separator";
 
 import { useEnrollment } from "../hooks";
+import { formatCurrency } from "../utils/format-payment";
 
 interface EnrollmentDetailsPageProps {
   enrollmentId: string;
@@ -199,12 +200,7 @@ export function EnrollmentDetailsPage({
 
               <strong>Fee</strong>
 
-              <p>
-                ₹
-                {
-                  enrollment.feeAmount
-                }
-              </p>
+              <p>{formatCurrency(enrollment.feeAmount)}</p>
 
             </div>
 
@@ -212,12 +208,7 @@ export function EnrollmentDetailsPage({
 
               <strong>Discount</strong>
 
-              <p>
-                ₹
-                {
-                  enrollment.discountAmount
-                }
-              </p>
+              <p>{formatCurrency(enrollment.discountAmount)}</p>
 
             </div>
 
@@ -225,12 +216,7 @@ export function EnrollmentDetailsPage({
 
               <strong>Paid</strong>
 
-              <p>
-                ₹
-                {
-                  enrollment.paidAmount
-                }
-              </p>
+              <p>{formatCurrency(enrollment.paidAmount)}</p>
 
             </div>
 
@@ -238,12 +224,7 @@ export function EnrollmentDetailsPage({
 
               <strong>Due</strong>
 
-              <p>
-                ₹
-                {
-                  enrollment.dueAmount
-                }
-              </p>
+              <p>{formatCurrency(enrollment.dueAmount)}</p>
 
             </div>
 

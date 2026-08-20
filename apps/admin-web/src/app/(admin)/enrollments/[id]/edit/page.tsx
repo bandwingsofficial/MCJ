@@ -1,21 +1,10 @@
-import {
-  EditEnrollmentPage,
-} from "@/src/features/enrollments/pages";
+import { redirect } from "next/navigation";
 
-interface EditEnrollmentRouteProps {
-  params: {
-    id: string;
-  };
+interface Props {
+  params: Promise<{ id: string }>;
 }
 
-export default function EditEnrollmentRoute({
-  params,
-}: EditEnrollmentRouteProps) {
-  return (
-    <EditEnrollmentPage
-      enrollmentId={
-        params.id
-      }
-    />
-  );
+export default async function Page({ params }: Props) {
+  const { id } = await params;
+  redirect(`/students?enrollment=${id}`);
 }

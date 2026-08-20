@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import {
-  Archive,
+  MoreVertical,
   Pencil,
   RotateCcw,
-  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
+import { Dropdown } from "@/src/shared/components/ui/dropdown";
 
 import type { Branch } from "@/src/features/branches/types/branch.types";
 import { BranchStatusBadge } from "@/src/features/branches/components/branch-status-badge";
@@ -39,6 +39,26 @@ export function BranchManageHeader({
   const meta = [branch.branchCode, location]
     .filter(Boolean)
     .join(" · ");
+
+  const moreItems = isArchived
+    ? [
+        {
+          label: "Restore Branch",
+          onClick: onRestore,
+        },
+        {
+          label: "Permanently Delete",
+          onClick: onPermanentDelete,
+          destructive: true,
+        },
+      ]
+    : [
+        {
+          label: "Archive Branch",
+          onClick: onArchive,
+          destructive: true,
+        },
+      ];
 
   return (
     <div className="space-y-3">
@@ -71,9 +91,7 @@ export function BranchManageHeader({
             {branch.branchName}
           </h1>
           {meta ? (
-            <p className="mt-1 text-sm text-slate-500">
-              {meta}
-            </p>
+            <p className="mt-1 text-sm text-slate-500">{meta}</p>
           ) : null}
           <div className="mt-2">
             <BranchStatusBadge
@@ -84,54 +102,46 @@ export function BranchManageHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {!isArchived ? (
+            <Button
+              type="button"
+              size="sm"
+              disabled={actionsDisabled}
+              onClick={onEdit}
+            >
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              Edit Branch
+            </Button>
+          ) : null}
+
+          <Dropdown
+            trigger={
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={actionsDisabled}
+                aria-label="More branch actions"
+              >
+                <MoreVertical className="mr-1.5 h-3.5 w-3.5" />
+                More
+              </Button>
+            }
+            items={moreItems}
+          />
+
           {isArchived ? (
-            <>
-              <Button
-                type="button"
-                size="sm"
-                disabled={actionsDisabled}
-                onClick={onRestore}
-                className="border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-              >
-                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                Restore
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="danger"
-                disabled={actionsDisabled}
-                onClick={onPermanentDelete}
-              >
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                Permanently Delete
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={actionsDisabled}
-                onClick={onEdit}
-              >
-                <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                Edit
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={actionsDisabled}
-                onClick={onArchive}
-                className="border-amber-200 text-amber-800 hover:bg-amber-50"
-              >
-                <Archive className="mr-1.5 h-3.5 w-3.5" />
-                Archive
-              </Button>
-            </>
-          )}
+            <Button
+              type="button"
+              size="sm"
+              disabled={actionsDisabled}
+              onClick={onRestore}
+              className="border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+            >
+              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+              Restore
+            </Button>
+          ) : null}
         </div>
       </div>
     </div>

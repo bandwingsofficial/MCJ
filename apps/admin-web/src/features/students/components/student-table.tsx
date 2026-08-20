@@ -17,7 +17,7 @@ import type { StudentListItem } from "@/src/features/students/types/student.type
 import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.utils";
 
 import { StudentStatusBadge } from "./StudentStatusBadge";
-import { StudentActions } from "./student-actions";
+import { StudentRowActionsMenu } from "./student-row-actions-menu";
 
 interface Props {
   students: StudentListItem[];
@@ -29,8 +29,12 @@ interface Props {
   emptyTitle?: string;
   emptyDescription?: string;
   onManage: (student: StudentListItem) => void;
+  onEdit: (student: StudentListItem) => void;
   onActivate: (student: StudentListItem) => void;
   onDeactivate: (student: StudentListItem) => void;
+  onDelete: (student: StudentListItem) => void;
+  onRestore: (student: StudentListItem) => void;
+  onPermanentDelete: (student: StudentListItem) => void;
 }
 
 function formatStudentName(student: StudentListItem): string {
@@ -47,8 +51,12 @@ export function StudentTable({
   emptyTitle = "No Students Found",
   emptyDescription = "Create your first student to get started.",
   onManage,
+  onEdit,
   onActivate,
   onDeactivate,
+  onDelete,
+  onRestore,
+  onPermanentDelete,
 }: Props) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
@@ -175,12 +183,16 @@ export function StudentTable({
               </TableCell>
 
               <TableCell className="text-right">
-                <StudentActions
+                <StudentRowActionsMenu
                   student={student}
                   disabled={actionsDisabled}
                   onManage={onManage}
+                  onEdit={onEdit}
                   onActivate={onActivate}
                   onDeactivate={onDeactivate}
+                  onDelete={onDelete}
+                  onRestore={onRestore}
+                  onPermanentDelete={onPermanentDelete}
                 />
               </TableCell>
             </TableRow>

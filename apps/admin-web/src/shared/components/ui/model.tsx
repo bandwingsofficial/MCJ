@@ -42,7 +42,7 @@ export function Modal({
     "w-[calc(100vw-2rem)] max-w-5xl",
     "-translate-x-1/2 -translate-y-1/2",
     "max-h-[90vh]",
-    "overflow-x-hidden overflow-y-auto",
+    "overflow-x-hidden",
     "rounded-2xl border border-slate-200 bg-white p-6 shadow-xl",
     contentClassName,
   )}

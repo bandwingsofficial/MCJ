@@ -142,6 +142,7 @@ export interface EnrollmentSummaryView {
   paymentStatus: PaymentStatus;
   source: EnrollmentSource;
   feeAmount: number;
+  discountAmount: number;
   finalAmount: number;
   paidAmount: number;
   dueAmount: number;

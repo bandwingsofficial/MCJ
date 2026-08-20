@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import { enrollmentService } from "../services/enrollment.service";
+import { parseEnrollmentListResponse } from "../utils/enrollment-list.utils";
 
 import {
   Enrollment,
@@ -79,13 +80,10 @@ take: 10,
               filters,
             );
 
-          setEnrollments(
-  response.data.items,
-);
+          const parsed = parseEnrollmentListResponse(response);
 
-setCount(
-  response.data.total,
-);
+          setEnrollments(parsed.items);
+          setCount(parsed.total);
         } catch (error) {
           const message =
             error instanceof Error

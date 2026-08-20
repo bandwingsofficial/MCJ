@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Card } from "@/src/shared/components/ui/card";
 import {
@@ -12,13 +12,30 @@ import {
 
 import type { Student } from "@/src/features/students/types/student.types";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
+import { StudentManageEnrollmentsPanel } from "@/src/features/students/components/manage/student-manage-enrollments-panel";
 
 interface Props {
   student: Student;
+  initialTab?: TabKey;
   onTabChange?: (tab: TabKey) => void;
 }
 
-export type TabKey = "overview" | "enrollments" | "attendance" | "reports";
+export type TabKey =
+  | "overview"
+  | "enrollments"
+  | "attendance"
+  | "payments"
+  | "documents"
+  | "activity";
+
+const TAB_ITEMS: ReadonlyArray<[TabKey, string]> = [
+  ["overview", "Overview"],
+  ["enrollments", "Enrollments"],
+  ["attendance", "Attendance"],
+  ["payments", "Payments"],
+  ["documents", "Documents"],
+  ["activity", "Activity"],
+];
 
 function DetailItem({
   label,
@@ -30,16 +47,22 @@ function DetailItem({
   return (
     <div className="space-y-1">
       <p className="text-sm text-slate-500">{label}</p>
-      <p className="font-medium text-slate-900 break-words">
-        {value ?? "—"}
-      </p>
+      <p className="font-medium text-slate-900 break-words">{value ?? "—"}</p>
     </div>
   );
 }
 
-export function StudentManageWorkspace({ student, onTabChange }: Props) {
-  const [tab, setTab] = useState<TabKey>("overview");
+export function StudentManageWorkspace({
+  student,
+  initialTab = "overview",
+  onTabChange,
+}: Props) {
+  const [tab, setTab] = useState<TabKey>(initialTab);
   const fullName = [student.firstName, student.lastName].filter(Boolean).join(" ");
+
+  useEffect(() => {
+    setTab(initialTab);
+  }, [initialTab]);
 
   return (
     <Tabs
@@ -51,14 +74,7 @@ export function StudentManageWorkspace({ student, onTabChange }: Props) {
       }}
     >
       <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
-        {(
-          [
-            ["overview", "Overview"],
-            ["enrollments", "Enrollments"],
-            ["attendance", "Attendance"],
-            ["reports", "Reports"],
-          ] as const
-        ).map(([value, label]) => (
+        {TAB_ITEMS.map(([value, label]) => (
           <TabsTrigger
             key={value}
             value={value}
@@ -84,10 +100,7 @@ export function StudentManageWorkspace({ student, onTabChange }: Props) {
               label="Date of Birth"
               value={formatStudentDate(student.dateOfBirth)}
             />
-            <DetailItem
-              label="Branch"
-              value={student.branchId}
-            />
+            <DetailItem label="Branch" value={student.branchId} />
             <DetailItem
               label="Admission Date"
               value={formatStudentDate(student.admissionDate)}
@@ -108,9 +121,7 @@ export function StudentManageWorkspace({ student, onTabChange }: Props) {
         </Card>
 
         <Card className="p-4">
-          <h2 className="mb-4 text-sm font-semibold text-slate-900">
-            Address
-          </h2>
+          <h2 className="mb-4 text-sm font-semibold text-slate-900">Address</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <DetailItem label="Address Line 1" value={student.addressLine1} />
             <DetailItem label="Address Line 2" value={student.addressLine2} />
@@ -142,7 +153,7 @@ export function StudentManageWorkspace({ student, onTabChange }: Props) {
         {student.notes ? (
           <Card className="p-4">
             <h2 className="mb-2 text-sm font-semibold text-slate-900">Notes</h2>
-            <p className="text-sm text-slate-700 whitespace-pre-wrap">
+            <p className="whitespace-pre-wrap text-sm text-slate-700">
               {student.notes}
             </p>
           </Card>
@@ -150,11 +161,7 @@ export function StudentManageWorkspace({ student, onTabChange }: Props) {
       </TabsContent>
 
       <TabsContent value="enrollments">
-        <Card className="p-6">
-          <p className="text-sm text-slate-500">
-            Enrollment management for this student will appear here.
-          </p>
-        </Card>
+        <StudentManageEnrollmentsPanel student={student} />
       </TabsContent>
 
       <TabsContent value="attendance">
@@ -165,10 +172,26 @@ export function StudentManageWorkspace({ student, onTabChange }: Props) {
         </Card>
       </TabsContent>
 
-      <TabsContent value="reports">
+      <TabsContent value="payments">
         <Card className="p-6">
           <p className="text-sm text-slate-500">
-            Reports for this student will appear here.
+            Payment history for this student will appear here.
+          </p>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="documents">
+        <Card className="p-6">
+          <p className="text-sm text-slate-500">
+            Documents for this student will appear here.
+          </p>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="activity">
+        <Card className="p-6">
+          <p className="text-sm text-slate-500">
+            Activity log for this student will appear here.
           </p>
         </Card>
       </TabsContent>

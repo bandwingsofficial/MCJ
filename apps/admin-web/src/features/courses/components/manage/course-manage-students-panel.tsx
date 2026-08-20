@@ -61,11 +61,11 @@ export function CourseManageStudentsPanel({ courseId }: Props) {
           />
         </div>
         <Link
-          href="/enrollments/create"
+          href="/students"
           className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           <Plus className="mr-1.5 h-3.5 w-3.5" />
-          Create Enrollment
+          Manage Students
         </Link>
       </div>
 
@@ -117,7 +117,7 @@ export function CourseManageStudentsPanel({ courseId }: Props) {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
-                        href={`/students/${student.id}`}
+                        href={`/students/${student.id}/manage/enrollments`}
                         className="text-sm font-medium text-[#2447A8] hover:underline"
                       >
                         View

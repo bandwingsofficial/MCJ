@@ -1,20 +1,10 @@
 // src/features/enrollments/services/format-enrollment.ts
 
 import { Enrollment } from "../types";
+import { formatCurrency } from "../utils/format-payment";
 
-export const formatEnrollmentFee = (
-  enrollment: Enrollment,
-) =>
-  new Intl.NumberFormat(
-    "en-IN",
-    {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    },
-  ).format(
-    enrollment.finalAmount,
-  );
+export const formatEnrollmentFee = (enrollment: Enrollment) =>
+  formatCurrency(enrollment.finalAmount);
 
 export const formatEnrollmentDate = (
   date: string | null,

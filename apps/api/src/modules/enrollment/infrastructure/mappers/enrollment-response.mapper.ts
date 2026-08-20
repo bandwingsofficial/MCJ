@@ -13,6 +13,7 @@ import type {
   EnrollmentSummaryView,
   EnrollmentTrainerView,
 } from '../../domain/repositories/enrollment.repository';
+import { toMoneyNumber } from './enrollment-money.utils';
 
 // Eager-load graph shared by all enrollment read queries.
 export const enrollmentDetailInclude = {
@@ -27,7 +28,7 @@ type EnrollmentWithRelations = Prisma.EnrollmentGetPayload<{
   include: typeof enrollmentDetailInclude;
 }>;
 
-const toNumber = (value: Prisma.Decimal): number => Number(value);
+const toNumber = toMoneyNumber;
 
 export class EnrollmentResponseMapper {
   static toDetail(
@@ -71,6 +72,7 @@ export class EnrollmentResponseMapper {
       paymentStatus: record.paymentStatus as PaymentStatus,
       source: record.source as EnrollmentSource,
       feeAmount: toNumber(record.feeAmount),
+      discountAmount: toNumber(record.discountAmount),
       finalAmount: toNumber(record.finalAmount),
       paidAmount: toNumber(record.paidAmount),
       dueAmount: toNumber(record.dueAmount),

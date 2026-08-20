@@ -14,6 +14,7 @@ import type { CourseDetails } from "@/src/features/courses/types/course.types";
 import type { CourseSummary } from "@/src/features/courses/types/course.types";
 import { computeCourseContentStats } from "@/src/features/courses/utils/course-content-stats.util";
 import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
+import { formatCourseFee } from "@/src/features/courses/utils/format-course-fee.util";
 
 import { CourseOverviewSummary } from "./course-overview-summary";
 import { CourseManageModulesPanel } from "./course-manage-modules-panel";
@@ -134,7 +135,13 @@ export function CourseManageWorkspace({
                 {course.status}
               </dd>
             </div>
-            <div className="sm:col-span-2">
+            <div>
+              <dt className="text-xs text-slate-500">Course Fee</dt>
+              <dd className="mt-0.5 text-sm font-medium text-slate-900">
+                {formatCourseFee(course)}
+              </dd>
+            </div>
+            <div>
               <dt className="text-xs text-slate-500">Description</dt>
               <dd className="mt-0.5 text-sm text-slate-800">
                 {course.description?.trim() ||

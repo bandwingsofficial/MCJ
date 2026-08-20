@@ -1,7 +1,5 @@
-import {
-  EnrollmentListPage,
-} from "@/src/features/enrollments/pages";
+import { redirect } from "next/navigation";
 
-export default function EnrollmentsPage() {
-  return <EnrollmentListPage />;
+export default function Page() {
+  redirect("/students");
 }

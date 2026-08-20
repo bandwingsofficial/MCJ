@@ -11,6 +11,7 @@ import { Enrollment } from '../../domain/entities/enrollment.entity';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import type { EnrollmentRepository } from '../../domain/repositories/enrollment.repository';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
+import { InvalidDiscountException } from '../../domain/errors/enrollment-business.exception';
 import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
 import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
 
@@ -48,10 +49,8 @@ export class CreateEnrollmentHandler {
         batchId: command.batchId,
       },
     );
-    
-    await this.domainService.ensureBatchHasCapacity(
-  hierarchy.batch,
-);
+
+    await this.domainService.ensureBatchHasCapacity(hierarchy.batch);
 
     await this.domainService.ensureNotDuplicate(
       this.enrollmentRepo,
@@ -59,15 +58,16 @@ export class CreateEnrollmentHandler {
       command.batchId,
     );
 
+    const discountAmount = command.discountAmount ?? 0;
+
+    if (discountAmount > command.feeAmount) {
+      throw new InvalidDiscountException();
+    }
+
     const enrollmentNumber =
       await this.domainService.generateUniqueEnrollmentNumber(
         this.enrollmentRepo,
       );
-
-    // Snapshot the fee from the Course at the time of enrollment. Admin-provided
-    // values take precedence over course pricing; otherwise course pricing is used.
-    const courseFee = hierarchy.course.originalPrice.getValue();
-    const courseDiscount = hierarchy.course.getTotalDiscount();
 
     const enrollment = Enrollment.create({
       id: randomUUID(),
@@ -80,12 +80,12 @@ export class CreateEnrollmentHandler {
       admissionDate: null,
       joiningDate: hierarchy.batch.startDate,
       expectedCompletionDate: hierarchy.batch.endDate,
-      feeAmount: command.feeAmount ?? courseFee,
-      discountAmount: command.discountAmount ?? courseDiscount,
-      paidAmount: command.paidAmount ?? 0,
+      feeAmount: command.feeAmount,
+      discountAmount,
+      paidAmount: 0,
       status: EnrollmentStatus.PENDING,
       source: command.source,
-      remarks: command.remarks,
+      remarks: undefined,
       createdBy: command.createdBy,
     });
 

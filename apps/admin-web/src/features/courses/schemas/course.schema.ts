@@ -62,9 +62,9 @@ const courseFields = {
 
   originalPrice: z
     .number({
-      error: "Original price is required",
+      error: "Course fee is required",
     })
-    .min(0, "Original price cannot be negative"),
+    .min(0, "Course fee cannot be negative"),
 
   discountPrice: z
     .number({
@@ -141,6 +141,17 @@ const courseBaseSchema = z.object(courseFields);
 
 export const createCourseSchema = courseBaseSchema.superRefine(
   (data, context) => {
+    if (
+      !data.isFree &&
+      (data.originalPrice == null || data.originalPrice <= 0)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["originalPrice"],
+        message: "Course fee is required for paid courses",
+      });
+    }
+
     if (data.discountPrice > data.originalPrice) {
       context.addIssue({
         code: z.ZodIssueCode.custom,

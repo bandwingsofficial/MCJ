@@ -9,6 +9,8 @@ import {
 export interface EnrollmentFilters {
   search?: string;
 
+  studentId?: string;
+
   status?: EnrollmentStatus;
 
   paymentStatus?: PaymentStatus;
@@ -20,6 +22,8 @@ export interface EnrollmentFilters {
   batchId?: string;
 
   isActive?: boolean;
+
+  includeDeleted?: boolean;
 
   skip: number;
 

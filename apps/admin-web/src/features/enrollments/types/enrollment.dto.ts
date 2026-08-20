@@ -11,20 +11,21 @@ import {
 export interface CreateEnrollmentRequest {
   studentId: string;
   batchId: string;
-
   feeAmount: number;
-  discountAmount: number;
-  paidAmount: number;
-
-  remarks?: string;
+  discountAmount?: number;
 }
 
 export interface UpdateEnrollmentRequest {
+  admissionDate?: string;
+  joiningDate?: string;
+  expectedCompletionDate?: string;
   feeAmount?: number;
   discountAmount?: number;
   paidAmount?: number;
 
   remarks?: string;
+
+  status?: EnrollmentStatus;
 
   isActive?: boolean;
 }

@@ -63,7 +63,7 @@ export interface EnrollmentHierarchy {
   student: Student;
   branch: Branch;
   branchId: string;
-  category: Category;
+  category: Category | null;
   categoryId: string;
   course: Course;
   courseId: string;
@@ -285,22 +285,23 @@ export class EnrollmentDomainService {
       throw new CourseNotAvailableException();
     }
 
-    const categoryId = course.categoryId;
+    const categoryId = course.categoryId?.trim() || null;
 
-    const category = await repos.categoryRepo.findById(
-      categoryId,
-      true,
-    );
-    if (!category) {
-      throw new CategoryNotFoundException();
-    }
+    let category: Category | null = null;
 
-    if (category.isDeleted) {
-      throw new CategoryDeletedException();
-    }
+    if (categoryId) {
+      category = await repos.categoryRepo.findById(categoryId, true);
+      if (!category) {
+        throw new CategoryNotFoundException();
+      }
 
-    if (category.status !== CategoryStatus.ACTIVE) {
-      throw new CategoryInactiveException();
+      if (category.isDeleted) {
+        throw new CategoryDeletedException();
+      }
+
+      if (category.status !== CategoryStatus.ACTIVE) {
+        throw new CategoryInactiveException();
+      }
     }
 
     const branch =
@@ -338,17 +339,25 @@ export class EnrollmentDomainService {
       throw new StudentBranchMismatchException();
     }
 
-    const isCategoryAssigned =
-      await repos.categoryRepo.isAssignedToBranch(
-        category.id,
-        branchId,
-      );
+    // Batch is the source of truth for branch + course alignment.
+    // If an active batch exists for this branch and course, the offering is valid
+    // even when the legacy branchCategory junction row is missing.
+    const batchProvesBranchOffering =
+      batch.branchId === branchId && batch.courseId === course.id;
 
-    if (!isCategoryAssigned) {
+    const isCategoryAssigned = category
+      ? await repos.categoryRepo.isAssignedToBranch(category.id, branchId)
+      : true;
+
+    if (
+      category &&
+      !isCategoryAssigned &&
+      !batchProvesBranchOffering
+    ) {
       throw new CategoryBranchMismatchException();
     }
 
-    if (course.categoryId !== category.id) {
+    if (category && course.categoryId !== category.id) {
       throw new CourseCategoryMismatchException();
     }
 
@@ -356,11 +365,17 @@ export class EnrollmentDomainService {
       throw new BatchCourseMismatchException();
     }
 
+    // Batch is the enrollment source of truth. An active batch at a branch for a
+    // course proves the offering is available there, even when course.branchIds
+    // (optional course-level branch restrictions) is out of sync.
     if (
+      !batchProvesBranchOffering &&
       course.branchIds.length > 0 &&
       !course.branchIds.includes(branchId)
     ) {
-      throw new CourseNotAvailableException();
+      throw new CourseNotAvailableException(
+        'Course is not available at the selected branch.',
+      );
     }
 
     return {
@@ -368,7 +383,7 @@ export class EnrollmentDomainService {
       branch,
       branchId,
       category,
-      categoryId,
+      categoryId: categoryId ?? course.categoryId,
       course,
       courseId,
       batch,

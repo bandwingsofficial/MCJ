@@ -2,9 +2,7 @@ import { Transform } from 'class-transformer';
 import {
   IsNumber,
   IsOptional,
-  IsString,
   IsUUID,
-  MaxLength,
   Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -14,11 +12,7 @@ const toNumber = (value: unknown) =>
     ? Number(value)
     : undefined;
 
-const trimOrUndefined = (value: unknown) =>
-  typeof value === 'string' ? value.trim() || undefined : value;
-
-// branchId, categoryId and courseId are intentionally NOT accepted here.
-// They are derived on the server from the chosen batch and course.
+// branchId, categoryId, courseId and batch schedule fields are derived from batchId.
 export class CreateEnrollmentDto {
   @ApiProperty()
   @IsUUID()
@@ -28,12 +22,11 @@ export class CreateEnrollmentDto {
   @IsUUID()
   batchId!: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsNumber()
   @Min(0)
   @Transform(({ value }) => toNumber(value))
-  feeAmount?: number;
+  feeAmount!: number;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -41,18 +34,4 @@ export class CreateEnrollmentDto {
   @Min(0)
   @Transform(({ value }) => toNumber(value))
   discountAmount?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Transform(({ value }) => toNumber(value))
-  paidAmount?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(4000)
-  @Transform(({ value }) => trimOrUndefined(value))
-  remarks?: string;
 }

@@ -15,6 +15,9 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { useStudents } from "@/src/features/students/hooks/useStudents";
 import { useActivateStudent } from "@/src/features/students/hooks/useActivateStudent";
 import { useDeactivateStudent } from "@/src/features/students/hooks/useDeactivateStudent";
+import { useDeleteStudent } from "@/src/features/students/hooks/useDeleteStudent";
+import { useRestoreStudent } from "@/src/features/students/hooks/useRestoreStudent";
+import { usePermanentDeleteStudent } from "@/src/features/students/hooks/usePermanentDeleteStudent";
 import { studentService } from "@/src/features/students/services/student.service";
 import { DEFAULT_STUDENT_FILTERS } from "@/src/features/students/constants/student.constants";
 
@@ -25,6 +28,7 @@ import {
   type BulkStudentAction,
 } from "@/src/features/students/components/student-bulk-actions-toolbar";
 import { CreateStudentModal } from "@/src/features/students/components/create-student-modal";
+import { UpdateStudentModal } from "@/src/features/students/components/update-student-modal";
 
 import type {
   BranchOption,
@@ -55,8 +59,17 @@ export function StudentsPage() {
 
   const { activateStudent, isLoading: isActivating } = useActivateStudent();
   const { deactivateStudent, isLoading: isDeactivating } = useDeactivateStudent();
+  const { deleteStudent, isPending: isDeleting } = useDeleteStudent();
+  const { restoreStudent, isPending: isRestoring } = useRestoreStudent();
+  const { permanentDeleteStudent, isPending: isPermanentlyDeleting } =
+    usePermanentDeleteStudent();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<StudentListItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<StudentListItem | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<StudentListItem | null>(null);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] =
+    useState<StudentListItem | null>(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [bulkConfirmAction, setBulkConfirmAction] =
     useState<BulkStudentAction | null>(null);
@@ -89,7 +102,12 @@ export function StudentsPage() {
   );
 
   const actionLoading =
-    isActivating || isDeactivating || isBulkLoading;
+    isActivating ||
+    isDeactivating ||
+    isBulkLoading ||
+    isDeleting ||
+    isRestoring ||
+    isPermanentlyDeleting;
 
   useEffect(() => {
     const loadFilterOptions = async () => {
@@ -327,12 +345,16 @@ export function StudentsPage() {
               onManage={(student) =>
                 router.push(`/students/${student.id}/manage`)
               }
+              onEdit={setEditTarget}
               onActivate={(student) =>
                 setStatusTarget({ student, action: "activate" })
               }
               onDeactivate={(student) =>
                 setStatusTarget({ student, action: "deactivate" })
               }
+              onDelete={setDeleteTarget}
+              onRestore={setRestoreTarget}
+              onPermanentDelete={setPermanentDeleteTarget}
             />
           </div>
         )}
@@ -391,6 +413,98 @@ export function StudentsPage() {
         onClose={() => setIsCreateOpen(false)}
         onSuccess={async () => {
           await refetch();
+        }}
+      />
+
+      {editTarget ? (
+        <UpdateStudentModal
+          open={Boolean(editTarget)}
+          student={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSuccess={async () => {
+            await refetch();
+          }}
+        />
+      ) : null}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Archive student?"
+        description={
+          deleteTarget
+            ? `Archive "${[deleteTarget.firstName, deleteTarget.lastName].filter(Boolean).join(" ")}"? They can be restored later.`
+            : ""
+        }
+        confirmLabel="Archive"
+        loading={isDeleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) {
+            return;
+          }
+
+          try {
+            await deleteStudent(deleteTarget.id);
+            appToast.success("Student archived successfully");
+            setDeleteTarget(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(restoreTarget)}
+        title="Restore student?"
+        description={
+          restoreTarget
+            ? `Restore "${[restoreTarget.firstName, restoreTarget.lastName].filter(Boolean).join(" ")}"?`
+            : ""
+        }
+        confirmLabel="Restore"
+        loading={isRestoring}
+        onCancel={() => setRestoreTarget(null)}
+        onConfirm={async () => {
+          if (!restoreTarget) {
+            return;
+          }
+
+          try {
+            await restoreStudent(restoreTarget.id);
+            appToast.success("Student restored successfully");
+            setRestoreTarget(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(permanentDeleteTarget)}
+        title="Permanently delete student?"
+        description={
+          permanentDeleteTarget
+            ? `Permanently delete "${[permanentDeleteTarget.firstName, permanentDeleteTarget.lastName].filter(Boolean).join(" ")}"? This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Permanently Delete"
+        loading={isPermanentlyDeleting}
+        onCancel={() => setPermanentDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!permanentDeleteTarget) {
+            return;
+          }
+
+          try {
+            await permanentDeleteStudent(permanentDeleteTarget.id);
+            appToast.success("Student permanently deleted");
+            setPermanentDeleteTarget(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
         }}
       />
 

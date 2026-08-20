@@ -25,6 +25,18 @@ interface Props {
   branchId: string;
 }
 
+const TAB_LABELS: Record<string, string> = {
+  overview: "Overview",
+  users: "Users",
+  categories: "Categories",
+  courses: "Courses",
+  batches: "Batches",
+  students: "Students",
+  enrollments: "Enrollments",
+  instructors: "Instructors",
+  reports: "Reports",
+};
+
 export function BranchManagePage({ branchId }: Props) {
   const router = useRouter();
 
@@ -116,9 +128,7 @@ export function BranchManagePage({ branchId }: Props) {
         summaryLoading={summaryLoading}
         onSummaryRefresh={refetchSummary}
         onTabChange={(tab) => {
-          setActiveSection(
-            tab === "users" ? "Users" : undefined,
-          );
+          setActiveSection(TAB_LABELS[tab]);
         }}
       />
 

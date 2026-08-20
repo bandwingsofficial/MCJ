@@ -42,7 +42,7 @@ export class Enrollment {
   static create(params: EnrollmentCreateParams): Enrollment {
     const feeAmount = Money.create(params.feeAmount).getValue();
     const discountAmount = Money.create(
-      params.discountAmount,
+      params.discountAmount ?? 0,
     ).getValue();
     const paidAmount = Money.create(params.paidAmount).getValue();
 

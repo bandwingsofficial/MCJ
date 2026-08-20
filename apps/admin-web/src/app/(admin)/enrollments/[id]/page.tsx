@@ -1,21 +1,10 @@
-import {
-  EnrollmentDetailsPage,
-} from "@/src/features/enrollments/pages";
+import { redirect } from "next/navigation";
 
-interface EnrollmentDetailsRouteProps {
-  params: {
-    id: string;
-  };
+interface Props {
+  params: Promise<{ id: string }>;
 }
 
-export default function EnrollmentDetailsRoute({
-  params,
-}: EnrollmentDetailsRouteProps) {
-  return (
-    <EnrollmentDetailsPage
-      enrollmentId={
-        params.id
-      }
-    />
-  );
+export default async function Page({ params }: Props) {
+  const { id } = await params;
+  redirect(`/students?enrollment=${id}`);
 }

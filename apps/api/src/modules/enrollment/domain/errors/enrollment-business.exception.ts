@@ -138,10 +138,10 @@ export class CourseArchivedException extends BaseException {
 }
 
 export class CourseNotAvailableException extends BaseException {
-  constructor() {
+  constructor(message = 'Course is not available for enrollment.') {
     super(
       ERROR_CODES.COURSE_NOT_AVAILABLE,
-      'Course is not available for enrollment.',
+      message,
       400,
     );
   }

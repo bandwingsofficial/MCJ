@@ -16,13 +16,14 @@ import { usePermanentDeleteStudent } from "@/src/features/students/hooks/usePerm
 
 import { UpdateStudentModal } from "@/src/features/students/components/update-student-modal";
 import { StudentManageHeader } from "@/src/features/students/components/manage/student-manage-header";
-import { StudentManageWorkspace } from "@/src/features/students/components/manage/student-manage-workspace";
+import { StudentManageWorkspace, type TabKey } from "@/src/features/students/components/manage/student-manage-workspace";
 
 interface Props {
   studentId: string;
+  initialTab?: TabKey;
 }
 
-export function StudentManagePage({ studentId }: Props) {
+export function StudentManagePage({ studentId, initialTab = "overview" }: Props) {
   const router = useRouter();
   const { student, isLoading, error, refetch } = useStudent({ id: studentId });
 
@@ -78,12 +79,15 @@ export function StudentManagePage({ studentId }: Props) {
       <div className="mt-4">
         <StudentManageWorkspace
           student={student}
+          initialTab={initialTab}
           onTabChange={(tab) => {
-            const labels: Record<string, string> = {
+            const labels: Record<TabKey, string> = {
               overview: "Overview",
               enrollments: "Enrollments",
               attendance: "Attendance",
-              reports: "Reports",
+              payments: "Payments",
+              documents: "Documents",
+              activity: "Activity",
             };
             setActiveSection(labels[tab]);
           }}
