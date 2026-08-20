@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 import type { BranchRepository } from '@modules/branch/domain/repositories/branch.repository';
 import { BranchStatus } from '@modules/branch/domain/enums/branch-status.enum';
 
@@ -9,6 +8,7 @@ import { BaseException } from '@common/exceptions/base.exception';
 import type { Student } from '../entities/student.entity';
 import type { StudentRepository } from '../repositories/student.repository';
 import { BranchNotFoundException } from '../errors/branch-not-found.exception';
+import { formatStudentCode } from '../utils/student-code.util';
 @Injectable()
 export class StudentDomainService {
   async ensureExists(
@@ -136,10 +136,8 @@ export class StudentDomainService {
     studentRepo: StudentRepository,
   ): Promise<string> {
     for (let attempt = 0; attempt < 5; attempt++) {
-      const studentCode = `STD-${randomUUID()
-        .replace(/-/g, '')
-        .slice(0, 10)
-        .toUpperCase()}`;
+      const maxNumber = await studentRepo.getMaxStudentCodeNumber();
+      const studentCode = formatStudentCode(maxNumber + 1 + attempt);
 
       const existing = await studentRepo.findByStudentCode(
         studentCode,

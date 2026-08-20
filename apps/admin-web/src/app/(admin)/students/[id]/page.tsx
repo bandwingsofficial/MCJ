@@ -1,4 +1,4 @@
-import { StudentDetailsPage } from "@/src/features/students/pages/StudentDetailsPage";
+import { redirect } from "next/navigation";
 
 interface Props {
   params: Promise<{
@@ -6,15 +6,8 @@ interface Props {
   }>;
 }
 
-export default async function Page({
-  params,
-}: Props) {
-  const { id } =
-    await params;
+export default async function Page({ params }: Props) {
+  const { id } = await params;
 
-  return (
-    <StudentDetailsPage
-      id={id}
-    />
-  );
+  redirect(`/students/${id}/manage`);
 }

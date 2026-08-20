@@ -31,6 +31,11 @@ import { PermanentDeleteStudentHandler } from './application/permanent-delete-st
 import { RestoreStudentHandler } from './application/restore-student/restore-student.handler';
 import { UpdateStudentHandler } from './application/update-student/update-student.handler';
 import { UpdateStudentStatusHandler } from './application/update-student-status/update-student-status.handler';
+import { SuggestStudentCodeHandler } from './application/suggest-student-code/suggest-student-code.handler';
+import { BulkDeleteStudentsHandler } from './application/bulk-delete-students/bulk-delete-students.handler';
+import { BulkRestoreStudentsHandler } from './application/bulk-restore-students/bulk-restore-students.handler';
+import { BulkUpdateStudentStatusHandler } from './application/bulk-update-student-status/bulk-update-student-status.handler';
+import { BulkPermanentDeleteStudentsHandler } from './application/bulk-permanent-delete-students/bulk-permanent-delete-students.handler';
 import type { StudentRepository } from './domain/repositories/student.repository';
 import { StudentDomainService } from './domain/services/student-domain.service';
 import { PrismaStudentRepository } from './infrastructure/repositories/prisma-student.repository';
@@ -266,6 +271,68 @@ import { PublicStudentController } from './presentation/controllers/public-stude
       inject: [
         STUDENT_TOKENS.STUDENT_REPOSITORY,
         StudentDomainService,
+      ],
+    },
+
+    {
+      provide: SuggestStudentCodeHandler,
+      useFactory: (studentRepo: StudentRepository) =>
+        new SuggestStudentCodeHandler(studentRepo),
+      inject: [STUDENT_TOKENS.STUDENT_REPOSITORY],
+    },
+
+    {
+      provide: BulkDeleteStudentsHandler,
+      useFactory: (
+        studentRepo: StudentRepository,
+        domainService: StudentDomainService,
+      ) =>
+        new BulkDeleteStudentsHandler(studentRepo, domainService),
+      inject: [
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        StudentDomainService,
+      ],
+    },
+
+    {
+      provide: BulkRestoreStudentsHandler,
+      useFactory: (
+        studentRepo: StudentRepository,
+        domainService: StudentDomainService,
+      ) =>
+        new BulkRestoreStudentsHandler(studentRepo, domainService),
+      inject: [
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        StudentDomainService,
+      ],
+    },
+
+    {
+      provide: BulkUpdateStudentStatusHandler,
+      useFactory: (
+        studentRepo: StudentRepository,
+        domainService: StudentDomainService,
+      ) =>
+        new BulkUpdateStudentStatusHandler(studentRepo, domainService),
+      inject: [
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        StudentDomainService,
+      ],
+    },
+
+    {
+      provide: BulkPermanentDeleteStudentsHandler,
+      useFactory: (
+        studentRepo: StudentRepository,
+        uploadDomainService: UploadDomainService,
+      ) =>
+        new BulkPermanentDeleteStudentsHandler(
+          studentRepo,
+          uploadDomainService,
+        ),
+      inject: [
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        UploadDomainService,
       ],
     },
   ],

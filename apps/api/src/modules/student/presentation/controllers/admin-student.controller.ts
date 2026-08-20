@@ -41,6 +41,18 @@ import { UpdateStudentCommand } from '../../application/update-student/update-st
 import { UpdateStudentHandler } from '../../application/update-student/update-student.handler';
 import { UpdateStudentStatusCommand } from '../../application/update-student-status/update-student-status.command';
 import { UpdateStudentStatusHandler } from '../../application/update-student-status/update-student-status.handler';
+import { SuggestStudentCodeHandler } from '../../application/suggest-student-code/suggest-student-code.handler';
+import { SuggestStudentCodeQuery } from '../../application/suggest-student-code/suggest-student-code.query';
+import { BulkDeleteStudentsCommand } from '../../application/bulk-delete-students/bulk-delete-students.command';
+import { BulkDeleteStudentsHandler } from '../../application/bulk-delete-students/bulk-delete-students.handler';
+import { BulkPermanentDeleteStudentsCommand } from '../../application/bulk-permanent-delete-students/bulk-permanent-delete-students.command';
+import { BulkPermanentDeleteStudentsHandler } from '../../application/bulk-permanent-delete-students/bulk-permanent-delete-students.handler';
+import { BulkRestoreStudentsCommand } from '../../application/bulk-restore-students/bulk-restore-students.command';
+import { BulkRestoreStudentsHandler } from '../../application/bulk-restore-students/bulk-restore-students.handler';
+import { BulkUpdateStudentStatusCommand } from '../../application/bulk-update-student-status/bulk-update-student-status.command';
+import { BulkUpdateStudentStatusHandler } from '../../application/bulk-update-student-status/bulk-update-student-status.handler';
+import { BulkStudentIdsDto } from '../dtos/bulk-student-ids.dto';
+import { BulkUpdateStudentStatusDto } from '../dtos/bulk-update-student-status.dto';
 import { CreateStudentDto } from '../dtos/create-student.dto';
 import { ListStudentsQueryDto } from '../dtos/list-students-query.dto';
 import { UpdateStudentDto } from '../dtos/update-student.dto';
@@ -62,6 +74,11 @@ export class AdminStudentController {
     private readonly restoreStudentHandler: RestoreStudentHandler,
     private readonly permanentDeleteStudentHandler: PermanentDeleteStudentHandler,
     private readonly updateStudentStatusHandler: UpdateStudentStatusHandler,
+    private readonly suggestStudentCodeHandler: SuggestStudentCodeHandler,
+    private readonly bulkUpdateStudentStatusHandler: BulkUpdateStudentStatusHandler,
+    private readonly bulkDeleteStudentsHandler: BulkDeleteStudentsHandler,
+    private readonly bulkRestoreStudentsHandler: BulkRestoreStudentsHandler,
+    private readonly bulkPermanentDeleteStudentsHandler: BulkPermanentDeleteStudentsHandler,
   ) {}
 
   @Post()
@@ -140,7 +157,172 @@ export class AdminStudentController {
     return {
       success: true,
       message: 'Students fetched successfully',
+      data: {
+        items: result.items,
+        count: result.count,
+      },
+    };
+  }
+
+  @Get('suggest-code')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+    BranchAccessGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async suggestCode() {
+    const result = await this.suggestStudentCodeHandler.execute(
+      new SuggestStudentCodeQuery(),
+    );
+
+    return {
+      success: true,
+      message: 'Student code suggested successfully',
       data: result,
+    };
+  }
+
+  @Patch('bulk/status')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async bulkUpdateStatus(
+    @Body() dto: BulkUpdateStudentStatusDto,
+    @CurrentUser() user: StudentAdminUser,
+  ) {
+    const result = await this.bulkUpdateStudentStatusHandler.execute(
+      new BulkUpdateStudentStatusCommand(
+        dto.studentIds,
+        dto.isActive,
+        user.sub,
+        this.resolveBranchId(undefined, user),
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Student statuses updated successfully',
+      data: result.summary,
+    };
+  }
+
+  @Patch('bulk/activate')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async bulkActivate(
+    @Body() dto: BulkStudentIdsDto,
+    @CurrentUser() user: StudentAdminUser,
+  ) {
+    const result = await this.bulkUpdateStudentStatusHandler.execute(
+      new BulkUpdateStudentStatusCommand(
+        dto.studentIds,
+        true,
+        user.sub,
+        this.resolveBranchId(undefined, user),
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Student statuses updated successfully',
+      data: result.summary,
+    };
+  }
+
+  @Patch('bulk/deactivate')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async bulkDeactivate(
+    @Body() dto: BulkStudentIdsDto,
+    @CurrentUser() user: StudentAdminUser,
+  ) {
+    const result = await this.bulkUpdateStudentStatusHandler.execute(
+      new BulkUpdateStudentStatusCommand(
+        dto.studentIds,
+        false,
+        user.sub,
+        this.resolveBranchId(undefined, user),
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Student statuses updated successfully',
+      data: result.summary,
+    };
+  }
+
+  @Patch('bulk/restore')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async bulkRestore(
+    @Body() dto: BulkStudentIdsDto,
+    @CurrentUser() user: StudentAdminUser,
+  ) {
+    const result = await this.bulkRestoreStudentsHandler.execute(
+      new BulkRestoreStudentsCommand(
+        dto.studentIds,
+        user.sub,
+        this.resolveBranchId(undefined, user),
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Students restored successfully',
+      data: result.summary,
+    };
+  }
+
+  @Delete('bulk')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async bulkDelete(
+    @Body() dto: BulkStudentIdsDto,
+    @CurrentUser() user: StudentAdminUser,
+  ) {
+    const result = await this.bulkDeleteStudentsHandler.execute(
+      new BulkDeleteStudentsCommand(
+        dto.studentIds,
+        user.sub,
+        this.resolveBranchId(undefined, user),
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Students archived successfully',
+      data: result.summary,
+    };
+  }
+
+  @Delete('bulk/permanent')
+  @UseGuards(JwtAuthGuard, SuperAdminGuard)
+  async bulkPermanentDelete(@Body() dto: BulkStudentIdsDto) {
+    const result =
+      await this.bulkPermanentDeleteStudentsHandler.execute(
+        new BulkPermanentDeleteStudentsCommand(dto.studentIds),
+      );
+
+    return {
+      success: true,
+      message: 'Students permanently deleted successfully',
+      data: result.summary,
     };
   }
 

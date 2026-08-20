@@ -1,100 +1,130 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { studentService } from "@/src/features/students/services/student.service";
-
-import {
-  DEFAULT_STUDENT_FILTERS,
-} from "@/src/features/students/constants/student.constants";
-
-import {
+import type {
   Student,
   StudentFilters,
 } from "@/src/features/students/types/student.types";
+import { parseStudentListResponse } from "@/src/features/students/utils/student-list.utils";
 
-interface UseStudentsOptions {
-  filters?: StudentFilters;
-}
+const DEFAULT_PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 400;
 
 interface UseStudentsReturn {
   students: Student[];
-
-  count: number;
-
+  total: number;
+  isInitialLoading: boolean;
+  isFetching: boolean;
   isLoading: boolean;
-
   error: string | null;
-
   filters: StudentFilters;
-
-  setFilters: (
-    filters: StudentFilters
-  ) => void;
-
+  setFilters: (filters: StudentFilters) => void;
   refetch: () => Promise<void>;
 }
 
-export const useStudents = (
-  options?: UseStudentsOptions
-): UseStudentsReturn => {
-  const [
-    students,
-    setStudents,
-  ] = useState<Student[]>([]);
+export const useStudents = (): UseStudentsReturn => {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [total, setTotal] = useState(0);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [count, setCount] =
-    useState(0);
+  const [filters, setFiltersState] = useState<StudentFilters>({
+    search: "",
+    includeDeleted: false,
+    page: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
 
-  const [
-    isLoading,
-    setIsLoading,
-  ] = useState(true);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const hasLoadedRef = useRef(false);
+  const requestIdRef = useRef(0);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [error, setError] =
-    useState<string | null>(
-      null
-    );
+  const setFilters = useCallback((next: StudentFilters) => {
+    setFiltersState((prev) => {
+      const filterChanged =
+        next.search !== prev.search ||
+        next.branchId !== prev.branchId ||
+        next.status !== prev.status ||
+        next.gender !== prev.gender ||
+        next.includeDeleted !== prev.includeDeleted ||
+        next.pageSize !== prev.pageSize;
 
-  const [
-    filters,
-    setFilters,
-  ] = useState<StudentFilters>(
-    options?.filters ??
-      DEFAULT_STUDENT_FILTERS
-  );
+      return {
+        ...next,
+        page: filterChanged ? 1 : next.page,
+      };
+    });
+  }, []);
 
-  const fetchStudents =
-    useCallback(async () => {
-      try {
-        setIsLoading(true);
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
 
-        setError(null);
+    debounceRef.current = setTimeout(() => {
+      const nextSearch = (filters.search ?? "").trim();
+      setDebouncedSearch((prev) => (prev === nextSearch ? prev : nextSearch));
+      setFiltersState((prev) => (prev.page === 1 ? prev : { ...prev, page: 1 }));
+    }, SEARCH_DEBOUNCE_MS);
 
-        const response =
-          await studentService.getStudents(
-            filters
-          );
-          console.log("FULL RESPONSE", response);
-
-
-        setStudents(response.data);
-
-setCount(response.data.length);
-      } catch (error) {
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch students."
-        );
-      } finally {
-        setIsLoading(false);
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
       }
-    }, [filters]);
+    };
+  }, [filters.search]);
+
+  const fetchStudents = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
+
+    try {
+      if (!hasLoadedRef.current) {
+        setIsInitialLoading(true);
+      } else {
+        setIsFetching(true);
+      }
+
+      setError(null);
+
+      const response = await studentService.getStudents({
+        ...filters,
+        search: debouncedSearch,
+      });
+
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
+      const payload = parseStudentListResponse(response.data);
+      setStudents(payload.items);
+      setTotal(payload.count);
+      hasLoadedRef.current = true;
+    } catch (err) {
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
+      setError(getErrorMessage(err));
+    } finally {
+      if (requestId === requestIdRef.current) {
+        setIsInitialLoading(false);
+        setIsFetching(false);
+      }
+    }
+  }, [
+    debouncedSearch,
+    filters.branchId,
+    filters.gender,
+    filters.includeDeleted,
+    filters.page,
+    filters.pageSize,
+    filters.status,
+  ]);
 
   useEffect(() => {
     void fetchStudents();
@@ -102,18 +132,13 @@ setCount(response.data.length);
 
   return {
     students,
-
-    count,
-
-    isLoading,
-
+    total,
+    isInitialLoading,
+    isFetching,
+    isLoading: isInitialLoading,
     error,
-
     filters,
-
     setFilters,
-
-    refetch:
-      fetchStudents,
+    refetch: fetchStudents,
   };
 };

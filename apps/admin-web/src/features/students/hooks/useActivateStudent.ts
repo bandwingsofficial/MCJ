@@ -1,43 +1,28 @@
 "use client";
 
-import {
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useState } from "react";
 
-import { appToast } from "@/src/shared/components/ui/toast";
-
-import { studentApi } from "@/src/features/students/api/student.api";
 import { studentService } from "@/src/features/students/services/student.service";
 
-export const useActivateStudent = () => {
-  const queryClient =
-    useQueryClient();
+interface UseActivateStudentReturn {
+  isLoading: boolean;
+  activateStudent: (id: string) => Promise<void>;
+}
 
-  return useMutation({
-    mutationFn: (id: string) =>
-      studentService.activateStudent(id),
+export const useActivateStudent = (): UseActivateStudentReturn => {
+  const [isLoading, setIsLoading] = useState(false);
 
-    onSuccess: (_, id) => {
-      void queryClient.invalidateQueries({
-        queryKey: studentApi.lists(),
-      });
+  const activateStudent = async (id: string) => {
+    try {
+      setIsLoading(true);
+      await studentService.activateStudent(id);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      void queryClient.invalidateQueries({
-        queryKey: studentApi.detail(id),
-      });
-
-      appToast.success(
-        "Student activated successfully."
-      );
-    },
-
-    onError: (
-      error: Error
-    ) => {
-      appToast.error(
-        error.message
-      );
-    },
-  });
+  return {
+    activateStudent,
+    isLoading,
+  };
 };

@@ -1,45 +1,30 @@
 "use client";
 
-import {
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useState } from "react";
 
-import { appToast } from "@/src/shared/components/ui/toast";
-
-import { studentApi } from "@/src/features/students/api/student.api";
 import { studentService } from "@/src/features/students/services/student.service";
 
-export const useDeleteStudent =
-  () => {
-    const queryClient =
-      useQueryClient();
+interface UseDeleteStudentReturn {
+  isLoading: boolean;
+  isPending: boolean;
+  deleteStudent: (id: string) => Promise<void>;
+}
 
-    return useMutation({
-      mutationFn: (
-        id: string
-      ) =>
-        studentService.deleteStudent(
-          id
-        ),
+export const useDeleteStudent = (): UseDeleteStudentReturn => {
+  const [isLoading, setIsLoading] = useState(false);
 
-      onSuccess: () => {
-        void queryClient.invalidateQueries({
-          queryKey:
-            studentApi.lists(),
-        });
-
-        appToast.success(
-          "Student deleted successfully."
-        );
-      },
-
-      onError: (
-        error: Error
-      ) => {
-        appToast.error(
-          error.message
-        );
-      },
-    });
+  const deleteStudent = async (id: string) => {
+    try {
+      setIsLoading(true);
+      await studentService.deleteStudent(id);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  return {
+    deleteStudent,
+    isLoading,
+    isPending: isLoading,
+  };
+};

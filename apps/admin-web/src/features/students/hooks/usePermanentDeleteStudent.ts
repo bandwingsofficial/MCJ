@@ -1,45 +1,30 @@
 "use client";
 
-import {
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useState } from "react";
 
-import { appToast } from "@/src/shared/components/ui/toast";
-
-import { studentApi } from "@/src/features/students/api/student.api";
 import { studentService } from "@/src/features/students/services/student.service";
 
-export const usePermanentDeleteStudent =
-  () => {
-    const queryClient =
-      useQueryClient();
+interface UsePermanentDeleteStudentReturn {
+  isLoading: boolean;
+  isPending: boolean;
+  permanentDeleteStudent: (id: string) => Promise<void>;
+}
 
-    return useMutation({
-      mutationFn: (
-        id: string
-      ) =>
-        studentService.permanentDeleteStudent(
-          id
-        ),
+export const usePermanentDeleteStudent = (): UsePermanentDeleteStudentReturn => {
+  const [isLoading, setIsLoading] = useState(false);
 
-      onSuccess: () => {
-        void queryClient.invalidateQueries({
-          queryKey:
-            studentApi.lists(),
-        });
-
-        appToast.success(
-          "Student permanently deleted successfully."
-        );
-      },
-
-      onError: (
-        error: Error
-      ) => {
-        appToast.error(
-          error.message
-        );
-      },
-    });
+  const permanentDeleteStudent = async (id: string) => {
+    try {
+      setIsLoading(true);
+      await studentService.permanentDeleteStudent(id);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  return {
+    permanentDeleteStudent,
+    isLoading,
+    isPending: isLoading,
+  };
+};

@@ -1,53 +1,30 @@
 "use client";
 
-import {
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useState } from "react";
 
-import { appToast } from "@/src/shared/components/ui/toast";
-
-import { studentApi } from "@/src/features/students/api/student.api";
 import { studentService } from "@/src/features/students/services/student.service";
 
-export const useRestoreStudent =
-  () => {
-    const queryClient =
-      useQueryClient();
+interface UseRestoreStudentReturn {
+  isLoading: boolean;
+  isPending: boolean;
+  restoreStudent: (id: string) => Promise<void>;
+}
 
-    return useMutation({
-      mutationFn: (
-        id: string
-      ) =>
-        studentService.restoreStudent(
-          id
-        ),
+export const useRestoreStudent = (): UseRestoreStudentReturn => {
+  const [isLoading, setIsLoading] = useState(false);
 
-      onSuccess: (
-        _,
-        id
-      ) => {
-        void queryClient.invalidateQueries({
-          queryKey:
-            studentApi.lists(),
-        });
-
-        void queryClient.invalidateQueries({
-          queryKey:
-            studentApi.detail(id),
-        });
-
-        appToast.success(
-          "Student restored successfully."
-        );
-      },
-
-      onError: (
-        error: Error
-      ) => {
-        appToast.error(
-          error.message
-        );
-      },
-    });
+  const restoreStudent = async (id: string) => {
+    try {
+      setIsLoading(true);
+      await studentService.restoreStudent(id);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  return {
+    restoreStudent,
+    isLoading,
+    isPending: isLoading,
+  };
+};

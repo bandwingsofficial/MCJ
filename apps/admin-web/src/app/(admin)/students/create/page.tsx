@@ -1,5 +1,5 @@
-import { StudentCreatePage } from "@/src/features/students/pages/StudentCreatePage";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <StudentCreatePage />;
+  redirect("/students");
 }

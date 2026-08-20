@@ -1,4 +1,4 @@
-import { StudentEditPage } from "@/src/features/students/pages/StudentEditPage";
+import { redirect } from "next/navigation";
 
 interface Props {
   params: Promise<{
@@ -6,15 +6,8 @@ interface Props {
   }>;
 }
 
-export default async function Page({
-  params,
-}: Props) {
-  const { id } =
-    await params;
+export default async function Page({ params }: Props) {
+  const { id } = await params;
 
-  return (
-    <StudentEditPage
-      id={id}
-    />
-  );
+  redirect(`/students/${id}/manage`);
 }

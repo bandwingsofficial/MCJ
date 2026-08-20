@@ -10,7 +10,5 @@ export * from "@/src/features/students/services/student.service";
 
 export * from "@/src/features/students/types/student.dto";
 
-export * from "@/src/features/students/types/student-form.types";
-
 export * from "@/src/features/students/types/student.types";
 

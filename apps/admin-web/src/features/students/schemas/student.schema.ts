@@ -2,63 +2,63 @@
 
 import { z } from "zod";
 
+import { NOTES_MAX_LENGTH } from "@/src/features/students/utils/student-form.utils";
+
 const currentYear = new Date().getFullYear();
+const phoneRegex = /^\+?[0-9]{7,15}$/;
+
+const optionalPhone = z
+  .string()
+  .trim()
+  .optional()
+  .or(z.literal(""))
+  .refine((value) => !value || phoneRegex.test(value), {
+    message: "Please enter a valid phone number",
+  });
+
+const optionalEmail = z
+  .string()
+  .trim()
+  .optional()
+  .or(z.literal(""))
+  .refine((value) => !value || z.string().email().safeParse(value).success, {
+    message: "Please enter a valid email address",
+  });
 
 export const studentSchema = z.object({
+  studentCode: z.string().optional(),
+
   firstName: z
     .string()
     .trim()
     .min(2, "First name is required")
-    .max(100),
-    
-    profileImageFileId: z
-  .string()
-  .uuid()
-  .optional()
-  .or(z.literal("")),
+    .max(80, "First name cannot exceed 80 characters"),
 
   lastName: z
     .string()
     .trim()
-    .min(2, "Last name is required")
-    .max(100),
+    .max(80, "Last name cannot exceed 80 characters")
+    .optional()
+    .or(z.literal("")),
 
-  email: z
-    .string()
-    .trim()
-    .email("Invalid email address"),
+  email: optionalEmail,
 
-  phone: z
-    .string()
-    .trim()
-    .min(10)
-    .max(15),
+  phone: optionalPhone,
 
-  gender: z.enum([
-    "MALE",
-    "FEMALE",
-    "OTHER",
-  ]),
+  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
 
-  dateOfBirth: z.string().min(1),
+  dateOfBirth: z.string().optional().or(z.literal("")),
 
-  addressLine1: z.string().optional(),
+  addressLine1: z.string().trim().max(160).optional().or(z.literal("")),
+  addressLine2: z.string().trim().max(160).optional().or(z.literal("")),
+  city: z.string().trim().max(100).optional().or(z.literal("")),
+  state: z.string().trim().max(100).optional().or(z.literal("")),
+  country: z.string().trim().max(100).optional().or(z.literal("")),
+  postalCode: z.string().trim().max(20).optional().or(z.literal("")),
 
-  addressLine2: z.string().optional(),
-
-  city: z.string().optional(),
-
-  state: z.string().optional(),
-
-  country: z.string().optional(),
-
-  postalCode: z.string().optional(),
-
-  qualification: z.string().optional(),
-
-  collegeName: z.string().optional(),
-
-  specialization: z.string().optional(),
+  qualification: z.string().trim().max(200).optional().or(z.literal("")),
+  collegeName: z.string().trim().max(200).optional().or(z.literal("")),
+  specialization: z.string().trim().max(160).optional().or(z.literal("")),
 
   passingYear: z
     .number()
@@ -66,33 +66,39 @@ export const studentSchema = z.object({
     .max(currentYear + 10)
     .optional(),
 
-  parentName: z.string().optional(),
+  parentName: z.string().trim().max(80).optional().or(z.literal("")),
+  parentPhone: optionalPhone,
+  emergencyContactName: z.string().trim().max(80).optional().or(z.literal("")),
+  emergencyContactPhone: optionalPhone,
 
-  parentPhone: z.string().optional(),
+  admissionDate: z.string().optional().or(z.literal("")),
 
-  emergencyContactName: z.string().optional(),
+  branchId: z.string().uuid("Please select a branch"),
 
-  emergencyContactPhone: z.string().optional(),
-
-  admissionDate: z.string().min(1),
-
-  branchId: z
+  notes: z
     .string()
-    .uuid("Invalid branch"),
-
-  notes: z.string().optional(),
+    .max(
+      NOTES_MAX_LENGTH,
+      `Notes cannot exceed ${NOTES_MAX_LENGTH} characters`,
+    )
+    .optional()
+    .or(z.literal("")),
 
   status: z.enum([
     "LEAD",
     "ENQUIRED",
     "ADMITTED",
-    "ACTIVE",
-    "INACTIVE",
     "COMPLETED",
     "DROPPED",
     "PLACED",
   ]),
+
+  profileImageFileId: z
+    .string()
+    .uuid()
+    .optional()
+    .or(z.literal("")),
 });
 
-export type StudentFormSchema =
-  z.infer<typeof studentSchema>;
+export type StudentFormSchema = z.infer<typeof studentSchema>;
+export type StudentFormValues = StudentFormSchema;

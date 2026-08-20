@@ -10,6 +10,7 @@ import {
   StudentRepository,
 } from '../../domain/repositories/student.repository';
 import { StudentMapper } from '../mappers/student.mapper';
+import { parseStudentCodeNumber } from '../../domain/utils/student-code.util';
 
 export class PrismaStudentRepository
   implements StudentRepository
@@ -131,6 +132,37 @@ export class PrismaStudentRepository
     });
 
     return records.map(StudentMapper.toDomain);
+  }
+
+  async count(filters: StudentListFilters = {}): Promise<number> {
+    return this.prisma.student.count({
+      where: this.buildWhere(filters),
+    });
+  }
+
+  async getMaxStudentCodeNumber(): Promise<number> {
+    const records = await this.prisma.student.findMany({
+      where: {
+        studentCode: {
+          startsWith: 'STU',
+        },
+      },
+      select: {
+        studentCode: true,
+      },
+    });
+
+    let max = 0;
+
+    for (const record of records) {
+      const value = parseStudentCodeNumber(record.studentCode);
+
+      if (value !== null && value > max) {
+        max = value;
+      }
+    }
+
+    return max;
   }
 
   async deletePermanent(id: string): Promise<void> {

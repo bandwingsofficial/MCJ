@@ -1,45 +1,31 @@
-// src/features/students/types/student.dto.ts
-
-import {
+import type {
+  ApiSuccessResponse,
   Student,
+  StudentListResponse,
 } from "@/src/features/students/types/student.types";
 
-export interface ApiResponse<T> {
-  success: boolean;
-
-  message: string;
-
-  data: T;
-}
-
 export type GetStudentsResponse =
-  ApiResponse<Student[]>;
+  ApiSuccessResponse<StudentListResponse | Student[]>;
 
-export type GetStudentResponse =
-  ApiResponse<Student>;
+export type GetStudentResponse = ApiSuccessResponse<Student>;
 
-export type CreateStudentResponse =
-  ApiResponse<Student>;
+export type CreateStudentResponse = ApiSuccessResponse<Student>;
 
-export type UpdateStudentResponse =
-  ApiResponse<Student>;
+export type UpdateStudentResponse = ApiSuccessResponse<Student>;
 
 export interface DeleteStudentDto {
   id: string;
-
   deleted: boolean;
-
   deletedAt: string;
 }
 
 export interface PermanentDeleteStudentDto {
   id: string;
-
   permanentlyDeleted: boolean;
 }
 
 export type DeleteStudentResponse =
-  ApiResponse<DeleteStudentDto>;
+  ApiSuccessResponse<DeleteStudentDto>;
 
 export type PermanentDeleteStudentResponse =
-  ApiResponse<PermanentDeleteStudentDto>;
+  ApiSuccessResponse<PermanentDeleteStudentDto>;

@@ -42,6 +42,7 @@ import {
 import {
   studentService,
 } from "@/src/features/students/services/student.service";
+import { parseStudentListResponse } from "@/src/features/students/utils/student-list.utils";
 
 import {
   batchService,
@@ -51,7 +52,7 @@ interface StudentOption {
   id: string;
   studentCode: string;
   firstName: string;
-  lastName: string;
+  lastName: string | null;
 }
 
 interface BatchOption {
@@ -205,8 +206,15 @@ export function EnrollmentForm({
   ]);
 
           setStudents(
-  studentsResponse.data,
-);
+            parseStudentListResponse(studentsResponse.data).items.map(
+              (student) => ({
+                id: student.id,
+                studentCode: student.studentCode,
+                firstName: student.firstName,
+                lastName: student.lastName,
+              }),
+            ),
+          );
 
 setBatches(
   batchesResponse.data.items ?? [],

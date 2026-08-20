@@ -1,220 +1,182 @@
-// src/features/students/services/student.service.ts
-
 import { AxiosError } from "axios";
 
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { apiClient } from "@/src/core/api/axios";
 
-import {
+import { studentApi } from "@/src/features/students/api/student.api";
+import { branchService } from "@/src/features/branches/services/branch.service";
+import type {
+  BranchOption,
   CreateStudentRequest,
-  Student,
   StudentFilters,
   UpdateStudentRequest,
 } from "@/src/features/students/types/student.types";
 
-import {
-  CreateStudentResponse,
-  DeleteStudentResponse,
-  GetStudentResponse,
-  GetStudentsResponse,
-  PermanentDeleteStudentResponse,
-  UpdateStudentResponse,
-} from "@/src/features/students/types/student.dto";
+const FORM_OPTIONS_PAGE_SIZE = 100;
 
 class StudentService {
-  async getStudents(
-    filters: StudentFilters
-  ): Promise<GetStudentsResponse> {
-    try {
-      const { data } =
-        await apiClient.get<GetStudentsResponse>(
-          "/admin/students",
-          {
-            params: filters,
-          }
-        );
-
-      return data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  async getStudent(
-    id: string
-  ): Promise<GetStudentResponse> {
-    try {
-      const { data } =
-        await apiClient.get<GetStudentResponse>(
-          `/admin/students/${id}`
-        );
-
-      return data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  async createStudent(
-    payload: CreateStudentRequest
-  ): Promise<CreateStudentResponse> {
-    try {
-      const { data } =
-        await apiClient.post<CreateStudentResponse>(
-          "/admin/students",
-          payload
-        );
-
-      return data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  async updateStudent(
-    id: string,
-    payload: UpdateStudentRequest
-  ): Promise<UpdateStudentResponse> {
-    try {
-      const { data } =
-        await apiClient.patch<UpdateStudentResponse>(
-          `/admin/students/${id}`,
-          payload
-        );
-
-      return data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  async activateStudent(
-    id: string
-  ): Promise<GetStudentResponse> {
-    try {
-      const { data } =
-        await apiClient.patch<GetStudentResponse>(
-          `/admin/students/${id}/activate`
-        );
-
-      return data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  async deactivateStudent(
-    id: string
-  ): Promise<GetStudentResponse> {
-    try {
-      const { data } =
-        await apiClient.patch<GetStudentResponse>(
-          `/admin/students/${id}/deactivate`
-        );
-
-      return data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  async restoreStudent(
-    id: string
-  ): Promise<GetStudentResponse> {
-    try {
-      const { data } =
-        await apiClient.patch<GetStudentResponse>(
-          `/admin/students/${id}/restore`
-        );
-
-      return data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  async deleteStudent(
-    id: string
-  ): Promise<DeleteStudentResponse> {
-    try {
-      const { data } =
-        await apiClient.delete<DeleteStudentResponse>(
-          `/admin/students/${id}`
-        );
-
-      return data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  async permanentDeleteStudent(
-    id: string
-  ): Promise<PermanentDeleteStudentResponse> {
-    try {
-      const { data } =
-        await apiClient.delete<PermanentDeleteStudentResponse>(
-          `/admin/students/${id}/permanent`
-        );
-
-      return data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  private handleError(
-    error: unknown
-  ): Error {
+  private handleError(error: unknown): Error {
     if (error instanceof AxiosError) {
-      return new Error(
-        error.response?.data?.message ??
-          error.message
-      );
+      return new Error(getErrorMessage(error));
     }
 
     return new Error(
-      "Unexpected error occurred."
+      error instanceof Error ? error.message : "Unexpected error occurred",
     );
   }
 
-  async uploadStudentImage(
-  file: File
-){const formData =
-  new FormData();
-
-formData.append(
-  "file",
-  file
-);
-
-formData.append(
-  "folder",
-  "students"
-);
-
-formData.append(
-  "fileName",
-  file.name
-);
-
-const response =
-  await apiClient.post(
-    "/admin/uploads",
-    formData,
-    {
-      headers: {
-        "Content-Type":
-          undefined,
-      },
-      transformRequest: [
-        (data) => data,
-      ],
+  async getStudents(filters?: StudentFilters) {
+    try {
+      return await studentApi.getStudents(filters);
+    } catch (error) {
+      throw this.handleError(error);
     }
-  );
+  }
 
-return response.data;
-}
+  async getStudent(id: string) {
+    try {
+      return await studentApi.getStudent(id);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async suggestStudentCode() {
+    try {
+      return await studentApi.suggestStudentCode();
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async createStudent(payload: CreateStudentRequest) {
+    try {
+      return await studentApi.createStudent(payload);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async updateStudent(id: string, payload: UpdateStudentRequest) {
+    try {
+      return await studentApi.updateStudent(id, payload);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async activateStudent(id: string) {
+    try {
+      return await studentApi.activateStudent(id);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async deactivateStudent(id: string) {
+    try {
+      return await studentApi.deactivateStudent(id);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async restoreStudent(id: string) {
+    try {
+      return await studentApi.restoreStudent(id);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async deleteStudent(id: string) {
+    try {
+      return await studentApi.deleteStudent(id);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async permanentDeleteStudent(id: string) {
+    try {
+      return await studentApi.permanentDeleteStudent(id);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async bulkActivate(studentIds: string[]) {
+    try {
+      return await studentApi.bulkActivate(studentIds);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async bulkDeactivate(studentIds: string[]) {
+    try {
+      return await studentApi.bulkDeactivate(studentIds);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async bulkDelete(studentIds: string[]) {
+    try {
+      return await studentApi.bulkDelete(studentIds);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async bulkRestore(studentIds: string[]) {
+    try {
+      return await studentApi.bulkRestore(studentIds);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async bulkPermanentDelete(studentIds: string[]) {
+    try {
+      return await studentApi.bulkPermanentDelete(studentIds);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getBranches(): Promise<BranchOption[]> {
+    try {
+      const response = await branchService.getBranches({
+        status: "ACTIVE",
+        page: 1,
+        pageSize: FORM_OPTIONS_PAGE_SIZE,
+        includeDeleted: false,
+      });
+
+      return (response.data.items ?? []).map((branch) => ({
+        id: branch.id,
+        branchName: branch.branchName,
+        branchCode: branch.branchCode,
+      }));
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async uploadStudentImage(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", "students");
+    formData.append("fileName", file.name);
+
+    const response = await apiClient.post("/admin/uploads", formData, {
+      headers: { "Content-Type": undefined },
+      transformRequest: [(data) => data],
+    });
+
+    return response.data;
+  }
 }
 
-export const studentService =
-  new StudentService();
+export const studentService = new StudentService();

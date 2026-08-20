@@ -1,85 +1,45 @@
 "use client";
 
-import {
-  useState,
-} from "react";
-
-import { appToast } from "@/src/shared/components/ui/toast";
+import { useState } from "react";
 
 import { studentService } from "@/src/features/students/services/student.service";
-
-import type {
-  CreateStudentRequest,
-} from "@/src/features/students/types/student.types";
+import type { CreateStudentRequest } from "@/src/features/students/types/student.types";
 
 interface UseCreateStudentReturn {
   isLoading: boolean;
-
+  isPending: boolean;
   createStudent: (
     payload: CreateStudentRequest,
-    image?: File | null
-  ) => Promise<boolean>;
+    image?: File | null,
+  ) => Promise<void>;
 }
 
-export const useCreateStudent =
-  (
-    onSuccess?: () => void
-  ): UseCreateStudentReturn => {
-    const [
-      isLoading,
-      setIsLoading,
-    ] = useState(false);
+export const useCreateStudent = (): UseCreateStudentReturn => {
+  const [isLoading, setIsLoading] = useState(false);
 
-    const createStudent =
-      async (
-        payload: CreateStudentRequest,
-        image?: File | null
-      ): Promise<boolean> => {
-        try {
-          setIsLoading(true);
+  const createStudent = async (
+    payload: CreateStudentRequest,
+    image?: File | null,
+  ) => {
+    try {
+      setIsLoading(true);
 
-          const requestPayload: CreateStudentRequest =
-            {
-              ...payload,
-            };
+      const requestPayload: CreateStudentRequest = { ...payload };
 
-          if (image) {
-            const uploadResponse =
-              await studentService.uploadStudentImage(
-                image
-              );
+      if (image) {
+        const uploadResponse = await studentService.uploadStudentImage(image);
+        requestPayload.profileImageFileId = uploadResponse.data.fileId;
+      }
 
-            requestPayload.profileImageFileId =
-              uploadResponse.data.fileId;
-          }
-
-          const response =
-            await studentService.createStudent(
-              requestPayload
-            );
-
-          appToast.success(
-            response.message
-          );
-
-          onSuccess?.();
-
-          return true;
-        } catch (error) {
-          appToast.error(
-            error instanceof Error
-              ? error.message
-              : "Failed to create student"
-          );
-
-          return false;
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-    return {
-      isLoading,
-      createStudent,
-    };
+      await studentService.createStudent(requestPayload);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  return {
+    isLoading,
+    isPending: isLoading,
+    createStudent,
+  };
+};

@@ -34,6 +34,8 @@ export interface StudentRepository {
     includeDeleted?: boolean,
   ): Promise<Student | null>;
   findAll(filters?: StudentListFilters): Promise<Student[]>;
+  count(filters?: StudentListFilters): Promise<number>;
+  getMaxStudentCodeNumber(): Promise<number>;
   deletePermanent(id: string): Promise<void>;
   findByUserId(
   userId: string,

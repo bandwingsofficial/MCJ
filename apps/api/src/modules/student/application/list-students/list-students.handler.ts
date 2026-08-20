@@ -2,14 +2,15 @@ import type { StudentRepository } from '../../domain/repositories/student.reposi
 import { GetStudentResult } from '../get-student/get-student.result';
 
 import { ListStudentsQuery } from './list-students.query';
+import { ListStudentsResult } from './list-students.result';
 
 export class ListStudentsHandler {
   constructor(private readonly studentRepo: StudentRepository) {}
 
   async execute(
     query: ListStudentsQuery,
-  ): Promise<GetStudentResult[]> {
-    const students = await this.studentRepo.findAll({
+  ): Promise<ListStudentsResult> {
+    const filters = {
       branchId: query.branchId,
       status: query.status,
       search: query.search,
@@ -17,8 +18,16 @@ export class ListStudentsHandler {
       onlyActive: query.onlyActive,
       skip: query.skip,
       take: query.take,
-    });
+    };
 
-    return students.map(GetStudentResult.fromEntity);
+    const [students, count] = await Promise.all([
+      this.studentRepo.findAll(filters),
+      this.studentRepo.count(filters),
+    ]);
+
+    return new ListStudentsResult(
+      students.map(GetStudentResult.fromEntity),
+      count,
+    );
   }
 }

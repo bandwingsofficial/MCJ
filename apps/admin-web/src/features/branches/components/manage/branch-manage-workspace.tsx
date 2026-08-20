@@ -28,6 +28,7 @@ import { batchService } from "@/src/features/batches/services/batch.service";
 import type { Batch } from "@/src/features/batches/types/batch.types";
 import { studentService } from "@/src/features/students/services/student.service";
 import type { Student } from "@/src/features/students/types/student.types";
+import { parseStudentListResponse } from "@/src/features/students/utils/student-list.utils";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types";
 import { trainerService } from "@/src/features/trainers/services/trainer.service";
@@ -142,8 +143,11 @@ export function BranchManageWorkspace({
           search,
           includeDeleted: false,
           branchId,
+          page: 1,
+          pageSize: 100,
         });
-        setStudents(response.data ?? []);
+        const payload = parseStudentListResponse(response.data);
+        setStudents(payload.items);
       }
 
       if (tab === "enrollments") {
