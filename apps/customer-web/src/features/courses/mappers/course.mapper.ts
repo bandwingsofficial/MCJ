@@ -7,12 +7,16 @@ import type {
   CoursePreviewModule,
 } from "@/src/features/courses/types/course.types";
 
-function resolveMode(dto: CourseDto): CourseMode {
+function resolveModes(dto: CourseDto): CourseMode[] {
   if (dto.modes?.length) {
-    return dto.modes[0];
+    return dto.modes;
   }
 
-  return dto.mode ?? "ONLINE";
+  return dto.mode ? [dto.mode] : ["ONLINE"];
+}
+
+function resolveMode(dto: CourseDto): CourseMode {
+  return resolveModes(dto)[0];
 }
 
 function resolvePreviewModules(
@@ -45,6 +49,7 @@ export function mapCourseDtoToCourse(dto: CourseDto): Course {
     durationType: dto.durationType,
     level: dto.level,
     mode: resolveMode(dto),
+    modes: resolveModes(dto),
     language: dto.language,
     averageRating: dto.averageRating ?? 0,
     totalReviews: dto.totalReviews ?? 0,
@@ -55,6 +60,11 @@ export function mapCourseDtoToCourse(dto: CourseDto): Course {
     previewModules: resolvePreviewModules(dto),
     moduleCount: dto.moduleCount ?? dto.previewModules?.length ?? 0,
     lessonCount: dto.lessonCount ?? 0,
+    previewLessonCount: dto.previewLessonCount ?? 0,
+    isEnrolled: dto.isEnrolled ?? null,
+    isAdmitted: dto.isAdmitted ?? null,
+    updatedAt: dto.updatedAt ?? null,
+    status: dto.status ?? null,
   };
 }
 

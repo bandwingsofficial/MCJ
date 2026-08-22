@@ -346,6 +346,7 @@ export class CourseHierarchyService {
             lesson.displayOrder,
           ),
       ),
+      module.keySkills ?? [],
     );
   }
 

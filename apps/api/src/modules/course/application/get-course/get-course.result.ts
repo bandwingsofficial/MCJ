@@ -67,6 +67,7 @@ export class CourseModulePreviewResult {
     public readonly description: string | null,
     public readonly displayOrder: number,
     public readonly lessons: CourseLessonPreviewResult[],
+    public readonly keySkills: string[] = [],
   ) {}
 }
 

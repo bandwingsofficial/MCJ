@@ -4,7 +4,7 @@ import {
 
 interface PageProps {
   params: Promise<{
-    slug: string;
+    courseId: string;
   }>;
 }
 
@@ -12,12 +12,12 @@ export default async function Page({
   params,
 }: PageProps) {
   const {
-    slug,
+    courseId,
   } = await params;
 
   return (
     <CourseDetailsPage
-      slug={slug}
+      courseId={courseId}
     />
   );
 }

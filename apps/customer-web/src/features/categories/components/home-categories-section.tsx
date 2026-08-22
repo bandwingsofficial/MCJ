@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/src/shared/components/ui/button";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { useCategories } from "@/src/features/categories/hooks/use-categories";
-import { CategoryList } from "@/src/features/categories/components/category-list";
+import { HomeCategoryCard } from "@/src/features/categories/components/home-category-card";
 import { CategorySkeleton } from "@/src/features/categories/components/category-skeleton";
 import { CategoryEmptyState } from "@/src/features/categories/components/category-empty-state";
 
@@ -34,10 +34,17 @@ export function HomeCategoriesSection() {
         )}
         {!isLoading && !isError && visibleCategories.length === 0 && <CategoryEmptyState />}
         {!isLoading && !isError && visibleCategories.length > 0 && (
-          <CategoryList
-            categories={visibleCategories}
-            onCategoryClick={(category) => router.push(`/courses?category=${category.slug}`)}
-          />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {visibleCategories.map((category) => (
+              <HomeCategoryCard
+                key={category.id}
+                category={category}
+                onClick={(selected) =>
+                  router.push(`/courses?category=${selected.slug}`)
+                }
+              />
+            ))}
+          </div>
         )}
       </div>
     </section>

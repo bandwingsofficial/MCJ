@@ -10,6 +10,7 @@ export * from "./components/TrainerSkillsCard";
 export * from "./components/TrainerSkeleton";
 export * from "./components/TrainerSocialLinksCard";
 
+export * from "./hooks/useCourseTrainers";
 export * from "./hooks/useTrainer";
 export * from "./hooks/useTrainers";
 

@@ -40,6 +40,7 @@ export interface CoursePreviewModule {
   title: string;
   description: string | null;
   displayOrder: number;
+  keySkills?: string[];
   lessons: CoursePreviewLesson[];
 }
 
@@ -75,6 +76,26 @@ export interface CourseDto {
   moduleCount?: number;
   lessonCount?: number;
   isEnrolled?: boolean | null;
+  isAdmitted?: boolean | null;
+  previewLessonCount?: number;
+  updatedAt?: string;
+}
+
+export interface CourseSummary {
+  courseId: string;
+  batches: number;
+  students: number;
+  instructors: number;
+  branches: number;
+  modules: number;
+  lessons: number;
+  quizzes: number;
+}
+
+export interface GetCourseSummaryResponse {
+  success: boolean;
+  message: string;
+  data: CourseSummary;
 }
 
 export interface Course {
@@ -95,6 +116,7 @@ export interface Course {
   durationType: string | null;
   level: CourseLevel;
   mode: CourseMode;
+  modes: CourseMode[];
   language: string;
   averageRating: number;
   totalReviews: number;
@@ -105,6 +127,11 @@ export interface Course {
   previewModules: CoursePreviewModule[];
   moduleCount: number;
   lessonCount: number;
+  previewLessonCount: number;
+  isEnrolled: boolean | null;
+  isAdmitted: boolean | null;
+  updatedAt: string | null;
+  status: CourseStatus | null;
 }
 
 export interface GetCoursesParams {
@@ -112,6 +139,7 @@ export interface GetCoursesParams {
   categoryId?: string;
   branchId?: string;
   isFeatured?: boolean;
+  isPopular?: boolean;
 }
 
 export interface GetCoursesResponse {

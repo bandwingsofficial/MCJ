@@ -1,4 +1,9 @@
 import { trainerApi } from "@/src/features/trainers/api/trainer.api";
+import {
+  filterTrainersByCourseId,
+  normalizeTrainer,
+  normalizeTrainerList,
+} from "@/src/features/trainers/mappers/trainer.mapper";
 
 import type {
   Trainer,
@@ -11,7 +16,12 @@ export const trainerService = {
     const response =
       await trainerApi.getTrainers();
 
-    return response.data.data;
+    return normalizeTrainerList(response.data.data);
+  },
+
+  async getCourseTrainers(courseId: string): Promise<Trainer[]> {
+    const trainers = await this.getTrainers();
+    return filterTrainersByCourseId(trainers, courseId);
   },
 
   async getTrainer(
@@ -22,6 +32,6 @@ export const trainerService = {
         id,
       );
 
-    return response.data.data;
+    return normalizeTrainer(response.data.data);
   },
 };

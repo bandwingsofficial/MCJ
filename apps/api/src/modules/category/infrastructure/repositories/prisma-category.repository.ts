@@ -5,6 +5,8 @@ import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
+import { CourseStatus } from '@modules/course/domain/enums/course-status.enum';
+
 import { Category } from '../../domain/entities/category.entity';
 import { CategoryStatus } from '../../domain/enums/category-status.enum';
 import {
@@ -525,5 +527,27 @@ export class PrismaCategoryRepository
     }
 
     return where;
+  }
+
+  async countActiveCoursesByCategoryIds(
+    categoryIds: string[],
+  ): Promise<Record<string, number>> {
+    if (categoryIds.length === 0) {
+      return {};
+    }
+
+    const rows = await this.prisma.course.groupBy({
+      by: ['categoryId'],
+      where: {
+        categoryId: { in: categoryIds },
+        isDeleted: false,
+        status: CourseStatus.ACTIVE,
+      },
+      _count: { _all: true },
+    });
+
+    return Object.fromEntries(
+      rows.map((row) => [row.categoryId, row._count._all]),
+    );
   }
 }

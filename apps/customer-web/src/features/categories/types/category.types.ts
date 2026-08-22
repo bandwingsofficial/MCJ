@@ -16,6 +16,7 @@ export interface CategoryDto {
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  courseCount?: number;
 }
 
 export type CategoryStatus =
@@ -31,6 +32,7 @@ export interface Category {
   status: CategoryStatus;
   displayOrder: number;
   branchId: string;
+  courseCount?: number;
 }
 
 export interface GetCategoriesParams {

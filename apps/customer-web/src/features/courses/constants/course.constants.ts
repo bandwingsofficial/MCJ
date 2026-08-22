@@ -5,7 +5,8 @@ export const COURSE_QUERY_KEYS = {
     search?: string,
     categoryId?: string,
     branchId?: string,
-    isFeatured?: boolean
+    isFeatured?: boolean,
+    isPopular?: boolean,
   ) =>
     [
       ...COURSE_QUERY_KEYS.all,
@@ -13,12 +14,16 @@ export const COURSE_QUERY_KEYS = {
       categoryId ?? "",
       branchId ?? "",
       isFeatured ?? false,
+      isPopular ?? false,
     ] as const,
 
-  detail: (slug: string) =>
+  detail: (identifier: string) =>
     [
       ...COURSE_QUERY_KEYS.all,
       "detail",
-      slug,
+      identifier,
     ] as const,
+
+  summary: (id: string) =>
+    [...COURSE_QUERY_KEYS.all, "summary", id] as const,
 };

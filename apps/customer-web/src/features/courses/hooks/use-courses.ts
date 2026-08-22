@@ -15,21 +15,22 @@ import type {
 } from "@/src/features/courses/types/course.types";
 
 export function useCourses(
-  params?: GetCoursesParams
+  params?: GetCoursesParams & { enabled?: boolean },
 ) {
+  const { enabled = true, ...queryParams } = params ?? {};
+
   return useQuery({
-    queryKey:
-      COURSE_QUERY_KEYS.list(
-        params?.search,
-        params?.categoryId,
-        params?.branchId,
-        params?.isFeatured
-      ),
+    queryKey: COURSE_QUERY_KEYS.list(
+      queryParams.search,
+      queryParams.categoryId,
+      queryParams.branchId,
+      queryParams.isFeatured,
+      queryParams.isPopular,
+    ),
 
-    queryFn: () =>
-      getCourses(params),
+    queryFn: () => getCourses(queryParams),
 
-    staleTime:
-      1000 * 60 * 5,
+    staleTime: 1000 * 60 * 5,
+    enabled,
   });
 }

@@ -17,10 +17,10 @@ import { useEnroll } from "@/src/features/enrollments/hooks/useEnroll";
 import type { EnrollmentFormValues } from "@/src/features/enrollments/schemas/enrollment.schema";
 
 interface EnrollPageProps {
-  slug: string;
+  courseId: string;
 }
 
-export function EnrollPage({ slug }: EnrollPageProps) {
+export function EnrollPage({ courseId }: EnrollPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedBatchId = searchParams.get("batchId") ?? undefined;
@@ -30,7 +30,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     isLoading: courseLoading,
     isError: courseError,
     refetch: refetchCourse,
-  } = useCourse(slug);
+  } = useCourse(courseId);
 
   const {
     batches: courseBatches,

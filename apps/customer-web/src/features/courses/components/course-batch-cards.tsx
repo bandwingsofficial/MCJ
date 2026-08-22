@@ -1,22 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { CalendarDays, MapPin, Users } from "lucide-react";
+import {
+  CalendarDays,
+  MapPin,
+  Monitor,
+  ArrowRight,
+} from "lucide-react";
 
 import { Badge } from "@/src/shared/components/ui/badge";
-import { Button } from "@/src/shared/components/ui/button";
-import { Card } from "@/src/shared/components/ui/card";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
 import type { Batch } from "@/src/features/batches/types/batch.types";
-import { formatCurrency } from "@/src/features/courses/utils/course-display.utils";
+import { formatCourseMode } from "@/src/features/courses/utils/course-display.utils";
 
 interface Props {
-  batches: Batch[];
+  batches: Batch[] | unknown;
   isLoading?: boolean;
   courseSlug: string;
-  coursePrice: number;
-  isFree?: boolean;
+  variant?: "grid" | "list";
 }
 
 function formatDate(value?: string | null): string {
@@ -24,112 +26,225 @@ function formatDate(value?: string | null): string {
     return "—";
   }
 
-  return new Date(value).toLocaleDateString("en-IN", {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return date.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
 }
 
-function formatSchedule(batch: Batch): string {
-  const days = batch.daysOfWeek?.join(", ");
-  const time =
-    batch.startTime && batch.endTime
-      ? `${batch.startTime} – ${batch.endTime}`
-      : null;
+function getBatchStatus(status?: string | null): string {
+  if (!status) {
+    return "Available";
+  }
 
-  return [days, time].filter(Boolean).join(" · ") || "Schedule to be announced";
+  return status
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export function CourseBatchCards({
   batches,
-  isLoading,
+  isLoading = false,
   courseSlug,
-  coursePrice,
-  isFree,
+  variant = "list",
 }: Props) {
   const router = useRouter();
 
+  /**
+   * Never assume the API response is an array.
+   */
+  const safeBatches: Batch[] = Array.isArray(batches) ? batches : [];
+
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2">
+      <div
+        className={
+          variant === "list"
+            ? "space-y-3"
+            : "grid gap-4 md:grid-cols-2"
+        }
+      >
         {Array.from({ length: 2 }).map((_, index) => (
-          <Skeleton key={index} className="h-44 w-full rounded-xl" />
+          <Skeleton
+            key={index}
+            className="h-28 w-full rounded-xl"
+          />
         ))}
       </div>
     );
   }
 
-  if (batches.length === 0) {
+  if (safeBatches.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-10 text-center">
+      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center">
         <p className="text-sm font-medium text-slate-700">
-          No batches available right now
+          No batches currently available.
         </p>
-        <p className="mt-1 text-sm text-slate-500">
-          Check back later for upcoming batches for this course.
+
+        <p className="mt-1 text-xs text-slate-500">
+          Please check again later for upcoming batches.
         </p>
       </div>
     );
   }
 
+  const handleEnroll = (batchId: string) => {
+    if (!courseSlug || !batchId) {
+      return;
+    }
+
+    router.push(
+      `/courses/${encodeURIComponent(courseSlug)}/enroll?batchId=${encodeURIComponent(
+        batchId,
+      )}`,
+    );
+  };
+
+  /*
+   * LIST VIEW
+   *
+   * This is the preferred customer-facing presentation.
+   */
+  if (variant === "list") {
+    return (
+      <div className="space-y-3">
+        {safeBatches.map((batch) => {
+          const batchId = batch?.id;
+
+          if (!batchId) {
+            return null;
+          }
+
+          return (
+            <article
+              key={batchId}
+              className="group rounded-xl border border-slate-200 bg-white p-4 transition hover:border-blue-200 hover:shadow-sm sm:p-5"
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                {/* Batch information */}
+                <div className="min-w-0">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Badge
+                      variant="info"
+                      className="text-[10px] font-semibold uppercase tracking-wide"
+                    >
+                      {getBatchStatus(batch.status)}
+                    </Badge>
+                  </div>
+
+                  <h3 className="truncate text-sm font-semibold text-slate-900 sm:text-base">
+                    {batch.name || "Unnamed Batch"}
+                  </h3>
+
+                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+                    <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                      <CalendarDays className="h-3.5 w-3.5 shrink-0 text-indigo-500" />
+                      <span>
+                        {formatDate(batch.startDate)}{" "}
+                        <span className="text-slate-400">→</span>{" "}
+                        {formatDate(batch.endDate)}
+                      </span>
+                    </p>
+
+                    <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                      <Monitor className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+                      <span>
+                        {formatCourseMode(batch.mode)}
+                      </span>
+                    </p>
+
+                    <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-orange-500" />
+                      <span>
+                        {batch.branch?.branchName || "Branch not specified"}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Enroll action */}
+                <button
+                  type="button"
+                  onClick={() => handleEnroll(batchId)}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  Enroll
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    );
+  }
+
+  /*
+   * GRID VIEW
+   */
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      {batches.map((batch) => {
-        const seatsLeft = Math.max(0, batch.capacity - batch.enrolledCount);
-        const trainer = batch.trainers?.[0];
-        const trainerName = trainer
-          ? [trainer.firstName, trainer.lastName].filter(Boolean).join(" ")
-          : null;
+      {safeBatches.map((batch) => {
+        const batchId = batch?.id;
+
+        if (!batchId) {
+          return null;
+        }
 
         return (
-          <Card
-            key={batch.id}
-            className="flex h-full flex-col rounded-xl border border-slate-200 p-5 shadow-sm"
+          <article
+            key={batchId}
+            className="rounded-xl border border-slate-200 bg-white p-5 transition hover:border-blue-200 hover:shadow-sm"
           >
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900">
-                  {batch.name}
-                </h3>
-                <p className="text-sm text-slate-500">{batch.code}</p>
-              </div>
-              <Badge variant="info">{batch.status}</Badge>
-            </div>
+              <h3 className="min-w-0 truncate text-base font-semibold text-slate-900">
+                {batch.name || "Unnamed Batch"}
+              </h3>
 
-            <div className="mt-4 space-y-2 text-sm text-slate-600">
-              <p className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-orange-500" />
-                {batch.branch?.branchName ?? "—"}
-              </p>
-              <p className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-indigo-500" />
-                {formatDate(batch.startDate)} → {formatDate(batch.endDate)}
-              </p>
-              <p className="text-slate-500">{formatSchedule(batch)}</p>
-              {trainerName ? (
-                <p className="text-slate-500">Instructor: {trainerName}</p>
-              ) : null}
-              <p className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-emerald-500" />
-                {seatsLeft} seats available
-              </p>
-            </div>
-
-            <div className="mt-auto flex items-center justify-between gap-3 pt-5">
-              <p className="text-lg font-bold text-slate-900">
-                {isFree ? "Free" : formatCurrency(coursePrice)}
-              </p>
-              <Button
-                size="sm"
-                onClick={() =>
-                  router.push(`/courses/${courseSlug}/enroll?batchId=${batch.id}`)
-                }
+              <Badge
+                variant="info"
+                className="shrink-0 text-[10px] uppercase"
               >
-                Select Batch
-              </Button>
+                {getBatchStatus(batch.status)}
+              </Badge>
             </div>
-          </Card>
+
+            <div className="mt-4 space-y-2.5">
+              <p className="flex items-center gap-2 text-sm text-slate-600">
+                <MapPin className="h-4 w-4 shrink-0 text-orange-500" />
+                {batch.branch?.branchName || "Branch not specified"}
+              </p>
+
+              <p className="flex items-center gap-2 text-sm text-slate-600">
+                <CalendarDays className="h-4 w-4 shrink-0 text-indigo-500" />
+                {formatDate(batch.startDate)}
+                <span className="text-slate-400">→</span>
+                {formatDate(batch.endDate)}
+              </p>
+
+              <p className="flex items-center gap-2 text-sm text-slate-600">
+                <Monitor className="h-4 w-4 shrink-0 text-blue-500" />
+                {formatCourseMode(batch.mode)}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleEnroll(batchId)}
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Enroll
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </article>
         );
       })}
     </div>

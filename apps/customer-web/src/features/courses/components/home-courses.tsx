@@ -1,64 +1,88 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/src/shared/components/ui/button";
+import { EmptyState } from "@/src/shared/components/ui/empty-state";
+import { ErrorState } from "@/src/shared/components/ui/error-state";
 
-import { CourseCard } from "@/src/features/courses/components/course-card";
-import type { Course } from "@/src/features/courses/types/course.types";
+import { useCourses } from "@/src/features/courses/hooks/use-courses";
+import { HomePopularCourseCard } from "@/src/features/courses/components/home-popular-course-card";
+import { HomePopularCourseSkeleton } from "@/src/features/courses/components/home-popular-course-skeleton";
 
-interface HomeCoursesProps {
-  courses: Course[];
-  onCourseClick?: (course: Course) => void;
-}
+export function HomeCourses() {
+  const router = useRouter();
 
-export function HomeCourses({
-  courses,
-  onCourseClick,
-}: HomeCoursesProps) {
-  if (!courses.length) {
-    return null;
-  }
+  const popularQuery = useCourses({ isPopular: true });
+  const fallbackQuery = useCourses({
+    enabled:
+      !popularQuery.isLoading &&
+      !popularQuery.isError &&
+      (popularQuery.data?.length ?? 0) === 0,
+  });
+
+  const courses = useMemo(() => {
+    const source =
+      (popularQuery.data?.length ?? 0) > 0
+        ? popularQuery.data
+        : fallbackQuery.data;
+
+    return source?.slice(0, 10) ?? [];
+  }, [popularQuery.data, fallbackQuery.data]);
+
+  const isLoading =
+    popularQuery.isLoading ||
+    ((popularQuery.data?.length ?? 0) === 0 && fallbackQuery.isLoading);
+
+  const isError = popularQuery.isError && fallbackQuery.isError;
+
+  const refetch = () => {
+    void popularQuery.refetch();
+    if ((popularQuery.data?.length ?? 0) === 0) {
+      void fallbackQuery.refetch();
+    }
+  };
 
   return (
-    <section className="py-20">
-      <div className="mx-auto max-w-7xl px-8">
-        {/* Header */}
-        <div className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <span className="inline-flex rounded-full bg-blue-100 px-4 py-1 text-sm font-semibold text-blue-700">
-              Professional Learning
-            </span>
-
-            <h2 className="mt-4 text-4xl font-bold tracking-tight text-slate-900">
-              Explore Our Featured Courses
-            </h2>
-
-            <p className="mt-4 text-lg leading-8 text-slate-600">
-              Upgrade your skills with industry-focused programs taught by
-              experienced mentors. Learn practical concepts, earn valuable
-              certifications, and accelerate your career.
+    <section className="w-full py-10">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold">Popular Courses</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Most loved courses by our students.
             </p>
           </div>
-
-          <Link href="/courses">
-            <Button variant="outline" className="flex items-center">
-              View All Courses
-            </Button>
-          </Link>
+          <Button variant="outline" onClick={() => router.push("/courses")}>
+            View All
+          </Button>
         </div>
 
-        {/* Cards - Updated to 3 columns */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course) => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              onClick={onCourseClick}
-            />
-          ))}
-        </div>
+        {isLoading && <HomePopularCourseSkeleton count={5} />}
+
+        {isError && (
+          <ErrorState
+            title="Failed To Load Courses"
+            description="Please try again later."
+            onRetry={refetch}
+          />
+        )}
+
+        {!isLoading && !isError && courses.length === 0 && (
+          <EmptyState
+            title="No popular courses available"
+            description="Check back soon for new courses."
+          />
+        )}
+
+        {!isLoading && !isError && courses.length > 0 && (
+          <div className="grid grid-cols-1 items-stretch gap-3.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+            {courses.map((course) => (
+              <HomePopularCourseCard key={course.id} course={course} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

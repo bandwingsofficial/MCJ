@@ -9,6 +9,7 @@ import { useCourses } from "@/src/features/courses/hooks/use-courses";
 import { CourseList } from "@/src/features/courses/components/course-list";
 import { CourseSkeleton } from "@/src/features/courses/components/course-skeleton";
 import { CourseEmptyState } from "@/src/features/courses/components/course-empty-state";
+import { getCourseDetailPath } from "@/src/features/courses/utils/course-route.utils";
 
 interface CourseSectionProps {
   categoryId?: string;
@@ -55,7 +56,7 @@ export function CourseSection({
   return (
     <CourseList
       courses={courses}
-      onCourseClick={(course) => router.push(`/courses/${course.slug}`)}
+      onCourseClick={(course) => router.push(getCourseDetailPath(course))}
     />
   );
 }

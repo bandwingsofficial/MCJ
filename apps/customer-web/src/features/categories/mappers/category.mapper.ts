@@ -17,6 +17,7 @@ export function mapCategoryDtoToCategory(
     status: dto.status,
     displayOrder: dto.displayOrder,
     branchId: dto.branchId,
+    courseCount: dto.courseCount,
   };
 }
 

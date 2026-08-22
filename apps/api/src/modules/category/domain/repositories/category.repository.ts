@@ -86,4 +86,8 @@ export interface CategoryRepository {
   reorderOrderedCategories(orderedIds: string[]): Promise<void>;
 
   normalizeOrderedDisplayOrders(): Promise<void>;
+
+  countActiveCoursesByCategoryIds(
+    categoryIds: string[],
+  ): Promise<Record<string, number>>;
 }

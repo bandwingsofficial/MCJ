@@ -6,10 +6,15 @@ import type {
   Trainer,
 } from "@/src/features/trainers/types/trainer.types";
 
+export interface TrainerListResult {
+  items: Trainer[];
+  total: number;
+}
+
 export const trainerApi = {
   getTrainers() {
     return apiClient.get<
-      ApiResponse<Trainer[]>
+      ApiResponse<TrainerListResult>
     >("/trainers");
   },
 
