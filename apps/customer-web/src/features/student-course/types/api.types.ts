@@ -38,70 +38,65 @@ export interface CourseBranchResponseDto {
 
 export interface StudentCourseResponseDto {
   id: string;
+  code?: string;
   title: string;
   slug: string;
   tagline: string | null;
   shortDescription: string | null;
   description: string | null;
-
   thumbnailFileId: string | null;
   thumbnailUrl: string | null;
-
   originalPrice: number;
   discountPrice: number;
   totalDiscount: number;
-
   currency: string;
-
   isFree: boolean;
-
   duration: number;
-
   durationType: string;
-
   level: string;
-
   modes: string[];
-
   language: string;
-
   averageRating: number;
-
   totalReviews: number;
-
   isFeatured: boolean;
-
   isPopular: boolean;
-
   displayOrder: number | null;
-
   metaTitle: string;
-
   metaDescription: string | null;
-
   metaKeywords: string;
-
   categoryId: string;
-
   branches: CourseBranchResponseDto[];
-
   status: string;
-
   images: [];
-
   materials: [];
-
   modules: CourseModuleResponseDto[];
-
+  previewModules?: CourseModuleResponseDto[];
+  moduleCount?: number;
+  lessonCount?: number;
   createdBy: string;
-
   updatedBy: string | null;
-
   isDeleted: boolean;
-
   deletedAt: string | null;
-
   createdAt: string;
-
   updatedAt: string;
+}
+
+export interface StudentCourseProgressItemDto {
+  lessonId: string;
+  isCompleted: boolean;
+  watchedSeconds: number;
+  completedAt: string | null;
+}
+
+export interface StudentCourseProgressDto {
+  courseId: string;
+  totalLessons: number;
+  completedLessons: number;
+  completionPercentage: number;
+  items: StudentCourseProgressItemDto[];
+}
+
+export interface StudentCoursePayloadDto {
+  course: StudentCourseResponseDto;
+  progress: StudentCourseProgressDto;
 }

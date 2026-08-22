@@ -31,24 +31,7 @@ export function useCourseProgress(
         0,
       );
 
-    const totalResources =
-      modules.reduce(
-        (
-          moduleTotal,
-          module,
-        ) =>
-          moduleTotal +
-          module.lessons.reduce(
-            (
-              lessonTotal,
-              lesson,
-            ) =>
-              lessonTotal +
-              lesson.resources.length,
-            0,
-          ),
-        0,
-      );
+    const totalResources = 0;
 
     return {
       totalModules:

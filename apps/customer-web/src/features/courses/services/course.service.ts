@@ -18,51 +18,34 @@ import type {
 } from "@/src/features/courses/types/course.types";
 
 export async function getCourses(
-  params?: GetCoursesParams
+  params?: GetCoursesParams,
 ): Promise<Course[]> {
   try {
-    const response =
-      await getCoursesApi(
-        params
-      );
+    const response = await getCoursesApi(params);
+    const items = response.data?.items ?? response.data ?? [];
 
     return mapCourseDtosToCourses(
-      response.data
+      Array.isArray(items) ? items : [],
     );
   } catch (error) {
-    if (
-      error instanceof AxiosError
-    ) {
+    if (error instanceof AxiosError) {
       throw error;
     }
 
-    throw new Error(
-      "Failed to fetch courses"
-    );
+    throw new Error("Failed to fetch courses");
   }
 }
 
-export async function getCourseBySlug(
-  slug: string
-): Promise<Course> {
+export async function getCourseBySlug(slug: string): Promise<Course> {
   try {
-    const response =
-      await getCourseBySlugApi(
-        slug
-      );
+    const response = await getCourseBySlugApi(slug);
 
-    return mapCourseDtoToCourse(
-      response.data
-    );
+    return mapCourseDtoToCourse(response.data);
   } catch (error) {
-    if (
-      error instanceof AxiosError
-    ) {
+    if (error instanceof AxiosError) {
       throw error;
     }
 
-    throw new Error(
-      "Failed to fetch course"
-    );
+    throw new Error("Failed to fetch course");
   }
 }

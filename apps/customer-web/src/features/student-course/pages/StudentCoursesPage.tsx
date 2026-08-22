@@ -7,22 +7,33 @@ import { CourseError } from "@/src/features/student-course/components/states/Cou
 import { CourseSkeleton } from "@/src/features/student-course/components/states/CourseSkeleton";
 import { EmptyCourses } from "@/src/features/student-course/components/states/EmptyCourses";
 
+const ACTIVE_STATUSES = new Set(["PENDING", "ADMITTED"]);
+
 export function StudentCoursesPage() {
   const { enrollments, isLoading, error, refetch } = useMyEnrollments();
 
   const learningEnrollments = enrollments.filter(
-    (e) => e.status === "ADMITTED" && e.paymentStatus === "PAID"
+    (enrollment) =>
+      ACTIVE_STATUSES.has(enrollment.status) && enrollment.isActive,
   );
 
-  if (isLoading) return <CourseSkeleton />;
-  if (error) return <CourseError message={error} onRetry={refetch} />;
-  if (learningEnrollments.length === 0) return <EmptyCourses />;
+  if (isLoading) {
+    return <CourseSkeleton />;
+  }
+
+  if (error) {
+    return <CourseError message={error} onRetry={refetch} />;
+  }
+
+  if (learningEnrollments.length === 0) {
+    return <EmptyCourses />;
+  }
 
   return (
     <div className="space-y-6">
-      <PageHeader 
-        title="My Learnings" 
-        description="Access and continue your active courses." 
+      <PageHeader
+        title="My Learning"
+        description="Access and continue your enrolled courses."
       />
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

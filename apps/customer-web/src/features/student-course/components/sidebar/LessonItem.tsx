@@ -2,7 +2,6 @@
 
 import {
   Clock3,
-  FileText,
   PlayCircle,
 } from "lucide-react";
 
@@ -69,23 +68,10 @@ export function LessonItem({
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <Clock3 className="h-3.5 w-3.5" />
-
               <span>
                 {lesson.duration
                   ? `${lesson.duration} min`
                   : "Duration N/A"}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <FileText className="h-3.5 w-3.5" />
-
-              <span>
-                {
-                  lesson.resources
-                    .length
-                }{" "}
-                Resources
               </span>
             </div>
           </div>

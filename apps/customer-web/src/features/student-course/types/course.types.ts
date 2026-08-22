@@ -61,6 +61,11 @@ export interface StudentCourse {
   id: string;
 
   /**
+   * Course code shown to students.
+   */
+  code: string;
+
+  /**
    * Course title.
    */
   title: string;
@@ -189,6 +194,10 @@ export interface StudentCourse {
    * Sorted by displayOrder by the mapper.
    */
   modules: CourseModule[];
+
+  moduleCount: number;
+
+  lessonCount: number;
 
   /**
    * Audit fields.

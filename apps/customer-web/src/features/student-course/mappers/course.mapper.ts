@@ -2,7 +2,6 @@ import type {
   StudentCourseResponseDto,
   CourseModuleResponseDto,
   LessonResponseDto,
-  LessonResourceResponseDto,
 } from "@/src/features/student-course/types/api.types";
 
 import {
@@ -14,132 +13,51 @@ import {
   type StudentCourse,
 } from "@/src/features/student-course/types/course.types";
 
-import type {
-  CourseModule,
-} from "@/src/features/student-course/types/module.types";
-
-import type {
-  Lesson,
-} from "@/src/features/student-course/types/lesson.types";
-
-import {
-  LessonResourceType,
-  type LessonResource,
-} from "@/src/features/student-course/types/resource.types";
+import type { CourseModule } from "@/src/features/student-course/types/module.types";
+import type { Lesson } from "@/src/features/student-course/types/lesson.types";
 
 export class CourseMapper {
-  static toDomain(
-    dto: StudentCourseResponseDto,
-  ): StudentCourse {
+  static toDomain(dto: StudentCourseResponseDto): StudentCourse {
+    const modules = (dto.modules?.length ? dto.modules : dto.previewModules ?? [])
+      .map(this.toModule)
+      .sort((first, second) => first.displayOrder - second.displayOrder);
+
     return {
       id: dto.id,
-
+      code: dto.code ?? "",
       title: dto.title,
-
       slug: dto.slug,
-
       tagline: dto.tagline,
-
-      shortDescription:
-        dto.shortDescription,
-
-      description:
-        dto.description,
-
-      thumbnailUrl:
-        dto.thumbnailUrl,
-
-      originalPrice:
-        dto.originalPrice,
-
-      discountPrice:
-        dto.discountPrice,
-
-      totalDiscount:
-        dto.totalDiscount,
-
-      currency:
-        dto.currency,
-
-      isFree:
-        dto.isFree,
-
-      duration:
-        dto.duration,
-
-      durationType:
-        this.toDurationType(
-          dto.durationType,
-        ),
-
-      level:
-        this.toCourseLevel(
-          dto.level,
-        ),
-
-      modes:
-        dto.modes.map(
-          this.toCourseMode,
-        ),
-
-      language:
-        dto.language,
-
-      averageRating:
-        dto.averageRating,
-
-      totalReviews:
-        dto.totalReviews,
-
-      isFeatured:
-        dto.isFeatured,
-
-      isPopular:
-        dto.isPopular,
-
-      metaTitle:
-        dto.metaTitle,
-
-      metaDescription:
-        dto.metaDescription,
-
-      metaKeywords:
-        this.toKeywords(
-          dto.metaKeywords,
-        ),
-
-      categoryId:
-        dto.categoryId,
-
-      branches:
-        dto.branches.map(
-          this.toBranch,
-        ),
-
-      status:
-        this.toCourseStatus(
-          dto.status,
-        ),
-
-      modules:
-        dto.modules
-          .map(
-            this.toModule,
-          )
-          .sort(
-            (
-              first,
-              second,
-            ) =>
-              first.displayOrder -
-              second.displayOrder,
-          ),
-
-      createdAt:
-        dto.createdAt,
-
-      updatedAt:
-        dto.updatedAt,
+      shortDescription: dto.shortDescription,
+      description: dto.description,
+      thumbnailUrl: dto.thumbnailUrl,
+      originalPrice: dto.originalPrice,
+      discountPrice: dto.discountPrice,
+      totalDiscount: dto.totalDiscount,
+      currency: dto.currency,
+      isFree: dto.isFree,
+      duration: dto.duration,
+      durationType: this.toDurationType(dto.durationType),
+      level: this.toCourseLevel(dto.level),
+      modes: dto.modes.map(this.toCourseMode),
+      language: dto.language,
+      averageRating: dto.averageRating,
+      totalReviews: dto.totalReviews,
+      isFeatured: dto.isFeatured,
+      isPopular: dto.isPopular,
+      metaTitle: dto.metaTitle,
+      metaDescription: dto.metaDescription,
+      metaKeywords: this.toKeywords(dto.metaKeywords),
+      categoryId: dto.categoryId,
+      branches: dto.branches.map(this.toBranch),
+      status: this.toCourseStatus(dto.status),
+      modules,
+      moduleCount: dto.moduleCount ?? modules.length,
+      lessonCount:
+        dto.lessonCount ??
+        modules.reduce((total, module) => total + module.lessons.length, 0),
+      createdAt: dto.createdAt,
+      updatedAt: dto.updatedAt,
     };
   }
 
@@ -148,232 +66,93 @@ export class CourseMapper {
   ): CourseBranch {
     return {
       id: dto.id,
-      branchName:
-        dto.branchName,
-      branchCode:
-        dto.branchCode,
+      branchName: dto.branchName,
+      branchCode: dto.branchCode,
     };
   }
 
-  private static toModule(
-    dto: CourseModuleResponseDto,
-  ): CourseModule {
+  private static toModule(dto: CourseModuleResponseDto): CourseModule {
     return {
       id: dto.id,
-
       title: dto.title,
-
-      description:
-        dto.description,
-
-      keySkills:
-        dto.keySkills,
-
-      displayOrder:
-        dto.displayOrder,
-
-      lessons:
-        dto.lessons
-          .map(
-            this.toLesson,
-          )
-          .sort(
-            (
-              first,
-              second,
-            ) =>
-              first.displayOrder -
-              second.displayOrder,
-          ),
+      description: dto.description,
+      keySkills: dto.keySkills,
+      displayOrder: dto.displayOrder,
+      lessons: dto.lessons
+        .map(this.toLesson)
+        .sort((first, second) => first.displayOrder - second.displayOrder),
     };
   }
 
-  private static toLesson(
-    dto: LessonResponseDto,
-  ): Lesson {
+  private static toLesson(dto: LessonResponseDto): Lesson {
     return {
       id: dto.id,
-
       title: dto.title,
-
-      videoUrl:
-        dto.videoUrl,
-
-      duration:
-        dto.duration,
-
-      displayOrder:
-        dto.displayOrder,
-
-      resources:
-        dto.resources
-          .map(
-            this.toResource,
-          )
-          .sort(
-            (
-              first,
-              second,
-            ) =>
-              first.displayOrder -
-              second.displayOrder,
-          ),
+      duration: dto.duration,
+      displayOrder: dto.displayOrder,
     };
   }
 
-  private static toResource(
-    dto: LessonResourceResponseDto,
-  ): LessonResource {
-    return {
-      id: dto.id,
-
-      title: dto.title,
-
-      type:
-        this.toResourceType(
-          dto.type,
-        ),
-
-      fileUrl:
-        dto.fileUrl,
-
-      displayOrder:
-        dto.displayOrder,
-    };
-  }
-
-  private static toKeywords(
-    keywords: string,
-  ): string[] {
+  private static toKeywords(keywords: string): string[] {
     return keywords
       .split(",")
-      .map(
-        (keyword) =>
-          keyword.trim(),
-      )
+      .map((keyword) => keyword.trim())
       .filter(Boolean);
   }
 
-  private static toCourseLevel(
-    level: string,
-  ): CourseLevel {
+  private static toCourseLevel(level: string): CourseLevel {
     switch (level) {
       case CourseLevel.BEGINNER:
         return CourseLevel.BEGINNER;
-
       case CourseLevel.INTERMEDIATE:
         return CourseLevel.INTERMEDIATE;
-
       case CourseLevel.ADVANCED:
         return CourseLevel.ADVANCED;
-
       default:
         return CourseLevel.BEGINNER;
     }
   }
 
-  private static toCourseStatus(
-    status: string,
-  ): CourseStatus {
+  private static toCourseStatus(status: string): CourseStatus {
     switch (status) {
       case CourseStatus.ACTIVE:
         return CourseStatus.ACTIVE;
-
       case CourseStatus.DRAFT:
         return CourseStatus.DRAFT;
-
       case CourseStatus.INACTIVE:
         return CourseStatus.INACTIVE;
-
       case CourseStatus.ARCHIVED:
         return CourseStatus.ARCHIVED;
-
       default:
         return CourseStatus.DRAFT;
     }
   }
 
-  private static toCourseMode(
-    mode: string,
-  ): CourseMode {
+  private static toCourseMode(mode: string): CourseMode {
     switch (mode) {
       case CourseMode.ONLINE:
         return CourseMode.ONLINE;
-
       case CourseMode.OFFLINE:
         return CourseMode.OFFLINE;
-
       case CourseMode.HYBRID:
         return CourseMode.HYBRID;
-
       default:
         return CourseMode.ONLINE;
     }
   }
 
-  private static toDurationType(
-    type: string,
-  ): CourseDurationType {
+  private static toDurationType(type: string): CourseDurationType {
     switch (type) {
       case CourseDurationType.DAYS:
         return CourseDurationType.DAYS;
-
       case CourseDurationType.WEEKS:
         return CourseDurationType.WEEKS;
-
       case CourseDurationType.MONTHS:
         return CourseDurationType.MONTHS;
-
       case CourseDurationType.YEARS:
         return CourseDurationType.YEARS;
-
       default:
         return CourseDurationType.DAYS;
-    }
-  }
-
-  private static toResourceType(
-    type: string,
-  ): LessonResourceType {
-    switch (type) {
-      case LessonResourceType.PDF:
-        return LessonResourceType.PDF;
-
-      case LessonResourceType.DOC:
-        return LessonResourceType.DOC;
-
-      case LessonResourceType.DOCX:
-        return LessonResourceType.DOCX;
-
-      case LessonResourceType.PPT:
-        return LessonResourceType.PPT;
-
-      case LessonResourceType.PPTX:
-        return LessonResourceType.PPTX;
-
-      case LessonResourceType.XLS:
-        return LessonResourceType.XLS;
-
-      case LessonResourceType.XLSX:
-        return LessonResourceType.XLSX;
-
-      case LessonResourceType.IMAGE:
-        return LessonResourceType.IMAGE;
-
-      case LessonResourceType.VIDEO:
-        return LessonResourceType.VIDEO;
-
-      case LessonResourceType.AUDIO:
-        return LessonResourceType.AUDIO;
-
-      case LessonResourceType.ZIP:
-        return LessonResourceType.ZIP;
-
-      case LessonResourceType.LINK:
-        return LessonResourceType.LINK;
-
-      default:
-        return LessonResourceType.OTHER;
     }
   }
 }

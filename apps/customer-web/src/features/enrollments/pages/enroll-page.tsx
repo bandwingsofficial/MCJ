@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Card } from "@/src/shared/components/ui/card";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -9,25 +9,21 @@ import { Loader } from "@/src/shared/components/ui/loader";
 import { PageHeader } from "@/src/shared/components/ui/page-header";
 import { appToast } from "@/src/shared/components/ui/toast";
 
-import { useBatches } from "@/src/features/batches/hooks/useBatches";
-
+import { useCourseBatches } from "@/src/features/batches/hooks/useCourseBatches";
 import { useCourse } from "@/src/features/courses/hooks/use-course";
-
+import { formatCoursePrice } from "@/src/features/courses/utils/course-display.utils";
 import { EnrollmentForm } from "@/src/features/enrollments/components/EnrollmentForm";
 import { useEnroll } from "@/src/features/enrollments/hooks/useEnroll";
-
-import type {
-  EnrollmentFormValues,
-} from "@/src/features/enrollments/schemas/enrollment.schema";
+import type { EnrollmentFormValues } from "@/src/features/enrollments/schemas/enrollment.schema";
 
 interface EnrollPageProps {
   slug: string;
 }
 
-export function EnrollPage({
-  slug,
-}: EnrollPageProps) {
+export function EnrollPage({ slug }: EnrollPageProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const preselectedBatchId = searchParams.get("batchId") ?? undefined;
 
   const {
     data: course,
@@ -37,54 +33,31 @@ export function EnrollPage({
   } = useCourse(slug);
 
   const {
-    batches,
+    batches: courseBatches,
     isLoading: batchLoading,
     error: batchError,
     refetch: refetchBatches,
-  } = useBatches();
+  } = useCourseBatches(course?.id);
 
-  const {
-    createEnrollment,
-    isSubmitting,
-    error,
-  } = useEnroll();
+  const { createEnrollment, isSubmitting, error } = useEnroll();
 
-  const courseBatches = useMemo(() => {
-    if (!course) {
-      return [];
-    }
+  const selectedBatch = useMemo(
+    () => courseBatches.find((batch) => batch.id === preselectedBatchId),
+    [courseBatches, preselectedBatchId],
+  );
 
-    return batches.filter(
-      (batch) =>
-        batch.courseId === course.id,
-    );
-  }, [
-    batches,
-    course,
-  ]);
-
-  const handleSubmit = async (
-    values: EnrollmentFormValues,
-  ) => {
-    const enrollment =
-      await createEnrollment({
-        batchId:
-          values.batchId,
-        remarks:
-          values.remarks,
-      });
+  const handleSubmit = async (values: EnrollmentFormValues) => {
+    const enrollment = await createEnrollment({
+      batchId: values.batchId,
+      remarks: values.remarks,
+    });
 
     if (!enrollment) {
       return;
     }
 
-    appToast.success(
-      "Enrollment created successfully.",
-    );
-
-    router.push(
-      "/student/enrollments",
-    );
+    appToast.success("Enrollment created successfully.");
+    router.push("/student/my-learning");
   };
 
   if (courseLoading) {
@@ -100,63 +73,53 @@ export function EnrollPage({
       <ErrorState
         title="Course Not Found"
         description="Unable to load the selected course."
-        onRetry={() =>
-          refetchCourse()
-        }
+        onRetry={() => refetchCourse()}
       />
     );
   }
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-
       <PageHeader
-        title="Course Enrollment"
-        description="Select a batch and complete your enrollment."
+        title="Review Enrollment"
+        description="Confirm your batch selection and complete enrollment."
       />
 
-      <Card className="mt-8 p-6">
-
-        <div className="mb-8">
-
-          <h2 className="text-2xl font-semibold">
+      <Card className="mt-8 space-y-6 p-6">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+          <p className="text-sm font-medium text-indigo-600">{course.code}</p>
+          <h2 className="mt-1 text-2xl font-semibold text-slate-900">
             {course.title}
           </h2>
+          {course.tagline ? (
+            <p className="mt-2 text-slate-600">{course.tagline}</p>
+          ) : null}
 
-          {course.tagline && (
-            <p className="mt-2 text-muted-foreground">
-              {course.tagline}
-            </p>
-          )}
-
+          <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-600">
+            <span>Category: {course.categoryName}</span>
+            <span>Price: {formatCoursePrice(course)}</span>
+            {selectedBatch ? (
+              <>
+                <span>Batch: {selectedBatch.name}</span>
+                <span>
+                  Branch: {selectedBatch.branch?.branchName ?? "—"}
+                </span>
+              </>
+            ) : null}
+          </div>
         </div>
 
         <EnrollmentForm
-          batches={
-            courseBatches
-          }
-          loading={
-            isSubmitting
-          }
-          batchLoading={
-            batchLoading
-          }
-          batchError={
-            batchError
-          }
-          submitError={
-            error
-          }
-          onRetry={
-            refetchBatches
-          }
-          onSubmit={
-            handleSubmit
-          }
+          batches={courseBatches}
+          defaultBatchId={preselectedBatchId}
+          loading={isSubmitting}
+          batchLoading={batchLoading}
+          batchError={batchError}
+          submitError={error}
+          onRetry={refetchBatches}
+          onSubmit={handleSubmit}
         />
-
       </Card>
-
     </main>
   );
 }

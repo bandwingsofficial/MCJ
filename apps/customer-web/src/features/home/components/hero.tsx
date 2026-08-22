@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const stats = [
   { value: "5000+", label: "Students Placed" },
@@ -16,6 +17,7 @@ const badges = [
 ];
 
 export function HeroSection() {
+  const router = useRouter();
   const [visible, setVisible] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
 
@@ -485,25 +487,33 @@ export function HeroSection() {
             </div>
 
             <h1 className={`hero-headline ${visible ? "show" : ""}`}>
-              Master Accounting<br />
-              with <span className="highlight">MCJ Institute</span>
+              Learn. Practice. <span className="highlight">Progress.</span>
             </h1>
 
             <p className={`hero-subtitle-line ${visible ? "show" : ""}`}>
-              Where Precision Meets Opportunity
+              Build skills that move your career forward
             </p>
 
             <div className={`divider ${visible ? "show" : ""}`} />
 
             <p className={`hero-desc ${visible ? "show" : ""}`}>
-              Industry-aligned programs in Tally, GST, and financial accounting.
-              Earn certifications that open doors — with hands-on training and
-              guaranteed placement support from day one.
+              Explore industry-aligned courses with expert instructors, flexible
+              batches, and a learning experience designed to help you grow.
             </p>
 
             <div className={`cta-row ${visible ? "show" : ""}`}>
-              <button className="btn-primary">Explore Courses</button>
-              <button className="btn-outline">Talk to an Advisor →</button>
+              <button
+                className="btn-primary"
+                onClick={() => router.push("/courses")}
+              >
+                Explore Courses
+              </button>
+              <button
+                className="btn-outline"
+                onClick={() => router.push("/contact")}
+              >
+                Talk to an Advisor →
+              </button>
             </div>
 
             <div className={`stats-row ${visible ? "show" : ""}`}>

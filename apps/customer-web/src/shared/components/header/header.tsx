@@ -12,11 +12,10 @@ import { useLogout } from "@/src/features/auth/hooks/use-logout";
 
 const navItems = [
   { name: "Home", href: "/" },
-  { name: "Jobs", href: "/jobs" },
   { name: "Courses", href: "/courses" },
-  { name: "Franchise", href: "/franchise" },
-  { name: "Batches", href: "/batch" },
-  { name: "Finance News", href: "/finance-news" },
+  { name: "Categories", href: "/categories" },
+  { name: "Branches", href: "/branches" },
+  { name: "My Learning", href: "/student/my-learning", protected: true },
   { name: "Contact Us", href: "/contact" },
 ];
 
@@ -29,18 +28,12 @@ export function Header() {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // =========================
-  // HYDRATION FIX
-  // =========================
   useEffect(() => {
     setMounted(true);
   }, []);
 
   if (!mounted) return null;
 
-  // =========================
-  // PROTECTED ROUTE
-  // =========================
   const handleProtectedRoute = (href: string) => {
     if (!user) {
       router.push(AUTH_ROUTES.LOGIN);
@@ -49,9 +42,6 @@ export function Header() {
     router.push(href);
   };
 
-  // =========================
-  // LOGOUT
-  // =========================
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync();
@@ -64,8 +54,6 @@ export function Header() {
   return (
     <header className="w-full bg-white border-b border-gray-100 sticky top-0 z-50 backdrop-blur-md bg-white/95 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)]">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        
-        {/* ================= LOGO ================= */}
         <Link
           href="/"
           className="flex items-center gap-3 group transition-transform duration-200 active:scale-95"
@@ -90,7 +78,6 @@ export function Header() {
           </span>
         </Link>
 
-        {/* ================= NAVIGATION ================= */}
         <nav className="hidden md:flex items-center gap-8 h-full">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
@@ -98,7 +85,11 @@ export function Header() {
             return (
               <button
                 key={item.name}
-                onClick={() => router.push(item.href)}
+                onClick={() =>
+                  item.protected
+                    ? handleProtectedRoute(item.href)
+                    : router.push(item.href)
+                }
                 className={`group relative flex items-center h-full text-[15px] font-medium tracking-wide transition-all duration-200 outline-none ${
                   isActive
                     ? "text-blue-600 font-semibold"
@@ -109,12 +100,10 @@ export function Header() {
                   {item.name}
                 </span>
 
-                {/* Active underline */}
                 {isActive && (
                   <span className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-blue-600 to-orange-500 rounded-t-full shadow-[0_-2px_10px_rgba(37,99,235,0.4)]" />
                 )}
 
-                {/* Hover underline (grows from center) */}
                 {!isActive && (
                   <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[3px] bg-orange-500 rounded-t-full transition-all duration-300 ease-out group-hover:w-full shadow-[0_-2px_10px_rgba(249,115,22,0.35)]" />
                 )}
@@ -123,10 +112,7 @@ export function Header() {
           })}
         </nav>
 
-        {/* ================= RIGHT SIDE ================= */}
         <div className="flex items-center gap-4">
-          
-          {/* ================= NOT LOGGED IN ================= */}
           {!user && (
             <button
               onClick={() => router.push("/login")}
@@ -137,11 +123,8 @@ export function Header() {
             </button>
           )}
 
-          {/* ================= LOGGED IN ================= */}
           {user && (
             <div className="flex items-center gap-4">
-              
-              {/* STUDENT BUTTON */}
               <button
                 onClick={() => router.push("/student")}
                 className="group flex items-center gap-2 px-4 py-2.5 border border-gray-200 bg-gray-50/50 text-gray-700 font-semibold rounded-xl text-sm transition-all duration-300 hover:bg-white hover:border-orange-300 hover:text-orange-600 hover:shadow-md hover:shadow-orange-100 active:scale-95"
@@ -150,7 +133,6 @@ export function Header() {
                 Student
               </button>
 
-              {/* PROFILE MENU */}
               <div
                 className="relative py-2"
                 onMouseEnter={() => setOpen(true)}
@@ -165,8 +147,6 @@ export function Header() {
 
                 {open && (
                   <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-100 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                    
-                    {/* USER INFO */}
                     <div className="px-3 py-2.5 text-xs font-semibold tracking-wider text-gray-400 uppercase">
                       Account Status
                     </div>
@@ -177,7 +157,19 @@ export function Header() {
                       </div>
                     </div>
 
-                    {/* DASHBOARD */}
+                    <div className="mt-1.5">
+                      <button
+                        onClick={() => {
+                          router.push("/student/my-learning");
+                          setOpen(false);
+                        }}
+                        className="group flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-gray-700 rounded-xl transition-all duration-200 hover:bg-orange-50 hover:text-orange-600 hover:pl-4"
+                      >
+                        <LayoutDashboard className="w-4 h-4 text-gray-400 transition-colors duration-200 group-hover:text-orange-500" />
+                        My Learning
+                      </button>
+                    </div>
+
                     <div className="mt-1.5">
                       <button
                         onClick={() => {
@@ -191,7 +183,6 @@ export function Header() {
                       </button>
                     </div>
 
-                    {/* LOGOUT */}
                     <div className="mt-1 pt-1 border-t border-gray-50">
                       <button
                         onClick={handleLogout}
@@ -201,11 +192,9 @@ export function Header() {
                         Logout
                       </button>
                     </div>
-
                   </div>
                 )}
               </div>
-
             </div>
           )}
         </div>

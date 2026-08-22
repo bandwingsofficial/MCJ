@@ -22,7 +22,7 @@ import { Textarea } from "@/src/shared/components/ui/textarea";
 
 interface EnrollmentFormProps {
   batches: Batch[];
-
+  defaultBatchId?: string;
   loading: boolean;
 
   batchLoading: boolean;
@@ -40,6 +40,7 @@ interface EnrollmentFormProps {
 
 export function EnrollmentForm({
   batches,
+  defaultBatchId,
   loading,
   batchLoading,
   batchError,
@@ -50,21 +51,14 @@ export function EnrollmentForm({
   const {
     control,
     handleSubmit,
-    formState: {
-      errors,
+    formState: { errors },
+  } = useForm<EnrollmentFormValues>({
+    resolver: zodResolver(enrollmentSchema),
+    defaultValues: {
+      batchId: defaultBatchId ?? "",
+      remarks: "",
     },
-  } =
-    useForm<EnrollmentFormValues>({
-      resolver:
-        zodResolver(
-          enrollmentSchema,
-        ),
-
-      defaultValues: {
-        batchId: "",
-        remarks: "",
-      },
-    });
+  });
 
   if (batchLoading) {
     return (
@@ -129,17 +123,18 @@ export function EnrollmentForm({
               onValueChange={
                 field.onChange
               }
-              options={batches.map(
-                (
-                  batch,
-                ) => ({
-                  value:
-                    batch.id,
-
-                  label:
-                    `${batch.name} • ${batch.mode} • ${batch.startTime}-${batch.endTime} • ${batch.enrolledCount}/${batch.capacity} Seats`,
-                }),
-              )}
+              options={batches.map((batch) => ({
+                value: batch.id,
+                label: [
+                  batch.name,
+                  batch.code,
+                  batch.branch?.branchName,
+                  `${batch.startTime}-${batch.endTime}`,
+                  `${batch.enrolledCount}/${batch.capacity} seats`,
+                ]
+                  .filter(Boolean)
+                  .join(" · "),
+              }))}
             />
           )}
         />

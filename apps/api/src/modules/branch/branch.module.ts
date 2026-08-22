@@ -4,6 +4,7 @@ import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 
 import { BranchController } from './presentation/controllers/branch.controller';
+import { PublicBranchController } from './presentation/controllers/public-branch.controller';
 
 import { CreateBranchHandler } from './application/create-branch/create-branch.handler';
 import { DeleteBranchHandler } from './application/delete-branch/delete-branch.handler';
@@ -32,7 +33,7 @@ import { BRANCH_TOKENS } from './branch.tokens';
 @Module({
   imports: [PrismaModule],
 
-  controllers: [BranchController],
+  controllers: [BranchController, PublicBranchController],
 
   providers: [
     BranchDomainService,

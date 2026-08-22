@@ -12,11 +12,13 @@ import { CourseEmptyState } from "@/src/features/courses/components/course-empty
 
 interface CourseSectionProps {
   categoryId?: string;
+  branchId?: string;
   search?: string;
 }
 
 export function CourseSection({
   categoryId,
+  branchId,
   search,
 }: CourseSectionProps) {
   const router = useRouter();
@@ -27,10 +29,9 @@ export function CourseSection({
     isError,
     refetch,
   } = useCourses({
-    search:
-      search || undefined,
-
+    search: search || undefined,
     categoryId,
+    branchId,
   });
 
   if (isLoading) {
@@ -42,32 +43,19 @@ export function CourseSection({
       <ErrorState
         title="Failed To Load Courses"
         description="Please try again."
-        onRetry={() =>
-          refetch()
-        }
+        onRetry={() => refetch()}
       />
     );
   }
 
-  if (
-    !courses ||
-    courses.length === 0
-  ) {
-    return (
-      <CourseEmptyState />
-    );
+  if (!courses || courses.length === 0) {
+    return <CourseEmptyState />;
   }
 
   return (
     <CourseList
       courses={courses}
-      onCourseClick={(
-        course
-      ) =>
-        router.push(
-          `/courses/${course.slug}`
-        )
-      }
+      onCourseClick={(course) => router.push(`/courses/${course.slug}`)}
     />
   );
 }
