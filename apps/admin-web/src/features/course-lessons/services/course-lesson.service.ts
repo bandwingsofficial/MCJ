@@ -84,6 +84,15 @@ class CourseLessonService {
     return data;
   }
 
+  async permanentDeleteCourseLesson(id: string) {
+    const { data } =
+      await apiClient.delete<DeleteCourseLessonResponse>(
+        `${this.basePath}/${id}/permanent`,
+      );
+
+    return data;
+  }
+
   async restoreCourseLesson(
     id: string,
   ) {

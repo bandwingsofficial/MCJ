@@ -245,6 +245,7 @@ export function ModuleLiveRecordedVideosTab({
         open={deleteOpen}
         loading={isDeleting}
         lessonTitle={selected?.title}
+        contentLabel="Live Recorded Video"
         onClose={() => {
           setDeleteOpen(false);
           setSelected(null);
@@ -255,7 +256,7 @@ export function ModuleLiveRecordedVideosTab({
           }
           try {
             await deleteCourseLesson(selected.id);
-            appToast.success("Live recorded video deleted successfully");
+            appToast.success("Live recorded video permanently deleted");
             setDeleteOpen(false);
             setSelected(null);
             await onRefresh();

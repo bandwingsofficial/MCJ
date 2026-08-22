@@ -120,6 +120,21 @@ class CourseResourceService {
     return response.data;
   }
 
+  async permanentDeleteCourseResource(
+    resourceId: string,
+  ): Promise<
+    ApiSuccessResponse<DeleteCourseResourceResponse>
+  > {
+    const response =
+      await apiClient.delete<
+        ApiSuccessResponse<DeleteCourseResourceResponse>
+      >(
+        `${this.basePath}/${resourceId}/permanent`,
+      );
+
+    return response.data;
+  }
+
   async restoreCourseResource(
     resourceId: string,
   ): Promise<

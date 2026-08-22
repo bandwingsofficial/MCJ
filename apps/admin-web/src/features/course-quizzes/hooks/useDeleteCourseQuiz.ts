@@ -21,7 +21,8 @@ export const useDeleteCourseQuiz = (): UseDeleteCourseQuizReturn => {
       setIsLoading(true);
       setError(null);
 
-      const response = await courseQuizService.deleteCourseQuiz(id);
+      const response =
+        await courseQuizService.permanentDeleteCourseQuiz(id);
       return response.data;
     } catch (deleteError) {
       const message =

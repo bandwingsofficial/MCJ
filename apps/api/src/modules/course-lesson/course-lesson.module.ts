@@ -11,6 +11,7 @@ import type { CourseModuleRepository } from '../course-module/domain/repositorie
 
 import { COURSE_LESSON_TOKENS } from './course-lesson.tokens';
 import { CreateCourseLessonHandler } from './application/create-course-lesson/create-course-lesson.handler';
+import { PermanentDeleteCourseLessonHandler } from './application/permanent-delete-course-lesson/permanent-delete-course-lesson.handler';
 import { DeleteCourseLessonHandler } from './application/delete-course-lesson/delete-course-lesson.handler';
 import { GetCourseLessonHandler } from './application/get-course-lesson/get-course-lesson.handler';
 import { ListCourseLessonsHandler } from './application/list-course-lessons/list-course-lessons.handler';
@@ -120,6 +121,22 @@ import { CourseLessonController } from './presentation/controllers/course-lesson
     },
 
     {
+      provide: PermanentDeleteCourseLessonHandler,
+      useFactory: (
+        courseLessonRepo: CourseLessonRepository,
+        domainService: CourseLessonDomainService,
+      ) =>
+        new PermanentDeleteCourseLessonHandler(
+          courseLessonRepo,
+          domainService,
+        ),
+      inject: [
+        COURSE_LESSON_TOKENS.COURSE_LESSON_REPOSITORY,
+        CourseLessonDomainService,
+      ],
+    },
+
+    {
       provide: RestoreCourseLessonHandler,
       useFactory: (
         courseLessonRepo: CourseLessonRepository,
@@ -184,6 +201,9 @@ import { CourseLessonController } from './presentation/controllers/course-lesson
     },
   ],
 
-  exports: [COURSE_LESSON_TOKENS.COURSE_LESSON_REPOSITORY],
+  exports: [
+    COURSE_LESSON_TOKENS.COURSE_LESSON_REPOSITORY,
+    CourseLessonDomainService,
+  ],
 })
 export class CourseLessonModule {}

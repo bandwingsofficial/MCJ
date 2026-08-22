@@ -33,7 +33,7 @@ export const useDeleteCourseLesson =
 
           setError(null);
 
-          await courseLessonService.deleteCourseLesson(
+          await courseLessonService.permanentDeleteCourseLesson(
             id,
           );
         } catch (error) {

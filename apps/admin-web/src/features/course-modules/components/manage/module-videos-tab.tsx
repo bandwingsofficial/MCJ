@@ -461,6 +461,8 @@ export function ModuleVideosTab({
 
         lessonTitle={selected?.title}
 
+        contentLabel="Self-Paced Video"
+
         onClose={() => {
 
           setDeleteOpen(false);
@@ -481,7 +483,7 @@ export function ModuleVideosTab({
 
             await deleteCourseLesson(selected.id);
 
-            appToast.success("Self-paced video deleted successfully");
+            appToast.success("Self-paced video permanently deleted");
 
             setDeleteOpen(false);
 

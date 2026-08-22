@@ -23,8 +23,8 @@ import {
 import {
   useCourseResources,
   useCreateCourseResource,
-  useDeleteCourseResource,
   useMoveCourseResource,
+  usePermanentDeleteCourseResource,
   useRestoreCourseResource,
   useUpdateCourseResource,
 } from "@/src/features/course-resources/hooks";
@@ -67,10 +67,10 @@ export function CourseResourcesPage({
     useUpdateCourseResource();
 
   const {
-    deleteCourseResource,
+    permanentDeleteCourseResource,
     isLoading: isDeleting,
   } =
-    useDeleteCourseResource();
+    usePermanentDeleteCourseResource();
 
   const {
     restoreCourseResource,
@@ -342,14 +342,14 @@ export function CourseResourcesPage({
           }
 
           await appToast.promise(
-            deleteCourseResource(
+            permanentDeleteCourseResource(
               selectedResource.id,
             ),
             {
               loading:
                 "Deleting resource...",
               success:
-                "Resource deleted successfully.",
+                "Resource permanently deleted.",
               error:
                 "Failed to delete resource.",
             },

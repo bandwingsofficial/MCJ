@@ -66,6 +66,14 @@ class CourseQuizService {
     return data;
   }
 
+  async permanentDeleteCourseQuiz(id: string) {
+    const { data } = await apiClient.delete<CourseQuizResponse>(
+      `${this.basePath}/${id}/permanent`,
+    );
+
+    return data;
+  }
+
   async publishCourseQuiz(id: string) {
     const { data } = await apiClient.patch<CourseQuizResponse>(
       `${this.basePath}/${id}/publish`,

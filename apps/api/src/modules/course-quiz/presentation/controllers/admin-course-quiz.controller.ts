@@ -24,6 +24,8 @@ import { GetQuizHandler } from '../../application/get-quiz/get-quiz.handler';
 import { GetQuizQuery } from '../../application/get-quiz/get-quiz.query';
 import { ListCourseQuizzesHandler } from '../../application/list-course-quizzes/list-course-quizzes.handler';
 import { ListCourseQuizzesQuery } from '../../application/list-course-quizzes/list-course-quizzes.query';
+import { PermanentDeleteQuizCommand } from '../../application/permanent-delete-quiz/permanent-delete-quiz.command';
+import { PermanentDeleteQuizHandler } from '../../application/permanent-delete-quiz/permanent-delete-quiz.handler';
 import { PublishQuizCommand } from '../../application/publish-quiz/publish-quiz.command';
 import { PublishQuizHandler } from '../../application/publish-quiz/publish-quiz.handler';
 import { CreateQuestionCommand } from '../../application/create-question/create-question.command';
@@ -49,6 +51,7 @@ export class AdminCourseQuizController {
     private readonly getQuizHandler: GetQuizHandler,
     private readonly updateQuizHandler: UpdateQuizHandler,
     private readonly deleteQuizHandler: DeleteQuizHandler,
+    private readonly permanentDeleteQuizHandler: PermanentDeleteQuizHandler,
     private readonly publishQuizHandler: PublishQuizHandler,
     private readonly createQuestionHandler: CreateQuestionHandler,
     private readonly reorderQuestionsHandler: ReorderQuestionsHandler,
@@ -140,6 +143,19 @@ export class AdminCourseQuizController {
     return {
       success: true,
       message: 'Course quiz deleted successfully',
+      data: result,
+    };
+  }
+
+  @Delete(':id/permanent')
+  async permanentDelete(@Param('id') id: string) {
+    const result = await this.permanentDeleteQuizHandler.execute(
+      new PermanentDeleteQuizCommand(id),
+    );
+
+    return {
+      success: true,
+      message: 'Course quiz permanently deleted successfully',
       data: result,
     };
   }

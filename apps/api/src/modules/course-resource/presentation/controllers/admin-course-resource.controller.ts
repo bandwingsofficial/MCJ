@@ -26,6 +26,8 @@ import { ListCourseResourcesHandler } from '../../application/list-course-resour
 import { ListCourseResourcesQuery } from '../../application/list-course-resources/list-course-resources.query';
 import { MoveCourseResourceCommand } from '../../application/move-course-resource/move-course-resource.command';
 import { MoveCourseResourceHandler } from '../../application/move-course-resource/move-course-resource.handler';
+import { PermanentDeleteCourseResourceCommand } from '../../application/permanent-delete-course-resource/permanent-delete-course-resource.command';
+import { PermanentDeleteCourseResourceHandler } from '../../application/permanent-delete-course-resource/permanent-delete-course-resource.handler';
 import { RestoreCourseResourceCommand } from '../../application/restore-course-resource/restore-course-resource.command';
 import { RestoreCourseResourceHandler } from '../../application/restore-course-resource/restore-course-resource.handler';
 import { UpdateCourseResourceCommand } from '../../application/update-course-resource/update-course-resource.command';
@@ -46,6 +48,7 @@ export class AdminCourseResourceController {
     private readonly listCourseResourcesHandler: ListCourseResourcesHandler,
     private readonly getCourseResourceHandler: GetCourseResourceHandler,
     private readonly deleteCourseResourceHandler: DeleteCourseResourceHandler,
+    private readonly permanentDeleteCourseResourceHandler: PermanentDeleteCourseResourceHandler,
     private readonly restoreCourseResourceHandler: RestoreCourseResourceHandler,
     private readonly moveCourseResourceHandler: MoveCourseResourceHandler,
   ) {}
@@ -140,6 +143,20 @@ export class AdminCourseResourceController {
     return {
       success: true,
       message: 'Course resource deleted successfully',
+      data: result,
+    };
+  }
+
+  @Delete(':id/permanent')
+  async permanentDelete(@Param('id') id: string) {
+    const result =
+      await this.permanentDeleteCourseResourceHandler.execute(
+        new PermanentDeleteCourseResourceCommand(id),
+      );
+
+    return {
+      success: true,
+      message: 'Course resource permanently deleted successfully',
       data: result,
     };
   }

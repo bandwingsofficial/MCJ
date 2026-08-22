@@ -8,10 +8,12 @@ import { AuthModule } from '../auth/auth.module';
 import { COURSE_LESSON_TOKENS } from '../course-lesson/course-lesson.tokens';
 import { CourseLessonModule } from '../course-lesson/course-lesson.module';
 import type { CourseLessonRepository } from '../course-lesson/domain/repositories/course-lesson.repository';
+import { CourseLessonDomainService } from '../course-lesson/domain/services/course-lesson-domain.service';
 
 import { COURSE_QUIZ_TOKENS } from './course-quiz.tokens';
 import { CreateQuizHandler } from './application/create-quiz/create-quiz.handler';
 import { CreateQuestionHandler } from './application/create-question/create-question.handler';
+import { PermanentDeleteQuizHandler } from './application/permanent-delete-quiz/permanent-delete-quiz.handler';
 import { DeleteQuizHandler } from './application/delete-quiz/delete-quiz.handler';
 import { DeleteQuestionHandler } from './application/delete-question/delete-question.handler';
 import { GetQuizHandler } from './application/get-quiz/get-quiz.handler';
@@ -100,6 +102,28 @@ import { AdminCourseQuizQuestionController } from './presentation/controllers/ad
       inject: [
         COURSE_QUIZ_TOKENS.COURSE_QUIZ_REPOSITORY,
         CourseQuizDomainService,
+      ],
+    },
+
+    {
+      provide: PermanentDeleteQuizHandler,
+      useFactory: (
+        courseQuizRepo: CourseQuizRepository,
+        courseLessonRepo: CourseLessonRepository,
+        quizDomainService: CourseQuizDomainService,
+        lessonDomainService: CourseLessonDomainService,
+      ) =>
+        new PermanentDeleteQuizHandler(
+          courseQuizRepo,
+          courseLessonRepo,
+          quizDomainService,
+          lessonDomainService,
+        ),
+      inject: [
+        COURSE_QUIZ_TOKENS.COURSE_QUIZ_REPOSITORY,
+        COURSE_LESSON_TOKENS.COURSE_LESSON_REPOSITORY,
+        CourseQuizDomainService,
+        CourseLessonDomainService,
       ],
     },
 

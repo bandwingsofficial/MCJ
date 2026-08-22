@@ -11,6 +11,7 @@ import type { CourseLessonRepository } from '../course-lesson/domain/repositorie
 
 import { COURSE_RESOURCE_TOKENS } from './course-resource.tokens';
 import { CreateCourseResourceHandler } from './application/create-course-resource/create-course-resource.handler';
+import { PermanentDeleteCourseResourceHandler } from './application/permanent-delete-course-resource/permanent-delete-course-resource.handler';
 import { DeleteCourseResourceHandler } from './application/delete-course-resource/delete-course-resource.handler';
 import { GetCourseResourceHandler } from './application/get-course-resource/get-course-resource.handler';
 import { ListCourseResourcesHandler } from './application/list-course-resources/list-course-resources.handler';
@@ -105,6 +106,22 @@ import { CourseResourceController } from './presentation/controllers/course-reso
         domainService: CourseResourceDomainService,
       ) =>
         new DeleteCourseResourceHandler(
+          courseResourceRepo,
+          domainService,
+        ),
+      inject: [
+        COURSE_RESOURCE_TOKENS.COURSE_RESOURCE_REPOSITORY,
+        CourseResourceDomainService,
+      ],
+    },
+
+    {
+      provide: PermanentDeleteCourseResourceHandler,
+      useFactory: (
+        courseResourceRepo: CourseResourceRepository,
+        domainService: CourseResourceDomainService,
+      ) =>
+        new PermanentDeleteCourseResourceHandler(
           courseResourceRepo,
           domainService,
         ),

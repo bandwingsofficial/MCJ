@@ -26,6 +26,8 @@ import { ListCourseLessonsHandler } from '../../application/list-course-lessons/
 import { ListCourseLessonsQuery } from '../../application/list-course-lessons/list-course-lessons.query';
 import { MoveCourseLessonCommand } from '../../application/move-course-lesson/move-course-lesson.command';
 import { MoveCourseLessonHandler } from '../../application/move-course-lesson/move-course-lesson.handler';
+import { PermanentDeleteCourseLessonCommand } from '../../application/permanent-delete-course-lesson/permanent-delete-course-lesson.command';
+import { PermanentDeleteCourseLessonHandler } from '../../application/permanent-delete-course-lesson/permanent-delete-course-lesson.handler';
 import { RestoreCourseLessonCommand } from '../../application/restore-course-lesson/restore-course-lesson.command';
 import { RestoreCourseLessonHandler } from '../../application/restore-course-lesson/restore-course-lesson.handler';
 import { DeactivateCourseLessonCommand } from '../../application/deactivate-course-lesson/deactivate-course-lesson.command';
@@ -50,6 +52,7 @@ export class AdminCourseLessonController {
     private readonly listCourseLessonsHandler: ListCourseLessonsHandler,
     private readonly getCourseLessonHandler: GetCourseLessonHandler,
     private readonly deleteCourseLessonHandler: DeleteCourseLessonHandler,
+    private readonly permanentDeleteCourseLessonHandler: PermanentDeleteCourseLessonHandler,
     private readonly restoreCourseLessonHandler: RestoreCourseLessonHandler,
     private readonly deactivateCourseLessonHandler: DeactivateCourseLessonHandler,
     private readonly activateCourseLessonHandler: ActivateCourseLessonHandler,
@@ -149,6 +152,20 @@ export class AdminCourseLessonController {
     return {
       success: true,
       message: 'Course lesson deleted successfully',
+      data: result,
+    };
+  }
+
+  @Delete(':id/permanent')
+  async permanentDelete(@Param('id') id: string) {
+    const result =
+      await this.permanentDeleteCourseLessonHandler.execute(
+        new PermanentDeleteCourseLessonCommand(id),
+      );
+
+    return {
+      success: true,
+      message: 'Course lesson permanently deleted successfully',
       data: result,
     };
   }

@@ -21,13 +21,14 @@ import {
   useCreateCourseResource,
   useDeleteCourseResource,
   useMoveCourseResource,
+  usePermanentDeleteCourseResource,
   useRestoreCourseResource,
   useUpdateCourseResource,
 } from "@/src/features/course-resources/hooks";
 import type { CourseResourceFormValues } from "@/src/features/course-resources/types";
 import { isResourceTypeLink } from "@/src/features/course-resources/utils/resource-file-validation";
 import { useCreateCourseLesson } from "@/src/features/course-lessons/hooks";
-import { useCreateCourseQuiz, usePublishCourseQuiz } from "@/src/features/course-quizzes/hooks";
+import { useCreateCourseQuiz, useDeleteCourseQuiz, usePublishCourseQuiz } from "@/src/features/course-quizzes/hooks";
 import { ModuleContentActions } from "@/src/features/course-modules/components/manage/module-content-actions";
 import { ModuleContentFilters } from "@/src/features/course-modules/components/manage/module-content-filters";
 import {
@@ -70,6 +71,10 @@ export function ModuleResourcesTab({
   const { updateCourseResource, isLoading: isUpdating } =
     useUpdateCourseResource();
   const { deleteCourseResource } = useDeleteCourseResource();
+  const {
+    permanentDeleteCourseResource,
+    isLoading: isPermanentlyDeleting,
+  } = usePermanentDeleteCourseResource();
   const { restoreCourseResource } = useRestoreCourseResource();
   const { moveCourseResource } = useMoveCourseResource();
 
@@ -248,6 +253,8 @@ export function ModuleResourcesTab({
 
       <CourseResourceDeleteDialog
         open={deleteOpen}
+        loading={isPermanentlyDeleting}
+        resourceTitle={selected?.title}
         onClose={() => {
           setDeleteOpen(false);
           setSelected(null);
@@ -256,11 +263,15 @@ export function ModuleResourcesTab({
           if (!selected) {
             return;
           }
-          await deleteCourseResource(selected.id);
-          appToast.success("Resource deleted successfully");
-          setDeleteOpen(false);
-          setSelected(null);
-          await onRefresh();
+          try {
+            await permanentDeleteCourseResource(selected.id);
+            appToast.success("Resource permanently deleted");
+            setDeleteOpen(false);
+            setSelected(null);
+            await onRefresh();
+          } catch (error) {
+            appToast.error(getErrorMessage(error));
+          }
         }}
       />
 
@@ -315,6 +326,7 @@ export function ModuleQuizzesTab({
   const { createCourseLesson } = useCreateCourseLesson();
   const { createCourseQuiz } = useCreateCourseQuiz();
   const { publishCourseQuiz } = usePublishCourseQuiz();
+  const { deleteCourseQuiz, isLoading: isDeletingQuiz } = useDeleteCourseQuiz();
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("ALL");
@@ -324,6 +336,7 @@ export function ModuleQuizzesTab({
   const [quizTitle, setQuizTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [selected, setSelected] = useState<QuizTableRow | null>(null);
 
   const filteredRows = useMemo(() => {
@@ -446,6 +459,10 @@ export function ModuleQuizzesTab({
                   }
                 : undefined
             }
+            onDelete={() => {
+              setSelected(row);
+              setDeleteOpen(true);
+            }}
           />
         )}
       />
@@ -532,6 +549,38 @@ export function ModuleQuizzesTab({
             await publishCourseQuiz(selected.quiz.id);
             appToast.success("Quiz published successfully");
             setPublishOpen(false);
+            setSelected(null);
+            await onRefresh();
+          } catch (error) {
+            appToast.error(getErrorMessage(error));
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete Quiz?"
+        description={
+          selected?.quiz.title
+            ? `This action will permanently delete "${selected.quiz.title}".\nThis cannot be undone.`
+            : "This action will permanently delete this quiz.\nThis cannot be undone."
+        }
+        loading={isDeletingQuiz}
+        confirmLabel="Delete Permanently"
+        loadingLabel="Deleting..."
+        confirmVariant="danger"
+        onCancel={() => {
+          setDeleteOpen(false);
+          setSelected(null);
+        }}
+        onConfirm={async () => {
+          if (!selected) {
+            return;
+          }
+          try {
+            await deleteCourseQuiz(selected.quiz.id);
+            appToast.success("Quiz permanently deleted");
+            setDeleteOpen(false);
             setSelected(null);
             await onRefresh();
           } catch (error) {
