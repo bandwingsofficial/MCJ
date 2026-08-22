@@ -4,10 +4,10 @@ export function isCourseUuid(value: string): boolean {
   );
 }
 
-export function getCourseDetailPath(course: { id: string }): string {
-  return `/courses/${course.id}`;
+export function getCourseDetailPath(course: { slug: string }): string {
+  return `/courses/${encodeURIComponent(course.slug)}`;
 }
 
-export function getCourseEnrollPath(course: { id: string }): string {
-  return `/courses/${course.id}/enroll`;
+export function getCourseEnrollPath(course: { slug: string }): string {
+  return `/courses/${encodeURIComponent(course.slug)}/enroll`;
 }

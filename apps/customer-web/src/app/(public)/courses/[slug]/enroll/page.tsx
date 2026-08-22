@@ -5,12 +5,12 @@ import { Loader } from "@/src/shared/components/ui/loader";
 
 interface PageProps {
   params: Promise<{
-    courseId: string;
+    slug: string;
   }>;
 }
 
 export default async function Page({ params }: PageProps) {
-  const { courseId } = await params;
+  const { slug } = await params;
 
   return (
     <Suspense
@@ -20,7 +20,7 @@ export default async function Page({ params }: PageProps) {
         </div>
       }
     >
-      <EnrollPage courseId={courseId} />
+      <EnrollPage slug={slug} />
     </Suspense>
   );
 }

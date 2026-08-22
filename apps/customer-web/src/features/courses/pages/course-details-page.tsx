@@ -8,29 +8,21 @@ import { CourseDetails } from "@/src/features/courses/components/course-details"
 import { CourseDetailsSkeleton } from "@/src/features/courses/components/course-details-skeleton";
 
 interface CourseDetailsPageProps {
-  courseId: string;
+  slug: string;
 }
 
-export function CourseDetailsPage({
-  courseId,
-}: CourseDetailsPageProps) {
+export function CourseDetailsPage({ slug }: CourseDetailsPageProps) {
   const {
     data: course,
     isLoading,
     isError,
     refetch,
-  } = useCourse(courseId);
+  } = useCourse(slug);
 
-  /*
-   * Loading state
-   */
   if (isLoading) {
     return <CourseDetailsSkeleton />;
   }
 
-  /*
-   * Error / course not found
-   */
   if (isError || !course) {
     return (
       <main className="min-h-[60vh] bg-white">
@@ -54,11 +46,6 @@ export function CourseDetailsPage({
     );
   }
 
-  /*
-   * Course successfully loaded
-   *
-   * All actual course UI is handled by CourseDetails.
-   */
   return (
     <main className="w-full bg-white">
       <CourseDetails course={course} />

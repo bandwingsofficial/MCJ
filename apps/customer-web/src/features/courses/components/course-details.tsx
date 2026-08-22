@@ -366,7 +366,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                   <CourseBatchCards
                     batches={safeBatches}
                     isLoading={batchesLoading}
-                    courseSlug={course.id}
+                    courseSlug={course.slug}
                     variant="list"
                   />
                 </div>
