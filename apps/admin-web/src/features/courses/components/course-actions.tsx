@@ -5,6 +5,7 @@ import { Settings2 } from "lucide-react";
 
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
 import { isArchivedCourse } from "@/src/features/courses/utils/course-bulk.utils";
+import { courseManagePath } from "@/src/features/courses/utils/course-manage.routes";
 
 const iconBtnClass =
   "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg p-0";
@@ -25,7 +26,7 @@ export function CourseActions({
   return (
     <div className="flex items-center justify-end whitespace-nowrap">
       <Link
-        href={`/courses/${course.id}/manage`}
+        href={courseManagePath(course.id)}
         title="Manage course"
         aria-label="Manage course"
         className={`${iconBtnClass} ${

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Eye, Link2Off } from "lucide-react";
+import { Eye, Link2Off, Settings2 } from "lucide-react";
 
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
@@ -245,8 +245,13 @@ export function BranchManageCoursesPanel({
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
                         <BranchIconAction
+                          icon={Settings2}
+                          label="Manage"
+                          href={`/courses/${course.id}/manage`}
+                        />
+                        <BranchIconAction
                           icon={Eye}
-                          label="View"
+                          label="Preview"
                           href={`/courses/${course.id}/preview`}
                         />
                         <BranchIconAction

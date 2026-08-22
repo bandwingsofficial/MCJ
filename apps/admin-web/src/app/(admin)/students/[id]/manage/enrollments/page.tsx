@@ -1,4 +1,6 @@
-import { StudentManagePage } from "@/src/features/students/pages/student-manage-page";
+import { redirect } from "next/navigation";
+
+import { studentManageTabPath } from "@/src/features/students/utils/student-manage.routes";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -7,5 +9,5 @@ interface Props {
 export default async function StudentManageEnrollmentsRoute({ params }: Props) {
   const { id } = await params;
 
-  return <StudentManagePage studentId={id} initialTab="enrollments" />;
+  redirect(studentManageTabPath(id, "enrollments"));
 }

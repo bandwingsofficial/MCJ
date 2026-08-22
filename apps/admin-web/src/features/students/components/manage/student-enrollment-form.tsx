@@ -115,6 +115,7 @@ export function StudentEnrollmentForm({
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [batchDetails, setBatchDetails] =
     useState<StudentEnrollmentBatchDetailsData | null>(null);
+  const [isBatchEligible, setIsBatchEligible] = useState(mode !== "create");
 
   const mergedDefaults = useMemo(
     () => ({
@@ -188,6 +189,7 @@ export function StudentEnrollmentForm({
     if (mode !== "create" || !batchId) {
       if (mode === "create") {
         setBatchDetails(null);
+        setIsBatchEligible(false);
         setValue("feeAmount", 0, { shouldDirty: false, shouldValidate: true });
         setValue("discountAmount", 0, {
           shouldDirty: false,
@@ -204,9 +206,33 @@ export function StudentEnrollmentForm({
         const batchResponse = await batchService.getBatch(batchId);
         const batch = batchResponse.data;
 
+        if (batch.branchId && batch.branchId !== student.branchId) {
+          setBatchDetails(null);
+          setIsBatchEligible(false);
+          appToast.error(
+            "Selected batch does not belong to this student's branch.",
+          );
+          return;
+        }
+
+        if (!isSelectableBatch(batch)) {
+          setBatchDetails(null);
+          setIsBatchEligible(false);
+          appToast.error("Selected batch is not available for enrollment.");
+          return;
+        }
+
         const courseResponse = await courseService.getCourse(batch.courseId);
         const course = courseResponse.data;
 
+        if (course.status !== "ACTIVE") {
+          setBatchDetails(null);
+          setIsBatchEligible(false);
+          appToast.error("Course is not available for enrollment.");
+          return;
+        }
+
+        setIsBatchEligible(true);
         setBatchDetails({
           courseTitle: course.title ?? batch.course?.title ?? "—",
           courseFee: formatCourseFee(course),
@@ -229,13 +255,14 @@ export function StudentEnrollmentForm({
       } catch (error) {
         appToast.error(getErrorMessage(error));
         setBatchDetails(null);
+        setIsBatchEligible(false);
       } finally {
         setIsLoadingDetails(false);
       }
     };
 
     void loadBatchDetails();
-  }, [batchId, mode, setValue]);
+  }, [batchId, mode, setValue, student.branchId]);
 
   const getFieldState = (name: FieldName): FieldVisualState => {
     const hasError = Boolean(errors[name]);
@@ -399,7 +426,14 @@ export function StudentEnrollmentForm({
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting || isLoadingDetails}>
+        <Button
+          type="submit"
+          disabled={
+            isSubmitting ||
+            isLoadingDetails ||
+            (mode === "create" && (!batchId || !isBatchEligible))
+          }
+        >
           {isSubmitting ? loadingLabel : submitLabel}
         </Button>
       </div>

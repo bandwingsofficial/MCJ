@@ -3,7 +3,10 @@
 import { useState } from "react";
 
 import { studentService } from "@/src/features/students/services/student.service";
-import type { CreateStudentRequest } from "@/src/features/students/types/student.types";
+import type {
+  CreateStudentRequest,
+  Student,
+} from "@/src/features/students/types/student.types";
 
 interface UseCreateStudentReturn {
   isLoading: boolean;
@@ -11,7 +14,7 @@ interface UseCreateStudentReturn {
   createStudent: (
     payload: CreateStudentRequest,
     image?: File | null,
-  ) => Promise<void>;
+  ) => Promise<Student>;
 }
 
 export const useCreateStudent = (): UseCreateStudentReturn => {
@@ -31,7 +34,8 @@ export const useCreateStudent = (): UseCreateStudentReturn => {
         requestPayload.profileImageFileId = uploadResponse.data.fileId;
       }
 
-      await studentService.createStudent(requestPayload);
+      const response = await studentService.createStudent(requestPayload);
+      return response.data;
     } finally {
       setIsLoading(false);
     }

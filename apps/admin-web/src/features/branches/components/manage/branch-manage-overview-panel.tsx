@@ -7,6 +7,7 @@ import {
   BookOpen,
   Eye,
   Plus,
+  Settings2,
   Trash2,
 } from "lucide-react";
 
@@ -62,6 +63,10 @@ import type { StudentListItem } from "@/src/features/students/types/student.type
 import { parseStudentListResponse } from "@/src/features/students/utils/student-list.utils";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
 import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.utils";
+import {
+  studentManagePath,
+  studentManageTabPath,
+} from "@/src/features/students/utils/student-manage.routes";
 
 const OVERVIEW_CATEGORY_LIMIT = 8;
 const OVERVIEW_COURSE_LIMIT = 6;
@@ -582,8 +587,13 @@ export function BranchManageOverviewPanel({
                   </div>
                   <div className="flex items-center gap-1">
                     <BranchIconAction
+                      icon={Settings2}
+                      label="Manage"
+                      href={`/courses/${course.id}/manage`}
+                    />
+                    <BranchIconAction
                       icon={Eye}
-                      label="View"
+                      label="Preview"
                       href={`/courses/${course.id}/preview`}
                     />
                     <BranchIconAction
@@ -764,7 +774,7 @@ export function BranchManageOverviewPanel({
                   key={student.id}
                   type="button"
                   onClick={() =>
-                    router.push(`/students/${student.id}/manage`)
+                    router.push(studentManagePath(student.id))
                   }
                   className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/40 px-3 py-3 text-left transition-colors hover:bg-slate-50"
                 >
@@ -835,7 +845,10 @@ export function BranchManageOverviewPanel({
                   onClick={() => {
                     if (enrollment.student?.id) {
                       router.push(
-                        `/students/${enrollment.student.id}/manage/enrollments`,
+                        studentManageTabPath(
+                          enrollment.student.id,
+                          "enrollments",
+                        ),
                       );
                     }
                   }}

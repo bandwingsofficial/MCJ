@@ -26,6 +26,7 @@ import { parseStudentListResponse } from "@/src/features/students/utils/student-
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
 import { StudentStatusBadge } from "@/src/features/students/components/StudentStatusBadge";
 import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.utils";
+import { studentManagePath } from "@/src/features/students/utils/student-manage.routes";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
 import {
   Table,
@@ -220,7 +221,7 @@ export function BranchManageStudentsPanel({
                           student={student}
                           disabled={assignmentsDisabled || actionLoading}
                           onManage={(item) =>
-                            router.push(`/students/${item.id}/manage`)
+                            router.push(studentManagePath(item.id))
                           }
                           onEdit={setEditTarget}
                           onActivate={(item) =>

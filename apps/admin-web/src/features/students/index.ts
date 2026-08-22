@@ -12,3 +12,4 @@ export * from "@/src/features/students/types/student.dto";
 
 export * from "@/src/features/students/types/student.types";
 
+export * from "@/src/features/students/utils/student-manage.routes";

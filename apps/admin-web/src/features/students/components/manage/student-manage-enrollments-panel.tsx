@@ -24,9 +24,17 @@ import { StudentEnrollmentTable } from "./student-enrollment-table";
 
 interface Props {
   student: Student;
+  refreshKey?: number;
+  onStudentRefresh?: () => Promise<void>;
+  onEnrollmentMutation?: () => Promise<void>;
 }
 
-export function StudentManageEnrollmentsPanel({ student }: Props) {
+export function StudentManageEnrollmentsPanel({
+  student,
+  refreshKey = 0,
+  onStudentRefresh,
+  onEnrollmentMutation,
+}: Props) {
   const {
     enrollments,
     total,
@@ -80,6 +88,10 @@ export function StudentManageEnrollmentsPanel({ student }: Props) {
     void loadBranches();
   }, []);
 
+  useEffect(() => {
+    void refetch();
+  }, [refetch, refreshKey]);
+
   const loadEnrollmentDetail = async (id: string) => {
     const response = await enrollmentService.getEnrollment(id);
     return response.data;
@@ -111,6 +123,8 @@ export function StudentManageEnrollmentsPanel({ student }: Props) {
       );
       setStatusTarget(null);
       await refetch();
+      await onStudentRefresh?.();
+      await onEnrollmentMutation?.();
     } catch (err) {
       appToast.error(getErrorMessage(err));
     } finally {
@@ -129,6 +143,8 @@ export function StudentManageEnrollmentsPanel({ student }: Props) {
       appToast.success("Enrollment deleted successfully");
       setDeleteTarget(null);
       await refetch();
+      await onStudentRefresh?.();
+      await onEnrollmentMutation?.();
     } catch (err) {
       appToast.error(getErrorMessage(err));
     } finally {
@@ -147,6 +163,8 @@ export function StudentManageEnrollmentsPanel({ student }: Props) {
       appToast.success("Enrollment restored successfully");
       setRestoreTarget(null);
       await refetch();
+      await onStudentRefresh?.();
+      await onEnrollmentMutation?.();
     } catch (err) {
       appToast.error(getErrorMessage(err));
     } finally {
@@ -165,6 +183,8 @@ export function StudentManageEnrollmentsPanel({ student }: Props) {
       appToast.success("Enrollment permanently deleted");
       setPermanentDeleteTarget(null);
       await refetch();
+      await onStudentRefresh?.();
+      await onEnrollmentMutation?.();
     } catch (err) {
       appToast.error(getErrorMessage(err));
     } finally {
@@ -274,7 +294,11 @@ export function StudentManageEnrollmentsPanel({ student }: Props) {
         open={isCreateOpen}
         student={student}
         onClose={() => setIsCreateOpen(false)}
-        onSuccess={refetch}
+        onSuccess={async () => {
+          await refetch();
+          await onStudentRefresh?.();
+          await onEnrollmentMutation?.();
+        }}
       />
 
       {editTarget ? (
@@ -284,7 +308,11 @@ export function StudentManageEnrollmentsPanel({ student }: Props) {
           enrollment={editTarget}
           branchMap={branchMap}
           onClose={() => setEditTarget(null)}
-          onSuccess={refetch}
+          onSuccess={async () => {
+            await refetch();
+            await onStudentRefresh?.();
+            await onEnrollmentMutation?.();
+          }}
         />
       ) : null}
 

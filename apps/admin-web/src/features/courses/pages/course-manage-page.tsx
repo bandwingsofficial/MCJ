@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useCategories } from "@/src/features/categories/hooks/use-categories";
@@ -24,13 +24,25 @@ import { CourseDeactivateDialog } from "@/src/features/courses/components/course
 import { CourseDeleteDialog } from "@/src/features/courses/components/course-delete-dialog";
 import { CourseRestoreDialog } from "@/src/features/courses/components/course-restore-dialog";
 import { CourseManageHeader } from "@/src/features/courses/components/manage/course-manage-header";
-import { CourseManageWorkspace } from "@/src/features/courses/components/manage/course-manage-workspace";
+import {
+  CourseManageWorkspace,
+  type TabKey,
+} from "@/src/features/courses/components/manage/course-manage-workspace";
 import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
+import {
+  COURSE_MANAGE_DEFAULT_TAB,
+} from "@/src/features/courses/utils/course-manage.routes";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 interface Props {
   courseId: string;
 }
+
+const TAB_LABELS: Record<TabKey, string> = {
+  overview: "Overview",
+  modules: "Modules",
+  preview: "Preview",
+};
 
 export function CourseManagePage({ courseId }: Props) {
   const router = useRouter();
@@ -68,9 +80,10 @@ export function CourseManagePage({ courseId }: Props) {
   const [isRestoreOpen, setIsRestoreOpen] = useState(false);
   const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] =
     useState(false);
-  const [activeSection, setActiveSection] = useState<string | undefined>(
-    undefined,
+  const [activeTab, setActiveTab] = useState<TabKey>(
+    COURSE_MANAGE_DEFAULT_TAB,
   );
+  const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
 
   const categoryOptions = useMemo(
     () =>
@@ -85,6 +98,16 @@ export function CourseManagePage({ courseId }: Props) {
     () => getCourseCategoryDisplayName(course),
     [course],
   );
+
+  const refreshCourseData = useCallback(async () => {
+    await Promise.all([refetch(), refetchSummary()]);
+  }, [refetch, refetchSummary]);
+
+  const returnToOverview = useCallback(async () => {
+    setActiveTab(COURSE_MANAGE_DEFAULT_TAB);
+    setOverviewRefreshKey((current) => current + 1);
+    await refreshCourseData();
+  }, [refreshCourseData]);
 
   const actionsDisabled =
     isArchiving ||
@@ -114,7 +137,7 @@ export function CourseManagePage({ courseId }: Props) {
       <CourseManageHeader
         course={course}
         categoryName={categoryName}
-        activeSection={activeSection}
+        activeSection={TAB_LABELS[activeTab]}
         actionsDisabled={actionsDisabled}
         onEdit={() => setIsEditOpen(true)}
         onActivate={() => setIsActivateOpen(true)}
@@ -128,18 +151,13 @@ export function CourseManagePage({ courseId }: Props) {
         course={course}
         summary={summary}
         summaryLoading={summaryLoading}
-        onSummaryRefresh={async () => {
-          await refetchSummary();
-          await refetch();
-        }}
+        activeTab={activeTab}
+        overviewRefreshKey={overviewRefreshKey}
+        onSummaryRefresh={refreshCourseData}
         onCourseUpdated={setCourseData}
-        onTabChange={(tab) => {
-          const labels: Record<string, string> = {
-            modules: "Modules",
-            preview: "Preview",
-          };
-          setActiveSection(labels[tab]);
-        }}
+        onEditCourse={() => setIsEditOpen(true)}
+        onMutationSuccess={returnToOverview}
+        onTabChange={setActiveTab}
       />
 
       <CourseFormModal
@@ -148,8 +166,8 @@ export function CourseManagePage({ courseId }: Props) {
         categoryOptions={categoryOptions}
         onClose={() => setIsEditOpen(false)}
         onSuccess={async () => {
-          await refetch();
-          await refetchSummary();
+          setIsEditOpen(false);
+          await returnToOverview();
         }}
       />
 
@@ -162,8 +180,7 @@ export function CourseManagePage({ courseId }: Props) {
             await activateCourse(course.id);
             appToast.success("Course activated successfully");
             setIsActivateOpen(false);
-            await refetch();
-            await refetchSummary();
+            await returnToOverview();
           } catch (err) {
             appToast.error(getErrorMessage(err));
           }
@@ -179,8 +196,7 @@ export function CourseManagePage({ courseId }: Props) {
             await deactivateCourse(course.id);
             appToast.success("Course deactivated successfully");
             setIsDeactivateOpen(false);
-            await refetch();
-            await refetchSummary();
+            await returnToOverview();
           } catch (err) {
             appToast.error(getErrorMessage(err));
           }
@@ -195,8 +211,7 @@ export function CourseManagePage({ courseId }: Props) {
           try {
             await deleteCourse(course.id);
             setIsArchiveOpen(false);
-            await refetch();
-            await refetchSummary();
+            await returnToOverview();
           } catch (err) {
             appToast.error(getErrorMessage(err));
           }
@@ -211,8 +226,7 @@ export function CourseManagePage({ courseId }: Props) {
           try {
             await restoreCourse(course.id);
             setIsRestoreOpen(false);
-            await refetch();
-            await refetchSummary();
+            await returnToOverview();
           } catch (err) {
             appToast.error(getErrorMessage(err));
           }

@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 
+import { studentManagePath } from "@/src/features/students/utils/student-manage.routes";
+
 interface Props {
   params: Promise<{
     id: string;
@@ -9,5 +11,5 @@ interface Props {
 export default async function Page({ params }: Props) {
   const { id } = await params;
 
-  redirect(`/students/${id}/manage`);
+  redirect(studentManagePath(id));
 }

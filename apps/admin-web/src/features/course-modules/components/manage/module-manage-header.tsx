@@ -8,6 +8,7 @@ import { Button } from "@/src/shared/components/ui/button";
 import { CourseModuleForm } from "@/src/features/course-modules/components";
 import { CourseModuleStatusBadge } from "@/src/features/course-modules/components/CourseModuleStatusBadge";
 import type { CourseModule } from "@/src/features/course-modules/types/course-module.types";
+import { courseManagePath } from "@/src/features/courses/utils/course-manage.routes";
 
 interface Props {
   courseId: string;
@@ -51,7 +52,7 @@ export function ModuleManageHeader({
         </Link>
         <span aria-hidden>›</span>
         <Link
-          href={`/courses/${courseId}/manage`}
+          href={courseManagePath(courseId)}
           className="font-medium text-[#2447A8] hover:underline"
         >
           {courseTitle} ({courseCode})
@@ -60,7 +61,7 @@ export function ModuleManageHeader({
         <span className="text-slate-700">Management</span>
         <span aria-hidden>›</span>
         <Link
-          href={`/courses/${courseId}/manage`}
+          href={courseManagePath(courseId)}
           className="font-medium text-[#2447A8] hover:underline"
         >
           Modules

@@ -1,0 +1,13 @@
+import { redirect } from "next/navigation";
+
+interface Props {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+export default async function CourseEditRedirect({ params }: Props) {
+  const { id } = await params;
+
+  redirect(`/courses/${id}/manage`);
+}

@@ -76,6 +76,12 @@ export function CourseManageHeader({
           {meta ? (
             <p className="mt-1 text-sm text-slate-500">{meta}</p>
           ) : null}
+          {course.shortDescription?.trim() ||
+          course.tagline?.trim() ? (
+            <p className="mt-1 max-w-3xl text-sm text-slate-600">
+              {course.shortDescription?.trim() || course.tagline?.trim()}
+            </p>
+          ) : null}
           <div className="mt-2">
             <CourseStatusBadge
               status={course.status}

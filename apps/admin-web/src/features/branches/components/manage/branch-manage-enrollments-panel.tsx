@@ -33,6 +33,7 @@ import {
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
 import { StudentEnrollmentActiveBadge } from "@/src/features/students/components/manage/student-enrollment-active-badge";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
+import { studentManageTabPath } from "@/src/features/students/utils/student-manage.routes";
 
 const PAGE_SIZE = 10;
 
@@ -171,7 +172,10 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
                           label="Manage"
                           onClick={() =>
                             router.push(
-                              `/students/${enrollment.student.id}/manage/enrollments`,
+                              studentManageTabPath(
+                                enrollment.student.id,
+                                "enrollments",
+                              ),
                             )
                           }
                         />

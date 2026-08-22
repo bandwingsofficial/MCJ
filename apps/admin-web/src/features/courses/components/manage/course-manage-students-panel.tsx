@@ -13,6 +13,7 @@ import { appToast } from "@/src/shared/components/ui/toast";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { studentManageTabPath } from "@/src/features/students/utils/student-manage.routes";
 
 interface Props {
   courseId: string;
@@ -117,7 +118,7 @@ export function CourseManageStudentsPanel({ courseId }: Props) {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
-                        href={`/students/${student.id}/manage/enrollments`}
+                        href={studentManageTabPath(student.id, "enrollments")}
                         className="text-sm font-medium text-[#2447A8] hover:underline"
                       >
                         View

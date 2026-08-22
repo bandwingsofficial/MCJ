@@ -42,6 +42,7 @@ import {
   getEligiblePermanentDeleteIds,
   getEligibleRestoreIds,
 } from "@/src/features/students/utils/student-bulk.utils";
+import { studentManagePath } from "@/src/features/students/utils/student-manage.routes";
 
 export function StudentsPage() {
   const router = useRouter();
@@ -343,7 +344,7 @@ export function StudentsPage() {
                   : "Create your first student to get started."
               }
               onManage={(student) =>
-                router.push(`/students/${student.id}/manage`)
+                router.push(studentManagePath(student.id))
               }
               onEdit={setEditTarget}
               onActivate={(student) =>
@@ -411,8 +412,9 @@ export function StudentsPage() {
       <CreateStudentModal
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onSuccess={async () => {
+        onSuccess={async (createdStudent) => {
           await refetch();
+          router.push(studentManagePath(createdStudent.id));
         }}
       />
 

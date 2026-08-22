@@ -8,11 +8,12 @@ import { StudentForm } from "@/src/features/students/components/student-form";
 import { useCreateStudent } from "@/src/features/students/hooks/useCreateStudent";
 import { toCreateStudentRequest } from "@/src/features/students/utils/student-form.utils";
 import type { StudentFormValues } from "@/src/features/students/schemas/student.schema";
+import type { Student } from "@/src/features/students/types/student.types";
 
 interface CreateStudentModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: () => void | Promise<void>;
+  onSuccess: (student: Student) => void | Promise<void>;
 }
 
 export function CreateStudentModal({
@@ -26,9 +27,9 @@ export function CreateStudentModal({
     values: StudentFormValues,
     image: File | null,
   ) => {
-    await createStudent(toCreateStudentRequest(values), image);
+    const createdStudent = await createStudent(toCreateStudentRequest(values), image);
     appToast.success("Student created successfully");
-    await onSuccess();
+    await onSuccess(createdStudent);
     onClose();
   };
 

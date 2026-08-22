@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
@@ -11,6 +12,7 @@ import { useUpdateCourseModule } from "@/src/features/course-modules/hooks";
 import type { CourseModule } from "@/src/features/course-modules/types/course-module.types";
 import { ModuleManageWorkspace } from "@/src/features/course-modules/components/manage/module-manage-workspace";
 import { useCourse } from "@/src/features/courses/hooks/use-course";
+import { courseManagePath } from "@/src/features/courses/utils/course-manage.routes";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 interface Props {
@@ -22,6 +24,7 @@ export function CourseModuleManagePage({
   courseId,
   moduleId,
 }: Props) {
+  const router = useRouter();
   const { course, isLoading: courseLoading } = useCourse(courseId);
   const { updateCourseModule, isSubmitting: isUpdatingModule } =
     useUpdateCourseModule();
@@ -89,6 +92,7 @@ export function CourseModuleManagePage({
           setModule(response);
           setEditOpen(false);
           appToast.success("Module updated successfully");
+          router.push(courseManagePath(courseId));
         } catch (error) {
           appToast.error(getErrorMessage(error));
         }

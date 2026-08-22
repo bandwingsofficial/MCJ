@@ -38,6 +38,7 @@ interface Props {
   course: CourseDetails;
   disabled?: boolean;
   onRefresh?: () => Promise<void>;
+  onMutationSuccess?: () => Promise<void>;
 }
 
 export function CourseManageModulesPanel({
@@ -45,6 +46,7 @@ export function CourseManageModulesPanel({
   course,
   disabled = false,
   onRefresh,
+  onMutationSuccess,
 }: Props) {
   const { modules, isLoading, error, refetch } = useCourseModules({
     courseId,
@@ -327,6 +329,7 @@ export function CourseManageModulesPanel({
             setFormOpen(false);
             await refetch();
             await onRefresh?.();
+            await onMutationSuccess?.();
           } catch (err) {
             appToast.error(getErrorMessage(err));
           }
@@ -363,6 +366,7 @@ export function CourseManageModulesPanel({
             setSelectedModule(null);
             await refetch();
             await onRefresh?.();
+            await onMutationSuccess?.();
           } catch (err) {
             appToast.error(getErrorMessage(err));
           }
@@ -389,6 +393,7 @@ export function CourseManageModulesPanel({
             setSelectedModule(null);
             await refetch();
             await onRefresh?.();
+            await onMutationSuccess?.();
           } catch (err) {
             appToast.error(getErrorMessage(err));
           }

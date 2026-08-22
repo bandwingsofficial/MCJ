@@ -41,7 +41,6 @@ import {
   CourseDeletedException,
   CourseInactiveException,
   CourseInDraftException,
-  CourseNotAvailableException,
   CourseNotFoundException,
   EnrollmentBranchAccessDeniedException,
   EnrollmentDeletedException,
@@ -281,8 +280,11 @@ export class EnrollmentDomainService {
       throw new CourseInactiveException();
     }
 
-    if (course.status !== CourseStatus.ACTIVE) {
-      throw new CourseNotAvailableException();
+    // Batch at branch is the authoritative proof of course availability.
+    // course.branchIds may be out of sync with active batch offerings.
+
+    if (batch.courseId !== course.id) {
+      throw new BatchCourseMismatchException();
     }
 
     const categoryId = course.categoryId?.trim() || null;
@@ -359,23 +361,6 @@ export class EnrollmentDomainService {
 
     if (category && course.categoryId !== category.id) {
       throw new CourseCategoryMismatchException();
-    }
-
-    if (batch.courseId !== course.id) {
-      throw new BatchCourseMismatchException();
-    }
-
-    // Batch is the enrollment source of truth. An active batch at a branch for a
-    // course proves the offering is available there, even when course.branchIds
-    // (optional course-level branch restrictions) is out of sync.
-    if (
-      !batchProvesBranchOffering &&
-      course.branchIds.length > 0 &&
-      !course.branchIds.includes(branchId)
-    ) {
-      throw new CourseNotAvailableException(
-        'Course is not available at the selected branch.',
-      );
     }
 
     return {
