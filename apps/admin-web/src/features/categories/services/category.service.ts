@@ -18,6 +18,19 @@ import type {
   CategoryStatus,
 } from "@/src/features/categories/types/category.types";
 
+/** Reads the authoritative total from list API pagination metadata. */
+export function resolveCategoryListTotal(
+  response: ApiSuccessResponse<CategoryListResponse> & {
+    meta?: CategoryListMeta;
+  },
+): number {
+  if (typeof response.meta?.total === "number") {
+    return response.meta.total;
+  }
+
+  return response.data.length;
+}
+
 class CategoryService {
   private readonly basePath =
     "/admin/categories";

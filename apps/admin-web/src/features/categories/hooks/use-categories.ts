@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 
-import { categoryService } from "@/src/features/categories/services/category.service";
+import { categoryService, resolveCategoryListTotal } from "@/src/features/categories/services/category.service";
 
 import {
   CategoryFilters,
@@ -150,35 +150,34 @@ export const useCategories =
             setIsFetching(true);
           }
 
-          const response =
-            await categoryService.getCategories({
-              search: debouncedSearch,
-              branchId: filters.branchId,
-              status: filters.status,
-              page: filters.page,
-              pageSize: filters.pageSize,
-            });
+          const isCatalogScope =
+            !debouncedSearch &&
+            !filters.status &&
+            !filters.branchId;
 
-          const catalogResponse =
-            await categoryService.getCategories({
-              search: "",
-              page: 1,
-              pageSize: 1,
-            });
+          const listResponse = await categoryService.getCategories({
+            search: debouncedSearch,
+            branchId: filters.branchId,
+            status: filters.status,
+            page: filters.page,
+            pageSize: filters.pageSize,
+          });
+
+          const catalogResponse = isCatalogScope
+            ? listResponse
+            : await categoryService.getCategories({
+                search: "",
+                page: 1,
+                pageSize: 1,
+              });
 
           if (requestId !== requestIdRef.current) {
             return;
           }
 
-          setCategories(response.data);
-          setTotal(
-            response.meta?.total ??
-              response.data.length
-          );
-          setCatalogTotal(
-            catalogResponse.meta?.total ??
-              catalogResponse.data.length
-          );
+          setCategories(listResponse.data);
+          setTotal(resolveCategoryListTotal(listResponse));
+          setCatalogTotal(resolveCategoryListTotal(catalogResponse));
           setError(null);
           hasLoadedRef.current = true;
         } catch (error) {

@@ -986,6 +986,8 @@ export function CategoriesPage() {
 
   return (
 
+    <div className="-m-6 min-h-full bg-white p-6">
+
     <>
 
       <CategorySummaryHeader
@@ -1397,6 +1399,8 @@ export function CategoriesPage() {
       />
 
     </>
+
+    </div>
 
   );
 
