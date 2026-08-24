@@ -14,7 +14,7 @@ import type {
   UserProfile,
 } from "@/src/features/auth/types/auth.types";
 
-export function useLogin() {
+export function useLogin(redirectTo?: string) {
   const router = useRouter();
 
   const setUser =
@@ -40,9 +40,12 @@ export function useLogin() {
         "Login successful"
       );
 
-      router.push(
-        "/student"
-      );
+      const destination =
+        redirectTo && redirectTo.startsWith("/")
+          ? redirectTo
+          : "/student";
+
+      router.push(destination);
     },
 
     onError: (

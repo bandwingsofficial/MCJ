@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 
 import { EnrollPage } from "@/src/features/enrollments/pages/enroll-page";
-import { Loader } from "@/src/shared/components/ui/loader";
+import { EnrollmentPageSkeleton } from "@/src/features/enrollments/components/enrollment-page-skeleton";
 
 interface PageProps {
   params: Promise<{
@@ -13,13 +13,7 @@ export default async function Page({ params }: PageProps) {
   const { slug } = await params;
 
   return (
-    <Suspense
-      fallback={
-        <div className="flex justify-center py-20">
-          <Loader />
-        </div>
-      }
-    >
+    <Suspense fallback={<EnrollmentPageSkeleton />}>
       <EnrollPage slug={slug} />
     </Suspense>
   );

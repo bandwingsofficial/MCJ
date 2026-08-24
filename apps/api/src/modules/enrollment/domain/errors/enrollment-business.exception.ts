@@ -284,3 +284,23 @@ export class InvalidEnrollmentNumberException extends BaseException {
     super(ERROR_CODES.INVALID_ENROLLMENT_NUMBER, message, 400);
   }
 }
+
+export class EnrollmentNotPendingApprovalException extends BaseException {
+  constructor() {
+    super(
+      ERROR_CODES.ENROLLMENT_NOT_PENDING_APPROVAL,
+      'Enrollment is not awaiting approval.',
+      400,
+    );
+  }
+}
+
+export class EnrollmentPaymentNotVerifiedException extends BaseException {
+  constructor() {
+    super(
+      ERROR_CODES.ENROLLMENT_PAYMENT_NOT_VERIFIED,
+      'Enrollment payment has not been verified.',
+      400,
+    );
+  }
+}

@@ -25,6 +25,8 @@ import { SuperAdminGuard } from '@common/guards/super-admin.guard';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 import { BranchUserRole } from '@modules/branch-user/domain/enums/branch-user-role.enum';
 
+import { ApproveEnrollmentCommand } from '../../application/approve-enrollment/approve-enrollment.command';
+import { ApproveEnrollmentHandler } from '../../application/approve-enrollment/approve-enrollment.handler';
 import { CreateEnrollmentCommand } from '../../application/create-enrollment/create-enrollment.command';
 import { CreateEnrollmentHandler } from '../../application/create-enrollment/create-enrollment.handler';
 import { DeleteEnrollmentCommand } from '../../application/delete-enrollment/delete-enrollment.command';
@@ -35,6 +37,8 @@ import { ListEnrollmentsHandler } from '../../application/list-enrollments/list-
 import { ListEnrollmentsQuery } from '../../application/list-enrollments/list-enrollments.query';
 import { PermanentDeleteEnrollmentCommand } from '../../application/permanent-delete-enrollment/permanent-delete-enrollment.command';
 import { PermanentDeleteEnrollmentHandler } from '../../application/permanent-delete-enrollment/permanent-delete-enrollment.handler';
+import { RejectEnrollmentCommand } from '../../application/reject-enrollment/reject-enrollment.command';
+import { RejectEnrollmentHandler } from '../../application/reject-enrollment/reject-enrollment.handler';
 import { RestoreEnrollmentCommand } from '../../application/restore-enrollment/restore-enrollment.command';
 import { RestoreEnrollmentHandler } from '../../application/restore-enrollment/restore-enrollment.handler';
 import { UpdateEnrollmentCommand } from '../../application/update-enrollment/update-enrollment.command';
@@ -43,6 +47,7 @@ import { UpdateEnrollmentStatusCommand } from '../../application/update-enrollme
 import { UpdateEnrollmentStatusHandler } from '../../application/update-enrollment-status/update-enrollment-status.handler';
 import { CreateEnrollmentDto } from '../dtos/create-enrollment.dto';
 import { ListEnrollmentsQueryDto } from '../dtos/list-enrollments-query.dto';
+import { RejectEnrollmentDto } from '../dtos/reject-enrollment.dto';
 import { UpdateEnrollmentDto } from '../dtos/update-enrollment.dto';
 import { UpdateEnrollmentStatusDto } from '../dtos/update-enrollment-status.dto';
 
@@ -66,6 +71,8 @@ export class AdminEnrollmentController {
     private readonly deleteEnrollmentHandler: DeleteEnrollmentHandler,
     private readonly restoreEnrollmentHandler: RestoreEnrollmentHandler,
     private readonly permanentDeleteEnrollmentHandler: PermanentDeleteEnrollmentHandler,
+    private readonly approveEnrollmentHandler: ApproveEnrollmentHandler,
+    private readonly rejectEnrollmentHandler: RejectEnrollmentHandler,
   ) {}
 
   @Post()
@@ -215,6 +222,52 @@ export class AdminEnrollmentController {
     return {
       success: true,
       message: 'Enrollment status updated successfully',
+      data: result,
+    };
+  }
+
+  @Post(':id/approve')
+  @UseGuards(JwtOrBranchJwtAuthGuard, AdminOrBranchRoleGuard)
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async approve(
+    @Param('id') id: string,
+    @CurrentUser() user: EnrollmentAdminUser,
+  ) {
+    const result = await this.approveEnrollmentHandler.execute(
+      new ApproveEnrollmentCommand(
+        id,
+        user.sub,
+        this.resolveBranchId(undefined, user),
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Enrollment approved successfully',
+      data: result,
+    };
+  }
+
+  @Post(':id/reject')
+  @UseGuards(JwtOrBranchJwtAuthGuard, AdminOrBranchRoleGuard)
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async reject(
+    @Param('id') id: string,
+    @Body() dto: RejectEnrollmentDto,
+    @CurrentUser() user: EnrollmentAdminUser,
+  ) {
+    const result = await this.rejectEnrollmentHandler.execute(
+      new RejectEnrollmentCommand(
+        id,
+        dto.reason,
+        user.sub,
+        this.resolveBranchId(undefined, user),
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Enrollment rejected successfully',
       data: result,
     };
   }

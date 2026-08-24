@@ -7,8 +7,13 @@ const transitions: Record<
   EnrollmentStatus[]
 > = {
   [EnrollmentStatus.PENDING]: [
-    EnrollmentStatus.ADMITTED,
+    EnrollmentStatus.PENDING_APPROVAL,
     EnrollmentStatus.CANCELLED,
+  ],
+
+  [EnrollmentStatus.PENDING_APPROVAL]: [
+    EnrollmentStatus.ADMITTED,
+    EnrollmentStatus.REJECTED,
   ],
 
   [EnrollmentStatus.ADMITTED]: [
@@ -26,6 +31,8 @@ const transitions: Record<
   [EnrollmentStatus.CANCELLED]: [],
 
   [EnrollmentStatus.DROPPED]: [],
+
+  [EnrollmentStatus.REJECTED]: [],
 };
 
 export const canUpdateStatus = (

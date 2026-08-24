@@ -51,6 +51,7 @@ export class EnrollmentResponseMapper {
       joiningDate: record.joiningDate,
       expectedCompletionDate: record.expectedCompletionDate,
       remarks: record.remarks,
+      rejectionReason: record.rejectionReason,
       isActive: record.isActive,
       isDeleted: record.isDeleted,
       deletedAt: record.deletedAt,

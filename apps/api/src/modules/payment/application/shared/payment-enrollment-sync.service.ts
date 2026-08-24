@@ -1,7 +1,5 @@
 import { Logger } from '@nestjs/common';
 
-import type { BatchRepository } from '@modules/batch/domain/repositories/batch.repository';
-import { EnrollmentSideEffectsService } from '@modules/enrollment/application/shared/enrollment-side-effects.service';
 import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-status.enum';
 import type { EnrollmentRepository } from '@modules/enrollment/domain/repositories/enrollment.repository';
 
@@ -10,8 +8,7 @@ import { Payment } from '../../domain/entities/payment.entity';
 const round = (value: number) => Math.round(value * 100) / 100;
 
 // Propagates successful/refunded payments onto the owning Enrollment aggregate:
-// updates paidAmount/dueAmount, confirms admission on full payment, and reuses
-// the Enrollment module's own side-effects (batch seats, student status).
+// updates paidAmount/dueAmount and moves paid enrollments into PENDING_APPROVAL.
 export class PaymentEnrollmentSyncService {
   private readonly logger = new Logger(
     PaymentEnrollmentSyncService.name,
@@ -19,8 +16,6 @@ export class PaymentEnrollmentSyncService {
 
   constructor(
     private readonly enrollmentRepo: EnrollmentRepository,
-    private readonly batchRepo: BatchRepository,
-    private readonly enrollmentSideEffects: EnrollmentSideEffectsService,
   ) {}
 
   async applyPaymentSuccess(payment: Payment): Promise<void> {
@@ -55,21 +50,13 @@ export class PaymentEnrollmentSyncService {
     let expectedCompletionDate: Date | null | undefined;
     let status: EnrollmentStatus | undefined;
 
-    // Admission is confirmed only on the transition to fully paid.
+    // Full payment moves the enrollment into the admin approval queue.
+    // Admission is granted only after an admin explicitly approves.
     if (
       willBeFullyPaid &&
       previousStatus === EnrollmentStatus.PENDING
     ) {
-      const batch = await this.batchRepo.findById(
-        enrollment.batchId,
-        true,
-      );
-
-      admissionDate = new Date();
-      joiningDate = batch?.startDate ?? enrollment.joiningDate;
-      expectedCompletionDate =
-        batch?.endDate ?? enrollment.expectedCompletionDate;
-      status = EnrollmentStatus.ADMITTED;
+      status = EnrollmentStatus.PENDING_APPROVAL;
     }
 
     enrollment.update({
@@ -82,21 +69,6 @@ export class PaymentEnrollmentSyncService {
     });
 
     await this.enrollmentRepo.save(enrollment);
-
-    if (
-      status === EnrollmentStatus.ADMITTED &&
-      previousStatus !== EnrollmentStatus.ADMITTED
-    ) {
-      this.logger.log(
-    `Calling EnrollmentSideEffectsService for enrollment ${enrollment.id}`,
-  );
-
-      await this.enrollmentSideEffects.apply(
-        enrollment,
-        previousStatus,
-        payment.createdBy,
-      );
-    }
   }
 
   async applyRefund(payment: Payment): Promise<void> {

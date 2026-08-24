@@ -8,6 +8,39 @@ export function getCourseDetailPath(course: { slug: string }): string {
   return `/courses/${encodeURIComponent(course.slug)}`;
 }
 
-export function getCourseEnrollPath(course: { slug: string }): string {
-  return `/courses/${encodeURIComponent(course.slug)}/enroll`;
+export function getCourseBatchesSectionPath(course: { slug: string }): string {
+  return `${getCourseDetailPath(course)}#available-batches`;
+}
+
+export function getCourseEnrollPath(
+  course: { slug: string },
+  options?: { batchId?: string },
+): string {
+  const base = `/courses/${encodeURIComponent(course.slug)}/enroll`;
+
+  if (!options?.batchId) {
+    return base;
+  }
+
+  const params = new URLSearchParams({
+    batchId: options.batchId,
+  });
+
+  return `${base}?${params.toString()}`;
+}
+
+export function getEnrollmentLoginPath(returnPath: string): string {
+  const params = new URLSearchParams({
+    redirect: returnPath,
+  });
+
+  return `/login?${params.toString()}`;
+}
+
+export function getEnrollmentRegisterPath(returnPath: string): string {
+  const params = new URLSearchParams({
+    redirect: returnPath,
+  });
+
+  return `/register?${params.toString()}`;
 }

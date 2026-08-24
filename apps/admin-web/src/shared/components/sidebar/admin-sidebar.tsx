@@ -27,6 +27,7 @@ import {
   Newspaper,
   Briefcase,
   FileText,
+  ClipboardList,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -69,6 +70,11 @@ const menu = [
         name: "Students",
         icon: Layers,
         path: "/students",
+      },
+      {
+        name: "Enrollments",
+        icon: ClipboardList,
+        path: "/enrollments",
       },
     ],
   },

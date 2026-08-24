@@ -73,21 +73,9 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
 
     {
       provide: PaymentEnrollmentSyncService,
-      useFactory: (
-        enrollmentRepo: EnrollmentRepository,
-        batchRepo: BatchRepository,
-        enrollmentSideEffects: EnrollmentSideEffectsService,
-      ) =>
-        new PaymentEnrollmentSyncService(
-          enrollmentRepo,
-          batchRepo,
-          enrollmentSideEffects,
-        ),
-      inject: [
-        ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
-        BATCH_TOKENS.BATCH_REPOSITORY,
-        EnrollmentSideEffectsService,
-      ],
+      useFactory: (enrollmentRepo: EnrollmentRepository) =>
+        new PaymentEnrollmentSyncService(enrollmentRepo),
+      inject: [ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY],
     },
 
     {

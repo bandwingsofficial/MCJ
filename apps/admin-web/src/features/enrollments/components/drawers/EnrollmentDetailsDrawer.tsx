@@ -3,10 +3,11 @@
 import { Drawer } from "@/src/shared/components/ui/drawer";
 
 import { Badge } from "@/src/shared/components/ui/badge";
+import { Button } from "@/src/shared/components/ui/button";
 
 import { Separator } from "@/src/shared/components/ui/separator";
 
-import { Enrollment } from "../../types";
+import { Enrollment, EnrollmentStatus } from "../../types";
 import { formatCurrency } from "../../utils/format-payment";
 
 interface EnrollmentDetailsDrawerProps {
@@ -15,16 +16,28 @@ interface EnrollmentDetailsDrawerProps {
   enrollment: Enrollment | null;
 
   onClose: () => void;
+
+  onApprove?: (enrollment: Enrollment) => void;
+
+  onReject?: (enrollment: Enrollment) => void;
+
+  isProcessing?: boolean;
 }
 
 export function EnrollmentDetailsDrawer({
   open,
   enrollment,
   onClose,
+  onApprove,
+  onReject,
+  isProcessing = false,
 }: EnrollmentDetailsDrawerProps) {
   if (!enrollment) {
     return null;
   }
+
+  const canReview =
+    enrollment.status === EnrollmentStatus.PENDING_APPROVAL;
 
   return (
     <Drawer
@@ -263,6 +276,36 @@ export function EnrollmentDetailsDrawer({
           </p>
 
         </section>
+
+        {enrollment.rejectionReason ? (
+          <section className="space-y-2">
+            <h3 className="font-semibold">Rejection Reason</h3>
+            <Separator />
+            <p className="text-sm text-red-700">
+              {enrollment.rejectionReason}
+            </p>
+          </section>
+        ) : null}
+
+        {canReview ? (
+          <section className="flex gap-3 pt-2">
+            <Button
+              className="flex-1"
+              onClick={() => onApprove?.(enrollment)}
+              loading={isProcessing}
+            >
+              Approve Enrollment
+            </Button>
+            <Button
+              variant="danger"
+              className="flex-1"
+              onClick={() => onReject?.(enrollment)}
+              disabled={isProcessing}
+            >
+              Reject Enrollment
+            </Button>
+          </section>
+        ) : null}
 
       </div>
     </Drawer>

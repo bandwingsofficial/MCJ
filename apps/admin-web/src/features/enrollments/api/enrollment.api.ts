@@ -61,6 +61,19 @@ export const enrollmentApi = {
     );
   },
 
+  async approveEnrollment(id: string) {
+    return apiClient.post<EnrollmentResponse>(
+      ENROLLMENT_ENDPOINTS.APPROVE(id),
+    );
+  },
+
+  async rejectEnrollment(id: string, reason: string) {
+    return apiClient.post<EnrollmentResponse>(
+      ENROLLMENT_ENDPOINTS.REJECT(id),
+      { reason },
+    );
+  },
+
   async deleteEnrollment(id: string) {
     return apiClient.delete<DeleteEnrollmentResponse>(
       ENROLLMENT_ENDPOINTS.DELETE(id),

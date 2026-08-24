@@ -52,11 +52,13 @@ export class CourseAccessService {
 
     const admitted = courseEnrollments.some(
       (enrollment) =>
-        enrollment.status === EnrollmentStatus.ADMITTED,
+        enrollment.status === EnrollmentStatus.ADMITTED ||
+        enrollment.status === EnrollmentStatus.ACTIVE ||
+        enrollment.status === EnrollmentStatus.COMPLETED,
     );
 
     return {
-      isEnrolled: true,
+      isEnrolled: admitted,
       isAdmitted: admitted,
     };
   }

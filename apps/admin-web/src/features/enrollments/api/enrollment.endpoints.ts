@@ -14,6 +14,10 @@ export const ENROLLMENT_ENDPOINTS = {
   UPDATE_STATUS: (id: string) =>
     `/admin/enrollments/${id}/status`,
 
+  APPROVE: (id: string) => `/admin/enrollments/${id}/approve`,
+
+  REJECT: (id: string) => `/admin/enrollments/${id}/reject`,
+
   DELETE: (id: string) =>
     `/admin/enrollments/${id}`,
 

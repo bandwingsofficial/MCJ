@@ -71,6 +71,24 @@ export class CreatePaymentOrderHandler {
       throw new EnrollmentAlreadyPaidException();
     }
 
+    const existingPending =
+      await this.paymentRepo.findPendingByEnrollmentId(enrollment.id);
+
+    if (existingPending?.gatewayOrderId) {
+      this.logger.log(
+        `♻️ Reusing pending Razorpay order for enrollment ${enrollment.id}: ${existingPending.gatewayOrderId}`,
+      );
+
+      return new CreatePaymentOrderResult(
+        existingPending.gatewayOrderId,
+        existingPending.amount,
+        existingPending.currency,
+        this.gateway.getPublicKey(),
+        existingPending.id,
+        existingPending.paymentNumber.getValue(),
+      );
+    }
+
     const currency = enrollment.course.pricing.currency || 'INR';
 
     const order = await this.gateway.createOrder({

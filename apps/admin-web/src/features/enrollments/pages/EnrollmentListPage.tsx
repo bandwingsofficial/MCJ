@@ -28,6 +28,7 @@ import { EnrollmentForm } from "../components/form";
 import {
   DeleteEnrollmentDialog,
   PermanentDeleteEnrollmentDialog,
+  RejectEnrollmentDialog,
   RestoreEnrollmentDialog,
   UpdateEnrollmentStatusDialog,
 } from "../components/dialogs";
@@ -35,8 +36,10 @@ import {
 import { EnrollmentDetailsDrawer } from "../components/drawers";
 
 import {
+  useApproveEnrollment,
   useDeleteEnrollment,
   usePermanentDeleteEnrollment,
+  useRejectEnrollment,
   useRestoreEnrollment,
   useUpdateEnrollmentStatus,
 } from "../hooks";
@@ -76,6 +79,12 @@ export function EnrollmentListPage() {
       updatingStatus,
   } =
     useUpdateEnrollmentStatus();
+
+  const { approveEnrollment, isLoading: approving } =
+    useApproveEnrollment();
+
+  const { rejectEnrollment, isLoading: rejecting } =
+    useRejectEnrollment();
 
   const [
     selectedEnrollment,
@@ -126,6 +135,8 @@ export function EnrollmentListPage() {
     setStatusOpen,
   ] =
     useState(false);
+
+  const [rejectOpen, setRejectOpen] = useState(false);
 
   const totalPages =
     useMemo(
@@ -308,6 +319,36 @@ export function EnrollmentListPage() {
       await refetch();
     };
 
+  const handleApprove = async (enrollment: Enrollment) => {
+    await approveEnrollment(enrollment.id);
+    setDrawerOpen(false);
+    await refetch();
+  };
+
+  const handleRejectClick = (enrollment: Enrollment) => {
+    setSelectedEnrollment(enrollment);
+    setRejectOpen(true);
+  };
+
+  const confirmReject = async (reason: string) => {
+    if (!selectedEnrollment) {
+      return;
+    }
+
+    await rejectEnrollment(selectedEnrollment.id, reason);
+    setRejectOpen(false);
+    setDrawerOpen(false);
+    await refetch();
+  };
+
+  const filterPendingApproval = () => {
+    setFilters({
+      ...filters,
+      status: "PENDING_APPROVAL" as Enrollment["status"],
+      skip: 0,
+    });
+  };
+
   if (isLoading) {
     return <Loader />;
   }
@@ -329,16 +370,21 @@ export function EnrollmentListPage() {
   return (
     <>      <PageHeader
         title="Enrollments"
-        description="Manage all enrollments"
+        description="Review paid enrollment requests and manage admissions."
         actions={
-          <Button
-            onClick={
-              handleCreate
-            }
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Enrollment
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={filterPendingApproval}>
+              Pending Approval
+            </Button>
+            <Button
+              onClick={
+                handleCreate
+              }
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Enrollment
+            </Button>
+          </div>
         }
       />
 
@@ -464,6 +510,16 @@ export function EnrollmentListPage() {
             false,
           )
         }
+        onApprove={handleApprove}
+        onReject={handleRejectClick}
+        isProcessing={approving || rejecting}
+      />
+
+      <RejectEnrollmentDialog
+        open={rejectOpen}
+        loading={rejecting}
+        onConfirm={confirmReject}
+        onClose={() => setRejectOpen(false)}
       />
 
       {/* Delete */}

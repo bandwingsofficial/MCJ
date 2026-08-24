@@ -11,4 +11,5 @@ export * from "./useRestoreEnrollment";
 export * from "./usePermanentDeleteEnrollment";
 
 export * from "./useEnrollmentFilters";
-export * from "./useEnrollmentTable";
+export * from "./useApproveEnrollment";
+export * from "./useRejectEnrollment";

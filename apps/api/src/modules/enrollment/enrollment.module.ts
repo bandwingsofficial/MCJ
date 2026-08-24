@@ -24,13 +24,16 @@ import { STUDENT_TOKENS } from '../student/student.tokens';
 import { StudentModule } from '../student/student.module';
 import type { StudentRepository } from '../student/domain/repositories/student.repository';
 import { ENROLLMENT_TOKENS } from './enrollment.tokens';
+import { ApproveEnrollmentHandler } from './application/approve-enrollment/approve-enrollment.handler';
 import { CreateEnrollmentHandler } from './application/create-enrollment/create-enrollment.handler';
 import { CreatePublicEnrollmentHandler } from './application/create-public-enrollment/create-public-enrollment.handler';
 import { DeleteEnrollmentHandler } from './application/delete-enrollment/delete-enrollment.handler';
 import { GetEnrollmentHandler } from './application/get-enrollment/get-enrollment.handler';
+import { GetMyEnrollmentByIdHandler } from './application/get-my-enrollment-by-id/get-my-enrollment-by-id.handler';
 import { GetMyEnrollmentHandler } from './application/get-my-enrollment/get-my-enrollment.handler';
 import { ListEnrollmentsHandler } from './application/list-enrollments/list-enrollments.handler';
 import { PermanentDeleteEnrollmentHandler } from './application/permanent-delete-enrollment/permanent-delete-enrollment.handler';
+import { RejectEnrollmentHandler } from './application/reject-enrollment/reject-enrollment.handler';
 import { RestoreEnrollmentHandler } from './application/restore-enrollment/restore-enrollment.handler';
 import { EnrollmentSideEffectsService } from './application/shared/enrollment-side-effects.service';
 import { UpdateEnrollmentHandler } from './application/update-enrollment/update-enrollment.handler';
@@ -134,7 +137,6 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         courseRepo: CourseRepository,
         batchRepo: BatchRepository,
         domainService: EnrollmentDomainService,
-        sideEffects: EnrollmentSideEffectsService,
       ) =>
         new CreatePublicEnrollmentHandler(
           enrollmentRepo,
@@ -144,7 +146,6 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
           courseRepo,
           batchRepo,
           domainService,
-          sideEffects,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
@@ -154,7 +155,6 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         COURSE_TOKENS.COURSE_REPOSITORY,
         BATCH_TOKENS.BATCH_REPOSITORY,
         EnrollmentDomainService,
-        EnrollmentSideEffectsService,
       ],
     },
 
@@ -226,6 +226,60 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
         STUDENT_TOKENS.STUDENT_REPOSITORY,
+      ],
+    },
+
+    {
+      provide: GetMyEnrollmentByIdHandler,
+      useFactory: (
+        enrollmentRepo: EnrollmentRepository,
+        studentRepo: StudentRepository,
+        domainService: EnrollmentDomainService,
+      ) =>
+        new GetMyEnrollmentByIdHandler(
+          enrollmentRepo,
+          studentRepo,
+          domainService,
+        ),
+      inject: [
+        ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        EnrollmentDomainService,
+      ],
+    },
+
+    {
+      provide: ApproveEnrollmentHandler,
+      useFactory: (
+        enrollmentRepo: EnrollmentRepository,
+        batchRepo: BatchRepository,
+        domainService: EnrollmentDomainService,
+        sideEffects: EnrollmentSideEffectsService,
+      ) =>
+        new ApproveEnrollmentHandler(
+          enrollmentRepo,
+          batchRepo,
+          domainService,
+          sideEffects,
+        ),
+      inject: [
+        ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+        BATCH_TOKENS.BATCH_REPOSITORY,
+        EnrollmentDomainService,
+        EnrollmentSideEffectsService,
+      ],
+    },
+
+    {
+      provide: RejectEnrollmentHandler,
+      useFactory: (
+        enrollmentRepo: EnrollmentRepository,
+        domainService: EnrollmentDomainService,
+      ) =>
+        new RejectEnrollmentHandler(enrollmentRepo, domainService),
+      inject: [
+        ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+        EnrollmentDomainService,
       ],
     },
 

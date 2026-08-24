@@ -108,6 +108,7 @@ export interface Enrollment {
   expectedCompletionDate: string | null;
 
   remarks: string | null;
+  rejectionReason: string | null;
 
   isActive: boolean;
   isDeleted: boolean;

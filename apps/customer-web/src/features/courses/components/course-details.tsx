@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -28,8 +28,8 @@ import {
   formatCourseLevel,
   formatCourseMode,
   formatDuration,
+  getCourseLearningOutcomes,
 } from "@/src/features/courses/utils/course-display.utils";
-import { getCourseEnrollPath } from "@/src/features/courses/utils/course-route.utils";
 import { useCourseTrainers } from "@/src/features/trainers/hooks/useCourseTrainers";
 import type { Trainer } from "@/src/features/trainers/types/trainer.types";
 
@@ -41,6 +41,7 @@ type DetailTab = "overview" | "curriculum" | "instructor" | "faq";
 
 export function CourseDetails({ course }: CourseDetailsProps) {
   const router = useRouter();
+  const batchesSectionRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
 
   const { batches, isLoading: batchesLoading } = useCourseBatches(course.id);
@@ -73,13 +74,10 @@ export function CourseDetails({ course }: CourseDetailsProps) {
     course.tagline?.trim() ||
     "Course overview will be available soon.";
 
-  const learningOutcomes = useMemo(() => {
-    const skills = safeModules.flatMap((module) =>
-      Array.isArray(module.keySkills) ? module.keySkills : [],
-    );
-
-    return [...new Set(skills.map((skill) => skill.trim()).filter(Boolean))];
-  }, [safeModules]);
+  const learningOutcomes = useMemo(
+    () => getCourseLearningOutcomes(safeModules),
+    [safeModules],
+  );
 
   const courseIncludes = [
     moduleCount > 0
@@ -98,13 +96,23 @@ export function CourseDetails({ course }: CourseDetailsProps) {
       : null,
   ].filter(Boolean) as string[];
 
+  const scrollToAvailableBatches = () => {
+    batchesSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
   const handleEnroll = () => {
     if (course.isEnrolled) {
       router.push(`/student/courses/${course.id}`);
       return;
     }
 
-    router.push(getCourseEnrollPath(course));
+    if (safeBatches.length > 0) {
+      scrollToAvailableBatches();
+      return;
+    }
   };
 
   const tabs: { id: DetailTab; label: string }[] = [
@@ -212,6 +220,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                 summary={summary}
                 batchCount={safeBatches.length}
                 sticky={false}
+                onPrimaryAction={handleEnroll}
               />
             </aside>
           </div>
@@ -358,7 +367,11 @@ export function CourseDetails({ course }: CourseDetailsProps) {
             </div>
 
             {batchesLoading || safeBatches.length > 0 ? (
-              <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <div
+                id="available-batches"
+                ref={batchesSectionRef}
+                className="scroll-mt-24 rounded-xl border border-slate-200 bg-white p-5"
+              >
                 <h2 className="text-base font-bold text-slate-950">
                   Available Batches
                 </h2>
@@ -385,7 +398,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                 Ready to start your learning journey?
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Enroll today and begin learning at your own pace.
+                Select an available batch below to continue enrollment.
               </p>
             </div>
             <Button

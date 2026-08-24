@@ -16,8 +16,8 @@ import {
   LoginFormValues,
 } from "@/src/features/auth/schemas/login.schema";
 
-export function LoginForm() {
-  const loginMutation = useLogin();
+export function LoginForm({ redirectTo }: { redirectTo?: string }) {
+  const loginMutation = useLogin(redirectTo);
 
   const {
     register,

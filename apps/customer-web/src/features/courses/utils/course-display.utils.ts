@@ -37,3 +37,13 @@ export function formatCourseMode(mode: string | null | undefined): string {
 
   return mode.charAt(0) + mode.slice(1).toLowerCase();
 }
+
+export function getCourseLearningOutcomes(
+  modules: Array<{ keySkills?: string[] | null }>,
+): string[] {
+  const skills = modules.flatMap((module) =>
+    Array.isArray(module.keySkills) ? module.keySkills : [],
+  );
+
+  return [...new Set(skills.map((skill) => skill.trim()).filter(Boolean))];
+}

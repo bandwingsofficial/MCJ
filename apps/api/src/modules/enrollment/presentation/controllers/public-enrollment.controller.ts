@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -18,6 +19,8 @@ import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 
 import { CreatePublicEnrollmentCommand } from '../../application/create-public-enrollment/create-public-enrollment.command';
 import { CreatePublicEnrollmentHandler } from '../../application/create-public-enrollment/create-public-enrollment.handler';
+import { GetMyEnrollmentByIdHandler } from '../../application/get-my-enrollment-by-id/get-my-enrollment-by-id.handler';
+import { GetMyEnrollmentByIdQuery } from '../../application/get-my-enrollment-by-id/get-my-enrollment-by-id.query';
 import { GetMyEnrollmentHandler } from '../../application/get-my-enrollment/get-my-enrollment.handler';
 import { GetMyEnrollmentQuery } from '../../application/get-my-enrollment/get-my-enrollment.query';
 import { CreatePublicEnrollmentDto } from '../dtos/create-public-enrollment.dto';
@@ -30,6 +33,7 @@ export class PublicEnrollmentController {
   constructor(
     private readonly createPublicEnrollmentHandler: CreatePublicEnrollmentHandler,
     private readonly getMyEnrollmentHandler: GetMyEnrollmentHandler,
+    private readonly getMyEnrollmentByIdHandler: GetMyEnrollmentByIdHandler,
   ) {}
 
   @Post()
@@ -68,6 +72,26 @@ export class PublicEnrollmentController {
     return {
       success: true,
       message: 'Enrollments fetched successfully',
+      data: result,
+    };
+  }
+
+  @Get(':id')
+  @ApiResponse({
+    status: 200,
+    description: 'Enrollment detail fetched',
+  })
+  async getMyEnrollment(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+  ) {
+    const result = await this.getMyEnrollmentByIdHandler.execute(
+      new GetMyEnrollmentByIdQuery(user.sub, id),
+    );
+
+    return {
+      success: true,
+      message: 'Enrollment fetched successfully',
       data: result,
     };
   }

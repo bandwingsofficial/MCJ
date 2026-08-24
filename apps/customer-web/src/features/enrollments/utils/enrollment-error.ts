@@ -9,6 +9,21 @@ const ERROR_MESSAGES: Record<string, string> = {
 
   STUDENT_ALREADY_ENROLLED:
     "You are already enrolled in this batch.",
+
+  STUDENT_BRANCH_MISMATCH:
+    "Your student profile is assigned to a different branch. Please contact support or choose a batch at your branch.",
+
+  STUDENT_NOT_FOUND:
+    "Please complete your student profile before enrolling.",
+
+  COURSE_INACTIVE:
+    "This course is currently unavailable for enrollment.",
+
+  BATCH_NOT_FOUND:
+    "The selected batch is no longer available.",
+
+  BATCH_INACTIVE:
+    "The selected batch is not open for enrollment.",
 };
 
 export function getEnrollmentErrorMessage(

@@ -129,6 +129,7 @@ export interface EnrollmentDetailView {
   joiningDate: Date | null;
   expectedCompletionDate: Date | null;
   remarks: string | null;
+  rejectionReason: string | null;
   isActive: boolean;
   isDeleted: boolean;
   deletedAt: Date | null;

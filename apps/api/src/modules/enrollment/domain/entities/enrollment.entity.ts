@@ -29,6 +29,7 @@ export class Enrollment {
     public status: EnrollmentStatus,
     public source: EnrollmentSource,
     public remarks: string | null,
+    public rejectionReason: string | null,
     public isActive: boolean,
     public readonly createdBy: string | null,
     public updatedBy: string | null,
@@ -66,6 +67,7 @@ export class Enrollment {
       params.status ?? EnrollmentStatus.PENDING,
       params.source ?? EnrollmentSource.ADMIN,
       sanitizeText(params.remarks, 4000),
+      null,
       params.isActive ?? true,
       params.createdBy ?? null,
       null,
@@ -104,6 +106,7 @@ export class Enrollment {
       params.status,
       params.source,
       params.remarks,
+      params.rejectionReason,
       params.isActive,
       params.createdBy,
       params.updatedBy,
@@ -134,6 +137,9 @@ export class Enrollment {
 
     if (params.remarks !== undefined)
       this.remarks = sanitizeText(params.remarks, 4000);
+
+    if (params.rejectionReason !== undefined)
+      this.rejectionReason = sanitizeText(params.rejectionReason, 2000);
 
     if (params.status !== undefined) this.status = params.status;
 
@@ -208,6 +214,12 @@ export class Enrollment {
 
     this.dueAmount = round(this.finalAmount - this.paidAmount);
 
+    if (this.finalAmount <= 0) {
+      this.paymentStatus = PaymentStatus.PAID;
+      this.dueAmount = 0;
+      return;
+    }
+
     if (this.paidAmount <= 0) {
       this.paymentStatus = PaymentStatus.UNPAID;
     } else if (this.paidAmount >= this.finalAmount) {
@@ -251,6 +263,7 @@ export interface EnrollmentUpdateParams {
   discountAmount?: number;
   paidAmount?: number;
   remarks?: string | null;
+  rejectionReason?: string | null;
   status?: EnrollmentStatus;
   isActive?: boolean;
   updatedBy?: string | null;
@@ -276,6 +289,7 @@ export interface EnrollmentReconstituteParams {
   status: EnrollmentStatus;
   source: EnrollmentSource;
   remarks: string | null;
+  rejectionReason: string | null;
   isActive: boolean;
   createdBy: string | null;
   updatedBy: string | null;

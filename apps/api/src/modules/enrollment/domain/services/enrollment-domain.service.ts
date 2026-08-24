@@ -113,7 +113,14 @@ export class EnrollmentDomainService {
       EnrollmentStatus,
       EnrollmentStatus[]
     > = {
-      [EnrollmentStatus.PENDING]: [EnrollmentStatus.ADMITTED],
+      [EnrollmentStatus.PENDING]: [
+        EnrollmentStatus.PENDING_APPROVAL,
+        EnrollmentStatus.CANCELLED,
+      ],
+      [EnrollmentStatus.PENDING_APPROVAL]: [
+        EnrollmentStatus.ADMITTED,
+        EnrollmentStatus.REJECTED,
+      ],
       [EnrollmentStatus.ADMITTED]: [
         EnrollmentStatus.ACTIVE,
         EnrollmentStatus.CANCELLED,
@@ -125,6 +132,7 @@ export class EnrollmentDomainService {
       [EnrollmentStatus.COMPLETED]: [],
       [EnrollmentStatus.DROPPED]: [],
       [EnrollmentStatus.CANCELLED]: [],
+      [EnrollmentStatus.REJECTED]: [],
     };
 
     if (!allowedTransitions[from].includes(to)) {

@@ -13,9 +13,9 @@ import { Enrollment } from '../../domain/entities/enrollment.entity';
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import type { EnrollmentRepository } from '../../domain/repositories/enrollment.repository';
+import { EnrollmentAlreadyExistsException } from '../../domain/errors/enrollment-already-exists.exception';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
 import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
-import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
 
 import { CreatePublicEnrollmentCommand } from './create-public-enrollment.command';
 
@@ -32,7 +32,6 @@ export class CreatePublicEnrollmentHandler {
     private readonly courseRepo: CourseRepository,
     private readonly batchRepo: BatchRepository,
     private readonly domainService: EnrollmentDomainService,
-    private readonly sideEffects: EnrollmentSideEffectsService,
   ) {}
 
   async execute(
@@ -68,14 +67,32 @@ export class CreatePublicEnrollmentHandler {
     );
 
     await this.domainService.ensureBatchHasCapacity(
-  hierarchy.batch,
-);
-
-    await this.domainService.ensureNotDuplicate(
-      this.enrollmentRepo,
-      student.id,
-      command.batchId,
+      hierarchy.batch,
     );
+
+    const existing =
+      await this.enrollmentRepo.findByStudentAndBatch(
+        student.id,
+        command.batchId,
+        true,
+      );
+
+    if (existing && !existing.isDeleted) {
+      const inProgress =
+        existing.status === EnrollmentStatus.PENDING ||
+        existing.status === EnrollmentStatus.PENDING_APPROVAL;
+
+      if (inProgress) {
+        return this.domainService.ensureDetailExists(
+          await this.enrollmentRepo.findDetailById(
+            existing.id,
+            true,
+          ),
+        );
+      }
+
+      throw new EnrollmentAlreadyExistsException();
+    }
 
     const enrollmentNumber =
       await this.domainService.generateUniqueEnrollmentNumber(
@@ -85,8 +102,9 @@ export class CreatePublicEnrollmentHandler {
     // Pricing is always derived from the Course — the public client never sends
     // any financial values. This snapshot stays fixed even if the course price
     // changes later.
-    const courseFee = hierarchy.course.originalPrice.getValue();
-    const courseDiscount = hierarchy.course.getDefaultDiscountAmount();
+    const pricing = hierarchy.course.getPricing();
+    const isComplimentary =
+      pricing.isFree || pricing.discountedPrice <= 0;
 
     const enrollment = Enrollment.create({
       id: randomUUID(),
@@ -99,18 +117,18 @@ export class CreatePublicEnrollmentHandler {
       admissionDate: null,
       joiningDate: hierarchy.batch.startDate,
       expectedCompletionDate: hierarchy.batch.endDate,
-      feeAmount: courseFee,
-      discountAmount: courseDiscount,
+      feeAmount: pricing.originalPrice,
+      discountAmount: pricing.discountAmount,
       paidAmount: 0,
-      status: EnrollmentStatus.PENDING,
+      status: isComplimentary
+        ? EnrollmentStatus.PENDING_APPROVAL
+        : EnrollmentStatus.PENDING,
       source: EnrollmentSource.PUBLIC,
       remarks: command.remarks,
       createdBy: command.userId,
     });
 
     await this.enrollmentRepo.save(enrollment);
-
-    await this.sideEffects.apply(enrollment, null, command.userId);
 
     this.logger.log(
       `✅ Public enrollment created: ${enrollment.id}`,

@@ -1,12 +1,9 @@
 import { normalizeMoney } from "@/src/features/enrollments/utils/format-payment";
 
-import { getCoursePricing } from "./course-pricing.util";
-
-interface CoursePricingSource {
-  pricing?: {
-    discountAmount?: number | null;
-  } | null;
-}
+import {
+  getCoursePricing,
+  type CoursePricingSource,
+} from "./course-pricing.util";
 
 export function getCourseDefaultDiscount(
   course: CoursePricingSource,

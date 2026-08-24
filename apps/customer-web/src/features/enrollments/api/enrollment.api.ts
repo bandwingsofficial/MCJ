@@ -24,4 +24,8 @@ export const enrollmentApi = {
       ApiResponse<Enrollment[]>
     >("/enrollments/me");
   },
+
+  getEnrollment(id: string) {
+    return apiClient.get<ApiResponse<Enrollment>>(`/enrollments/${id}`);
+  },
 };

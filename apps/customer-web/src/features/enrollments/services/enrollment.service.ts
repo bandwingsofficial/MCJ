@@ -22,6 +22,12 @@ class EnrollmentService {
 
     return response.data.data;
   }
+
+  async getEnrollment(id: string) {
+    const response = await enrollmentApi.getEnrollment(id);
+
+    return response.data.data;
+  }
 }
 
 export const enrollmentService =

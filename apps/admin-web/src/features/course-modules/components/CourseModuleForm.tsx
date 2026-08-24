@@ -19,6 +19,7 @@ import {
   createCourseModuleSchema,
   CreateCourseModuleForm,
 } from "@/src/features/course-modules/schemas/course-module.schema";
+import { KeySkillsInput } from "@/src/features/course-modules/components/KeySkillsInput";
 import type { CourseModule } from "@/src/features/course-modules/types/course-module.types";
 import {
   getSyncFieldState,
@@ -69,6 +70,7 @@ export function CourseModuleForm({
 
   const titleValue = watch("title");
   const descriptionValue = watch("description");
+  const keySkillsValue = watch("keySkills");
   const showValidation = Boolean(isSubmitted || editValidationReady);
 
   useEffect(() => {
@@ -181,6 +183,19 @@ export function CourseModuleForm({
             maxWords={MODULE_WORD_LIMITS.moduleDescription}
           />
         </ValidatedField>
+
+        <KeySkillsInput
+          value={keySkillsValue ?? []}
+          disabled={loading}
+          errorMessage={errors.keySkills?.message}
+          onChange={(skills) => {
+            setValue("keySkills", skills, {
+              shouldDirty: true,
+              shouldTouch: true,
+              shouldValidate: true,
+            });
+          }}
+        />
 
         <div className="flex justify-end gap-3 border-t pt-4">
           <Button

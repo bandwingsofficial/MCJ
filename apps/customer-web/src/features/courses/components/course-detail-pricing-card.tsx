@@ -25,6 +25,7 @@ interface CourseDetailPricingCardProps {
   batchCount: number;
   sticky?: boolean;
   variant?: "default" | "cta";
+  onPrimaryAction?: () => void;
 }
 
 export function CourseDetailPricingCard({
@@ -33,6 +34,7 @@ export function CourseDetailPricingCard({
   batchCount,
   sticky = true,
   variant = "default",
+  onPrimaryAction,
 }: CourseDetailPricingCardProps) {
   const router = useRouter();
 
@@ -49,6 +51,11 @@ export function CourseDetailPricingCard({
   const hasBatches = batchCount > 0;
 
   const handlePrimaryAction = () => {
+    if (onPrimaryAction) {
+      onPrimaryAction();
+      return;
+    }
+
     if (isEnrolled) {
       router.push(`/student/courses/${course.id}`);
       return;
@@ -214,8 +221,7 @@ export function CourseDetailPricingCard({
               </div>
             ) : (
               <p className="text-center text-xs leading-relaxed text-slate-500">
-                Select an available batch during enrollment to
-                continue.
+                Select a batch below to continue enrollment.
               </p>
             )}
           </div>

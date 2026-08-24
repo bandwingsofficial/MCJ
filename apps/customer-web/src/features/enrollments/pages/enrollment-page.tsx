@@ -20,8 +20,8 @@ export function EnrollmentPage() {
     <main className="container mx-auto space-y-8 px-4 py-0">
 
       <PageHeader
-        title="My Enrollments"
-        description="View and manage all your course enrollments."
+        title="Enrollment History"
+        description="View your enrollment records, payment status, and admission updates."
       />
 
       {isLoading && (

@@ -12,7 +12,15 @@ import type {
   StudentProfile,
 } from "@/src/features/student/types";
 
-export function useStudentProfile() {
+interface UseStudentProfileOptions {
+  enabled?: boolean;
+}
+
+export function useStudentProfile(
+  options?: UseStudentProfileOptions,
+) {
+  const enabled = options?.enabled ?? true;
+
   const [
     profile,
     setProfile,
@@ -23,7 +31,7 @@ export function useStudentProfile() {
   const [
     isLoading,
     setIsLoading,
-  ] = useState(true);
+  ] = useState(enabled);
 
   const [
     error,
@@ -32,8 +40,7 @@ export function useStudentProfile() {
     null,
   );
 
- const fetchProfile =
-  useCallback(async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       setIsLoading(true);
 
@@ -43,25 +50,22 @@ export function useStudentProfile() {
       setProfile(data);
 
       setError(null);
-    } catch (error) {
+    } catch (fetchError) {
       if (
-        error instanceof Error &&
-        error.message ===
+        fetchError instanceof Error &&
+        fetchError.message ===
           "Student not found"
       ) {
-        // First time student
         setProfile(null);
-
         setError(null);
-
         return;
       }
 
       setProfile(null);
 
       setError(
-        error instanceof Error
-          ? error.message
+        fetchError instanceof Error
+          ? fetchError.message
           : "Failed to fetch student profile.",
       );
     } finally {
@@ -70,14 +74,20 @@ export function useStudentProfile() {
   }, []);
 
   useEffect(() => {
+    if (!enabled) {
+      setProfile(null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     void fetchProfile();
-  }, [fetchProfile]);
+  }, [enabled, fetchProfile]);
 
   return {
     profile,
     isLoading,
     error,
-    refetch:
-      fetchProfile,
+    refetch: fetchProfile,
   };
 }

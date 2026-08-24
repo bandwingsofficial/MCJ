@@ -14,7 +14,7 @@ import type {
   RegisterRequest,
 } from "@/src/features/auth/types/auth.types";
 
-export function useRegister() {
+export function useRegister(redirectTo?: string) {
   const router = useRouter();
 
   return useMutation({
@@ -30,9 +30,11 @@ export function useRegister() {
         "Registration successful! Please log in to continue."
       );
 
-      router.push(
-        "/login"
-      );
+      const loginPath = redirectTo
+        ? `/login?redirect=${encodeURIComponent(redirectTo)}`
+        : "/login";
+
+      router.push(loginPath);
     },
 
     onError: (

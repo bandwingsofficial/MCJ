@@ -93,6 +93,26 @@ export const enrollmentService = {
     }
   },
 
+  async approveEnrollment(id: string) {
+    try {
+      const response = await enrollmentApi.approveEnrollment(id);
+
+      return response.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
+  },
+
+  async rejectEnrollment(id: string, reason: string) {
+    try {
+      const response = await enrollmentApi.rejectEnrollment(id, reason);
+
+      return response.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
+  },
+
   async deleteEnrollment(
     id: string,
   ) {

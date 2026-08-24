@@ -2,7 +2,9 @@ import type { ApiResponse } from "@/src/core/types/api-response.types";
 
 export type EnrollmentStatus =
   | "PENDING"
+  | "PENDING_APPROVAL"
   | "ADMITTED"
+  | "ACTIVE"
   | "REJECTED"
   | "COMPLETED"
   | "CANCELLED";
@@ -119,6 +121,7 @@ export interface Enrollment {
   expectedCompletionDate: string;
 
   remarks: string | null;
+  rejectionReason: string | null;
 
   isActive: boolean;
   isDeleted: boolean;

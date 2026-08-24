@@ -24,12 +24,18 @@ function resolveMode(dto: CourseDto): CourseMode {
 function resolvePreviewModules(
   dto: CourseDto,
 ): CoursePreviewModule[] {
-  return (dto.previewModules ?? []).map((module) => ({
-    ...module,
-    lessons: [...(module.lessons ?? [])].sort(
-      (a, b) => a.displayOrder - b.displayOrder,
-    ),
-  })).sort((a, b) => a.displayOrder - b.displayOrder);
+  return (dto.previewModules ?? [])
+    .map((module) => ({
+      id: module.id,
+      title: module.title,
+      description: module.description ?? null,
+      displayOrder: module.displayOrder,
+      keySkills: Array.isArray(module.keySkills) ? module.keySkills : [],
+      lessons: [...(module.lessons ?? [])].sort(
+        (a, b) => a.displayOrder - b.displayOrder,
+      ),
+    }))
+    .sort((a, b) => a.displayOrder - b.displayOrder);
 }
 
 export function mapCourseDtoToCourse(dto: CourseDto): Course {

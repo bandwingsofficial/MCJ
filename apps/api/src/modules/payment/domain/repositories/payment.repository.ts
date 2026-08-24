@@ -104,6 +104,9 @@ export interface PaymentRepository {
     gatewayPaymentId: string,
     includeDeleted?: boolean,
   ): Promise<Payment | null>;
+  findPendingByEnrollmentId(
+    enrollmentId: string,
+  ): Promise<Payment | null>;
   findDetailById(
     id: string,
     includeDeleted?: boolean,

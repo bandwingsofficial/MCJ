@@ -13,6 +13,7 @@ import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
 import type { Batch } from "@/src/features/batches/types/batch.types";
 import { formatCourseMode } from "@/src/features/courses/utils/course-display.utils";
+import { getCourseEnrollPath } from "@/src/features/courses/utils/course-route.utils";
 
 interface Props {
   batches: Batch[] | unknown;
@@ -102,9 +103,10 @@ export function CourseBatchCards({
     }
 
     router.push(
-      `/courses/${encodeURIComponent(courseSlug)}/enroll?batchId=${encodeURIComponent(
-        batchId,
-      )}`,
+      getCourseEnrollPath(
+        { slug: courseSlug },
+        { batchId },
+      ),
     );
   };
 

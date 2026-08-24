@@ -751,6 +751,7 @@ model Enrollment {
   status                 EnrollmentStatus @default(PENDING)
   source                 EnrollmentSource @default(ADMIN)
   remarks                String?
+  rejectionReason        String?
   isActive               Boolean          @default(false)
   createdBy              String?
   updatedBy              String?
@@ -1277,11 +1278,13 @@ enum StudentStatus {
 
 enum EnrollmentStatus {
   PENDING
+  PENDING_APPROVAL
   ADMITTED
   ACTIVE
   COMPLETED
   DROPPED
   CANCELLED
+  REJECTED
 }
 
 enum PaymentStatus {

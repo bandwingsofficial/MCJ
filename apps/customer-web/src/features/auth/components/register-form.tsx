@@ -15,8 +15,12 @@ import {
   RegisterFormValues,
 } from "@/src/features/auth/schemas/register.schema";
 
-export function RegisterForm() {
-  const registerMutation = useRegister();
+export function RegisterForm({
+  redirectTo,
+}: {
+  redirectTo?: string;
+}) {
+  const registerMutation = useRegister(redirectTo);
 
   const {
     register,
