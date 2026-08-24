@@ -36,9 +36,12 @@ import { ActivateCourseLessonCommand } from '../../application/activate-course-l
 import { ActivateCourseLessonHandler } from '../../application/activate-course-lesson/activate-course-lesson.handler';
 import { UpdateCourseLessonCommand } from '../../application/update-course-lesson/update-course-lesson.command';
 import { UpdateCourseLessonHandler } from '../../application/update-course-lesson/update-course-lesson.handler';
+import { SetLessonPreviewCommand } from '../../application/set-lesson-preview/set-lesson-preview.command';
+import { SetLessonPreviewHandler } from '../../application/set-lesson-preview/set-lesson-preview.handler';
 import { CreateCourseLessonDto } from '../dtos/create-course-lesson.dto';
 import { ListCourseLessonsQueryDto } from '../dtos/list-course-lessons-query.dto';
 import { MoveCourseLessonDto } from '../dtos/move-course-lesson.dto';
+import { SetLessonPreviewDto } from '../dtos/set-lesson-preview.dto';
 import { UpdateCourseLessonDto } from '../dtos/update-course-lesson.dto';
 
 @ApiTags('Admin Course Lessons')
@@ -57,6 +60,7 @@ export class AdminCourseLessonController {
     private readonly deactivateCourseLessonHandler: DeactivateCourseLessonHandler,
     private readonly activateCourseLessonHandler: ActivateCourseLessonHandler,
     private readonly moveCourseLessonHandler: MoveCourseLessonHandler,
+    private readonly setLessonPreviewHandler: SetLessonPreviewHandler,
   ) {}
 
   @Post()
@@ -238,6 +242,25 @@ export class AdminCourseLessonController {
     return {
       success: true,
       message: 'Course lesson moved successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':id/preview')
+  async setPreview(
+    @Param('id') id: string,
+    @Body() dto: SetLessonPreviewDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.setLessonPreviewHandler.execute(
+      new SetLessonPreviewCommand(id, dto.isPreview, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: dto.isPreview
+        ? 'Lesson unlocked for free preview'
+        : 'Lesson locked from free preview',
       data: result,
     };
   }

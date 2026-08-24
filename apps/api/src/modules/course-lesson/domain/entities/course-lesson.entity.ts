@@ -21,6 +21,7 @@ export class CourseLesson {
     public isDeleted: boolean,
     public deletedAt: Date | null,
     public deletedBy: string | null,
+    public isPreview: boolean,
     public readonly createdAt: Date,
     public updatedAt: Date,
   ) {}
@@ -44,6 +45,7 @@ export class CourseLesson {
       false,
       null,
       null,
+      params.isPreview ?? false,
       new Date(),
       new Date(),
     );
@@ -68,6 +70,7 @@ export class CourseLesson {
       params.isDeleted,
       params.deletedAt,
       params.deletedBy,
+      params.isPreview,
       params.createdAt,
       params.updatedAt,
     );
@@ -121,6 +124,12 @@ export class CourseLesson {
     this.touch();
   }
 
+  setPreview(isPreview: boolean, updatedBy?: string | null) {
+    this.isPreview = isPreview;
+    this.updatedBy = updatedBy ?? this.updatedBy;
+    this.touch();
+  }
+
   private static normalizeTitle(title: string): string {
     const normalized = title?.trim();
 
@@ -152,6 +161,7 @@ export interface CourseLessonCreateParams {
   duration?: number | null;
   displayOrder?: number;
   createdBy?: string | null;
+  isPreview?: boolean;
 }
 
 export interface CourseLessonUpdateParams {
@@ -180,6 +190,7 @@ export interface CourseLessonReconstituteParams {
   isDeleted: boolean;
   deletedAt: Date | null;
   deletedBy: string | null;
+  isPreview: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

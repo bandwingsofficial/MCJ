@@ -2,7 +2,7 @@
 
 import { Card } from "@/src/shared/components/ui/card";
 
-import { ModuleContentStatusBadge } from "@/src/features/course-modules/components/manage/module-content-status-badge";
+import { LessonPreviewAccessBadge } from "@/src/features/course-lessons/components/lesson-preview-access-badge";
 import type { CourseLesson } from "@/src/features/course-lessons/types";
 import type { CourseModule } from "@/src/features/course-modules/types/course-module.types";
 import type {
@@ -46,8 +46,6 @@ export function LessonOverviewTab({
   selfPacedCount,
   liveRecordedCount,
 }: Props) {
-  const isArchived = Boolean(lesson.isDeleted || lesson.deletedAt);
-
   return (
     <div className="space-y-4">
       <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -93,10 +91,10 @@ export function LessonOverviewTab({
           </div>
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              Status
+              Preview Access
             </dt>
             <dd className="mt-1">
-              <ModuleContentStatusBadge isArchived={isArchived} />
+              <LessonPreviewAccessBadge isPreview={lesson.isPreview} />
             </dd>
           </div>
           <div className="sm:col-span-2">

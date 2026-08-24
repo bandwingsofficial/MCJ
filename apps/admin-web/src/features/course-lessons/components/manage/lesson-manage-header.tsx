@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { ModuleContentStatusBadge } from "@/src/features/course-modules/components/manage/module-content-status-badge";
+import { LessonPreviewAccessBadge } from "@/src/features/course-lessons/components/lesson-preview-access-badge";
 import type { CourseLesson } from "@/src/features/course-lessons/types";
 import type { CourseModule } from "@/src/features/course-modules/types/course-module.types";
 import {
@@ -31,8 +31,6 @@ export function LessonManageHeader({
   lesson,
   lessonPosition,
 }: Props) {
-  const isArchived = Boolean(lesson.isDeleted || lesson.deletedAt);
-
   return (
     <>
       <nav className="flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
@@ -101,7 +99,7 @@ export function LessonManageHeader({
         ) : null}
 
         <div className="mt-3">
-          <ModuleContentStatusBadge isArchived={isArchived} />
+          <LessonPreviewAccessBadge isPreview={lesson.isPreview} />
         </div>
       </div>
     </>

@@ -21,6 +21,7 @@ export class CourseLessonResponseMapper {
       lesson.updatedBy,
       lesson.isDeleted,
       lesson.deletedAt,
+      lesson.isPreview,
       lesson.createdAt,
       lesson.updatedAt,
     );

@@ -9,9 +9,11 @@ interface Props {
   searchPlaceholder: string;
   onSearchChange: (value: string) => void;
   onStatusChange: (value: string) => void;
+  statusOptions?: { label: string; value: string }[];
+  statusLabel?: string;
 }
 
-const STATUS_OPTIONS = [
+const DEFAULT_STATUS_OPTIONS = [
   { label: "All Status", value: "ALL" },
   { label: "Active", value: "ACTIVE" },
   { label: "Inactive", value: "INACTIVE" },
@@ -23,6 +25,7 @@ export function ModuleContentFilters({
   searchPlaceholder,
   onSearchChange,
   onStatusChange,
+  statusOptions = DEFAULT_STATUS_OPTIONS,
 }: Props) {
   return (
     <div className="mb-3 flex flex-col gap-2 sm:flex-row">
@@ -36,7 +39,7 @@ export function ModuleContentFilters({
         <AppSelect
           value={status}
           onValueChange={onStatusChange}
-          options={STATUS_OPTIONS}
+          options={statusOptions}
         />
       </div>
     </div>

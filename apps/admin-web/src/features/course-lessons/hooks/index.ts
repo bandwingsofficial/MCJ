@@ -6,3 +6,4 @@ export * from "./use-deactivate-course-lesson";
 export * from "./use-activate-course-lesson";
 export * from "./use-restore-course-lesson";
 export * from "./use-move-course-lesson";
+export * from "./use-set-lesson-preview";

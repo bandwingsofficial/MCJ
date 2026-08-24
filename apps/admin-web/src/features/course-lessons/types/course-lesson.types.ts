@@ -32,6 +32,8 @@ export interface CourseLesson {
 
   isDeleted: boolean;
 
+  isPreview: boolean;
+
   deletedAt: string | null;
 
   createdAt: string;

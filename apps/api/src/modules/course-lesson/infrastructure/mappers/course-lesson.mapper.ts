@@ -23,6 +23,7 @@ export class CourseLessonMapper {
       isDeleted: record.isDeleted,
       deletedAt: record.deletedAt,
       deletedBy: record.deletedBy,
+      isPreview: record.isPreview,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     });
@@ -47,6 +48,7 @@ export class CourseLessonMapper {
       isDeleted: lesson.isDeleted,
       deletedAt: lesson.deletedAt,
       deletedBy: lesson.deletedBy,
+      isPreview: lesson.isPreview,
       createdAt: lesson.createdAt,
       updatedAt: lesson.updatedAt,
     };

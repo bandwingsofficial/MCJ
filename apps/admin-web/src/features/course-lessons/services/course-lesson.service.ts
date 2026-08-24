@@ -129,6 +129,15 @@ class CourseLessonService {
     return data;
   }
 
+  async setLessonPreview(id: string, isPreview: boolean) {
+    const { data } = await apiClient.patch<CourseLessonResponse>(
+      `${this.basePath}/${id}/preview`,
+      { isPreview },
+    );
+
+    return data;
+  }
+
   async uploadLessonVideo(file: File) {
     const formData = new FormData();
     formData.append("file", file);

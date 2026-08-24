@@ -14,6 +14,7 @@ export class CourseLessonResult {
     public readonly updatedBy: string | null,
     public readonly isDeleted: boolean,
     public readonly deletedAt: Date | null,
+    public readonly isPreview: boolean,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
   ) {}
