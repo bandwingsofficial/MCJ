@@ -18,6 +18,9 @@ import type { CourseFaq } from "@/src/features/courses/types/course-faq.types";
 
 import { CourseFaqFormModal } from "./course-faq-form-modal";
 
+const iconBtnClass = "h-10 w-10 shrink-0 rounded-lg p-0";
+const iconClass = "h-[1.35rem] w-[1.35rem]";
+
 interface Props {
   courseId: string;
   disabled?: boolean;
@@ -199,20 +202,6 @@ export function CourseManageFaqPanel({ courseId, disabled = false }: Props) {
                       <p className="mt-1 text-sm text-slate-500">
                         Create your first FAQ for this course.
                       </p>
-                      {!disabled ? (
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="mt-4"
-                          onClick={() => {
-                            setEditTarget(null);
-                            setFormOpen(true);
-                          }}
-                        >
-                          <Plus className="mr-1.5 h-4 w-4" />
-                          Create FAQ
-                        </Button>
-                      ) : null}
                     </td>
                   </tr>
                 ) : (
@@ -263,31 +252,33 @@ export function CourseManageFaqPanel({ courseId, disabled = false }: Props) {
                           </p>
                         </td>
                         <td className="px-2 py-3 align-top">
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex items-center justify-end gap-0.5 whitespace-nowrap">
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
                               disabled={actionsDisabled}
+                              title="Edit FAQ"
                               aria-label="Edit FAQ"
-                              className="h-9 w-9 rounded-lg p-0 text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]"
+                              className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
                               onClick={() => {
                                 setEditTarget(faq);
                                 setFormOpen(true);
                               }}
                             >
-                              <Pencil className="h-[1.25rem] w-[1.25rem]" />
+                              <Pencil className={iconClass} />
                             </Button>
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
                               disabled={actionsDisabled}
+                              title="Permanently delete FAQ"
                               aria-label="Permanently delete FAQ"
-                              className="h-9 w-9 rounded-lg p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                              className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
                               onClick={() => setDeleteTarget(faq)}
                             >
-                              <Trash2 className="h-[1.25rem] w-[1.25rem]" />
+                              <Trash2 className={iconClass} />
                             </Button>
                           </div>
                         </td>

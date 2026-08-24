@@ -12,11 +12,16 @@ import { Modal } from "@/src/shared/components/ui/model";
 import {
   ValidatedField,
   validatedFieldInputClass,
+  type FieldVisualState,
 } from "@/src/shared/components/ui/validated-field";
-import { getSyncFieldState } from "@/src/features/courses/utils/course-form-validation";
+import { WordCount } from "@/src/shared/components/ui/word-count";
+import { truncateToMaxWords } from "@/src/shared/utils/word-count";
+import { cn } from "@/src/shared/lib/cn";
+import { getWordCountState } from "@/src/features/courses/utils/course-form-validation";
 
 import {
   courseFaqSchema,
+  COURSE_FAQ_MAX_WORDS,
   type CourseFaqFormValues,
 } from "@/src/features/courses/schemas/course-faq.schema";
 import type { CourseFaq } from "@/src/features/courses/types/course-faq.types";
@@ -29,8 +34,12 @@ interface Props {
   onSubmit: (values: CourseFaqFormValues) => Promise<void>;
 }
 
-function inputClass(state: ReturnType<typeof getSyncFieldState>, extra = "") {
-  return validatedFieldInputClass(state, `w-full min-w-0 ${extra}`);
+function inputClass(state: FieldVisualState, extra = "") {
+  return validatedFieldInputClass(state, cn("w-full min-w-0", extra));
+}
+
+function iconInputClass(state: FieldVisualState, extra = "") {
+  return cn(inputClass(state, extra), "pr-16");
 }
 
 export function CourseFaqFormModal({
@@ -47,7 +56,8 @@ export function CourseFaqFormModal({
     handleSubmit,
     reset,
     watch,
-    formState: { errors, touchedFields },
+    setValue,
+    formState: { errors, touchedFields, isSubmitted },
   } = useForm<CourseFaqFormValues>({
     resolver: zodResolver(courseFaqSchema),
     defaultValues: {
@@ -66,21 +76,22 @@ export function CourseFaqFormModal({
     }
   }, [open, faq, reset]);
 
+  const showValidation = isSubmitted;
   const questionValue = watch("question");
   const answerValue = watch("answer");
 
-  const questionState = getSyncFieldState(
-    Boolean(touchedFields.question),
+  const questionState = getWordCountState(
+    Boolean(touchedFields.question || showValidation),
     errors.question?.message,
     questionValue,
-    { required: true },
+    COURSE_FAQ_MAX_WORDS,
   );
 
-  const answerState = getSyncFieldState(
-    Boolean(touchedFields.answer),
+  const answerState = getWordCountState(
+    Boolean(touchedFields.answer || showValidation),
     errors.answer?.message,
     answerValue,
-    { required: true },
+    COURSE_FAQ_MAX_WORDS,
   );
 
   const handleClose = () => {
@@ -92,12 +103,16 @@ export function CourseFaqFormModal({
     onClose();
   };
 
+  const questionRegister = register("question");
+  const answerRegister = register("answer");
+
   return (
     <Modal
       open={open}
       title={isEdit ? "Edit FAQ" : "Create FAQ"}
       onClose={handleClose}
       contentClassName="min-w-0 max-w-2xl"
+      bodyClassName="px-4 py-4 sm:px-6 sm:py-5"
     >
       <form
         className="min-w-0 space-y-4"
@@ -105,6 +120,7 @@ export function CourseFaqFormModal({
           await onSubmit(values);
           reset();
         })}
+        noValidate
       >
         <ValidatedField
           label="Question"
@@ -112,14 +128,33 @@ export function CourseFaqFormModal({
           state={questionState}
           errorMessage={errors.question?.message}
         >
-          <Input
-            placeholder="Enter the FAQ question"
-            className={inputClass(questionState, "pr-10")}
-            {...register("question")}
-          />
-          <HelpCircle
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-            aria-hidden="true"
+          <>
+            <Input
+              placeholder="Enter the FAQ question (minimum 10 words)"
+              disabled={isSubmitting}
+              className={iconInputClass(questionState)}
+              value={questionValue ?? ""}
+              onChange={(event) => {
+                const next = truncateToMaxWords(
+                  event.target.value,
+                  COURSE_FAQ_MAX_WORDS,
+                );
+                setValue("question", next, {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                  shouldValidate: true,
+                });
+              }}
+              onBlur={questionRegister.onBlur}
+            />
+            <HelpCircle
+              className="pointer-events-none absolute right-9 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
+              aria-hidden="true"
+            />
+          </>
+          <WordCount
+            value={questionValue ?? ""}
+            maxWords={COURSE_FAQ_MAX_WORDS}
           />
         </ValidatedField>
 
@@ -129,28 +164,50 @@ export function CourseFaqFormModal({
           state={answerState}
           errorMessage={errors.answer?.message}
         >
-          <Textarea
-            rows={5}
-            placeholder="Enter the FAQ answer"
-            className={inputClass(answerState, "min-h-[7rem] resize-y pr-10")}
-            {...register("answer")}
-          />
-          <MessageSquareText
-            className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-slate-400"
-            aria-hidden="true"
-          />
+          <>
+            <Textarea
+              rows={5}
+              placeholder="Enter the FAQ answer (minimum 10 words)"
+              disabled={isSubmitting}
+              className={iconInputClass(answerState, "min-h-[7rem] resize-y")}
+              value={answerValue ?? ""}
+              onChange={(event) => {
+                const next = truncateToMaxWords(
+                  event.target.value,
+                  COURSE_FAQ_MAX_WORDS,
+                );
+                setValue("answer", next, {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                  shouldValidate: true,
+                });
+              }}
+              onBlur={answerRegister.onBlur}
+            />
+            <MessageSquareText
+              className="pointer-events-none absolute right-9 top-3 z-[1] h-4 w-4 text-slate-400"
+              aria-hidden="true"
+            />
+          </>
+          <WordCount value={answerValue ?? ""} maxWords={COURSE_FAQ_MAX_WORDS} />
         </ValidatedField>
 
-        <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">
+        <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
           <Button
             type="button"
             variant="outline"
             disabled={isSubmitting}
+            className="w-full sm:w-auto"
             onClick={handleClose}
           >
             Cancel
           </Button>
-          <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
+          <Button
+            type="submit"
+            loading={isSubmitting}
+            disabled={isSubmitting}
+            className="w-full sm:w-auto"
+          >
             {isEdit ? "Update FAQ" : "Create FAQ"}
           </Button>
         </div>

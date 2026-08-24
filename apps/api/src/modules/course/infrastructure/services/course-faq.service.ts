@@ -1,6 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+import { countWords } from '@common/utils/word-count.util';
+
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
+
+export const COURSE_FAQ_MIN_WORDS = 10;
+export const COURSE_FAQ_MAX_WORDS = 100;
 
 export interface CourseFaqRecord {
   id: string;
@@ -29,6 +36,9 @@ export class CourseFaqService {
     answer: string,
     createdBy?: string,
   ): Promise<CourseFaqRecord> {
+    const normalizedQuestion = this.normalizeFaqField('question', question);
+    const normalizedAnswer = this.normalizeFaqField('answer', answer);
+
     const maxOrder = await this.prisma.courseFaq.aggregate({
       where: { courseId },
       _max: { displayOrder: true },
@@ -37,8 +47,8 @@ export class CourseFaqService {
     return this.prisma.courseFaq.create({
       data: {
         courseId,
-        question: question.trim(),
-        answer: answer.trim(),
+        question: normalizedQuestion,
+        answer: normalizedAnswer,
         displayOrder: (maxOrder._max.displayOrder ?? 0) + 1,
         createdBy,
         updatedBy: createdBy,
@@ -55,11 +65,14 @@ export class CourseFaqService {
   ): Promise<CourseFaqRecord> {
     await this.ensureExists(courseId, faqId);
 
+    const normalizedQuestion = this.normalizeFaqField('question', question);
+    const normalizedAnswer = this.normalizeFaqField('answer', answer);
+
     return this.prisma.courseFaq.update({
       where: { id: faqId },
       data: {
-        question: question.trim(),
-        answer: answer.trim(),
+        question: normalizedQuestion,
+        answer: normalizedAnswer,
         updatedBy,
       },
     });
@@ -94,6 +107,61 @@ export class CourseFaqService {
     );
 
     return this.listByCourseId(courseId);
+  }
+
+  private normalizeFaqField(
+    field: 'question' | 'answer',
+    value: string,
+  ): string {
+    const label = field === 'question' ? 'Question' : 'Answer';
+    const trimmed = value?.trim() ?? '';
+
+    if (!trimmed) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        `${label} is required`,
+        400,
+        {
+          errors: {
+            [field]: [`${label} is required`],
+          },
+        },
+      );
+    }
+
+    const words = countWords(trimmed);
+
+    if (words < COURSE_FAQ_MIN_WORDS) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        `${label} must be at least ${COURSE_FAQ_MIN_WORDS} words`,
+        400,
+        {
+          errors: {
+            [field]: [
+              `${label} must be at least ${COURSE_FAQ_MIN_WORDS} words`,
+            ],
+          },
+        },
+      );
+    }
+
+    if (words > COURSE_FAQ_MAX_WORDS) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        `${label} cannot exceed ${COURSE_FAQ_MAX_WORDS} words`,
+        400,
+        {
+          errors: {
+            [field]: [
+              `${label} cannot exceed ${COURSE_FAQ_MAX_WORDS} words`,
+            ],
+          },
+        },
+      );
+    }
+
+    return trimmed;
   }
 
   private async ensureExists(courseId: string, faqId: string) {
