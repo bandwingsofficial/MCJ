@@ -1,3 +1,5 @@
+import type { CoursePricing } from "@/src/features/courses/types/course.types";
+
 import type {
   CourseModule,
 } from "@/src/features/student-course/types/module.types";
@@ -95,30 +97,7 @@ export interface StudentCourse {
    */
   thumbnailUrl: string | null;
 
-  /**
-   * Original course price.
-   */
-  originalPrice: number;
-
-  /**
-   * Discounted selling price.
-   */
-  discountPrice: number;
-
-  /**
-   * Discount amount.
-   */
-  totalDiscount: number;
-
-  /**
-   * Currency code.
-   */
-  currency: string;
-
-  /**
-   * Whether this course is free.
-   */
-  isFree: boolean;
+  pricing: CoursePricing;
 
   /**
    * Course duration value.

@@ -1,14 +1,25 @@
 import { normalizeMoney } from "@/src/features/enrollments/utils/format-payment";
 
-interface CourseDefaultDiscountSource {
-  originalPrice?: number | null;
-  discountPrice?: number | null;
-  totalDiscount?: number | null;
+import { getCoursePricing } from "./course-pricing.util";
+
+interface CoursePricingSource {
+  pricing?: {
+    discountAmount?: number | null;
+  } | null;
 }
 
 export function getCourseDefaultDiscount(
-  course: CourseDefaultDiscountSource,
+  course: CoursePricingSource,
 ): number {
+  return getCoursePricing(course).discountAmount;
+}
+
+/** @deprecated Use getCourseDefaultDiscount */
+export function getCourseDefaultDiscountLegacy(course: {
+  originalPrice?: number | null;
+  discountPrice?: number | null;
+  totalDiscount?: number | null;
+}): number {
   const fee = normalizeMoney(course.originalPrice);
   const discountPrice = normalizeMoney(course.discountPrice);
 

@@ -1,5 +1,7 @@
 import { Prisma } from '@prisma/client';
 
+import { buildCoursePricing } from '@modules/course/domain/value-objects/course-pricing.vo';
+
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { PaymentStatus } from '../../domain/enums/payment-status.enum';
@@ -137,6 +139,14 @@ export class EnrollmentResponseMapper {
   private static toCourse(
     course: EnrollmentWithRelations['course'],
   ): EnrollmentCourseView {
+    const pricing = buildCoursePricing({
+      originalPrice: toNumber(course.originalPrice),
+      discountAmount: toNumber(course.discountAmount),
+      discountedPrice: toNumber(course.discountedPrice),
+      currency: course.currency,
+      isFree: course.isFree,
+    });
+
     return {
       id: course.id,
       title: course.title,
@@ -152,9 +162,7 @@ export class EnrollmentResponseMapper {
       status: course.status,
       averageRating: course.averageRating,
       totalReviews: course.totalReviews,
-      originalPrice: toNumber(course.originalPrice),
-      discountPrice: toNumber(course.discountPrice),
-      currency: course.currency,
+      pricing,
     };
   }
 

@@ -16,6 +16,15 @@ export type CourseStatus =
   | "DRAFT"
   | "ARCHIVED";
 
+export interface CoursePricing {
+  originalPrice: number;
+  discountAmount: number;
+  discountPercent: number;
+  discountedPrice: number;
+  currency: string;
+  isFree: boolean;
+}
+
 export interface CourseCategory {
   id: string;
   name: string;
@@ -53,11 +62,7 @@ export interface CourseDto {
   shortDescription: string | null;
   description: string | null;
   thumbnailUrl: string | null;
-  originalPrice: number;
-  discountPrice: number;
-  totalDiscount: number;
-  currency: string;
-  isFree: boolean;
+  pricing: CoursePricing;
   duration: number | null;
   durationType: string | null;
   level: CourseLevel;
@@ -107,11 +112,7 @@ export interface Course {
   shortDescription: string | null;
   description: string | null;
   thumbnailUrl: string | null;
-  originalPrice: number;
-  discountPrice: number;
-  totalDiscount: number;
-  currency: string;
-  isFree: boolean;
+  pricing: CoursePricing;
   duration: number | null;
   durationType: string | null;
   level: CourseLevel;

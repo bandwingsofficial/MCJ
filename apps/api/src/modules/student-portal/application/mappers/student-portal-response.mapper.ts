@@ -73,9 +73,7 @@ export class StudentPortalResponseMapper {
       id: course.id,
       title: course.title,
       slug: course.slug,
-      originalPrice: course.originalPrice,
-      discountPrice: course.discountPrice,
-      currency: course.currency,
+      pricing: course.pricing,
     };
   }
 

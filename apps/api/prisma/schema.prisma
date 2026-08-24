@@ -304,7 +304,8 @@ model Course {
   thumbnailFileId  String?
   thumbnailUrl     String?
   originalPrice    Decimal          @default(0) @db.Decimal(12, 2)
-  discountPrice    Decimal          @default(0) @db.Decimal(12, 2)
+  discountAmount   Decimal          @default(0) @db.Decimal(12, 2)
+  discountedPrice  Decimal          @default(0) @db.Decimal(12, 2)
   currency         String           @default("INR")
   isFree           Boolean          @default(false)
   duration         Int?

@@ -38,6 +38,7 @@ import {
   type CourseMetaSource,
 } from "@/src/features/courses/utils/course-meta.utils";
 import { CourseMetaField } from "@/src/features/courses/components/course-meta-field";
+import { buildCoursePricingInput } from "@/src/features/courses/utils/course-pricing.util";
 
 interface SelectOption {
   label: string;
@@ -71,7 +72,8 @@ const defaultFormValues: CreateCourseFormValues = {
   description: "",
   categoryId: "",
   originalPrice: 0,
-  discountPrice: 0,
+  discountPercent: 0,
+  discountAmount: 0,
   currency: "INR",
   isFree: false,
   duration: 1,
@@ -163,7 +165,8 @@ export function CourseForm({
   const languageValue = watch("language");
   const isFreeValue = watch("isFree");
   const originalPriceValue = watch("originalPrice");
-  const discountPriceValue = watch("discountPrice");
+  const discountPercentValue = watch("discountPercent");
+  const discountAmountValue = watch("discountAmount");
   const metaTitleValue = watch("metaTitle");
   const metaDescriptionValue = watch("metaDescription");
   const metaKeywordsValue = watch("metaKeywords");
@@ -413,12 +416,27 @@ export function CourseForm({
     { required: !pricesDisabled },
   );
 
-  const discountPriceState = getSyncFieldState(
-    Boolean(touchedFields.discountPrice || showValidation),
-    errors.discountPrice?.message,
-    discountPriceValue != null ? String(discountPriceValue) : "",
+  const discountPercentState = getSyncFieldState(
+    Boolean(touchedFields.discountPercent || showValidation),
+    errors.discountPercent?.message,
+    discountPercentValue != null ? String(discountPercentValue) : "",
     { required: !pricesDisabled },
   );
+
+  const discountAmountState = getSyncFieldState(
+    Boolean(touchedFields.discountAmount || showValidation),
+    errors.discountAmount?.message,
+    discountAmountValue != null ? String(discountAmountValue) : "",
+    { required: !pricesDisabled },
+  );
+
+  const computedPricing = buildCoursePricingInput({
+    originalPrice: Number(originalPriceValue) || 0,
+    discountAmount: Number(discountAmountValue) || 0,
+    discountPercent: Number(discountPercentValue) || 0,
+    currency: watch("currency"),
+    isFree: Boolean(isFreeValue),
+  });
 
   const metaTitleState = getSyncFieldState(
     Boolean(touchedFields.metaTitle || showValidation),
@@ -483,7 +501,8 @@ export function CourseForm({
       "language",
       "isFree",
       "originalPrice",
-      "discountPrice",
+      "discountPercent",
+      "discountAmount",
       "metaTitle",
       "metaDescription",
       "slug",
@@ -532,7 +551,11 @@ export function CourseForm({
         shouldDirty: true,
         shouldValidate: true,
       });
-      setValue("discountPrice", 0, {
+      setValue("discountPercent", 0, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setValue("discountAmount", 0, {
         shouldDirty: true,
         shouldValidate: true,
       });
@@ -768,7 +791,7 @@ export function CourseForm({
 
         <div className={CELL_CLASS}>
           <ValidatedField
-            label="Course Fee"
+            label="Original Price"
             required={!pricesDisabled}
             state={originalPriceState}
             errorMessage={errors.originalPrice?.message}
@@ -784,9 +807,20 @@ export function CourseForm({
                 min={0}
                 step="0.01"
                 disabled={pricesDisabled}
-                placeholder={pricesDisabled ? "Free course" : "Enter course fee"}
+                placeholder={pricesDisabled ? "Free course" : "Enter original price"}
                 className={`${inputClass(originalPriceState)} ${pricesDisabled ? "" : "pl-7"}`}
-                {...register("originalPrice", { valueAsNumber: true })}
+                {...register("originalPrice", {
+                  valueAsNumber: true,
+                  onChange: (event) => {
+                    const nextOriginal = Number(event.target.value) || 0;
+                    const percent = Number(discountPercentValue) || 0;
+                    const nextAmount = Math.round((nextOriginal * percent) / 100 * 100) / 100;
+                    setValue("discountAmount", nextAmount, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                  },
+                })}
               />
             </div>
           </ValidatedField>
@@ -796,10 +830,41 @@ export function CourseForm({
       <div className={GRID_CLASS}>
         <div className={CELL_CLASS}>
           <ValidatedField
-            label="Default Discount"
+            label="Discount %"
             required={!pricesDisabled}
-            state={discountPriceState}
-            errorMessage={errors.discountPrice?.message}
+            state={discountPercentState}
+            errorMessage={errors.discountPercent?.message}
+          >
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              step="0.01"
+              disabled={pricesDisabled}
+              placeholder={pricesDisabled ? "Free course" : "Enter discount percent"}
+              className={inputClass(discountPercentState)}
+              {...register("discountPercent", {
+                valueAsNumber: true,
+                onChange: (event) => {
+                  const percent = Number(event.target.value) || 0;
+                  const original = Number(originalPriceValue) || 0;
+                  const nextAmount = Math.round((original * percent) / 100 * 100) / 100;
+                  setValue("discountAmount", nextAmount, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                },
+              })}
+            />
+          </ValidatedField>
+        </div>
+
+        <div className={CELL_CLASS}>
+          <ValidatedField
+            label="Discount Amount"
+            required={!pricesDisabled}
+            state={discountAmountState}
+            errorMessage={errors.discountAmount?.message}
           >
             <div className="relative">
               {!pricesDisabled ? (
@@ -813,12 +878,44 @@ export function CourseForm({
                 step="0.01"
                 disabled={pricesDisabled}
                 placeholder={
-                  pricesDisabled ? "Free course" : "Enter default discount"
+                  pricesDisabled ? "Free course" : "Enter discount amount"
                 }
-                className={`${inputClass(discountPriceState)} ${pricesDisabled ? "" : "pl-7"}`}
-                {...register("discountPrice", { valueAsNumber: true })}
+                className={`${inputClass(discountAmountState)} ${pricesDisabled ? "" : "pl-7"}`}
+                {...register("discountAmount", {
+                  valueAsNumber: true,
+                  onChange: (event) => {
+                    const amount = Number(event.target.value) || 0;
+                    const original = Number(originalPriceValue) || 0;
+                    const nextPercent =
+                      original > 0
+                        ? Math.round((amount / original) * 10000) / 100
+                        : 0;
+                    setValue("discountPercent", nextPercent, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                  },
+                })}
               />
             </div>
+          </ValidatedField>
+        </div>
+
+        <div className={CELL_CLASS}>
+          <ValidatedField label="Final Price" state="neutral">
+            <Input
+              value={
+                pricesDisabled
+                  ? "Free"
+                  : `₹${computedPricing.discountedPrice.toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}`
+              }
+              readOnly
+              disabled
+              className={inputClass("neutral")}
+            />
           </ValidatedField>
         </div>
 

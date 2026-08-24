@@ -47,10 +47,14 @@ export interface CourseInfo {
   status: string;
   averageRating: number;
   totalReviews: number;
-  originalPrice?: number;
-  discountPrice?: number;
-  currency?: string;
-  isFree?: boolean;
+  pricing?: {
+    originalPrice: number;
+    discountAmount: number;
+    discountPercent: number;
+    discountedPrice: number;
+    currency: string;
+    isFree: boolean;
+  };
 }
 
 export interface TrainerInfo {

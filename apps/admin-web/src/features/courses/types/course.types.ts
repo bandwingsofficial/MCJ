@@ -16,6 +16,15 @@ export type CourseDurationType =
   | "MONTHS"
   | "YEARS";
 
+export interface CoursePricing {
+  originalPrice: number;
+  discountAmount: number;
+  discountPercent: number;
+  discountedPrice: number;
+  currency: string;
+  isFree: boolean;
+}
+
 export interface CourseCategory {
   id: string;
   name: string;
@@ -51,15 +60,7 @@ export interface Course {
 
   thumbnailUrl: string | null;
 
-  originalPrice: number;
-
-  discountPrice: number;
-
-  totalDiscount: number;
-
-  currency: string;
-
-  isFree: boolean;
+  pricing: CoursePricing;
 
   duration: number | null;
 
@@ -200,11 +201,7 @@ export interface CourseListItem {
 
   tagline: string | null;
 
-  originalPrice: number;
-
-  discountPrice: number;
-
-  totalDiscount: number;
+  pricing: CoursePricing;
 
   isFree: boolean;
 
@@ -286,7 +283,9 @@ export interface CreateCourseRequest {
 
   originalPrice?: number;
 
-  discountPrice?: number;
+  discountAmount?: number;
+
+  discountedPrice?: number;
 
   currency?: string;
 
@@ -332,9 +331,10 @@ export interface UpdateCourseRequest {
   description?: string;
 
   originalPrice?: number;
-  thumbnailFileId?: string;
 
-  discountPrice?: number;
+  discountAmount?: number;
+
+  discountedPrice?: number;
 
   currency?: string;
 

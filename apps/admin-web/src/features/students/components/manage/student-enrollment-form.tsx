@@ -244,7 +244,7 @@ export function StudentEnrollmentForm({
           endDate: batch.endDate,
         });
 
-        setValue("feeAmount", normalizeMoney(course.originalPrice), {
+        setValue("feeAmount", normalizeMoney(course.pricing.originalPrice), {
           shouldDirty: false,
           shouldValidate: true,
         });

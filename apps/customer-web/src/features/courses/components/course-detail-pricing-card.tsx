@@ -40,12 +40,11 @@ export function CourseDetailPricingCard({
   const discountPercent = getDiscountPercent(course) ?? 0;
 
   const isEnrolled = Boolean(course.isEnrolled);
-  const isFree = Boolean(course.isFree);
+  const isFree = pricing.isFree;
 
   const showOriginalPrice =
     !isFree &&
-    Number.isFinite(pricing.original) &&
-    pricing.original > pricing.finalPrice;
+    pricing.originalPrice > pricing.discountedPrice;
 
   const hasBatches = batchCount > 0;
 
@@ -139,7 +138,7 @@ export function CourseDetailPricingCard({
                 {showOriginalPrice && (
                   <p className="pb-1 text-sm text-slate-400 line-through">
                     {formatCurrency(
-                      pricing.original,
+                      pricing.originalPrice,
                       pricing.currency,
                     )}
                   </p>

@@ -131,9 +131,21 @@ export function CourseViewSheet({
               </p>
 
               <p>
-                {course.isFree
+                {course.pricing.isFree
                   ? "—"
-                  : formatCurrency(course.discountPrice)}
+                  : formatCurrency(course.pricing.discountAmount)}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Final Price
+              </p>
+
+              <p>
+                {course.pricing.isFree
+                  ? "Free"
+                  : formatCurrency(course.pricing.discountedPrice)}
               </p>
             </div>
 
@@ -143,7 +155,7 @@ export function CourseViewSheet({
               </p>
 
               <p>
-                {course.isFree
+                {course.pricing.isFree
                   ? "Yes"
                   : "No"}
               </p>

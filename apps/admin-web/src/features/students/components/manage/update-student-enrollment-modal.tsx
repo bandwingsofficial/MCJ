@@ -96,8 +96,7 @@ export function UpdateStudentEnrollmentModal({
             batchLabel: formatBatchLabel(enrollment),
             courseTitle: enrollment.course?.title ?? "—",
             courseFee: formatCourseFee({
-              isFree: enrollment.course?.isFree,
-              originalPrice: enrollment.course?.originalPrice,
+              pricing: enrollment.course?.pricing,
             }),
             branchName: derivedBranchName,
             categoryName: enrollment.category?.name ?? "—",

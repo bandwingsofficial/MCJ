@@ -19,6 +19,12 @@ import {
   COURSE_MODE_LABELS,
 } from "@/src/features/student-course/constants/course.constants";
 
+import {
+  formatCurrency,
+  getCoursePricing,
+  getDiscountPercent,
+} from "@/src/features/courses/utils/course-display.utils";
+
 import type {
   StudentCourse,
 } from "@/src/features/student-course/types/course.types";
@@ -168,30 +174,46 @@ export function CourseHero({
                 Course Price
               </p>
 
-              {course.isFree ? (
-                <Badge variant="success">
-                  Free Course
-                </Badge>
-              ) : (
-                <div className="space-y-1">
-                  <p className="text-3xl font-bold text-primary">
-                    ₹
-                    {course.discountPrice.toLocaleString()}
-                  </p>
+              {(() => {
+                const pricing = getCoursePricing({ pricing: course.pricing });
+                const discountPercent = getDiscountPercent({
+                  pricing: course.pricing,
+                });
 
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground line-through">
-                      ₹
-                      {course.originalPrice.toLocaleString()}
-                    </span>
-
-                    <Badge variant="danger">
-                      Save ₹
-                      {course.totalDiscount.toLocaleString()}
+                if (pricing.isFree) {
+                  return (
+                    <Badge variant="success">
+                      Free Course
                     </Badge>
+                  );
+                }
+
+                return (
+                  <div className="space-y-1">
+                    <p className="text-3xl font-bold text-primary">
+                      {formatCurrency(
+                        pricing.discountedPrice,
+                        pricing.currency,
+                      )}
+                    </p>
+
+                    {pricing.discountAmount > 0 && (
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-muted-foreground line-through">
+                          {formatCurrency(
+                            pricing.originalPrice,
+                            pricing.currency,
+                          )}
+                        </span>
+
+                        <Badge variant="danger">
+                          {discountPercent ?? 0}% OFF
+                        </Badge>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
 

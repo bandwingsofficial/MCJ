@@ -119,9 +119,9 @@ export function CourseManageOverviewPanel({
   const router = useRouter();
   const courseId = course.id;
   const pricing = useMemo(() => getCoursePricing(course), [course]);
-  const pricingLabel = course.isFree
+  const pricingLabel = pricing.isFree
     ? "Free"
-    : formatCurrency(pricing.finalAmount);
+    : formatCurrency(pricing.discountedPrice);
 
   const { modules, isLoading: modulesLoading } = useCourseModules({
     courseId,

@@ -26,17 +26,14 @@ export function CourseDetailPricingSection({
   const router = useRouter();
 
   const pricing = getCoursePricing(course);
-
-  // Normalize null → 0 so the UI and TypeScript are both happy.
   const discountPercent = getDiscountPercent(course) ?? 0;
 
   const isEnrolled = Boolean(course.isEnrolled);
-  const isFree = Boolean(course.isFree);
+  const isFree = pricing.isFree;
 
   const showOriginalPrice =
     !isFree &&
-    Number.isFinite(pricing.original) &&
-    pricing.original > pricing.finalPrice;
+    pricing.originalPrice > pricing.discountedPrice;
 
   const handlePrimaryAction = () => {
     if (isEnrolled) {
@@ -74,7 +71,7 @@ export function CourseDetailPricingSection({
                 {showOriginalPrice && (
                   <p className="text-sm text-slate-400 line-through">
                     {formatCurrency(
-                      pricing.original,
+                      pricing.originalPrice,
                       pricing.currency,
                     )}
                   </p>

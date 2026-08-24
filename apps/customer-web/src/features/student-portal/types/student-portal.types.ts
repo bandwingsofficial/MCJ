@@ -46,11 +46,14 @@ export interface StudentPortalCourse {
 
   slug: string;
 
-  originalPrice: number;
-
-  discountPrice: number;
-
-  currency: string;
+  pricing: {
+    originalPrice: number;
+    discountAmount: number;
+    discountPercent: number;
+    discountedPrice: number;
+    currency: string;
+    isFree: boolean;
+  };
 }
 
 export interface StudentPortalBatch {

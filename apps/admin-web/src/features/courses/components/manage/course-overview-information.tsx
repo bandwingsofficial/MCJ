@@ -48,9 +48,9 @@ export function CourseOverviewInformation({ course, onEditCourse }: Props) {
     course.tagline?.trim() ||
     "—";
 
-  const courseFeeLabel = course.isFree
+  const courseFeeLabel = pricing.isFree
     ? "Free"
-    : formatCurrency(pricing.finalAmount);
+    : formatCurrency(pricing.discountedPrice);
 
   return (
     <Card className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
@@ -87,7 +87,7 @@ export function CourseOverviewInformation({ course, onEditCourse }: Props) {
             isDeleted={course.isDeleted}
           />
         </InfoField>
-        {!course.isFree ? (
+        {!pricing.isFree ? (
           <InfoField label="Discount">
             {formatCurrency(pricing.discountAmount)}
           </InfoField>

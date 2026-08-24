@@ -55,6 +55,15 @@ export interface EnrollmentCategoryView {
   slug: string;
 }
 
+export interface CoursePricingView {
+  originalPrice: number;
+  discountAmount: number;
+  discountPercent: number;
+  discountedPrice: number;
+  currency: string;
+  isFree: boolean;
+}
+
 export interface EnrollmentCourseView {
   id: string;
   title: string;
@@ -70,10 +79,7 @@ export interface EnrollmentCourseView {
   status: string;
   averageRating: number;
   totalReviews: number;
-  // Live course pricing — Course remains the source of truth.
-  originalPrice: number;
-  discountPrice: number;
-  currency: string;
+  pricing: CoursePricingView;
 }
 
 export interface EnrollmentTrainerView {

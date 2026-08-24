@@ -1,20 +1,27 @@
-import { formatCurrency } from "@/src/features/enrollments/utils/format-payment";
+import { formatCoursePrice, getCoursePricing } from "./course-pricing.util";
 
 interface CoursePricingSource {
-  isFree?: boolean;
-  originalPrice?: number | null;
+  pricing?: {
+    originalPrice?: number | null;
+    isFree?: boolean | null;
+    currency?: string | null;
+  } | null;
 }
 
 export function formatCourseFee(course: CoursePricingSource): string {
-  if (course.isFree) {
+  const pricing = getCoursePricing(course);
+
+  if (pricing.isFree) {
     return "Free";
   }
 
-  const price = course.originalPrice;
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: pricing.currency,
+    maximumFractionDigits: 2,
+  }).format(pricing.originalPrice);
+}
 
-  if (price == null || Number.isNaN(Number(price))) {
-    return "Not set";
-  }
-
-  return formatCurrency(Number(price));
+export function formatCourseFinalFee(course: CoursePricingSource): string {
+  return formatCoursePrice(course);
 }

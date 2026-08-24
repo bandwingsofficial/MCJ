@@ -23,6 +23,7 @@ import { BranchRepository } from '@/modules/branch/domain/repositories/branch.re
 import { BranchNotFoundException } from '@/modules/branch/domain/errors/branch-not-found.exception';
 
 import { InvalidCoursePricingException } from '../../domain/errors/invalid-course-pricing.exception';
+import { normalizeCoursePricingInput } from '../../domain/value-objects/course-pricing.vo';
 
 const COURSE_UPLOAD_FOLDER = 'courses';
 const COURSE_THUMBNAIL_FILE_NAME = 'thumbnail';
@@ -54,23 +55,31 @@ export class CreateCourseHandler {
       }
     }
 
+    const normalizedPricing = normalizeCoursePricingInput({
+      originalPrice: command.originalPrice,
+      discountAmount: command.discountAmount,
+      discountedPrice: command.discountedPrice,
+      currency: command.currency,
+      isFree: command.isFree,
+    });
+
     if (
-      command.originalPrice &&
-      command.discountPrice &&
-      command.discountPrice > command.originalPrice
+      normalizedPricing.isFree &&
+      (normalizedPricing.originalPrice > 0 ||
+        normalizedPricing.discountAmount > 0 ||
+        normalizedPricing.discountedPrice > 0)
     ) {
       throw new InvalidCoursePricingException(
-        'Discount price cannot be greater than original price',
+        'Free courses cannot have pricing values',
       );
     }
 
     if (
-      command.isFree &&
-      ((command.originalPrice ?? 0) > 0 ||
-        (command.discountPrice ?? 0) > 0)
+      !normalizedPricing.isFree &&
+      normalizedPricing.discountedPrice > normalizedPricing.originalPrice
     ) {
       throw new InvalidCoursePricingException(
-        'Free courses cannot have original price or discount price',
+        'Discounted price cannot be greater than original price',
       );
     }
 
@@ -180,10 +189,11 @@ export class CreateCourseHandler {
       description: command.description,
       thumbnailFileId,
       thumbnailUrl,
-      originalPrice: command.originalPrice,
-      discountPrice: command.discountPrice,
-      currency: command.currency,
-      isFree: command.isFree,
+      originalPrice: normalizedPricing.originalPrice,
+      discountAmount: normalizedPricing.discountAmount,
+      discountedPrice: normalizedPricing.discountedPrice,
+      currency: normalizedPricing.currency,
+      isFree: normalizedPricing.isFree,
       duration: command.duration,
       durationType: command.durationType,
       level: command.level,

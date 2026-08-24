@@ -62,15 +62,22 @@ const courseFields = {
 
   originalPrice: z
     .number({
-      error: "Course fee is required",
+      error: "Original price is required",
     })
-    .min(0, "Course fee cannot be negative"),
+    .min(0, "Original price cannot be negative"),
 
-  discountPrice: z
+  discountPercent: z
     .number({
-      error: "Discount price is required",
+      error: "Discount percent is required",
     })
-    .min(0, "Discount price cannot be negative"),
+    .min(0, "Discount percent cannot be negative")
+    .max(100, "Discount percent cannot exceed 100"),
+
+  discountAmount: z
+    .number({
+      error: "Discount amount is required",
+    })
+    .min(0, "Discount amount cannot be negative"),
 
   currency: z.string().default("INR"),
 
@@ -148,26 +155,26 @@ export const createCourseSchema = courseBaseSchema.superRefine(
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["originalPrice"],
-        message: "Course fee is required for paid courses",
+        message: "Original price is required for paid courses",
       });
     }
 
-    if (data.discountPrice > data.originalPrice) {
+    if (data.discountAmount > data.originalPrice) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ["discountPrice"],
-        message: "Discount price cannot be greater than original price",
+        path: ["discountAmount"],
+        message: "Discount amount cannot be greater than original price",
       });
     }
 
     if (
       data.isFree &&
-      (data.originalPrice > 0 || data.discountPrice > 0)
+      (data.originalPrice > 0 || data.discountAmount > 0)
     ) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["isFree"],
-        message: "Free courses cannot have original price or discount price",
+        message: "Free courses cannot have pricing values",
       });
     }
   },

@@ -71,7 +71,7 @@ export class CreatePaymentOrderHandler {
       throw new EnrollmentAlreadyPaidException();
     }
 
-    const currency = enrollment.course.currency || 'INR';
+    const currency = enrollment.course.pricing.currency || 'INR';
 
     const order = await this.gateway.createOrder({
       amount: dueAmount,

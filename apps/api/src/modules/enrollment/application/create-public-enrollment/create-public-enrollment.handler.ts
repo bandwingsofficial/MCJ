@@ -86,7 +86,7 @@ export class CreatePublicEnrollmentHandler {
     // any financial values. This snapshot stays fixed even if the course price
     // changes later.
     const courseFee = hierarchy.course.originalPrice.getValue();
-    const courseDiscount = hierarchy.course.getTotalDiscount();
+    const courseDiscount = hierarchy.course.getDefaultDiscountAmount();
 
     const enrollment = Enrollment.create({
       id: randomUUID(),

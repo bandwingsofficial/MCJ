@@ -7,6 +7,7 @@ import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { CourseForm } from "@/src/features/courses/components/course-form";
+import { buildCoursePricingInput } from "@/src/features/courses/utils/course-pricing.util";
 import { CreateCourseFormValues } from "@/src/features/courses/schemas/course.schema";
 import { CourseDetails } from "@/src/features/courses/types/course.types";
 import { useCreateCourse } from "@/src/features/courses/hooks/use-create-course";
@@ -90,16 +91,25 @@ export function CourseFormModal({
         thumbnailFileId = uploadResponse.data.fileId;
       }
 
+      const pricingInput = buildCoursePricingInput({
+        originalPrice: Number(values.originalPrice),
+        discountAmount: Number(values.discountAmount),
+        discountPercent: Number(values.discountPercent),
+        currency: values.currency,
+        isFree: values.isFree,
+      });
+
       const payload = {
         title: values.title,
         tagline: values.tagline?.trim() || undefined,
         shortDescription: values.shortDescription?.trim() || undefined,
         description: values.description?.trim() || undefined,
         categoryId: values.categoryId,
-        originalPrice: Number(values.originalPrice),
-        discountPrice: Number(values.discountPrice),
-        currency: values.currency,
-        isFree: values.isFree,
+        originalPrice: pricingInput.originalPrice,
+        discountAmount: pricingInput.discountAmount,
+        discountedPrice: pricingInput.discountedPrice,
+        currency: pricingInput.currency,
+        isFree: pricingInput.isFree,
         duration: Number(values.duration),
         durationType: values.durationType,
         level: values.level,
@@ -160,10 +170,11 @@ export function CourseFormModal({
                   shortDescription: course.shortDescription ?? "",
                   description: course.description ?? "",
                   categoryId: course.categoryId,
-                  originalPrice: course.originalPrice,
-                  discountPrice: course.discountPrice,
-                  currency: course.currency,
-                  isFree: course.isFree,
+                  originalPrice: course.pricing.originalPrice,
+                  discountPercent: course.pricing.discountPercent,
+                  discountAmount: course.pricing.discountAmount,
+                  currency: course.pricing.currency,
+                  isFree: course.pricing.isFree,
                   duration: course.duration ?? 1,
                   durationType: course.durationType ?? "MONTHS",
                   level: course.level,

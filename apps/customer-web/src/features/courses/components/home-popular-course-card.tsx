@@ -8,7 +8,7 @@ import { Button } from "@/src/shared/components/ui/button";
 
 import type { Course } from "@/src/features/courses/types/course.types";
 import {
-  formatCurrency,
+  formatCoursePrice,
   formatDuration,
 } from "@/src/features/courses/utils/course-display.utils";
 import { getCourseDetailPath, getCourseEnrollPath } from "@/src/features/courses/utils/course-route.utils";
@@ -18,20 +18,7 @@ interface HomePopularCourseCardProps {
 }
 
 function formatHomeCoursePrice(course: Course): string {
-  if (course.isFree) {
-    return formatCurrency(0, course.currency ?? "INR");
-  }
-
-  const discount = Number(course.discountPrice);
-  const original = Number(course.originalPrice);
-  const amount =
-    Number.isFinite(discount) && discount > 0
-      ? discount
-      : Number.isFinite(original)
-        ? original
-        : 0;
-
-  return formatCurrency(amount, course.currency ?? "INR");
+  return formatCoursePrice(course);
 }
 
 function getCourseDescription(course: Course): string | null {

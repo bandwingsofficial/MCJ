@@ -5,6 +5,10 @@ import { DurationType } from '../enums/duration-type.enum';
 import { CourseTitle } from '../value-objects/course-title.vo';
 import { Duration } from '../value-objects/duration.vo';
 import { Price } from '../value-objects/price.vo';
+import {
+  buildCoursePricing,
+  type CoursePricingSnapshot,
+} from '../value-objects/course-pricing.vo';
 import { ShortDescription } from '../value-objects/short-description.vo';
 import { Slug } from '../value-objects/slug.vo';
 import { CourseImage } from './course-image.entity';
@@ -22,7 +26,8 @@ export class Course {
     public thumbnailFileId: string | null,
     public thumbnailUrl: string | null,
     public originalPrice: Price,
-    public discountPrice: Price,
+    public discountAmount: Price,
+    public discountedPrice: Price,
     public currency: string,
     public isFree: boolean,
     public duration: Duration,
@@ -53,6 +58,14 @@ export class Course {
   ) {}
 
   static create(params: CourseCreateParams): Course {
+    const pricing = buildCoursePricing({
+      originalPrice: params.originalPrice ?? 0,
+      discountAmount: params.discountAmount ?? 0,
+      discountedPrice: params.discountedPrice ?? 0,
+      currency: params.currency,
+      isFree: params.isFree,
+    });
+
     return new Course(
       params.id,
       params.code,
@@ -65,10 +78,11 @@ export class Course {
       params.description ?? null,
       params.thumbnailFileId ?? null,
       params.thumbnailUrl ?? null,
-      Price.create(params.originalPrice),
-      Price.create(params.discountPrice),
-      params.currency ?? 'INR',
-      params.isFree ?? false,
+      Price.create(pricing.originalPrice),
+      Price.create(pricing.discountAmount),
+      Price.create(pricing.discountedPrice),
+      pricing.currency,
+      pricing.isFree,
       Duration.create(params.duration),
       params.durationType ?? null,
       params.level ?? CourseLevel.BEGINNER,
@@ -109,7 +123,8 @@ export class Course {
       params.thumbnailFileId,
       params.thumbnailUrl,
       Price.create(params.originalPrice),
-      Price.create(params.discountPrice),
+      Price.create(params.discountAmount),
+      Price.create(params.discountedPrice),
       params.currency,
       params.isFree,
       Duration.create(params.duration),
@@ -159,10 +174,39 @@ export class Course {
     if (params.description !== undefined) this.description = params.description;
     if (params.thumbnailFileId !== undefined) this.thumbnailFileId = params.thumbnailFileId;
     if (params.thumbnailUrl !== undefined) this.thumbnailUrl = params.thumbnailUrl;
-    if (params.originalPrice !== undefined) this.originalPrice = Price.create(params.originalPrice);
-    if (params.discountPrice !== undefined) this.discountPrice = Price.create(params.discountPrice);
-    if (params.currency !== undefined) this.currency = params.currency;
-    if (params.isFree !== undefined) this.isFree = params.isFree;
+
+    const pricingFieldsTouched =
+      params.originalPrice !== undefined ||
+      params.discountAmount !== undefined ||
+      params.discountedPrice !== undefined ||
+      params.currency !== undefined ||
+      params.isFree !== undefined;
+
+    if (pricingFieldsTouched) {
+      const pricing = buildCoursePricing({
+        originalPrice:
+          params.originalPrice !== undefined
+            ? params.originalPrice
+            : this.originalPrice.getValue(),
+        discountAmount:
+          params.discountAmount !== undefined
+            ? params.discountAmount
+            : this.discountAmount.getValue(),
+        discountedPrice:
+          params.discountedPrice !== undefined
+            ? params.discountedPrice
+            : this.discountedPrice.getValue(),
+        currency: params.currency ?? this.currency,
+        isFree: params.isFree ?? this.isFree,
+      });
+
+      this.originalPrice = Price.create(pricing.originalPrice);
+      this.discountAmount = Price.create(pricing.discountAmount);
+      this.discountedPrice = Price.create(pricing.discountedPrice);
+      this.currency = pricing.currency;
+      this.isFree = pricing.isFree;
+    }
+
     if (params.duration !== undefined) this.duration = Duration.create(params.duration);
     if (params.durationType !== undefined) this.durationType = params.durationType;
     if (params.level !== undefined) this.level = params.level;
@@ -220,25 +264,18 @@ export class Course {
     this.touch();
   }
 
-  getTotalDiscount(): number {
-    const fee = this.originalPrice.getValue();
-    const value = this.discountPrice.getValue();
-
-    if (value <= 0) {
-      return 0;
-    }
-
-    // Default discount amount (Course Management "Default Discount").
-    if (value <= fee) {
-      return value;
-    }
-
-    // Legacy records may store the final sale price instead of the amount.
-    return Math.max(fee - value, 0);
+  getPricing(): CoursePricingSnapshot {
+    return buildCoursePricing({
+      originalPrice: this.originalPrice.getValue(),
+      discountAmount: this.discountAmount.getValue(),
+      discountedPrice: this.discountedPrice.getValue(),
+      currency: this.currency,
+      isFree: this.isFree,
+    });
   }
 
   getDefaultDiscountAmount(): number {
-    return this.getTotalDiscount();
+    return this.getPricing().discountAmount;
   }
 
   private touch() {
@@ -257,7 +294,8 @@ export interface CourseCreateParams {
   thumbnailFileId?: string | null;
   thumbnailUrl?: string | null;
   originalPrice?: number;
-  discountPrice?: number;
+  discountAmount?: number;
+  discountedPrice?: number;
   currency?: string;
   isFree?: boolean;
   duration?: number | null;

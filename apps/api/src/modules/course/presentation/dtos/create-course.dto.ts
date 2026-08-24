@@ -108,7 +108,14 @@ export class CreateCourseDto {
   @IsNumber()
   @Min(0)
   @Transform(({ value }) => toNumber(value))
-  discountPrice?: number;
+  discountAmount?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Transform(({ value }) => toNumber(value))
+  discountedPrice?: number;
 
   @ApiPropertyOptional({ default: 'INR' })
   @IsOptional()
