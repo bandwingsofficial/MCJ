@@ -1,3 +1,8 @@
+import {
+  isLiveRecordedVideoLesson,
+  isSelfPacedVideoLesson,
+} from "@/src/features/course-modules/utils/module-content.utils";
+
 import type {
   CourseDetails,
   CourseLessonTree,
@@ -16,6 +21,7 @@ export interface CourseContentStats {
   modules: number;
   lessons: number;
   selfPacedVideos: number;
+  liveRecordedVideos: number;
   liveLessons: number;
   resources: number;
   quizzes: number;
@@ -68,6 +74,7 @@ export function computeCourseContentStats(
   const modules = course?.modules ?? [];
   let lessons = 0;
   let selfPacedVideos = 0;
+  let liveRecordedVideos = 0;
   let resources = 0;
   let quizzes = 0;
 
@@ -78,18 +85,24 @@ export function computeCourseContentStats(
     quizzes += counts.quizzes;
 
     for (const lesson of module.lessons ?? []) {
-      if (lesson.videoUrl?.trim()) {
+      if (isSelfPacedVideoLesson(lesson)) {
         selfPacedVideos += 1;
+      }
+      if (isLiveRecordedVideoLesson(lesson)) {
+        liveRecordedVideos += 1;
       }
     }
   }
+
+  const courseMaterials = course?.materials?.length ?? 0;
 
   return {
     modules: summary?.modules ?? course?.moduleCount ?? modules.length,
     lessons: summary?.lessons ?? lessons,
     selfPacedVideos,
-    liveLessons: 0,
-    resources,
+    liveRecordedVideos,
+    liveLessons: liveRecordedVideos,
+    resources: resources + courseMaterials,
     quizzes: summary?.quizzes ?? quizzes,
     assignments: 0,
   };

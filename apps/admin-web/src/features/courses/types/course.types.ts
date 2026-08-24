@@ -148,12 +148,19 @@ export interface CourseLessonQuizTree {
   timeLimitMinutes: number | null;
 }
 
+export type LessonContentType =
+  | "LESSON"
+  | "SELF_PACED_VIDEO"
+  | "LIVE_RECORDED_VIDEO";
+
 export interface CourseLessonTree {
   id: string;
 
   title: string;
 
   videoUrl: string | null;
+
+  contentType?: LessonContentType;
 
   duration: number | null;
 

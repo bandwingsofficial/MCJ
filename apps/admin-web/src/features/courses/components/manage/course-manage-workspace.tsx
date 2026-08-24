@@ -7,38 +7,44 @@ import {
   TabsTrigger,
 } from "@/src/shared/components/ui/tabs";
 
-import type { CourseDetails } from "@/src/features/courses/types/course.types";
-import type { CourseSummary } from "@/src/features/courses/types/course.types";
+import type {
+  CourseDetails,
+  CourseSummary,
+} from "@/src/features/courses/types/course.types";
 import { COURSE_MANAGE_DEFAULT_TAB } from "@/src/features/courses/utils/course-manage.routes";
 
+import { CourseManageFaqPanel } from "./course-manage-faq-panel";
 import { CourseManageModulesPanel } from "./course-manage-modules-panel";
 import { CourseManageOverviewPanel } from "./course-manage-overview-panel";
-import { CourseManagePreviewPanel } from "./course-manage-preview-panel";
+import { CourseManageTrainersPanel } from "./course-manage-trainers-panel";
 
 interface Props {
   course: CourseDetails;
   summary: CourseSummary | null;
   summaryLoading?: boolean;
-  overviewRefreshKey?: number;
   activeTab?: TabKey;
   onSummaryRefresh: () => Promise<void>;
   onCourseUpdated: (course: CourseDetails) => void;
   onTabChange?: (tab: TabKey) => void;
-  onEditCourse?: () => void;
   onMutationSuccess?: () => Promise<void>;
 }
 
-export type TabKey = "overview" | "modules" | "preview";
+export type TabKey = "overview" | "modules" | "faq" | "trainers";
+
+const TAB_ITEMS: readonly [TabKey, string][] = [
+  ["overview", "Overview"],
+  ["modules", "Modules"],
+  ["faq", "FAQ"],
+  ["trainers", "Assign Trainer"],
+];
 
 export function CourseManageWorkspace({
   course,
   summary,
   summaryLoading = false,
-  overviewRefreshKey = 0,
   activeTab = COURSE_MANAGE_DEFAULT_TAB,
   onSummaryRefresh,
   onTabChange,
-  onEditCourse,
   onMutationSuccess,
 }: Props) {
   const courseId = course.id;
@@ -53,13 +59,7 @@ export function CourseManageWorkspace({
       }}
     >
       <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
-        {(
-          [
-            ["overview", "Overview"],
-            ["modules", "Modules"],
-            ["preview", "Preview"],
-          ] as const
-        ).map(([value, label]) => (
+        {TAB_ITEMS.map(([value, label]) => (
           <TabsTrigger
             key={value}
             value={value}
@@ -75,12 +75,8 @@ export function CourseManageWorkspace({
           course={course}
           summary={summary}
           summaryLoading={summaryLoading}
-          refreshKey={overviewRefreshKey}
-          onSummaryRefresh={onSummaryRefresh}
-          onNavigateToTab={(nextTab) => {
-            onTabChange?.(nextTab);
-          }}
-          onEditCourse={onEditCourse}
+          disabled={contentDisabled}
+          onRefresh={onSummaryRefresh}
         />
       </TabsContent>
 
@@ -94,10 +90,14 @@ export function CourseManageWorkspace({
         />
       </TabsContent>
 
-      <TabsContent value="preview">
-        <CourseManagePreviewPanel
+      <TabsContent value="faq">
+        <CourseManageFaqPanel courseId={courseId} disabled={contentDisabled} />
+      </TabsContent>
+
+      <TabsContent value="trainers">
+        <CourseManageTrainersPanel
           courseId={courseId}
-          courseTitle={course.title}
+          disabled={contentDisabled}
         />
       </TabsContent>
     </Tabs>

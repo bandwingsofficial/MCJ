@@ -1,27 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import {
-  CircleCheck,
-  Eye,
-  Pencil,
-  Power,
-  RotateCcw,
-  Trash2,
-} from "lucide-react";
+import { Archive, Eye, RotateCcw, Trash2 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 
 import type { CourseDetails } from "@/src/features/courses/types/course.types";
 import { CourseStatusBadge } from "@/src/features/courses/components/course-status-badge";
+import { coursePreviewPath } from "@/src/features/courses/utils/course-manage.routes";
 
 interface Props {
   course: CourseDetails;
   categoryName?: string | null;
   activeSection?: string;
-  onEdit: () => void;
-  onActivate: () => void;
-  onDeactivate: () => void;
   onArchive: () => void;
   onRestore: () => void;
   onPermanentDelete: () => void;
@@ -32,16 +23,15 @@ export function CourseManageHeader({
   course,
   categoryName,
   activeSection,
-  onEdit,
-  onActivate,
-  onDeactivate,
   onArchive,
   onRestore,
   onPermanentDelete,
   actionsDisabled = false,
 }: Props) {
   const isArchived = Boolean(course.deletedAt || course.isDeleted);
-  const meta = [course.code ?? course.slug, categoryName].filter(Boolean).join(" · ");
+  const meta = [course.code ?? course.slug, categoryName]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className="space-y-3">
@@ -91,7 +81,15 @@ export function CourseManageHeader({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+          <Link
+            href={coursePreviewPath(course.id)}
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          >
+            <Eye className="mr-1.5 h-4 w-4 shrink-0" />
+            Preview Course
+          </Link>
+
           {isArchived ? (
             <>
               <Button
@@ -99,9 +97,9 @@ export function CourseManageHeader({
                 size="sm"
                 disabled={actionsDisabled}
                 onClick={onRestore}
-                className="border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                className="h-9 justify-center border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
               >
-                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                <RotateCcw className="mr-1.5 h-4 w-4 shrink-0" />
                 Restore
               </Button>
               <Button
@@ -110,70 +108,24 @@ export function CourseManageHeader({
                 variant="danger"
                 disabled={actionsDisabled}
                 onClick={onPermanentDelete}
+                className="h-9 justify-center"
               >
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                <Trash2 className="mr-1.5 h-4 w-4 shrink-0" />
                 Permanently Delete
               </Button>
             </>
           ) : (
-            <>
-              <Link
-                href={`/courses/${course.id}/preview`}
-                className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                <Eye className="mr-1.5 h-3.5 w-3.5" />
-                Preview Course
-              </Link>
-
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={actionsDisabled}
-                onClick={onEdit}
-              >
-                <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                Edit Course
-              </Button>
-
-              {course.status === "ACTIVE" ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={actionsDisabled}
-                  onClick={onDeactivate}
-                  className="border-red-200 text-red-700 hover:bg-red-50"
-                >
-                  <Power className="mr-1.5 h-3.5 w-3.5" />
-                  Deactivate
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={actionsDisabled}
-                  onClick={onActivate}
-                  className="border-emerald-200 text-emerald-800 hover:bg-emerald-50"
-                >
-                  <CircleCheck className="mr-1.5 h-3.5 w-3.5" />
-                  Activate
-                </Button>
-              )}
-
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={actionsDisabled}
-                onClick={onArchive}
-                className="border-amber-200 text-amber-800 hover:bg-amber-50"
-              >
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                Delete
-              </Button>
-            </>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={actionsDisabled}
+              onClick={onArchive}
+              className="h-9 justify-center border-amber-200 text-amber-800 hover:bg-amber-50"
+            >
+              <Archive className="mr-1.5 h-4 w-4 shrink-0" />
+              Archive Course
+            </Button>
           )}
         </div>
       </div>

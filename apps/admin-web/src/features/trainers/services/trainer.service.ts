@@ -19,6 +19,7 @@ import type {
 } from "@/src/features/trainers/types/trainer.types";
 
 const DEFAULT_PAGE_SIZE = 20;
+const TRAINER_LOOKUP_PAGE_SIZE = 100;
 
 function normalizeListResponse(
   data: TrainerListResponse | TrainerListItem[]
@@ -124,6 +125,85 @@ class TrainerService {
       });
 
       return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async listAllTrainers(filters?: Pick<TrainerFilters, "status">) {
+    const collected: TrainerDetails[] = [];
+    let page = 1;
+
+    while (true) {
+      const response = await this.getTrainers({
+        status: filters?.status,
+        page,
+        pageSize: TRAINER_LOOKUP_PAGE_SIZE,
+      });
+
+      const items = response.data.items as unknown as TrainerDetails[];
+      collected.push(...items);
+
+      if (items.length < TRAINER_LOOKUP_PAGE_SIZE) {
+        break;
+      }
+
+      page += 1;
+    }
+
+    return collected;
+  }
+
+  async getTrainersForCourse(courseId: string) {
+    try {
+      const trainers = await this.listAllTrainers();
+      return trainers.filter((trainer) =>
+        (trainer.courses ?? []).some((course) => course.id === courseId),
+      );
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async assignTrainersToCourse(courseId: string, trainerIds: string[]) {
+    const uniqueTrainerIds = Array.from(new Set(trainerIds));
+
+    await Promise.all(
+      uniqueTrainerIds.map(async (trainerId) => {
+        const response = await this.getTrainer(trainerId);
+        const trainer = response.data;
+        const existingCourseIds = (trainer.courses ?? []).map(
+          (course) => course.id,
+        );
+
+        if (existingCourseIds.includes(courseId)) {
+          return;
+        }
+
+        await this.assignTrainerCourses(trainerId, [
+          ...existingCourseIds,
+          courseId,
+        ]);
+      }),
+    );
+  }
+
+  async unassignTrainerFromCourse(courseId: string, trainerId: string) {
+    const response = await this.getTrainer(trainerId);
+    const trainer = response.data;
+    const nextCourseIds = (trainer.courses ?? [])
+      .map((course) => course.id)
+      .filter((id) => id !== courseId);
+
+    await this.assignTrainerCourses(trainerId, nextCourseIds);
+  }
+
+  async getActiveTrainersForAssignment() {
+    try {
+      const trainers = await this.listAllTrainers({ status: "ACTIVE" });
+      return trainers.filter(
+        (trainer) => trainer.status === "ACTIVE" && !trainer.isDeleted,
+      );
     } catch (error) {
       throw this.handleError(error);
     }

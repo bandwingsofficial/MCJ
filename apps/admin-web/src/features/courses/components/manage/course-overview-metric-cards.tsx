@@ -3,44 +3,39 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
-  CalendarDays,
-  CreditCard,
   FileQuestion,
-  GraduationCap,
-  Users,
+  FileText,
+  Layers,
+  Radio,
+  Video,
 } from "lucide-react";
 
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { cn } from "@/src/shared/lib/cn";
 
-import type { CourseSummary } from "@/src/features/courses/types/course.types";
+import type { CourseContentStats } from "@/src/features/courses/utils/course-content-stats.util";
 
 interface SummaryMetric {
   key: string;
   label: string;
-  hint: string;
-  value: string | number;
+  value: number;
   icon: LucideIcon;
   iconClass: string;
   bgClass: string;
-  isText?: boolean;
 }
 
 interface Props {
-  summary: CourseSummary | null;
-  enrollmentCount: number;
-  pricingLabel: string;
+  stats: CourseContentStats;
   isLoading?: boolean;
 }
 
 function MetricCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-2">
-          <Skeleton className="h-3 w-20" />
-          <Skeleton className="h-8 w-14" />
           <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-8 w-14" />
         </div>
         <Skeleton className="h-11 w-11 shrink-0 rounded-xl" />
       </div>
@@ -48,67 +43,55 @@ function MetricCardSkeleton() {
   );
 }
 
-export function CourseOverviewMetricCards({
-  summary,
-  enrollmentCount,
-  pricingLabel,
-  isLoading,
-}: Props) {
+export function CourseOverviewMetricCards({ stats, isLoading }: Props) {
   const metrics: SummaryMetric[] = [
     {
-      key: "batches",
-      label: "Batches",
-      hint: "Total batches",
-      value: summary?.batches ?? 0,
-      icon: CalendarDays,
-      iconClass: "text-orange-600",
-      bgClass: "bg-orange-50",
-    },
-    {
-      key: "students",
-      label: "Students",
-      hint: "Enrolled students",
-      value: summary?.students ?? 0,
-      icon: Users,
-      iconClass: "text-violet-600",
-      bgClass: "bg-violet-50",
-    },
-    {
-      key: "enrollments",
-      label: "Enrollments",
-      hint: "Total enrollments",
-      value: enrollmentCount,
-      icon: GraduationCap,
-      iconClass: "text-emerald-600",
-      bgClass: "bg-emerald-50",
-    },
-    {
       key: "modules",
-      label: "Modules",
-      hint: "Course modules",
-      value: summary?.modules ?? 0,
-      icon: BookOpen,
+      label: "Total Modules",
+      value: stats.modules,
+      icon: Layers,
       iconClass: "text-[#2447A8]",
       bgClass: "bg-blue-50",
     },
     {
-      key: "quizzes",
-      label: "Quizzes",
-      hint: "Assessment quizzes",
-      value: summary?.quizzes ?? 0,
-      icon: FileQuestion,
+      key: "lessons",
+      label: "Total Lessons",
+      value: stats.lessons,
+      icon: BookOpen,
+      iconClass: "text-violet-600",
+      bgClass: "bg-violet-50",
+    },
+    {
+      key: "resources",
+      label: "Total Resources",
+      value: stats.resources,
+      icon: FileText,
+      iconClass: "text-amber-600",
+      bgClass: "bg-amber-50",
+    },
+    {
+      key: "live-videos",
+      label: "Live Videos",
+      value: stats.liveRecordedVideos,
+      icon: Radio,
+      iconClass: "text-rose-600",
+      bgClass: "bg-rose-50",
+    },
+    {
+      key: "recorded-videos",
+      label: "Recorded Videos",
+      value: stats.selfPacedVideos,
+      icon: Video,
       iconClass: "text-sky-600",
       bgClass: "bg-sky-50",
     },
     {
-      key: "course-fee",
-      label: "Course Fee",
-      hint: "Default enrollment fee",
-      value: pricingLabel,
-      icon: CreditCard,
-      iconClass: "text-rose-600",
-      bgClass: "bg-rose-50",
-      isText: true,
+      key: "quizzes",
+      label: "Quizzes",
+      value: stats.quizzes,
+      icon: FileQuestion,
+      iconClass: "text-emerald-600",
+      bgClass: "bg-emerald-50",
     },
   ];
 
@@ -130,22 +113,16 @@ export function CourseOverviewMetricCards({
         return (
           <div
             key={metric.key}
-            className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+            className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-slate-500">
                   {metric.label}
                 </p>
-                <p
-                  className={cn(
-                    "mt-1 font-semibold tabular-nums tracking-tight text-slate-900",
-                    metric.isText ? "text-lg" : "text-3xl",
-                  )}
-                >
+                <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-slate-900">
                   {metric.value}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">{metric.hint}</p>
               </div>
               <div
                 className={cn(

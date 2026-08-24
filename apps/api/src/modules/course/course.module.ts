@@ -42,7 +42,9 @@ import { CourseDomainService } from './domain/services/course-domain.service';
 import { CourseHierarchyService } from './infrastructure/services/course-hierarchy.service';
 import { PrismaCourseRepository } from './infrastructure/repositories/prisma-course.repository';
 import { AdminCourseController } from './presentation/controllers/admin-course.controller';
+import { AdminCourseFaqController } from './presentation/controllers/admin-course-faq.controller';
 import { CourseController } from './presentation/controllers/course.controller';
+import { CourseFaqService } from './infrastructure/services/course-faq.service';
 import { BranchRepository } from '../branch/domain/repositories/branch.repository';
 import { BRANCH_TOKENS } from '../branch/branch.tokens';
 import { BranchModule } from '../branch/branch.module';
@@ -60,12 +62,14 @@ import { BranchModule } from '../branch/branch.module';
 
   controllers: [
     AdminCourseController,
+    AdminCourseFaqController,
     CourseController,
   ],
 
   providers: [
     CourseDomainService,
     CourseHierarchyService,
+    CourseFaqService,
     SuperAdminGuard,
 
     {
