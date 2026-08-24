@@ -1,11 +1,13 @@
 import { Course } from '../entities/course.entity';
 import { CourseStatus } from '../enums/course-status.enum';
+import { CourseMode } from '../enums/course-mode.enum';
 
 export interface CourseListFilters {
   categoryId?: string;
   branchId?: string;
   status?: CourseStatus;
   search?: string;
+  mode?: CourseMode;
   isFeatured?: boolean;
   isPopular?: boolean;
   includeDeleted?: boolean;

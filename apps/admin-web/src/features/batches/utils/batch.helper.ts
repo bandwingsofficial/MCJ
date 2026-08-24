@@ -13,8 +13,8 @@ export const formatBatchMode = (
     case "OFFLINE":
       return "Offline";
 
-    case "HYBRID":
-      return "Hybrid";
+    case "RECORDED":
+      return "Recorded";
 
     default:
       return mode;
@@ -63,10 +63,10 @@ export const isOfflineBatch = (
 ): boolean =>
   mode === "OFFLINE";
 
-export const isHybridBatch = (
+export const isRecordedBatch = (
   mode: BatchMode,
 ): boolean =>
-  mode === "HYBRID";
+  mode === "RECORDED";
 
 export function formatBatchDate(value: string | null | undefined): string {
   if (!value) {

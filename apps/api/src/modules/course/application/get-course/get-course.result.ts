@@ -1,6 +1,7 @@
 import { Course } from '../../domain/entities/course.entity';
 import { CourseLevel } from '../../domain/enums/course-level.enum';
 import { CourseMode } from '../../domain/enums/course-mode.enum';
+import { CourseQualification } from '../../domain/enums/course-qualification.enum';
 import { CourseStatus } from '../../domain/enums/course-status.enum';
 import { DurationType } from '../../domain/enums/duration-type.enum';
 import { MaterialType } from '../../domain/enums/material-type.enum';
@@ -131,6 +132,7 @@ export class GetCourseResult {
     public readonly durationType: DurationType | null,
     public readonly level: CourseLevel,
     public readonly modes: CourseMode[],
+    public readonly minimumQualifications: CourseQualification[],
     public readonly language: string,
     public readonly averageRating: number,
     public readonly totalReviews: number,
@@ -238,6 +240,7 @@ export class GetCourseResult {
       course.durationType,
       course.level,
       course.modes,
+      course.minimumQualifications,
       course.language,
       course.averageRating,
       course.totalReviews,

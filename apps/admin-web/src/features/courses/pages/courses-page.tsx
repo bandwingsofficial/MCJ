@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 
 import { useCategories } from "@/src/features/categories/hooks/use-categories";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Pagination } from "@/src/shared/components/ui/pagination";
@@ -14,6 +13,8 @@ import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { appToast } from "@/src/shared/components/ui/toast";
 
 import { useCourses } from "@/src/features/courses/hooks/use-courses";
+import { useActivateCourse } from "@/src/features/courses/hooks/use-activate-course";
+import { useDeactivateCourse } from "@/src/features/courses/hooks/use-deactivate-course";
 import { useBulkActivateCourses } from "@/src/features/courses/hooks/use-bulk-activate-courses";
 import { useBulkDeactivateCourses } from "@/src/features/courses/hooks/use-bulk-deactivate-courses";
 import { useBulkDeleteCourses } from "@/src/features/courses/hooks/use-bulk-delete-courses";
@@ -25,7 +26,10 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { CourseFilters } from "@/src/features/courses/components/course-filters";
 import { CourseTable } from "@/src/features/courses/components/course-table";
+import { CourseSummaryHeader } from "@/src/features/courses/components/course-summary-header";
 import { CourseFormModal } from "@/src/features/courses/components/course-form-modal";
+import { CourseActivateDialog } from "@/src/features/courses/components/course-activate-dialog";
+import { CourseDeactivateDialog } from "@/src/features/courses/components/course-deactivate-dialog";
 import {
   CourseBulkActionsToolbar,
   type BulkCourseAction,
@@ -39,12 +43,18 @@ import {
   getEligibleRestoreIds,
 } from "@/src/features/courses/utils/course-bulk.utils";
 
+import type {
+  CourseDetails,
+  CourseListItem,
+} from "@/src/features/courses/types/course.types";
+
 export function CoursesPage() {
   const router = useRouter();
 
   const {
     courses,
     total,
+    catalogTotal,
     filters,
     setFilters,
     isInitialLoading,
@@ -56,6 +66,12 @@ export function CoursesPage() {
   const { categories } = useCategories();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editCourse, setEditCourse] = useState<CourseDetails | null>(null);
+  const [isEditLoading, setIsEditLoading] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<{
+    course: CourseListItem;
+    action: "activate" | "deactivate";
+  } | null>(null);
   const [selectedCourseIds, setSelectedCourseIds] = useState<
     string[]
   >([]);
@@ -84,6 +100,11 @@ export function CoursesPage() {
     isPending: isBulkPermanentDeleting,
   } = useBulkPermanentDeleteCourses();
 
+  const { activateCourse, isLoading: isActivatingCourse } =
+    useActivateCourse();
+  const { deactivateCourse, isLoading: isDeactivatingCourse } =
+    useDeactivateCourse();
+
   const pageSize = filters.pageSize ?? 20;
   const page = filters.page ?? 1;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -102,7 +123,7 @@ export function CoursesPage() {
   const hasActiveFilters = Boolean(
     (filters.search ?? "").trim() ||
       filters.categoryId ||
-      filters.level ||
+      filters.mode ||
       filters.status
   );
 
@@ -113,7 +134,12 @@ export function CoursesPage() {
     isBulkRestoring ||
     isBulkPermanentDeleting;
 
-  const actionLoading = isReordering || bulkActionLoading;
+  const actionLoading =
+    isReordering ||
+    bulkActionLoading ||
+    isActivatingCourse ||
+    isDeactivatingCourse ||
+    isEditLoading;
 
   const eligibleBulkIds = useMemo(() => {
     if (!bulkConfirmAction) {
@@ -149,7 +175,7 @@ export function CoursesPage() {
     filters.pageSize,
     filters.status,
     filters.categoryId,
-    filters.level,
+    filters.mode,
     filters.search,
   ]);
 
@@ -163,6 +189,47 @@ export function CoursesPage() {
       });
     }
   }, [total, page, pageSize, filters, setFilters]);
+
+  const handleActivate = (course: CourseListItem) => {
+    setStatusTarget({ course, action: "activate" });
+  };
+
+  const handleDeactivate = (course: CourseListItem) => {
+    setStatusTarget({ course, action: "deactivate" });
+  };
+
+  const handleEdit = async (course: CourseListItem) => {
+    try {
+      setIsEditLoading(true);
+      const response = await courseService.getCourse(course.id);
+      setEditCourse(response.data);
+    } catch (err) {
+      appToast.error(getErrorMessage(err));
+    } finally {
+      setIsEditLoading(false);
+    }
+  };
+
+  const handleStatusConfirm = async () => {
+    if (!statusTarget) {
+      return;
+    }
+
+    try {
+      if (statusTarget.action === "activate") {
+        await activateCourse(statusTarget.course.id);
+        appToast.success("Course activated successfully");
+      } else {
+        await deactivateCourse(statusTarget.course.id);
+        appToast.success("Course deactivated successfully");
+      }
+
+      setStatusTarget(null);
+      await refetch();
+    } catch (err) {
+      appToast.error(getErrorMessage(err));
+    }
+  };
 
   const handleReorder = async (payload: {
     courseId: string;
@@ -316,152 +383,143 @@ export function CoursesPage() {
   }
 
   return (
-    <>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">
-            Courses
-          </h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            Manage courses and learning content
-          </p>
-        </div>
+    <div className="-m-6 min-h-full bg-white p-6">
+      <CourseSummaryHeader
+        total={catalogTotal}
+        isLoading={isInitialLoading && courses.length === 0}
+        onCreate={() => setIsCreateOpen(true)}
+        createDisabled={bulkActionLoading}
+      />
 
-        <Button
-          onClick={() => setIsCreateOpen(true)}
-          className="h-9 rounded-lg px-4"
-          disabled={bulkActionLoading}
-        >
-          Create Course
-        </Button>
-      </div>
+      <div className="mt-6 space-y-3">
+        <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
+          <div className="border-b border-slate-200 bg-white px-4 py-3">
+            <CourseFilters
+              filters={filters}
+              categoryOptions={categoryOptions}
+              onChange={setFilters}
+            />
+          </div>
 
-      <div className="space-y-3">
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-          <CourseFilters
-            filters={filters}
-            categoryOptions={categoryOptions}
-            onChange={setFilters}
+          <CourseBulkActionsToolbar
+            courses={courses}
+            selectedCourseIds={selectedCourseIds}
+            disabled={actionLoading || isFetching}
+            onAction={setBulkConfirmAction}
           />
-        </div>
 
-        {isInitialLoading ? (
-          <SkeletonTable rows={10} />
-        ) : (
-          <Card className="overflow-hidden p-0 shadow-sm">
-            {error ? (
-              <div className="border-b border-red-100 bg-red-50 px-3.5 py-2 text-sm text-red-700">
-                {error}{" "}
-                <button
-                  type="button"
-                  className="font-medium underline"
-                  onClick={() => {
-                    void refetch();
-                  }}
-                >
-                  Retry
-                </button>
-              </div>
-            ) : null}
-
-            <div className="px-3 pt-3">
-              <CourseBulkActionsToolbar
-                courses={courses}
-                selectedCourseIds={selectedCourseIds}
-                disabled={actionLoading || isFetching}
-                onAction={setBulkConfirmAction}
-              />
-            </div>
-
-            <div aria-busy={isFetching} className="relative">
-              {isFetching ? (
-                <span className="sr-only">
-                  Updating courses
-                </span>
+          {isInitialLoading ? (
+            <SkeletonTable rows={10} />
+          ) : (
+            <>
+              {error ? (
+                <div className="border-b border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                  {error}{" "}
+                  <button
+                    type="button"
+                    className="font-medium underline"
+                    onClick={() => {
+                      void refetch();
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
               ) : null}
 
-              <CourseTable
-                courses={courses}
-                selectedCourseIds={selectedCourseIds}
-                onSelectionChange={setSelectedCourseIds}
-                actionsDisabled={actionLoading || isFetching}
-                selectionDisabled={actionLoading || isFetching}
-                reorderDisabled={
-                  isReordering ||
-                  !!filters.status ||
-                  !!(filters.search ?? "").trim() ||
-                  !!filters.categoryId ||
-                  !!filters.level ||
-                  isFetching ||
-                  selectedCourseIds.length > 0
-                }
-                emptyTitle={
-                  hasActiveFilters
-                    ? "No Courses Found"
-                    : "No Courses Yet"
-                }
-                emptyDescription={
-                  hasActiveFilters
-                    ? "Try adjusting your search or filters."
-                    : "Create your first course to get started."
-                }
-                onReorder={handleReorder}
-              />
-            </div>
+              <div aria-busy={isFetching} className="relative">
+                {isFetching ? (
+                  <span className="sr-only">
+                    Updating courses
+                  </span>
+                ) : null}
 
-            <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-              {total > 0 ? (
-                <>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-slate-600">
-                    <span className="leading-9">
-                      Showing {from}–{to} of {total}
-                    </span>
+                <CourseTable
+                  courses={courses}
+                  selectedCourseIds={selectedCourseIds}
+                  onSelectionChange={setSelectedCourseIds}
+                  actionsDisabled={actionLoading || isFetching}
+                  selectionDisabled={actionLoading || isFetching}
+                  reorderDisabled={
+                    isReordering ||
+                    !!filters.status ||
+                    !!(filters.search ?? "").trim() ||
+                    !!filters.categoryId ||
+                    !!filters.mode ||
+                    isFetching ||
+                    selectedCourseIds.length > 0
+                  }
+                  emptyTitle={
+                    hasActiveFilters
+                      ? "No Courses Found"
+                      : "No Courses Yet"
+                  }
+                  emptyDescription={
+                    hasActiveFilters
+                      ? "Try adjusting your search or filters."
+                      : "Create your first course to get started."
+                  }
+                  onReorder={handleReorder}
+                  onActivate={handleActivate}
+                  onDeactivate={handleDeactivate}
+                  onEdit={handleEdit}
+                />
+              </div>
 
-                    <label className="flex items-center gap-2 leading-9">
-                      <span className="whitespace-nowrap">
-                        Rows per page
+              <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                {total > 0 ? (
+                  <>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-slate-600">
+                      <span className="leading-9">
+                        Showing {from}–{to} of {total}
                       </span>
-                      <select
-                        className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-[15px]"
-                        value={pageSize}
-                        disabled={bulkActionLoading}
-                        onChange={(event) =>
-                          setFilters({
-                            ...filters,
-                            pageSize: Number(
-                              event.target.value
-                            ),
-                          })
-                        }
-                      >
-                        {[10, 20, 50].map((size) => (
-                          <option key={size} value={size}>
-                            {size}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
 
-                  <Pagination
-                    page={page}
-                    totalPages={totalPages}
-                    onPageChange={(nextPage) =>
-                      setFilters({
-                        ...filters,
-                        page: nextPage,
-                      })
-                    }
-                  />
-                </>
-              ) : (
-                <p className="text-[15px] leading-9 text-slate-500">
-                  No courses to paginate
-                </p>
-              )}
-            </div>
-          </Card>
-        )}
+                      <label className="flex items-center gap-2 leading-9">
+                        <span className="whitespace-nowrap">
+                          Rows per page
+                        </span>
+                        <select
+                          className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-[15px]"
+                          value={pageSize}
+                          disabled={bulkActionLoading}
+                          onChange={(event) =>
+                            setFilters({
+                              ...filters,
+                              pageSize: Number(
+                                event.target.value
+                              ),
+                            })
+                          }
+                        >
+                          {[10, 20, 50].map((size) => (
+                            <option key={size} value={size}>
+                              {size}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    <Pagination
+                      page={page}
+                      totalPages={totalPages}
+                      onPageChange={(nextPage) =>
+                        setFilters({
+                          ...filters,
+                          page: nextPage,
+                        })
+                      }
+                    />
+                  </>
+                ) : (
+                  <p className="text-[15px] leading-9 text-slate-500">
+                    No courses to paginate
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+        </Card>
       </div>
 
       <CourseFormModal
@@ -473,6 +531,43 @@ export function CoursesPage() {
           if (createdCourseId) {
             router.push(`/courses/${createdCourseId}/manage`);
           }
+        }}
+      />
+
+      <CourseFormModal
+        open={editCourse !== null}
+        course={editCourse}
+        categoryOptions={categoryOptions}
+        onClose={() => setEditCourse(null)}
+        onSuccess={async () => {
+          await refetch();
+          setEditCourse(null);
+        }}
+      />
+
+      <CourseActivateDialog
+        open={statusTarget?.action === "activate"}
+        isLoading={isActivatingCourse}
+        onClose={() => {
+          if (!isActivatingCourse) {
+            setStatusTarget(null);
+          }
+        }}
+        onConfirm={() => {
+          void handleStatusConfirm();
+        }}
+      />
+
+      <CourseDeactivateDialog
+        open={statusTarget?.action === "deactivate"}
+        isLoading={isDeactivatingCourse}
+        onClose={() => {
+          if (!isDeactivatingCourse) {
+            setStatusTarget(null);
+          }
+        }}
+        onConfirm={() => {
+          void handleStatusConfirm();
         }}
       />
 
@@ -492,6 +587,6 @@ export function CoursesPage() {
           void handleBulkConfirm();
         }}
       />
-    </>
+    </div>
   );
 }

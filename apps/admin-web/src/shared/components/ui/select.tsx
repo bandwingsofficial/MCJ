@@ -38,7 +38,7 @@ export function AppSelect({
         className={cn(
           "flex h-11 w-full min-w-0 max-w-full items-center justify-between gap-2 overflow-hidden rounded-xl border border-slate-300 bg-white px-4 text-sm",
           "focus:outline-none focus:ring-2 focus:ring-[#2447A8]",
-          triggerClassName
+          triggerClassName,
         )}
       >
         <SelectPrimitive.Value
@@ -46,21 +46,27 @@ export function AppSelect({
           className="min-w-0 truncate text-left"
         />
 
-        <ChevronDown className="h-4 w-4 shrink-0" />
+        <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" />
       </SelectPrimitive.Trigger>
 
       <SelectPrimitive.Portal>
         <SelectPrimitive.Content
-          className="z-50 min-w-[200px] overflow-hidden rounded-xl border bg-white shadow-lg"
+          position="popper"
+          side="bottom"
+          align="start"
+          sideOffset={4}
+          collisionPadding={12}
+          avoidCollisions
+          className="z-[100] max-h-60 w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
         >
-          <SelectPrimitive.Viewport className="p-1">
+          <SelectPrimitive.Viewport className="max-h-60 overflow-y-auto p-1">
             {options.map((option) => (
               <SelectPrimitive.Item
                 key={option.value}
                 value={option.value}
-                className="relative flex cursor-pointer items-center rounded-lg px-3 py-2 text-sm outline-none hover:bg-slate-100"
+                className="relative flex cursor-pointer items-center rounded-lg px-3 py-2 text-sm outline-none hover:bg-slate-100 focus:bg-slate-100"
               >
-                <SelectPrimitive.ItemText>
+                <SelectPrimitive.ItemText className="min-w-0 truncate">
                   {option.label}
                 </SelectPrimitive.ItemText>
 

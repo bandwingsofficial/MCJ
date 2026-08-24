@@ -6,23 +6,20 @@ import {
   useState,
 } from "react";
 
+import Image from "next/image";
 import Link from "next/link";
 import { GripVertical } from "lucide-react";
 
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/src/shared/components/ui/table";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
 import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
 import { isArchivedCourse } from "@/src/features/courses/utils/course-bulk.utils";
+import {
+  formatCourseMode,
+  formatCourseModes,
+} from "@/src/features/courses/utils/course-display.utils";
 
 import { CourseStatusBadge } from "./course-status-badge";
 import { CourseActions } from "./course-actions";
@@ -40,6 +37,9 @@ interface CourseTableProps {
     courseId: string;
     newDisplayOrder: number;
   }) => Promise<void>;
+  onActivate: (course: CourseListItem) => void;
+  onDeactivate: (course: CourseListItem) => void;
+  onEdit: (course: CourseListItem) => void;
 }
 
 function canReorder(course: CourseListItem): boolean {
@@ -50,18 +50,12 @@ function canReorder(course: CourseListItem): boolean {
   );
 }
 
-function formatDuration(course: CourseListItem): string {
-  if (course.duration == null) {
-    return "—";
+function resolveCourseMode(course: CourseListItem): string {
+  if (course.modes?.length) {
+    return formatCourseModes(course.modes);
   }
 
-  const unit = course.durationType
-    ? course.durationType.toLowerCase()
-    : "";
-
-  return unit
-    ? `${course.duration} ${unit}`
-    : String(course.duration);
+  return formatCourseMode(course.mode);
 }
 
 export function CourseTable({
@@ -74,6 +68,9 @@ export function CourseTable({
   emptyTitle = "No Courses Found",
   emptyDescription = "Create your first course to get started.",
   onReorder,
+  onActivate,
+  onDeactivate,
+  onEdit,
 }: CourseTableProps) {
   const [rows, setRows] = useState(courses);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -210,146 +207,186 @@ export function CourseTable({
     safeSelectedIds.length > 0;
 
   return (
-    <Table className="rounded-none border-0">
-      <TableHeader>
-        <TableRow>
-          {selectionEnabled ? (
-            <TableHead className="w-10">
-              <input
-                ref={selectAllRef}
-                type="checkbox"
-                className="h-4 w-4 rounded border-slate-300"
-                checked={allVisibleSelected}
-                disabled={selectionDisabled}
-                onChange={(event) => {
-                  toggleAllVisible(event.target.checked);
+    <div className="overflow-x-auto">
+      <table className="min-w-full border-collapse">
+        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
+          <tr>
+            {selectionEnabled ? (
+              <th className="w-11 px-3 py-3 text-left">
+                <input
+                  ref={selectAllRef}
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-slate-300"
+                  checked={allVisibleSelected}
+                  disabled={selectionDisabled}
+                  onChange={(event) => {
+                    toggleAllVisible(event.target.checked);
+                  }}
+                  aria-label="Select all courses on this page"
+                />
+              </th>
+            ) : null}
+
+            <th className="w-10 px-2 py-3">
+              <span className="sr-only">Reorder</span>
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Image
+            </th>
+            <th className="min-w-[120px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Code
+            </th>
+            <th className="min-w-[180px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Name
+            </th>
+            <th className="min-w-[140px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Category
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Mode
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Level
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Status
+            </th>
+            <th className="w-[9.5rem] px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Actions
+            </th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y divide-slate-100">
+          {rows.map((course) => {
+            const draggable =
+              canReorder(course) && !dragDisabled;
+            const isArchived = isArchivedCourse(course);
+
+            return (
+              <tr
+                key={course.id}
+                draggable={draggable}
+                onDragStart={() => {
+                  if (!draggable) {
+                    return;
+                  }
+                  setDragId(course.id);
                 }}
-                aria-label="Select all courses on this page"
-              />
-            </TableHead>
-          ) : null}
-
-          <TableHead className="w-10">
-            <span className="sr-only">Reorder</span>
-          </TableHead>
-          <TableHead>Code</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>Category</TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead>Duration</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-
-      <TableBody>
-        {rows.map((course) => {
-          const draggable =
-            canReorder(course) && !dragDisabled;
-
-          return (
-            <TableRow
-              key={course.id}
-              draggable={draggable}
-              onDragStart={() => {
-                if (!draggable) {
-                  return;
-                }
-                setDragId(course.id);
-              }}
-              onDragOver={(event) => {
-                if (!draggable || !dragId) {
-                  return;
-                }
-                event.preventDefault();
-                setDropTargetId(course.id);
-              }}
-              onDragLeave={() => {
-                if (dropTargetId === course.id) {
+                onDragOver={(event) => {
+                  if (!draggable || !dragId) {
+                    return;
+                  }
+                  event.preventDefault();
+                  setDropTargetId(course.id);
+                }}
+                onDragLeave={() => {
+                  if (dropTargetId === course.id) {
+                    setDropTargetId(null);
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  void handleDrop(course.id);
+                }}
+                onDragEnd={() => {
+                  setDragId(null);
                   setDropTargetId(null);
-                }
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                void handleDrop(course.id);
-              }}
-              onDragEnd={() => {
-                setDragId(null);
-                setDropTargetId(null);
-              }}
-              className={`${
-                dropTargetId === course.id ? "bg-slate-50" : ""
-              } ${dragId === course.id ? "opacity-60" : ""}`}
-            >
-              {selectionEnabled ? (
-                <TableCell className="w-10">
-                  <Checkbox
-                    checked={safeSelectedIds.includes(course.id)}
-                    disabled={selectionDisabled}
-                    onCheckedChange={(checked) => {
-                      toggleRow(course.id, checked);
-                    }}
-                  />
-                </TableCell>
-              ) : null}
-
-              <TableCell className="w-10">
-                {draggable ? (
-                  <GripVertical
-                    className="h-3.5 w-3.5 cursor-grab text-slate-400"
-                    aria-label="Drag to reorder"
-                  />
-                ) : (
-                  <span className="inline-block w-3.5" />
-                )}
-              </TableCell>
-
-              <TableCell className="font-mono text-sm text-slate-700">
-                {course.code ?? course.slug}
-              </TableCell>
-
-              <TableCell className="text-[15px] font-medium text-slate-900">
-                <Link
-                  href={`/courses/${course.id}/manage`}
-                  className="hover:text-[#2447A8] hover:underline"
-                >
-                  {course.title}
-                </Link>
-                {course.tagline ? (
-                  <div className="text-xs font-normal text-slate-500">
-                    {course.tagline}
-                  </div>
+                }}
+                className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${
+                  dropTargetId === course.id ? "bg-blue-50/60" : ""
+                } ${dragId === course.id ? "opacity-60" : ""} ${
+                  isArchived ? "bg-slate-50/40" : "bg-white"
+                }`}
+              >
+                {selectionEnabled ? (
+                  <td className="w-11 px-3 py-3 align-middle">
+                    <Checkbox
+                      checked={safeSelectedIds.includes(course.id)}
+                      disabled={selectionDisabled}
+                      onCheckedChange={(checked) => {
+                        toggleRow(course.id, Boolean(checked));
+                      }}
+                    />
+                  </td>
                 ) : null}
-              </TableCell>
 
-              <TableCell>
-                {getCourseCategoryDisplayName(course)}
-              </TableCell>
+                <td className="w-10 px-2 py-3 align-middle">
+                  {draggable ? (
+                    <GripVertical className="h-4 w-4 cursor-grab text-slate-400 active:cursor-grabbing" />
+                  ) : (
+                    <span className="inline-block w-4" />
+                  )}
+                </td>
 
-              <TableCell>
-                {course.level.replaceAll("_", " ")}
-              </TableCell>
+                <td className="px-3 py-3 align-middle">
+                  {course.thumbnailUrl ? (
+                    <Image
+                      src={course.thumbnailUrl}
+                      alt={course.title}
+                      width={44}
+                      height={44}
+                      className="h-11 w-11 rounded-lg border border-slate-200 object-cover shadow-sm"
+                    />
+                  ) : (
+                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                      N/A
+                    </div>
+                  )}
+                </td>
 
-              <TableCell>{formatDuration(course)}</TableCell>
+                <td className="px-3 py-3 align-middle font-mono text-sm text-slate-700">
+                  {course.code ?? course.slug}
+                </td>
 
-              <TableCell>
-                <CourseStatusBadge
-                  status={course.status}
-                  deletedAt={course.deletedAt}
-                  isDeleted={course.isDeleted}
-                />
-              </TableCell>
+                <td className="px-3 py-3 align-middle">
+                  <Link
+                    href={`/courses/${course.id}/manage`}
+                    className="text-[15px] font-medium text-slate-900 hover:text-[#2447A8] hover:underline"
+                  >
+                    {course.title}
+                  </Link>
+                  {course.tagline ? (
+                    <div className="text-xs font-normal text-slate-500">
+                      {course.tagline}
+                    </div>
+                  ) : null}
+                </td>
 
-              <TableCell className="text-right">
-                <CourseActions
-                  course={course}
-                  disabled={actionsDisabled || isSavingOrder}
-                />
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                <td className="px-3 py-3 align-middle text-sm text-slate-700">
+                  {getCourseCategoryDisplayName(course)}
+                </td>
+
+                <td className="px-3 py-3 align-middle text-sm text-slate-700">
+                  {resolveCourseMode(course)}
+                </td>
+
+                <td className="px-3 py-3 align-middle text-sm capitalize text-slate-700">
+                  {course.level.replaceAll("_", " ").toLowerCase()}
+                </td>
+
+                <td className="px-3 py-3 align-middle">
+                  <CourseStatusBadge
+                    status={course.status}
+                    deletedAt={course.deletedAt}
+                    isDeleted={course.isDeleted}
+                  />
+                </td>
+
+                <td className="px-2 py-3 align-middle">
+                  <CourseActions
+                    course={course}
+                    disabled={actionsDisabled || isSavingOrder}
+                    onActivate={onActivate}
+                    onDeactivate={onDeactivate}
+                    onEdit={onEdit}
+                  />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

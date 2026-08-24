@@ -28,10 +28,10 @@ export function BatchModeBadge({
         </Badge>
       );
 
-    case "HYBRID":
+    case "RECORDED":
       return (
         <Badge variant="info">
-          Hybrid
+          Recorded
         </Badge>
       );
 

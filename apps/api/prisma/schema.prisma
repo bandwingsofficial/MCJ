@@ -310,9 +310,10 @@ model Course {
   isFree           Boolean          @default(false)
   duration         Int?
   durationType     DurationType?
-  level            CourseLevel      @default(BEGINNER)
-  mode             CourseMode[]
-  language         String           @default("English")
+  level                  CourseLevel            @default(BEGINNER)
+  mode                   CourseMode[]
+  minimumQualifications  CourseQualification[]
+  language               String                 @default("English")
   averageRating    Float            @default(0)
   totalReviews     Int              @default(0)
   isFeatured       Boolean          @default(false)
@@ -1189,7 +1190,21 @@ enum DurationType {
 enum CourseMode {
   ONLINE
   OFFLINE
-  HYBRID
+  RECORDED
+}
+
+enum CourseQualification {
+  B_COM
+  M_COM
+  BBA
+  MBA
+  BCA
+  MCA
+  CA
+  CA_FOUNDATION
+  CMA
+  CS
+  ACCA
 }
 
 enum CourseLevel {

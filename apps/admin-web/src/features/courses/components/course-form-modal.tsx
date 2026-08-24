@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Modal } from "@/src/shared/components/ui/model";
 import { appToast } from "@/src/shared/components/ui/toast";
@@ -40,6 +40,7 @@ export function CourseFormModal({
   const [suggestedCode, setSuggestedCode] = useState<string | null>(null);
   const [isSuggestingCode, setIsSuggestingCode] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   const isEditMode = Boolean(course);
   const isLoading = isCreating || isUpdating;
@@ -110,10 +111,9 @@ export function CourseFormModal({
         discountedPrice: pricingInput.discountedPrice,
         currency: pricingInput.currency,
         isFree: pricingInput.isFree,
-        duration: Number(values.duration),
-        durationType: values.durationType,
         level: values.level,
         modes: values.modes,
+        minimumQualifications: values.minimumQualifications,
         language: values.language,
         displayOrder: values.displayOrder,
         slug: values.slug?.trim() || undefined,
@@ -148,51 +148,56 @@ export function CourseFormModal({
       title={isEditMode ? "Edit Course" : "Create Course"}
       onClose={onClose}
       contentClassName="min-w-0"
+      bodyRef={bodyRef}
     >
-      <div className="min-w-0 overflow-x-hidden">
-        <CourseForm
-          key={course?.id ?? (open ? "create" : "closed")}
-          courseCode={isEditMode ? course?.code : suggestedCode}
-          isEdit={isEditMode}
-          categoryOptions={categoryOptions}
-          isLoading={isLoading}
-          isUploadingImage={isUploadingImage || isSuggestingCode}
-          submitLabel={isEditMode ? "Update Course" : "Create Course"}
-          loadingLabel={
-            isEditMode ? "Updating Course..." : "Creating Course..."
-          }
-          onCancel={onClose}
-          defaultValues={
-            course
-              ? {
-                  title: course.title,
-                  tagline: course.tagline ?? "",
-                  shortDescription: course.shortDescription ?? "",
-                  description: course.description ?? "",
-                  categoryId: course.categoryId,
-                  originalPrice: course.pricing.originalPrice,
-                  discountPercent: course.pricing.discountPercent,
-                  discountAmount: course.pricing.discountAmount,
-                  currency: course.pricing.currency,
-                  isFree: course.pricing.isFree,
-                  duration: course.duration ?? 1,
-                  durationType: course.durationType ?? "MONTHS",
-                  level: course.level,
-                  modes: course.mode ? [course.mode] : ["ONLINE"],
-                  language: course.language,
-                  displayOrder: course.displayOrder,
-                  slug: course.slug ?? "",
-                  metaTitle: course.metaTitle ?? "",
-                  metaDescription: course.metaDescription ?? "",
-                  metaKeywords: course.metaKeywords ?? "",
-                  thumbnailUrl: course.thumbnailUrl,
-                  status: course.status,
-                }
-              : undefined
-          }
-          onSubmit={handleSubmit}
-        />
-      </div>
+      <CourseForm
+        key={course?.id ?? (open ? "create" : "closed")}
+        courseCode={isEditMode ? course?.code : suggestedCode}
+        isEdit={isEditMode}
+        categoryOptions={categoryOptions}
+        isLoading={isLoading}
+        isUploadingImage={isUploadingImage || isSuggestingCode}
+        submitLabel={isEditMode ? "Update Course" : "Create Course"}
+        loadingLabel={
+          isEditMode ? "Updating Course..." : "Creating Course..."
+        }
+        onCancel={onClose}
+        dropdownBoundaryRef={bodyRef}
+        defaultValues={
+          course
+            ? {
+                title: course.title,
+                tagline: course.tagline ?? "",
+                shortDescription: course.shortDescription ?? "",
+                description: course.description ?? "",
+                categoryId: course.categoryId,
+                originalPrice: course.pricing.originalPrice,
+                discountPercent: course.pricing.discountPercent,
+                discountAmount: course.pricing.discountAmount,
+                currency: course.pricing.currency,
+                isFree: course.pricing.isFree,
+                level: course.level,
+                modes:
+                  course.modes?.length
+                    ? course.modes
+                    : course.mode
+                      ? [course.mode]
+                      : ["ONLINE"],
+                minimumQualifications:
+                  course.minimumQualifications ?? [],
+                language: course.language,
+                displayOrder: course.displayOrder,
+                slug: course.slug ?? "",
+                metaTitle: course.metaTitle ?? "",
+                metaDescription: course.metaDescription ?? "",
+                metaKeywords: course.metaKeywords ?? "",
+                thumbnailUrl: course.thumbnailUrl,
+                status: course.status,
+              }
+            : undefined
+        }
+        onSubmit={handleSubmit}
+      />
     </Modal>
   );
 }

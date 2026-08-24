@@ -8,7 +8,20 @@ export type CourseLevel =
 export type CourseMode =
   | "ONLINE"
   | "OFFLINE"
-  | "HYBRID";
+  | "RECORDED";
+
+export type CourseQualification =
+  | "B_COM"
+  | "M_COM"
+  | "BBA"
+  | "MBA"
+  | "BCA"
+  | "MCA"
+  | "CA"
+  | "CA_FOUNDATION"
+  | "CMA"
+  | "CS"
+  | "ACCA";
 
 export type CourseDurationType =
   | "DAYS"
@@ -69,6 +82,8 @@ export interface Course {
   level: CourseLevel;
 
   mode: CourseMode;
+
+  minimumQualifications?: CourseQualification[];
 
   language: string;
 
@@ -181,6 +196,8 @@ export interface CourseDetails
 
   modes?: CourseMode[];
 
+  minimumQualifications?: CourseQualification[];
+
   modules?: CourseModuleTree[];
 
   moduleCount?: number;
@@ -210,6 +227,8 @@ export interface CourseListItem {
   mode?: CourseMode;
 
   modes?: CourseMode[];
+
+  minimumQualifications?: CourseQualification[];
 
   language: string;
 
@@ -246,6 +265,8 @@ export interface CourseListResponse {
   items: CourseListItem[];
 
   count: number;
+
+  total?: number;
 
   meta?: {
     total: number;
@@ -299,6 +320,8 @@ export interface CreateCourseRequest {
 
   modes?: CourseMode[];
 
+  minimumQualifications?: CourseQualification[];
+
   language?: string;
 
   displayOrder?: number;
@@ -348,6 +371,8 @@ export interface UpdateCourseRequest {
 
   modes?: CourseMode[];
 
+  minimumQualifications?: CourseQualification[];
+
   language?: string;
 
   displayOrder?: number;
@@ -376,12 +401,12 @@ export interface UpdateCourseRequest {
 export interface CourseFilters {
   search?: string;
 
-  categoryId?: string;
-
   /** Optional for branch manage workspace callers. */
   branchId?: string;
 
-  level?: CourseLevel;
+  categoryId?: string;
+
+  mode?: CourseMode;
 
   status?: CourseFilterStatus;
 

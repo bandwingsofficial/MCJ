@@ -7,7 +7,10 @@ import {
   useState,
 } from "react";
 
-import { courseService } from "@/src/features/courses/services/course.service";
+import {
+  courseService,
+  resolveCourseListTotal,
+} from "@/src/features/courses/services/course.service";
 
 import {
   DEFAULT_COURSE_PAGE_SIZE,
@@ -20,10 +23,22 @@ import type {
 
 const SEARCH_DEBOUNCE_MS = 400;
 
+function hasActiveCourseFilters(filters: CourseFilters): boolean {
+  return Boolean(
+    (filters.search ?? "").trim() ||
+      filters.categoryId ||
+      filters.mode ||
+      filters.status,
+  );
+}
+
 interface UseCoursesReturn {
   courses: CourseListItem[];
 
   total: number;
+
+  /** Total courses in the catalog (unfiltered). */
+  catalogTotal: number;
 
   /** Alias of total for legacy callers. */
   count: number;
@@ -56,6 +71,8 @@ export const useCourses = (options?: {
 
   const [total, setTotal] = useState(0);
 
+  const [catalogTotal, setCatalogTotal] = useState(0);
+
   const [isInitialLoading, setIsInitialLoading] =
     useState(true);
 
@@ -69,7 +86,7 @@ export const useCourses = (options?: {
     useState<CourseFilters>({
       search: "",
       categoryId: undefined,
-      level: undefined,
+      mode: undefined,
       status: undefined,
       page: 1,
       pageSize: defaultPageSize,
@@ -91,15 +108,15 @@ export const useCourses = (options?: {
           next.status !== prev.status;
         const categoryChanged =
           next.categoryId !== prev.categoryId;
-        const levelChanged =
-          next.level !== prev.level;
+        const modeChanged =
+          next.mode !== prev.mode;
         const pageSizeChanged =
           next.pageSize !== prev.pageSize;
 
         const shouldResetPage =
           statusChanged ||
           categoryChanged ||
-          levelChanged ||
+          modeChanged ||
           pageSizeChanged;
 
         return {
@@ -153,7 +170,7 @@ export const useCourses = (options?: {
         const response = await courseService.getCourses({
           search: debouncedSearch,
           categoryId: filters.categoryId,
-          level: filters.level,
+          mode: filters.mode,
           status: filters.status,
           page: filters.page ?? 1,
           pageSize:
@@ -164,8 +181,15 @@ export const useCourses = (options?: {
           return;
         }
 
+        const listTotal = resolveCourseListTotal(response.data);
+
         setCourses(response.data.items);
-        setTotal(response.data.count);
+        setTotal(listTotal);
+
+        if (!hasActiveCourseFilters(filters)) {
+          setCatalogTotal(listTotal);
+        }
+
         setError(null);
         hasLoadedRef.current = true;
       } catch (err) {
@@ -189,10 +213,11 @@ export const useCourses = (options?: {
     [
       debouncedSearch,
       filters.categoryId,
-      filters.level,
+      filters.mode,
       filters.status,
       filters.page,
       filters.pageSize,
+      filters.search,
     ]
   );
 
@@ -203,6 +228,7 @@ export const useCourses = (options?: {
   return {
     courses,
     total,
+    catalogTotal,
     count: total,
     isInitialLoading,
     isFetching,

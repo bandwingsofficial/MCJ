@@ -49,8 +49,8 @@ export const COURSE_MODE_LABELS: Record<
   [CourseMode.OFFLINE]:
     "Offline",
 
-  [CourseMode.HYBRID]:
-    "Hybrid",
+  [CourseMode.RECORDED]:
+    "Recorded",
 };
 
 export const COURSE_DURATION_LABELS: Record<

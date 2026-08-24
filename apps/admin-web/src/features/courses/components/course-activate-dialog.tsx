@@ -24,6 +24,7 @@ export function CourseActivateDialog({
       title="Activate course?"
       description="Are you sure you want to activate this course?"
       confirmLabel="Activate"
+      confirmVariant="success"
       loading={isLoading}
       onConfirm={onConfirm}
       onCancel={onClose}

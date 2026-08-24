@@ -1,5 +1,6 @@
 import { CourseLevel } from '../enums/course-level.enum';
 import { CourseMode } from '../enums/course-mode.enum';
+import { CourseQualification } from '../enums/course-qualification.enum';
 import { CourseStatus } from '../enums/course-status.enum';
 import { DurationType } from '../enums/duration-type.enum';
 import { CourseTitle } from '../value-objects/course-title.vo';
@@ -34,6 +35,7 @@ export class Course {
     public durationType: DurationType | null,
     public level: CourseLevel,
     public modes: CourseMode[],
+    public minimumQualifications: CourseQualification[],
     public language: string,
     public averageRating: number,
     public totalReviews: number,
@@ -87,6 +89,7 @@ export class Course {
       params.durationType ?? null,
       params.level ?? CourseLevel.BEGINNER,
       params.modes ?? [CourseMode.OFFLINE],
+      params.minimumQualifications ?? [],
       params.language?.trim() || 'English',
       params.averageRating ?? 0,
       params.totalReviews ?? 0,
@@ -131,6 +134,7 @@ export class Course {
       params.durationType,
       params.level,
       params.modes,
+      params.minimumQualifications,
       params.language,
       params.averageRating,
       params.totalReviews,
@@ -211,6 +215,9 @@ export class Course {
     if (params.durationType !== undefined) this.durationType = params.durationType;
     if (params.level !== undefined) this.level = params.level;
     if (params.modes !== undefined) this.modes = params.modes;
+    if (params.minimumQualifications !== undefined) {
+      this.minimumQualifications = params.minimumQualifications;
+    }
     if (params.language !== undefined) this.language = params.language;
     if (params.averageRating !== undefined) this.averageRating = params.averageRating;
     if (params.totalReviews !== undefined) this.totalReviews = params.totalReviews;
@@ -302,6 +309,7 @@ export interface CourseCreateParams {
   durationType?: DurationType | null;
   level?: CourseLevel;
   modes?: CourseMode[];
+  minimumQualifications?: CourseQualification[];
   language?: string;
   averageRating?: number;
   totalReviews?: number;
@@ -336,6 +344,7 @@ export interface CourseReconstituteParams
       | 'thumbnailUrl'
       | 'duration'
       | 'durationType'
+      | 'minimumQualifications'
       | 'metaTitle'
       | 'metaDescription'
       | 'metaKeywords'
@@ -350,6 +359,7 @@ export interface CourseReconstituteParams
   thumbnailUrl: string | null;
   duration: number | null;
   durationType: DurationType | null;
+  minimumQualifications: CourseQualification[];
   metaTitle: string | null;
   metaDescription: string | null;
   metaKeywords: string | null;

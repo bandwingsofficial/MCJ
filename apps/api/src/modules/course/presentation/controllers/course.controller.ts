@@ -39,6 +39,7 @@ export class CourseController {
         query.branchId,
         undefined,
         query.search,
+        undefined,
         query.isFeatured,
         query.isPopular,
         false,

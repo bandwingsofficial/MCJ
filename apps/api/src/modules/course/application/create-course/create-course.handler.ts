@@ -198,6 +198,7 @@ export class CreateCourseHandler {
       durationType: command.durationType,
       level: command.level,
       modes: command.modes,
+      minimumQualifications: command.minimumQualifications,
       language: command.language,
       averageRating: command.averageRating,
       totalReviews: command.totalReviews,

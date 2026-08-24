@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 import {
-  COURSE_DURATION_TYPES,
   COURSE_LEVELS,
   COURSE_MODES,
+  COURSE_QUALIFICATIONS,
 } from "@/src/features/courses/constants/course.constants";
 import {
   COURSE_CHAR_LIMITS,
@@ -83,22 +83,15 @@ const courseFields = {
 
   isFree: z.boolean().default(false),
 
-  duration: z
-    .number({
-      error: "Duration is required",
-    })
-    .int("Duration must be a whole number")
-    .min(1, "Duration must be at least 1"),
-
-  durationType: z.enum(COURSE_DURATION_TYPES, {
-    error: "Please select a duration type",
-  }),
-
   level: z.enum(COURSE_LEVELS).default("BEGINNER"),
 
   modes: z
     .array(z.enum(COURSE_MODES))
-    .min(1, "Please select a type"),
+    .min(1, "Please select a mode"),
+
+  minimumQualifications: z
+    .array(z.enum(COURSE_QUALIFICATIONS))
+    .default([]),
 
   language: z
     .string()

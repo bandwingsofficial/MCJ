@@ -10,6 +10,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { PaginationQueryDto } from '@common/pagination/pagination-query.dto';
 import { CourseStatus } from '../../domain/enums/course-status.enum';
+import { CourseMode } from '../../domain/enums/course-mode.enum';
 
 export class ListCoursesQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional()
@@ -26,6 +27,11 @@ export class ListCoursesQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(CourseStatus)
   status?: CourseStatus;
+
+  @ApiPropertyOptional({ enum: CourseMode })
+  @IsOptional()
+  @IsEnum(CourseMode)
+  mode?: CourseMode;
 
   @ApiPropertyOptional()
   @IsOptional()

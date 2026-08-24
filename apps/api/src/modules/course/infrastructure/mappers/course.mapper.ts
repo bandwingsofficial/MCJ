@@ -11,6 +11,7 @@ import { CourseMaterial } from '../../domain/entities/course-material.entity';
 import { Course } from '../../domain/entities/course.entity';
 import { CourseLevel } from '../../domain/enums/course-level.enum';
 import { CourseMode } from '../../domain/enums/course-mode.enum';
+import { CourseQualification } from '../../domain/enums/course-qualification.enum';
 import { CourseStatus } from '../../domain/enums/course-status.enum';
 import { DurationType } from '../../domain/enums/duration-type.enum';
 import { MaterialType } from '../../domain/enums/material-type.enum';
@@ -42,6 +43,8 @@ export class CourseMapper {
       durationType: record.durationType as DurationType | null,
       level: record.level as CourseLevel,
       modes: record.mode as CourseMode[],
+      minimumQualifications:
+        (record.minimumQualifications as CourseQualification[]) ?? [],
       language: record.language,
       averageRating: record.averageRating,
       totalReviews: record.totalReviews,
@@ -112,6 +115,7 @@ export class CourseMapper {
       durationType: course.durationType,
       level: course.level,
       mode: course.modes,
+      minimumQualifications: course.minimumQualifications,
       language: course.language,
       averageRating: course.averageRating,
       totalReviews: course.totalReviews,

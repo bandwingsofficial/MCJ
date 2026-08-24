@@ -1,5 +1,6 @@
 import { CourseLevel } from '../../domain/enums/course-level.enum';
 import { CourseMode } from '../../domain/enums/course-mode.enum';
+import { CourseQualification } from '../../domain/enums/course-qualification.enum';
 import { DurationType } from '../../domain/enums/duration-type.enum';
 
 import type {
@@ -28,6 +29,8 @@ export class UpdateCourseCommand {
 
     // updated
     public readonly modes?: CourseMode[],
+
+    public readonly minimumQualifications?: CourseQualification[],
 
     public readonly language?: string,
     public readonly averageRating?: number,

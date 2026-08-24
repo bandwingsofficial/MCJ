@@ -4,6 +4,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { CourseLevel } from '../../domain/enums/course-level.enum';
 import { CourseMode } from '../../domain/enums/course-mode.enum';
+import { CourseQualification } from '../../domain/enums/course-qualification.enum';
 import { CourseStatus } from '../../domain/enums/course-status.enum';
 import { DurationType } from '../../domain/enums/duration-type.enum';
 
@@ -162,6 +163,20 @@ export class CreateCourseDto {
 @IsArray()
 @IsEnum(CourseMode, { each: true })
 modes?: CourseMode[];
+
+  @ApiPropertyOptional({
+    enum: CourseQualification,
+    isArray: true,
+  })
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string'
+      ? JSON.parse(value)
+      : value,
+  )
+  @IsArray()
+  @IsEnum(CourseQualification, { each: true })
+  minimumQualifications?: CourseQualification[];
 
   @ApiPropertyOptional({ default: 'English' })
   @IsOptional()

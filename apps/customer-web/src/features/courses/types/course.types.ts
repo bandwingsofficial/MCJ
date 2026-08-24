@@ -8,7 +8,7 @@ export type CourseLevel =
 export type CourseMode =
   | "ONLINE"
   | "OFFLINE"
-  | "HYBRID";
+  | "RECORDED";
 
 export type CourseStatus =
   | "ACTIVE"

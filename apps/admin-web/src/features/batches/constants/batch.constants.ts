@@ -23,8 +23,8 @@ export const BATCH_MODES: {
     value: "OFFLINE",
   },
   {
-    label: "Hybrid",
-    value: "HYBRID",
+    label: "Recorded",
+    value: "RECORDED",
   },
 ];
 

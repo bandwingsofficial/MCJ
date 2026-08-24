@@ -28,6 +28,7 @@ export class ListCoursesHandler {
       branchId: query.branchId,
       status: query.status,
       search: query.search,
+      mode: query.mode,
       isFeatured: query.isFeatured,
       isPopular: query.isPopular,
       includeDeleted: query.includeDeleted,

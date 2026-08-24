@@ -1,7 +1,7 @@
 export type BatchMode =
   | "ONLINE"
   | "OFFLINE"
-  | "HYBRID";
+  | "RECORDED";
 
 export type BatchStatus =
   | "UPCOMING"

@@ -50,7 +50,7 @@ export const batchSchema = z
 
     enrolledCount: z.number().min(0).default(0),
 
-    mode: z.enum(["ONLINE", "OFFLINE", "HYBRID"]),
+    mode: z.enum(["ONLINE", "OFFLINE", "RECORDED"]),
 
     status: z.enum([
       "UPCOMING",

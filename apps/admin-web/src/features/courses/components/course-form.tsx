@@ -4,6 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  BookOpen,
+  FileText,
+  FolderOpen,
+  GraduationCap,
+  IndianRupee,
+  Monitor,
+  type LucideIcon,
+} from "lucide-react";
 
 import { Input } from "@/src/shared/components/ui/input";
 import { Textarea } from "@/src/shared/components/ui/textarea";
@@ -16,11 +25,12 @@ import {
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
 import { truncateToMaxWords } from "@/src/shared/utils/word-count";
+import { cn } from "@/src/shared/lib/cn";
 
 import {
-  COURSE_DURATION_TYPES,
   COURSE_LEVELS,
   COURSE_MODES,
+  COURSE_MODE_LABELS,
 } from "@/src/features/courses/constants/course.constants";
 import {
   createCourseSchema,
@@ -38,6 +48,7 @@ import {
   type CourseMetaSource,
 } from "@/src/features/courses/utils/course-meta.utils";
 import { CourseMetaField } from "@/src/features/courses/components/course-meta-field";
+import { QualificationMultiSelect } from "@/src/features/courses/components/qualification-multi-select";
 import { buildCoursePricingInput } from "@/src/features/courses/utils/course-pricing.util";
 
 interface SelectOption {
@@ -63,6 +74,7 @@ interface Props {
     removeImage: boolean,
   ) => Promise<void>;
   onCancel?: () => void;
+  dropdownBoundaryRef?: React.RefObject<HTMLElement | null>;
 }
 
 const defaultFormValues: CreateCourseFormValues = {
@@ -76,10 +88,9 @@ const defaultFormValues: CreateCourseFormValues = {
   discountAmount: 0,
   currency: "INR",
   isFree: false,
-  duration: 1,
-  durationType: "MONTHS",
   level: "BEGINNER",
   modes: ["ONLINE"],
+  minimumQualifications: [],
   language: "English",
   displayOrder: 0,
   slug: "",
@@ -93,8 +104,18 @@ const PRICING_TYPE_OPTIONS = [
   { label: "Free", value: "FREE" },
 ];
 
-const GRID_CLASS = "grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2";
-const CELL_CLASS = "min-w-0";
+const GRID_CLASS =
+  "grid w-full min-w-0 grid-cols-1 gap-x-4 gap-y-5 md:grid-cols-2";
+const CELL_CLASS = "min-w-0 w-full";
+
+function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <Icon
+      className="pointer-events-none absolute right-9 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
+      aria-hidden="true"
+    />
+  );
+}
 
 type MetaFieldKey = "metaTitle" | "metaDescription" | "slug" | "metaKeywords";
 
@@ -104,6 +125,13 @@ function formatLevelLabel(level: string) {
 
 function inputClass(state: ReturnType<typeof getSyncFieldState>) {
   return validatedFieldInputClass(state, "w-full min-w-0 max-w-full");
+}
+
+function iconInputClass(
+  state: ReturnType<typeof getSyncFieldState>,
+  extra = "",
+) {
+  return cn(inputClass(state), "pr-16", extra);
 }
 
 export function CourseForm({
@@ -117,6 +145,7 @@ export function CourseForm({
   loadingLabel = "Creating Course...",
   onSubmit,
   onCancel,
+  dropdownBoundaryRef,
 }: Props) {
   const formRef = useRef<HTMLFormElement | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -158,9 +187,8 @@ export function CourseForm({
   const shortDescriptionValue = watch("shortDescription");
   const descriptionValue = watch("description");
   const categoryIdValue = watch("categoryId");
-  const durationValue = watch("duration");
-  const durationTypeValue = watch("durationType");
   const modesValue = watch("modes");
+  const minimumQualificationsValue = watch("minimumQualifications");
   const levelValue = watch("level");
   const languageValue = watch("language");
   const isFreeValue = watch("isFree");
@@ -367,25 +395,17 @@ export function CourseForm({
     { required: true },
   );
 
-  const durationState = getSyncFieldState(
-    Boolean(touchedFields.duration || showValidation),
-    errors.duration?.message,
-    durationValue != null ? String(durationValue) : "",
-    { required: true },
-  );
-
-  const durationTypeState = getSyncFieldState(
-    Boolean(touchedFields.durationType || showValidation),
-    errors.durationType?.message,
-    durationTypeValue,
-    { required: true },
-  );
-
   const modeState = getSyncFieldState(
     Boolean(touchedFields.modes || showValidation),
     errors.modes?.message,
     modesValue?.[0],
     { required: true },
+  );
+
+  const qualificationsState = getSyncFieldState(
+    Boolean(touchedFields.minimumQualifications || showValidation),
+    errors.minimumQualifications?.message,
+    minimumQualificationsValue?.length ? "selected" : "",
   );
 
   const levelState = getSyncFieldState(
@@ -462,20 +482,6 @@ export function CourseForm({
     slugValue,
   );
 
-  const durationGroupState =
-    durationState === "invalid" || durationTypeState === "invalid"
-      ? "invalid"
-      : durationState === "valid" && durationTypeState === "valid"
-        ? "valid"
-        : durationState === "neutral" && durationTypeState === "neutral"
-          ? "neutral"
-          : durationState === "valid" || durationTypeState === "valid"
-            ? "valid"
-            : "neutral";
-
-  const durationGroupError =
-    errors.duration?.message ?? errors.durationType?.message;
-
   const imageState =
     imageError ||
     (imageTouched &&
@@ -495,8 +501,7 @@ export function CourseForm({
       "description",
       "categoryId",
       "modes",
-      "duration",
-      "durationType",
+      "minimumQualifications",
       "level",
       "language",
       "isFree",
@@ -570,7 +575,7 @@ export function CourseForm({
   return (
     <form
       ref={formRef}
-      className="min-w-0 space-y-4 overflow-x-hidden"
+      className="min-w-0 w-full space-y-5"
       onSubmit={handleSubmit(
         async (data) => {
           await onSubmit(data, selectedImage, removeImage);
@@ -604,9 +609,10 @@ export function CourseForm({
             <Input
               id="course-title"
               placeholder="Course title"
-              className={inputClass(titleState)}
+              className={iconInputClass(titleState)}
               {...register("title")}
             />
+            <FieldIcon icon={BookOpen} />
           </ValidatedField>
         </div>
       </div>
@@ -638,13 +644,16 @@ export function CourseForm({
               control={control}
               name="categoryId"
               render={({ field }) => (
-                <AppSelect
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  placeholder="Select Category"
-                  options={categoryOptions}
-                  triggerClassName={inputClass(categoryState)}
-                />
+                <>
+                  <AppSelect
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Select Category"
+                    options={categoryOptions}
+                    triggerClassName={iconInputClass(categoryState)}
+                  />
+                  <FieldIcon icon={FolderOpen} />
+                </>
               )}
             />
           </ValidatedField>
@@ -654,7 +663,7 @@ export function CourseForm({
       <div className={GRID_CLASS}>
         <div className={CELL_CLASS}>
           <ValidatedField
-            label="Type"
+            label="Mode"
             required
             state={modeState}
             errorMessage={errors.modes?.message}
@@ -663,62 +672,26 @@ export function CourseForm({
               control={control}
               name="modes"
               render={({ field }) => (
-                <AppSelect
-                  value={field.value?.[0]}
-                  onValueChange={(value) =>
-                    field.onChange(value ? [value] : [])
-                  }
-                  placeholder="Select course type"
-                  options={COURSE_MODES.map((mode) => ({
-                    label: formatLevelLabel(mode),
-                    value: mode,
-                  }))}
-                  triggerClassName={inputClass(modeState)}
-                />
+                <>
+                  <AppSelect
+                    value={field.value?.[0]}
+                    onValueChange={(value) =>
+                      field.onChange(value ? [value] : [])
+                    }
+                    placeholder="Select course mode"
+                    options={COURSE_MODES.map((mode) => ({
+                      label: COURSE_MODE_LABELS[mode],
+                      value: mode,
+                    }))}
+                    triggerClassName={iconInputClass(modeState)}
+                  />
+                  <FieldIcon icon={Monitor} />
+                </>
               )}
             />
           </ValidatedField>
         </div>
 
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Duration"
-            required
-            state={durationGroupState}
-            errorMessage={durationGroupError}
-          >
-            <div className="grid min-w-0 grid-cols-[minmax(0,5.5rem)_minmax(0,1fr)] gap-2">
-              <Input
-                id="course-duration"
-                type="number"
-                min={1}
-                placeholder="Enter duration"
-                aria-label="Duration amount"
-                className={inputClass(durationState)}
-                {...register("duration", { valueAsNumber: true })}
-              />
-              <Controller
-                control={control}
-                name="durationType"
-                render={({ field }) => (
-                  <AppSelect
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    placeholder="Select duration unit"
-                    options={COURSE_DURATION_TYPES.map((type) => ({
-                      label: formatLevelLabel(type),
-                      value: type,
-                    }))}
-                    triggerClassName={inputClass(durationTypeState)}
-                  />
-                )}
-              />
-            </div>
-          </ValidatedField>
-        </div>
-      </div>
-
-      <div className={GRID_CLASS}>
         <div className={CELL_CLASS}>
           <ValidatedField
             label="Level"
@@ -730,15 +703,45 @@ export function CourseForm({
               control={control}
               name="level"
               render={({ field }) => (
-                <AppSelect
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  placeholder="Select difficulty level"
-                  options={COURSE_LEVELS.map((level) => ({
-                    label: formatLevelLabel(level),
-                    value: level,
-                  }))}
-                  triggerClassName={inputClass(levelState)}
+                <>
+                  <AppSelect
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Select difficulty level"
+                    options={COURSE_LEVELS.map((level) => ({
+                      label: formatLevelLabel(level),
+                      value: level,
+                    }))}
+                    triggerClassName={iconInputClass(levelState)}
+                  />
+                  <FieldIcon icon={GraduationCap} />
+                </>
+              )}
+            />
+          </ValidatedField>
+        </div>
+      </div>
+
+      <div className={GRID_CLASS}>
+        <div className={CELL_CLASS}>
+          <ValidatedField
+            label="Minimum Qualification Required"
+            state={qualificationsState}
+            errorMessage={errors.minimumQualifications?.message}
+          >
+            <Controller
+              control={control}
+              name="minimumQualifications"
+              render={({ field }) => (
+                <QualificationMultiSelect
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                  state={
+                    qualificationsState === "checking"
+                      ? "neutral"
+                      : qualificationsState
+                  }
+                  collisionBoundaryRef={dropdownBoundaryRef}
                 />
               )}
             />
@@ -796,9 +799,9 @@ export function CourseForm({
             state={originalPriceState}
             errorMessage={errors.originalPrice?.message}
           >
-            <div className="relative">
+            <>
               {!pricesDisabled ? (
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-slate-500">
                   ₹
                 </span>
               ) : null}
@@ -808,7 +811,10 @@ export function CourseForm({
                 step="0.01"
                 disabled={pricesDisabled}
                 placeholder={pricesDisabled ? "Free course" : "Enter original price"}
-                className={`${inputClass(originalPriceState)} ${pricesDisabled ? "" : "pl-7"}`}
+                className={iconInputClass(
+                  originalPriceState,
+                  pricesDisabled ? "" : "pl-7",
+                )}
                 {...register("originalPrice", {
                   valueAsNumber: true,
                   onChange: (event) => {
@@ -822,7 +828,8 @@ export function CourseForm({
                   },
                 })}
               />
-            </div>
+              {!pricesDisabled ? <FieldIcon icon={IndianRupee} /> : null}
+            </>
           </ValidatedField>
         </div>
       </div>
@@ -866,9 +873,9 @@ export function CourseForm({
             state={discountAmountState}
             errorMessage={errors.discountAmount?.message}
           >
-            <div className="relative">
+            <>
               {!pricesDisabled ? (
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-slate-500">
                   ₹
                 </span>
               ) : null}
@@ -880,7 +887,10 @@ export function CourseForm({
                 placeholder={
                   pricesDisabled ? "Free course" : "Enter discount amount"
                 }
-                className={`${inputClass(discountAmountState)} ${pricesDisabled ? "" : "pl-7"}`}
+                className={cn(
+                  inputClass(discountAmountState),
+                  pricesDisabled ? "" : "pl-7",
+                )}
                 {...register("discountAmount", {
                   valueAsNumber: true,
                   onChange: (event) => {
@@ -897,7 +907,7 @@ export function CourseForm({
                   },
                 })}
               />
-            </div>
+            </>
           </ValidatedField>
         </div>
 
@@ -942,25 +952,31 @@ export function CourseForm({
         state={shortDescriptionState}
         errorMessage={errors.shortDescription?.message}
       >
-        <Textarea
-          id="course-short-description"
-          rows={3}
-          placeholder="Write a short description of the course..."
-          className={inputClass(shortDescriptionState)}
-          value={shortDescriptionValue ?? ""}
-          onChange={(event) => {
-            const next = truncateToMaxWords(
-              event.target.value,
-              COURSE_WORD_LIMITS.shortDescription,
-            );
-            setValue("shortDescription", next, {
-              shouldDirty: true,
-              shouldTouch: true,
-              shouldValidate: true,
-            });
-          }}
-          onBlur={register("shortDescription").onBlur}
-        />
+        <>
+          <Textarea
+            id="course-short-description"
+            rows={3}
+            placeholder="Write a short description of the course..."
+            className={cn(inputClass(shortDescriptionState), "min-h-[5.5rem] w-full resize-y pr-10")}
+            value={shortDescriptionValue ?? ""}
+            onChange={(event) => {
+              const next = truncateToMaxWords(
+                event.target.value,
+                COURSE_WORD_LIMITS.shortDescription,
+              );
+              setValue("shortDescription", next, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+              });
+            }}
+            onBlur={register("shortDescription").onBlur}
+          />
+          <FileText
+            className="pointer-events-none absolute right-3 top-3 z-[1] h-4 w-4 text-slate-400"
+            aria-hidden="true"
+          />
+        </>
         <WordCount
           value={shortDescriptionValue ?? ""}
           maxWords={COURSE_WORD_LIMITS.shortDescription}
@@ -972,25 +988,31 @@ export function CourseForm({
         state={descriptionState}
         errorMessage={errors.description?.message}
       >
-        <Textarea
-          id="course-description"
-          rows={4}
-          placeholder="Describe the course, learning outcomes, and what students will learn..."
-          className={inputClass(descriptionState)}
-          value={descriptionValue ?? ""}
-          onChange={(event) => {
-            const next = truncateToMaxWords(
-              event.target.value,
-              COURSE_WORD_LIMITS.description,
-            );
-            setValue("description", next, {
-              shouldDirty: true,
-              shouldTouch: true,
-              shouldValidate: true,
-            });
-          }}
-          onBlur={register("description").onBlur}
-        />
+        <>
+          <Textarea
+            id="course-description"
+            rows={4}
+            placeholder="Describe the course, learning outcomes, and what students will learn..."
+            className={cn(inputClass(descriptionState), "min-h-[6.5rem] w-full resize-y pr-10")}
+            value={descriptionValue ?? ""}
+            onChange={(event) => {
+              const next = truncateToMaxWords(
+                event.target.value,
+                COURSE_WORD_LIMITS.description,
+              );
+              setValue("description", next, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+              });
+            }}
+            onBlur={register("description").onBlur}
+          />
+          <FileText
+            className="pointer-events-none absolute right-3 top-3 z-[1] h-4 w-4 text-slate-400"
+            aria-hidden="true"
+          />
+        </>
         <WordCount
           value={descriptionValue ?? ""}
           maxWords={COURSE_WORD_LIMITS.description}

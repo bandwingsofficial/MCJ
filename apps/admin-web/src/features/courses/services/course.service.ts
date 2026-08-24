@@ -23,6 +23,24 @@ import type {
 
 const DEFAULT_PAGE_SIZE = 20;
 
+export function resolveCourseListTotal(
+  data: CourseListResponse,
+): number {
+  if (typeof data.meta?.total === "number") {
+    return data.meta.total;
+  }
+
+  if (typeof data.total === "number") {
+    return data.total;
+  }
+
+  if (typeof data.count === "number") {
+    return data.count;
+  }
+
+  return data.items?.length ?? 0;
+}
+
 function normalizeListResponse(
   data: CourseListResponse | CourseListItem[]
 ): CourseListResponse {
@@ -33,13 +51,17 @@ function normalizeListResponse(
     };
   }
 
+  const total =
+    data.meta?.total ??
+    data.total ??
+    data.count ??
+    data.items?.length ??
+    0;
+
   return {
     items: data.items ?? [],
-    count:
-      data.meta?.total ??
-      data.count ??
-      data.items?.length ??
-      0,
+    count: total,
+    total,
     meta: data.meta,
   };
 }
@@ -55,7 +77,7 @@ function buildListParams(filters?: CourseFilters) {
     search: filters?.search?.trim() || undefined,
     categoryId: filters?.categoryId || undefined,
     branchId: filters?.branchId || undefined,
-    level: filters?.level || undefined,
+    mode: filters?.mode || undefined,
     status: isArchivedFilter ? "ARCHIVED" : status || undefined,
     includeDeleted: isArchivedFilter
       ? true

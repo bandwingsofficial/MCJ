@@ -1,6 +1,6 @@
 // src/features/batches/types/batch.types.ts
 
-export type BatchMode = "ONLINE" | "OFFLINE" | "HYBRID";
+export type BatchMode = "ONLINE" | "OFFLINE" | "RECORDED";
 
 export type BatchStatus =
   | "UPCOMING"

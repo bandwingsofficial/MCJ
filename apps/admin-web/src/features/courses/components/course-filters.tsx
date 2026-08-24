@@ -1,15 +1,14 @@
 "use client";
 
+import {
+  COURSE_MODES,
+  COURSE_MODE_LABELS,
+  DEFAULT_COURSE_FILTERS,
+} from "@/src/features/courses/constants/course.constants";
+
 import { SearchInput } from "@/src/shared/components/ui/search-input";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { Button } from "@/src/shared/components/ui/button";
-
-import {
-  COURSE_LEVELS,
-} from "@/src/features/courses/constants/course.constants";
-import {
-  DEFAULT_COURSE_FILTERS,
-} from "@/src/features/courses/constants/course.constants";
 
 import type {
   CourseFilters as CourseFiltersType,
@@ -34,7 +33,7 @@ export function CourseFilters({
   const hasActiveFilters = Boolean(
     (filters.search ?? "").trim() ||
       filters.categoryId ||
-      filters.level ||
+      filters.mode ||
       filters.status
   );
 
@@ -96,22 +95,22 @@ export function CourseFilters({
 
       <div className="w-full shrink-0 sm:w-44">
         <AppSelect
-          value={filters.level ?? "ALL"}
+          value={filters.mode ?? "ALL"}
           triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
           onValueChange={(value) =>
             onChange({
               ...filters,
-              level:
+              mode:
                 value === "ALL"
                   ? undefined
-                  : (value as CourseFiltersType["level"]),
+                  : (value as CourseFiltersType["mode"]),
             })
           }
           options={[
-            { label: "All Types", value: "ALL" },
-            ...COURSE_LEVELS.map((level) => ({
-              label: level.replaceAll("_", " "),
-              value: level,
+            { label: "All Modes", value: "ALL" },
+            ...COURSE_MODES.map((mode) => ({
+              label: COURSE_MODE_LABELS[mode],
+              value: mode,
             })),
           ]}
         />

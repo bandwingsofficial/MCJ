@@ -132,8 +132,8 @@ export class CourseMapper {
         return CourseMode.ONLINE;
       case CourseMode.OFFLINE:
         return CourseMode.OFFLINE;
-      case CourseMode.HYBRID:
-        return CourseMode.HYBRID;
+      case CourseMode.RECORDED:
+        return CourseMode.RECORDED;
       default:
         return CourseMode.ONLINE;
     }
