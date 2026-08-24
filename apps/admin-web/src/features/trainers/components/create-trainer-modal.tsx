@@ -90,6 +90,7 @@ export function CreateTrainerModal({
       open={open}
       title="Create Trainer"
       onClose={onClose}
+      bodyClassName="overflow-y-auto bg-white px-6 py-5"
     >
       <CreateTrainerForm
         key={open ? "create-trainer-open" : "create-trainer-closed"}

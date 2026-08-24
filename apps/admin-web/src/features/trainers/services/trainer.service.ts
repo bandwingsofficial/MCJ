@@ -50,22 +50,32 @@ class TrainerService {
       const page = filters?.page ?? 1;
       const pageSize = filters?.pageSize ?? DEFAULT_PAGE_SIZE;
       const skip = (page - 1) * pageSize;
+      const status = filters?.status;
+
+      const params: Record<string, unknown> = {
+        search: filters?.search?.trim() || undefined,
+        branchId: filters?.branchId || undefined,
+        trainerType: filters?.trainerType || undefined,
+        status: status || undefined,
+        includeDeleted: filters?.includeDeleted ?? true,
+        skip,
+        take: pageSize,
+      };
+
+      if (filters?.isDeleted !== undefined) {
+        params.isDeleted = filters.isDeleted;
+      } else if (status === "ACTIVE" || status === "INACTIVE") {
+        params.isDeleted = false;
+      } else if (status === "ARCHIVED") {
+        params.isDeleted = true;
+      }
 
       const response = await apiClient.get<
         ApiSuccessResponse<
           TrainerListResponse | TrainerListItem[]
         >
       >(this.basePath, {
-        params: {
-          search: filters?.search?.trim() || undefined,
-          branchId: filters?.branchId || undefined,
-          trainerType: filters?.trainerType || undefined,
-          status: filters?.status || undefined,
-          includeDeleted:
-            filters?.status != null ? undefined : false,
-          skip,
-          take: pageSize,
-        },
+        params,
       });
 
       return {
@@ -137,6 +147,7 @@ class TrainerService {
     while (true) {
       const response = await this.getTrainers({
         status: filters?.status,
+        ...(filters?.status ? {} : { isDeleted: false }),
         page,
         pageSize: TRAINER_LOOKUP_PAGE_SIZE,
       });

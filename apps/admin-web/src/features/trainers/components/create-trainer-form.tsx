@@ -9,7 +9,8 @@ interface CreateTrainerFormProps {
   submitLabel: string;
   onSubmit: (
     values: CreateTrainerFormValues,
-    image: File | null
+    image: File | null,
+    removeImage?: boolean,
   ) => Promise<void>;
 }
 

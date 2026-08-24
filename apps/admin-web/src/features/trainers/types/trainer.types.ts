@@ -12,7 +12,10 @@ export type TrainerType =
 
 export type TrainerStatus =
   | "ACTIVE"
-  | "INACTIVE";
+  | "INACTIVE"
+  | "ARCHIVED";
+
+export type TrainerDisplayStatus = TrainerStatus;
 
 export type TrainerFilterStatus =
   | "ACTIVE"
@@ -102,6 +105,8 @@ export interface TrainerListItem {
 
   phone: string | null;
 
+  qualification: string | null;
+
   specialization: string | null;
 
   employeeCode: string | null;
@@ -137,6 +142,10 @@ export interface TrainerFilters {
 
   status?: TrainerFilterStatus;
 
+  includeDeleted?: boolean;
+
+  isDeleted?: boolean;
+
   page?: number;
 
   pageSize?: number;
@@ -159,7 +168,7 @@ export interface CreateTrainerRequest {
 
   lastName?: string;
 
-  profileImageFileId?: string;
+  profileImageFileId?: string | null;
 
   email?: string;
 
@@ -195,7 +204,7 @@ export interface CreateTrainerRequest {
 export interface UpdateTrainerRequest {
   firstName?: string;
 
-  profileImageFileId?: string;
+  profileImageFileId?: string | null;
 
   lastName?: string;
 

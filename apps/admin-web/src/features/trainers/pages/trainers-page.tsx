@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Pagination } from "@/src/shared/components/ui/pagination";
@@ -10,7 +9,10 @@ import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { appToast } from "@/src/shared/components/ui/toast";
 
-import type { TrainerListItem } from "@/src/features/trainers/types/trainer.types";
+import type {
+  TrainerFilters as TrainerFiltersState,
+  TrainerListItem,
+} from "@/src/features/trainers/types/trainer.types";
 
 import { useTrainers } from "@/src/features/trainers/hooks/use-trainers";
 import { useActivateTrainer } from "@/src/features/trainers/hooks/use-activate-trainer";
@@ -27,8 +29,9 @@ import { useBulkPermanentDeleteTrainers } from "@/src/features/trainers/hooks/us
 import { trainerService } from "@/src/features/trainers/services/trainer.service";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
-import { TrainerFilters } from "@/src/features/trainers/components/trainer-filters";
+import { TrainerFilters as TrainerFiltersBar } from "@/src/features/trainers/components/trainer-filters";
 import { TrainerTable } from "@/src/features/trainers/components/trainer-table";
+import { TrainerSummaryHeader } from "@/src/features/trainers/components/trainer-summary-header";
 import { CreateTrainerModal } from "@/src/features/trainers/components/create-trainer-modal";
 import { UpdateTrainerModal } from "@/src/features/trainers/components/update-trainer-modal";
 import { StatusTrainerDialog } from "@/src/features/trainers/components/status-trainer-dialog";
@@ -48,10 +51,29 @@ import {
   getEligibleRestoreIds,
 } from "@/src/features/trainers/utils/trainer-bulk.utils";
 
+function getEmptyMessage(filters: TrainerFiltersState): string {
+  if (filters.status === "ARCHIVED") {
+    return "No archived trainers found.";
+  }
+
+  const hasActiveFilters = Boolean(
+    (filters.search ?? "").trim() ||
+      filters.trainerType ||
+      filters.status,
+  );
+
+  if (hasActiveFilters) {
+    return "No trainers match your filters.";
+  }
+
+  return "No trainers found.";
+}
+
 export function TrainersPage() {
   const {
     trainers,
     total,
+    catalogTotal,
     filters,
     setFilters,
     isInitialLoading,
@@ -117,11 +139,9 @@ export function TrainersPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
-
-  const hasActiveFilters = Boolean(
-    (filters.search ?? "").trim() ||
-      filters.trainerType ||
-      filters.status
+  const emptyMessage = useMemo(
+    () => getEmptyMessage(filters),
+    [filters],
   );
 
   const bulkActionLoading =
@@ -149,27 +169,27 @@ export function TrainersPage() {
       case "activate":
         return getEligibleActivateIds(
           trainers,
-          selectedTrainerIds
+          selectedTrainerIds,
         );
       case "deactivate":
         return getEligibleDeactivateIds(
           trainers,
-          selectedTrainerIds
+          selectedTrainerIds,
         );
       case "delete":
         return getEligibleDeleteIds(
           trainers,
-          selectedTrainerIds
+          selectedTrainerIds,
         );
       case "restore":
         return getEligibleRestoreIds(
           trainers,
-          selectedTrainerIds
+          selectedTrainerIds,
         );
       case "permanent-delete":
         return getEligiblePermanentDeleteIds(
           trainers,
-          selectedTrainerIds
+          selectedTrainerIds,
         );
       default:
         return [];
@@ -229,8 +249,8 @@ export function TrainersPage() {
           appToast.success(
             formatBulkResultToast(
               result,
-              "trainer(s) activated successfully"
-            )
+              "trainer(s) activated successfully",
+            ),
           );
         }
         break;
@@ -240,8 +260,8 @@ export function TrainersPage() {
           appToast.success(
             formatBulkResultToast(
               result,
-              "trainer(s) deactivated successfully"
-            )
+              "trainer(s) deactivated successfully",
+            ),
           );
         }
         break;
@@ -251,8 +271,8 @@ export function TrainersPage() {
           appToast.success(
             formatBulkResultToast(
               result,
-              "trainer(s) archived successfully"
-            )
+              "trainer(s) archived successfully",
+            ),
           );
         }
         break;
@@ -262,8 +282,8 @@ export function TrainersPage() {
           appToast.success(
             formatBulkResultToast(
               result,
-              "trainer(s) restored successfully"
-            )
+              "trainer(s) restored successfully",
+            ),
           );
         }
         break;
@@ -273,8 +293,8 @@ export function TrainersPage() {
           appToast.success(
             formatBulkResultToast(
               result,
-              "trainer(s) permanently deleted"
-            )
+              "trainer(s) permanently deleted",
+            ),
           );
         }
         break;
@@ -349,126 +369,103 @@ export function TrainersPage() {
   }
 
   return (
-    <>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">
-            Trainers
-          </h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            Manage organization trainers
-          </p>
-        </div>
+    <div className="-m-6 min-h-full bg-white p-6">
+      <TrainerSummaryHeader
+        total={catalogTotal}
+        isLoading={isInitialLoading}
+        createDisabled={bulkActionLoading}
+        onCreate={() => setIsCreateOpen(true)}
+      />
 
-        <Button
-          onClick={() => setIsCreateOpen(true)}
-          className="h-9 rounded-lg px-4"
-          disabled={bulkActionLoading}
-        >
-          Create Trainer
-        </Button>
-      </div>
+      <div className="mt-6 space-y-3">
+        <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
+          <div className="border-b border-slate-200 bg-white px-4 py-3">
+            <TrainerFiltersBar
+              filters={filters}
+              onChange={setFilters}
+            />
+          </div>
 
-      <div className="space-y-3">
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-          <TrainerFilters
-            filters={filters}
-            onChange={setFilters}
+          <TrainerBulkActionsToolbar
+            trainers={trainers}
+            selectedTrainerIds={selectedTrainerIds}
+            disabled={actionLoading || isFetching}
+            onAction={setBulkConfirmAction}
           />
-        </div>
 
-        {isInitialLoading ? (
-          <SkeletonTable rows={10} />
-        ) : (
-          <Card className="overflow-hidden p-0 shadow-sm">
-            {error ? (
-              <div className="border-b border-red-100 bg-red-50 px-3.5 py-2 text-sm text-red-700">
-                {error}{" "}
-                <button
-                  type="button"
-                  className="font-medium underline"
-                  onClick={() => {
-                    void refetch();
-                  }}
-                >
-                  Retry
-                </button>
-              </div>
-            ) : null}
-
-            <div className="px-3 pt-3">
-              <TrainerBulkActionsToolbar
-                trainers={trainers}
-                selectedTrainerIds={selectedTrainerIds}
-                disabled={actionLoading || isFetching}
-                onAction={setBulkConfirmAction}
-              />
-            </div>
-
-            <div aria-busy={isFetching} className="relative">
-              {isFetching ? (
-                <span className="sr-only">
-                  Updating trainers
-                </span>
+          {isInitialLoading ? (
+            <SkeletonTable rows={10} />
+          ) : (
+            <>
+              {error ? (
+                <div className="border-b border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                  {error}{" "}
+                  <button
+                    type="button"
+                    className="font-medium underline"
+                    onClick={() => {
+                      void refetch();
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
               ) : null}
 
-              <TrainerTable
-                trainers={trainers}
-                selectedTrainerIds={selectedTrainerIds}
-                onSelectionChange={setSelectedTrainerIds}
-                actionsDisabled={actionLoading || isFetching}
-                selectionDisabled={actionLoading || isFetching}
-                reorderDisabled={
-                  isReordering ||
-                  !!filters.status ||
-                  !!(filters.search ?? "").trim() ||
-                  !!filters.trainerType ||
-                  isFetching ||
-                  selectedTrainerIds.length > 0
-                }
-                emptyTitle={
-                  hasActiveFilters
-                    ? "No Trainers Found"
-                    : "No Trainers Yet"
-                }
-                emptyDescription={
-                  hasActiveFilters
-                    ? "Try adjusting your search or filters."
-                    : "Create your first trainer to get started."
-                }
-                onEdit={(trainer) => {
-                  setSelectedTrainer(trainer);
-                  setIsEditOpen(true);
-                }}
-                onActivate={(trainer) => {
-                  setSelectedTrainer(trainer);
-                  setStatusTarget("ACTIVE");
-                  setIsStatusOpen(true);
-                }}
-                onDeactivate={(trainer) => {
-                  setSelectedTrainer(trainer);
-                  setStatusTarget("INACTIVE");
-                  setIsStatusOpen(true);
-                }}
-                onDelete={(trainer) => {
-                  setSelectedTrainer(trainer);
-                  setIsDeleteOpen(true);
-                }}
-                onRestore={(trainer) => {
-                  setSelectedTrainer(trainer);
-                  setIsRestoreOpen(true);
-                }}
-                onPermanentDelete={(trainer) => {
-                  setSelectedTrainer(trainer);
-                  setIsPermanentDeleteOpen(true);
-                }}
-                onReorder={handleReorder}
-              />
-            </div>
+              <div aria-busy={isFetching} className="relative">
+                {isFetching ? (
+                  <span className="sr-only">
+                    Updating trainers
+                  </span>
+                ) : null}
 
-            <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <TrainerTable
+                  trainers={trainers}
+                  selectedTrainerIds={selectedTrainerIds}
+                  onSelectionChange={setSelectedTrainerIds}
+                  actionsDisabled={actionLoading || isFetching}
+                  selectionDisabled={actionLoading || isFetching}
+                  reorderDisabled={
+                    isReordering ||
+                    !!filters.status ||
+                    !!(filters.search ?? "").trim() ||
+                    !!filters.trainerType ||
+                    isFetching ||
+                    selectedTrainerIds.length > 0
+                  }
+                  emptyMessage={emptyMessage}
+                  onEdit={(trainer) => {
+                    setSelectedTrainer(trainer);
+                    setIsEditOpen(true);
+                  }}
+                  onActivate={(trainer) => {
+                    setSelectedTrainer(trainer);
+                    setStatusTarget("ACTIVE");
+                    setIsStatusOpen(true);
+                  }}
+                  onDeactivate={(trainer) => {
+                    setSelectedTrainer(trainer);
+                    setStatusTarget("INACTIVE");
+                    setIsStatusOpen(true);
+                  }}
+                  onDelete={(trainer) => {
+                    setSelectedTrainer(trainer);
+                    setIsDeleteOpen(true);
+                  }}
+                  onRestore={(trainer) => {
+                    setSelectedTrainer(trainer);
+                    setIsRestoreOpen(true);
+                  }}
+                  onPermanentDelete={(trainer) => {
+                    setSelectedTrainer(trainer);
+                    setIsPermanentDeleteOpen(true);
+                  }}
+                  onReorder={handleReorder}
+                />
+              </div>
+
               {total > 0 ? (
-                <>
+                <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-slate-600">
                     <span className="leading-9">
                       Showing {from}–{to} of {total}
@@ -486,12 +483,12 @@ export function TrainersPage() {
                           setFilters({
                             ...filters,
                             pageSize: Number(
-                              event.target.value
+                              event.target.value,
                             ),
                           })
                         }
                       >
-                        {[10, 20, 50].map((size) => (
+                        {[10, 20, 50, 100].map((size) => (
                           <option key={size} value={size}>
                             {size}
                           </option>
@@ -510,15 +507,11 @@ export function TrainersPage() {
                       })
                     }
                   />
-                </>
-              ) : (
-                <p className="text-[15px] leading-9 text-slate-500">
-                  No trainers to paginate
-                </p>
-              )}
-            </div>
-          </Card>
-        )}
+                </div>
+              ) : null}
+            </>
+          )}
+        </Card>
       </div>
 
       <CreateTrainerModal
@@ -576,7 +569,7 @@ export function TrainersPage() {
           }
 
           const success = await deleteTrainer(
-            selectedTrainer.id
+            selectedTrainer.id,
           );
 
           if (success) {
@@ -596,7 +589,7 @@ export function TrainersPage() {
           }
 
           const success = await restoreTrainer(
-            selectedTrainer.id
+            selectedTrainer.id,
           );
 
           if (success) {
@@ -617,7 +610,7 @@ export function TrainersPage() {
           }
 
           const success = await permanentDeleteTrainer(
-            selectedTrainer.id
+            selectedTrainer.id,
           );
 
           if (success) {
@@ -643,6 +636,6 @@ export function TrainersPage() {
           void handleBulkConfirm();
         }}
       />
-    </>
+    </div>
   );
 }

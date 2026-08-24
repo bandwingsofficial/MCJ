@@ -18,6 +18,8 @@ interface Props {
   state?: FieldVisualState;
   accept?: string;
   hint?: string;
+  entityLabel?: string;
+  previewAlt?: string;
   onFileSelect: (file: File | null) => void;
   onRemove: () => void;
   validateFile?: (file: File) => string | null;
@@ -32,6 +34,8 @@ export function ImageUploadField({
   state = "neutral",
   accept = "image/png,image/jpeg,image/webp",
   hint = "PNG, JPG, JPEG, WEBP",
+  entityLabel = "course",
+  previewAlt,
   onFileSelect,
   onRemove,
   validateFile,
@@ -90,7 +94,7 @@ export function ImageUploadField({
           <div className="mx-auto mb-3 h-40 w-full max-w-sm overflow-hidden rounded-lg border border-slate-200 bg-white">
             <Image
               src={displayUrl!}
-              alt="Course image preview"
+              alt={previewAlt ?? `${entityLabel} image preview`}
               width={480}
               height={270}
               className="h-full w-full object-cover"
@@ -157,7 +161,7 @@ export function ImageUploadField({
             <>
               <Upload className="mx-auto h-8 w-8 text-slate-400" />
               <p className="mt-2 text-sm font-medium text-slate-700">
-                Drag & drop course image here
+                Drag & drop {entityLabel} image here
               </p>
               <p className="mt-1 text-sm text-slate-500">or Browse</p>
               <p className="mt-3 text-xs text-slate-400">{hint}</p>

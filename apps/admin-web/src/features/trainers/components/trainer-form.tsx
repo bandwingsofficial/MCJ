@@ -6,21 +6,36 @@ import {
   useState,
   type ChangeEvent,
   type FocusEvent,
+  type ReactNode,
 } from "react";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Briefcase,
+  Calendar,
+  GraduationCap,
+  Hash,
+  Link2,
+  Mail,
+  Phone,
+  Tag,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 
 import { Input } from "@/src/shared/components/ui/input";
 import { Button } from "@/src/shared/components/ui/button";
 import { Label } from "@/src/shared/components/ui/label";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { Switch } from "@/src/shared/components/ui/switch";
+import { ImageUploadField } from "@/src/shared/components/ui/image-upload-field";
 import {
   FieldVisualState,
   ValidatedField,
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
+import { cn } from "@/src/shared/lib/cn";
 
 import { TrainerBioField } from "@/src/features/trainers/components/trainer-bio-field";
 
@@ -34,7 +49,28 @@ import {
 } from "@/src/features/trainers/constants/trainer.constants";
 import { trainerService } from "@/src/features/trainers/services/trainer.service";
 import { mapTrainerToFormValues } from "@/src/features/trainers/utils/map-trainer-to-form-values";
+import {
+  TRAINER_CHAR_LIMITS,
+  validateTrainerImageFile,
+} from "@/src/features/trainers/utils/trainer-form-validation";
 import type { TrainerDetails } from "@/src/features/trainers/types/trainer.types";
+
+function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <Icon
+      className="pointer-events-none absolute right-9 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
+      aria-hidden="true"
+    />
+  );
+}
+
+function iconInputClass(state: FieldVisualState, extra = "") {
+  return cn(validatedFieldInputClass(state, "w-full min-w-0 max-w-full"), "pr-16", extra);
+}
+
+function selectTriggerClass(state: FieldVisualState) {
+  return iconInputClass(state, "pr-16");
+}
 
 type SyncFieldName = Exclude<
   keyof CreateTrainerFormValues,
@@ -91,7 +127,8 @@ interface TrainerFormProps {
   submitLabel: string;
   onSubmit: (
     values: CreateTrainerFormValues,
-    image: File | null
+    image: File | null,
+    removeImage?: boolean,
   ) => Promise<void>;
 }
 
@@ -113,11 +150,13 @@ export function TrainerForm({
   );
 
   const [skillInput, setSkillInput] = useState("");
-  const [selectedImage, setSelectedImage] =
-    useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<
-    string | null
-  >(isEdit ? trainer?.profileImageUrl ?? null : null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [imageTouched, setImageTouched] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    isEdit ? trainer?.profileImageUrl ?? null : null,
+  );
   const [suggestedCode, setSuggestedCode] = useState(
     isEdit ? trainer?.employeeCode ?? "" : ""
   );
@@ -157,6 +196,9 @@ export function TrainerForm({
     setSuggestedCode(trainer.employeeCode ?? "");
     setPreviewUrl(trainer.profileImageUrl);
     setSelectedImage(null);
+    setRemoveImage(false);
+    setImageError(null);
+    setImageTouched(false);
 
     void trigger().then(() => {
       setEditValidationReady(true);
@@ -219,6 +261,72 @@ export function TrainerForm({
 
     return () => URL.revokeObjectURL(objectUrl);
   }, [selectedImage]);
+
+  const getImageState = (): FieldVisualState => {
+    if (!imageTouched && !(isEdit && editValidationReady)) {
+      return "neutral";
+    }
+    if (imageError) {
+      return "invalid";
+    }
+    if (selectedImage || (previewUrl && !removeImage)) {
+      return "valid";
+    }
+    return "neutral";
+  };
+
+  const handleImageSelect = (file: File | null) => {
+    setImageTouched(true);
+    setRemoveImage(false);
+    if (!file) {
+      setSelectedImage(null);
+      setImageError(null);
+      return;
+    }
+
+    const validationMessage = validateTrainerImageFile(file);
+    if (validationMessage) {
+      setSelectedImage(null);
+      setImageError(validationMessage);
+      return;
+    }
+
+    setImageError(null);
+    setSelectedImage(file);
+  };
+
+  const renderIconInput = (
+    label: string,
+    field: {
+      state: FieldVisualState;
+      errorMessage?: string;
+      inputProps: React.ComponentProps<typeof Input>;
+    },
+    icon: LucideIcon,
+    placeholder: string,
+    options?: {
+      required?: boolean;
+      footer?: ReactNode;
+      type?: string;
+    },
+  ) => (
+    <ValidatedField
+      label={label}
+      required={options?.required}
+      state={field.state}
+      errorMessage={field.errorMessage}
+    >
+      <div className="relative">
+        <Input
+          {...field.inputProps}
+          type={options?.type}
+          placeholder={placeholder}
+        />
+        <FieldIcon icon={icon} />
+      </div>
+      {options?.footer}
+    </ValidatedField>
+  );
 
   const handleKeyDown = (
     event: React.KeyboardEvent<HTMLInputElement>
@@ -351,7 +459,7 @@ export function TrainerForm({
       errorMessage: errors[name]?.message,
       inputProps: {
         ...registration,
-        className: validatedFieldInputClass(state),
+        className: iconInputClass(state),
         onBlur: (event: FocusEvent<HTMLInputElement>) => {
           registration.onBlur(event);
           void trigger(name);
@@ -375,7 +483,7 @@ export function TrainerForm({
       errorMessage: errors[name]?.message,
       inputProps: {
         ...registration,
-        className: validatedFieldInputClass(state),
+        className: iconInputClass(state),
         onBlur: (event: FocusEvent<HTMLInputElement>) => {
           registration.onBlur(event);
           void trigger(name);
@@ -408,52 +516,70 @@ export function TrainerForm({
 
   return (
     <form
-      className="space-y-5"
+      className="space-y-5 bg-white"
       onSubmit={handleSubmit(async (formValues) => {
-        await onSubmit(formValues, selectedImage);
+        await onSubmit(formValues, selectedImage, removeImage);
       })}
     >
-      <div className="flex flex-col gap-2">
-        <Label>Profile Image</Label>
-        {previewUrl ? (
-          <img
-            src={previewUrl}
-            alt="Trainer preview"
-            className="h-32 w-32 rounded-md border object-contain"
-          />
-        ) : null}
-        <Input
-          type="file"
-          accept="image/*"
-          onChange={(event) => {
-            setSelectedImage(event.target.files?.[0] ?? null);
+      <ValidatedField
+        label="Profile Image"
+        state={getImageState()}
+        errorMessage={imageError ?? undefined}
+      >
+        <ImageUploadField
+          entityLabel="trainer profile"
+          previewAlt="Trainer profile preview"
+          previewUrl={removeImage ? null : previewUrl}
+          file={selectedImage}
+          disabled={isSubmitting}
+          error={imageError}
+          state={getImageState()}
+          validateFile={validateTrainerImageFile}
+          onFileSelect={handleImageSelect}
+          onRemove={() => {
+            setImageTouched(true);
+            setSelectedImage(null);
+            setRemoveImage(true);
+            setPreviewUrl(null);
+            setImageError(null);
           }}
         />
-      </div>
+      </ValidatedField>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <ValidatedField
-          label="First Name"
-          required
-          state={firstNameField.state}
-          errorMessage={firstNameField.errorMessage}
-        >
-          <Input
-            {...firstNameField.inputProps}
-            placeholder="Enter first name"
-          />
-        </ValidatedField>
+        {renderIconInput(
+          "First Name",
+          firstNameField,
+          User,
+          "Enter first name",
+          {
+            required: true,
+            footer: (
+              <p
+                className={cn(
+                  "mt-1 text-right text-xs tabular-nums",
+                  (values.firstName?.length ?? 0) >
+                    TRAINER_CHAR_LIMITS.firstName
+                    ? "text-red-600"
+                    : "text-slate-500",
+                )}
+              >
+                {Math.min(
+                  values.firstName?.length ?? 0,
+                  TRAINER_CHAR_LIMITS.firstName,
+                )}
+                /{TRAINER_CHAR_LIMITS.firstName} characters
+              </p>
+            ),
+          },
+        )}
 
-        <ValidatedField
-          label="Last Name"
-          state={lastNameField.state}
-          errorMessage={lastNameField.errorMessage}
-        >
-          <Input
-            {...lastNameField.inputProps}
-            placeholder="Enter last name"
-          />
-        </ValidatedField>
+        {renderIconInput(
+          "Last Name",
+          lastNameField,
+          User,
+          "Enter last name",
+        )}
 
         <ValidatedField
           label="Trainer Code"
@@ -465,71 +591,60 @@ export function TrainerForm({
                 : "valid"
           }
           successMessage={
-            !isEdit && suggestedCode
-              ? "Auto-generated"
-              : undefined
+            !isEdit && suggestedCode ? "Auto-generated" : undefined
           }
         >
-          <Input
-            value={trainerCode}
-            readOnly
-            placeholder={
-              isSuggestingCode
-                ? "Generating code..."
-                : "Trainer code"
-            }
-            className={validatedFieldInputClass(
-              isEdit ? "neutral" : "valid"
-            )}
-          />
+          <div className="relative">
+            <Input
+              value={trainerCode}
+              readOnly
+              placeholder={
+                isSuggestingCode ? "Generating code..." : "Trainer code"
+              }
+              className={iconInputClass(isEdit ? "neutral" : "valid")}
+            />
+            <FieldIcon icon={Hash} />
+          </div>
         </ValidatedField>
 
-        <ValidatedField
-          label="Email"
-          state={emailField.state}
-          errorMessage={emailField.errorMessage}
-        >
-          <Input
-            type="email"
-            {...emailField.inputProps}
-            placeholder="example@domain.com"
-          />
-        </ValidatedField>
+        {renderIconInput(
+          "Email",
+          emailField,
+          Mail,
+          "example@domain.com",
+          { type: "email" },
+        )}
 
-        <ValidatedField
-          label="Phone"
-          state={phoneField.state}
-          errorMessage={phoneField.errorMessage}
-        >
-          <Input
-            {...phoneField.inputProps}
-            placeholder="Enter phone number"
-          />
-        </ValidatedField>
+        {renderIconInput(
+          "Phone",
+          phoneField,
+          Phone,
+          "Enter phone number",
+        )}
 
         <ValidatedField
           label="Gender"
           state={genderFieldState}
           errorMessage={errors.gender?.message}
         >
-          <AppSelect
-            value={watch("gender")}
-            options={TRAINER_GENDERS.map((gender) => ({
-              label: gender,
-              value: gender,
-            }))}
-            triggerClassName={validatedFieldInputClass(
-              genderFieldState,
-              "pr-10"
-            )}
-            onValueChange={(value) => {
-              setValue("gender", value as never, {
-                shouldDirty: true,
-                shouldTouch: true,
-                shouldValidate: true,
-              });
-            }}
-          />
+          <div className="relative">
+            <AppSelect
+              value={watch("gender")}
+              options={TRAINER_GENDERS.map((gender) => ({
+                label: gender,
+                value: gender,
+              }))}
+              triggerClassName={selectTriggerClass(genderFieldState)}
+              onValueChange={(value) => {
+                setValue("gender", value as never, {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                  shouldValidate: true,
+                });
+              }}
+            />
+            <FieldIcon icon={User} />
+          </div>
         </ValidatedField>
 
         <ValidatedField
@@ -537,42 +652,42 @@ export function TrainerForm({
           state={trainerTypeFieldState}
           errorMessage={errors.trainerType?.message}
         >
-          <AppSelect
-            value={watch("trainerType")}
-            options={TRAINER_TYPES.map((type) => ({
-              label: type.replaceAll("_", " "),
-              value: type,
-            }))}
-            triggerClassName={validatedFieldInputClass(
-              trainerTypeFieldState,
-              "pr-10"
-            )}
-            onValueChange={(value) => {
-              setValue("trainerType", value as never, {
-                shouldDirty: true,
-                shouldTouch: true,
-                shouldValidate: true,
-              });
-            }}
-          />
+          <div className="relative">
+            <AppSelect
+              value={watch("trainerType")}
+              options={TRAINER_TYPES.map((type) => ({
+                label: type.replaceAll("_", " "),
+                value: type,
+              }))}
+              triggerClassName={selectTriggerClass(trainerTypeFieldState)}
+              onValueChange={(value) => {
+                setValue("trainerType", value as never, {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                  shouldValidate: true,
+                });
+              }}
+            />
+            <FieldIcon icon={Briefcase} />
+          </div>
         </ValidatedField>
       </div>
 
       <div className="min-w-0">
         <Label>
           Skills{" "}
-          <span className="text-xs text-slate-400">
-            (Press Enter to add)
-          </span>
+          <span className="text-xs text-slate-400">(Press Enter to add)</span>
         </Label>
-        <Input
-          placeholder="Type a skill and press Enter"
-          value={skillInput}
-          onChange={(event) =>
-            setSkillInput(event.target.value)
-          }
-          onKeyDown={handleKeyDown}
-        />
+        <div className="relative">
+          <Input
+            placeholder="Type a skill and press Enter"
+            className={iconInputClass("neutral")}
+            value={skillInput}
+            onChange={(event) => setSkillInput(event.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <FieldIcon icon={Tag} />
+        </div>
         {currentSkills.length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-2">
             {currentSkills.map((skill) => (
@@ -612,39 +727,34 @@ export function TrainerForm({
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <ValidatedField
-          label="Qualification"
-          state={qualificationField.state}
-          errorMessage={qualificationField.errorMessage}
-        >
-          <Input
-            {...qualificationField.inputProps}
-            placeholder="Degree / Certification"
-          />
-        </ValidatedField>
+        {renderIconInput(
+          "Qualification",
+          qualificationField,
+          GraduationCap,
+          "Degree / Certification",
+        )}
 
-        <ValidatedField
-          label="Specialization"
-          state={specializationField.state}
-          errorMessage={specializationField.errorMessage}
-        >
-          <Input
-            {...specializationField.inputProps}
-            placeholder="e.g. Strength Training"
-          />
-        </ValidatedField>
+        {renderIconInput(
+          "Specialization",
+          specializationField,
+          Briefcase,
+          "e.g. Strength Training",
+        )}
 
         <ValidatedField
           label="Experience (Years)"
           state={experienceYearsField.state}
           errorMessage={experienceYearsField.errorMessage}
         >
-          <Input
-            type="number"
-            min={0}
-            {...experienceYearsField.inputProps}
-            placeholder="0"
-          />
+          <div className="relative">
+            <Input
+              type="number"
+              min={0}
+              {...experienceYearsField.inputProps}
+              placeholder="0"
+            />
+            <FieldIcon icon={Hash} />
+          </div>
         </ValidatedField>
 
         <ValidatedField
@@ -652,46 +762,34 @@ export function TrainerForm({
           state={joiningDateField.state}
           errorMessage={joiningDateField.errorMessage}
         >
-          <Input
-            type="date"
-            {...joiningDateField.inputProps}
-          />
+          <div className="relative">
+            <Input type="date" {...joiningDateField.inputProps} />
+            <FieldIcon icon={Calendar} />
+          </div>
         </ValidatedField>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <ValidatedField
-          label="LinkedIn"
-          state={linkedInField.state}
-          errorMessage={linkedInField.errorMessage}
-        >
-          <Input
-            {...linkedInField.inputProps}
-            placeholder="https://..."
-          />
-        </ValidatedField>
+        {renderIconInput(
+          "LinkedIn",
+          linkedInField,
+          Link2,
+          "https://...",
+        )}
 
-        <ValidatedField
-          label="YouTube"
-          state={youtubeField.state}
-          errorMessage={youtubeField.errorMessage}
-        >
-          <Input
-            {...youtubeField.inputProps}
-            placeholder="https://..."
-          />
-        </ValidatedField>
+        {renderIconInput(
+          "YouTube",
+          youtubeField,
+          Link2,
+          "https://...",
+        )}
 
-        <ValidatedField
-          label="Instagram"
-          state={instagramField.state}
-          errorMessage={instagramField.errorMessage}
-        >
-          <Input
-            {...instagramField.inputProps}
-            placeholder="https://..."
-          />
-        </ValidatedField>
+        {renderIconInput(
+          "Instagram",
+          instagramField,
+          Link2,
+          "https://...",
+        )}
       </div>
 
       <div className="flex items-center gap-3">

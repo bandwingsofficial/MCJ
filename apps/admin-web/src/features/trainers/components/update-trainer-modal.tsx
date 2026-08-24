@@ -121,17 +121,19 @@ export function UpdateTrainerModal({
 
   const handleSubmit = async (
     values: UpdateTrainerFormValues,
-    image: File | null
+    image: File | null,
+    removeImage?: boolean,
   ) => {
     if (!trainer) {
       return;
     }
 
-    const success = await updateTrainer(
-      trainer.id,
-      toUpdatePayload(values),
-      image
-    );
+    const payload = toUpdatePayload(values);
+    if (removeImage) {
+      payload.profileImageFileId = null;
+    }
+
+    const success = await updateTrainer(trainer.id, payload, image);
 
     if (success) {
       onSuccess();
@@ -140,7 +142,12 @@ export function UpdateTrainerModal({
   };
 
   return (
-    <Modal open={open} title="Update Trainer" onClose={onClose}>
+    <Modal
+      open={open}
+      title="Update Trainer"
+      onClose={onClose}
+      bodyClassName="overflow-y-auto bg-white px-6 py-5"
+    >
       {isLoadingDetails || !details ? (
         <p className="py-6 text-sm text-slate-500">
           Loading trainer details…

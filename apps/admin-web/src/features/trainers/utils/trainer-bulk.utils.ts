@@ -3,8 +3,13 @@ import type {
   TrainerListItem,
 } from "@/src/features/trainers/types/trainer.types";
 
+type TrainerArchiveState = Pick<TrainerListItem, "status"> & {
+  deletedAt?: string | null;
+  isDeleted?: boolean;
+};
+
 export function isArchivedTrainer(
-  trainer: TrainerListItem
+  trainer: TrainerArchiveState,
 ): boolean {
   return Boolean(trainer.deletedAt ?? trainer.isDeleted);
 }

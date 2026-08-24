@@ -93,7 +93,7 @@ export function TrainerBulkActionsToolbar({
           disabled={disabled || deleteCount === 0}
           onClick={() => onAction("delete")}
         >
-          Delete
+          Archive
         </Button>
 
         <Button

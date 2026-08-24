@@ -18,6 +18,7 @@ import { batchService } from "@/src/features/batches/services/batch.service";
 import { formatBatchDate } from "@/src/features/batches/utils/batch.helper";
 import { trainerService } from "@/src/features/trainers/services/trainer.service";
 import { TrainerStatusBadge } from "@/src/features/trainers/components/trainer-status-badge";
+import { getTrainerDisplayStatus } from "@/src/features/trainers/utils/trainer-display.utils";
 import type {
   TrainerListItem,
   TrainerStatus,
@@ -363,9 +364,7 @@ export function BatchManageTrainersPanel({
 
                       <td className="px-4 py-3">
                         <TrainerStatusBadge
-                          status={trainer.status}
-                          deletedAt={trainer.deletedAt}
-                          isDeleted={trainer.isDeleted}
+                          status={getTrainerDisplayStatus(trainer)}
                         />
                       </td>
 

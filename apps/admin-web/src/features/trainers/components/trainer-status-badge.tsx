@@ -1,50 +1,36 @@
-"use client";
-
 import { Badge } from "@/src/shared/components/ui/badge";
 
-import type {
-  TrainerStatus,
-} from "@/src/features/trainers/types/trainer.types";
+import type { TrainerDisplayStatus } from "@/src/features/trainers/types/trainer.types";
 
 interface Props {
-  status: TrainerStatus;
-  deletedAt?: string | null;
-  isDeleted?: boolean;
+  status: TrainerDisplayStatus;
 }
 
-export function TrainerStatusBadge({
-  status,
-  deletedAt,
-  isDeleted,
-}: Props) {
-  if (deletedAt || isDeleted) {
-    return (
-      <Badge
-        variant="danger"
-        className="px-2.5 py-0.5 text-sm"
-      >
-        Archived
-      </Badge>
-    );
+export function TrainerStatusBadge({ status }: Props) {
+  switch (status) {
+    case "ACTIVE":
+      return (
+        <Badge variant="success" className="px-2.5 py-0.5 text-sm">
+          Active
+        </Badge>
+      );
+    case "INACTIVE":
+      return (
+        <Badge variant="warning" className="px-2.5 py-0.5 text-sm">
+          Inactive
+        </Badge>
+      );
+    case "ARCHIVED":
+      return (
+        <Badge variant="danger" className="px-2.5 py-0.5 text-sm">
+          Archived
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="default" className="px-2.5 py-0.5 text-sm">
+          Unknown
+        </Badge>
+      );
   }
-
-  if (status === "ACTIVE") {
-    return (
-      <Badge
-        variant="success"
-        className="px-2.5 py-0.5 text-sm"
-      >
-        Active
-      </Badge>
-    );
-  }
-
-  return (
-    <Badge
-      variant="warning"
-      className="px-2.5 py-0.5 text-sm"
-    >
-      Inactive
-    </Badge>
-  );
 }

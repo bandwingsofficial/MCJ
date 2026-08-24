@@ -25,6 +25,9 @@ interface UseTrainersReturn {
 
   total: number;
 
+  /** Total trainers in the catalog (non-archived, unfiltered). */
+  catalogTotal: number;
+
   /** Alias of total for legacy callers. */
   count: number;
 
@@ -55,6 +58,8 @@ export const useTrainers = (options?: {
   >([]);
 
   const [total, setTotal] = useState(0);
+
+  const [catalogTotal, setCatalogTotal] = useState(0);
 
   const [isInitialLoading, setIsInitialLoading] =
     useState(true);
@@ -190,6 +195,24 @@ export const useTrainers = (options?: {
     ]
   );
 
+  const refreshCatalogTotal = useCallback(async () => {
+    try {
+      const response = await trainerService.getTrainers({
+        page: 1,
+        pageSize: 1,
+        includeDeleted: true,
+        isDeleted: false,
+      });
+      setCatalogTotal(response.data.count);
+    } catch {
+      // Header total is non-critical.
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshCatalogTotal();
+  }, [refreshCatalogTotal]);
+
   useEffect(() => {
     void fetchTrainers();
   }, [fetchTrainers]);
@@ -197,6 +220,7 @@ export const useTrainers = (options?: {
   return {
     trainers,
     total,
+    catalogTotal,
     count: total,
     isInitialLoading,
     isFetching,
@@ -204,6 +228,9 @@ export const useTrainers = (options?: {
     error,
     filters,
     setFilters,
-    refetch: () => fetchTrainers({ silent: false }),
+    refetch: async () => {
+      await fetchTrainers({ silent: false });
+      await refreshCatalogTotal();
+    },
   };
 };

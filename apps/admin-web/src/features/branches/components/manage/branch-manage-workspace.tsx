@@ -98,6 +98,7 @@ export function BranchManageWorkspace({
         branchId,
         page: 1,
         pageSize: 100,
+        isDeleted: false,
       });
       setInstructors(response.data.items ?? []);
     } catch (error) {
@@ -120,6 +121,7 @@ export function BranchManageWorkspace({
       const response = await trainerService.getTrainers({
         page: 1,
         pageSize: 200,
+        isDeleted: false,
       });
       const assigned = new Set(instructors.map((item) => item.id));
       setAssignCandidates(
