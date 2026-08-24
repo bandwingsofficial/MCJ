@@ -39,6 +39,8 @@ export interface CategoryDetails
 export interface CreateCategoryRequest {
   name: string;
 
+  slug?: string;
+
   description?: string;
 
   status?: Exclude<CategoryStatus, "ARCHIVED">;
@@ -49,9 +51,13 @@ export interface CreateCategoryRequest {
 export interface UpdateCategoryRequest {
   name?: string;
 
+  slug?: string;
+
   description?: string;
 
   status?: Exclude<CategoryStatus, "ARCHIVED">;
+
+  displayOrder?: number;
 
   thumbnailFileId?: string | null;
 }

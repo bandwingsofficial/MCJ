@@ -75,4 +75,23 @@ export const categoryApi = {
 
     return response.data;
   },
+
+  async checkAvailability(params: {
+    name?: string;
+    slug?: string;
+    excludeId?: string;
+  }) {
+    const response = await apiClient.get<
+      ApiSuccessResponse<{
+        nameAvailable: boolean | null;
+        slugAvailable: boolean | null;
+        nameMessage: string | null;
+        slugMessage: string | null;
+      }>
+    >("/admin/categories/check-availability", {
+      params,
+    });
+
+    return response.data;
+  },
 };

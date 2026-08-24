@@ -24,6 +24,7 @@ import { BulkRestoreCategoryHandler } from './application/bulk-restore-category/
 import { BulkPermanentDeleteCategoryHandler } from './application/bulk-permanent-delete-category/bulk-permanent-delete-category.handler';
 import { ReorderCategoriesHandler } from './application/reorder-categories/reorder-categories.handler';
 import { GetCategoryDependenciesHandler } from './application/get-category-dependencies/get-category-dependencies.handler';
+import { CheckCategoryAvailabilityHandler } from './application/check-category-availability/check-category-availability.handler';
 import { AssignCategoriesToBranchHandler } from './application/assign-categories-to-branch/assign-categories-to-branch.handler';
 import { UnassignCategoryFromBranchHandler } from './application/unassign-category-from-branch/unassign-category-from-branch.handler';
 
@@ -286,6 +287,13 @@ import { BranchRepository } from '../branch/domain/repositories/branch.repositor
         CATEGORY_TOKENS.CATEGORY_REPOSITORY,
         CategoryDomainService,
       ],
+    },
+
+    {
+      provide: CheckCategoryAvailabilityHandler,
+      useFactory: (categoryRepo: CategoryRepository) =>
+        new CheckCategoryAvailabilityHandler(categoryRepo),
+      inject: [CATEGORY_TOKENS.CATEGORY_REPOSITORY],
     },
 
     {

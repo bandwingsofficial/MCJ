@@ -87,10 +87,15 @@ export class UpdateCategoryHandler {
       }
     }
 
+    const nextDescription =
+      command.description !== undefined
+        ? this.domainService.normalizeDescription(command.description)
+        : category.description;
+
     category.update({
       name: command.name,
       slug: nextSlug,
-      description: command.description,
+      description: nextDescription,
       thumbnailFileId: nextThumbnailFileId,
       thumbnailUrl: nextThumbnailUrl,
       displayOrder:

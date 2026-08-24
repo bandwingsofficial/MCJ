@@ -68,6 +68,8 @@ import { BulkDeleteCategoryDto } from '../dtos/bulk-delete-category.dto';
 import { BulkPermanentDeleteCategoryDto } from '../dtos/bulk-permanent-delete-category.dto';
 import { BulkRestoreCategoryDto } from '../dtos/bulk-restore-category.dto';
 import { ReorderCategoriesDto } from '../dtos/reorder-categories.dto';
+import { CheckCategoryAvailabilityHandler } from '../../application/check-category-availability/check-category-availability.handler';
+import { CheckCategoryAvailabilityQuery } from '../../application/check-category-availability/check-category-availability.query';
 
 function resolveCategoryIds(
   dto: { categoryIds?: string[]; ids?: string[] },
@@ -97,7 +99,34 @@ export class AdminCategoryController {
     private readonly bulkPermanentDeleteCategoryHandler: BulkPermanentDeleteCategoryHandler,
     private readonly reorderCategoriesHandler: ReorderCategoriesHandler,
     private readonly getCategoryDependenciesHandler: GetCategoryDependenciesHandler,
+    private readonly checkCategoryAvailabilityHandler: CheckCategoryAvailabilityHandler,
   ) {}
+
+  @Get('check-availability')
+  @ApiResponse({
+    status: 200,
+    description: 'Category name/slug availability checked',
+  })
+  async checkAvailability(
+    @Query('name') name?: string,
+    @Query('slug') slug?: string,
+    @Query('excludeId') excludeId?: string,
+  ) {
+    const result =
+      await this.checkCategoryAvailabilityHandler.execute(
+        new CheckCategoryAvailabilityQuery(
+          name,
+          slug,
+          excludeId,
+        ),
+      );
+
+    return {
+      success: true,
+      message: 'Category availability checked successfully',
+      data: result,
+    };
+  }
 
   @Post()
   @ApiResponse({ status: 201, description: 'Category created' })

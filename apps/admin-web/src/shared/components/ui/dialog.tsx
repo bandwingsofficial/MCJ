@@ -20,7 +20,7 @@ interface ConfirmDialogProps {
   /** When false, only the primary action button is shown (e.g. Close). */
   showCancel?: boolean;
 
-  confirmVariant?: "primary" | "danger" | "outline";
+  confirmVariant?: "primary" | "danger" | "success" | "outline";
 
   onConfirm: () => void;
 

@@ -14,6 +14,7 @@ export interface ButtonProps
     | "secondary"
     | "outline"
     | "danger"
+    | "success"
     | "ghost";
 
   size?: "sm" | "md" | "lg";
@@ -31,6 +32,9 @@ const variantClasses = {
 
   danger:
     "bg-red-600 text-white hover:bg-red-700",
+
+  success:
+    "bg-emerald-600 text-white hover:bg-emerald-700",
 
   ghost:
     "hover:bg-slate-100",

@@ -39,6 +39,10 @@ export class CreateCategoryHandler {
       slug,
     );
 
+    const description = this.domainService.normalizeDescription(
+      command.description,
+    );
+
     // Always append to the global sequence — do not accept client displayOrder.
     const maxDisplayOrder =
       await this.categoryRepo.getMaxDisplayOrder();
@@ -66,7 +70,7 @@ export class CreateCategoryHandler {
       id: categoryId,
       name: command.name,
       slug,
-      description: command.description,
+      description,
       thumbnailFileId,
       thumbnailUrl,
       status: command.status,

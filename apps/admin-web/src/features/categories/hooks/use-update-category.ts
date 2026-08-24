@@ -4,6 +4,8 @@ import {
   useState,
 } from "react";
 
+import { AxiosError } from "axios";
+
 import { appToast } from "@/src/shared/components/ui/toast";
 
 import { categoryService } from "@/src/features/categories/services/category.service";
@@ -41,6 +43,10 @@ export const useUpdateCategory =
 
           return response.data;
         } catch (error) {
+          if (error instanceof AxiosError) {
+            throw error;
+          }
+
           appToast.error(
             getErrorMessage(error)
           );

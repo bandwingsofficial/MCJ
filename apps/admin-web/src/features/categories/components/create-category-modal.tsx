@@ -8,15 +8,11 @@ import { useCreateCategory } from "@/src/features/categories/hooks/use-create-ca
 
 import { categoryService } from "@/src/features/categories/services/category.service";
 
-import type {
-  CreateCategoryFormValues,
-} from "@/src/features/categories/schemas/category.schema";
+import type { CategoryFormValues } from "@/src/features/categories/schemas/category.schema";
 
 interface Props {
   open: boolean;
-
   onClose: () => void;
-
   onSuccess: () => void;
 }
 
@@ -25,55 +21,41 @@ export function CreateCategoryModal({
   onClose,
   onSuccess,
 }: Props) {
-  const {
-    createCategory,
-    isLoading,
-  } = useCreateCategory();
+  const { createCategory, isLoading } = useCreateCategory();
 
   const handleSubmit = async (
-    values: CreateCategoryFormValues,
+    values: CategoryFormValues,
     image: File | null,
-    _removeImage: boolean
   ) => {
     let thumbnailFileId: string | undefined;
 
     if (image) {
       const uploadResponse =
-        await categoryService.uploadCategoryImage(
-          image
-        );
+        await categoryService.uploadCategoryImage(image);
 
-      thumbnailFileId =
-        uploadResponse.data.fileId;
+      thumbnailFileId = uploadResponse.data.fileId;
     }
 
-    const result =
-      await createCategory({
-        name: values.name,
-        description: values.description,
-        status: values.status ?? "ACTIVE",
-        thumbnailFileId,
-      });
-
-    if (!result) {
-      return;
-    }
+    await createCategory({
+      name: values.name,
+      slug: values.slug || undefined,
+      description: values.description || undefined,
+      thumbnailFileId,
+    });
 
     onSuccess();
-
     onClose();
   };
 
   return (
-    <Modal
-      open={open}
-      title="Create Category"
-      onClose={onClose}
-    >
+    <Modal open={open} title="Create Category" onClose={onClose}>
       <CategoryForm
+        key={open ? "create-category-open" : "create-category-closed"}
         submitLabel="Create Category"
-        isLoading={isLoading}
-        onSubmit={handleSubmit}
+        isSubmitting={isLoading}
+        onSubmit={async (values, image) => {
+          await handleSubmit(values, image);
+        }}
       />
     </Modal>
   );

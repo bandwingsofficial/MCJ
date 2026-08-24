@@ -22,6 +22,9 @@ interface UseCategoriesReturn {
 
   total: number;
 
+  /** Total categories in the catalog (unfiltered). */
+  catalogTotal: number;
+
   /** True only for the first load when no rows exist yet. */
   isInitialLoading: boolean;
 
@@ -49,6 +52,9 @@ export const useCategories =
     >([]);
 
     const [total, setTotal] =
+      useState(0);
+
+    const [catalogTotal, setCatalogTotal] =
       useState(0);
 
     const [
@@ -153,6 +159,13 @@ export const useCategories =
               pageSize: filters.pageSize,
             });
 
+          const catalogResponse =
+            await categoryService.getCategories({
+              search: "",
+              page: 1,
+              pageSize: 1,
+            });
+
           if (requestId !== requestIdRef.current) {
             return;
           }
@@ -161,6 +174,10 @@ export const useCategories =
           setTotal(
             response.meta?.total ??
               response.data.length
+          );
+          setCatalogTotal(
+            catalogResponse.meta?.total ??
+              catalogResponse.data.length
           );
           setError(null);
           hasLoadedRef.current = true;
@@ -198,6 +215,7 @@ export const useCategories =
     return {
       categories,
       total,
+      catalogTotal,
       isInitialLoading,
       isFetching,
       error,

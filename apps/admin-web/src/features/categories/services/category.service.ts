@@ -270,6 +270,14 @@ class CategoryService {
     return categoryApi.bulkPermanentDeleteCategories(categoryIds);
   }
 
+  async checkAvailability(params: {
+    name?: string;
+    slug?: string;
+    excludeId?: string;
+  }) {
+    return categoryApi.checkAvailability(params);
+  }
+
   async uploadCategoryImage(
     file: File
   ) {

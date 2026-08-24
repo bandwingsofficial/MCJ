@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { AxiosError } from "axios";
+
 import { appToast } from "@/src/shared/components/ui/toast";
 
 import { categoryService } from "@/src/features/categories/services/category.service";
@@ -11,73 +13,36 @@ import type {
   CategoryDetails,
 } from "@/src/features/categories/types/category.types";
 
-interface ApiError {
-  response?: {
-    data?: {
-      code?: string;
-      message?: string;
-    };
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
+
+export const useCreateCategory = () => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const createCategory = async (
+    payload: CreateCategoryRequest,
+  ): Promise<CategoryDetails> => {
+    try {
+      setIsLoading(true);
+
+      const response = await categoryService.createCategory(payload);
+
+      appToast.success(response.message);
+
+      return response.data;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        throw error;
+      }
+
+      appToast.error(getErrorMessage(error));
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
-}
 
-export const useCreateCategory =
-  () => {
-    const [
-      isLoading,
-      setIsLoading,
-    ] = useState(false);
-
-    const createCategory =
-      async (
-        payload: CreateCategoryRequest
-      ): Promise<CategoryDetails | null> => {
-        try {
-          setIsLoading(true);
-
-          const response =
-            await categoryService.createCategory(
-              payload
-            );
-
-          appToast.success(
-            response.message
-          );
-
-          return response.data;
-        } catch (error) {
-          const apiError =
-            error as ApiError;
-
-          const code =
-            apiError.response?.data
-              ?.code;
-
-          const message =
-            apiError.response?.data
-              ?.message;
-
-          switch (code) {
-            case "CATEGORY_ALREADY_EXISTS":
-              appToast.error(
-                "Category already exists"
-              );
-              return null;
-
-            default:
-              appToast.error(
-                message ??
-                  "Failed to create category"
-              );
-
-              return null;
-          }
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-    return {
-      createCategory,
-      isLoading,
-    };
+  return {
+    createCategory,
+    isLoading,
   };
+};
