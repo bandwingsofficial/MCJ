@@ -8,6 +8,7 @@ export class CreateCourseLessonCommand {
     public readonly videoUrl?: string,
     public readonly duration?: number,
     public readonly contentType?: LessonContentType,
+    public readonly parentLessonId?: string | null,
     public readonly createdBy?: string,
   ) {}
 }

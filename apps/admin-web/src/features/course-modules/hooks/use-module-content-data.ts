@@ -155,9 +155,36 @@ export function filterNormalLessons(
 ) {
   return lessons.filter(
     (lesson) =>
+      !lesson.parentLessonId &&
       !quizLessonIds.has(lesson.id) &&
       !resourceShellLessonIds.has(lesson.id) &&
       isPlainLesson(lesson),
+  );
+}
+
+export function filterChildSelfPacedVideoLessons(
+  lessons: CourseLesson[],
+  parentLessonId: string,
+  quizLessonIds: Set<string>,
+) {
+  return lessons.filter(
+    (lesson) =>
+      lesson.parentLessonId === parentLessonId &&
+      isSelfPacedVideoLesson(lesson) &&
+      !quizLessonIds.has(lesson.id),
+  );
+}
+
+export function filterChildLiveRecordedVideoLessons(
+  lessons: CourseLesson[],
+  parentLessonId: string,
+  quizLessonIds: Set<string>,
+) {
+  return lessons.filter(
+    (lesson) =>
+      lesson.parentLessonId === parentLessonId &&
+      isLiveRecordedVideoLesson(lesson) &&
+      !quizLessonIds.has(lesson.id),
   );
 }
 
@@ -167,7 +194,9 @@ export function filterSelfPacedVideoLessons(
 ) {
   return lessons.filter(
     (lesson) =>
-      isSelfPacedVideoLesson(lesson) && !quizLessonIds.has(lesson.id),
+      !lesson.parentLessonId &&
+      isSelfPacedVideoLesson(lesson) &&
+      !quizLessonIds.has(lesson.id),
   );
 }
 
@@ -185,6 +214,8 @@ export function filterLiveRecordedVideoLessons(
 ) {
   return lessons.filter(
     (lesson) =>
-      isLiveRecordedVideoLesson(lesson) && !quizLessonIds.has(lesson.id),
+      !lesson.parentLessonId &&
+      isLiveRecordedVideoLesson(lesson) &&
+      !quizLessonIds.has(lesson.id),
   );
 }

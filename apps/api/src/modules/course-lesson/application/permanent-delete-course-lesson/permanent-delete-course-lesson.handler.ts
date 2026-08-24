@@ -17,13 +17,14 @@ export class PermanentDeleteCourseLessonHandler {
       await this.courseLessonRepo.findById(command.id, true),
     );
 
-    const { moduleId, displayOrder } = lesson;
+    const { moduleId, displayOrder, parentLessonId } = lesson;
 
     await this.courseLessonRepo.deletePermanent(lesson.id);
 
     await this.courseLessonRepo.closeDisplayOrderGap(
       moduleId,
       displayOrder,
+      parentLessonId,
     );
 
     return new PermanentDeleteCourseLessonResult(lesson.id, true);

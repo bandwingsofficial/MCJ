@@ -450,6 +450,7 @@ model CourseModule {
 model CourseLesson {
   id           String           @id @default(uuid())
   moduleId     String
+  parentLessonId String?
   title        String
   slug         String
   description  String?
@@ -466,12 +467,15 @@ model CourseLesson {
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   module       CourseModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  parentLesson CourseLesson?    @relation("LessonChildren", fields: [parentLessonId], references: [id], onDelete: Cascade)
+  childLessons CourseLesson[]   @relation("LessonChildren")
   resources    CourseResource[]
   quiz         CourseQuiz?
   progress     LessonProgress[]
 
   @@unique([moduleId, slug])
   @@index([moduleId])
+  @@index([parentLessonId])
   @@index([slug])
   @@index([displayOrder])
   @@index([moduleId, isDeleted])

@@ -72,6 +72,7 @@ export class AdminCourseLessonController {
         dto.videoUrl,
         dto.duration,
         dto.contentType,
+        dto.parentLessonId ?? null,
         user?.sub,
       ),
     );
@@ -85,9 +86,15 @@ export class AdminCourseLessonController {
 
   @Get()
   async list(@Query() query: ListCourseLessonsQueryDto) {
+    const parentLessonId = query.parentLessonScope === 'root'
+      ? null
+      : query.parentLessonId;
+
     const result = await this.listCourseLessonsHandler.execute(
       new ListCourseLessonsQuery(
         query.moduleId,
+        parentLessonId,
+        query.contentType,
         query.search,
         query.includeDeleted,
         query.skip,

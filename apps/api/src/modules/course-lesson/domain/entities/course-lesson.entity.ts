@@ -8,6 +8,7 @@ export class CourseLesson {
   private constructor(
     public readonly id: string,
     public readonly moduleId: string,
+    public readonly parentLessonId: string | null,
     public title: string,
     public slug: Slug,
     public description: string | null,
@@ -28,6 +29,7 @@ export class CourseLesson {
     return new CourseLesson(
       params.id,
       params.moduleId,
+      params.parentLessonId ?? null,
       CourseLesson.normalizeTitle(params.title),
       params.slug
         ? Slug.create(params.slug)
@@ -53,6 +55,7 @@ export class CourseLesson {
     return new CourseLesson(
       params.id,
       params.moduleId,
+      params.parentLessonId,
       params.title,
       Slug.create(params.slug),
       params.description,
@@ -140,6 +143,7 @@ export class CourseLesson {
 export interface CourseLessonCreateParams {
   id: string;
   moduleId: string;
+  parentLessonId?: string | null;
   title: string;
   slug?: string;
   description?: string | null;
@@ -163,6 +167,7 @@ export interface CourseLessonUpdateParams {
 export interface CourseLessonReconstituteParams {
   id: string;
   moduleId: string;
+  parentLessonId: string | null;
   title: string;
   slug: string;
   description: string | null;

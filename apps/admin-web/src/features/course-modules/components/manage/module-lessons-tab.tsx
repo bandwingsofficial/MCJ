@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
@@ -29,6 +30,7 @@ import {
 import { ModuleContentStatusBadge } from "@/src/features/course-modules/components/manage/module-content-status-badge";
 import { ModuleContentTable } from "@/src/features/course-modules/components/manage/module-content-table";
 import { filterNormalLessons } from "@/src/features/course-modules/hooks/use-module-content-data";
+import { courseManageLessonPath } from "@/src/features/courses/utils/course-manage.routes";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 interface LessonRow extends CourseLesson {
@@ -36,6 +38,7 @@ interface LessonRow extends CourseLesson {
 }
 
 interface Props {
+  courseId: string;
   moduleId: string;
   lessons: CourseLesson[];
   quizLessonIds: Set<string>;
@@ -44,12 +47,14 @@ interface Props {
 }
 
 export function ModuleLessonsTab({
+  courseId,
   moduleId,
   lessons,
   quizLessonIds,
   resourceShellLessonIds,
   onRefresh,
 }: Props) {
+  const router = useRouter();
   const { createCourseLesson, isLoading: isCreating } =
     useCreateCourseLesson();
   const { updateCourseLesson, isLoading: isUpdating } =
@@ -169,6 +174,12 @@ export function ModuleLessonsTab({
         renderActions={(row) => (
           <ModuleContentActions
             isArchived={row.isArchived}
+            showManage
+            onManage={() => {
+              router.push(
+                courseManageLessonPath(courseId, moduleId, row.id),
+              );
+            }}
             onDeactivate={() => {
               setSelected(row);
               setStatusOpen(true);
@@ -213,6 +224,7 @@ export function ModuleLessonsTab({
             } else {
               await createCourseLesson({
                 moduleId,
+                parentLessonId: null,
                 title: values.title,
                 description: values.description,
                 videoUrl: "",

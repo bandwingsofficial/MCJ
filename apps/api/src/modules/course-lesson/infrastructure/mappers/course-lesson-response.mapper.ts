@@ -9,6 +9,7 @@ export class CourseLessonResponseMapper {
     return new CourseLessonResult(
       lesson.id,
       lesson.moduleId,
+      lesson.parentLessonId,
       lesson.title,
       lesson.slug.getValue(),
       lesson.description,

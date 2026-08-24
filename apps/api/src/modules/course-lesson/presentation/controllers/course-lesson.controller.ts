@@ -21,9 +21,15 @@ export class CourseLessonController {
     description: 'Course lessons listed',
   })
   async list(@Query() query: ListCourseLessonsQueryDto) {
+    const parentLessonId = query.parentLessonScope === 'root'
+      ? null
+      : query.parentLessonId;
+
     const result = await this.listCourseLessonsHandler.execute(
       new ListCourseLessonsQuery(
         query.moduleId,
+        parentLessonId,
+        query.contentType,
         query.search,
         false,
         query.skip,

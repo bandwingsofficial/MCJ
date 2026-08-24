@@ -16,6 +16,14 @@ class CourseLessonService {
   private readonly basePath =
     "/admin/course-lessons";
 
+  async getCourseLesson(id: string) {
+    const { data } = await apiClient.get<CourseLessonResponse>(
+      `${this.basePath}/${id}`,
+    );
+
+    return data;
+  }
+
   async getCourseLessons(
     filters: GetCourseLessonsRequest,
   ) {
@@ -24,11 +32,12 @@ class CourseLessonService {
         this.basePath,
         {
           params: {
-  moduleId: filters.moduleId,
-
-  includeDeleted:
-    filters.includeDeleted,
-},
+            moduleId: filters.moduleId,
+            parentLessonId: filters.parentLessonId,
+            parentLessonScope: filters.parentLessonScope,
+            contentType: filters.contentType,
+            includeDeleted: filters.includeDeleted,
+          },
         },
       );
 

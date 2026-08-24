@@ -49,6 +49,21 @@ export class CreateCourseLessonHandler {
       );
     }
 
+    if (command.parentLessonId) {
+      const parentLesson = await this.courseLessonRepo.findById(
+        command.parentLessonId,
+        true,
+      );
+
+      if (!parentLesson || parentLesson.moduleId !== command.moduleId) {
+        throw new BaseException(
+          ERROR_CODES.COURSE_LESSON_NOT_FOUND,
+          'Parent lesson not found in this module',
+          404,
+        );
+      }
+    }
+
     const slug = Slug.fromTitle(command.title).getValue();
 
     await this.domainService.ensureSlugIsAvailable(
@@ -57,14 +72,18 @@ export class CreateCourseLessonHandler {
       slug,
     );
 
+    const parentLessonId = command.parentLessonId ?? null;
+
     const displayOrder =
       (await this.courseLessonRepo.getMaxDisplayOrder(
         command.moduleId,
+        parentLessonId,
       )) + 1;
 
     const lesson = CourseLesson.create({
       id: randomUUID(),
       moduleId: command.moduleId,
+      parentLessonId,
       title: command.title,
       slug,
       description: command.description,

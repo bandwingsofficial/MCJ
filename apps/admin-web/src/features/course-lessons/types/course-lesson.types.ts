@@ -10,6 +10,8 @@ export interface CourseLesson {
 
   moduleId: string;
 
+  parentLessonId?: string | null;
+
   title: string;
 
   slug: string;
@@ -39,6 +41,8 @@ export interface CourseLesson {
 
 export interface CreateCourseLessonRequest {
   moduleId: string;
+
+  parentLessonId?: string | null;
 
   title: string;
 
@@ -127,6 +131,12 @@ export interface CourseLessonApiError {
 
 export interface GetCourseLessonsRequest {
   moduleId: string;
+
+  parentLessonId?: string;
+
+  parentLessonScope?: 'root';
+
+  contentType?: LessonContentType;
 
   includeDeleted: boolean;
 }

@@ -23,6 +23,7 @@ export class MoveCourseLessonHandler {
     const maxPosition =
       await this.courseLessonRepo.getMaxDisplayOrder(
         lesson.moduleId,
+        lesson.parentLessonId,
       );
 
     if (
@@ -41,6 +42,7 @@ export class MoveCourseLessonHandler {
       lesson.displayOrder,
       command.newPosition,
       command.updatedBy,
+      lesson.parentLessonId,
     );
 
     return CourseLessonResponseMapper.toResult(

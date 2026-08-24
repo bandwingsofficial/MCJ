@@ -17,6 +17,11 @@ export class CreateCourseLessonDto {
   @IsUUID()
   moduleId!: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  parentLessonId?: string;
+
   @ApiProperty({ example: 'What is Java?' })
   @IsString()
   @MaxLength(200)

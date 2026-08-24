@@ -26,6 +26,7 @@ export class DeleteCourseLessonHandler {
     await this.courseLessonRepo.closeDisplayOrderGap(
       lesson.moduleId,
       deletedDisplayOrder,
+      lesson.parentLessonId,
     );
 
     await this.courseLessonRepo.cascadeSoftDelete(

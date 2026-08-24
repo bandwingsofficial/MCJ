@@ -12,6 +12,12 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { courseLessonService } from "@/src/features/course-lessons/services/course-lesson.service";
 import type { CourseLesson } from "@/src/features/course-lessons/types";
+import { useCourse } from "@/src/features/courses/hooks/use-course";
+import {
+  courseManageLessonPath,
+  courseManageModulePath,
+  courseManagePath,
+} from "@/src/features/courses/utils/course-manage.routes";
 
 import { QuizBuilder } from "@/src/features/course-quizzes/components/quiz-builder";
 import { courseQuizService } from "@/src/features/course-quizzes/services/course-quiz.service";
@@ -31,6 +37,7 @@ export function QuizBuilderPage({
   moduleId,
   lessonId,
 }: QuizBuilderPageProps) {
+  const { course } = useCourse(courseId);
   const [quizId, setQuizId] = useState<string | null>(null);
   const [initializing, setInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
@@ -41,16 +48,12 @@ export function QuizBuilderPage({
 
   const loadLesson = useCallback(async () => {
     try {
-      const response = await courseLessonService.getCourseLessons({
-        moduleId,
-        includeDeleted: false,
-      });
-      const foundLesson = response.data.find((item) => item.id === lessonId);
-      setLesson(foundLesson ?? null);
+      const response = await courseLessonService.getCourseLesson(lessonId);
+      setLesson(response.data);
     } catch {
       setLesson(null);
     }
-  }, [lessonId, moduleId]);
+  }, [lessonId]);
 
   const resolveQuiz = useCallback(async () => {
     setInitializing(true);
@@ -97,6 +100,49 @@ export function QuizBuilderPage({
     }
   };
 
+  const breadcrumbs = (
+    <nav className="flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
+      <Link href="/courses" className="font-medium text-[#2447A8] hover:underline">
+        Courses
+      </Link>
+      <span aria-hidden>›</span>
+      <Link
+        href={courseManagePath(courseId)}
+        className="font-medium text-[#2447A8] hover:underline"
+      >
+        {course?.title ?? "Course"}
+        {course?.slug ? ` (${course.slug})` : ""}
+      </Link>
+      <span aria-hidden>›</span>
+      <span className="text-slate-700">Management</span>
+      <span aria-hidden>›</span>
+      <Link
+        href={courseManagePath(courseId)}
+        className="font-medium text-[#2447A8] hover:underline"
+      >
+        Modules
+      </Link>
+      <span aria-hidden>›</span>
+      <Link
+        href={courseManageModulePath(courseId, moduleId)}
+        className="font-medium text-[#2447A8] hover:underline"
+      >
+        Module
+      </Link>
+      <span aria-hidden>›</span>
+      <span className="text-slate-700">Lessons</span>
+      <span aria-hidden>›</span>
+      <Link
+        href={courseManageLessonPath(courseId, moduleId, lessonId)}
+        className="font-medium text-[#2447A8] hover:underline"
+      >
+        {lesson?.title ?? "Lesson"}
+      </Link>
+      <span aria-hidden>›</span>
+      <span className="font-medium text-slate-900">Quiz Builder</span>
+    </nav>
+  );
+
   if (initializing || (quizId && isLoading && !quiz)) {
     return <Loader />;
   }
@@ -115,31 +161,8 @@ export function QuizBuilderPage({
 
   if (!quizId) {
     return (
-      <div className="space-y-4">
-        <nav className="flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
-          <Link
-            href="/courses"
-            className="font-medium text-[#2447A8] hover:underline"
-          >
-            Courses
-          </Link>
-          <span aria-hidden>›</span>
-          <Link
-            href={`/courses/${courseId}/manage`}
-            className="font-medium text-[#2447A8] hover:underline"
-          >
-            Management
-          </Link>
-          <span aria-hidden>›</span>
-          <Link
-            href={`/courses/${courseId}/manage/modules/${moduleId}`}
-            className="font-medium text-[#2447A8] hover:underline"
-          >
-            Module
-          </Link>
-          <span aria-hidden>›</span>
-          <span className="font-medium text-slate-700">Quiz Builder</span>
-        </nav>
+      <div className="-m-6 min-h-full space-y-4 bg-white p-6">
+        {breadcrumbs}
 
         <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
           <p className="text-sm text-slate-600">
@@ -173,31 +196,8 @@ export function QuizBuilderPage({
   }
 
   return (
-    <div className="space-y-4">
-      <nav className="flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
-        <Link
-          href="/courses"
-          className="font-medium text-[#2447A8] hover:underline"
-        >
-          Courses
-        </Link>
-        <span aria-hidden>›</span>
-        <Link
-          href={`/courses/${courseId}/manage`}
-          className="font-medium text-[#2447A8] hover:underline"
-        >
-          Management
-        </Link>
-        <span aria-hidden>›</span>
-        <Link
-          href={`/courses/${courseId}/manage/modules/${moduleId}`}
-          className="font-medium text-[#2447A8] hover:underline"
-        >
-          Module
-        </Link>
-        <span aria-hidden>›</span>
-        <span className="font-medium text-slate-700">Quiz Builder</span>
-      </nav>
+    <div className="-m-6 min-h-full space-y-4 bg-white p-6">
+      {breadcrumbs}
 
       <div>
         <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">
@@ -208,10 +208,7 @@ export function QuizBuilderPage({
         </p>
       </div>
 
-      <QuizBuilder
-        quiz={quiz}
-        onQuizUpdated={refetch}
-      />
+      <QuizBuilder quiz={quiz} onQuizUpdated={refetch} />
     </div>
   );
 }

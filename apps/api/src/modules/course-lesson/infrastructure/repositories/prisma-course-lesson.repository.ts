@@ -101,12 +101,12 @@ export class PrismaCourseLessonRepository
     });
   }
 
-  async getMaxDisplayOrder(moduleId: string): Promise<number> {
+  async getMaxDisplayOrder(
+    moduleId: string,
+    parentLessonId: string | null = null,
+  ): Promise<number> {
     const result = await this.prisma.courseLesson.aggregate({
-      where: {
-        moduleId,
-        isDeleted: false,
-      },
+      where: this.buildOrderScopeWhere(moduleId, parentLessonId),
       _max: {
         displayOrder: true,
       },
@@ -119,16 +119,18 @@ export class PrismaCourseLessonRepository
     moduleId: string,
     oldOrder: number,
     newOrder: number,
+    parentLessonId: string | null = null,
   ): Promise<void> {
     if (oldOrder === newOrder) {
       return;
     }
 
+    const scope = this.buildOrderScopeWhere(moduleId, parentLessonId);
+
     if (newOrder < oldOrder) {
       await this.prisma.courseLesson.updateMany({
         where: {
-          moduleId,
-          isDeleted: false,
+          ...scope,
           displayOrder: { gte: newOrder, lt: oldOrder },
         },
         data: { displayOrder: { increment: 1 } },
@@ -136,8 +138,7 @@ export class PrismaCourseLessonRepository
     } else {
       await this.prisma.courseLesson.updateMany({
         where: {
-          moduleId,
-          isDeleted: false,
+          ...scope,
           displayOrder: { gt: oldOrder, lte: newOrder },
         },
         data: { displayOrder: { decrement: 1 } },
@@ -148,11 +149,11 @@ export class PrismaCourseLessonRepository
   async closeDisplayOrderGap(
     moduleId: string,
     deletedDisplayOrder: number,
+    parentLessonId: string | null = null,
   ): Promise<void> {
     await this.prisma.courseLesson.updateMany({
       where: {
-        moduleId,
-        isDeleted: false,
+        ...this.buildOrderScopeWhere(moduleId, parentLessonId),
         displayOrder: { gt: deletedDisplayOrder },
       },
       data: { displayOrder: { decrement: 1 } },
@@ -165,17 +166,19 @@ export class PrismaCourseLessonRepository
     oldOrder: number,
     newOrder: number,
     updatedBy?: string | null,
+    parentLessonId: string | null = null,
   ): Promise<void> {
     if (oldOrder === newOrder) {
       return;
     }
 
+    const scope = this.buildOrderScopeWhere(moduleId, parentLessonId);
+
     await this.prisma.$transaction(async (tx) => {
       if (newOrder < oldOrder) {
         await tx.courseLesson.updateMany({
           where: {
-            moduleId,
-            isDeleted: false,
+            ...scope,
             displayOrder: { gte: newOrder, lt: oldOrder },
           },
           data: { displayOrder: { increment: 1 } },
@@ -183,8 +186,7 @@ export class PrismaCourseLessonRepository
       } else {
         await tx.courseLesson.updateMany({
           where: {
-            moduleId,
-            isDeleted: false,
+            ...scope,
             displayOrder: { gt: oldOrder, lte: newOrder },
           },
           data: { displayOrder: { decrement: 1 } },
@@ -200,6 +202,17 @@ export class PrismaCourseLessonRepository
         },
       });
     });
+  }
+
+  private buildOrderScopeWhere(
+    moduleId: string,
+    parentLessonId: string | null,
+  ): Prisma.CourseLessonWhereInput {
+    return {
+      moduleId,
+      isDeleted: false,
+      parentLessonId,
+    };
   }
 
   async cascadeSoftDelete(
@@ -238,6 +251,14 @@ export class PrismaCourseLessonRepository
 
     if (filters.moduleId) {
       where.moduleId = filters.moduleId;
+    }
+
+    if (filters.parentLessonId !== undefined) {
+      where.parentLessonId = filters.parentLessonId;
+    }
+
+    if (filters.contentType) {
+      where.contentType = filters.contentType as Prisma.CourseLessonWhereInput['contentType'];
     }
 
     if (filters.search) {

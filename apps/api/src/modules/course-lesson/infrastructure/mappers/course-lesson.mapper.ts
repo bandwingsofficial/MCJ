@@ -10,6 +10,7 @@ export class CourseLessonMapper {
     return CourseLesson.reconstitute({
       id: record.id,
       moduleId: record.moduleId,
+      parentLessonId: record.parentLessonId,
       title: record.title,
       slug: record.slug,
       description: record.description,
@@ -33,6 +34,7 @@ export class CourseLessonMapper {
     return {
       id: lesson.id,
       moduleId: lesson.moduleId,
+      parentLessonId: lesson.parentLessonId,
       title: lesson.title,
       slug: lesson.slug.getValue(),
       description: lesson.description,

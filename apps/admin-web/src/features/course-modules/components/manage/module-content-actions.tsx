@@ -80,6 +80,20 @@ export function ModuleContentActions({
             <Trash2 className={iconClass} />
           </Button>
         ) : null}
+
+        {showManage && onManage ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={onManage}
+            title="Manage"
+            aria-label="Manage"
+            className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+          >
+            <Settings2 className={iconClass} />
+          </Button>
+        ) : null}
       </div>
     );
   }
@@ -136,7 +150,7 @@ export function ModuleContentActions({
           onClick={onManage}
           title="Manage"
           aria-label="Manage"
-          className={`${iconBtnClass} text-slate-700 hover:bg-slate-100`}
+          className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
         >
           <Settings2 className={iconClass} />
         </Button>

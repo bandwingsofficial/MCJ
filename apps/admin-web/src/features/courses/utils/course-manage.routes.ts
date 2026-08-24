@@ -13,6 +13,22 @@ export function courseManageModulePath(
   return `${courseManagePath(courseId)}/modules/${moduleId}`;
 }
 
+export function courseManageLessonPath(
+  courseId: string,
+  moduleId: string,
+  lessonId: string,
+): string {
+  return `${courseManageModulePath(courseId, moduleId)}/lessons/${lessonId}/manage`;
+}
+
+export function courseManageLessonQuizPath(
+  courseId: string,
+  moduleId: string,
+  lessonId: string,
+): string {
+  return `${courseManageModulePath(courseId, moduleId)}/lessons/${lessonId}/quiz`;
+}
+
 export function coursePreviewPath(courseId: string): string {
   return `/courses/${courseId}/preview`;
 }

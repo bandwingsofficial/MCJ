@@ -2,6 +2,8 @@ import { CourseLesson } from '../entities/course-lesson.entity';
 
 export interface CourseLessonListFilters {
   moduleId?: string;
+  parentLessonId?: string | null;
+  contentType?: string;
   search?: string;
   includeDeleted?: boolean;
   skip?: number;
@@ -33,18 +35,23 @@ export interface CourseLessonRepository {
 
   deletePermanent(id: string): Promise<void>;
 
-  // Display order management (scoped per module)
-  getMaxDisplayOrder(moduleId: string): Promise<number>;
+  // Display order management (scoped per module + parent lesson)
+  getMaxDisplayOrder(
+    moduleId: string,
+    parentLessonId?: string | null,
+  ): Promise<number>;
 
   shiftDisplayOrders(
     moduleId: string,
     oldOrder: number,
     newOrder: number,
+    parentLessonId?: string | null,
   ): Promise<void>;
 
   closeDisplayOrderGap(
     moduleId: string,
     deletedDisplayOrder: number,
+    parentLessonId?: string | null,
   ): Promise<void>;
 
   move(
@@ -53,6 +60,7 @@ export interface CourseLessonRepository {
     oldOrder: number,
     newOrder: number,
     updatedBy?: string | null,
+    parentLessonId?: string | null,
   ): Promise<void>;
 
   // Cascade operations (down to resources)
