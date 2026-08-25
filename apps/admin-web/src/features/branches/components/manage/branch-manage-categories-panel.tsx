@@ -14,8 +14,9 @@ import {
   type AssignableItem,
 } from "@/src/features/branches/components/manage/assign-entities-modal";
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
-import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
+import { BranchManageCardGrid } from "@/src/features/branches/components/manage/branch-manage-card-grid";
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
+import { BranchSummaryModuleCard } from "@/src/features/branches/components/manage/branch-summary-module-card";
 import { categoryService } from "@/src/features/categories/services/category.service";
 import { CategoryStatusBadge } from "@/src/features/categories/components/category-status-badge";
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
@@ -24,12 +25,16 @@ import { courseService } from "@/src/features/courses/services/course.service";
 interface Props {
   branchId: string;
   assignmentsDisabled?: boolean;
+  assignOnMount?: boolean;
+  onAssignOnMountHandled?: () => void;
   onSummaryRefresh?: () => Promise<void>;
 }
 
 export function BranchManageCategoriesPanel({
   branchId,
   assignmentsDisabled = false,
+  assignOnMount = false,
+  onAssignOnMountHandled,
   onSummaryRefresh,
 }: Props) {
   const [search, setSearch] = useState("");
@@ -129,6 +134,16 @@ export function BranchManageCategoriesPanel({
     }
   };
 
+  useEffect(() => {
+    if (!assignOnMount || assignmentsDisabled) {
+      return;
+    }
+
+    void openAssign();
+    onAssignOnMountHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when navigated from overview assign
+  }, [assignOnMount, assignmentsDisabled, onAssignOnMountHandled]);
+
   const handleAssign = async (ids: string[]) => {
     if (ids.length === 0) {
       return;
@@ -181,51 +196,27 @@ export function BranchManageCategoriesPanel({
           assignDisabled={assignmentsDisabled}
         />
 
-        <BranchManageTableShell
-          columns={[
-            { key: "image", label: "Category Image", className: "w-[5rem]" },
-            { key: "name", label: "Category Name" },
-            { key: "description", label: "Description" },
-            { key: "courses", label: "Courses Count", className: "w-[7rem]" },
-            { key: "status", label: "Status", className: "w-[8rem]" },
-            {
-              key: "actions",
-              label: "Actions",
-              className: "w-[4.5rem] text-right",
-            },
-          ]}
+        <BranchManageCardGrid
           isLoading={isLoading}
           isEmpty={!isLoading && categories.length === 0}
-          emptyMessage="No categories assigned yet"
+          emptyMessage="No Categories Yet"
           emptyDescription="Assign categories to this branch to get started."
         >
           {categories.map((item) => (
-            <tr key={item.id} className="hover:bg-slate-50">
-              <td className="px-4 py-3">
-                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                  {item.thumbnailUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.thumbnailUrl}
-                      alt={item.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : null}
-                </div>
-              </td>
-              <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
-                {item.name}
-              </td>
-              <td className="max-w-xs truncate px-4 py-3 text-sm text-slate-700">
-                {item.description?.trim() ?? ""}
-              </td>
-              <td className="px-4 py-3 text-sm text-slate-700">
-                {courseCountByCategory[item.id] ?? 0}
-              </td>
-              <td className="px-4 py-3">
-                <CategoryStatusBadge status={item.status} />
-              </td>
-              <td className="px-4 py-3 text-right">
+            <BranchSummaryModuleCard
+              key={item.id}
+              title={item.name}
+              subtitle={item.description?.trim() || undefined}
+              imageUrl={item.thumbnailUrl}
+              imageAlt={item.name}
+              assignedCount={courseCountByCategory[item.id] ?? 0}
+              assignedLabel={
+                (courseCountByCategory[item.id] ?? 0) === 1
+                  ? "course"
+                  : "courses"
+              }
+              badge={<CategoryStatusBadge status={item.status} />}
+              footer={
                 <BranchIconAction
                   icon={Link2Off}
                   label="Unassign Category"
@@ -238,10 +229,10 @@ export function BranchManageCategoriesPanel({
                     })
                   }
                 />
-              </td>
-            </tr>
+              }
+            />
           ))}
-        </BranchManageTableShell>
+        </BranchManageCardGrid>
       </Card>
 
       <AssignEntitiesModal

@@ -4,7 +4,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
   CalendarDays,
-  GraduationCap,
   Grid3x3,
   Users,
   UserSquare2,
@@ -26,9 +25,9 @@ interface MetricConfig {
 
 const METRICS: MetricConfig[] = [
   {
-    key: "students",
-    label: "Students",
-    hint: "Active students",
+    key: "enrollments",
+    label: "Students Enrolled",
+    hint: "Active enrollments",
     icon: Users,
     iconClass: "text-violet-600",
     bgClass: "bg-violet-50",
@@ -48,14 +47,6 @@ const METRICS: MetricConfig[] = [
     icon: CalendarDays,
     iconClass: "text-orange-600",
     bgClass: "bg-orange-50",
-  },
-  {
-    key: "enrollments",
-    label: "Enrollments",
-    hint: "Total enrollments",
-    icon: GraduationCap,
-    iconClass: "text-emerald-600",
-    bgClass: "bg-emerald-50",
   },
   {
     key: "categories",

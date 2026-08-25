@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Eye, Link2Off } from "lucide-react";
 
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
@@ -12,35 +11,67 @@ import {
   AssignEntitiesModal,
   type AssignableItem,
 } from "@/src/features/branches/components/manage/assign-entities-modal";
-import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
-import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
+import { BranchBatchCard } from "@/src/features/branches/components/manage/branch-batch-card";
+import { BranchManageCardGrid } from "@/src/features/branches/components/manage/branch-manage-card-grid";
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
 import {
   assignBatchToBranch,
   unassignBatchFromBranch,
 } from "@/src/features/branches/utils/branch-assign.utils";
-import { formatTrainerNames } from "@/src/features/branches/utils/branch-display.utils";
 import { batchService } from "@/src/features/batches/services/batch.service";
-import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
 import type { Batch } from "@/src/features/batches/types/batch.types";
-import { courseService } from "@/src/features/courses/services/course.service";
-import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
 
 interface Props {
   branchId: string;
   assignmentsDisabled?: boolean;
+  assignOnMount?: boolean;
+  onAssignOnMountHandled?: () => void;
   onSummaryRefresh?: () => Promise<void>;
+}
+
+async function loadCourseTitlesByBatch(
+  batches: Batch[],
+): Promise<Record<string, string[]>> {
+  const entries = await Promise.all(
+    batches.map(async (batch) => {
+      try {
+        const assignments = await batchService.getBatchCourses(batch.id);
+        const titles = assignments
+          .map((item) => item.course?.title?.trim())
+          .filter((title): title is string => Boolean(title));
+
+        if (titles.length > 0) {
+          return [batch.id, titles] as const;
+        }
+
+        if (batch.course?.title) {
+          return [batch.id, [batch.course.title]] as const;
+        }
+
+        return [batch.id, []] as const;
+      } catch {
+        return [
+          batch.id,
+          batch.course?.title ? [batch.course.title] : [],
+        ] as const;
+      }
+    }),
+  );
+
+  return Object.fromEntries(entries);
 }
 
 export function BranchManageBatchesPanel({
   branchId,
   assignmentsDisabled = false,
+  assignOnMount = false,
+  onAssignOnMountHandled,
   onSummaryRefresh,
 }: Props) {
   const [search, setSearch] = useState("");
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [categoryByCourseId, setCategoryByCourseId] = useState<
-    Record<string, string>
+  const [courseTitlesByBatchId, setCourseTitlesByBatchId] = useState<
+    Record<string, string[]>
   >({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -61,35 +92,21 @@ export function BranchManageBatchesPanel({
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [batchResponse, courseResponse] = await Promise.all([
-        batchService.getBatches({
-          search,
-          branchId,
-          includeDeleted: false,
-          page: 1,
-          pageSize: 100,
-        }),
-        courseService.getCourses({
-          branchId,
-          page: 1,
-          pageSize: 200,
-        }),
-      ]);
+      const batchResponse = await batchService.getBatches({
+        search,
+        branchId,
+        includeDeleted: false,
+        page: 1,
+        pageSize: 100,
+      });
 
-      setBatches(batchResponse.data.items ?? []);
-
-      const categoryMap: Record<string, string> = {};
-      for (const course of courseResponse.data.items ?? []) {
-        if (course.category?.name || course.categoryName) {
-          categoryMap[course.id] =
-            course.category?.name ?? course.categoryName ?? "";
-        }
-      }
-      setCategoryByCourseId(categoryMap);
+      const items = batchResponse.data.items ?? [];
+      setBatches(items);
+      setCourseTitlesByBatchId(await loadCourseTitlesByBatch(items));
     } catch (error) {
       appToast.error(getErrorMessage(error));
       setBatches([]);
-      setCategoryByCourseId({});
+      setCourseTitlesByBatchId({});
     } finally {
       setIsLoading(false);
     }
@@ -134,6 +151,16 @@ export function BranchManageBatchesPanel({
       setAssignLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!assignOnMount || assignmentsDisabled) {
+      return;
+    }
+
+    void openAssign();
+    onAssignOnMountHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when navigated from overview assign
+  }, [assignOnMount, assignmentsDisabled, onAssignOnMountHandled]);
 
   const handleAssign = async (ids: string[]) => {
     if (ids.length === 0) {
@@ -193,81 +220,29 @@ export function BranchManageBatchesPanel({
           assignDisabled={assignmentsDisabled}
         />
 
-        <BranchManageTableShell
-          columns={[
-            { key: "code", label: "Batch Code" },
-            { key: "name", label: "Batch Name" },
-            { key: "course", label: "Course" },
-            { key: "category", label: "Category" },
-            { key: "trainers", label: "Trainer(s)" },
-            { key: "start", label: "Start Date", className: "w-[7rem]" },
-            { key: "end", label: "End Date", className: "w-[7rem]" },
-            { key: "status", label: "Status", className: "w-[8rem]" },
-            {
-              key: "actions",
-              label: "Actions",
-              className: "w-[5.5rem] text-right",
-            },
-          ]}
+        <BranchManageCardGrid
           isLoading={isLoading}
           isEmpty={!isLoading && batches.length === 0}
-          emptyMessage="No batches assigned yet"
+          emptyMessage="No Batches Yet"
           emptyDescription="Assign batches to this branch to get started."
+          columnsClassName="grid grid-cols-1 gap-4 xl:grid-cols-2"
+          skeletonCount={2}
         >
           {batches.map((batch) => (
-            <tr key={batch.id} className="hover:bg-slate-50">
-              <td className="truncate px-4 py-3 font-mono text-sm text-slate-700">
-                {batch.code ?? ""}
-              </td>
-              <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
-                {batch.name}
-              </td>
-              <td className="truncate px-4 py-3 text-sm text-slate-700">
-                {batch.course?.title ?? ""}
-              </td>
-              <td className="truncate px-4 py-3 text-sm text-slate-700">
-                {batch.courseId
-                  ? (categoryByCourseId[batch.courseId] ?? "")
-                  : ""}
-              </td>
-              <td className="truncate px-4 py-3 text-sm text-slate-700">
-                {batch.trainers?.length
-                  ? formatTrainerNames(batch.trainers)
-                  : ""}
-              </td>
-              <td className="px-4 py-3 text-sm text-slate-700">
-                {formatStudentDate(batch.startDate)}
-              </td>
-              <td className="px-4 py-3 text-sm text-slate-700">
-                {formatStudentDate(batch.endDate)}
-              </td>
-              <td className="px-4 py-3">
-                <BatchStatusBadge status={batch.status} />
-              </td>
-              <td className="px-4 py-3 text-right">
-                <div className="flex items-center justify-end gap-1">
-                  <BranchIconAction
-                    icon={Eye}
-                    label="View"
-                    href={`/batches/${batch.id}/manage`}
-                  />
-                  <BranchIconAction
-                    icon={Link2Off}
-                    label="Unassign batch"
-                    destructive
-                    disabled={assignmentsDisabled}
-                    onClick={() =>
-                      setUnassignTarget({
-                        id: batch.id,
-                        label: batch.name,
-                      })
-                    }
-                  />
-                </div>
-              </td>
-            </tr>
+            <BranchBatchCard
+              key={batch.id}
+              batch={batch}
+              courseTitles={courseTitlesByBatchId[batch.id]}
+              assignmentsDisabled={assignmentsDisabled}
+              onUnassign={() =>
+                setUnassignTarget({
+                  id: batch.id,
+                  label: batch.name,
+                })
+              }
+            />
           ))}
-        </BranchManageTableShell>
+        </BranchManageCardGrid>
       </Card>
 
       <AssignEntitiesModal

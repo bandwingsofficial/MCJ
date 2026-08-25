@@ -1,26 +1,53 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import { Card } from "@/src/shared/components/ui/card";
+import { appToast } from "@/src/shared/components/ui/toast";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import type { Branch } from "@/src/features/branches/types/branch.types";
 import type { BranchSummaryCounts } from "@/src/features/branches/hooks/use-branch-summary";
 import { BranchStatusBadge } from "@/src/features/branches/components/branch-status-badge";
 import { BranchOverviewMetricCards } from "@/src/features/branches/components/manage/branch-overview-metric-cards";
-import { Plus } from "lucide-react";
-
-import { Button } from "@/src/shared/components/ui/button";
+import { BranchOverviewSectionHeader } from "@/src/features/branches/components/manage/branch-overview-section-header";
+import { BranchManageCardGrid } from "@/src/features/branches/components/manage/branch-manage-card-grid";
+import { BranchSummaryModuleCard } from "@/src/features/branches/components/manage/branch-summary-module-card";
+import { BranchBatchCard } from "@/src/features/branches/components/manage/branch-batch-card";
+import { BranchStudentEnrolledCard } from "@/src/features/branches/components/manage/branch-student-enrolled-card";
 import type { BranchManageTabKey } from "@/src/features/branches/components/manage/branch-manage-tab.types";
 import { formatBranchAddress } from "@/src/features/branches/utils/branch-display.utils";
+import { categoryService } from "@/src/features/categories/services/category.service";
+import type { CategoryListItem } from "@/src/features/categories/types/category.types";
+import { CategoryStatusBadge } from "@/src/features/categories/components/category-status-badge";
+import { courseService } from "@/src/features/courses/services/course.service";
+import type { CourseListItem } from "@/src/features/courses/types/course.types";
+import { CourseStatusBadge } from "@/src/features/courses/components/course-status-badge";
+import {
+  formatCourseDuration,
+  formatCourseLevel,
+  formatCoursePrice,
+} from "@/src/features/branches/utils/branch-display.utils";
+import { batchService } from "@/src/features/batches/services/batch.service";
+import type { Batch } from "@/src/features/batches/types/batch.types";
+import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
+import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
+import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
 
 interface Props {
   branch: Branch;
   summary: BranchSummaryCounts | null;
   summaryLoading?: boolean;
   assignmentsDisabled?: boolean;
-  onNavigateToTab: (tab: BranchManageTabKey) => void;
+  onNavigateToTab: (
+    tab: BranchManageTabKey,
+    options?: { assign?: boolean },
+  ) => void;
 }
+
+const PREVIEW_LIMIT = 4;
+const BATCH_PREVIEW_LIMIT = 4;
 
 function OverviewField({
   label,
@@ -37,43 +64,37 @@ function OverviewField({
   );
 }
 
-const RELATED_MODULES: {
-  tab: BranchManageTabKey;
-  title: string;
-  countKey: keyof Omit<BranchSummaryCounts, "branchId">;
-  assignLabel: string;
-}[] = [
-  {
-    tab: "categories",
-    title: "Categories",
-    countKey: "categories",
-    assignLabel: "Assign Category",
-  },
-  {
-    tab: "courses",
-    title: "Courses",
-    countKey: "courses",
-    assignLabel: "Assign Course",
-  },
-  {
-    tab: "batches",
-    title: "Batches",
-    countKey: "batches",
-    assignLabel: "Assign Batch",
-  },
-  {
-    tab: "students",
-    title: "Students",
-    countKey: "students",
-    assignLabel: "Assign Student",
-  },
-  {
-    tab: "trainers",
-    title: "Trainers",
-    countKey: "instructors",
-    assignLabel: "Assign Trainer",
-  },
-];
+async function loadCourseTitlesByBatch(
+  batches: Batch[],
+): Promise<Record<string, string[]>> {
+  const entries = await Promise.all(
+    batches.map(async (batch) => {
+      try {
+        const assignments = await batchService.getBatchCourses(batch.id);
+        const titles = assignments
+          .map((item) => item.course?.title?.trim())
+          .filter((title): title is string => Boolean(title));
+
+        if (titles.length > 0) {
+          return [batch.id, titles] as const;
+        }
+
+        if (batch.course?.title) {
+          return [batch.id, [batch.course.title]] as const;
+        }
+
+        return [batch.id, []] as const;
+      } catch {
+        return [
+          batch.id,
+          batch.course?.title ? [batch.course.title] : [],
+        ] as const;
+      }
+    }),
+  );
+
+  return Object.fromEntries(entries);
+}
 
 export function BranchManageOverviewPanel({
   branch,
@@ -82,7 +103,122 @@ export function BranchManageOverviewPanel({
   assignmentsDisabled = false,
   onNavigateToTab,
 }: Props) {
+  const branchId = branch.id;
   const address = formatBranchAddress(branch);
+
+  const [previewLoading, setPreviewLoading] = useState(true);
+  const [categories, setCategories] = useState<CategoryListItem[]>([]);
+  const [courses, setCourses] = useState<CourseListItem[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
+  const [courseTitlesByBatchId, setCourseTitlesByBatchId] = useState<
+    Record<string, string[]>
+  >({});
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [courseCountByCategory, setCourseCountByCategory] = useState<
+    Record<string, number>
+  >({});
+  const [batchCountByCourse, setBatchCountByCourse] = useState<
+    Record<string, number>
+  >({});
+
+  const loadPreview = useCallback(async () => {
+    setPreviewLoading(true);
+    try {
+      const [
+        categoryResponse,
+        courseResponse,
+        allCoursesResponse,
+        batchResponse,
+        allBatchesResponse,
+        enrollmentResponse,
+      ] = await Promise.all([
+        categoryService.getCategories({
+          search: "",
+          status: "ACTIVE",
+          branchId,
+          page: 1,
+          pageSize: PREVIEW_LIMIT,
+        }),
+        courseService.getCourses({
+          branchId,
+          page: 1,
+          pageSize: PREVIEW_LIMIT,
+        }),
+        courseService.getCourses({
+          branchId,
+          page: 1,
+          pageSize: 200,
+        }),
+        batchService.getBatches({
+          branchId,
+          includeDeleted: false,
+          page: 1,
+          pageSize: BATCH_PREVIEW_LIMIT,
+        }),
+        batchService.getBatches({
+          branchId,
+          includeDeleted: false,
+          page: 1,
+          pageSize: 200,
+        }),
+        enrollmentService.getEnrollments({
+          branchId,
+          skip: 0,
+          take: PREVIEW_LIMIT,
+        }),
+      ]);
+
+      const categoryItems = (categoryResponse.data ?? []).filter(
+        (item) => !item.isDeleted && item.status === "ACTIVE",
+      );
+      const courseItems = courseResponse.data.items ?? [];
+      const batchItems = batchResponse.data.items ?? [];
+      const enrollmentItems = parseEnrollmentListResponse(enrollmentResponse)
+        .items;
+
+      setCategories(categoryItems);
+      setCourses(courseItems);
+      setBatches(batchItems);
+      setEnrollments(enrollmentItems);
+      setCourseTitlesByBatchId(await loadCourseTitlesByBatch(batchItems));
+
+      const categoryCounts: Record<string, number> = {};
+      const batchCounts: Record<string, number> = {};
+      for (const course of allCoursesResponse.data.items ?? []) {
+        if (course.categoryId) {
+          categoryCounts[course.categoryId] =
+            (categoryCounts[course.categoryId] ?? 0) + 1;
+        }
+      }
+      for (const batch of allBatchesResponse.data.items ?? []) {
+        if (batch.courseId) {
+          batchCounts[batch.courseId] = (batchCounts[batch.courseId] ?? 0) + 1;
+        }
+      }
+      setCourseCountByCategory(categoryCounts);
+      setBatchCountByCourse(batchCounts);
+    } catch (error) {
+      appToast.error(getErrorMessage(error));
+      setCategories([]);
+      setCourses([]);
+      setBatches([]);
+      setEnrollments([]);
+      setCourseTitlesByBatchId({});
+      setCourseCountByCategory({});
+      setBatchCountByCourse({});
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [branchId]);
+
+  useEffect(() => {
+    void loadPreview();
+  }, [loadPreview]);
+
+  const batchCount = summary?.batches ?? batches.length;
+  const categoryCount = summary?.categories ?? categories.length;
+  const courseCount = summary?.courses ?? courses.length;
+  const enrolledCount = summary?.enrollments ?? enrollments.length;
 
   return (
     <div className="space-y-4">
@@ -123,66 +259,144 @@ export function BranchManageOverviewPanel({
 
       <BranchOverviewMetricCards summary={summary} isLoading={summaryLoading} />
 
-      <Card className="rounded-xl border border-slate-200/80 p-4 shadow-sm">
-        <h2 className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Related Modules
-        </h2>
+      <Card className="rounded-xl border border-slate-200/80 p-5 shadow-sm">
+        <BranchOverviewSectionHeader
+          title={`Batches (${summaryLoading ? "…" : batchCount})`}
+          onViewAll={() => onNavigateToTab("batches")}
+          actionLabel="Assign Batch"
+          onAction={() => onNavigateToTab("batches", { assign: true })}
+          actionDisabled={assignmentsDisabled}
+        />
 
-        <div className="divide-y divide-slate-200 rounded-xl border border-slate-200">
-          {RELATED_MODULES.map((module) => (
-            <div
-              key={module.tab}
-              className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div>
-                <p className="text-sm font-medium text-slate-900">
-                  {module.title}
-                </p>
-                <p className="text-sm text-slate-500">
-                  {summaryLoading
-                    ? "…"
-                    : `${summary?.[module.countKey] ?? 0} assigned`}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => onNavigateToTab(module.tab)}
-                  className="text-sm font-medium text-[#2447A8] hover:underline"
-                >
-                  View all
-                </button>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={assignmentsDisabled}
-                  onClick={() => onNavigateToTab(module.tab)}
-                >
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  {module.assignLabel}
-                </Button>
-              </div>
-            </div>
+        <BranchManageCardGrid
+          isLoading={previewLoading}
+          isEmpty={!previewLoading && batches.length === 0}
+          emptyMessage="No Batches Yet"
+          emptyDescription="Assign batches to this branch to manage schedules and enrollments."
+          columnsClassName="grid grid-cols-1 gap-4 xl:grid-cols-2"
+          skeletonCount={2}
+        >
+          {batches.map((batch) => (
+            <BranchBatchCard
+              key={batch.id}
+              batch={batch}
+              courseTitles={courseTitlesByBatchId[batch.id]}
+              compact
+            />
           ))}
+        </BranchManageCardGrid>
+      </Card>
 
-          <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-medium text-slate-900">Enrollments</p>
-              <p className="text-sm text-slate-500">
-                {summaryLoading
-                  ? "…"
-                  : `${summary?.enrollments ?? 0} total`}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => onNavigateToTab("enrollments")}
-              className="text-sm font-medium text-[#2447A8] hover:underline"
-            >
-              View all
-            </button>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <Card className="rounded-xl border border-slate-200/80 p-4 shadow-sm">
+          <BranchOverviewSectionHeader
+            title={`Categories (${summaryLoading ? "…" : categoryCount})`}
+            onViewAll={() => onNavigateToTab("categories")}
+            actionLabel="Assign Category"
+            onAction={() => onNavigateToTab("categories", { assign: true })}
+            actionDisabled={assignmentsDisabled}
+          />
+
+          <BranchManageCardGrid
+            isLoading={previewLoading}
+            isEmpty={!previewLoading && categories.length === 0}
+            emptyMessage="No Categories Yet"
+            emptyDescription="Assign categories to organize branch courses."
+            columnsClassName="grid grid-cols-1 gap-3"
+            skeletonCount={2}
+          >
+            {categories.map((item) => (
+              <BranchSummaryModuleCard
+                key={item.id}
+                title={item.name}
+                subtitle={item.description?.trim() || undefined}
+                imageUrl={item.thumbnailUrl}
+                imageAlt={item.name}
+                assignedCount={courseCountByCategory[item.id] ?? 0}
+                assignedLabel={
+                  (courseCountByCategory[item.id] ?? 0) === 1
+                    ? "course"
+                    : "courses"
+                }
+                badge={<CategoryStatusBadge status={item.status} />}
+              />
+            ))}
+          </BranchManageCardGrid>
+        </Card>
+
+        <Card className="rounded-xl border border-slate-200/80 p-4 shadow-sm">
+          <BranchOverviewSectionHeader
+            title={`Courses (${summaryLoading ? "…" : courseCount})`}
+            onViewAll={() => onNavigateToTab("courses")}
+            actionLabel="Assign Course"
+            onAction={() => onNavigateToTab("courses", { assign: true })}
+            actionDisabled={assignmentsDisabled}
+          />
+
+          <BranchManageCardGrid
+            isLoading={previewLoading}
+            isEmpty={!previewLoading && courses.length === 0}
+            emptyMessage="No Courses Yet"
+            emptyDescription="Assign courses available at this branch."
+            columnsClassName="grid grid-cols-1 gap-3"
+            skeletonCount={2}
+          >
+            {courses.map((course) => (
+              <BranchSummaryModuleCard
+                key={course.id}
+                title={course.title}
+                subtitle={course.code ?? undefined}
+                assignedCount={batchCountByCourse[course.id] ?? 0}
+                assignedLabel={
+                  (batchCountByCourse[course.id] ?? 0) === 1
+                    ? "batch"
+                    : "batches"
+                }
+                badge={<CourseStatusBadge status={course.status} />}
+                meta={
+                  <>
+                    <p>
+                      {formatCourseLevel(course.level)} ·{" "}
+                      {formatCourseDuration(
+                        course.duration,
+                        course.durationType,
+                      )}
+                    </p>
+                    <p>{formatCoursePrice(course)}</p>
+                  </>
+                }
+              />
+            ))}
+          </BranchManageCardGrid>
+        </Card>
+      </div>
+
+      <Card className="rounded-xl border border-slate-200/80 p-4 shadow-sm">
+        <BranchOverviewSectionHeader
+          title={`Students Enrolled (${summaryLoading ? "…" : enrolledCount})`}
+          onViewAll={() => onNavigateToTab("students-enrolled")}
+          actionLabel="Assign Student"
+          onAction={() =>
+            onNavigateToTab("students-enrolled", { assign: true })
+          }
+          actionDisabled={assignmentsDisabled}
+        />
+
+        <BranchManageCardGrid
+          isLoading={previewLoading}
+          isEmpty={!previewLoading && enrollments.length === 0}
+          emptyMessage="No Students Enrolled Yet"
+          emptyDescription="Assign students or enroll them in branch batches."
+          columnsClassName="grid grid-cols-1 gap-3 lg:grid-cols-2"
+          skeletonCount={2}
+        >
+          {enrollments.map((enrollment) => (
+            <BranchStudentEnrolledCard
+              key={enrollment.id}
+              enrollment={enrollment}
+            />
+          ))}
+        </BranchManageCardGrid>
       </Card>
     </div>
   );

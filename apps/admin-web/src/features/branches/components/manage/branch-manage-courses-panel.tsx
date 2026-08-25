@@ -13,8 +13,9 @@ import {
   type AssignableItem,
 } from "@/src/features/branches/components/manage/assign-entities-modal";
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
-import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
+import { BranchManageCardGrid } from "@/src/features/branches/components/manage/branch-manage-card-grid";
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
+import { BranchSummaryModuleCard } from "@/src/features/branches/components/manage/branch-summary-module-card";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import {
   formatCourseDuration,
@@ -28,12 +29,16 @@ import type { CourseListItem } from "@/src/features/courses/types/course.types";
 interface Props {
   branchId: string;
   assignmentsDisabled?: boolean;
+  assignOnMount?: boolean;
+  onAssignOnMountHandled?: () => void;
   onSummaryRefresh?: () => Promise<void>;
 }
 
 export function BranchManageCoursesPanel({
   branchId,
   assignmentsDisabled = false,
+  assignOnMount = false,
+  onAssignOnMountHandled,
   onSummaryRefresh,
 }: Props) {
   const [search, setSearch] = useState("");
@@ -128,6 +133,16 @@ export function BranchManageCoursesPanel({
     }
   };
 
+  useEffect(() => {
+    if (!assignOnMount || assignmentsDisabled) {
+      return;
+    }
+
+    void openAssign();
+    onAssignOnMountHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when navigated from overview assign
+  }, [assignOnMount, assignmentsDisabled, onAssignOnMountHandled]);
+
   const handleAssign = async (ids: string[]) => {
     if (ids.length === 0) {
       return;
@@ -190,58 +205,44 @@ export function BranchManageCoursesPanel({
           assignDisabled={assignmentsDisabled}
         />
 
-        <BranchManageTableShell
-          columns={[
-            { key: "code", label: "Course Code" },
-            { key: "title", label: "Course Name" },
-            { key: "category", label: "Category" },
-            { key: "level", label: "Type / Level", className: "w-[7rem]" },
-            { key: "duration", label: "Duration", className: "w-[7rem]" },
-            { key: "price", label: "Price", className: "w-[6rem]" },
-            { key: "batches", label: "Batches Count", className: "w-[7rem]" },
-            { key: "status", label: "Status", className: "w-[8rem]" },
-            {
-              key: "actions",
-              label: "Actions",
-              className: "w-[7rem] text-right",
-            },
-          ]}
+        <BranchManageCardGrid
           isLoading={isLoading}
           isEmpty={!isLoading && courses.length === 0}
-          emptyMessage="No courses assigned yet"
+          emptyMessage="No Courses Yet"
           emptyDescription="Assign courses to this branch to get started."
         >
           {courses.map((course) => (
-            <tr key={course.id} className="hover:bg-slate-50">
-              <td className="truncate px-4 py-3 font-mono text-sm text-slate-700">
-                {course.code ?? ""}
-              </td>
-              <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
-                {course.title}
-              </td>
-              <td className="truncate px-4 py-3 text-sm text-slate-700">
-                {course.category?.name ?? course.categoryName ?? ""}
-              </td>
-              <td className="px-4 py-3 text-sm text-slate-700">
-                {formatCourseLevel(course.level)}
-              </td>
-              <td className="px-4 py-3 text-sm text-slate-700">
-                {formatCourseDuration(
-                  course.duration,
-                  course.durationType,
-                )}
-              </td>
-              <td className="px-4 py-3 text-sm text-slate-700">
-                {formatCoursePrice(course)}
-              </td>
-              <td className="px-4 py-3 text-sm text-slate-700">
-                {batchCountByCourse[course.id] ?? 0}
-              </td>
-              <td className="px-4 py-3">
-                <CourseStatusBadge status={course.status} />
-              </td>
-              <td className="px-4 py-3 text-right">
-                <div className="flex items-center justify-end gap-1">
+            <BranchSummaryModuleCard
+              key={course.id}
+              title={course.title}
+              subtitle={course.code ?? undefined}
+              assignedCount={batchCountByCourse[course.id] ?? 0}
+              assignedLabel={
+                (batchCountByCourse[course.id] ?? 0) === 1 ? "batch" : "batches"
+              }
+              badge={<CourseStatusBadge status={course.status} />}
+              meta={
+                <>
+                  <p>
+                    <span className="text-slate-500">Category: </span>
+                    {course.category?.name ?? course.categoryName ?? "—"}
+                  </p>
+                  <p>
+                    <span className="text-slate-500">Level: </span>
+                    {formatCourseLevel(course.level)}
+                  </p>
+                  <p>
+                    <span className="text-slate-500">Duration: </span>
+                    {formatCourseDuration(course.duration, course.durationType)}
+                  </p>
+                  <p>
+                    <span className="text-slate-500">Price: </span>
+                    {formatCoursePrice(course)}
+                  </p>
+                </>
+              }
+              footer={
+                <div className="flex items-center gap-1">
                   <BranchIconAction
                     icon={Settings2}
                     label="Manage"
@@ -265,10 +266,10 @@ export function BranchManageCoursesPanel({
                     }
                   />
                 </div>
-              </td>
-            </tr>
+              }
+            />
           ))}
-        </BranchManageTableShell>
+        </BranchManageCardGrid>
       </Card>
 
       <AssignEntitiesModal

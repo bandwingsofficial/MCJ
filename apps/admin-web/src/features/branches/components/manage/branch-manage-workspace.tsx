@@ -16,8 +16,7 @@ import type { BranchSummaryCounts } from "@/src/features/branches/hooks/use-bran
 import { BranchManageBatchesPanel } from "./branch-manage-batches-panel";
 import { BranchManageCategoriesPanel } from "./branch-manage-categories-panel";
 import { BranchManageCoursesPanel } from "./branch-manage-courses-panel";
-import { BranchManageEnrollmentsPanel } from "./branch-manage-enrollments-panel";
-import { BranchManageStudentsPanel } from "./branch-manage-students-panel";
+import { BranchManageStudentsEnrolledPanel } from "./branch-manage-students-enrolled-panel";
 import { BranchManageTrainersPanel } from "./branch-manage-trainers-panel";
 import { BranchManageUsersPanel } from "./branch-manage-users-panel";
 import { BranchManageOverviewPanel } from "./branch-manage-overview-panel";
@@ -44,10 +43,26 @@ export function BranchManageWorkspace({
   const isArchived = Boolean(branch.deletedAt);
   const assignmentsDisabled = isArchived || branch.status !== "ACTIVE";
   const [tab, setTab] = useState<TabKey>("overview");
+  const [assignOnMountTab, setAssignOnMountTab] = useState<TabKey | null>(
+    null,
+  );
 
-  const navigateToTab = (nextTab: TabKey) => {
+  const navigateToTab = (
+    nextTab: TabKey,
+    options?: { assign?: boolean },
+  ) => {
     setTab(nextTab);
     onTabChange?.(nextTab);
+
+    if (options?.assign) {
+      setAssignOnMountTab(nextTab);
+    }
+  };
+
+  const clearAssignOnMount = (currentTab: TabKey) => {
+    setAssignOnMountTab((previous) =>
+      previous === currentTab ? null : previous,
+    );
   };
 
   return (
@@ -64,11 +79,10 @@ export function BranchManageWorkspace({
           [
             ["overview", "Overview"],
             ["users", "Users"],
+            ["batches", "Batches"],
             ["categories", "Categories"],
             ["courses", "Courses"],
-            ["batches", "Batches"],
-            ["students", "Students"],
-            ["enrollments", "Enrollments"],
+            ["students-enrolled", "Students Enrolled"],
             ["trainers", "Trainers"],
             ["reports", "Reports"],
           ] as const
@@ -106,6 +120,8 @@ export function BranchManageWorkspace({
         <BranchManageCategoriesPanel
           branchId={branchId}
           assignmentsDisabled={assignmentsDisabled}
+          assignOnMount={assignOnMountTab === "categories"}
+          onAssignOnMountHandled={() => clearAssignOnMount("categories")}
           onSummaryRefresh={onSummaryRefresh}
         />
       </TabsContent>
@@ -114,6 +130,8 @@ export function BranchManageWorkspace({
         <BranchManageCoursesPanel
           branchId={branchId}
           assignmentsDisabled={assignmentsDisabled}
+          assignOnMount={assignOnMountTab === "courses"}
+          onAssignOnMountHandled={() => clearAssignOnMount("courses")}
           onSummaryRefresh={onSummaryRefresh}
         />
       </TabsContent>
@@ -122,20 +140,22 @@ export function BranchManageWorkspace({
         <BranchManageBatchesPanel
           branchId={branchId}
           assignmentsDisabled={assignmentsDisabled}
+          assignOnMount={assignOnMountTab === "batches"}
+          onAssignOnMountHandled={() => clearAssignOnMount("batches")}
           onSummaryRefresh={onSummaryRefresh}
         />
       </TabsContent>
 
-      <TabsContent value="students">
-        <BranchManageStudentsPanel
+      <TabsContent value="students-enrolled">
+        <BranchManageStudentsEnrolledPanel
           branchId={branchId}
           assignmentsDisabled={assignmentsDisabled}
+          assignOnMount={assignOnMountTab === "students-enrolled"}
+          onAssignOnMountHandled={() =>
+            clearAssignOnMount("students-enrolled")
+          }
           onSummaryRefresh={onSummaryRefresh}
         />
-      </TabsContent>
-
-      <TabsContent value="enrollments">
-        <BranchManageEnrollmentsPanel branchId={branchId} />
       </TabsContent>
 
       <TabsContent value="trainers">
