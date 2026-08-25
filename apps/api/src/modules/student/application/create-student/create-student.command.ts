@@ -4,7 +4,7 @@ import { StudentStatus } from '../../domain/enums/student-status.enum';
 export class CreateStudentCommand {
   constructor(
     public readonly firstName: string,
-    public readonly branchId: string,
+    public readonly branchId?: string,
     public readonly lastName?: string,
     public readonly email?: string,
     public readonly phone?: string,

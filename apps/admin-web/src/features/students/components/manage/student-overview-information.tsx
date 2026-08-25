@@ -14,7 +14,6 @@ import {
 
 interface Props {
   student: Student;
-  branchName: string;
 }
 
 function InfoField({
@@ -32,7 +31,7 @@ function InfoField({
   );
 }
 
-export function StudentOverviewInformation({ student, branchName }: Props) {
+export function StudentOverviewInformation({ student }: Props) {
   const isArchived = Boolean(student.deletedAt || student.isDeleted);
   const fullName = formatStudentName(student.firstName, student.lastName);
 
@@ -79,7 +78,6 @@ export function StudentOverviewInformation({ student, branchName }: Props) {
         <InfoField label="Date of Birth">
           {formatStudentDate(student.dateOfBirth)}
         </InfoField>
-        <InfoField label="Branch">{branchName}</InfoField>
         <InfoField label="Admission Date">
           {formatStudentDate(student.admissionDate)}
         </InfoField>

@@ -157,11 +157,9 @@ export interface EnrollmentSummaryView {
   createdAt: Date;
   student: EnrollmentStudentView;
   branch: EnrollmentBranchView;
+  category: EnrollmentCategoryView;
   course: Pick<EnrollmentCourseView, 'id' | 'title' | 'slug'>;
-  batch: Pick<
-    EnrollmentBatchView,
-    'id' | 'name' | 'code' | 'startDate' | 'status'
-  >;
+  batch: EnrollmentBatchView;
 }
 
 export interface EnrollmentRepository {

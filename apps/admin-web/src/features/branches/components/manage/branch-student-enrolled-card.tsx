@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye } from "lucide-react";
+import { Eye, Trash2 } from "lucide-react";
 
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
 import {
@@ -18,6 +18,8 @@ import { formatStudentDate } from "@/src/features/students/utils/student-form.ut
 interface Props {
   enrollment: Enrollment;
   onManage?: (studentId: string) => void;
+  onRemove?: (enrollment: Enrollment) => void;
+  removeDisabled?: boolean;
 }
 
 function formatEnrollmentFinalAmount(enrollment: Enrollment): number {
@@ -44,6 +46,8 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 export function BranchStudentEnrolledCard({
   enrollment,
   onManage,
+  onRemove,
+  removeDisabled = false,
 }: Props) {
   const student = enrollment.student;
   const studentName = formatPersonName(
@@ -64,6 +68,15 @@ export function BranchStudentEnrolledCard({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <StudentEnrollmentActiveBadge enrollment={enrollment} />
+          {onRemove ? (
+            <BranchIconAction
+              icon={Trash2}
+              label="Remove enrollment"
+              destructive
+              disabled={removeDisabled}
+              onClick={() => onRemove(enrollment)}
+            />
+          ) : null}
           {student?.id && onManage ? (
             <BranchIconAction
               icon={Eye}

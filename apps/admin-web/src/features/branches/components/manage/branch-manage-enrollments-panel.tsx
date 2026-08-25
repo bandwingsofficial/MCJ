@@ -16,16 +16,14 @@ import {
   formatBatchLabel,
   formatPersonName,
 } from "@/src/features/branches/utils/branch-display.utils";
+import { PaymentStatusBadge } from "@/src/features/enrollments/components/table/PaymentStatusBadge";
+import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/table/EnrollmentStatusBadge";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
-import {
-  formatCurrency,
-  normalizeMoney,
-} from "@/src/features/enrollments/utils/format-payment";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
-import { StudentEnrollmentActiveBadge } from "@/src/features/students/components/manage/student-enrollment-active-badge";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
-import { studentManageTabPath } from "@/src/features/students/utils/student-manage.routes";
+import { studentManagePath } from "@/src/features/students/utils/student-manage.routes";
+import { formatEnrollmentCategoryName } from "@/src/features/students/utils/enrollment-display.utils";
 
 const PAGE_SIZE = 10;
 
@@ -38,18 +36,6 @@ function formatStudentName(enrollment: Enrollment): string {
     enrollment.student?.firstName,
     enrollment.student?.lastName,
   );
-}
-
-function formatEnrollmentFinalAmount(enrollment: Enrollment): number {
-  const fee = normalizeMoney(enrollment.feeAmount);
-  const discount = normalizeMoney(enrollment.discountAmount);
-  const finalAmount = normalizeMoney(enrollment.finalAmount);
-
-  if (finalAmount > 0) {
-    return finalAmount;
-  }
-
-  return Math.max(0, fee - discount);
 }
 
 export function BranchManageEnrollmentsPanel({ branchId }: Props) {
@@ -96,19 +82,21 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
       <BranchSectionToolbar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search enrollments..."
+        searchPlaceholder="Search enrolled students..."
       />
 
       <BranchManageTableShell
         columns={[
+          { key: "code", label: "Student Code", className: "w-[7rem]" },
           { key: "student", label: "Student" },
+          { key: "email", label: "Email" },
+          { key: "phone", label: "Phone", className: "w-[7rem]" },
           { key: "batch", label: "Batch" },
           { key: "course", label: "Course" },
+          { key: "category", label: "Category", className: "w-[7rem]" },
           { key: "date", label: "Enrollment Date", className: "w-[8rem]" },
-          { key: "fee", label: "Fee", className: "w-[6rem]" },
-          { key: "discount", label: "Discount", className: "w-[6rem]" },
-          { key: "final", label: "Final Amount", className: "w-[7rem]" },
-          { key: "status", label: "Status", className: "w-[8rem]" },
+          { key: "payment", label: "Payment", className: "w-[7rem]" },
+          { key: "status", label: "Enrollment Status", className: "w-[8rem]" },
           {
             key: "actions",
             label: "Actions",
@@ -117,13 +105,22 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
         ]}
         isLoading={isLoading}
         isEmpty={!isLoading && enrollments.length === 0}
-        emptyMessage="No enrollments found yet"
-        emptyDescription="Enrollments for this branch will appear here."
+        emptyMessage="No students enrolled yet"
+        emptyDescription="Students enrolled in this branch through the Enrollment module will appear here."
       >
         {enrollments.map((enrollment) => (
           <tr key={enrollment.id} className="hover:bg-slate-50">
+            <td className="px-4 py-3 font-mono text-sm text-slate-700">
+              {enrollment.student?.studentCode ?? "—"}
+            </td>
             <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
               {formatStudentName(enrollment)}
+            </td>
+            <td className="truncate px-4 py-3 text-sm text-slate-700">
+              {enrollment.student?.email ?? "—"}
+            </td>
+            <td className="truncate px-4 py-3 text-sm text-slate-700">
+              {enrollment.student?.phone ?? "—"}
             </td>
             <td className="truncate px-4 py-3 text-sm text-slate-700">
               {enrollment.batch?.name
@@ -131,40 +128,32 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
                     enrollment.batch.name,
                     enrollment.batch.code,
                   )
-                : ""}
+                : "—"}
             </td>
             <td className="truncate px-4 py-3 text-sm text-slate-700">
-              {enrollment.course?.title ?? ""}
+              {enrollment.course?.title ?? "—"}
+            </td>
+            <td className="truncate px-4 py-3 text-sm text-slate-700">
+              {formatEnrollmentCategoryName(enrollment)}
             </td>
             <td className="px-4 py-3 text-sm text-slate-700">
               {formatStudentDate(
                 enrollment.admissionDate ?? enrollment.createdAt,
               )}
             </td>
-            <td className="px-4 py-3 text-sm text-slate-700">
-              {formatCurrency(enrollment.feeAmount)}
-            </td>
-            <td className="px-4 py-3 text-sm text-slate-700">
-              {formatCurrency(enrollment.discountAmount)}
-            </td>
-            <td className="px-4 py-3 text-sm text-slate-700">
-              {formatCurrency(formatEnrollmentFinalAmount(enrollment))}
+            <td className="px-4 py-3">
+              <PaymentStatusBadge status={enrollment.paymentStatus} />
             </td>
             <td className="px-4 py-3">
-              <StudentEnrollmentActiveBadge enrollment={enrollment} />
+              <EnrollmentStatusBadge status={enrollment.status} />
             </td>
             <td className="px-4 py-3 text-right">
               {enrollment.student?.id ? (
                 <BranchIconAction
                   icon={Eye}
-                  label="Manage"
+                  label="View student"
                   onClick={() =>
-                    router.push(
-                      studentManageTabPath(
-                        enrollment.student.id,
-                        "enrollments",
-                      ),
-                    )
+                    router.push(studentManagePath(enrollment.student.id))
                   }
                 />
               ) : null}

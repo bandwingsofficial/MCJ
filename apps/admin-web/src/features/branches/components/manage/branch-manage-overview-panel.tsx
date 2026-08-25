@@ -374,19 +374,14 @@ export function BranchManageOverviewPanel({
       <Card className="rounded-xl border border-slate-200/80 p-4 shadow-sm">
         <BranchOverviewSectionHeader
           title={`Students Enrolled (${summaryLoading ? "…" : enrolledCount})`}
-          onViewAll={() => onNavigateToTab("students-enrolled")}
-          actionLabel="Assign Student"
-          onAction={() =>
-            onNavigateToTab("students-enrolled", { assign: true })
-          }
-          actionDisabled={assignmentsDisabled}
+          onViewAll={() => onNavigateToTab("students")}
         />
 
         <BranchManageCardGrid
           isLoading={previewLoading}
           isEmpty={!previewLoading && enrollments.length === 0}
           emptyMessage="No Students Enrolled Yet"
-          emptyDescription="Assign students or enroll them in branch batches."
+          emptyDescription="Students enrolled in this branch through the Enrollment module will appear here."
           columnsClassName="grid grid-cols-1 gap-3 lg:grid-cols-2"
           skeletonCount={2}
         >

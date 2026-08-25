@@ -186,9 +186,10 @@ export class CreateStudentDto {
   @IsDateString()
   admissionDate?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsUUID()
-  branchId!: string;
+  branchId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

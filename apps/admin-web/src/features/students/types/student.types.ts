@@ -36,7 +36,7 @@ export interface Student {
   emergencyContactPhone: string | null;
   studentCode: string;
   admissionDate: string | null;
-  branchId: string;
+  branchId?: string | null;
   notes: string | null;
   status: StudentStatus;
   isActive: boolean;
@@ -81,13 +81,14 @@ export interface CreateStudentRequest {
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   admissionDate?: string;
-  branchId: string;
+  branchId?: string | null;
   notes?: string;
   status?: StudentStatus;
 }
 
 export interface UpdateStudentRequest extends CreateStudentRequest {
   studentCode?: string;
+  branchId?: string | null;
 }
 
 export interface StudentListResponse {

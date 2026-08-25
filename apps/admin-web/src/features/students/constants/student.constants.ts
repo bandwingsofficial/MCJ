@@ -64,7 +64,6 @@ export const DEFAULT_STUDENT_FORM_VALUES: StudentFormSchema = {
   emergencyContactName: "",
   emergencyContactPhone: "",
   admissionDate: "",
-  branchId: "",
   notes: "",
   status: "LEAD",
   profileImageFileId: "",

@@ -30,7 +30,7 @@ export class Student {
     public emergencyContactPhone: Phone,
     public studentCode: StudentCode,
     public admissionDate: Date | null,
-    public branchId: string,
+    public branchId: string | null,
     public notes: string | null,
     public isActive: boolean,
     public status: StudentStatus,    public readonly createdBy: string | null,
@@ -67,7 +67,7 @@ export class Student {
       Phone.create(params.emergencyContactPhone),
       StudentCode.create(params.studentCode),
       params.admissionDate ?? null,
-      params.branchId,
+      params.branchId ?? null,
       sanitizeText(params.notes, 4000),
       params.isActive ?? true,
       params.status ?? StudentStatus.LEAD,      params.createdBy ?? null,
@@ -205,7 +205,7 @@ export interface StudentCreateParams {
   studentCode: string;
   userId: string;
   admissionDate?: Date | null;
-  branchId: string;
+  branchId?: string | null;
   notes?: string | null;
   isActive?: boolean;
   status?: StudentStatus;  createdBy?: string | null;

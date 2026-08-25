@@ -13,6 +13,18 @@ export interface CreateEnrollmentRequest {
   batchId: string;
   feeAmount: number;
   discountAmount?: number;
+  admissionDate?: string;
+  initialPaymentAmount?: number;
+  paymentMethod?: string;
+  transactionId?: string;
+  initialPaymentPaidAt?: string;
+  installments?: Array<{
+    amount: number;
+    dueDate?: string;
+    paymentMethod: string;
+    paymentStatus?: "PENDING" | "SUCCESS";
+    transactionId?: string;
+  }>;
 }
 
 export interface UpdateEnrollmentRequest {

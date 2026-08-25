@@ -1,137 +1,102 @@
 "use client";
 
-import Image from "next/image";
-import { Eye, Pencil, Settings2 } from "lucide-react";
-
-import { Button } from "@/src/shared/components/ui/button";
-import { Card } from "@/src/shared/components/ui/card";
-import { Dropdown } from "@/src/shared/components/ui/dropdown";
-
-import { formatCurrency } from "@/src/features/enrollments/utils/format-payment";
+import { PaymentStatusBadge } from "@/src/features/enrollments/components/table/PaymentStatusBadge";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { StudentEnrollmentActiveBadge } from "@/src/features/students/components/manage/student-enrollment-active-badge";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
+import {
+  formatEnrollmentBalance,
+  formatEnrollmentBatchCode,
+  formatEnrollmentBatchName,
+  formatEnrollmentCategoryName,
+  formatEnrollmentFinalPrice,
+  formatEnrollmentPaidAmount,
+  formatEnrollmentTrainerNames,
+  resolveEnrollmentBranchName,
+} from "@/src/features/students/utils/enrollment-display.utils";
+import { formatBatchOverviewTiming } from "@/src/features/batches/utils/batch-progress.utils";
 
 interface Props {
   enrollment: Enrollment;
-  branchName: string;
-  disabled?: boolean;
-  onView: (enrollment: Enrollment) => void;
-  onEdit: (enrollment: Enrollment) => void;
-  onDelete: (enrollment: Enrollment) => void;
+  branchMap?: Record<string, string>;
 }
 
-function formatBatchCode(enrollment: Enrollment): string {
-  return enrollment.batch?.code ?? "—";
-}
-
-function formatBatchName(enrollment: Enrollment): string {
-  return enrollment.batch?.name ?? "—";
-}
-
-export function StudentOverviewEnrollmentCard({
-  enrollment,
-  branchName,
-  disabled = false,
-  onView,
-  onEdit,
-  onDelete,
-}: Props) {
-  const courseTitle = enrollment.course?.title ?? "—";
-  const fee = formatCurrency(enrollment.finalAmount);
-
+function DetailItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-slate-900">
-              {formatBatchCode(enrollment)}
-            </p>
-            <StudentEnrollmentActiveBadge enrollment={enrollment} />
-          </div>
-          <p className="mt-1 text-sm font-medium text-slate-800">
-            {formatBatchName(enrollment)}
-          </p>
-          <div className="mt-3 grid gap-2 text-sm text-slate-600 sm:grid-cols-2 xl:grid-cols-4">
-            <p>
-              <span className="text-slate-500">Course:</span> {courseTitle}
-            </p>
-            <p>
-              <span className="text-slate-500">Branch:</span> {branchName}
-            </p>
-            <p>
-              <span className="text-slate-500">Start:</span>{" "}
-              {formatStudentDate(enrollment.batch?.startDate)}
-            </p>
-            <p>
-              <span className="text-slate-500">End:</span>{" "}
-              {formatStudentDate(enrollment.batch?.endDate)}
-            </p>
-          </div>
-          <p className="mt-2 text-sm font-medium text-slate-900">Fee: {fee}</p>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1 self-start">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={disabled}
-            onClick={() => onView(enrollment)}
-          >
-            <Eye className="mr-1.5 h-3.5 w-3.5" />
-            View
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={disabled}
-            onClick={() => onEdit(enrollment)}
-          >
-            <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            Edit
-          </Button>
-          <Dropdown
-            trigger={
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={disabled}
-                aria-label="More enrollment actions"
-              >
-                <Settings2 className="h-4 w-4" />
-              </Button>
-            }
-            items={[
-              {
-                label: "Delete",
-                onClick: () => onDelete(enrollment),
-                destructive: true,
-              },
-            ]}
-          />
-        </div>
-      </div>
+    <div>
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-sm font-medium text-slate-900">{value}</p>
     </div>
   );
 }
 
-export function StudentOverviewSectionCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+export function StudentOverviewEnrollmentCard({
+  enrollment,
+  branchMap = {},
+}: Props) {
+  const branchName = resolveEnrollmentBranchName(enrollment, branchMap);
+  const courseTitle = enrollment.course?.title ?? "—";
+  const batchTiming =
+    enrollment.batch?.startTime && enrollment.batch?.endTime
+      ? formatBatchOverviewTiming(
+          enrollment.batch.startTime,
+          enrollment.batch.endTime,
+        )
+      : "—";
+
   return (
-    <Card className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-      {title ? (
-        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-      ) : null}
-      <div className={title ? "mt-4" : undefined}>{children}</div>
-    </Card>
+    <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-semibold text-slate-900">
+          {formatEnrollmentBatchName(enrollment)}
+        </p>
+        <span className="font-mono text-xs text-slate-500">
+          {formatEnrollmentBatchCode(enrollment)}
+        </span>
+        <StudentEnrollmentActiveBadge enrollment={enrollment} />
+        <PaymentStatusBadge status={enrollment.paymentStatus} />
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <DetailItem label="Branch" value={branchName} />
+        <DetailItem label="Course" value={courseTitle} />
+        <DetailItem
+          label="Category"
+          value={formatEnrollmentCategoryName(enrollment)}
+        />
+        <DetailItem
+          label="Trainer"
+          value={formatEnrollmentTrainerNames(enrollment)}
+        />
+        <DetailItem
+          label="Batch Start"
+          value={formatStudentDate(enrollment.batch?.startDate)}
+        />
+        <DetailItem
+          label="Batch End"
+          value={formatStudentDate(enrollment.batch?.endDate)}
+        />
+        <DetailItem label="Batch Timing" value={batchTiming} />
+        <DetailItem
+          label="Enrollment Date"
+          value={formatStudentDate(
+            enrollment.admissionDate ?? enrollment.createdAt,
+          )}
+        />
+        <DetailItem
+          label="Total Fee"
+          value={formatEnrollmentFinalPrice(enrollment)}
+        />
+        <DetailItem
+          label="Amount Paid"
+          value={formatEnrollmentPaidAmount(enrollment)}
+        />
+        <DetailItem
+          label="Remaining Amount"
+          value={formatEnrollmentBalance(enrollment)}
+        />
+        <DetailItem label="Enrollment Status" value={enrollment.status} />
+      </div>
+    </div>
   );
 }

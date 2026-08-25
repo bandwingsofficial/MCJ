@@ -16,7 +16,7 @@ import type { BranchSummaryCounts } from "@/src/features/branches/hooks/use-bran
 import { BranchManageBatchesPanel } from "./branch-manage-batches-panel";
 import { BranchManageCategoriesPanel } from "./branch-manage-categories-panel";
 import { BranchManageCoursesPanel } from "./branch-manage-courses-panel";
-import { BranchManageStudentsEnrolledPanel } from "./branch-manage-students-enrolled-panel";
+import { BranchManageEnrollmentsPanel } from "./branch-manage-enrollments-panel";
 import { BranchManageTrainersPanel } from "./branch-manage-trainers-panel";
 import { BranchManageUsersPanel } from "./branch-manage-users-panel";
 import { BranchManageOverviewPanel } from "./branch-manage-overview-panel";
@@ -82,7 +82,7 @@ export function BranchManageWorkspace({
             ["batches", "Batches"],
             ["categories", "Categories"],
             ["courses", "Courses"],
-            ["students-enrolled", "Students Enrolled"],
+            ["students", "Students"],
             ["trainers", "Trainers"],
             ["reports", "Reports"],
           ] as const
@@ -146,16 +146,8 @@ export function BranchManageWorkspace({
         />
       </TabsContent>
 
-      <TabsContent value="students-enrolled">
-        <BranchManageStudentsEnrolledPanel
-          branchId={branchId}
-          assignmentsDisabled={assignmentsDisabled}
-          assignOnMount={assignOnMountTab === "students-enrolled"}
-          onAssignOnMountHandled={() =>
-            clearAssignOnMount("students-enrolled")
-          }
-          onSummaryRefresh={onSummaryRefresh}
-        />
+      <TabsContent value="students">
+        <BranchManageEnrollmentsPanel branchId={branchId} />
       </TabsContent>
 
       <TabsContent value="trainers">

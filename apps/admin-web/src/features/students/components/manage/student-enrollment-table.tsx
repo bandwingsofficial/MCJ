@@ -10,10 +10,18 @@ import {
 } from "@/src/shared/components/ui/table";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
-import { formatCurrency } from "@/src/features/enrollments/utils/format-payment";
+import { PaymentStatusBadge } from "@/src/features/enrollments/components/table/PaymentStatusBadge";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import type { Student } from "@/src/features/students/types/student.types";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
+import {
+  formatEnrollmentBalance,
+  formatEnrollmentCategoryName,
+  formatEnrollmentFinalPrice,
+  formatEnrollmentPaidAmount,
+  formatEnrollmentTrainerNames,
+  resolveEnrollmentBranchName,
+} from "@/src/features/students/utils/enrollment-display.utils";
 
 import { StudentEnrollmentActiveBadge } from "./student-enrollment-active-badge";
 import { StudentEnrollmentRowActions } from "./student-enrollment-row-actions";
@@ -31,30 +39,8 @@ interface Props {
   onDeactivate: (enrollment: Enrollment) => void;
 }
 
-function formatBatchLabel(enrollment: Enrollment): string {
-  const name = enrollment.batch?.name ?? "—";
-  const code = enrollment.batch?.code;
-
-  return code ? `${name} (${code})` : name;
-}
-
-function resolveBranchName(
-  enrollment: Enrollment,
-  branchMap: Record<string, string>,
-): string {
-  return (
-    enrollment.branch?.branchName ??
-    branchMap[enrollment.branch?.id ?? ""] ??
-    "—"
-  );
-}
-
-function formatStudentName(student: Student): string {
-  return [student.firstName, student.lastName].filter(Boolean).join(" ");
-}
-
 export function StudentEnrollmentTable({
-  student,
+  student: _student,
   enrollments,
   branchMap = {},
   disabled = false,
@@ -68,25 +54,27 @@ export function StudentEnrollmentTable({
   if (enrollments.length === 0) {
     return (
       <EmptyState
-        title="No enrollments yet"
-        description="Create an enrollment to assign this student to a batch."
+        title="No Enrollments Yet"
+        description="Enroll this student through a branch batch to see enrollment details here."
       />
     );
   }
-
-  const studentName = formatStudentName(student);
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Student</TableHead>
-          <TableHead>Batch</TableHead>
-          <TableHead>Course</TableHead>
           <TableHead>Branch</TableHead>
+          <TableHead>Batch</TableHead>
+          <TableHead>Batch Code</TableHead>
+          <TableHead>Course</TableHead>
+          <TableHead>Category</TableHead>
+          <TableHead>Trainer</TableHead>
           <TableHead>Enrollment Date</TableHead>
-          <TableHead>Fee</TableHead>
-          <TableHead>Discount</TableHead>
+          <TableHead>Final Price</TableHead>
+          <TableHead>Paid</TableHead>
+          <TableHead>Balance</TableHead>
+          <TableHead>Payment</TableHead>
           <TableHead>Status</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
@@ -94,17 +82,27 @@ export function StudentEnrollmentTable({
       <TableBody>
         {enrollments.map((enrollment) => (
           <TableRow key={enrollment.id}>
-            <TableCell className="font-medium text-slate-900">
-              {studentName}
-            </TableCell>
-            <TableCell>{formatBatchLabel(enrollment)}</TableCell>
-            <TableCell>{enrollment.course?.title ?? "—"}</TableCell>
-            <TableCell>{resolveBranchName(enrollment, branchMap)}</TableCell>
             <TableCell>
-              {formatStudentDate(enrollment.admissionDate ?? enrollment.createdAt)}
+              {resolveEnrollmentBranchName(enrollment, branchMap)}
             </TableCell>
-            <TableCell>{formatCurrency(enrollment.feeAmount)}</TableCell>
-            <TableCell>{formatCurrency(enrollment.discountAmount)}</TableCell>
+            <TableCell>{enrollment.batch?.name ?? "—"}</TableCell>
+            <TableCell className="font-mono text-sm">
+              {enrollment.batch?.code ?? "—"}
+            </TableCell>
+            <TableCell>{enrollment.course?.title ?? "—"}</TableCell>
+            <TableCell>{formatEnrollmentCategoryName(enrollment)}</TableCell>
+            <TableCell>{formatEnrollmentTrainerNames(enrollment)}</TableCell>
+            <TableCell>
+              {formatStudentDate(
+                enrollment.admissionDate ?? enrollment.createdAt,
+              )}
+            </TableCell>
+            <TableCell>{formatEnrollmentFinalPrice(enrollment)}</TableCell>
+            <TableCell>{formatEnrollmentPaidAmount(enrollment)}</TableCell>
+            <TableCell>{formatEnrollmentBalance(enrollment)}</TableCell>
+            <TableCell>
+              <PaymentStatusBadge status={enrollment.paymentStatus} />
+            </TableCell>
             <TableCell>
               <StudentEnrollmentActiveBadge enrollment={enrollment} />
             </TableCell>

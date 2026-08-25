@@ -746,7 +746,7 @@ model Student {
   emergencyContactPhone String?
   studentCode           String           @unique
   admissionDate         DateTime?
-  branchId              String
+  branchId              String?
   notes                 String?
   status                StudentStatus    @default(LEAD)
   createdBy             String?
@@ -762,7 +762,7 @@ model Student {
   payments              Payment[]
   Placement             Placement[]
   lessonProgress        LessonProgress[]
-  branch                Branch           @relation(fields: [branchId], references: [id])
+  branch                Branch?          @relation(fields: [branchId], references: [id])
   profileImageUpload    Upload?          @relation("StudentProfileImage", fields: [profileImageFileId], references: [id], onDelete: SetNull)
   userId String @unique 
   user User @relation(fields: [userId], references: [id])

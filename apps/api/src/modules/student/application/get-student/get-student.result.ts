@@ -29,7 +29,7 @@ export class GetStudentResult {
     public readonly emergencyContactPhone: string | null,
     public readonly studentCode: string,
     public readonly admissionDate: Date | null,
-    public readonly branchId: string,
+    public readonly branchId: string | null,
     public readonly notes: string | null,
     public readonly isActive: boolean,
     public readonly status: StudentStatus,    public readonly createdBy: string | null,

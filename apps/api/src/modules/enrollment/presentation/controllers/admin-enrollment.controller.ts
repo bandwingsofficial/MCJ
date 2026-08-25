@@ -29,6 +29,7 @@ import { ApproveEnrollmentCommand } from '../../application/approve-enrollment/a
 import { ApproveEnrollmentHandler } from '../../application/approve-enrollment/approve-enrollment.handler';
 import { CreateEnrollmentCommand } from '../../application/create-enrollment/create-enrollment.command';
 import { CreateEnrollmentHandler } from '../../application/create-enrollment/create-enrollment.handler';
+import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
 import { DeleteEnrollmentCommand } from '../../application/delete-enrollment/delete-enrollment.command';
 import { DeleteEnrollmentHandler } from '../../application/delete-enrollment/delete-enrollment.handler';
 import { GetEnrollmentHandler } from '../../application/get-enrollment/get-enrollment.handler';
@@ -93,7 +94,15 @@ export class AdminEnrollmentController {
         dto.batchId,
         dto.feeAmount,
         dto.discountAmount ?? 0,
-        undefined,
+        dto.admissionDate ? new Date(dto.admissionDate) : undefined,
+        dto.initialPaymentAmount,
+        dto.paymentMethod,
+        dto.transactionId,
+        dto.initialPaymentPaidAt
+          ? new Date(dto.initialPaymentPaidAt)
+          : undefined,
+        dto.installments ?? [],
+        EnrollmentSource.ADMIN,
         user.sub,
       ),
     );

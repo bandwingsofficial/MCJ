@@ -356,8 +356,8 @@ export class EnrollmentDomainService {
       throw new BranchInactiveException();
     }
 
-    // Hierarchy alignment
-    if (student.branchId !== branchId) {
+    // Hierarchy alignment — branch assignment may come from enrollment workflow.
+    if (student.branchId && student.branchId !== branchId) {
       throw new StudentBranchMismatchException();
     }
 

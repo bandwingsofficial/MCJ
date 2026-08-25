@@ -20,6 +20,11 @@ import type { CategoryRepository } from '../category/domain/repositories/categor
 import { COURSE_TOKENS } from '../course/course.tokens';
 import { CourseModule } from '../course/course.module';
 import type { CourseRepository } from '../course/domain/repositories/course.repository';
+import { PaymentEnrollmentSyncService } from '../payment/application/shared/payment-enrollment-sync.service';
+import { PaymentModule } from '../payment/payment.module';
+import { PAYMENT_TOKENS } from '../payment/payment.tokens';
+import type { PaymentRepository } from '../payment/domain/repositories/payment.repository';
+import { PaymentDomainService } from '../payment/domain/services/payment-domain.service';
 import { STUDENT_TOKENS } from '../student/student.tokens';
 import { StudentModule } from '../student/student.module';
 import type { StudentRepository } from '../student/domain/repositories/student.repository';
@@ -36,6 +41,7 @@ import { PermanentDeleteEnrollmentHandler } from './application/permanent-delete
 import { RejectEnrollmentHandler } from './application/reject-enrollment/reject-enrollment.handler';
 import { RestoreEnrollmentHandler } from './application/restore-enrollment/restore-enrollment.handler';
 import { EnrollmentSideEffectsService } from './application/shared/enrollment-side-effects.service';
+import { EnrollmentPaymentRecordingService } from './application/shared/enrollment-payment-recording.service';
 import { UpdateEnrollmentHandler } from './application/update-enrollment/update-enrollment.handler';
 import { UpdateEnrollmentStatusHandler } from './application/update-enrollment-status/update-enrollment-status.handler';
 import type { EnrollmentRepository } from './domain/repositories/enrollment.repository';
@@ -54,6 +60,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
     forwardRef(() => CourseModule),
     forwardRef(() => BatchModule),
     StudentModule,
+    forwardRef(() => PaymentModule),
   ],
 
   controllers: [
@@ -94,6 +101,25 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
     },
 
     {
+      provide: EnrollmentPaymentRecordingService,
+      useFactory: (
+        paymentRepo: PaymentRepository,
+        paymentDomainService: PaymentDomainService,
+        enrollmentSync: PaymentEnrollmentSyncService,
+      ) =>
+        new EnrollmentPaymentRecordingService(
+          paymentRepo,
+          paymentDomainService,
+          enrollmentSync,
+        ),
+      inject: [
+        PAYMENT_TOKENS.PAYMENT_REPOSITORY,
+        PaymentDomainService,
+        PaymentEnrollmentSyncService,
+      ],
+    },
+
+    {
       provide: CreateEnrollmentHandler,
       useFactory: (
         enrollmentRepo: EnrollmentRepository,
@@ -104,6 +130,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         batchRepo: BatchRepository,
         domainService: EnrollmentDomainService,
         sideEffects: EnrollmentSideEffectsService,
+        paymentRecording: EnrollmentPaymentRecordingService,
       ) =>
         new CreateEnrollmentHandler(
           enrollmentRepo,
@@ -114,6 +141,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
           batchRepo,
           domainService,
           sideEffects,
+          paymentRecording,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
@@ -124,6 +152,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         BATCH_TOKENS.BATCH_REPOSITORY,
         EnrollmentDomainService,
         EnrollmentSideEffectsService,
+        EnrollmentPaymentRecordingService,
       ],
     },
 

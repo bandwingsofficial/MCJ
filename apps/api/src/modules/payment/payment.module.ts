@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { AdminOrBranchRoleGuard } from '@common/guards/admin-or-branch-role.guard';
@@ -44,7 +44,7 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
     PrismaModule,
     AuthModule,
     BranchUserModule,
-    EnrollmentModule,
+    forwardRef(() => EnrollmentModule),
     StudentModule,
     BatchModule,
   ],
@@ -239,6 +239,10 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
     },
   ],
 
-  exports: [PAYMENT_TOKENS.PAYMENT_REPOSITORY],
+  exports: [
+    PAYMENT_TOKENS.PAYMENT_REPOSITORY,
+    PaymentDomainService,
+    PaymentEnrollmentSyncService,
+  ],
 })
 export class PaymentModule {}

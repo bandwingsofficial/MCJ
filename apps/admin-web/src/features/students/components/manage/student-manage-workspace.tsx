@@ -13,7 +13,6 @@ import { STUDENT_MANAGE_DEFAULT_TAB } from "@/src/features/students/utils/studen
 import { StudentManageActivityPanel } from "./student-manage-activity-panel";
 import { StudentManageAttendancePanel } from "./student-manage-attendance-panel";
 import { StudentManageDocumentsPanel } from "./student-manage-documents-panel";
-import { StudentManageEnrollmentsPanel } from "./student-manage-enrollments-panel";
 import { StudentManageOverviewPanel } from "./student-manage-overview-panel";
 import { StudentManagePaymentsPanel } from "./student-manage-payments-panel";
 
@@ -23,12 +22,10 @@ interface Props {
   overviewRefreshKey?: number;
   onTabChange?: (tab: TabKey) => void;
   onStudentRefresh?: () => Promise<void>;
-  onEnrollmentMutation?: () => Promise<void>;
 }
 
 export type TabKey =
   | "overview"
-  | "enrollments"
   | "attendance"
   | "payments"
   | "documents"
@@ -36,7 +33,6 @@ export type TabKey =
 
 const TAB_ITEMS: ReadonlyArray<[TabKey, string]> = [
   ["overview", "Overview"],
-  ["enrollments", "Enrollments"],
   ["attendance", "Attendance"],
   ["payments", "Payments"],
   ["documents", "Documents"],
@@ -49,7 +45,6 @@ export function StudentManageWorkspace({
   overviewRefreshKey = 0,
   onTabChange,
   onStudentRefresh,
-  onEnrollmentMutation,
 }: Props) {
   return (
     <Tabs
@@ -76,16 +71,6 @@ export function StudentManageWorkspace({
           refreshKey={overviewRefreshKey}
           onNavigateToTab={(tab) => onTabChange?.(tab)}
           onStudentRefresh={onStudentRefresh}
-          onEnrollmentMutation={onEnrollmentMutation}
-        />
-      </TabsContent>
-
-      <TabsContent value="enrollments">
-        <StudentManageEnrollmentsPanel
-          student={student}
-          refreshKey={overviewRefreshKey}
-          onStudentRefresh={onStudentRefresh}
-          onEnrollmentMutation={onEnrollmentMutation}
         />
       </TabsContent>
 

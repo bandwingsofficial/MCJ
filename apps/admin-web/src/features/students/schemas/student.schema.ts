@@ -73,7 +73,7 @@ export const studentSchema = z.object({
 
   admissionDate: z.string().optional().or(z.literal("")),
 
-  branchId: z.string().uuid("Please select a branch"),
+  branchId: z.string().uuid("Please select a valid branch").optional().or(z.literal("")),
 
   notes: z
     .string()

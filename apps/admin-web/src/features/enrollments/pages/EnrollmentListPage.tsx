@@ -4,6 +4,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import Link from "next/link";
 
 import { Plus } from "lucide-react";
 
@@ -95,12 +96,6 @@ export function EnrollmentListPage() {
     );
 
   const [
-    createOpen,
-    setCreateOpen,
-  ] =
-    useState(false);
-
-  const [
     editOpen,
     setEditOpen,
   ] =
@@ -170,14 +165,6 @@ export function EnrollmentListPage() {
       filters.take,
   });
 };
-
-  const handleCreate = () => {
-    setSelectedEnrollment(
-      null,
-    );
-
-    setCreateOpen(true);
-  };
 
   const handleView = (
     enrollment: Enrollment,
@@ -376,14 +363,13 @@ export function EnrollmentListPage() {
             <Button variant="outline" onClick={filterPendingApproval}>
               Pending Approval
             </Button>
-            <Button
-              onClick={
-                handleCreate
-              }
+            <Link
+              href="/enrollments/create"
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-[#2447A8] px-4 text-sm font-medium text-white hover:bg-[#1e3a8a]"
             >
               <Plus className="mr-2 h-4 w-4" />
-              Add Enrollment
-            </Button>
+              Create Enrollment
+            </Link>
           </div>
         }
       />
@@ -442,31 +428,6 @@ export function EnrollmentListPage() {
         )}
 
       </Card>
-
-      {/* Create */}
-
-      <Modal
-        open={
-          createOpen
-        }
-        title="Create Enrollment"
-        onClose={() =>
-          setCreateOpen(
-            false,
-          )
-        }
-      >
-        <EnrollmentForm
-          mode="create"
-          onSuccess={() => {
-            setCreateOpen(
-              false,
-            );
-
-            void refetch();
-          }}
-        />
-      </Modal>
 
       {/* Edit */}
 

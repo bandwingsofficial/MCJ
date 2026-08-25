@@ -12,6 +12,8 @@ import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
+import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
+import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
 import { useStudents } from "@/src/features/students/hooks/useStudents";
 import { useActivateStudent } from "@/src/features/students/hooks/useActivateStudent";
 import { useDeactivateStudent } from "@/src/features/students/hooks/useDeactivateStudent";
@@ -80,6 +82,9 @@ export function StudentsPage() {
   } | null>(null);
   const [isBulkLoading, setIsBulkLoading] = useState(false);
   const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [enrolledStudentIds, setEnrolledStudentIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   const pageSize = filters.pageSize ?? 20;
   const page = filters.page ?? 1;
@@ -87,13 +92,35 @@ export function StudentsPage() {
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
 
-  const branchMap = useMemo(
-    () =>
-      Object.fromEntries(
-        branches.map((branch) => [branch.id, branch.branchName]),
-      ),
-    [branches],
-  );
+  useEffect(() => {
+    const loadEnrollmentStatus = async () => {
+      try {
+        const response = await enrollmentService.getEnrollments({
+          skip: 0,
+          take: 1000,
+        });
+        const parsed = parseEnrollmentListResponse(response);
+        const enrolled = new Set<string>();
+
+        for (const enrollment of parsed.items) {
+          if (enrollment.isDeleted) {
+            continue;
+          }
+
+          const studentId = enrollment.student?.id;
+          if (studentId) {
+            enrolled.add(studentId);
+          }
+        }
+
+        setEnrolledStudentIds(enrolled);
+      } catch {
+        setEnrolledStudentIds(new Set());
+      }
+    };
+
+    void loadEnrollmentStatus();
+  }, [students]);
 
   const hasActiveFilters = Boolean(
     (filters.search ?? "").trim() ||
@@ -329,14 +356,14 @@ export function StudentsPage() {
           <div className="overflow-x-auto">
             <StudentTable
               students={students}
-              branchMap={branchMap}
+              enrolledStudentIds={enrolledStudentIds}
               selectedStudentIds={selectedStudentIds}
               onSelectionChange={setSelectedStudentIds}
               actionsDisabled={actionLoading}
               emptyTitle={
                 hasActiveFilters
                   ? "No students match your current filters"
-                  : "No Students Found"
+                  : "No Students Yet"
               }
               emptyDescription={
                 hasActiveFilters

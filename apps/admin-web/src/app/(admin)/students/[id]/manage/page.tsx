@@ -8,7 +8,6 @@ interface Props {
 
 const VALID_TABS = new Set<TabKey>([
   "overview",
-  "enrollments",
   "attendance",
   "payments",
   "documents",

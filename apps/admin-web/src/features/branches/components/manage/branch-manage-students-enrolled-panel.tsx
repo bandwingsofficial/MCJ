@@ -4,26 +4,20 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Card } from "@/src/shared/components/ui/card";
+import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { Pagination } from "@/src/shared/components/ui/pagination";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
-import {
-  AssignEntitiesModal,
-  type AssignableItem,
-} from "@/src/features/branches/components/manage/assign-entities-modal";
+import { BranchAssignStudentModal } from "@/src/features/branches/components/manage/branch-assign-student-modal";
 import { BranchManageCardGrid } from "@/src/features/branches/components/manage/branch-manage-card-grid";
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
 import { BranchStudentEnrolledCard } from "@/src/features/branches/components/manage/branch-student-enrolled-card";
-import { assignStudentToBranch } from "@/src/features/branches/utils/branch-assign.utils";
+import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
-import { studentService } from "@/src/features/students/services/student.service";
-import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.utils";
-import { parseStudentListResponse } from "@/src/features/students/utils/student-list.utils";
-import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
-import { studentManageTabPath } from "@/src/features/students/utils/student-manage.routes";
+import { studentManagePath } from "@/src/features/students/utils/student-manage.routes";
 
 const PAGE_SIZE = 10;
 
@@ -48,14 +42,9 @@ export function BranchManageStudentsEnrolledPanel({
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-
   const [assignOpen, setAssignOpen] = useState(false);
-  const [assignSearch, setAssignSearch] = useState("");
-  const [assignCandidates, setAssignCandidates] = useState<AssignableItem[]>(
-    [],
-  );
-  const [assignLoading, setAssignLoading] = useState(false);
-  const [assignSubmitting, setAssignSubmitting] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<Enrollment | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -86,80 +75,41 @@ export function BranchManageStudentsEnrolledPanel({
     setPage(1);
   }, [search]);
 
-  const openAssign = useCallback(async () => {
-    setAssignOpen(true);
-    setAssignSearch("");
-    setAssignLoading(true);
-    try {
-      const response = await studentService.getStudents({
-        includeDeleted: false,
-        page: 1,
-        pageSize: 200,
-      });
-      const payload = parseStudentListResponse(response.data);
-
-      setAssignCandidates(
-        payload.items
-          .filter(
-            (item) =>
-              item.isActive &&
-              !isArchivedStudent(item) &&
-              item.branchId !== branchId,
-          )
-          .map((item) => ({
-            id: item.id,
-            label: formatPersonName(item.firstName, item.lastName),
-            meta: item.studentCode ?? item.email ?? undefined,
-          })),
-      );
-    } catch (error) {
-      appToast.error(getErrorMessage(error));
-      setAssignOpen(false);
-    } finally {
-      setAssignLoading(false);
-    }
-  }, [branchId]);
-
   useEffect(() => {
     if (!assignOnMount || assignmentsDisabled) {
       return;
     }
 
-    void openAssign();
+    setAssignOpen(true);
     onAssignOnMountHandled?.();
-  }, [
-    assignOnMount,
-    assignmentsDisabled,
-    onAssignOnMountHandled,
-    openAssign,
-  ]);
+  }, [assignOnMount, assignmentsDisabled, onAssignOnMountHandled]);
 
-  const handleAssign = async (ids: string[]) => {
-    if (ids.length === 0) {
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const handleRemove = async () => {
+    if (!removeTarget) {
       return;
     }
 
-    setAssignSubmitting(true);
+    setIsRemoving(true);
     try {
-      for (const id of ids) {
-        await assignStudentToBranch(id, branchId);
-      }
-      appToast.success(
-        ids.length === 1
-          ? "Student assigned successfully"
-          : `${ids.length} students assigned successfully`,
-      );
-      setAssignOpen(false);
+      await enrollmentService.deleteEnrollment(removeTarget.id);
+      appToast.success("Enrollment removed");
+      setRemoveTarget(null);
       await loadData();
       await onSummaryRefresh?.();
     } catch (error) {
       appToast.error(getErrorMessage(error));
     } finally {
-      setAssignSubmitting(false);
+      setIsRemoving(false);
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const formatRemoveStudentName = (enrollment: Enrollment): string =>
+    formatPersonName(
+      enrollment.student?.firstName,
+      enrollment.student?.lastName,
+    );
 
   return (
     <>
@@ -169,9 +119,7 @@ export function BranchManageStudentsEnrolledPanel({
           onSearchChange={setSearch}
           searchPlaceholder="Search enrolled students..."
           assignLabel="Assign Student"
-          onAssign={() => {
-            void openAssign();
-          }}
+          onAssign={() => setAssignOpen(true)}
           assignDisabled={assignmentsDisabled}
         />
 
@@ -179,16 +127,16 @@ export function BranchManageStudentsEnrolledPanel({
           isLoading={isLoading}
           isEmpty={!isLoading && enrollments.length === 0}
           emptyMessage="No Students Enrolled Yet"
-          emptyDescription="Assign students to this branch or enroll them in branch batches."
+          emptyDescription="Assign students to a branch batch to create enrollments."
           columnsClassName="grid grid-cols-1 gap-4 lg:grid-cols-2"
         >
           {enrollments.map((enrollment) => (
             <BranchStudentEnrolledCard
               key={enrollment.id}
               enrollment={enrollment}
-              onManage={(studentId) =>
-                router.push(studentManageTabPath(studentId, "enrollments"))
-              }
+              removeDisabled={assignmentsDisabled || isRemoving}
+              onRemove={assignmentsDisabled ? undefined : setRemoveTarget}
+              onManage={(studentId) => router.push(studentManagePath(studentId))}
             />
           ))}
         </BranchManageCardGrid>
@@ -204,18 +152,30 @@ export function BranchManageStudentsEnrolledPanel({
         ) : null}
       </Card>
 
-      <AssignEntitiesModal
+      <BranchAssignStudentModal
         open={assignOpen}
-        title="Assign Students"
-        items={assignCandidates}
-        isLoading={assignLoading}
-        isSubmitting={assignSubmitting}
-        search={assignSearch}
-        onSearchChange={setAssignSearch}
-        searchPlaceholder="Search active students..."
-        emptyMessage="No active students available to assign"
+        branchId={branchId}
         onClose={() => setAssignOpen(false)}
-        onAssign={handleAssign}
+        onSuccess={async () => {
+          await loadData();
+          await onSummaryRefresh?.();
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(removeTarget)}
+        title="Remove enrollment?"
+        description={
+          removeTarget
+            ? `Remove ${formatRemoveStudentName(removeTarget)} from ${removeTarget.batch?.name ?? "this batch"}? The student profile will remain in the system.`
+            : ""
+        }
+        confirmLabel="Remove"
+        loading={isRemoving}
+        onCancel={() => setRemoveTarget(null)}
+        onConfirm={() => {
+          void handleRemove();
+        }}
       />
     </>
   );

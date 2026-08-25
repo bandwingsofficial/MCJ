@@ -56,7 +56,6 @@ export function mapStudentToFormValues(
     emergencyContactName: student.emergencyContactName ?? "",
     emergencyContactPhone: student.emergencyContactPhone ?? "",
     admissionDate: student.admissionDate?.split("T")[0] ?? "",
-    branchId: student.branchId,
     notes: student.notes ?? "",
     status: student.status,
     profileImageFileId: student.profileImageFileId ?? "",
@@ -88,7 +87,6 @@ export function toCreateStudentRequest(
     emergencyContactName: emptyToUndefined(values.emergencyContactName),
     emergencyContactPhone: emptyToUndefined(values.emergencyContactPhone),
     admissionDate: emptyToUndefined(values.admissionDate),
-    branchId: values.branchId,
     notes: emptyToUndefined(values.notes),
     status: values.status,
     profileImageFileId: emptyToUndefined(values.profileImageFileId),
@@ -96,10 +94,13 @@ export function toCreateStudentRequest(
 }
 
 export function toUpdateStudentRequest(
-  values: StudentFormSchema,
+  values: StudentFormSchema & { branchId?: string | null },
 ): UpdateStudentRequest {
+  const payload = toCreateStudentRequest(values);
+
   return {
-    ...toCreateStudentRequest(values),
+    ...payload,
     studentCode: values.studentCode?.trim() || undefined,
+    ...(values.branchId !== undefined ? { branchId: values.branchId } : {}),
   };
 }

@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 
+import { EnrollmentSource } from '@modules/enrollment/domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-status.enum';
 import type { EnrollmentRepository } from '@modules/enrollment/domain/repositories/enrollment.repository';
 
@@ -50,9 +51,10 @@ export class PaymentEnrollmentSyncService {
     let expectedCompletionDate: Date | null | undefined;
     let status: EnrollmentStatus | undefined;
 
-    // Full payment moves the enrollment into the admin approval queue.
-    // Admission is granted only after an admin explicitly approves.
+    // Online/public enrollments move to approval after full payment.
+    // Admin branch enrollments stay active without a second approval step.
     if (
+      enrollment.source !== EnrollmentSource.ADMIN &&
       willBeFullyPaid &&
       previousStatus === EnrollmentStatus.PENDING
     ) {

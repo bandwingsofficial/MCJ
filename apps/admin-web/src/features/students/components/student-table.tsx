@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
+import { Badge } from "@/src/shared/components/ui/badge";
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
 import {
   Table,
@@ -21,7 +22,7 @@ import { StudentRowActionsMenu } from "./student-row-actions-menu";
 
 interface Props {
   students: StudentListItem[];
-  branchMap?: Record<string, string>;
+  enrolledStudentIds?: Set<string>;
   selectedStudentIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
   actionsDisabled?: boolean;
@@ -41,14 +42,28 @@ function formatStudentName(student: StudentListItem): string {
   return [student.firstName, student.lastName].filter(Boolean).join(" ");
 }
 
+function EnrollmentStatusIndicator({
+  isEnrolled,
+}: {
+  isEnrolled: boolean;
+}) {
+  if (isEnrolled) {
+    return <Badge variant="success">Enrolled</Badge>;
+  }
+
+  return (
+    <span className="text-sm text-slate-500">Not Enrolled Yet</span>
+  );
+}
+
 export function StudentTable({
   students,
-  branchMap = {},
+  enrolledStudentIds = new Set<string>(),
   selectedStudentIds = [],
   onSelectionChange,
   actionsDisabled = false,
   selectionDisabled = false,
-  emptyTitle = "No Students Found",
+  emptyTitle = "No Students Yet",
   emptyDescription = "Create your first student to get started.",
   onManage,
   onEdit,
@@ -128,76 +143,76 @@ export function StudentTable({
               />
             </TableHead>
           ) : null}
+          <TableHead>Student Code</TableHead>
           <TableHead>Student</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Phone</TableHead>
-          <TableHead>Branch</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Enrollment Status</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {students.map((student) => {
-          const branchName = branchMap[student.branchId] ?? "—";
-
-          return (
-            <TableRow key={student.id}>
-              {selectionEnabled ? (
-                <TableCell>
-                  <Checkbox
-                    checked={safeSelectedIds.includes(student.id)}
-                    disabled={selectionDisabled}
-                    onCheckedChange={(checked) =>
-                      toggleRow(student.id, Boolean(checked))
-                    }
-                    aria-label={`Select ${formatStudentName(student)}`}
-                  />
-                </TableCell>
-              ) : null}
-
-              <TableCell className="text-[15px] font-medium text-slate-900">
-                <div>{formatStudentName(student)}</div>
-                <div className="text-xs font-normal text-slate-500">
-                  {student.studentCode}
-                </div>
-              </TableCell>
-
-              <TableCell className="text-[15px] text-slate-700">
-                {student.email ?? "—"}
-              </TableCell>
-
-              <TableCell className="text-[15px] text-slate-700">
-                {student.phone ?? "—"}
-              </TableCell>
-
-              <TableCell className="text-[15px] text-slate-700">
-                {branchName}
-              </TableCell>
-
+        {students.map((student) => (
+          <TableRow key={student.id}>
+            {selectionEnabled ? (
               <TableCell>
-                <StudentStatusBadge
-                  status={student.status}
-                  isActive={student.isActive}
-                  isDeleted={isArchivedStudent(student)}
+                <Checkbox
+                  checked={safeSelectedIds.includes(student.id)}
+                  disabled={selectionDisabled}
+                  onCheckedChange={(checked) =>
+                    toggleRow(student.id, Boolean(checked))
+                  }
+                  aria-label={`Select ${formatStudentName(student)}`}
                 />
               </TableCell>
+            ) : null}
 
-              <TableCell className="text-right">
-                <StudentRowActionsMenu
-                  student={student}
-                  disabled={actionsDisabled}
-                  onManage={onManage}
-                  onEdit={onEdit}
-                  onActivate={onActivate}
-                  onDeactivate={onDeactivate}
-                  onDelete={onDelete}
-                  onRestore={onRestore}
-                  onPermanentDelete={onPermanentDelete}
-                />
-              </TableCell>
-            </TableRow>
-          );
-        })}
+            <TableCell className="font-mono text-[15px] text-slate-700">
+              {student.studentCode}
+            </TableCell>
+
+            <TableCell className="text-[15px] font-medium text-slate-900">
+              {formatStudentName(student)}
+            </TableCell>
+
+            <TableCell className="text-[15px] text-slate-700">
+              {student.email ?? "—"}
+            </TableCell>
+
+            <TableCell className="text-[15px] text-slate-700">
+              {student.phone ?? "—"}
+            </TableCell>
+
+            <TableCell>
+              <StudentStatusBadge
+                status={student.status}
+                isActive={student.isActive}
+                isDeleted={isArchivedStudent(student)}
+              />
+            </TableCell>
+
+            <TableCell>
+              <EnrollmentStatusIndicator
+                isEnrolled={enrolledStudentIds.has(student.id)}
+              />
+            </TableCell>
+
+            <TableCell className="text-right">
+              <StudentRowActionsMenu
+                student={student}
+                disabled={actionsDisabled}
+                onManage={onManage}
+                onEdit={onEdit}
+                onActivate={onActivate}
+                onDeactivate={onDeactivate}
+                onDelete={onDelete}
+                onRestore={onRestore}
+                onPermanentDelete={onPermanentDelete}
+              />
+            </TableCell>
+          </TableRow>
+        ))}
       </TableBody>
     </Table>
   );

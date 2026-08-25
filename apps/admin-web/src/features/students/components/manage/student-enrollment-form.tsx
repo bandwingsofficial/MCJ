@@ -159,7 +159,7 @@ export function StudentEnrollmentForm({
         setIsLoadingOptions(true);
 
         const response = await batchService.getBatches({
-          branchId: student.branchId,
+          ...(student.branchId ? { branchId: student.branchId } : {}),
           page: 1,
           pageSize: 100,
           includeDeleted: false,
@@ -206,7 +206,11 @@ export function StudentEnrollmentForm({
         const batchResponse = await batchService.getBatch(batchId);
         const batch = batchResponse.data;
 
-        if (batch.branchId && batch.branchId !== student.branchId) {
+        if (
+          student.branchId &&
+          batch.branchId &&
+          batch.branchId !== student.branchId
+        ) {
           setBatchDetails(null);
           setIsBatchEligible(false);
           appToast.error(

@@ -84,18 +84,13 @@ export class EnrollmentResponseMapper {
       createdAt: record.createdAt,
       student: this.toStudent(record.student),
       branch: this.toBranch(record.branch),
+      category: this.toCategory(record.category),
       course: {
         id: record.course.id,
         title: record.course.title,
         slug: record.course.slug,
       },
-      batch: {
-        id: record.batch.id,
-        name: record.batch.name,
-        code: record.batch.code,
-        startDate: record.batch.startDate,
-        status: record.batch.status,
-      },
+      batch: this.toBatch(record.batch),
     };
   }
 

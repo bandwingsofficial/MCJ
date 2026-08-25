@@ -9,12 +9,10 @@ import {
 
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
-import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
-import { BranchOverviewSectionHeader } from "@/src/features/branches/components/manage/branch-overview-section-header";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import { SortOrder } from "@/src/features/enrollments/types/enrollment.enums";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
@@ -22,21 +20,17 @@ import { formatCurrency } from "@/src/features/enrollments/utils/format-payment"
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
 import { paymentService } from "@/src/features/payments/services/payment.service";
 import type { PaymentSummary } from "@/src/features/payments/types/payment.types";
-import { CreateStudentEnrollmentModal } from "@/src/features/students/components/manage/create-student-enrollment-modal";
 import { StudentOverviewEnrollmentCard } from "@/src/features/students/components/manage/student-overview-enrollment-card";
 import { StudentOverviewInformation } from "@/src/features/students/components/manage/student-overview-information";
 import {
   StudentOverviewPrimaryMetrics,
   StudentOverviewSummaryMetrics,
 } from "@/src/features/students/components/manage/student-overview-metrics";
-import { UpdateStudentEnrollmentModal } from "@/src/features/students/components/manage/update-student-enrollment-modal";
 import { studentService } from "@/src/features/students/services/student.service";
 import type { BranchOption, Student } from "@/src/features/students/types/student.types";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
-import {
-  computeStudentOverviewStats,
-  getOverviewActiveEnrollments,
-} from "@/src/features/students/utils/student-overview.utils";
+import { computeStudentOverviewStats } from "@/src/features/students/utils/student-overview.utils";
+import { getVisibleEnrollments } from "@/src/features/students/utils/enrollment-display.utils";
 
 import type { TabKey } from "./student-manage-workspace";
 
@@ -45,7 +39,6 @@ interface Props {
   refreshKey?: number;
   onNavigateToTab: (tab: TabKey) => void;
   onStudentRefresh?: () => Promise<void>;
-  onEnrollmentMutation?: () => Promise<void>;
 }
 
 function PaymentStatusPill({ status }: { status: string }) {
@@ -68,22 +61,11 @@ export function StudentManageOverviewPanel({
   student,
   refreshKey = 0,
   onNavigateToTab,
-  onStudentRefresh,
-  onEnrollmentMutation,
 }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [payments, setPayments] = useState<PaymentSummary[]>([]);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Enrollment | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Enrollment | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const branchName = useMemo(() => {
-    const branch = branches.find((item) => item.id === student.branchId);
-    return branch?.branchName ?? "—";
-  }, [branches, student.branchId]);
 
   const branchMap = useMemo(
     () =>
@@ -98,8 +80,8 @@ export function StudentManageOverviewPanel({
     [enrollments, payments],
   );
 
-  const activeEnrollments = useMemo(
-    () => getOverviewActiveEnrollments(enrollments),
+  const visibleEnrollments = useMemo(
+    () => getVisibleEnrollments(enrollments),
     [enrollments],
   );
 
@@ -143,35 +125,6 @@ export function StudentManageOverviewPanel({
     void loadOverviewData();
   }, [loadOverviewData, refreshKey]);
 
-  const handleEditEnrollment = async (enrollment: Enrollment) => {
-    try {
-      const response = await enrollmentService.getEnrollment(enrollment.id);
-      setEditTarget(response.data);
-    } catch (error) {
-      appToast.error(getErrorMessage(error));
-    }
-  };
-
-  const handleDeleteEnrollment = async () => {
-    if (!deleteTarget) {
-      return;
-    }
-
-    try {
-      setIsDeleting(true);
-      await enrollmentService.deleteEnrollment(deleteTarget.id);
-      appToast.success("Enrollment deleted successfully");
-      setDeleteTarget(null);
-      await loadOverviewData();
-      await onStudentRefresh?.();
-      await onEnrollmentMutation?.();
-    } catch (error) {
-      appToast.error(getErrorMessage(error));
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   const profileDocument = student.profileImageUrl
     ? {
         title: "Profile Photo",
@@ -183,53 +136,44 @@ export function StudentManageOverviewPanel({
 
   return (
     <div className="space-y-6">
-      <StudentOverviewInformation student={student} branchName={branchName} />
+      <StudentOverviewInformation student={student} />
 
       <StudentOverviewPrimaryMetrics stats={stats} isLoading={isLoading} />
 
-      <section>
-        <BranchOverviewSectionHeader
-          title="Active Enrollments"
-          onViewAll={() => onNavigateToTab("enrollments")}
-          actionLabel="New Enrollment"
-          onAction={() => setIsCreateOpen(true)}
-        />
+      <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+        <h2 className="text-base font-semibold text-slate-900">
+          Enrollment Information
+        </h2>
 
-        {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={index} className="h-28 w-full rounded-xl" />
-            ))}
-          </div>
-        ) : activeEnrollments.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-10 text-center">
-            <p className="text-sm font-medium text-slate-700">
-              No enrollments yet
-            </p>
-            <p className="mt-1 text-sm text-slate-500">
-              Create an enrollment to assign this student to a batch.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {activeEnrollments.map((enrollment) => (
-              <StudentOverviewEnrollmentCard
-                key={enrollment.id}
-                enrollment={enrollment}
-                branchName={
-                  enrollment.branch?.branchName ??
-                  branchMap[enrollment.branch?.id ?? ""] ??
-                  "—"
-                }
-                onView={() => onNavigateToTab("enrollments")}
-                onEdit={(item) => {
-                  void handleEditEnrollment(item);
-                }}
-                onDelete={setDeleteTarget}
-              />
-            ))}
-          </div>
-        )}
+        <div className="mt-4">
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 2 }).map((_, index) => (
+                <Skeleton key={index} className="h-28 w-full rounded-xl" />
+              ))}
+            </div>
+          ) : visibleEnrollments.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-10 text-center">
+              <p className="text-sm font-medium text-slate-700">
+                Not Enrolled Yet
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Enroll this student from Branch Management to see enrollment
+                details here.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {visibleEnrollments.map((enrollment) => (
+                <StudentOverviewEnrollmentCard
+                  key={enrollment.id}
+                  enrollment={enrollment}
+                  branchMap={branchMap}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -373,45 +317,6 @@ export function StudentManageOverviewPanel({
         <h2 className="mb-4 text-base font-semibold text-slate-900">Summary</h2>
         <StudentOverviewSummaryMetrics stats={stats} isLoading={isLoading} />
       </section>
-
-      <CreateStudentEnrollmentModal
-        open={isCreateOpen}
-        student={student}
-        onClose={() => setIsCreateOpen(false)}
-        onSuccess={async () => {
-          await loadOverviewData();
-          await onStudentRefresh?.();
-          await onEnrollmentMutation?.();
-        }}
-      />
-
-      {editTarget ? (
-        <UpdateStudentEnrollmentModal
-          open={Boolean(editTarget)}
-          student={student}
-          enrollment={editTarget}
-          branchMap={branchMap}
-          onClose={() => setEditTarget(null)}
-          onSuccess={async () => {
-            setEditTarget(null);
-            await loadOverviewData();
-            await onStudentRefresh?.();
-            await onEnrollmentMutation?.();
-          }}
-        />
-      ) : null}
-
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        title="Delete enrollment?"
-        description="This enrollment will be archived and can be restored later."
-        confirmLabel="Delete"
-        loading={isDeleting}
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={() => {
-          void handleDeleteEnrollment();
-        }}
-      />
     </div>
   );
 }

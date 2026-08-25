@@ -24,10 +24,12 @@ export class CreateStudentHandler {
   ) {}
 
   async execute(command: CreateStudentCommand): Promise<GetStudentResult> {
-    await this.domainService.ensureBranchExists(
-      this.branchRepo,
-      command.branchId,
-    );
+    if (command.branchId) {
+      await this.domainService.ensureBranchExists(
+        this.branchRepo,
+        command.branchId,
+      );
+    }
     await this.domainService.ensureEmailIsAvailable(
       this.studentRepo,
       command.email,
@@ -85,7 +87,7 @@ export class CreateStudentHandler {
       emergencyContactPhone: command.emergencyContactPhone,
       studentCode,
       admissionDate: command.admissionDate,
-      branchId: command.branchId,
+      branchId: command.branchId ?? null,
       notes: command.notes,
       status: command.status,
       createdBy: command.createdBy,

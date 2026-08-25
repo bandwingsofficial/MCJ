@@ -35,7 +35,6 @@ interface Props {
 
 const TAB_LABELS: Record<TabKey, string> = {
   overview: "Overview",
-  enrollments: "Enrollments",
   attendance: "Attendance",
   payments: "Payments",
   documents: "Documents",
@@ -44,7 +43,11 @@ const TAB_LABELS: Record<TabKey, string> = {
 
 const VALID_TABS = new Set<TabKey>(Object.keys(TAB_LABELS) as TabKey[]);
 
-function resolveInitialTab(initialTab?: TabKey): TabKey {
+function resolveInitialTab(initialTab?: TabKey | "enrollments"): TabKey {
+  if (initialTab === "enrollments") {
+    return STUDENT_MANAGE_DEFAULT_TAB;
+  }
+
   if (initialTab && VALID_TABS.has(initialTab)) {
     return initialTab;
   }
@@ -96,13 +99,6 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
     bumpOverviewRefresh();
     await refreshStudentData();
     router.replace(studentManagePath(studentId));
-  }, [bumpOverviewRefresh, refreshStudentData, router, studentId]);
-
-  const returnToEnrollmentsTab = useCallback(async () => {
-    setActiveTab("enrollments");
-    bumpOverviewRefresh();
-    await refreshStudentData();
-    router.replace(studentManageTabPath(studentId, "enrollments"));
   }, [bumpOverviewRefresh, refreshStudentData, router, studentId]);
 
   const refreshInPlace = useCallback(async () => {
@@ -163,7 +159,6 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
         overviewRefreshKey={overviewRefreshKey}
         onTabChange={handleTabChange}
         onStudentRefresh={handleStudentDataRefresh}
-        onEnrollmentMutation={returnToEnrollmentsTab}
       />
 
       <UpdateStudentModal
