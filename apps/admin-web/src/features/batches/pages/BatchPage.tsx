@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -15,21 +14,25 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { useBatches } from "@/src/features/batches/hooks/useBatches";
 import { useActivateBatch } from "@/src/features/batches/hooks/useActivateBatch";
 import { useDeactivateBatch } from "@/src/features/batches/hooks/useDeactivateBatch";
+import { useDeleteBatch } from "@/src/features/batches/hooks/useDeleteBatch";
+import { useRestoreBatch } from "@/src/features/batches/hooks/useRestoreBatch";
 import { batchService } from "@/src/features/batches/services/batch.service";
 
 import { BatchFilters } from "@/src/features/batches/components/batch-filters";
+import { BatchSummaryHeader } from "@/src/features/batches/components/batch-summary-header";
 import { BatchTable } from "@/src/features/batches/components/BatchTable";
 import {
   BatchBulkActionsToolbar,
   type BulkBatchAction,
 } from "@/src/features/batches/components/batch-bulk-actions-toolbar";
 import { CreateBatchModal } from "@/src/features/batches/components/create-batch-modal";
+import { UpdateBatchModal } from "@/src/features/batches/components/update-batch-modal";
+import { PermanentDeleteBatchDialog } from "@/src/features/batches/components/permanent-delete-batch-dialog";
+import { BatchDeleteDialog } from "@/src/features/batches/components/BatchDeleteDialog";
 
 import type {
   BatchListItem,
-  BranchOption,
   CourseOption,
-  TrainerOption,
 } from "@/src/features/batches/types/batch.types";
 import {
   formatBulkResultToast,
@@ -39,6 +42,7 @@ import {
   getEligiblePermanentDeleteIds,
   getEligibleRestoreIds,
 } from "@/src/features/batches/utils/batch-bulk.utils";
+import { getBatchEmptyMessage } from "@/src/features/batches/utils/batch-list.utils";
 
 export function BatchPage() {
   const router = useRouter();
@@ -46,6 +50,7 @@ export function BatchPage() {
   const {
     batches,
     total,
+    catalogTotal,
     filters,
     setFilters,
     isInitialLoading,
@@ -56,9 +61,18 @@ export function BatchPage() {
 
   const { activateBatch, isLoading: isActivating } = useActivateBatch();
   const { deactivateBatch, isLoading: isDeactivating } = useDeactivateBatch();
+  const { deleteBatch, isLoading: isArchiving } = useDeleteBatch();
+  const { restoreBatch, isLoading: isRestoring } = useRestoreBatch();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState<BatchListItem | null>(null);
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
+  const [archiveTarget, setArchiveTarget] = useState<BatchListItem | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<BatchListItem | null>(null);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] =
+    useState<BatchListItem | null>(null);
+  const [isPermanentDeleting, setIsPermanentDeleting] = useState(false);
   const [bulkConfirmAction, setBulkConfirmAction] =
     useState<BulkBatchAction | null>(null);
   const [statusTarget, setStatusTarget] = useState<{
@@ -67,61 +81,45 @@ export function BatchPage() {
   } | null>(null);
   const [isReordering, setIsReordering] = useState(false);
   const [isBulkLoading, setIsBulkLoading] = useState(false);
-
   const [courses, setCourses] = useState<CourseOption[]>([]);
-  const [branches, setBranches] = useState<BranchOption[]>([]);
-  const [trainers, setTrainers] = useState<TrainerOption[]>([]);
 
   const pageSize = filters.pageSize ?? 20;
   const page = filters.page ?? 1;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
+  const emptyMessage = useMemo(
+    () => getBatchEmptyMessage(filters),
+    [filters],
+  );
 
   const hasActiveFilters = Boolean(
     (filters.search ?? "").trim() ||
       filters.courseId ||
-      filters.branchId ||
-      filters.trainerId ||
-      filters.mode ||
-      filters.status ||
-      filters.includeDeleted,
+      filters.status !== undefined,
   );
 
   const actionLoading =
     isActivating ||
     isDeactivating ||
+    isArchiving ||
+    isRestoring ||
     isReordering ||
-    isBulkLoading;
+    isBulkLoading ||
+    isPermanentDeleting;
 
   const reorderDisabled =
-    hasActiveFilters || Boolean((filters.search ?? "").trim());
+    hasActiveFilters ||
+    isFetching ||
+    selectedBatchIds.length > 0;
 
   useEffect(() => {
-    const loadFilterOptions = async () => {
-      try {
-        const [courseItems, branchItems, trainerItems] = await Promise.all([
-          batchService.getCourses(),
-          batchService.getBranches(),
-          batchService.getActiveTrainers(),
-        ]);
-
-        setCourses(courseItems);
-        setBranches(branchItems);
-        setTrainers(
-          trainerItems.map((trainer) => ({
-            id: trainer.id,
-            firstName: trainer.firstName,
-            lastName: trainer.lastName,
-            employeeCode: trainer.employeeCode,
-          })),
-        );
-      } catch {
-        // Filter dropdowns are optional; list still works without them.
-      }
-    };
-
-    void loadFilterOptions();
+    void batchService
+      .getCourses()
+      .then(setCourses)
+      .catch(() => {
+        // Filter dropdown is optional.
+      });
   }, []);
 
   useEffect(() => {
@@ -130,12 +128,8 @@ export function BatchPage() {
     filters.page,
     filters.pageSize,
     filters.status,
-    filters.includeDeleted,
     filters.search,
     filters.courseId,
-    filters.branchId,
-    filters.trainerId,
-    filters.mode,
   ]);
 
   useEffect(() => {
@@ -197,7 +191,10 @@ export function BatchPage() {
         case "activate":
           result = await batchService.bulkActivate(eligibleBulkIds);
           appToast.success(
-            formatBulkResultToast(result.data, "batch(es) activated successfully"),
+            formatBulkResultToast(
+              result.data,
+              "batch(es) activated successfully",
+            ),
           );
           break;
         case "deactivate":
@@ -212,13 +209,19 @@ export function BatchPage() {
         case "delete":
           result = await batchService.bulkDelete(eligibleBulkIds);
           appToast.success(
-            formatBulkResultToast(result.data, "batch(es) archived successfully"),
+            formatBulkResultToast(
+              result.data,
+              "batch(es) archived successfully",
+            ),
           );
           break;
         case "restore":
           result = await batchService.bulkRestore(eligibleBulkIds);
           appToast.success(
-            formatBulkResultToast(result.data, "batch(es) restored successfully"),
+            formatBulkResultToast(
+              result.data,
+              "batch(es) restored successfully",
+            ),
           );
           break;
         case "permanent-delete":
@@ -294,134 +297,125 @@ export function BatchPage() {
   }
 
   return (
-    <>
-      {error && batches.length > 0 ? (
-        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-          {error}
-        </div>
-      ) : null}
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Batches</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            Manage course batches and schedules
-          </p>
-        </div>
-        <Button type="button" onClick={() => setIsCreateOpen(true)}>
-          + Create Batch
-        </Button>
-      </div>
-
-      <BatchFilters
-        filters={filters}
-        courses={courses}
-        branches={branches}
-        trainers={trainers}
-        onChange={setFilters}
-        onReset={() =>
-          setFilters({
-            search: "",
-            courseId: undefined,
-            branchId: undefined,
-            trainerId: undefined,
-            mode: undefined,
-            status: undefined,
-            includeDeleted: false,
-            page: 1,
-            pageSize,
-          })
-        }
+    <div className="-m-6 min-h-full min-w-0 bg-white p-6">
+      <BatchSummaryHeader
+        total={catalogTotal}
+        isLoading={isInitialLoading}
+        createDisabled={actionLoading}
+        onCreate={() => setIsCreateOpen(true)}
       />
 
-      <BatchBulkActionsToolbar
-        batches={batches}
-        selectedBatchIds={selectedBatchIds}
-        disabled={actionLoading}
-        onAction={setBulkConfirmAction}
-      />
-
-      <Card className="mt-4 overflow-hidden">
-        {isInitialLoading ? (
-          <div className="p-4">
-            <SkeletonTable />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <BatchTable
-              batches={batches}
-              selectedBatchIds={selectedBatchIds}
-              onSelectionChange={setSelectedBatchIds}
-              actionsDisabled={actionLoading}
-              reorderDisabled={reorderDisabled}
-              emptyTitle={
-                hasActiveFilters
-                  ? "No batches match your current filters"
-                  : "No Batches Found"
-              }
-              emptyDescription={
-                hasActiveFilters
-                  ? "Try adjusting your search or filter criteria."
-                  : "Create your first batch to get started."
-              }
-              onManage={(batch) => router.push(`/batches/${batch.id}/manage`)}
-              onActivate={(batch) =>
-                setStatusTarget({ batch, action: "activate" })
-              }
-              onDeactivate={(batch) =>
-                setStatusTarget({ batch, action: "deactivate" })
-              }
-              onReorder={handleReorder}
+      <div className="mt-6 space-y-3">
+        <Card className="min-w-0 overflow-hidden border-slate-200 p-0 shadow-sm">
+          <div className="border-b border-slate-200 bg-white px-4 py-3">
+            <BatchFilters
+              filters={filters}
+              courses={courses}
+              onChange={setFilters}
             />
           </div>
-        )}
 
-        {isFetching && !isInitialLoading ? (
-          <p className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
-            Updating batches...
-          </p>
-        ) : null}
-      </Card>
+          <BatchBulkActionsToolbar
+            batches={batches}
+            selectedBatchIds={selectedBatchIds}
+            disabled={actionLoading || isFetching}
+            onAction={setBulkConfirmAction}
+          />
 
-      <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-between">
-        {total > 0 ? (
-          <>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600">
-              <span>
-                Showing {from}–{to} of {total}
-              </span>
-              <label className="flex items-center gap-2">
-                <span className="whitespace-nowrap">Rows per page</span>
-                <select
-                  className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm"
-                  value={pageSize}
-                  disabled={actionLoading}
-                  onChange={(event) =>
-                    setFilters({
-                      ...filters,
-                      pageSize: Number(event.target.value),
-                      page: 1,
-                    })
+          {isInitialLoading ? (
+            <SkeletonTable rows={10} />
+          ) : (
+            <>
+              {error ? (
+                <div className="border-b border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                  {error}{" "}
+                  <button
+                    type="button"
+                    className="font-medium underline"
+                    onClick={() => {
+                      void refetch();
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : null}
+
+              <div aria-busy={isFetching} className="relative min-w-0">
+                {isFetching ? (
+                  <span className="sr-only">Updating batches</span>
+                ) : null}
+
+                <BatchTable
+                  batches={batches}
+                  selectedBatchIds={selectedBatchIds}
+                  onSelectionChange={setSelectedBatchIds}
+                  actionsDisabled={actionLoading || isFetching}
+                  selectionDisabled={actionLoading || isFetching}
+                  reorderDisabled={reorderDisabled}
+                  emptyMessage={emptyMessage}
+                  onActivate={(batch) =>
+                    setStatusTarget({ batch, action: "activate" })
                   }
-                >
-                  {[10, 20, 50].map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              onPageChange={(nextPage) =>
-                setFilters({ ...filters, page: nextPage })
-              }
-            />
-          </>
-        ) : (
-          <p className="text-sm text-slate-600">Showing 0 batches</p>
-        )}
+                  onDeactivate={(batch) =>
+                    setStatusTarget({ batch, action: "deactivate" })
+                  }
+                  onEdit={(batch) => {
+                    setSelectedBatch(batch);
+                    setIsEditOpen(true);
+                  }}
+                  onManage={(batch) =>
+                    router.push(`/batches/${batch.id}/manage`)
+                  }
+                  onDelete={setArchiveTarget}
+                  onRestore={setRestoreTarget}
+                  onPermanentDelete={setPermanentDeleteTarget}
+                  onReorder={handleReorder}
+                />
+              </div>
+
+              {total > 0 ? (
+                <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-slate-600">
+                    <span className="leading-9">
+                      Showing {from}–{to} of {total}
+                    </span>
+
+                    <label className="flex items-center gap-2 leading-9">
+                      <span className="whitespace-nowrap">Rows per page</span>
+                      <select
+                        className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-[15px]"
+                        value={pageSize}
+                        disabled={actionLoading}
+                        onChange={(event) =>
+                          setFilters({
+                            ...filters,
+                            pageSize: Number(event.target.value),
+                            page: 1,
+                          })
+                        }
+                      >
+                        {[10, 20, 50, 100].map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <Pagination
+                    page={page}
+                    totalPages={totalPages}
+                    onPageChange={(nextPage) =>
+                      setFilters({ ...filters, page: nextPage })
+                    }
+                  />
+                </div>
+              ) : null}
+            </>
+          )}
+        </Card>
       </div>
 
       <CreateBatchModal
@@ -429,6 +423,89 @@ export function BatchPage() {
         onClose={() => setIsCreateOpen(false)}
         onSuccess={async () => {
           await refetch();
+        }}
+      />
+
+      <UpdateBatchModal
+        open={isEditOpen}
+        batch={selectedBatch}
+        onClose={() => {
+          setIsEditOpen(false);
+          setSelectedBatch(null);
+        }}
+        onSuccess={async () => {
+          await refetch();
+        }}
+      />
+
+      <BatchDeleteDialog
+        open={Boolean(archiveTarget)}
+        isLoading={isArchiving}
+        onCancel={() => setArchiveTarget(null)}
+        onConfirm={async () => {
+          if (!archiveTarget) {
+            return;
+          }
+
+          try {
+            await deleteBatch(archiveTarget.id);
+            appToast.success("Batch archived successfully");
+            setArchiveTarget(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(restoreTarget)}
+        title="Restore batch?"
+        description={
+          restoreTarget
+            ? `Restore "${restoreTarget.name}" from archive?`
+            : ""
+        }
+        confirmLabel="Restore"
+        loading={isRestoring}
+        onCancel={() => setRestoreTarget(null)}
+        onConfirm={async () => {
+          if (!restoreTarget) {
+            return;
+          }
+
+          try {
+            await restoreBatch(restoreTarget.id);
+            appToast.success("Batch restored successfully");
+            setRestoreTarget(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
+        }}
+      />
+
+      <PermanentDeleteBatchDialog
+        open={Boolean(permanentDeleteTarget)}
+        batchName={permanentDeleteTarget?.name ?? ""}
+        isLoading={isPermanentDeleting}
+        onCancel={() => setPermanentDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!permanentDeleteTarget) {
+            return;
+          }
+
+          try {
+            setIsPermanentDeleting(true);
+            await batchService.permanentlyDeleteBatch(permanentDeleteTarget.id);
+            appToast.success("Batch permanently deleted");
+            setPermanentDeleteTarget(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          } finally {
+            setIsPermanentDeleting(false);
+          }
         }}
       />
 
@@ -482,6 +559,6 @@ export function BatchPage() {
           void handleBulkConfirm();
         }}
       />
-    </>
+    </div>
   );
 }

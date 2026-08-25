@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -9,6 +9,7 @@ import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { useBatch } from "@/src/features/batches/hooks/useBatch";
+import { useBatchCourseAssignments } from "@/src/features/batches/hooks/useBatchCourseAssignments";
 import { useBatchSummary } from "@/src/features/batches/hooks/useBatchSummary";
 import { useDeleteBatch } from "@/src/features/batches/hooks/useDeleteBatch";
 import { useRestoreBatch } from "@/src/features/batches/hooks/useRestoreBatch";
@@ -19,6 +20,7 @@ import { PermanentDeleteBatchDialog } from "@/src/features/batches/components/pe
 import { UpdateBatchModal } from "@/src/features/batches/components/update-batch-modal";
 import { BatchManageHeader } from "@/src/features/batches/components/manage/batch-manage-header";
 import { BatchManageWorkspace } from "@/src/features/batches/components/manage/batch-manage-workspace";
+import type { BatchCourseAssignment } from "@/src/features/batches/types/batch.types";
 
 interface Props {
   batchId: string;
@@ -32,6 +34,16 @@ export function BatchManagePage({ batchId }: Props) {
     isLoading: summaryLoading,
     refetch: refetchSummary,
   } = useBatchSummary(batchId);
+  const {
+    assignments: fetchedAssignments,
+    isLoading: assignmentsLoading,
+    refetch: refetchAssignments,
+  } = useBatchCourseAssignments(batchId);
+  const [assignments, setAssignments] = useState<BatchCourseAssignment[]>([]);
+
+  useEffect(() => {
+    setAssignments(fetchedAssignments);
+  }, [fetchedAssignments]);
 
   const { deleteBatch, isLoading: isArchiving } = useDeleteBatch();
   const { restoreBatch, isLoading: isRestoring } = useRestoreBatch();
@@ -63,8 +75,11 @@ export function BatchManagePage({ batchId }: Props) {
 
   return (
     <>
+      <div className="-m-6 min-h-full min-w-0 bg-white p-6">
       <BatchManageHeader
         batch={batch}
+        assignments={assignments}
+        assignmentsLoading={assignmentsLoading}
         activeSection={activeSection}
         onEdit={() => setIsEditOpen(true)}
         onArchive={() => setIsArchiveOpen(true)}
@@ -86,20 +101,22 @@ export function BatchManagePage({ batchId }: Props) {
           batch={batch}
           summary={summary}
           summaryLoading={summaryLoading}
+          assignments={assignments}
+          assignmentsLoading={assignmentsLoading}
+          onAssignmentsChange={setAssignments}
           onSummaryRefresh={refetchSummary}
           onBatchUpdated={refetch}
+          onAssignmentsRefresh={refetchAssignments}
           onTabChange={(tab) => {
             const labels: Record<string, string> = {
               overview: "Overview",
+              courses: "Courses",
               students: "Students",
-              trainers: "Trainers",
-              schedule: "Schedule",
-              attendance: "Attendance",
-              reports: "Reports",
             };
             setActiveSection(labels[tab]);
           }}
         />
+      </div>
       </div>
 
       <UpdateBatchModal

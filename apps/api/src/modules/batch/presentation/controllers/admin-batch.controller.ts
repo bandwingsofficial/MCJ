@@ -21,6 +21,9 @@ import type { AuthUser } from '@common/decorators/current-user.decorator';
 import { SuperAdminGuard } from '@common/guards/super-admin.guard';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 
+import { AssignBatchCourseHandler } from '../../application/batch-courses/assign-batch-course.handler';
+import { ListBatchCoursesHandler } from '../../application/batch-courses/list-batch-courses.handler';
+import { RemoveBatchCourseHandler } from '../../application/batch-courses/remove-batch-course.handler';
 import { AssignBatchTrainersCommand } from '../../application/assign-batch-trainers/assign-batch-trainers.command';
 import { AssignBatchTrainersHandler } from '../../application/assign-batch-trainers/assign-batch-trainers.handler';
 import { BulkDeleteBatchesCommand } from '../../application/bulk-delete-batches/bulk-delete-batches.command';
@@ -53,6 +56,7 @@ import { UpdateBatchCommand } from '../../application/update-batch/update-batch.
 import { UpdateBatchHandler } from '../../application/update-batch/update-batch.handler';
 import { UpdateBatchStatusCommand } from '../../application/update-batch-status/update-batch-status.command';
 import { UpdateBatchStatusHandler } from '../../application/update-batch-status/update-batch-status.handler';
+import { AssignBatchCourseDto } from '../dtos/assign-batch-course.dto';
 import { AssignBatchTrainersDto } from '../dtos/assign-batch-trainers.dto';
 import { BulkBatchIdsDto } from '../dtos/bulk-batch-ids.dto';
 import { BulkUpdateBatchStatusDto } from '../dtos/bulk-update-batch-status.dto';
@@ -83,6 +87,9 @@ export class AdminBatchController {
     private readonly bulkDeleteBatchesHandler: BulkDeleteBatchesHandler,
     private readonly bulkRestoreBatchesHandler: BulkRestoreBatchesHandler,
     private readonly bulkPermanentDeleteBatchesHandler: BulkPermanentDeleteBatchesHandler,
+    private readonly listBatchCoursesHandler: ListBatchCoursesHandler,
+    private readonly assignBatchCourseHandler: AssignBatchCourseHandler,
+    private readonly removeBatchCourseHandler: RemoveBatchCourseHandler,
   ) {}
 
   @Post()
@@ -95,15 +102,16 @@ export class AdminBatchController {
     const result = await this.createBatchHandler.execute(
       new CreateBatchCommand(
         dto.name,
+        dto.categoryId,
         dto.courseId,
-        new Date(dto.startDate),
+        dto.startDate ? new Date(dto.startDate) : new Date(),
         dto.daysOfWeek,
         dto.capacity,
         dto.code,
         dto.slug,
         dto.description,
         dto.branchId,
-        new Date(dto.endDate),
+        dto.endDate ? new Date(dto.endDate) : undefined,
         dto.startTime,
         dto.endTime,
         dto.enrolledCount,
@@ -138,6 +146,8 @@ export class AdminBatchController {
         query.isFeatured,
         query.includeDeleted,
         false,
+        query.isDeleted,
+        query.isActive,
         query.skip,
         query.take,
       ),
@@ -151,9 +161,12 @@ export class AdminBatchController {
   }
 
   @Get('suggest-code')
-  async suggestCode() {
+  async suggestCode(
+    @Query('startTime') startTime: string,
+    @Query('endTime') endTime: string,
+  ) {
     const result = await this.suggestBatchCodeHandler.execute(
-      new SuggestBatchCodeQuery(),
+      new SuggestBatchCodeQuery(startTime, endTime),
     );
 
     return {
@@ -326,6 +339,7 @@ export class AdminBatchController {
         dto.slug,
         dto.description,
         dto.courseId,
+        dto.categoryId,
         dto.branchId,
         dto.startDate ? new Date(dto.startDate) : undefined,
         dto.endDate ? new Date(dto.endDate) : undefined,
@@ -425,6 +439,53 @@ export class AdminBatchController {
       success: true,
       message: 'Batch deactivated successfully',
       data: result,
+    };
+  }
+
+  @Get(':id/courses')
+  async listCourses(@Param('id') id: string) {
+    const result = await this.listBatchCoursesHandler.execute(id);
+
+    return {
+      success: true,
+      message: 'Batch courses fetched successfully',
+      data: result,
+    };
+  }
+
+  @Post(':id/courses')
+  @ApiBody({ type: AssignBatchCourseDto })
+  async assignCourse(
+    @Param('id') id: string,
+    @Body() dto: AssignBatchCourseDto,
+  ) {
+    const result = await this.assignBatchCourseHandler.execute({
+      batchId: id,
+      courseId: dto.courseId,
+      trainerId: dto.trainerId,
+    });
+
+    return {
+      success: true,
+      message: 'Course assigned to batch successfully',
+      data: result,
+    };
+  }
+
+  @Delete(':id/courses/:assignmentId')
+  async removeCourse(
+    @Param('id') id: string,
+    @Param('assignmentId') assignmentId: string,
+  ) {
+    await this.removeBatchCourseHandler.execute({
+      batchId: id,
+      assignmentId,
+    });
+
+    return {
+      success: true,
+      message: 'Course removed from batch successfully',
+      data: null,
     };
   }
 

@@ -25,7 +25,13 @@ public branch: {
   branchName: string;
   branchCode: string;
 } | null,
-    public courseId: string,
+
+public category: {
+  id: string;
+  name: string;
+} | null,
+    public courseId: string | null,
+    public categoryId: string | null,
     public branchId: string | null,
     public startDate: Date,
     public endDate: Date | null,
@@ -63,8 +69,10 @@ public branch: {
 
     params.course ?? null,
     params.branch ?? null,
+    params.category ?? null,
 
-    params.courseId,
+    params.courseId ?? null,
+    params.categoryId ?? null,
     params.branchId ?? null,
     params.startDate,
     params.endDate ?? null,
@@ -102,8 +110,10 @@ public branch: {
 
     params.course,
     params.branch,
+    params.category,
 
     params.courseId,
+    params.categoryId,
     params.branchId,
     params.startDate,
     params.endDate,
@@ -151,8 +161,16 @@ if (params.branch !== undefined) {
   this.branch = params.branch;
 }
 
+if (params.category !== undefined) {
+  this.category = params.category;
+}
+
 if (params.courseId !== undefined) {
   this.courseId = params.courseId;
+}
+
+if (params.categoryId !== undefined) {
+  this.categoryId = params.categoryId;
 }
 
 if (params.branchId !== undefined) {
@@ -232,7 +250,13 @@ branch?: {
   branchName: string;
   branchCode: string;
 } | null;
-  courseId: string;
+
+category?: {
+  id: string;
+  name: string;
+} | null;
+  courseId?: string | null;
+  categoryId?: string | null;
   branchId?: string | null;
   startDate: Date;
   endDate?: Date | null;
@@ -283,7 +307,13 @@ export interface BatchReconstituteParams
     branchCode: string;
   } | null;
 
+  category: {
+    id: string;
+    name: string;
+  } | null;
+
   branchId: string | null;
+  categoryId: string | null;
   endDate: Date | null;
   classroom: string | null;
   meetingLink: string | null;

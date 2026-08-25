@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
-import { parseBatchCodeNumber } from '../../domain/utils/batch-code.util';
+import { parseBatchCodeSequence } from '../../domain/utils/batch-code.util';
 
 import { Batch } from '../../domain/entities/batch.entity';
 import {
@@ -138,11 +138,11 @@ export class PrismaBatchRepository implements BatchRepository {
     return maxOrder ?? 0;
   }
 
-  async getMaxBatchCodeNumber(): Promise<number> {
+  async getMaxBatchCodeSequence(prefix: string): Promise<number> {
     const records = await this.prisma.batch.findMany({
       where: {
         code: {
-          startsWith: 'BCH',
+          startsWith: prefix,
         },
       },
       select: {
@@ -153,7 +153,7 @@ export class PrismaBatchRepository implements BatchRepository {
     let max = 0;
 
     for (const record of records) {
-      const value = parseBatchCodeNumber(record.code);
+      const value = parseBatchCodeSequence(record.code, prefix);
 
       if (value !== null && value > max) {
         max = value;
@@ -253,19 +253,45 @@ export class PrismaBatchRepository implements BatchRepository {
           isDeleted: false,
         },
       }),
-      this.prisma.batchTrainer.count({
-        where: { batchId },
-      }),
+      this.prisma.batchCourse.findMany({
+        where: {
+          batchId,
+          isDeleted: false,
+          isActive: true,
+        },
+        select: {
+          trainerId: true,
+        },
+        distinct: ['trainerId'],
+      }).then((rows) => rows.length),
     ]);
 
     return {
       studentsCount,
       trainerCount,
-      enrolledCount: batch?.enrolledCount ?? 0,
+      enrolledCount: studentsCount,
       capacity: batch?.capacity ?? 0,
       attendancePresent: 0,
       attendanceAbsent: 0,
     };
+  }
+
+  async findFirstAssignedCourseId(batchId: string): Promise<string | null> {
+    const assignment = await this.prisma.batchCourse.findFirst({
+      where: {
+        batchId,
+        isDeleted: false,
+        isActive: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+      select: {
+        courseId: true,
+      },
+    });
+
+    return assignment?.courseId ?? null;
   }
 
   async deletePermanent(id: string): Promise<void> {
@@ -292,6 +318,14 @@ export class PrismaBatchRepository implements BatchRepository {
         },
       },
 
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+
       trainers: {
         orderBy: { createdAt: 'desc' as const },
         include: {
@@ -313,12 +347,18 @@ export class PrismaBatchRepository implements BatchRepository {
   ): Prisma.BatchWhereInput {
     const where: Prisma.BatchWhereInput = {};
 
-    if (!filters.includeDeleted) {
+    if (filters.isDeleted === true) {
+      where.isDeleted = true;
+    } else if (filters.isDeleted === false) {
+      where.isDeleted = false;
+    } else if (!filters.includeDeleted) {
       where.isDeleted = false;
     }
 
     if (filters.onlyActive) {
       where.isActive = true;
+    } else if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
     } else if (filters.status) {
       where.status = filters.status;
     }

@@ -16,6 +16,7 @@ const SEARCH_DEBOUNCE_MS = 400;
 interface UseBatchesReturn {
   batches: BatchListItem[];
   total: number;
+  catalogTotal: number;
   count: number;
   isInitialLoading: boolean;
   isFetching: boolean;
@@ -33,6 +34,7 @@ export const useBatches = (options?: {
 
   const [batches, setBatches] = useState<BatchListItem[]>([]);
   const [total, setTotal] = useState(0);
+  const [catalogTotal, setCatalogTotal] = useState(0);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,11 +42,7 @@ export const useBatches = (options?: {
   const [filters, setFiltersState] = useState<BatchFilters>({
     search: "",
     courseId: undefined,
-    branchId: undefined,
-    trainerId: undefined,
-    mode: undefined,
     status: undefined,
-    includeDeleted: false,
     page: 1,
     pageSize: defaultPageSize,
   });
@@ -59,11 +57,7 @@ export const useBatches = (options?: {
       const filterChanged =
         next.search !== prev.search ||
         next.courseId !== prev.courseId ||
-        next.branchId !== prev.branchId ||
-        next.trainerId !== prev.trainerId ||
-        next.mode !== prev.mode ||
         next.status !== prev.status ||
-        next.includeDeleted !== prev.includeDeleted ||
         next.pageSize !== prev.pageSize;
 
       return {
@@ -90,6 +84,21 @@ export const useBatches = (options?: {
       }
     };
   }, [filters.search]);
+
+  const refreshCatalogTotal = useCallback(async () => {
+    try {
+      const response = await batchService.getBatches({
+        page: 1,
+        pageSize: 1,
+        includeDeleted: true,
+        isDeleted: false,
+      });
+      const payload = parseBatchListResponse(response.data);
+      setCatalogTotal(payload.count);
+    } catch {
+      // Header total is non-critical.
+    }
+  }, []);
 
   const fetchBatches = useCallback(async () => {
     const requestId = ++requestIdRef.current;
@@ -130,15 +139,15 @@ export const useBatches = (options?: {
     }
   }, [
     debouncedSearch,
-    filters.branchId,
     filters.courseId,
-    filters.includeDeleted,
-    filters.mode,
+    filters.status,
     filters.page,
     filters.pageSize,
-    filters.status,
-    filters.trainerId,
   ]);
+
+  useEffect(() => {
+    void refreshCatalogTotal();
+  }, [refreshCatalogTotal]);
 
   useEffect(() => {
     void fetchBatches();
@@ -147,6 +156,7 @@ export const useBatches = (options?: {
   return {
     batches,
     total,
+    catalogTotal,
     count: total,
     isInitialLoading,
     isFetching,
@@ -154,6 +164,9 @@ export const useBatches = (options?: {
     error,
     filters,
     setFilters,
-    refetch: fetchBatches,
+    refetch: async () => {
+      await fetchBatches();
+      await refreshCatalogTotal();
+    },
   };
 };

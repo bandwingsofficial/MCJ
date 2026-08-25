@@ -126,7 +126,9 @@ export function BranchManageBatchesPanel({ branchId }: Props) {
                     {batch.course?.title ?? "—"}
                   </TableCell>
                   <TableCell>
-                    {categoryByCourseId[batch.courseId] ?? "No Category"}
+                    {batch.courseId
+                      ? (categoryByCourseId[batch.courseId] ?? "No Category")
+                      : "—"}
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate">
                     {formatTrainerNames(batch.trainers ?? [])}

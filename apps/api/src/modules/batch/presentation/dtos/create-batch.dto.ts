@@ -93,9 +93,14 @@ export class CreateBatchDto {
   @Transform(({ value }) => trimOrUndefined(value))
   description?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  courseId?: string;
+
   @ApiProperty()
   @IsUUID()
-  courseId!: string;
+  categoryId!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -110,15 +115,13 @@ export class CreateBatchDto {
   @IsDateString()
   endDate!: string;
 
-  @ApiPropertyOptional({ example: '09:30' })
-  @IsOptional()
+  @ApiProperty({ example: '10:00' })
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
-  startTime?: string;
+  startTime!: string;
 
-  @ApiPropertyOptional({ example: '17:30' })
-  @IsOptional()
+  @ApiProperty({ example: '12:00' })
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
-  endTime?: string;
+  endTime!: string;
 
   @ApiProperty({
     enum: DayOfWeek,

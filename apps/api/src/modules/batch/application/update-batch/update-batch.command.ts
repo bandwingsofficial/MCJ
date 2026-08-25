@@ -10,6 +10,7 @@ export class UpdateBatchCommand {
     public readonly slug?: string,
     public readonly description?: string | null,
     public readonly courseId?: string,
+    public readonly categoryId?: string,
     public readonly branchId?: string | null,
     public readonly startDate?: Date,
     public readonly endDate?: Date | null,

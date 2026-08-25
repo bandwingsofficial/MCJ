@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
+import { CategoryNotFoundException } from '@modules/course/domain/errors/category-not-found.exception';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 import type { TrainerRepository } from '@modules/trainer/domain/repositories/trainer.repository';
 import { TrainerStatus } from '@modules/trainer/domain/enums/trainer-status.enum';
@@ -8,7 +10,13 @@ import { BaseException } from '@common/exceptions/base.exception';
 
 import type { Batch } from '../entities/batch.entity';
 import type { BatchRepository } from '../repositories/batch.repository';
-import { formatBatchCode } from '../utils/batch-code.util';
+import {
+  buildBatchCodePrefix,
+  formatBatchCode,
+  getMonthAbbreviation,
+  getTimeCodeFromTimes,
+  parseTimeToMinutes,
+} from '../utils/batch-code.util';
 import { CourseNotFoundException } from '../errors/course-not-found.exception';
 import { TrainerNotFoundException } from '../errors/trainer-not-found.exception';
 
@@ -72,6 +80,17 @@ export class BatchDomainService {
     }
   }
 
+  async ensureCategoryExists(
+    categoryRepo: CategoryRepository,
+    categoryId: string,
+  ): Promise<void> {
+    const category = await categoryRepo.findById(categoryId);
+
+    if (!category || category.isDeleted) {
+      throw new CategoryNotFoundException();
+    }
+  }
+
   async ensureTrainersExist(
     trainerRepo: TrainerRepository,
     trainerIds: string[],
@@ -116,11 +135,21 @@ export class BatchDomainService {
 
   async generateUniqueBatchCode(
     batchRepo: BatchRepository,
+    startTime: string,
+    endTime: string,
+    referenceDate: Date = new Date(),
   ): Promise<string> {
-    const maxNumber = await batchRepo.getMaxBatchCodeNumber();
+    const month = getMonthAbbreviation(referenceDate);
+    const timeCode = getTimeCodeFromTimes(startTime, endTime);
+    const prefix = buildBatchCodePrefix(month, timeCode);
+    const maxSequence = await batchRepo.getMaxBatchCodeSequence(prefix);
 
     for (let offset = 1; offset <= 50; offset++) {
-      const candidate = formatBatchCode(maxNumber + offset);
+      const candidate = formatBatchCode(
+        month,
+        timeCode,
+        maxSequence + offset,
+      );
       const existing = await batchRepo.findByCode(candidate, true);
 
       if (!existing) {
@@ -136,22 +165,43 @@ export class BatchDomainService {
   }
 
   validateSchedule(params: {
-    startDate: Date;
+    startDate?: Date;
     endDate?: Date | null;
+    startTime: string;
+    endTime: string;
     daysOfWeek: unknown[];
   }): void {
-    if (!params.endDate) {
+    if (params.startDate && params.endDate) {
+      const start = new Date(params.startDate);
+      start.setHours(0, 0, 0, 0);
+
+      const end = new Date(params.endDate);
+      end.setHours(0, 0, 0, 0);
+
+      if (end.getTime() < start.getTime()) {
+        throw new BaseException(
+          ERROR_CODES.VALIDATION_ERROR,
+          'Batch end date cannot be earlier than start date',
+          400,
+        );
+      }
+    }
+
+    if (!params.startTime?.trim() || !params.endTime?.trim()) {
       throw new BaseException(
         ERROR_CODES.VALIDATION_ERROR,
-        'Batch end date is required',
+        'Batch start time and end time are required',
         400,
       );
     }
 
-    if (params.endDate < params.startDate) {
+    const startMinutes = parseTimeToMinutes(params.startTime);
+    const endMinutes = parseTimeToMinutes(params.endTime);
+
+    if (endMinutes <= startMinutes) {
       throw new BaseException(
         ERROR_CODES.VALIDATION_ERROR,
-        'Batch end date cannot be before start date',
+        'Batch end time must be after start time',
         400,
       );
     }

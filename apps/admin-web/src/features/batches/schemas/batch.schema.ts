@@ -2,7 +2,11 @@
 
 import { z } from "zod";
 
-import { DESCRIPTION_WORD_LIMIT, countWords } from "@/src/features/batches/utils/batch-form.utils";
+import {
+  DESCRIPTION_WORD_LIMIT,
+  countWords,
+} from "@/src/features/batches/utils/batch-form.utils";
+import { isEndDateBeforeStartDate } from "@/src/features/batches/utils/batch-schedule.utils";
 
 const dayOfWeekEnum = z.enum([
   "MONDAY",
@@ -13,6 +17,13 @@ const dayOfWeekEnum = z.enum([
   "SATURDAY",
   "SUNDAY",
 ]);
+
+const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function parseTimeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
 
 export const batchSchema = z
   .object({
@@ -30,17 +41,21 @@ export const batchSchema = z
 
     description: z.string().optional().or(z.literal("")),
 
-    courseId: z.string().uuid("Please select a course"),
-
-    branchId: z
-      .string()
-      .uuid("Please select a valid branch")
-      .optional()
-      .or(z.literal("")),
+    categoryId: z.string().uuid("Please select a category"),
 
     startDate: z.string().min(1, "Start date is required"),
 
     endDate: z.string().min(1, "End date is required"),
+
+    startTime: z
+      .string()
+      .min(1, "Start time is required")
+      .regex(timePattern, "Enter a valid start time"),
+
+    endTime: z
+      .string()
+      .min(1, "End time is required")
+      .regex(timePattern, "Enter a valid end time"),
 
     daysOfWeek: z
       .array(dayOfWeekEnum)
@@ -52,30 +67,30 @@ export const batchSchema = z
 
     mode: z.enum(["ONLINE", "OFFLINE", "RECORDED"]),
 
-    status: z.enum([
-      "UPCOMING",
-      "ONGOING",
-      "COMPLETED",
-      "CANCELLED",
-      "ARCHIVED",
-    ]),
-
-    classroom: z.string().optional(),
-
-    meetingLink: z
-      .string()
-      .url("Invalid meeting link")
-      .optional()
-      .or(z.literal("")),
-
     isFeatured: z.boolean(),
   })
   .superRefine((data, ctx) => {
-    if (new Date(data.endDate) < new Date(data.startDate)) {
+    if (
+      data.startDate &&
+      data.endDate &&
+      isEndDateBeforeStartDate(data.startDate, data.endDate)
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "End date cannot be before start date",
+        message: "End date cannot be earlier than start date",
         path: ["endDate"],
+      });
+    }
+
+    if (
+      data.startTime &&
+      data.endTime &&
+      parseTimeToMinutes(data.endTime) <= parseTimeToMinutes(data.startTime)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "End time must be after start time",
+        path: ["endTime"],
       });
     }
 
@@ -85,22 +100,6 @@ export const batchSchema = z
         code: z.ZodIssueCode.custom,
         message: `Description cannot exceed ${DESCRIPTION_WORD_LIMIT} words`,
         path: ["description"],
-      });
-    }
-
-    if (data.mode === "ONLINE" && !data.meetingLink?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Meeting link is required for online batches",
-        path: ["meetingLink"],
-      });
-    }
-
-    if (data.mode === "OFFLINE" && !data.classroom?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Classroom is required for offline batches",
-        path: ["classroom"],
       });
     }
   });

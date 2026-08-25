@@ -5,6 +5,9 @@ import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 
 import { AuthModule } from '../auth/auth.module';
+import { CATEGORY_TOKENS } from '../category/category.tokens';
+import { CategoryModule } from '../category/category.module';
+import type { CategoryRepository } from '../category/domain/repositories/category.repository';
 import { COURSE_TOKENS } from '../course/course.tokens';
 import { CourseModule } from '../course/course.module';
 import type { CourseRepository } from '../course/domain/repositories/course.repository';
@@ -14,6 +17,9 @@ import type { TrainerRepository } from '../trainer/domain/repositories/trainer.r
 
 import { BATCH_TOKENS } from './batch.tokens';
 import { AssignBatchTrainersHandler } from './application/assign-batch-trainers/assign-batch-trainers.handler';
+import { AssignBatchCourseHandler } from './application/batch-courses/assign-batch-course.handler';
+import { ListBatchCoursesHandler } from './application/batch-courses/list-batch-courses.handler';
+import { RemoveBatchCourseHandler } from './application/batch-courses/remove-batch-course.handler';
 import { BulkDeleteBatchesHandler } from './application/bulk-delete-batches/bulk-delete-batches.handler';
 import { BulkPermanentDeleteBatchesHandler } from './application/bulk-permanent-delete-batches/bulk-permanent-delete-batches.handler';
 import { BulkRestoreBatchesHandler } from './application/bulk-restore-batches/bulk-restore-batches.handler';
@@ -31,6 +37,7 @@ import { UpdateBatchHandler } from './application/update-batch/update-batch.hand
 import { UpdateBatchStatusHandler } from './application/update-batch-status/update-batch-status.handler';
 import type { BatchRepository } from './domain/repositories/batch.repository';
 import { BatchDomainService } from './domain/services/batch-domain.service';
+import { PrismaBatchCourseRepository } from './infrastructure/repositories/prisma-batch-course.repository';
 import { PrismaBatchRepository } from './infrastructure/repositories/prisma-batch.repository';
 
 import { AdminBatchController } from './presentation/controllers/admin-batch.controller';
@@ -46,6 +53,7 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
     PrismaModule,
     AuthModule,
     forwardRef(() => CourseModule),
+    forwardRef(() => CategoryModule),
     TrainerModule,
     BranchModule,
     forwardRef(() => EnrollmentModule),
@@ -72,6 +80,7 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
       useFactory: (
         batchRepo: BatchRepository,
         courseRepo: CourseRepository,
+        categoryRepo: CategoryRepository,
         trainerRepo: TrainerRepository,
         branchRepo: BranchRepository,
         domainService: BatchDomainService,
@@ -79,6 +88,7 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
         new CreateBatchHandler(
           batchRepo,
           courseRepo,
+          categoryRepo,
           trainerRepo,
           branchRepo,
           domainService,
@@ -86,6 +96,7 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
       inject: [
         BATCH_TOKENS.BATCH_REPOSITORY,
         COURSE_TOKENS.COURSE_REPOSITORY,
+        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
         TRAINER_TOKENS.TRAINER_REPOSITORY,
         BRANCH_TOKENS.BRANCH_REPOSITORY,
         BatchDomainService,
@@ -97,18 +108,21 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
       useFactory: (
         batchRepo: BatchRepository,
         courseRepo: CourseRepository,
+        categoryRepo: CategoryRepository,
         branchRepo: BranchRepository,
         domainService: BatchDomainService,
       ) =>
         new UpdateBatchHandler(
           batchRepo,
           courseRepo,
+          categoryRepo,
           branchRepo,
           domainService,
         ),
       inject: [
         BATCH_TOKENS.BATCH_REPOSITORY,
         COURSE_TOKENS.COURSE_REPOSITORY,
+        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
         BRANCH_TOKENS.BRANCH_REPOSITORY,
         BatchDomainService,
       ],
@@ -210,6 +224,64 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
         ),
       inject: [
         BATCH_TOKENS.BATCH_REPOSITORY,
+        BatchDomainService,
+      ],
+    },
+
+    {
+      provide: PrismaBatchCourseRepository,
+      useFactory: (prisma: PrismaService) =>
+        new PrismaBatchCourseRepository(prisma),
+      inject: [PrismaService],
+    },
+
+    {
+      provide: ListBatchCoursesHandler,
+      useFactory: (batchCourseRepo: PrismaBatchCourseRepository) =>
+        new ListBatchCoursesHandler(batchCourseRepo),
+      inject: [PrismaBatchCourseRepository],
+    },
+
+    {
+      provide: AssignBatchCourseHandler,
+      useFactory: (
+        batchRepo: BatchRepository,
+        batchCourseRepo: PrismaBatchCourseRepository,
+        courseRepo: CourseRepository,
+        trainerRepo: TrainerRepository,
+        domainService: BatchDomainService,
+      ) =>
+        new AssignBatchCourseHandler(
+          batchRepo,
+          batchCourseRepo,
+          courseRepo,
+          trainerRepo,
+          domainService,
+        ),
+      inject: [
+        BATCH_TOKENS.BATCH_REPOSITORY,
+        PrismaBatchCourseRepository,
+        COURSE_TOKENS.COURSE_REPOSITORY,
+        TRAINER_TOKENS.TRAINER_REPOSITORY,
+        BatchDomainService,
+      ],
+    },
+
+    {
+      provide: RemoveBatchCourseHandler,
+      useFactory: (
+        batchRepo: BatchRepository,
+        batchCourseRepo: PrismaBatchCourseRepository,
+        domainService: BatchDomainService,
+      ) =>
+        new RemoveBatchCourseHandler(
+          batchRepo,
+          batchCourseRepo,
+          domainService,
+        ),
+      inject: [
+        BATCH_TOKENS.BATCH_REPOSITORY,
+        PrismaBatchCourseRepository,
         BatchDomainService,
       ],
     },

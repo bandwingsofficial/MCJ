@@ -9,7 +9,7 @@ export type BatchStatus =
   | "CANCELLED"
   | "ARCHIVED";
 
-export type BatchFilterStatus = BatchStatus;
+export type BatchFilterStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED";
 
 export type DayOfWeek =
   | "MONDAY"
@@ -24,6 +24,12 @@ export interface BatchCourse {
   id: string;
   title: string;
   code?: string | null;
+  category?: BatchCategory | null;
+}
+
+export interface BatchCategory {
+  id: string;
+  name: string;
 }
 
 export interface BatchBranch {
@@ -47,9 +53,11 @@ export interface Batch {
   code: string;
   slug: string;
   description: string | null;
-  courseId: string;
+  courseId: string | null;
+  categoryId: string | null;
   branchId: string | null;
   course?: BatchCourse | null;
+  category?: BatchCategory | null;
   branch?: BatchBranch | null;
   startDate: string;
   endDate: string | null;
@@ -83,19 +91,43 @@ export interface BatchFilters {
   trainerId?: string;
   mode?: BatchMode;
   status?: BatchFilterStatus;
+  isActive?: boolean;
+  isDeleted?: boolean;
   includeDeleted?: boolean;
   page?: number;
   pageSize?: number;
+}
+
+export interface BatchCourseAssignment {
+  id: string;
+  batchId: string;
+  courseId: string;
+  trainerId: string;
+  isActive: boolean;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  course: BatchCourse;
+  trainer: BatchTrainer;
+}
+
+export interface AssignBatchCourseRequest {
+  courseId: string;
+  trainerId: string;
 }
 
 export interface CreateBatchRequest {
   name: string;
   code?: string;
   description?: string;
-  courseId: string;
+  categoryId: string;
+  courseId?: string;
   branchId?: string;
   startDate: string;
   endDate: string;
+  startTime: string;
+  endTime: string;
   daysOfWeek: DayOfWeek[];
   capacity: number;
   enrolledCount?: number;
@@ -169,10 +201,16 @@ export interface BulkBatchOperationResult {
   failures: BulkBatchItemResult[];
 }
 
+export interface CategoryOption {
+  id: string;
+  name: string;
+}
+
 export interface CourseOption {
   id: string;
   title: string;
   code?: string | null;
+  category?: BatchCategory | null;
 }
 
 export interface BranchOption {

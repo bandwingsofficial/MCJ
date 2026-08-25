@@ -7,11 +7,23 @@ import {
   useState,
   type ChangeEvent,
   type FocusEvent,
+  type ReactNode,
 } from "react";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader } from "lucide-react";
+import {
+  BookOpen,
+  Calendar,
+  CalendarDays,
+  Clock,
+  FolderTree,
+  Hash,
+  Loader,
+  Tag,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
@@ -27,31 +39,27 @@ import {
 import { truncateToMaxWords } from "@/src/shared/utils/word-count";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { cn } from "@/src/shared/lib/cn";
 
 import {
-  DAYS_OF_WEEK,
   BATCH_MODES,
-  BATCH_STATUSES,
+  DAYS_OF_WEEK,
 } from "@/src/features/batches/constants/batch.constants";
 import {
   batchSchema,
   type BatchFormValues,
 } from "@/src/features/batches/schemas/batch.schema";
 import { batchService } from "@/src/features/batches/services/batch.service";
-import type {
-  BranchOption,
-  CourseOption,
-} from "@/src/features/batches/types/batch.types";
 import {
   countWords,
   DESCRIPTION_WORD_LIMIT,
 } from "@/src/features/batches/utils/batch-form.utils";
 import {
-  BATCH_BRANCH_NONE,
-  fromBranchSelectValue,
-  toBranchSelectValue,
-  uniqueSelectOptions,
-} from "@/src/features/batches/utils/batch-select.utils";
+  calculateTotalWorkingDays,
+  formatTotalWorkingDaysLabel,
+  isEndDateBeforeStartDate,
+} from "@/src/features/batches/utils/batch-schedule.utils";
+import { uniqueSelectOptions } from "@/src/features/batches/utils/batch-select.utils";
 
 interface BatchFormProps {
   isEdit?: boolean;
@@ -67,23 +75,72 @@ const EMPTY_DEFAULTS: BatchFormValues = {
   name: "",
   code: "",
   description: "",
-  courseId: "",
-  branchId: "",
-  startDate: "",
-  endDate: "",
+  categoryId: "",
+  startDate: new Date().toISOString().split("T")[0]!,
+  endDate: new Date().toISOString().split("T")[0]!,
+  startTime: "10:00",
+  endTime: "12:00",
   daysOfWeek: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
   capacity: 1,
   enrolledCount: 0,
   mode: "ONLINE",
-  status: "UPCOMING",
-  classroom: "",
-  meetingLink: "",
   isFeatured: false,
 };
 
 const GRID_CLASS = "grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2";
 
 type SyncFieldName = keyof BatchFormValues;
+
+function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <Icon
+      className="pointer-events-none absolute right-9 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
+      aria-hidden="true"
+    />
+  );
+}
+
+function iconInputClass(state: FieldVisualState, extra = "") {
+  return cn(
+    validatedFieldInputClass(state, "w-full min-w-0 max-w-full"),
+    "pr-16",
+    extra,
+  );
+}
+
+function selectTriggerClass(state: FieldVisualState) {
+  return iconInputClass(state);
+}
+
+function IconField({
+  label,
+  required,
+  state,
+  errorMessage,
+  checkingMessage,
+  icon,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  state: FieldVisualState;
+  errorMessage?: string;
+  checkingMessage?: string;
+  icon: LucideIcon;
+  children: ReactNode;
+}) {
+  return (
+    <ValidatedField
+      label={label}
+      required={required}
+      state={state}
+      errorMessage={errorMessage}
+      checkingMessage={checkingMessage}
+    >
+      <div className="relative">{children}</div>
+    </ValidatedField>
+  );
+}
 
 export function BatchForm({
   isEdit = false,
@@ -95,8 +152,9 @@ export function BatchForm({
   onSubmit,
 }: BatchFormProps) {
   const suggestRequestIdRef = useRef(0);
-  const [courses, setCourses] = useState<CourseOption[]>([]);
-  const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [categories, setCategories] = useState<
+    import("@/src/features/batches/types/batch.types").CategoryOption[]
+  >([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [isSuggestingCode, setIsSuggestingCode] = useState(false);
 
@@ -124,9 +182,37 @@ export function BatchForm({
   });
 
   const values = watch();
-  const selectedMode = values.mode;
   const selectedDays = values.daysOfWeek ?? [];
   const descriptionWords = countWords(values.description ?? "");
+
+  const totalWorkingDays = useMemo(
+    () =>
+      calculateTotalWorkingDays(
+        values.startDate ?? "",
+        values.endDate ?? "",
+        selectedDays,
+      ),
+    [selectedDays, values.endDate, values.startDate],
+  );
+
+  const totalWorkingDaysLabel = useMemo(
+    () => formatTotalWorkingDaysLabel(totalWorkingDays),
+    [totalWorkingDays],
+  );
+
+  const datesAreValid = useMemo(() => {
+    if (!values.startDate?.trim() || !values.endDate?.trim()) {
+      return false;
+    }
+
+    return !isEndDateBeforeStartDate(values.startDate, values.endDate);
+  }, [values.endDate, values.startDate]);
+
+  useEffect(() => {
+    if (values.endDate) {
+      void trigger("endDate");
+    }
+  }, [values.startDate, values.endDate, trigger]);
 
   useEffect(() => {
     reset(mergedDefaults);
@@ -135,32 +221,32 @@ export function BatchForm({
   useEffect(() => {
     const loadOptions = async () => {
       setIsLoadingOptions(true);
-
-      const [coursesResult, branchesResult] = await Promise.allSettled([
-        batchService.getCourses(),
-        batchService.getBranches(),
-      ]);
-
-      if (coursesResult.status === "fulfilled") {
-        setCourses(coursesResult.value);
-      } else {
-        appToast.error(getErrorMessage(coursesResult.reason));
+      try {
+        const categoryItems = await batchService.getCategories();
+        setCategories(categoryItems);
+      } catch (error) {
+        appToast.error(getErrorMessage(error));
+      } finally {
+        setIsLoadingOptions(false);
       }
-
-      if (branchesResult.status === "fulfilled") {
-        setBranches(branchesResult.value);
-      } else {
-        appToast.error(getErrorMessage(branchesResult.reason));
-      }
-
-      setIsLoadingOptions(false);
     };
 
     void loadOptions();
   }, []);
 
   useEffect(() => {
-    if (isEdit || isLoadingOptions) {
+    const startTime = values.startTime?.trim();
+    const endTime = values.endTime?.trim();
+
+    if (!startTime || !endTime || isLoadingOptions) {
+      return;
+    }
+
+    if (
+      isEdit &&
+      startTime === mergedDefaults.startTime &&
+      endTime === mergedDefaults.endTime
+    ) {
       return;
     }
 
@@ -169,7 +255,10 @@ export function BatchForm({
     const suggestCode = async () => {
       try {
         setIsSuggestingCode(true);
-        const response = await batchService.suggestBatchCode();
+        const response = await batchService.suggestBatchCode(
+          startTime,
+          endTime,
+        );
 
         if (requestId !== suggestRequestIdRef.current) {
           return;
@@ -177,7 +266,7 @@ export function BatchForm({
 
         setValue("code", response.data.batchCode, {
           shouldValidate: true,
-          shouldDirty: true,
+          shouldDirty: !isEdit,
         });
       } catch (error) {
         if (requestId === suggestRequestIdRef.current) {
@@ -191,7 +280,15 @@ export function BatchForm({
     };
 
     void suggestCode();
-  }, [isEdit, isLoadingOptions, setValue]);
+  }, [
+    isEdit,
+    isLoadingOptions,
+    mergedDefaults.endTime,
+    mergedDefaults.startTime,
+    setValue,
+    values.endTime,
+    values.startTime,
+  ]);
 
   const getFieldState = (
     name: SyncFieldName,
@@ -234,7 +331,7 @@ export function BatchForm({
     }
 
     if (typeof raw === "string" && raw.trim() === "") {
-      return name === "branchId" || name === "description" ? "neutral" : "invalid";
+      return name === "description" ? "neutral" : "invalid";
     }
 
     if (Array.isArray(raw) && raw.length === 0) {
@@ -244,15 +341,12 @@ export function BatchForm({
     return "valid";
   };
 
-  const inputClass = (name: SyncFieldName, options?: { forceValid?: boolean }) =>
-    validatedFieldInputClass(getFieldState(name, options));
-
   const registerField = (name: SyncFieldName) => {
     const registration = register(name);
 
     return {
       ...registration,
-      className: inputClass(name),
+      className: iconInputClass(getFieldState(name)),
       onBlur: (event: FocusEvent<HTMLInputElement>) => {
         registration.onBlur(event);
         void trigger(name);
@@ -263,9 +357,6 @@ export function BatchForm({
       },
     };
   };
-
-  const selectClass = (name: SyncFieldName) =>
-    validatedFieldInputClass(getFieldState(name), "w-full min-w-0");
 
   const toggleDay = (day: BatchFormValues["daysOfWeek"][number]) => {
     const next = selectedDays.includes(day)
@@ -278,20 +369,12 @@ export function BatchForm({
     });
   };
 
-  const courseOptions = uniqueSelectOptions(
-    courses.map((course) => ({
-      label: course.code ? `${course.title} (${course.code})` : course.title,
-      value: course.id,
+  const categoryOptions = uniqueSelectOptions(
+    categories.map((category) => ({
+      label: category.name,
+      value: category.id,
     })),
   );
-
-  const branchOptions = uniqueSelectOptions([
-    { label: "Select branch (optional)", value: BATCH_BRANCH_NONE },
-    ...branches.map((branch) => ({
-      label: `${branch.branchName} (${branch.branchCode})`,
-      value: branch.id,
-    })),
-  ]);
 
   const handleFormSubmit = handleSubmit(async (formValues) => {
     await onSubmit(formValues);
@@ -306,87 +389,77 @@ export function BatchForm({
   }
 
   return (
-    <form onSubmit={handleFormSubmit} className="flex min-h-0 flex-1 flex-col">
+    <form onSubmit={handleFormSubmit} className="flex min-h-0 flex-1 flex-col bg-white">
       <div className={`${GRID_CLASS} min-h-0 flex-1 overflow-y-auto`}>
-        <ValidatedField
+        <IconField
           label="Batch Name"
           required
+          icon={Tag}
           state={getFieldState("name")}
           errorMessage={errors.name?.message}
         >
+          <FieldIcon icon={Tag} />
           <Input
             placeholder="Enter batch name"
             autoComplete="off"
             {...registerField("name")}
+            className={iconInputClass(getFieldState("name"))}
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
+        <IconField
           label="Batch Code"
           required
+          icon={Hash}
           state={getFieldState("code", { forceValid: true })}
           checkingMessage="Generating code..."
           errorMessage={errors.code?.message}
         >
+          <FieldIcon icon={Hash} />
           <Input
             readOnly
-            placeholder="BCH0001"
+            placeholder="MCJAUGM1001"
             autoComplete="off"
-            className={validatedFieldInputClass(
+            className={iconInputClass(
               getFieldState("code", { forceValid: true }),
               "bg-slate-50",
             )}
             {...register("code")}
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
-          label="Course"
+        <IconField
+          label="Category"
           required
-          state={getFieldState("courseId")}
-          errorMessage={errors.courseId?.message}
+          icon={FolderTree}
+          state={getFieldState("categoryId")}
+          errorMessage={errors.categoryId?.message}
         >
+          <FieldIcon icon={FolderTree} />
           <AppSelect
-            value={values.courseId?.trim() ? values.courseId : undefined}
-            placeholder="Select course"
+            value={values.categoryId?.trim() ? values.categoryId : undefined}
+            placeholder="Select category"
             onValueChange={(value) => {
-              setValue("courseId", value, {
+              setValue("categoryId", value, {
                 shouldValidate: true,
                 shouldDirty: true,
               });
             }}
-            options={courseOptions}
-            triggerClassName={selectClass("courseId")}
+            options={categoryOptions}
+            triggerClassName={selectTriggerClass(getFieldState("categoryId"))}
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
-          label="Branch"
-          state={getFieldState("branchId")}
-          errorMessage={errors.branchId?.message}
-        >
-          <AppSelect
-            value={toBranchSelectValue(values.branchId)}
-            placeholder="Select branch"
-            onValueChange={(value) =>
-              setValue("branchId", fromBranchSelectValue(value), {
-                shouldValidate: true,
-                shouldDirty: true,
-              })
-            }
-            options={branchOptions}
-            triggerClassName={selectClass("branchId")}
-          />
-        </ValidatedField>
-
-        <ValidatedField
+        <IconField
           label="Batch Type"
           required
+          icon={BookOpen}
           state={getFieldState("mode")}
           errorMessage={errors.mode?.message}
         >
+          <FieldIcon icon={BookOpen} />
           <AppSelect
-            value={selectedMode}
+            value={values.mode}
             onValueChange={(value) =>
               setValue("mode", value as BatchFormValues["mode"], {
                 shouldValidate: true,
@@ -394,110 +467,71 @@ export function BatchForm({
               })
             }
             options={uniqueSelectOptions(BATCH_MODES)}
-            triggerClassName={selectClass("mode")}
+            triggerClassName={selectTriggerClass(getFieldState("mode"))}
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
-          label="Status"
-          required
-          state={getFieldState("status")}
-          errorMessage={errors.status?.message}
-        >
-          <AppSelect
-            value={values.status}
-            onValueChange={(value) =>
-              setValue("status", value as BatchFormValues["status"], {
-                shouldValidate: true,
-                shouldDirty: true,
-              })
-            }
-            options={uniqueSelectOptions(BATCH_STATUSES)}
-            triggerClassName={selectClass("status")}
-          />
-        </ValidatedField>
+        <div className="md:col-span-2">
+          <p className="text-sm font-medium text-slate-900">Duration</p>
+        </div>
 
-        <ValidatedField
+        <IconField
           label="Start Date"
           required
+          icon={Calendar}
           state={getFieldState("startDate")}
           errorMessage={errors.startDate?.message}
         >
-          <Input type="date" autoComplete="off" {...registerField("startDate")} />
-        </ValidatedField>
+          <FieldIcon icon={Calendar} />
+          <Input
+            type="date"
+            autoComplete="off"
+            {...registerField("startDate")}
+            className={iconInputClass(getFieldState("startDate"))}
+          />
+        </IconField>
 
-        <ValidatedField
+        <IconField
           label="End Date"
           required
+          icon={Calendar}
           state={getFieldState("endDate")}
           errorMessage={errors.endDate?.message}
         >
-          <Input type="date" autoComplete="off" {...registerField("endDate")} />
-        </ValidatedField>
-
-        <ValidatedField
-          label="Capacity"
-          required
-          state={getFieldState("capacity")}
-          errorMessage={errors.capacity?.message}
-        >
+          <FieldIcon icon={Calendar} />
           <Input
-            type="number"
-            min={1}
+            type="date"
             autoComplete="off"
-            {...register("capacity", {
-              valueAsNumber: true,
-              onBlur: () => {
-                void trigger("capacity");
-              },
-              onChange: () => {
-                void trigger("capacity");
-              },
-            })}
-            className={inputClass("capacity")}
+            {...registerField("endDate")}
+            className={iconInputClass(getFieldState("endDate"))}
           />
-        </ValidatedField>
+        </IconField>
 
-        {isEdit ? (
-          <ValidatedField label="Enrolled Count" state="neutral">
-            <Input
-              type="number"
-              min={0}
-              autoComplete="off"
-              {...register("enrolledCount", { valueAsNumber: true })}
-            />
-          </ValidatedField>
-        ) : null}
-
-        {selectedMode !== "ONLINE" ? (
-          <ValidatedField
-            label="Classroom"
-            required
-            state={getFieldState("classroom")}
-            errorMessage={errors.classroom?.message}
+        <div className="md:col-span-2">
+          <IconField
+            label="Total Working Days"
+            icon={CalendarDays}
+            state={
+              datesAreValid && totalWorkingDays !== null ? "valid" : "neutral"
+            }
           >
+            <FieldIcon icon={CalendarDays} />
             <Input
-              placeholder="Enter classroom"
-              autoComplete="off"
-              {...registerField("classroom")}
+              readOnly
+              tabIndex={-1}
+              value={totalWorkingDaysLabel}
+              placeholder="Auto-calculated"
+              className={iconInputClass(
+                datesAreValid && totalWorkingDays !== null ? "valid" : "neutral",
+                "cursor-not-allowed bg-slate-50",
+              )}
             />
-          </ValidatedField>
-        ) : null}
+          </IconField>
+        </div>
 
-        {selectedMode !== "OFFLINE" ? (
-          <ValidatedField
-            label="Meeting Link"
-            required={selectedMode === "ONLINE"}
-            state={getFieldState("meetingLink")}
-            errorMessage={errors.meetingLink?.message}
-          >
-            <Input
-              placeholder="https://..."
-              autoComplete="off"
-              {...registerField("meetingLink")}
-            />
-          </ValidatedField>
-        ) : null}
+        <div className="md:col-span-2">
+          <p className="text-sm font-medium text-slate-900">Schedule</p>
+        </div>
 
         <div className="md:col-span-2">
           <ValidatedField
@@ -522,6 +556,80 @@ export function BatchForm({
             </div>
           </ValidatedField>
         </div>
+
+        <div className="md:col-span-2">
+          <p className="text-sm font-medium text-slate-700">Daily Timing</p>
+        </div>
+
+        <IconField
+          label="Start Time"
+          required
+          icon={Clock}
+          state={getFieldState("startTime")}
+          errorMessage={errors.startTime?.message}
+        >
+          <FieldIcon icon={Clock} />
+          <Input
+            type="time"
+            autoComplete="off"
+            {...registerField("startTime")}
+            className={iconInputClass(getFieldState("startTime"))}
+          />
+        </IconField>
+
+        <IconField
+          label="End Time"
+          required
+          icon={Clock}
+          state={getFieldState("endTime")}
+          errorMessage={errors.endTime?.message}
+        >
+          <FieldIcon icon={Clock} />
+          <Input
+            type="time"
+            autoComplete="off"
+            {...registerField("endTime")}
+            className={iconInputClass(getFieldState("endTime"))}
+          />
+        </IconField>
+
+        <IconField
+          label="Capacity"
+          required
+          icon={Users}
+          state={getFieldState("capacity")}
+          errorMessage={errors.capacity?.message}
+        >
+          <FieldIcon icon={Users} />
+          <Input
+            type="number"
+            min={1}
+            autoComplete="off"
+            className={iconInputClass(getFieldState("capacity"))}
+            {...register("capacity", {
+              valueAsNumber: true,
+              onBlur: () => {
+                void trigger("capacity");
+              },
+              onChange: () => {
+                void trigger("capacity");
+              },
+            })}
+          />
+        </IconField>
+
+        {isEdit ? (
+          <IconField label="Enrolled Count" icon={Users} state="neutral">
+            <FieldIcon icon={Users} />
+            <Input
+              type="number"
+              min={0}
+              autoComplete="off"
+              className={iconInputClass("neutral")}
+              {...register("enrolledCount", { valueAsNumber: true })}
+            />
+          </IconField>
+        ) : null}
 
         <div className="md:col-span-2">
           <ValidatedField

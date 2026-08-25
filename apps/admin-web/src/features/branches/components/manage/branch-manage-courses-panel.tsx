@@ -85,6 +85,10 @@ export function BranchManageCoursesPanel({
 
       const counts: Record<string, number> = {};
       for (const batch of batchResponse.data.items ?? []) {
+        if (!batch.courseId) {
+          continue;
+        }
+
         counts[batch.courseId] = (counts[batch.courseId] ?? 0) + 1;
       }
       setBatchCountByCourse(counts);

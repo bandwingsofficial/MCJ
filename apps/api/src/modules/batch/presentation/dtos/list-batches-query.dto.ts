@@ -60,4 +60,24 @@ export class ListBatchesQueryDto extends PaginationQueryDto {
   @IsBoolean()
   @Transform(({ value }) => toBoolean(value))
   includeDeleted?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    return undefined;
+  })
+  isDeleted?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    return undefined;
+  })
+  isActive?: boolean;
 }

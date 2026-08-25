@@ -3,7 +3,9 @@ import { apiClient } from "@/src/core/api/axios";
 import type {
   ApiSuccessResponse,
   AssignBatchTrainersRequest,
+  AssignBatchCourseRequest,
   Batch,
+  BatchCourseAssignment,
   BatchFilters,
   BatchListResponse,
   BatchSummary,
@@ -44,10 +46,12 @@ export const batchApi = {
     return response.data;
   },
 
-  async suggestBatchCode() {
+  async suggestBatchCode(startTime: string, endTime: string) {
     const response = await apiClient.get<
       ApiSuccessResponse<SuggestBatchCodeResponse>
-    >("/admin/batches/suggest-code");
+    >("/admin/batches/suggest-code", {
+      params: { startTime, endTime },
+    });
 
     return response.data;
   },
@@ -171,6 +175,33 @@ export const batchApi = {
     const response = await apiClient.delete<
       ApiSuccessResponse<BulkBatchOperationResult>
     >("/admin/batches/bulk/permanent", { data: { batchIds } });
+
+    return response.data;
+  },
+
+  async getBatchCourses(batchId: string) {
+    const response = await apiClient.get<
+      ApiSuccessResponse<BatchCourseAssignment[]>
+    >(`/admin/batches/${batchId}/courses`);
+
+    return response.data;
+  },
+
+  async assignBatchCourse(
+    batchId: string,
+    payload: AssignBatchCourseRequest,
+  ) {
+    const response = await apiClient.post<
+      ApiSuccessResponse<BatchCourseAssignment>
+    >(`/admin/batches/${batchId}/courses`, payload);
+
+    return response.data;
+  },
+
+  async removeBatchCourse(batchId: string, assignmentId: string) {
+    const response = await apiClient.delete<ApiSuccessResponse<null>>(
+      `/admin/batches/${batchId}/courses/${assignmentId}`,
+    );
 
     return response.data;
   },

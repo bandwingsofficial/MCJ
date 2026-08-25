@@ -5,7 +5,8 @@ import { DayOfWeek } from '../../domain/enums/day-of-week.enum';
 export class CreateBatchCommand {
   constructor(
     public readonly name: string,
-    public readonly courseId: string,
+    public readonly categoryId: string,
+    public readonly courseId: string | undefined,
     public readonly startDate: Date,
     public readonly daysOfWeek: DayOfWeek[],
     public readonly capacity: number,

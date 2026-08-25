@@ -3,6 +3,23 @@ import {
   BatchStatus,
 } from "@/src/features/batches/types/batch.types";
 
+export function formatBatchOperationalStatus(
+  batch: Pick<
+    import("@/src/features/batches/types/batch.types").Batch,
+    "isActive" | "isDeleted" | "deletedAt"
+  >,
+): string {
+  if (batch.isDeleted || batch.deletedAt) {
+    return "Archived";
+  }
+
+  if (batch.isActive === false) {
+    return "Inactive";
+  }
+
+  return "Active";
+}
+
 export const formatBatchMode = (
   mode: BatchMode,
 ): string => {
@@ -68,6 +85,36 @@ export const isRecordedBatch = (
 ): boolean =>
   mode === "RECORDED";
 
+export function formatBatchTime(value: string | null | undefined): string {
+  if (!value) {
+    return "—";
+  }
+
+  const [hoursRaw, minutesRaw] = value.split(":");
+  const hours = Number(hoursRaw);
+  const minutes = Number(minutesRaw);
+
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return value;
+  }
+
+  const period = hours >= 12 ? "PM" : "AM";
+  const hour12 = hours % 12 || 12;
+
+  return `${hour12}:${String(minutes).padStart(2, "0")} ${period}`;
+}
+
+export function formatBatchTiming(
+  startTime: string | null | undefined,
+  endTime: string | null | undefined,
+): string {
+  if (!startTime || !endTime) {
+    return "—";
+  }
+
+  return `${formatBatchTime(startTime)} → ${formatBatchTime(endTime)}`;
+}
+
 export function formatBatchDate(value: string | null | undefined): string {
   if (!value) {
     return "—";
@@ -84,4 +131,47 @@ export function formatBatchDate(value: string | null | undefined): string {
     month: "short",
     year: "numeric",
   });
+}
+
+export function formatBatchDateRange(
+  startDate: string | null | undefined,
+  endDate: string | null | undefined,
+): string {
+  const start = formatBatchDate(startDate);
+
+  if (!endDate || endDate === startDate) {
+    return start;
+  }
+
+  const end = formatBatchDate(endDate);
+
+  if (end === start) {
+    return start;
+  }
+
+  return `${start} – ${end}`;
+}
+
+export function formatBatchSchedule(
+  startDate: string | null | undefined,
+  endDate: string | null | undefined,
+  startTime: string | null | undefined,
+  endTime: string | null | undefined,
+): string {
+  const dateRange = formatBatchDateRange(startDate, endDate);
+  const timing = formatBatchTiming(startTime, endTime);
+
+  if (dateRange === "—" && timing === "—") {
+    return "—";
+  }
+
+  if (timing === "—") {
+    return dateRange;
+  }
+
+  if (dateRange === "—") {
+    return timing;
+  }
+
+  return `${dateRange} · ${timing}`;
 }

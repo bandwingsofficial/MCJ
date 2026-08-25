@@ -20,6 +20,8 @@ export class ListBatchesHandler {
       isFeatured: query.isFeatured,
       includeDeleted: query.includeDeleted,
       onlyActive: query.onlyActive,
+      isDeleted: query.isDeleted,
+      isActive: query.isActive,
       skip: query.skip,
       take: query.take,
     };

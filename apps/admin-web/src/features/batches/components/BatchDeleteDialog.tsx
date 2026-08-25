@@ -21,8 +21,8 @@ export function BatchDeleteDialog({
   return (
     <ConfirmDialog
       open={open}
-      title="Delete Batch"
-      description="Are you sure you want to delete this batch?"
+      title="Archive Batch"
+      description="Are you sure you want to archive this batch? It can be restored later."
       loading={isLoading}
       onConfirm={onConfirm}
       onCancel={onCancel}

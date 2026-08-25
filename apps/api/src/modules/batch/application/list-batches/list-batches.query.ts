@@ -12,6 +12,8 @@ export class ListBatchesQuery {
     public readonly isFeatured?: boolean,
     public readonly includeDeleted = false,
     public readonly onlyActive = false,
+    public readonly isDeleted?: boolean,
+    public readonly isActive?: boolean,
     public readonly skip?: number,
     public readonly take?: number,
   ) {}

@@ -222,6 +222,13 @@ export function StudentEnrollmentForm({
           return;
         }
 
+        if (!batch.courseId) {
+          setBatchDetails(null);
+          setIsBatchEligible(false);
+          appToast.error("Selected batch has no course assigned.");
+          return;
+        }
+
         const courseResponse = await courseService.getCourse(batch.courseId);
         const course = courseResponse.data;
 

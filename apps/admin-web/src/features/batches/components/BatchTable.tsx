@@ -5,22 +5,16 @@ import { useEffect, useRef, useState } from "react";
 import { GripVertical } from "lucide-react";
 
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/src/shared/components/ui/table";
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
 import type { BatchListItem } from "@/src/features/batches/types/batch.types";
 import {
   canReorderBatch,
   isArchivedBatch,
 } from "@/src/features/batches/utils/batch-bulk.utils";
-import { formatBatchDate } from "@/src/features/batches/utils/batch.helper";
+import {
+  formatBatchDateRange,
+  formatBatchTiming,
+} from "@/src/features/batches/utils/batch.helper";
 
 import { BatchStatusBadge } from "./BatchStatusBadge";
 import { BatchActions } from "./batch-actions";
@@ -32,11 +26,14 @@ interface Props {
   actionsDisabled?: boolean;
   selectionDisabled?: boolean;
   reorderDisabled?: boolean;
-  emptyTitle?: string;
-  emptyDescription?: string;
-  onManage: (batch: BatchListItem) => void;
+  emptyMessage?: string;
   onActivate: (batch: BatchListItem) => void;
   onDeactivate: (batch: BatchListItem) => void;
+  onEdit: (batch: BatchListItem) => void;
+  onManage: (batch: BatchListItem) => void;
+  onDelete: (batch: BatchListItem) => void;
+  onRestore: (batch: BatchListItem) => void;
+  onPermanentDelete: (batch: BatchListItem) => void;
   onReorder: (payload: {
     batchId: string;
     newDisplayOrder: number;
@@ -50,11 +47,14 @@ export function BatchTable({
   actionsDisabled = false,
   selectionDisabled = false,
   reorderDisabled = false,
-  emptyTitle = "No Batches Found",
-  emptyDescription = "Create your first batch to get started.",
-  onManage,
+  emptyMessage = "No batches found.",
   onActivate,
   onDeactivate,
+  onEdit,
+  onManage,
+  onDelete,
+  onRestore,
+  onPermanentDelete,
   onReorder,
 }: Props) {
   const [rows, setRows] = useState(batches);
@@ -73,6 +73,8 @@ export function BatchTable({
     visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
   const someVisibleSelected =
     selectedVisibleCount > 0 && !allVisibleSelected;
+
+  const columnCount = selectionEnabled ? 8 : 7;
 
   useEffect(() => {
     setRows(batches);
@@ -112,12 +114,6 @@ export function BatchTable({
       Array.from(new Set([...safeSelectedIds, ...visibleIds])),
     );
   };
-
-  if (rows.length === 0) {
-    return (
-      <EmptyState title={emptyTitle} description={emptyDescription} />
-    );
-  }
 
   const handleDrop = async (targetId: string) => {
     if (
@@ -180,138 +176,182 @@ export function BatchTable({
     reorderDisabled || isSavingOrder || safeSelectedIds.length > 0;
 
   return (
-    <Table className="rounded-none border-0">
-      <TableHeader>
-        <TableRow>
-          {selectionEnabled ? (
-            <TableHead className="w-10">
-              <Checkbox
-                checked={allVisibleSelected}
-                disabled={selectionDisabled}
-                onCheckedChange={(checked) =>
-                  toggleAllVisible(Boolean(checked))
-                }
-                aria-label="Select all batches on this page"
-              />
-            </TableHead>
-          ) : null}
-          <TableHead className="w-10">
-            <span className="sr-only">Reorder</span>
-          </TableHead>
-          <TableHead>Batch Name</TableHead>
-          <TableHead>Course</TableHead>
-          <TableHead>Start Date</TableHead>
-          <TableHead>End Date</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {rows.map((batch) => {
-          const reorderable = canReorderBatch(batch);
-          const isDropTarget = dropTargetId === batch.id;
-          const isDragging = dragId === batch.id;
+    <div className="w-full min-w-0">
+      <table className="w-full table-fixed border-collapse">
+        <colgroup>
+          {selectionEnabled ? <col className="w-11" /> : null}
+          <col className="w-10" />
+          <col className="w-[11%]" />
+          <col className="w-[14%]" />
+          <col className="w-[14%]" />
+          <col className="w-[26%]" />
+          <col className="w-[9%]" />
+          <col className="w-[9rem]" />
+        </colgroup>
+        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
+          <tr>
+            {selectionEnabled ? (
+              <th className="w-11 px-3 py-3 text-left">
+                <input
+                  ref={selectAllRef}
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-slate-300"
+                  checked={allVisibleSelected}
+                  disabled={selectionDisabled}
+                  onChange={(event) => {
+                    toggleAllVisible(event.target.checked);
+                  }}
+                  aria-label="Select all batches on this page"
+                />
+              </th>
+            ) : null}
 
-          return (
-            <TableRow
-              key={batch.id}
-              className={
-                isDropTarget
-                  ? "bg-blue-50/60"
-                  : isDragging
-                    ? "opacity-60"
-                    : undefined
-              }
-              onDragOver={(event) => {
-                if (dragDisabled || !dragId || dragId === batch.id) {
-                  return;
-                }
-                event.preventDefault();
-                setDropTargetId(batch.id);
-              }}
-              onDragLeave={() => {
-                if (dropTargetId === batch.id) {
-                  setDropTargetId(null);
-                }
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                void handleDrop(batch.id);
-              }}
-            >
-              {selectionEnabled ? (
-                <TableCell>
-                  <Checkbox
-                    checked={safeSelectedIds.includes(batch.id)}
-                    disabled={selectionDisabled}
-                    onCheckedChange={(checked) =>
-                      toggleRow(batch.id, Boolean(checked))
+            <th className="w-10 px-2 py-3">
+              <span className="sr-only">Reorder</span>
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Batch Code
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Batch Name
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Course
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Schedule
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Status
+            </th>
+            <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Actions
+            </th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y divide-slate-100">
+          {rows.length === 0 ? (
+            <tr>
+              <td
+                colSpan={columnCount}
+                className="px-3 py-12 text-center align-middle"
+              >
+                <p className="text-sm font-medium text-slate-900">
+                  {emptyMessage}
+                </p>
+              </td>
+            </tr>
+          ) : (
+            rows.map((batch) => {
+              const draggable = canReorderBatch(batch) && !dragDisabled;
+              const isArchived = isArchivedBatch(batch);
+
+              return (
+                <tr
+                  key={batch.id}
+                  draggable={draggable}
+                  onDragStart={() => {
+                    if (!draggable) {
+                      return;
                     }
-                    aria-label={`Select ${batch.name}`}
-                  />
-                </TableCell>
-              ) : null}
-
-              <TableCell>
-                {reorderable && !dragDisabled ? (
-                  <button
-                    type="button"
-                    draggable
-                    className="cursor-grab text-slate-400 hover:text-slate-600 active:cursor-grabbing"
-                    onDragStart={() => setDragId(batch.id)}
-                    onDragEnd={() => {
-                      setDragId(null);
+                    setDragId(batch.id);
+                  }}
+                  onDragOver={(event) => {
+                    if (!draggable || !dragId) {
+                      return;
+                    }
+                    event.preventDefault();
+                    setDropTargetId(batch.id);
+                  }}
+                  onDragLeave={() => {
+                    if (dropTargetId === batch.id) {
                       setDropTargetId(null);
-                    }}
-                    aria-label={`Reorder ${batch.name}`}
-                  >
-                    <GripVertical className="h-4 w-4" />
-                  </button>
-                ) : (
-                  <span className="inline-block w-4" />
-                )}
-              </TableCell>
+                    }
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    void handleDrop(batch.id);
+                  }}
+                  onDragEnd={() => {
+                    setDragId(null);
+                    setDropTargetId(null);
+                  }}
+                  className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${
+                    dropTargetId === batch.id ? "bg-blue-50/60" : ""
+                  } ${dragId === batch.id ? "opacity-60" : ""} ${
+                    isArchived ? "bg-slate-50/40" : "bg-white"
+                  }`}
+                >
+                  {selectionEnabled ? (
+                    <td className="w-11 px-3 py-3 align-middle">
+                      <Checkbox
+                        checked={safeSelectedIds.includes(batch.id)}
+                        disabled={selectionDisabled}
+                        onCheckedChange={(checked) => {
+                          toggleRow(batch.id, Boolean(checked));
+                        }}
+                      />
+                    </td>
+                  ) : null}
 
-              <TableCell className="text-[15px] font-medium text-slate-900">
-                <div>{batch.name}</div>
-                <div className="text-xs font-normal text-slate-500">
-                  {batch.code}
-                </div>
-              </TableCell>
+                  <td className="w-10 px-2 py-3 align-middle">
+                    {draggable ? (
+                      <GripVertical className="h-4 w-4 cursor-grab text-slate-400 active:cursor-grabbing" />
+                    ) : (
+                      <span className="inline-block w-4" />
+                    )}
+                  </td>
 
-              <TableCell className="text-[15px] text-slate-700">
-                {batch.course?.title ?? "—"}
-              </TableCell>
+                  <td className="truncate px-3 py-3 align-middle font-medium text-slate-900">
+                    {batch.code}
+                  </td>
 
-              <TableCell className="text-[15px] text-slate-700">
-                {formatBatchDate(batch.startDate)}
-              </TableCell>
+                  <td className="truncate px-3 py-3 align-middle font-medium text-slate-900">
+                    {batch.name}
+                  </td>
 
-              <TableCell className="text-[15px] text-slate-700">
-                {batch.endDate ? formatBatchDate(batch.endDate) : "—"}
-              </TableCell>
+                  <td className="truncate px-3 py-3 align-middle text-slate-700">
+                    {batch.course?.title ?? "—"}
+                  </td>
 
-              <TableCell>
-                <BatchStatusBadge
-                  status={batch.status}
-                  isActive={batch.isActive}
-                  isDeleted={isArchivedBatch(batch)}
-                />
-              </TableCell>
+                  <td className="px-3 py-3 align-middle">
+                    <div className="min-w-0 flex flex-col gap-0.5 leading-snug">
+                      <span className="truncate whitespace-nowrap text-sm text-slate-900">
+                        {formatBatchDateRange(batch.startDate, batch.endDate)}
+                      </span>
+                      <span className="truncate whitespace-nowrap text-sm text-slate-600">
+                        {formatBatchTiming(batch.startTime, batch.endTime)}
+                      </span>
+                    </div>
+                  </td>
 
-              <TableCell className="text-right">
-                <BatchActions
-                  batch={batch}
-                  disabled={actionsDisabled}
-                  onManage={onManage}
-                  onActivate={onActivate}
-                  onDeactivate={onDeactivate}
-                />
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                  <td className="px-3 py-3 align-middle">
+                    <BatchStatusBadge
+                      isActive={batch.isActive}
+                      isDeleted={Boolean(batch.deletedAt || batch.isDeleted)}
+                    />
+                  </td>
+
+                  <td className="w-[9rem] px-2 py-3 align-middle">
+                    <BatchActions
+                      batch={batch}
+                      disabled={actionsDisabled || isSavingOrder}
+                      onActivate={onActivate}
+                      onDeactivate={onDeactivate}
+                      onEdit={onEdit}
+                      onManage={onManage}
+                      onDelete={onDelete}
+                      onRestore={onRestore}
+                      onPermanentDelete={onPermanentDelete}
+                    />
+                  </td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }

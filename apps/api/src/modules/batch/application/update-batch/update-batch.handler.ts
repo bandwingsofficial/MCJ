@@ -1,3 +1,4 @@
+import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 
 import { Slug } from '@common/value-objects/slug.vo';
@@ -14,7 +15,8 @@ export class UpdateBatchHandler {
   constructor(
     private readonly batchRepo: BatchRepository,
     private readonly courseRepo: CourseRepository,
-     private readonly branchRepo: BranchRepository,
+    private readonly categoryRepo: CategoryRepository,
+    private readonly branchRepo: BranchRepository,
     private readonly domainService: BatchDomainService,
   ) {}
 
@@ -25,6 +27,13 @@ export class UpdateBatchHandler {
       await this.batchRepo.findById(command.id),
     );
 
+    if (command.categoryId) {
+      await this.domainService.ensureCategoryExists(
+        this.categoryRepo,
+        command.categoryId,
+      );
+    }
+
     if (command.courseId) {
       await this.domainService.ensureCourseExists(
         this.courseRepo,
@@ -33,16 +42,16 @@ export class UpdateBatchHandler {
     }
 
     if (command.branchId) {
-  const branch = await this.branchRepo.findById(
-    command.branchId,
-  );
+      const branch = await this.branchRepo.findById(
+        command.branchId,
+      );
 
-  if (!branch) {
-    throw new BranchNotFoundException(
-      command.branchId,
-    );
-  }
-}
+      if (!branch) {
+        throw new BranchNotFoundException(
+          command.branchId,
+        );
+      }
+    }
 
     const nextSlug =
       command.slug !== undefined
@@ -51,13 +60,50 @@ export class UpdateBatchHandler {
           ? Slug.fromName(command.name).getValue()
           : batch.slug.getValue();
 
-    if (command.code) {
+    const batchCodeValue =
+      typeof batch.code === "string" ? batch.code : batch.code.getValue();
+
+    const nextStartTime = command.startTime ?? batch.startTime;
+    const nextEndTime = command.endTime ?? batch.endTime;
+
+    this.domainService.validateSchedule({
+      startDate: command.startDate ?? batch.startDate,
+      endDate: command.endDate ?? batch.endDate ?? batch.startDate,
+      startTime: nextStartTime,
+      endTime: nextEndTime,
+      daysOfWeek: command.daysOfWeek ?? batch.daysOfWeek,
+    });
+
+    const timesChanged =
+      (command.startTime !== undefined &&
+        command.startTime !== batch.startTime) ||
+      (command.endTime !== undefined &&
+        command.endTime !== batch.endTime);
+
+    let nextCode = command.code?.trim().toUpperCase() ?? batchCodeValue;
+
+    if (timesChanged) {
+      nextCode = await this.domainService.generateUniqueBatchCode(
+        this.batchRepo,
+        nextStartTime,
+        nextEndTime,
+      );
+    }
+
+    if (nextCode !== batchCodeValue) {
       await this.domainService.ensureCodeIsAvailable(
         this.batchRepo,
-        command.code,
+        nextCode,
+        batch.id,
+      );
+    } else if (command.code) {
+      await this.domainService.ensureCodeIsAvailable(
+        this.batchRepo,
+        nextCode,
         batch.id,
       );
     }
+
     await this.domainService.ensureSlugIsAvailable(
       this.batchRepo,
       nextSlug,
@@ -65,18 +111,13 @@ export class UpdateBatchHandler {
       batch.id,
     );
 
-    this.domainService.validateSchedule({
-      startDate: command.startDate ?? batch.startDate,
-      endDate: command.endDate ?? batch.endDate,
-      daysOfWeek: command.daysOfWeek ?? batch.daysOfWeek,
-    });
-
     batch.update({
       name: command.name,
-      code: command.code,
+      code: nextCode,
       slug: nextSlug,
       description: command.description,
       courseId: command.courseId,
+      categoryId: command.categoryId,
       branchId: command.branchId,
       startDate: command.startDate,
       endDate: command.endDate,
@@ -95,11 +136,11 @@ export class UpdateBatchHandler {
 
     await this.batchRepo.save(batch);
 
-const updatedBatch =
-  await this.domainService.ensureExists(
-    await this.batchRepo.findById(batch.id),
-  );
+    const updatedBatch =
+      await this.domainService.ensureExists(
+        await this.batchRepo.findById(batch.id),
+      );
 
-return GetBatchResult.fromEntity(updatedBatch);
+    return GetBatchResult.fromEntity(updatedBatch);
   }
 }

@@ -26,6 +26,13 @@ export class BatchBranchResult {
   ) {}
 }
 
+export class BatchCategoryResult {
+  constructor(
+    public readonly id: string,
+    public readonly name: string,
+  ) {}
+}
+
 export class GetBatchResult {
   constructor(
     public readonly id: string,
@@ -35,7 +42,9 @@ export class GetBatchResult {
     public readonly description: string | null,
     public readonly course: BatchCourseResult | null,
     public readonly branch: BatchBranchResult | null,
-    public readonly courseId: string,
+    public readonly category: BatchCategoryResult | null,
+    public readonly courseId: string | null,
+    public readonly categoryId: string | null,
     public readonly branchId: string | null,
     public readonly startDate: Date,
     public readonly endDate: Date | null,
@@ -80,7 +89,12 @@ export class GetBatchResult {
           )
         : null,
 
+      batch.category
+        ? new BatchCategoryResult(batch.category.id, batch.category.name)
+        : null,
+
       batch.courseId,
+      batch.categoryId,
       batch.branchId,
       batch.startDate,
       batch.endDate,

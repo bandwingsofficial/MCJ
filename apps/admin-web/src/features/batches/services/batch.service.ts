@@ -4,6 +4,7 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { batchApi } from "@/src/features/batches/api/batch.api";
 import { branchService } from "@/src/features/branches/services/branch.service";
+import { categoryService } from "@/src/features/categories/services/category.service";
 import { courseService } from "@/src/features/courses/services/course.service";
 import { trainerService } from "@/src/features/trainers/services/trainer.service";
 
@@ -13,11 +14,14 @@ import type {
 
 import type {
   AssignBatchTrainersRequest,
+  AssignBatchCourseRequest,
   Batch,
+  BatchCourseAssignment,
   BatchFilters,
   BatchSummary,
   BulkBatchOperationResult,
   CourseOption,
+  CategoryOption,
   BranchOption,
   CreateBatchRequest,
   ReorderBatchRequest,
@@ -61,9 +65,9 @@ class BatchService {
     }
   }
 
-  async suggestBatchCode() {
+  async suggestBatchCode(startTime: string, endTime: string) {
     try {
-      return await batchApi.suggestBatchCode();
+      return await batchApi.suggestBatchCode(startTime, endTime);
     } catch (error) {
       throw this.handleError(error);
     }
@@ -181,6 +185,56 @@ class BatchService {
     }
   }
 
+  async getBatchCourses(batchId: string): Promise<BatchCourseAssignment[]> {
+    try {
+      const response = await batchApi.getBatchCourses(batchId);
+      return response.data ?? [];
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async assignBatchCourse(
+    batchId: string,
+    payload: AssignBatchCourseRequest,
+  ): Promise<BatchCourseAssignment> {
+    try {
+      const response = await batchApi.assignBatchCourse(batchId, payload);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async removeBatchCourse(
+    batchId: string,
+    assignmentId: string,
+  ): Promise<void> {
+    try {
+      await batchApi.removeBatchCourse(batchId, assignmentId);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getCategories(): Promise<CategoryOption[]> {
+    try {
+      const response = await categoryService.getCategories({
+        search: "",
+        status: "ACTIVE",
+        page: 1,
+        pageSize: FORM_OPTIONS_PAGE_SIZE,
+      });
+
+      return (response.data ?? []).map((category) => ({
+        id: category.id,
+        name: category.name,
+      }));
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async getCourses(): Promise<CourseOption[]> {
     try {
       const response = await courseService.getCourses({
@@ -193,6 +247,11 @@ class BatchService {
         id: course.id,
         title: course.title,
         code: course.code,
+        category: course.category
+          ? { id: course.category.id, name: course.category.name }
+          : course.categoryId && course.categoryName
+            ? { id: course.categoryId, name: course.categoryName }
+            : null,
       }));
     } catch (error) {
       throw this.handleError(error);

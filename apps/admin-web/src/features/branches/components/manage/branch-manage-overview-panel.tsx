@@ -260,6 +260,10 @@ export function BranchManageOverviewPanel({
       }
 
       for (const batch of batchItems) {
+        if (!batch.courseId) {
+          continue;
+        }
+
         batchByCourse[batch.courseId] =
           (batchByCourse[batch.courseId] ?? 0) + 1;
         const categoryId = courseCategoryMap.get(batch.courseId);

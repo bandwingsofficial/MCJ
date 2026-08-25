@@ -266,6 +266,7 @@ model Category {
   thumbnailUpload   Upload?            @relation("CategoryThumbnailUpload", fields: [thumbnailFileId], references: [id], onDelete: SetNull)
   branchCategories  BranchCategory[]
   courses           Course[]
+  batches           Batch[]
   enrollments       Enrollment[]
   financialArticles FinancialArticle[]
 
@@ -332,6 +333,7 @@ model Course {
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   batches          Batch[]
+  batchCourses     BatchCourse[]
   category         Category         @relation(fields: [categoryId], references: [id])
   thumbnailUpload  Upload?          @relation("CourseThumbnail", fields: [thumbnailFileId], references: [id], onDelete: SetNull)
   courseBranches   CourseBranch[]
@@ -595,6 +597,7 @@ model Trainer {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   batches            BatchTrainer[]
+  batchCourses       BatchCourse[]
   branch             Branch?         @relation(fields: [branchId], references: [id])
   profileImageUpload Upload?         @relation("TrainerProfileImage", fields: [profileImageFileId], references: [id], onDelete: SetNull)
   courses            TrainerCourse[]
@@ -634,7 +637,8 @@ model Batch {
   code          String         @unique
   slug          String
   description   String?
-  courseId      String
+  courseId      String?
+  categoryId    String?
   branchId      String?
   startDate     DateTime
   endDate       DateTime?
@@ -658,8 +662,10 @@ model Batch {
   isActive      Boolean        @default(true)
   displayOrder  Int?
   branch        Branch?        @relation(fields: [branchId], references: [id])
-  course        Course         @relation(fields: [courseId], references: [id])
+  course        Course?        @relation(fields: [courseId], references: [id])
+  category      Category?      @relation(fields: [categoryId], references: [id])
   trainers      BatchTrainer[]
+  batchCourses  BatchCourse[]
   enrollments   Enrollment[]
 
   @@unique([slug, branchId])
@@ -667,6 +673,7 @@ model Batch {
   @@index([code])
   @@index([slug])
   @@index([courseId])
+  @@index([categoryId])
   @@index([branchId])
   @@index([status])
   @@index([isActive])
@@ -691,6 +698,27 @@ model BatchTrainer {
   @@unique([batchId, trainerId])
   @@index([batchId])
   @@index([trainerId])
+}
+
+model BatchCourse {
+  id        String    @id @default(uuid())
+  batchId   String
+  courseId  String
+  trainerId String
+  isActive  Boolean   @default(true)
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  batch     Batch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  course    Course    @relation(fields: [courseId], references: [id])
+  trainer   Trainer   @relation(fields: [trainerId], references: [id])
+
+  @@unique([batchId, courseId])
+  @@index([batchId])
+  @@index([courseId])
+  @@index([trainerId])
+  @@index([isDeleted])
 }
 
 model Student {

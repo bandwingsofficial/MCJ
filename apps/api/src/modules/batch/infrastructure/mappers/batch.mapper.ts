@@ -25,6 +25,12 @@ export type BatchWithRelations = PrismaBatch & {
     branchCode: string;
   } | null;
 
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
+
   trainers: (PrismaBatchTrainer & {
   trainer: {
     id: string;
@@ -59,7 +65,15 @@ export class BatchMapper {
         }
       : null,
 
+    category: record.category
+      ? {
+          id: record.category.id,
+          name: record.category.name,
+        }
+      : null,
+
     courseId: record.courseId,
+    categoryId: record.categoryId,
     branchId: record.branchId,
 
     startDate: record.startDate,
@@ -122,6 +136,7 @@ export class BatchMapper {
       slug: batch.slug.getValue(),
       description: batch.description,
       courseId: batch.courseId,
+      categoryId: batch.categoryId,
       branchId: batch.branchId,
       startDate: batch.startDate,
       endDate: batch.endDate,

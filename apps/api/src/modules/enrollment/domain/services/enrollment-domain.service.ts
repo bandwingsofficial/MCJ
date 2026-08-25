@@ -260,12 +260,40 @@ export class EnrollmentDomainService {
       throw new BatchCancelledException();
     }
 
-    if (!batch.branchId) {
+    const student = await repos.studentRepo.findById(
+      params.studentId,
+      true,
+    );
+    if (!student) {
+      throw new StudentNotFoundException();
+    }
+
+    if (student.isDeleted) {
+      throw new StudentDeletedException();
+    }
+
+    if (!student.isActive) {
+      throw new StudentInactiveException();
+    }
+
+    const branchId = batch.branchId ?? student.branchId;
+    if (!branchId) {
       throw new BranchNotFoundException();
     }
 
-    const branchId = batch.branchId;
-    const courseId = batch.courseId;
+    let courseId = batch.courseId;
+    let courseResolvedFromAssignment = false;
+
+    if (!courseId) {
+      courseId = await repos.batchRepo.findFirstAssignedCourseId(
+        params.batchId,
+      );
+      courseResolvedFromAssignment = Boolean(courseId);
+    }
+
+    if (!courseId) {
+      throw new CourseNotFoundException();
+    }
 
     const course = await repos.courseRepo.findById(courseId, true);
     if (!course) {
@@ -291,7 +319,7 @@ export class EnrollmentDomainService {
     // Batch at branch is the authoritative proof of course availability.
     // course.branchIds may be out of sync with active batch offerings.
 
-    if (batch.courseId !== course.id) {
+    if (batch.courseId && batch.courseId !== course.id) {
       throw new BatchCourseMismatchException();
     }
 
@@ -328,22 +356,6 @@ export class EnrollmentDomainService {
       throw new BranchInactiveException();
     }
 
-    const student = await repos.studentRepo.findById(
-      params.studentId,
-      true,
-    );
-    if (!student) {
-      throw new StudentNotFoundException();
-    }
-
-    if (student.isDeleted) {
-      throw new StudentDeletedException();
-    }
-
-    if (!student.isActive) {
-      throw new StudentInactiveException();
-    }
-
     // Hierarchy alignment
     if (student.branchId !== branchId) {
       throw new StudentBranchMismatchException();
@@ -353,7 +365,8 @@ export class EnrollmentDomainService {
     // If an active batch exists for this branch and course, the offering is valid
     // even when the legacy branchCategory junction row is missing.
     const batchProvesBranchOffering =
-      batch.branchId === branchId && batch.courseId === course.id;
+      (batch.branchId === branchId || batch.branchId === null) &&
+      (batch.courseId === course.id || courseResolvedFromAssignment);
 
     const isCategoryAssigned = category
       ? await repos.categoryRepo.isAssignedToBranch(category.id, branchId)

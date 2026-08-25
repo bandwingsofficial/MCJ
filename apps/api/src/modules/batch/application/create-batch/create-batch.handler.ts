@@ -1,5 +1,7 @@
 import { randomUUID } from 'crypto';
 import { Logger } from '@nestjs/common';
+import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
+import { CategoryNotFoundException } from '@modules/course/domain/errors/category-not-found.exception';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 import type { TrainerRepository } from '@modules/trainer/domain/repositories/trainer.repository';
 import type { BranchRepository } from '@modules/branch/domain/repositories/branch.repository';
@@ -20,6 +22,7 @@ export class CreateBatchHandler {
   constructor(
     private readonly batchRepo: BatchRepository,
     private readonly courseRepo: CourseRepository,
+    private readonly categoryRepo: CategoryRepository,
     private readonly trainerRepo: TrainerRepository,
     private readonly branchRepo: BranchRepository,
     private readonly domainService: BatchDomainService,
@@ -28,10 +31,17 @@ export class CreateBatchHandler {
   async execute(
     command: CreateBatchCommand,
   ): Promise<GetBatchResult> {
-    await this.domainService.ensureCourseExists(
-      this.courseRepo,
-      command.courseId,
+    await this.domainService.ensureCategoryExists(
+      this.categoryRepo,
+      command.categoryId,
     );
+
+    if (command.courseId) {
+      await this.domainService.ensureCourseExists(
+        this.courseRepo,
+        command.courseId,
+      );
+    }
 
     if (command.branchId) {
       const branch = await this.branchRepo.findById(
@@ -65,6 +75,8 @@ export class CreateBatchHandler {
         ? command.code.trim().toUpperCase()
         : await this.domainService.generateUniqueBatchCode(
             this.batchRepo,
+            command.startTime!,
+            command.endTime!,
           );
 
     await this.domainService.ensureCodeIsAvailable(
@@ -75,7 +87,13 @@ export class CreateBatchHandler {
       this.batchRepo,
       slug,
     );
-    this.domainService.validateSchedule(command);
+    this.domainService.validateSchedule({
+      startDate: command.startDate,
+      endDate: command.endDate ?? command.startDate,
+      startTime: command.startTime!,
+      endTime: command.endTime!,
+      daysOfWeek: command.daysOfWeek,
+    });
 
     const isActive = command.isActive ?? true;
     const displayOrder = isActive
@@ -89,12 +107,13 @@ export class CreateBatchHandler {
       code,
       slug,
       description: command.description,
-      courseId: command.courseId,
+      courseId: command.courseId ?? null,
+      categoryId: command.categoryId,
       branchId: command.branchId,
       startDate: command.startDate,
-      endDate: command.endDate,
-      startTime: command.startTime ?? '00:00',
-      endTime: command.endTime ?? '23:59',
+      endDate: command.endDate ?? command.startDate,
+      startTime: command.startTime!,
+      endTime: command.endTime!,
       daysOfWeek: command.daysOfWeek,
       capacity: command.capacity,
       enrolledCount: command.enrolledCount,

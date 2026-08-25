@@ -13,6 +13,8 @@ export interface BatchListFilters {
   isFeatured?: boolean;
   includeDeleted?: boolean;
   onlyActive?: boolean;
+  isDeleted?: boolean;
+  isActive?: boolean;
   skip?: number;
   take?: number;
 }
@@ -45,7 +47,7 @@ export interface BatchRepository {
   findAll(filters?: BatchListFilters): Promise<Batch[]>;
   count(filters?: BatchListFilters): Promise<number>;
   getMaxDisplayOrder(): Promise<number>;
-  getMaxBatchCodeNumber(): Promise<number>;
+  getMaxBatchCodeSequence(prefix: string): Promise<number>;
   closeDisplayOrderGap(deletedDisplayOrder: number): Promise<void>;
   moveDisplayOrder(
     batchId: string,
@@ -53,5 +55,6 @@ export interface BatchRepository {
     newOrder: number,
   ): Promise<void>;
   getSummaryCounts(batchId: string): Promise<BatchSummaryCounts>;
+  findFirstAssignedCourseId(batchId: string): Promise<string | null>;
   deletePermanent(id: string): Promise<void>;
 }

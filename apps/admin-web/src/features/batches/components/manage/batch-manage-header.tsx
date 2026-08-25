@@ -5,13 +5,24 @@ import { Pencil, RotateCcw, Trash2 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 
-import type { Batch } from "@/src/features/batches/types/batch.types";
+import type {
+  Batch,
+  BatchCourseAssignment,
+} from "@/src/features/batches/types/batch.types";
 import { BatchModeBadge } from "@/src/features/batches/components/BatchModeBadge";
 import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
-import { formatBatchDate } from "@/src/features/batches/utils/batch.helper";
+import {
+  formatBatchCategoriesFromAssignments,
+} from "@/src/features/batches/utils/batch-course.utils";
+import {
+  formatBatchDateRange,
+  formatBatchTiming,
+} from "@/src/features/batches/utils/batch.helper";
 
 interface Props {
   batch: Batch;
+  assignments: BatchCourseAssignment[];
+  assignmentsLoading?: boolean;
   activeSection?: string;
   onEdit: () => void;
   onArchive: () => void;
@@ -22,6 +33,8 @@ interface Props {
 
 export function BatchManageHeader({
   batch,
+  assignments,
+  assignmentsLoading = false,
   activeSection,
   onEdit,
   onArchive,
@@ -30,13 +43,10 @@ export function BatchManageHeader({
   actionsDisabled = false,
 }: Props) {
   const isArchived = Boolean(batch.deletedAt || batch.isDeleted);
-  const meta = [
-    batch.code,
-    batch.course?.title,
-    batch.branch?.branchName,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const categoriesLabel = assignmentsLoading
+    ? "…"
+    : formatBatchCategoriesFromAssignments(assignments);
+  const meta = [batch.code, categoriesLabel].join(" · ");
 
   return (
     <div className="space-y-3">
@@ -66,7 +76,7 @@ export function BatchManageHeader({
           <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
             {batch.name}
           </h1>
-          {meta ? <p className="mt-1 text-sm text-slate-500">{meta}</p> : null}
+          <p className="mt-1 text-sm text-slate-500">{meta}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <BatchStatusBadge
               status={batch.status}
@@ -76,10 +86,10 @@ export function BatchManageHeader({
             <BatchModeBadge mode={batch.mode} />
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            {formatBatchDate(batch.startDate)}
-            {batch.endDate ? ` – ${formatBatchDate(batch.endDate)}` : ""}
-            {" · "}
-            {batch.startTime} – {batch.endTime}
+            {formatBatchDateRange(batch.startDate, batch.endDate)}
+          </p>
+          <p className="text-xs text-slate-500">
+            {formatBatchTiming(batch.startTime, batch.endTime)}
           </p>
         </div>
 

@@ -37,6 +37,8 @@ export class BatchController {
         query.isFeatured,
         false,
         true,
+        undefined,
+        undefined,
         query.skip,
         query.take,
       ),
