@@ -85,8 +85,6 @@ export function BatchManageWorkspace({
       <TabsContent value="overview" className="space-y-3">
         <BatchManageOverviewPanel
           batch={batch}
-          summary={summary}
-          summaryLoading={summaryLoading}
           assignments={assignments}
           assignmentsLoading={assignmentsLoading}
         />

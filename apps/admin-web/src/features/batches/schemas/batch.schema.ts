@@ -41,8 +41,6 @@ export const batchSchema = z
 
     description: z.string().optional().or(z.literal("")),
 
-    categoryId: z.string().uuid("Please select a category"),
-
     startDate: z.string().min(1, "Start date is required"),
 
     endDate: z.string().min(1, "End date is required"),

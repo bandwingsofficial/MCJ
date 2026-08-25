@@ -31,10 +31,12 @@ export class CreateBatchHandler {
   async execute(
     command: CreateBatchCommand,
   ): Promise<GetBatchResult> {
-    await this.domainService.ensureCategoryExists(
-      this.categoryRepo,
-      command.categoryId,
-    );
+    if (command.categoryId) {
+      await this.domainService.ensureCategoryExists(
+        this.categoryRepo,
+        command.categoryId,
+      );
+    }
 
     if (command.courseId) {
       await this.domainService.ensureCourseExists(
@@ -108,7 +110,7 @@ export class CreateBatchHandler {
       slug,
       description: command.description,
       courseId: command.courseId ?? null,
-      categoryId: command.categoryId,
+      categoryId: command.categoryId ?? null,
       branchId: command.branchId,
       startDate: command.startDate,
       endDate: command.endDate ?? command.startDate,

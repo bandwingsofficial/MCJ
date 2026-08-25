@@ -98,9 +98,10 @@ export class CreateBatchDto {
   @IsUUID()
   courseId?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsUUID()
-  categoryId!: string;
+  categoryId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

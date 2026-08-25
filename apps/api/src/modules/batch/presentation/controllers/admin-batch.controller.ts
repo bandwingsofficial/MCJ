@@ -102,7 +102,7 @@ export class AdminBatchController {
     const result = await this.createBatchHandler.execute(
       new CreateBatchCommand(
         dto.name,
-        dto.categoryId,
+        dto.categoryId ?? null,
         dto.courseId,
         dto.startDate ? new Date(dto.startDate) : new Date(),
         dto.daysOfWeek,

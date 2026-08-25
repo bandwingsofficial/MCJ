@@ -22,7 +22,6 @@ export function toCreateBatchRequest(
     name: values.name.trim(),
     code: values.code.trim().toUpperCase(),
     description: values.description?.trim() || undefined,
-    categoryId: values.categoryId,
     startDate: values.startDate,
     endDate: values.endDate,
     startTime: values.startTime,

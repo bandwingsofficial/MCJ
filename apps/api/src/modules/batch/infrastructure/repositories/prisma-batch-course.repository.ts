@@ -3,6 +3,48 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import type { BatchCourseAssignmentRecord } from '../../application/batch-courses/batch-course.types';
 
+const courseAssignmentSelect = {
+  id: true,
+  title: true,
+  code: true,
+  tagline: true,
+  shortDescription: true,
+  description: true,
+  thumbnailUrl: true,
+  minimumQualifications: true,
+  isFree: true,
+  currency: true,
+  discountedPrice: true,
+  originalPrice: true,
+  category: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+} as const;
+
+const trainerAssignmentSelect = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  employeeCode: true,
+  status: true,
+  profileImageUrl: true,
+  specialization: true,
+  email: true,
+  qualification: true,
+} as const;
+
+const assignmentInclude = {
+  course: {
+    select: courseAssignmentSelect,
+  },
+  trainer: {
+    select: trainerAssignmentSelect,
+  },
+} as const;
+
 export class PrismaBatchCourseRepository {
   constructor(private readonly prisma: PrismaService) {}
 
@@ -12,30 +54,7 @@ export class PrismaBatchCourseRepository {
         batchId,
         isDeleted: false,
       },
-      include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
-            code: true,
-            category: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-        trainer: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            employeeCode: true,
-            status: true,
-          },
-        },
-      },
+      include: assignmentInclude,
       orderBy: {
         createdAt: 'asc',
       },
@@ -71,30 +90,7 @@ export class PrismaBatchCourseRepository {
             isDeleted: false,
             deletedAt: null,
           },
-          include: {
-            course: {
-              select: {
-                id: true,
-                title: true,
-                code: true,
-                category: {
-                  select: {
-                    id: true,
-                    name: true,
-                  },
-                },
-              },
-            },
-            trainer: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                employeeCode: true,
-                status: true,
-              },
-            },
-          },
+          include: assignmentInclude,
         })
       : await this.prisma.batchCourse.create({
           data: {
@@ -103,30 +99,7 @@ export class PrismaBatchCourseRepository {
             courseId: params.courseId,
             trainerId: params.trainerId,
           },
-          include: {
-            course: {
-              select: {
-                id: true,
-                title: true,
-                code: true,
-                category: {
-                  select: {
-                    id: true,
-                    name: true,
-                  },
-                },
-              },
-            },
-            trainer: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                employeeCode: true,
-                status: true,
-              },
-            },
-          },
+          include: assignmentInclude,
         });
 
     return record as BatchCourseAssignmentRecord;

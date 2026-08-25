@@ -24,6 +24,15 @@ export interface BatchCourse {
   id: string;
   title: string;
   code?: string | null;
+  tagline?: string | null;
+  shortDescription?: string | null;
+  description?: string | null;
+  thumbnailUrl?: string | null;
+  minimumQualifications?: string[];
+  isFree?: boolean;
+  currency?: string;
+  discountedPrice?: number | string;
+  originalPrice?: number | string;
   category?: BatchCategory | null;
 }
 
@@ -45,6 +54,9 @@ export interface BatchTrainer {
   employeeCode: string | null;
   specialization?: string | null;
   status?: string;
+  profileImageUrl?: string | null;
+  email?: string | null;
+  qualification?: string | null;
 }
 
 export interface Batch {
@@ -121,7 +133,6 @@ export interface CreateBatchRequest {
   name: string;
   code?: string;
   description?: string;
-  categoryId: string;
   courseId?: string;
   branchId?: string;
   startDate: string;

@@ -14,12 +14,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   BookOpen,
-  Calendar,
   CalendarDays,
-  Clock,
-  FolderTree,
   Hash,
-  Loader,
   Tag,
   Users,
   type LucideIcon,
@@ -75,7 +71,6 @@ const EMPTY_DEFAULTS: BatchFormValues = {
   name: "",
   code: "",
   description: "",
-  categoryId: "",
   startDate: new Date().toISOString().split("T")[0]!,
   endDate: new Date().toISOString().split("T")[0]!,
   startTime: "10:00",
@@ -104,6 +99,13 @@ function iconInputClass(state: FieldVisualState, extra = "") {
   return cn(
     validatedFieldInputClass(state, "w-full min-w-0 max-w-full"),
     "pr-16",
+    extra,
+  );
+}
+
+function plainInputClass(state: FieldVisualState, extra = "") {
+  return cn(
+    validatedFieldInputClass(state, "w-full min-w-0 max-w-full"),
     extra,
   );
 }
@@ -152,10 +154,6 @@ export function BatchForm({
   onSubmit,
 }: BatchFormProps) {
   const suggestRequestIdRef = useRef(0);
-  const [categories, setCategories] = useState<
-    import("@/src/features/batches/types/batch.types").CategoryOption[]
-  >([]);
-  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
   const [isSuggestingCode, setIsSuggestingCode] = useState(false);
 
   const mergedDefaults = useMemo(
@@ -219,26 +217,10 @@ export function BatchForm({
   }, [mergedDefaults, reset]);
 
   useEffect(() => {
-    const loadOptions = async () => {
-      setIsLoadingOptions(true);
-      try {
-        const categoryItems = await batchService.getCategories();
-        setCategories(categoryItems);
-      } catch (error) {
-        appToast.error(getErrorMessage(error));
-      } finally {
-        setIsLoadingOptions(false);
-      }
-    };
-
-    void loadOptions();
-  }, []);
-
-  useEffect(() => {
     const startTime = values.startTime?.trim();
     const endTime = values.endTime?.trim();
 
-    if (!startTime || !endTime || isLoadingOptions) {
+    if (!startTime || !endTime) {
       return;
     }
 
@@ -282,7 +264,6 @@ export function BatchForm({
     void suggestCode();
   }, [
     isEdit,
-    isLoadingOptions,
     mergedDefaults.endTime,
     mergedDefaults.startTime,
     setValue,
@@ -341,12 +322,12 @@ export function BatchForm({
     return "valid";
   };
 
-  const registerField = (name: SyncFieldName) => {
+  const registerPlainField = (name: SyncFieldName) => {
     const registration = register(name);
 
     return {
       ...registration,
-      className: iconInputClass(getFieldState(name)),
+      className: plainInputClass(getFieldState(name)),
       onBlur: (event: FocusEvent<HTMLInputElement>) => {
         registration.onBlur(event);
         void trigger(name);
@@ -369,24 +350,26 @@ export function BatchForm({
     });
   };
 
-  const categoryOptions = uniqueSelectOptions(
-    categories.map((category) => ({
-      label: category.name,
-      value: category.id,
-    })),
-  );
+  const registerField = (name: SyncFieldName) => {
+    const registration = register(name);
+
+    return {
+      ...registration,
+      className: iconInputClass(getFieldState(name)),
+      onBlur: (event: FocusEvent<HTMLInputElement>) => {
+        registration.onBlur(event);
+        void trigger(name);
+      },
+      onChange: (event: ChangeEvent<HTMLInputElement>) => {
+        registration.onChange(event);
+        void trigger(name);
+      },
+    };
+  };
 
   const handleFormSubmit = handleSubmit(async (formValues) => {
     await onSubmit(formValues);
   });
-
-  if (isLoadingOptions) {
-    return (
-      <div className="flex justify-center py-10">
-        <Loader className="h-6 w-6 animate-spin text-slate-400" />
-      </div>
-    );
-  }
 
   return (
     <form onSubmit={handleFormSubmit} className="flex min-h-0 flex-1 flex-col bg-white">
@@ -429,28 +412,6 @@ export function BatchForm({
         </IconField>
 
         <IconField
-          label="Category"
-          required
-          icon={FolderTree}
-          state={getFieldState("categoryId")}
-          errorMessage={errors.categoryId?.message}
-        >
-          <FieldIcon icon={FolderTree} />
-          <AppSelect
-            value={values.categoryId?.trim() ? values.categoryId : undefined}
-            placeholder="Select category"
-            onValueChange={(value) => {
-              setValue("categoryId", value, {
-                shouldValidate: true,
-                shouldDirty: true,
-              });
-            }}
-            options={categoryOptions}
-            triggerClassName={selectTriggerClass(getFieldState("categoryId"))}
-          />
-        </IconField>
-
-        <IconField
           label="Batch Type"
           required
           icon={BookOpen}
@@ -475,37 +436,31 @@ export function BatchForm({
           <p className="text-sm font-medium text-slate-900">Duration</p>
         </div>
 
-        <IconField
+        <ValidatedField
           label="Start Date"
           required
-          icon={Calendar}
           state={getFieldState("startDate")}
           errorMessage={errors.startDate?.message}
         >
-          <FieldIcon icon={Calendar} />
           <Input
             type="date"
             autoComplete="off"
-            {...registerField("startDate")}
-            className={iconInputClass(getFieldState("startDate"))}
+            {...registerPlainField("startDate")}
           />
-        </IconField>
+        </ValidatedField>
 
-        <IconField
+        <ValidatedField
           label="End Date"
           required
-          icon={Calendar}
           state={getFieldState("endDate")}
           errorMessage={errors.endDate?.message}
         >
-          <FieldIcon icon={Calendar} />
           <Input
             type="date"
             autoComplete="off"
-            {...registerField("endDate")}
-            className={iconInputClass(getFieldState("endDate"))}
+            {...registerPlainField("endDate")}
           />
-        </IconField>
+        </ValidatedField>
 
         <div className="md:col-span-2">
           <IconField
@@ -561,37 +516,31 @@ export function BatchForm({
           <p className="text-sm font-medium text-slate-700">Daily Timing</p>
         </div>
 
-        <IconField
+        <ValidatedField
           label="Start Time"
           required
-          icon={Clock}
           state={getFieldState("startTime")}
           errorMessage={errors.startTime?.message}
         >
-          <FieldIcon icon={Clock} />
           <Input
             type="time"
             autoComplete="off"
-            {...registerField("startTime")}
-            className={iconInputClass(getFieldState("startTime"))}
+            {...registerPlainField("startTime")}
           />
-        </IconField>
+        </ValidatedField>
 
-        <IconField
+        <ValidatedField
           label="End Time"
           required
-          icon={Clock}
           state={getFieldState("endTime")}
           errorMessage={errors.endTime?.message}
         >
-          <FieldIcon icon={Clock} />
           <Input
             type="time"
             autoComplete="off"
-            {...registerField("endTime")}
-            className={iconInputClass(getFieldState("endTime"))}
+            {...registerPlainField("endTime")}
           />
-        </IconField>
+        </ValidatedField>
 
         <IconField
           label="Capacity"

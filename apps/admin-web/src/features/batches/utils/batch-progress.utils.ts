@@ -208,13 +208,30 @@ export function formatBatchDurationLabel(
   );
 
   if (!start || !end) {
-    return "";
+    return "—";
   }
 
   const diffMs = end.getTime() - start.getTime();
   const dayCount = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
 
   return `${dayCount} day${dayCount === 1 ? "" : "s"}`;
+}
+
+export function formatBatchLifecycleStatus(
+  progress: Pick<
+    BatchProgressInfo,
+    "isExpired" | "isNotStarted"
+  >,
+): string {
+  if (progress.isExpired) {
+    return "Completed / Expired";
+  }
+
+  if (progress.isNotStarted) {
+    return "Upcoming";
+  }
+
+  return "In Progress";
 }
 
 export function formatProgressDayLabel(

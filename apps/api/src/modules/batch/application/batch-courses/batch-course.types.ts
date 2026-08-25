@@ -12,6 +12,15 @@ export interface BatchCourseAssignmentRecord {
     id: string;
     title: string;
     code: string;
+    tagline: string | null;
+    shortDescription: string | null;
+    description: string | null;
+    thumbnailUrl: string | null;
+    minimumQualifications: string[];
+    isFree: boolean;
+    currency: string;
+    discountedPrice: unknown;
+    originalPrice: unknown;
     category: {
       id: string;
       name: string;
@@ -23,5 +32,9 @@ export interface BatchCourseAssignmentRecord {
     lastName: string | null;
     employeeCode: string | null;
     status: string;
+    profileImageUrl: string | null;
+    specialization: string | null;
+    email: string | null;
+    qualification: string | null;
   };
 }

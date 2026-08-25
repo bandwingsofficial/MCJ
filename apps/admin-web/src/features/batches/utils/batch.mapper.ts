@@ -7,7 +7,6 @@ export const batchMapper = {
       name: batch.name,
       code: batch.code,
       description: batch.description ?? "",
-      categoryId: batch.categoryId ?? "",
       startDate,
       endDate,
       startTime: batch.startTime,
