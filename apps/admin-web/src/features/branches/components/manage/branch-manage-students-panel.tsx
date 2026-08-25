@@ -145,6 +145,7 @@ export function BranchManageStudentsPanel({
     try {
       const response = await studentService.getStudents({
         includeDeleted: false,
+        onlyActive: true,
         page: 1,
         pageSize: 200,
       });

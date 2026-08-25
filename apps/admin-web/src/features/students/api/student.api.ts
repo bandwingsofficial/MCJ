@@ -3,11 +3,14 @@ import { apiClient } from "@/src/core/api/axios";
 import type {
   ApiSuccessResponse,
   BulkStudentOperationResult,
+  CreateStudentDocumentRequest,
   CreateStudentRequest,
   Student,
+  StudentDocument,
   StudentFilters,
   StudentListResponse,
   SuggestStudentCodeResponse,
+  UpdateStudentDocumentRequest,
   UpdateStudentRequest,
 } from "@/src/features/students/types/student.types";
 import { buildStudentListQueryParams } from "@/src/features/students/utils/student-list.utils";
@@ -133,6 +136,45 @@ export const studentApi = {
     const response = await apiClient.delete<
       ApiSuccessResponse<BulkStudentOperationResult>
     >("/admin/students/bulk/permanent", { data: { studentIds } });
+
+    return response.data;
+  },
+
+  async getStudentDocuments(studentId: string) {
+    const response = await apiClient.get<
+      ApiSuccessResponse<StudentDocument[]>
+    >(`/admin/students/${studentId}/documents`);
+
+    return response.data;
+  },
+
+  async createStudentDocument(
+    studentId: string,
+    payload: CreateStudentDocumentRequest,
+  ) {
+    const response = await apiClient.post<
+      ApiSuccessResponse<StudentDocument>
+    >(`/admin/students/${studentId}/documents`, payload);
+
+    return response.data;
+  },
+
+  async updateStudentDocument(
+    studentId: string,
+    documentId: string,
+    payload: UpdateStudentDocumentRequest,
+  ) {
+    const response = await apiClient.patch<
+      ApiSuccessResponse<StudentDocument>
+    >(`/admin/students/${studentId}/documents/${documentId}`, payload);
+
+    return response.data;
+  },
+
+  async deleteStudentDocument(studentId: string, documentId: string) {
+    const response = await apiClient.delete<
+      ApiSuccessResponse<{ id: string; permanentlyDeleted: boolean }>
+    >(`/admin/students/${studentId}/documents/${documentId}`);
 
     return response.data;
   },

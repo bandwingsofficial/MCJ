@@ -64,6 +64,7 @@ export function buildStudentListQueryParams(filters?: StudentFilters) {
     status: includeDeleted ? undefined : filters?.status || undefined,
     gender: filters?.gender || undefined,
     includeDeleted: includeDeleted ? true : undefined,
+    onlyActive: filters?.onlyActive === true ? true : undefined,
     skip,
     take: pageSize,
   };

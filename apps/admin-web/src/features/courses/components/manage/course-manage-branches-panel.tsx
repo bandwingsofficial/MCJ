@@ -91,7 +91,7 @@ export function CourseManageBranchesPanel({
       const response = await branchService.getBranches({
         search: "",
         page: 1,
-        pageSize: 200,
+        pageSize: 100,
       });
       const assignedIds = new Set(branches.map((item) => item.id));
       setAssignCandidates(

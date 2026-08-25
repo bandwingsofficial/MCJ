@@ -88,11 +88,13 @@ export function buildBatchListQueryParams(filters?: BatchFilters) {
 
     courseId: filters?.courseId || undefined,
 
+    branchId: filters?.branchId || undefined,
+
     skip,
 
     take: pageSize,
 
-    includeDeleted: true,
+    includeDeleted: filters?.includeDeleted === false ? false : true,
 
   };
 

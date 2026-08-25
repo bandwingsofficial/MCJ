@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -80,4 +81,14 @@ export class UpdateEnrollmentDto {
   @IsBoolean()
   @Transform(({ value }) => toBoolean(value))
   isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  studentId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  batchId?: string;
 }

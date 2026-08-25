@@ -234,6 +234,7 @@ model Upload {
   financialArticleThumbnails FinancialArticle[] @relation("FinancialArticleThumbnail")
   jobApplicationResumes      JobApplication[]   @relation("JobApplicationResume")
   studentProfileImages       Student[]          @relation("StudentProfileImage")
+  studentDocuments           StudentDocument[]  @relation("StudentDocumentFile")
   trainerProfileImages       Trainer[]          @relation("TrainerProfileImage")
 
   @@index([storedName])
@@ -764,6 +765,7 @@ model Student {
   lessonProgress        LessonProgress[]
   branch                Branch?          @relation(fields: [branchId], references: [id])
   profileImageUpload    Upload?          @relation("StudentProfileImage", fields: [profileImageFileId], references: [id], onDelete: SetNull)
+  documents             StudentDocument[]
   userId String @unique 
   user User @relation(fields: [userId], references: [id])
 
@@ -778,6 +780,25 @@ model Student {
   @@index([admissionDate])
   @@index([branchId, status, isDeleted])
   @@index([isDeleted])
+  @@index([createdAt])
+}
+
+model StudentDocument {
+  id          String               @id @default(uuid())
+  studentId   String
+  name        String
+  type        StudentDocumentType
+  description String?
+  fileId      String
+  createdBy   String?
+  updatedBy   String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  student     Student              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  file        Upload               @relation("StudentDocumentFile", fields: [fileId], references: [id], onDelete: Restrict)
+
+  @@index([studentId])
+  @@index([fileId])
   @@index([createdAt])
 }
 
@@ -1338,6 +1359,15 @@ enum StudentStatus {
   COMPLETED
   DROPPED
   PLACED
+}
+
+enum StudentDocumentType {
+  MARKS_CARD
+  AADHAAR
+  ID_PROOF
+  CERTIFICATE
+  PHOTO
+  OTHER
 }
 
 enum EnrollmentStatus {

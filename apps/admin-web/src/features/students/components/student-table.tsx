@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-import { Badge } from "@/src/shared/components/ui/badge";
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
 import {
   Table,
@@ -22,7 +21,6 @@ import { StudentRowActionsMenu } from "./student-row-actions-menu";
 
 interface Props {
   students: StudentListItem[];
-  enrolledStudentIds?: Set<string>;
   selectedStudentIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
   actionsDisabled?: boolean;
@@ -33,32 +31,14 @@ interface Props {
   onEdit: (student: StudentListItem) => void;
   onActivate: (student: StudentListItem) => void;
   onDeactivate: (student: StudentListItem) => void;
-  onDelete: (student: StudentListItem) => void;
-  onRestore: (student: StudentListItem) => void;
-  onPermanentDelete: (student: StudentListItem) => void;
 }
 
 function formatStudentName(student: StudentListItem): string {
   return [student.firstName, student.lastName].filter(Boolean).join(" ");
 }
 
-function EnrollmentStatusIndicator({
-  isEnrolled,
-}: {
-  isEnrolled: boolean;
-}) {
-  if (isEnrolled) {
-    return <Badge variant="success">Enrolled</Badge>;
-  }
-
-  return (
-    <span className="text-sm text-slate-500">Not Enrolled Yet</span>
-  );
-}
-
 export function StudentTable({
   students,
-  enrolledStudentIds = new Set<string>(),
   selectedStudentIds = [],
   onSelectionChange,
   actionsDisabled = false,
@@ -69,9 +49,6 @@ export function StudentTable({
   onEdit,
   onActivate,
   onDeactivate,
-  onDelete,
-  onRestore,
-  onPermanentDelete,
 }: Props) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
@@ -148,7 +125,6 @@ export function StudentTable({
           <TableHead>Email</TableHead>
           <TableHead>Phone</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead>Enrollment Status</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -192,12 +168,6 @@ export function StudentTable({
               />
             </TableCell>
 
-            <TableCell>
-              <EnrollmentStatusIndicator
-                isEnrolled={enrolledStudentIds.has(student.id)}
-              />
-            </TableCell>
-
             <TableCell className="text-right">
               <StudentRowActionsMenu
                 student={student}
@@ -206,9 +176,6 @@ export function StudentTable({
                 onEdit={onEdit}
                 onActivate={onActivate}
                 onDeactivate={onDeactivate}
-                onDelete={onDelete}
-                onRestore={onRestore}
-                onPermanentDelete={onPermanentDelete}
               />
             </TableCell>
           </TableRow>

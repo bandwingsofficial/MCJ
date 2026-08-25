@@ -33,3 +33,23 @@ export function paymentReferenceLabel(method: string): string {
 export function todayDateInputValue(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+export function toApiDateTime(value?: string | null): string | undefined {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return `${trimmed}T00:00:00.000Z`;
+  }
+
+  const parsed = new Date(trimmed);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+
+  return parsed.toISOString();
+}

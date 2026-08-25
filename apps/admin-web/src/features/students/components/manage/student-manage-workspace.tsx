@@ -11,10 +11,8 @@ import type { Student } from "@/src/features/students/types/student.types";
 import { STUDENT_MANAGE_DEFAULT_TAB } from "@/src/features/students/utils/student-manage.routes";
 
 import { StudentManageActivityPanel } from "./student-manage-activity-panel";
-import { StudentManageAttendancePanel } from "./student-manage-attendance-panel";
 import { StudentManageDocumentsPanel } from "./student-manage-documents-panel";
 import { StudentManageOverviewPanel } from "./student-manage-overview-panel";
-import { StudentManagePaymentsPanel } from "./student-manage-payments-panel";
 
 interface Props {
   student: Student;
@@ -22,19 +20,13 @@ interface Props {
   overviewRefreshKey?: number;
   onTabChange?: (tab: TabKey) => void;
   onStudentRefresh?: () => Promise<void>;
+  onDocumentsChanged?: () => void;
 }
 
-export type TabKey =
-  | "overview"
-  | "attendance"
-  | "payments"
-  | "documents"
-  | "activity";
+export type TabKey = "overview" | "documents" | "activity";
 
 const TAB_ITEMS: ReadonlyArray<[TabKey, string]> = [
   ["overview", "Overview"],
-  ["attendance", "Attendance"],
-  ["payments", "Payments"],
   ["documents", "Documents"],
   ["activity", "Activity"],
 ];
@@ -44,7 +36,7 @@ export function StudentManageWorkspace({
   activeTab = STUDENT_MANAGE_DEFAULT_TAB,
   overviewRefreshKey = 0,
   onTabChange,
-  onStudentRefresh,
+  onDocumentsChanged,
 }: Props) {
   return (
     <Tabs
@@ -70,26 +62,15 @@ export function StudentManageWorkspace({
           student={student}
           refreshKey={overviewRefreshKey}
           onNavigateToTab={(tab) => onTabChange?.(tab)}
-          onStudentRefresh={onStudentRefresh}
-        />
-      </TabsContent>
-
-      <TabsContent value="attendance">
-        <StudentManageAttendancePanel
-          student={student}
-          refreshKey={overviewRefreshKey}
-        />
-      </TabsContent>
-
-      <TabsContent value="payments">
-        <StudentManagePaymentsPanel
-          student={student}
-          refreshKey={overviewRefreshKey}
         />
       </TabsContent>
 
       <TabsContent value="documents">
-        <StudentManageDocumentsPanel student={student} />
+        <StudentManageDocumentsPanel
+          student={student}
+          refreshKey={overviewRefreshKey}
+          onDocumentsChanged={onDocumentsChanged}
+        />
       </TabsContent>
 
       <TabsContent value="activity">

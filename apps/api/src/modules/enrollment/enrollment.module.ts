@@ -1,4 +1,4 @@
-import { Module ,forwardRef  } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { AdminOrBranchRoleGuard } from '@common/guards/admin-or-branch-role.guard';
 import { JwtOrBranchJwtAuthGuard } from '@common/guards/jwt-or-branch-jwt-auth.guard';
@@ -58,6 +58,8 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
     BranchUserModule,
     CategoryModule,
     forwardRef(() => CourseModule),
+    // Batch does not import Enrollment, but Course -> Enrollment -> Batch
+    // still forms a genuine module cycle, so Batch stays lazily imported.
     forwardRef(() => BatchModule),
     StudentModule,
     forwardRef(() => PaymentModule),
@@ -191,16 +193,31 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
       provide: UpdateEnrollmentHandler,
       useFactory: (
         enrollmentRepo: EnrollmentRepository,
+        studentRepo: StudentRepository,
+        branchRepo: BranchRepository,
+        categoryRepo: CategoryRepository,
+        courseRepo: CourseRepository,
+        batchRepo: BatchRepository,
         domainService: EnrollmentDomainService,
         sideEffects: EnrollmentSideEffectsService,
       ) =>
         new UpdateEnrollmentHandler(
           enrollmentRepo,
+          studentRepo,
+          branchRepo,
+          categoryRepo,
+          courseRepo,
+          batchRepo,
           domainService,
           sideEffects,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        BRANCH_TOKENS.BRANCH_REPOSITORY,
+        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
+        COURSE_TOKENS.COURSE_REPOSITORY,
+        BATCH_TOKENS.BATCH_REPOSITORY,
         EnrollmentDomainService,
         EnrollmentSideEffectsService,
       ],

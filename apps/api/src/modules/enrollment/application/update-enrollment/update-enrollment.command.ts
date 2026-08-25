@@ -12,6 +12,8 @@ export class UpdateEnrollmentCommand {
     public readonly remarks?: string,
     public readonly status?: EnrollmentStatus,
     public readonly isActive?: boolean,
+    public readonly studentId?: string,
+    public readonly batchId?: string,
     public readonly updatedBy?: string,
     public readonly actorBranchId?: string,
   ) {}

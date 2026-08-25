@@ -198,6 +198,8 @@ export class AdminEnrollmentController {
         dto.remarks,
         dto.status,
         dto.isActive,
+        dto.studentId,
+        dto.batchId,
         user.sub,
         this.resolveBranchId(undefined, user),
       ),

@@ -119,6 +119,12 @@ export class Enrollment {
   }
 
   update(params: EnrollmentUpdateParams) {
+    if (params.studentId !== undefined) this.studentId = params.studentId;
+    if (params.branchId !== undefined) this.branchId = params.branchId;
+    if (params.categoryId !== undefined) this.categoryId = params.categoryId;
+    if (params.courseId !== undefined) this.courseId = params.courseId;
+    if (params.batchId !== undefined) this.batchId = params.batchId;
+
     if (params.admissionDate !== undefined)
       this.admissionDate = params.admissionDate;
     if (params.joiningDate !== undefined)
@@ -256,6 +262,11 @@ export interface EnrollmentCreateParams {
 }
 
 export interface EnrollmentUpdateParams {
+  studentId?: string;
+  branchId?: string;
+  categoryId?: string;
+  courseId?: string;
+  batchId?: string;
   admissionDate?: Date | null;
   joiningDate?: Date | null;
   expectedCompletionDate?: Date | null;

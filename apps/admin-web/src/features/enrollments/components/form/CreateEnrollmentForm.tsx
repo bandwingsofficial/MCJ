@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
-import { Checkbox } from "@/src/shared/components/ui/checkbox";
 import { Input } from "@/src/shared/components/ui/input";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { appToast } from "@/src/shared/components/ui/toast";
@@ -21,14 +18,15 @@ import type { Course } from "@/src/features/courses/types/course.types";
 import { courseService } from "@/src/features/courses/services/course.service";
 import { getCourseDefaultDiscount } from "@/src/features/courses/utils/get-course-default-discount.util";
 import {
-  ENROLLMENT_INSTALLMENT_STATUS_OPTIONS,
   ENROLLMENT_PAYMENT_METHODS,
   paymentReferenceLabel,
   requiresPaymentReference,
   todayDateInputValue,
+  toApiDateTime,
   type EnrollmentPaymentMethod,
 } from "@/src/features/enrollments/constants/enrollment-create.constants";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
+import type { Enrollment } from "@/src/features/enrollments/types";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
 import {
   formatCurrency,
@@ -39,17 +37,11 @@ import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.ut
 import { parseStudentListResponse } from "@/src/features/students/utils/student-list.utils";
 import { uniqueSelectOptions } from "@/src/features/students/utils/student-select.utils";
 
-interface InstallmentRow {
-  id: string;
-  amount: string;
-  dueDate: string;
-  paymentMethod: EnrollmentPaymentMethod;
-  paymentStatus: "PENDING" | "SUCCESS";
-  transactionId: string;
-}
-
 interface Props {
+  mode?: "create" | "edit";
+  enrollment?: Enrollment;
   onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
 function isSelectableBatch(batch: Batch): boolean {
@@ -63,46 +55,60 @@ function isSelectableBatch(batch: Batch): boolean {
   );
 }
 
-function createInstallmentRow(): InstallmentRow {
-  return {
-    id: crypto.randomUUID(),
-    amount: "",
-    dueDate: "",
-    paymentMethod: "CASH",
-    paymentStatus: "PENDING",
-    transactionId: "",
-  };
+function computedPaymentStatus(paid: number, remaining: number): string {
+  if (paid <= 0) {
+    return "UNPAID";
+  }
+
+  if (remaining <= 0) {
+    return "PAID";
+  }
+
+  return "PARTIAL";
 }
 
-export function CreateEnrollmentForm({ onSuccess }: Props) {
-  const router = useRouter();
+export function CreateEnrollmentForm({
+  mode = "create",
+  enrollment,
+  onSuccess,
+  onCancel,
+}: Props) {
+  const isEdit = mode === "edit";
 
   const [branches, setBranches] = useState<
     Array<{ id: string; label: string }>
   >([]);
-  const [branchId, setBranchId] = useState("");
+  const [branchId, setBranchId] = useState(enrollment?.branch?.id ?? "");
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [admissionDate, setAdmissionDate] = useState(todayDateInputValue());
+  const [admissionDate, setAdmissionDate] = useState(
+    enrollment?.admissionDate
+      ? enrollment.admissionDate.slice(0, 10)
+      : todayDateInputValue(),
+  );
   const [paymentDate, setPaymentDate] = useState(todayDateInputValue());
-  const [batchId, setBatchId] = useState("");
+  const [batchId, setBatchId] = useState(enrollment?.batch?.id ?? "");
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
   const [courseTitles, setCourseTitles] = useState<string[]>([]);
-  const [categoryName, setCategoryName] = useState("—");
-  const [feeAmount, setFeeAmount] = useState(0);
-  const [discountAmount, setDiscountAmount] = useState(0);
+  const [categoryName, setCategoryName] = useState(
+    enrollment?.category?.name ?? "—",
+  );
+  const [feeAmount, setFeeAmount] = useState(
+    normalizeMoney(enrollment?.feeAmount),
+  );
+  const [discountAmount, setDiscountAmount] = useState(
+    normalizeMoney(enrollment?.discountAmount),
+  );
 
   const [students, setStudents] = useState<
     Array<{ id: string; label: string; meta?: string }>
   >([]);
-  const [studentId, setStudentId] = useState("");
+  const [studentId, setStudentId] = useState(enrollment?.student?.id ?? "");
 
   const [amountPaidNow, setAmountPaidNow] = useState("");
   const [paymentMethod, setPaymentMethod] =
     useState<EnrollmentPaymentMethod>("CASH");
   const [transactionId, setTransactionId] = useState("");
-  const [useInstallments, setUseInstallments] = useState(false);
-  const [installments, setInstallments] = useState<InstallmentRow[]>([]);
 
   const [isLoadingBranches, setIsLoadingBranches] = useState(true);
   const [isLoadingBatches, setIsLoadingBatches] = useState(false);
@@ -112,6 +118,7 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
   const finalAmount = Math.max(0, feeAmount - discountAmount);
   const paidNowValue = normalizeMoney(amountPaidNow);
   const remainingAmount = Math.max(0, finalAmount - paidNowValue);
+  const paymentStatus = computedPaymentStatus(paidNowValue, remainingAmount);
 
   useEffect(() => {
     const loadBranches = async () => {
@@ -120,7 +127,7 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
         const response = await branchService.getBranches({
           includeDeleted: false,
           page: 1,
-          pageSize: 200,
+          pageSize: 100,
         });
         setBranches(
           (response.data.items ?? []).map((branch) => ({
@@ -161,12 +168,26 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
           page: 1,
           pageSize: 200,
         });
-        setBatches((response.data.items ?? []).filter(isSelectableBatch));
-        setBatchId("");
-        setSelectedBatch(null);
-        setCourse(null);
-        setStudents([]);
-        setStudentId("");
+        const nextBatches = (response.data.items ?? []).filter((batch) => {
+          if (batch.branchId && batch.branchId !== branchId) {
+            return false;
+          }
+          if (isEdit && enrollment?.batch?.id === batch.id) {
+            return true;
+          }
+          return isSelectableBatch(batch);
+        });
+        setBatches(nextBatches);
+
+        if (!nextBatches.some((batch) => batch.id === batchId)) {
+          setBatchId("");
+          setSelectedBatch(null);
+          setCourse(null);
+          if (!isEdit) {
+            setStudents([]);
+            setStudentId("");
+          }
+        }
       } catch (error) {
         appToast.error(getErrorMessage(error));
         setBatches([]);
@@ -176,15 +197,19 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
     };
 
     void loadBatches();
-  }, [branchId]);
+    // batchId is read to keep the current selection when possible.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branchId, enrollment?.batch?.id, isEdit]);
 
   useEffect(() => {
     if (!branchId || !batchId) {
       setSelectedBatch(null);
       setCourse(null);
       setCourseTitles([]);
-      setStudents([]);
-      setStudentId("");
+      if (!isEdit) {
+        setStudents([]);
+        setStudentId("");
+      }
       return;
     }
 
@@ -203,6 +228,7 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
             }),
             studentService.getStudents({
               includeDeleted: false,
+              onlyActive: true,
               page: 1,
               pageSize: 200,
             }),
@@ -220,17 +246,19 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
         }
         setCourseTitles(titles);
 
-        let nextFee = 0;
-        let nextDiscount = 0;
-        let nextCategory = "—";
+        let nextFee = feeAmount;
+        let nextDiscount = discountAmount;
+        let nextCategory = categoryName;
         let nextCourse: Course | null = null;
 
         const courseId = batch.courseId ?? assignments[0]?.courseId;
         if (courseId) {
           const courseResponse = await courseService.getCourse(courseId);
           nextCourse = courseResponse.data;
-          nextFee = normalizeMoney(nextCourse.pricing?.originalPrice);
-          nextDiscount = getCourseDefaultDiscount(nextCourse);
+          if (!isEdit || enrollment?.batch?.id !== batchId) {
+            nextFee = normalizeMoney(nextCourse.pricing?.originalPrice);
+            nextDiscount = getCourseDefaultDiscount(nextCourse);
+          }
           nextCategory = nextCourse.category?.name ?? "—";
         } else if (assignments[0]?.course?.category?.name) {
           nextCategory = assignments[0].course.category.name;
@@ -243,29 +271,59 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
 
         const enrolledIds = new Set<string>();
         const enrollmentPayload = parseEnrollmentListResponse(enrollmentResponse);
-        for (const enrollment of enrollmentPayload.items) {
-          if (!enrollment.isDeleted && enrollment.student?.id) {
-            enrolledIds.add(enrollment.student.id);
+        for (const item of enrollmentPayload.items) {
+          if (
+            !item.isDeleted &&
+            item.student?.id &&
+            item.id !== enrollment?.id
+          ) {
+            enrolledIds.add(item.student.id);
           }
         }
 
         const studentPayload = parseStudentListResponse(studentResponse.data);
-        setStudents(
-          studentPayload.items
-            .filter(
-              (item) =>
-                item.isActive &&
-                !isArchivedStudent(item) &&
-                !enrolledIds.has(item.id),
-            )
-            .map((item) => ({
-              id: item.id,
-              label: formatPersonName(item.firstName, item.lastName),
-              meta: [item.studentCode, item.phone, item.email]
-                .filter(Boolean)
-                .join(" · "),
-            })),
-        );
+        const mappedStudents = studentPayload.items
+          .filter((item) => {
+            const isCurrent = item.id === enrollment?.student?.id;
+            if (isCurrent) {
+              return !isArchivedStudent(item);
+            }
+
+            return (
+              item.isActive &&
+              !isArchivedStudent(item) &&
+              !enrolledIds.has(item.id)
+            );
+          })
+          .map((item) => ({
+            id: item.id,
+            label: formatPersonName(item.firstName, item.lastName),
+            meta: [item.studentCode, item.phone, item.email]
+              .filter(Boolean)
+              .join(" · "),
+          }));
+
+        if (
+          enrollment?.student &&
+          !mappedStudents.some((item) => item.id === enrollment.student.id)
+        ) {
+          mappedStudents.unshift({
+            id: enrollment.student.id,
+            label: formatPersonName(
+              enrollment.student.firstName,
+              enrollment.student.lastName,
+            ),
+            meta: [
+              enrollment.student.studentCode,
+              enrollment.student.phone,
+              enrollment.student.email,
+            ]
+              .filter(Boolean)
+              .join(" · "),
+          });
+        }
+
+        setStudents(mappedStudents);
       } catch (error) {
         appToast.error(getErrorMessage(error));
         setSelectedBatch(null);
@@ -277,7 +335,8 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
     };
 
     void loadBatchContext();
-  }, [branchId, batchId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branchId, batchId, enrollment?.id, enrollment?.student?.id, isEdit]);
 
   const branchOptions = useMemo(
     () => uniqueSelectOptions(branches.map((b) => ({ label: b.label, value: b.id }))),
@@ -308,18 +367,35 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
     [students],
   );
 
+  const existingPaidAmount = isEdit
+    ? normalizeMoney(enrollment?.paidAmount)
+    : paidNowValue;
+  const existingRemainingAmount = Math.max(0, finalAmount - existingPaidAmount);
+  const existingPaymentStatus = computedPaymentStatus(
+    existingPaidAmount,
+    existingRemainingAmount,
+  );
+
   const handleSubmit = async () => {
     if (!branchId || !batchId || !studentId) {
       appToast.error("Select branch, batch, and student.");
       return;
     }
 
-    if (paidNowValue > finalAmount) {
-      appToast.error("Amount paid cannot exceed total course fee.");
+    if (!isEdit && paidNowValue > finalAmount) {
+      appToast.error("Amount paying now cannot exceed total course fee.");
+      return;
+    }
+
+    if (isEdit && existingPaidAmount > finalAmount) {
+      appToast.error(
+        "The selected batch fee is lower than the amount already paid. Choose a batch whose fee covers existing payments.",
+      );
       return;
     }
 
     if (
+      !isEdit &&
       paidNowValue > 0 &&
       requiresPaymentReference(paymentMethod) &&
       !transactionId.trim()
@@ -328,48 +404,44 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
       return;
     }
 
-    const installmentPayload = useInstallments
-      ? installments
-          .filter((row) => normalizeMoney(row.amount) > 0)
-          .map((row) => ({
-            amount: normalizeMoney(row.amount),
-            dueDate: row.dueDate || undefined,
-            paymentMethod: row.paymentMethod,
-            paymentStatus: row.paymentStatus,
-            transactionId: row.transactionId.trim() || undefined,
-          }))
-      : [];
+    const apiAdmissionDate = toApiDateTime(admissionDate);
 
-    let installmentSuccessTotal = 0;
-    for (const row of installmentPayload) {
-      if (row.paymentStatus === "SUCCESS") {
-        installmentSuccessTotal += row.amount;
-      }
-    }
-
-    if (paidNowValue + installmentSuccessTotal > finalAmount) {
-      appToast.error("Total recorded payments cannot exceed course fee.");
+    if (!apiAdmissionDate) {
+      appToast.error("Enter a valid enrollment date.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await enrollmentService.createEnrollment({
-        studentId,
-        batchId,
-        feeAmount,
-        discountAmount,
-        admissionDate,
-        initialPaymentAmount: paidNowValue > 0 ? paidNowValue : undefined,
-        paymentMethod: paidNowValue > 0 ? paymentMethod : undefined,
-        transactionId: transactionId.trim() || undefined,
-        initialPaymentPaidAt: paidNowValue > 0 ? paymentDate : undefined,
-        installments: installmentPayload.length ? installmentPayload : undefined,
-      });
+      if (isEdit && enrollment) {
+        await enrollmentService.updateEnrollment(enrollment.id, {
+          studentId,
+          batchId,
+          admissionDate: apiAdmissionDate,
+          feeAmount,
+          discountAmount,
+        });
+        appToast.success("Enrollment updated successfully");
+      } else {
+        await enrollmentService.createEnrollment({
+          studentId,
+          batchId,
+          feeAmount,
+          discountAmount,
+          admissionDate: apiAdmissionDate,
+          ...(paidNowValue > 0
+            ? {
+                initialPaymentAmount: paidNowValue,
+                paymentMethod,
+                transactionId: transactionId.trim() || undefined,
+                initialPaymentPaidAt: toApiDateTime(paymentDate),
+              }
+            : {}),
+        });
+        appToast.success("Enrollment created successfully");
+      }
 
-      appToast.success("Enrollment created successfully");
       onSuccess?.();
-      router.push("/enrollments");
     } catch (error) {
       appToast.error(getErrorMessage(error));
     } finally {
@@ -391,7 +463,9 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-700">Select Branch</label>
+          <label className="text-sm font-medium text-slate-700">
+            Select Branch
+          </label>
           {isLoadingBranches ? (
             <p className="text-sm text-slate-500">Loading branches...</p>
           ) : (
@@ -399,7 +473,11 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
               value={branchId || undefined}
               placeholder="Select branch"
               options={branchOptions}
-              onValueChange={setBranchId}
+              onValueChange={(value) => {
+                setBranchId(value);
+                setBatchId("");
+                setStudentId(isEdit ? studentId : "");
+              }}
             />
           )}
         </div>
@@ -411,9 +489,7 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
           {isLoadingBatches ? (
             <p className="text-sm text-slate-500">Loading batches...</p>
           ) : batches.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              No active batches assigned to this branch.
-            </p>
+            <p className="text-sm text-slate-500">No data yet</p>
           ) : (
             <AppSelect
               value={batchId || undefined}
@@ -421,7 +497,9 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
               options={batchOptions}
               onValueChange={(value) => {
                 setBatchId(value);
-                setStudentId("");
+                if (!isEdit) {
+                  setStudentId("");
+                }
               }}
             />
           )}
@@ -451,9 +529,7 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
           {isLoadingContext ? (
             <p className="text-sm text-slate-500">Loading students...</p>
           ) : students.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              No active students available for this batch.
-            </p>
+            <p className="text-sm text-slate-500">No data yet</p>
           ) : (
             <AppSelect
               value={studentId || undefined}
@@ -465,7 +541,7 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
         </div>
       ) : null}
 
-      {batchId && studentId ? (
+      {!isEdit && batchId && studentId ? (
         <div className="space-y-4 rounded-xl border border-slate-200 p-4">
           <h3 className="text-sm font-semibold text-slate-900">Payment</h3>
 
@@ -475,7 +551,7 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
               <Input readOnly value={formatCurrency(finalAmount)} />
             </div>
             <div>
-              <p className="mb-1 text-xs text-slate-500">Amount Paid Now</p>
+              <p className="mb-1 text-xs text-slate-500">Amount Paying Now</p>
               <Input
                 type="number"
                 min={0}
@@ -488,6 +564,10 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
             <div>
               <p className="mb-1 text-xs text-slate-500">Remaining Amount</p>
               <Input readOnly value={formatCurrency(remainingAmount)} />
+            </div>
+            <div>
+              <p className="mb-1 text-xs text-slate-500">Payment Status</p>
+              <Input readOnly value={paymentStatus} />
             </div>
             <div>
               <p className="mb-1 text-xs text-slate-500">Payment Method</p>
@@ -524,121 +604,41 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
               />
             </div>
           ) : null}
+        </div>
+      ) : null}
 
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            <Checkbox
-              checked={useInstallments}
-              onCheckedChange={(checked) => {
-                const enabled = Boolean(checked);
-                setUseInstallments(enabled);
-                if (enabled && installments.length === 0) {
-                  setInstallments([createInstallmentRow()]);
-                }
-              }}
-            />
-            Record remaining amount through installments
-          </label>
+      {isEdit && batchId && studentId ? (
+        <div className="space-y-4 rounded-xl border border-slate-200 p-4">
+          <h3 className="text-sm font-semibold text-slate-900">Payment</h3>
+          <p className="text-xs text-slate-500">
+            Existing payments are historical records and are not changed when
+            you update branch, batch, or student.
+          </p>
 
-          {useInstallments ? (
-            <div className="space-y-3">
-              {installments.map((row, index) => (
-                <div
-                  key={row.id}
-                  className="grid gap-3 rounded-lg border border-slate-200 p-3 sm:grid-cols-2"
-                >
-                  <div>
-                    <p className="mb-1 text-xs text-slate-500">Installment Amount</p>
-                    <Input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={row.amount}
-                      onChange={(event) => {
-                        const next = [...installments];
-                        next[index] = { ...row, amount: event.target.value };
-                        setInstallments(next);
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <p className="mb-1 text-xs text-slate-500">Due Date</p>
-                    <Input
-                      type="date"
-                      value={row.dueDate}
-                      onChange={(event) => {
-                        const next = [...installments];
-                        next[index] = { ...row, dueDate: event.target.value };
-                        setInstallments(next);
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <p className="mb-1 text-xs text-slate-500">Payment Method</p>
-                    <AppSelect
-                      value={row.paymentMethod}
-                      options={ENROLLMENT_PAYMENT_METHODS.map((item) => ({
-                        label: item.label,
-                        value: item.value,
-                      }))}
-                      onValueChange={(value) => {
-                        const next = [...installments];
-                        next[index] = {
-                          ...row,
-                          paymentMethod: value as EnrollmentPaymentMethod,
-                        };
-                        setInstallments(next);
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <p className="mb-1 text-xs text-slate-500">Payment Status</p>
-                    <AppSelect
-                      value={row.paymentStatus}
-                      options={ENROLLMENT_INSTALLMENT_STATUS_OPTIONS.map((item) => ({
-                        label: item.label,
-                        value: item.value,
-                      }))}
-                      onValueChange={(value) => {
-                        const next = [...installments];
-                        next[index] = {
-                          ...row,
-                          paymentStatus: value as InstallmentRow["paymentStatus"],
-                        };
-                        setInstallments(next);
-                      }}
-                    />
-                  </div>
-                  <div className="flex justify-end sm:col-span-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                      onClick={() =>
-                        setInstallments((current) =>
-                          current.filter((item) => item.id !== row.id),
-                        )
-                      }
-                    >
-                      <Trash2 className="mr-1 h-4 w-4" />
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setInstallments((current) => [...current, createInstallmentRow()])
-                }
-              >
-                <Plus className="mr-1 h-4 w-4" />
-                Add Installment
-              </Button>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="mb-1 text-xs text-slate-500">Total Fee</p>
+              <Input readOnly value={formatCurrency(finalAmount)} />
             </div>
-          ) : null}
+            <div>
+              <p className="mb-1 text-xs text-slate-500">Amount Paid</p>
+              <Input readOnly value={formatCurrency(existingPaidAmount)} />
+            </div>
+            <div>
+              <p className="mb-1 text-xs text-slate-500">Remaining Amount</p>
+              <Input
+                readOnly
+                value={formatCurrency(existingRemainingAmount)}
+              />
+            </div>
+            <div>
+              <p className="mb-1 text-xs text-slate-500">Payment Status</p>
+              <Input
+                readOnly
+                value={enrollment?.paymentStatus ?? existingPaymentStatus}
+              />
+            </div>
+          </div>
         </div>
       ) : null}
 
@@ -647,7 +647,7 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
           type="button"
           variant="outline"
           disabled={isSubmitting}
-          onClick={() => router.push("/enrollments")}
+          onClick={onCancel}
         >
           Cancel
         </Button>
@@ -665,7 +665,7 @@ export function CreateEnrollmentForm({ onSuccess }: Props) {
             void handleSubmit();
           }}
         >
-          Create Enrollment
+          {isEdit ? "Save Changes" : "Create Enrollment"}
         </Button>
       </div>
     </div>

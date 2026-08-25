@@ -182,6 +182,7 @@ export function BranchCreateEnrollmentModal({
             }),
             studentService.getStudents({
               includeDeleted: false,
+              onlyActive: true,
               page: 1,
               pageSize: 200,
             }),

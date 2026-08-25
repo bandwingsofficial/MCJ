@@ -2,6 +2,7 @@ export type PaymentMethod =
   | "CASH"
   | "UPI"
   | "CARD"
+  | "BANK_TRANSFER"
   | "NET_BANKING"
   | "CHEQUE"
   | "ONLINE"
@@ -65,4 +66,19 @@ export interface PaymentFilters {
   take?: number;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+}
+
+export interface CreateManualPaymentRequest {
+  enrollmentId: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  transactionId?: string;
+  remarks?: string;
+  paidAt?: string;
+}
+
+export interface PaymentResponse {
+  success: boolean;
+  message: string;
+  data: PaymentSummary;
 }

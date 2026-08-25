@@ -28,17 +28,16 @@ export interface CreateEnrollmentRequest {
 }
 
 export interface UpdateEnrollmentRequest {
+  studentId?: string;
+  batchId?: string;
   admissionDate?: string;
   joiningDate?: string;
   expectedCompletionDate?: string;
   feeAmount?: number;
   discountAmount?: number;
   paidAmount?: number;
-
   remarks?: string;
-
   status?: EnrollmentStatus;
-
   isActive?: boolean;
 }
 

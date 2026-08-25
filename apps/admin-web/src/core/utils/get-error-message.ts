@@ -4,6 +4,7 @@ interface ApiErrorResponse {
   success?: false;
   code?: string;
   message?: string | string[];
+  errors?: Record<string, string[] | string>;
 }
 
 const CODE_MESSAGES: Record<string, string> = {
@@ -26,6 +27,11 @@ export const getErrorMessage = (error: unknown): string => {
     const data = error.response?.data as ApiErrorResponse | undefined;
     const code = data?.code;
     const message = data?.message;
+    const validationMessage = formatValidationErrors(data?.errors);
+
+    if (code === "VALIDATION_ERROR" && validationMessage) {
+      return validationMessage;
+    }
 
     if (code && CODE_MESSAGES[code]) {
       // Prefer explicit API messages (e.g. "Branch name already exists.")
@@ -91,6 +97,26 @@ export const getErrorMessage = (error: unknown): string => {
 
   return "Something went wrong. Please try again.";
 };
+
+function formatValidationErrors(
+  errors?: Record<string, string[] | string>,
+): string | null {
+  if (!errors) {
+    return null;
+  }
+
+  for (const value of Object.values(errors)) {
+    if (Array.isArray(value) && typeof value[0] === "string" && value[0].trim()) {
+      return value[0];
+    }
+
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+  }
+
+  return null;
+}
 
 export const getErrorStatus = (error: unknown): number | null => {
   if (error instanceof AxiosError) {

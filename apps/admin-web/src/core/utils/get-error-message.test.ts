@@ -31,7 +31,7 @@ describe("getErrorMessage", () => {
           message: "Invalid credentials",
         })
       )
-    ).toBe("Invalid email or password.");
+    ).toBe("Invalid credentials");
   });
 
   it("maps rate limiting", () => {
@@ -61,5 +61,19 @@ describe("getErrorMessage", () => {
     ).toBe(
       "Cannot permanently delete this category because it is still linked to 1 course."
     );
+  });
+
+  it("surfaces field validation errors when the API omits message", () => {
+    expect(
+      getErrorMessage(
+        axiosError(400, {
+          code: "VALIDATION_ERROR",
+          errors: {
+            studentId: ["studentId must be a UUID"],
+            feeAmount: ["feeAmount must be a number"],
+          },
+        })
+      )
+    ).toBe("studentId must be a UUID");
   });
 });

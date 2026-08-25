@@ -1,52 +1,25 @@
 "use client";
 
-import {
-  useMemo,
-  useState,
-} from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
-import { Plus } from "lucide-react";
-
-import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
-import { Loader } from "@/src/shared/components/ui/loader";
-import { Modal } from "@/src/shared/components/ui/model";
-import { PageHeader } from "@/src/shared/components/ui/page-header";
 import { Pagination } from "@/src/shared/components/ui/pagination";
-import { SearchInput } from "@/src/shared/components/ui/search-input";
+import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 
-import { Enrollment } from "../types";
-
-import { useEnrollments } from "../hooks";
-
-import { EnrollmentTable } from "../components/table";
-
-import { EnrollmentForm } from "../components/form";
-
-import {
-  DeleteEnrollmentDialog,
-  PermanentDeleteEnrollmentDialog,
-  RejectEnrollmentDialog,
-  RestoreEnrollmentDialog,
-  UpdateEnrollmentStatusDialog,
-} from "../components/dialogs";
-
-import { EnrollmentDetailsDrawer } from "../components/drawers";
-
-import {
-  useApproveEnrollment,
-  useDeleteEnrollment,
-  usePermanentDeleteEnrollment,
-  useRejectEnrollment,
-  useRestoreEnrollment,
-  useUpdateEnrollmentStatus,
-} from "../hooks";
-import { EnrollmentFilters } from "../components/filters";
+import { EnrollmentFilters } from "@/src/features/enrollments/components/filters/EnrollmentFilters";
+import { CreateEnrollmentModal } from "@/src/features/enrollments/components/form/create-enrollment-modal";
+import { UpdateEnrollmentModal } from "@/src/features/enrollments/components/form/update-enrollment-modal";
+import { EnrollmentSummaryHeader } from "@/src/features/enrollments/components/table/enrollment-summary-header";
+import { EnrollmentTable } from "@/src/features/enrollments/components/table/EnrollmentTable";
+import { useEnrollment } from "@/src/features/enrollments/hooks/useEnrollment";
+import { useEnrollments } from "@/src/features/enrollments/hooks/useEnrollments";
+import type { Enrollment } from "@/src/features/enrollments/types";
+import { enrollmentManagePath } from "@/src/features/enrollments/utils/enrollment-manage.routes";
 
 export function EnrollmentListPage() {
+  const router = useRouter();
   const {
     enrollments,
     count,
@@ -57,512 +30,160 @@ export function EnrollmentListPage() {
     refetch,
   } = useEnrollments();
 
-  const {
-    deleteEnrollment,
-    isLoading: deleting,
-  } = useDeleteEnrollment();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedEnrollment, setSelectedEnrollment] =
+    useState<Enrollment | null>(null);
 
-  const {
-    restoreEnrollment,
-    isLoading: restoring,
-  } = useRestoreEnrollment();
+  const { enrollment: editEnrollment, isLoading: isEditLoading } =
+    useEnrollment(isEditOpen ? selectedEnrollment?.id ?? "" : "");
 
-  const {
-    permanentDeleteEnrollment,
-    isLoading:
-      permanentlyDeleting,
-  } =
-    usePermanentDeleteEnrollment();
+  const pageSize = filters.take || 10;
+  const page = Math.floor(filters.skip / pageSize) + 1;
+  const totalPages = Math.max(1, Math.ceil(count / pageSize));
+  const from = count === 0 ? 0 : filters.skip + 1;
+  const to = Math.min(filters.skip + pageSize, count);
 
-  const {
-    updateStatus,
-    isLoading:
-      updatingStatus,
-  } =
-    useUpdateEnrollmentStatus();
-
-  const { approveEnrollment, isLoading: approving } =
-    useApproveEnrollment();
-
-  const { rejectEnrollment, isLoading: rejecting } =
-    useRejectEnrollment();
-
-  const [
-    selectedEnrollment,
-    setSelectedEnrollment,
-  ] =
-    useState<Enrollment | null>(
-      null,
-    );
-
-  const [
-    editOpen,
-    setEditOpen,
-  ] =
-    useState(false);
-
-  const [
-    drawerOpen,
-    setDrawerOpen,
-  ] =
-    useState(false);
-
-  const [
-    deleteOpen,
-    setDeleteOpen,
-  ] =
-    useState(false);
-
-  const [
-    restoreOpen,
-    setRestoreOpen,
-  ] =
-    useState(false);
-
-  const [
-    permanentDeleteOpen,
-    setPermanentDeleteOpen,
-  ] =
-    useState(false);
-
-  const [
-    statusOpen,
-    setStatusOpen,
-  ] =
-    useState(false);
-
-  const [rejectOpen, setRejectOpen] = useState(false);
-
-  const totalPages =
-    useMemo(
-      () =>
-        Math.ceil(
-          count /
-            filters.take,
-        ),
-      [
-        count,
-        filters.take,
-      ],
-    );
-  const handleSearch = (
-    value: string,
-  ) => {
-    setFilters({
-      ...filters,
-      search: value,
-       skip: 0,
-    });
-  };
-
-  const handlePageChange = (
-  page: number,
-) => {
-  setFilters({
-    ...filters,
-    skip:
-      (page - 1) *
-      filters.take,
-  });
-};
-
-  const handleView = (
-    enrollment: Enrollment,
-  ) => {
-    setSelectedEnrollment(
-      enrollment,
-    );
-
-    setDrawerOpen(true);
-  };
-
-  const handleEdit = (
-    enrollment: Enrollment,
-  ) => {
-    setSelectedEnrollment(
-      enrollment,
-    );
-
-    setEditOpen(true);
-  };
-
-  const handleDelete = (
-    enrollment: Enrollment,
-  ) => {
-    setSelectedEnrollment(
-      enrollment,
-    );
-
-    setDeleteOpen(true);
-  };
-
-  const handleRestore = (
-    enrollment: Enrollment,
-  ) => {
-    setSelectedEnrollment(
-      enrollment,
-    );
-
-    setRestoreOpen(true);
-  };
-
-  const handlePermanentDelete =
-    (
-      enrollment: Enrollment,
-    ) => {
-      setSelectedEnrollment(
-        enrollment,
-      );
-
-      setPermanentDeleteOpen(
-        true,
-      );
-    };
-
-  const handleStatus =
-    (
-      enrollment: Enrollment,
-    ) => {
-      setSelectedEnrollment(
-        enrollment,
-      );
-
-      setStatusOpen(true);
-    };
-
-  const confirmDelete =
-    async () => {
-      if (
-        !selectedEnrollment
-      ) {
-        return;
-      }
-
-      await deleteEnrollment(
-        selectedEnrollment.id,
-      );
-
-      setDeleteOpen(false);
-
-      await refetch();
-    };
-
-  const confirmRestore =
-    async () => {
-      if (
-        !selectedEnrollment
-      ) {
-        return;
-      }
-
-      await restoreEnrollment(
-        selectedEnrollment.id,
-      );
-
-      setRestoreOpen(false);
-
-      await refetch();
-    };
-
-  const confirmPermanentDelete =
-    async () => {
-      if (
-        !selectedEnrollment
-      ) {
-        return;
-      }
-
-      await permanentDeleteEnrollment(
-        selectedEnrollment.id,
-      );
-
-      setPermanentDeleteOpen(
-        false,
-      );
-
-      await refetch();
-    };
-
-  const confirmStatusUpdate =
-    async (
-      status:
-        Enrollment["status"],
-    ) => {
-      if (
-        !selectedEnrollment
-      ) {
-        return;
-      }
-
-      await updateStatus(
-        selectedEnrollment.id,
-        {
-          status,
-        },
-      );
-
-      setStatusOpen(false);
-
-      await refetch();
-    };
-
-  const handleApprove = async (enrollment: Enrollment) => {
-    await approveEnrollment(enrollment.id);
-    setDrawerOpen(false);
-    await refetch();
-  };
-
-  const handleRejectClick = (enrollment: Enrollment) => {
-    setSelectedEnrollment(enrollment);
-    setRejectOpen(true);
-  };
-
-  const confirmReject = async (reason: string) => {
-    if (!selectedEnrollment) {
-      return;
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(count / pageSize));
+    if (page > maxPage) {
+      setFilters({
+        ...filters,
+        skip: (maxPage - 1) * pageSize,
+      });
     }
+  }, [count, page, pageSize, filters, setFilters]);
 
-    await rejectEnrollment(selectedEnrollment.id, reason);
-    setRejectOpen(false);
-    setDrawerOpen(false);
-    await refetch();
-  };
+  const emptyMessage = useMemo(() => {
+    if ((filters.search ?? "").trim() || filters.status) {
+      return "No data yet";
+    }
+    return "No data yet";
+  }, [filters.search, filters.status]);
 
-  const filterPendingApproval = () => {
-    setFilters({
-      ...filters,
-      status: "PENDING_APPROVAL" as Enrollment["status"],
-      skip: 0,
-    });
-  };
-
-  if (isLoading) {
-    return <Loader />;
-  }
-
-  if (error) {
+  if (error && enrollments.length === 0 && !isLoading) {
     return (
       <ErrorState
         title="Failed To Load Enrollments"
-        description={
-          error
-        }
-        onRetry={
-          refetch
-        }
+        description={error}
+        onRetry={() => {
+          void refetch();
+        }}
       />
     );
   }
 
   return (
-    <>      <PageHeader
-        title="Enrollments"
-        description="Review paid enrollment requests and manage admissions."
-        actions={
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={filterPendingApproval}>
-              Pending Approval
-            </Button>
-            <Link
-              href="/enrollments/create"
-              className="inline-flex h-9 items-center justify-center rounded-lg bg-[#2447A8] px-4 text-sm font-medium text-white hover:bg-[#1e3a8a]"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Enrollment
-            </Link>
+    <div className="-m-6 min-h-full bg-white p-6">
+      <EnrollmentSummaryHeader
+        total={count}
+        isLoading={isLoading && enrollments.length === 0}
+        onCreate={() => setIsCreateOpen(true)}
+      />
+
+      <div className="mt-6 space-y-3">
+        <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
+          <div className="border-b border-slate-200 bg-white px-4 py-3">
+            <EnrollmentFilters filters={filters} onChange={setFilters} />
           </div>
-        }
+
+          {isLoading && enrollments.length === 0 ? (
+            <SkeletonTable rows={10} />
+          ) : (
+            <>
+              {error ? (
+                <div className="border-b border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                  {error}{" "}
+                  <button
+                    type="button"
+                    className="font-medium underline"
+                    onClick={() => {
+                      void refetch();
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : null}
+
+              <EnrollmentTable
+                enrollments={enrollments}
+                emptyMessage={emptyMessage}
+                onEdit={(item) => {
+                  setSelectedEnrollment(item);
+                  setIsEditOpen(true);
+                }}
+                onManage={(item) => {
+                  router.push(enrollmentManagePath(item.id));
+                }}
+              />
+
+              {count > 0 ? (
+                <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-slate-600">
+                    <span className="leading-9">
+                      Showing {from}–{to} of {count}
+                    </span>
+
+                    <label className="flex items-center gap-2 leading-9">
+                      <span className="whitespace-nowrap">Rows per page</span>
+                      <select
+                        className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-[15px]"
+                        value={pageSize}
+                        onChange={(event) =>
+                          setFilters({
+                            ...filters,
+                            take: Number(event.target.value),
+                            skip: 0,
+                          })
+                        }
+                      >
+                        {[10, 20, 50, 100].map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <Pagination
+                    page={page}
+                    totalPages={totalPages}
+                    onPageChange={(nextPage) =>
+                      setFilters({
+                        ...filters,
+                        skip: (nextPage - 1) * pageSize,
+                      })
+                    }
+                  />
+                </div>
+              ) : null}
+            </>
+          )}
+        </Card>
+      </div>
+
+      <CreateEnrollmentModal
+        open={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onSuccess={() => {
+          void refetch();
+        }}
       />
 
-      <Card className="mt-4 space-y-4 p-4">
-
-        <EnrollmentFilters
-  filters={filters}
-  onChange={setFilters}
-/>
-
-        {enrollments.length ===
-        0 ? (
-          <EmptyState
-            title="No Enrollments Found"
-            description="Create your first enrollment."
-          />
-        ) : (
-          <>
-            <EnrollmentTable
-              enrollments={
-                enrollments
-              }
-              onView={
-                handleView
-              }
-              onEdit={
-                handleEdit
-              }
-              onDelete={
-                handleDelete
-              }
-              onRestore={
-                handleRestore
-              }
-              onPermanentDelete={
-                handlePermanentDelete
-              }
-              onStatusChange={
-                handleStatus
-              }
-            />
-
-            <Pagination
-              page={
-                filters.take
-              }
-              totalPages={
-                totalPages
-              }
-              onPageChange={
-                handlePageChange
-              }
-            />
-          </>
-        )}
-
-      </Card>
-
-      {/* Edit */}
-
-      <Modal
-        open={editOpen}
-        title="Edit Enrollment"
-        onClose={() =>
-          setEditOpen(
-            false,
-          )
-        }
-      >
-        {selectedEnrollment && (
-          <EnrollmentForm
-            mode="edit"
-            enrollment={
-              selectedEnrollment
-            }
-            onSuccess={() => {
-              setEditOpen(
-                false,
-              );
-
-              void refetch();
-            }}
-          />
-        )}
-      </Modal>
-
-      {/* Details */}
-
-      <EnrollmentDetailsDrawer
-        open={
-          drawerOpen
-        }
-        enrollment={
-          selectedEnrollment
-        }
-        onClose={() =>
-          setDrawerOpen(
-            false,
-          )
-        }
-        onApprove={handleApprove}
-        onReject={handleRejectClick}
-        isProcessing={approving || rejecting}
+      <UpdateEnrollmentModal
+        open={isEditOpen}
+        enrollment={editEnrollment ?? selectedEnrollment}
+        isLoading={isEditLoading && !editEnrollment}
+        onClose={() => {
+          setIsEditOpen(false);
+          setSelectedEnrollment(null);
+        }}
+        onSuccess={() => {
+          void refetch();
+        }}
       />
-
-      <RejectEnrollmentDialog
-        open={rejectOpen}
-        loading={rejecting}
-        onConfirm={confirmReject}
-        onClose={() => setRejectOpen(false)}
-      />
-
-      {/* Delete */}
-
-      <DeleteEnrollmentDialog
-        open={
-          deleteOpen
-        }
-        isLoading={
-          deleting
-        }
-        onClose={() =>
-          setDeleteOpen(
-            false,
-          )
-        }
-        onConfirm={
-          confirmDelete
-        }
-      />
-
-      {/* Restore */}
-
-      <RestoreEnrollmentDialog
-        open={
-          restoreOpen
-        }
-        isLoading={
-          restoring
-        }
-        onClose={() =>
-          setRestoreOpen(
-            false,
-          )
-        }
-        onConfirm={
-          confirmRestore
-        }
-      />
-
-      {/* Permanent Delete */}
-
-      <PermanentDeleteEnrollmentDialog
-        open={
-          permanentDeleteOpen
-        }
-        isLoading={
-          permanentlyDeleting
-        }
-        onClose={() =>
-          setPermanentDeleteOpen(
-            false,
-          )
-        }
-        onConfirm={
-          confirmPermanentDelete
-        }
-      />
-
-      {/* Status */}
-
-      {selectedEnrollment && (
-        <UpdateEnrollmentStatusDialog
-          open={
-            statusOpen
-          }
-          value={
-            selectedEnrollment.status
-          }
-          loading={
-            updatingStatus
-          }
-          onClose={() =>
-            setStatusOpen(
-              false,
-            )
-          }
-          onSubmit={
-            confirmStatusUpdate
-          }
-        />
-      )}
-    </>
+    </div>
   );
 }

@@ -10,8 +10,6 @@ import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { useStudent } from "@/src/features/students/hooks/useStudent";
-import { useActivateStudent } from "@/src/features/students/hooks/useActivateStudent";
-import { useDeactivateStudent } from "@/src/features/students/hooks/useDeactivateStudent";
 import { useDeleteStudent } from "@/src/features/students/hooks/useDeleteStudent";
 import { useRestoreStudent } from "@/src/features/students/hooks/useRestoreStudent";
 import { usePermanentDeleteStudent } from "@/src/features/students/hooks/usePermanentDeleteStudent";
@@ -35,16 +33,18 @@ interface Props {
 
 const TAB_LABELS: Record<TabKey, string> = {
   overview: "Overview",
-  attendance: "Attendance",
-  payments: "Payments",
   documents: "Documents",
   activity: "Activity",
 };
 
 const VALID_TABS = new Set<TabKey>(Object.keys(TAB_LABELS) as TabKey[]);
 
-function resolveInitialTab(initialTab?: TabKey | "enrollments"): TabKey {
-  if (initialTab === "enrollments") {
+function resolveInitialTab(initialTab?: TabKey | "enrollments" | "attendance" | "payments"): TabKey {
+  if (
+    initialTab === "enrollments" ||
+    initialTab === "attendance" ||
+    initialTab === "payments"
+  ) {
     return STUDENT_MANAGE_DEFAULT_TAB;
   }
 
@@ -59,8 +59,6 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
   const router = useRouter();
   const { student, isLoading, error, refetch } = useStudent({ id: studentId });
 
-  const { activateStudent, isLoading: isActivating } = useActivateStudent();
-  const { deactivateStudent, isLoading: isDeactivating } = useDeactivateStudent();
   const { deleteStudent, isPending: isArchiving } = useDeleteStudent();
   const { restoreStudent, isPending: isRestoring } = useRestoreStudent();
   const { permanentDeleteStudent, isPending: isPermanentlyDeleting } =
@@ -71,8 +69,6 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
   );
   const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isActivateOpen, setIsActivateOpen] = useState(false);
-  const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isRestoreOpen, setIsRestoreOpen] = useState(false);
   const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] = useState(false);
@@ -101,11 +97,6 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
     router.replace(studentManagePath(studentId));
   }, [bumpOverviewRefresh, refreshStudentData, router, studentId]);
 
-  const refreshInPlace = useCallback(async () => {
-    bumpOverviewRefresh();
-    await refreshStudentData();
-  }, [bumpOverviewRefresh, refreshStudentData]);
-
   const handleTabChange = useCallback(
     (tab: TabKey) => {
       setActiveTab(tab);
@@ -115,11 +106,7 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
   );
 
   const actionsDisabled =
-    isArchiving ||
-    isRestoring ||
-    isPermanentlyDeleting ||
-    isActivating ||
-    isDeactivating;
+    isArchiving || isRestoring || isPermanentlyDeleting;
 
   const activeSection = useMemo(() => TAB_LABELS[activeTab], [activeTab]);
 
@@ -146,8 +133,6 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
         activeSection={activeSection}
         actionsDisabled={actionsDisabled}
         onEdit={() => setIsEditOpen(true)}
-        onActivate={() => setIsActivateOpen(true)}
-        onDeactivate={() => setIsDeactivateOpen(true)}
         onArchive={() => setIsArchiveOpen(true)}
         onRestore={() => setIsRestoreOpen(true)}
         onPermanentDelete={() => setIsPermanentDeleteOpen(true)}
@@ -159,6 +144,7 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
         overviewRefreshKey={overviewRefreshKey}
         onTabChange={handleTabChange}
         onStudentRefresh={handleStudentDataRefresh}
+        onDocumentsChanged={bumpOverviewRefresh}
       />
 
       <UpdateStudentModal
@@ -168,44 +154,6 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
         onSuccess={async () => {
           setIsEditOpen(false);
           await returnToOverview();
-        }}
-      />
-
-      <ConfirmDialog
-        open={isActivateOpen}
-        title="Activate student?"
-        description={`Activate "${[student.firstName, student.lastName].filter(Boolean).join(" ")}"?`}
-        confirmLabel="Activate"
-        loading={isActivating}
-        onCancel={() => setIsActivateOpen(false)}
-        onConfirm={async () => {
-          try {
-            await activateStudent(student.id);
-            appToast.success("Student activated successfully");
-            setIsActivateOpen(false);
-            await refreshInPlace();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          }
-        }}
-      />
-
-      <ConfirmDialog
-        open={isDeactivateOpen}
-        title="Deactivate student?"
-        description={`Deactivate "${[student.firstName, student.lastName].filter(Boolean).join(" ")}"?`}
-        confirmLabel="Deactivate"
-        loading={isDeactivating}
-        onCancel={() => setIsDeactivateOpen(false)}
-        onConfirm={async () => {
-          try {
-            await deactivateStudent(student.id);
-            appToast.success("Student deactivated successfully");
-            setIsDeactivateOpen(false);
-            await refreshInPlace();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          }
         }}
       />
 
@@ -221,7 +169,7 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
             await deleteStudent(student.id);
             appToast.success("Student archived successfully");
             setIsArchiveOpen(false);
-            router.push("/students");
+            await refreshStudentData();
           } catch (err) {
             appToast.error(getErrorMessage(err));
           }
@@ -240,7 +188,7 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
             await restoreStudent(student.id);
             appToast.success("Student restored successfully");
             setIsRestoreOpen(false);
-            await returnToOverview();
+            await refreshStudentData();
           } catch (err) {
             appToast.error(getErrorMessage(err));
           }

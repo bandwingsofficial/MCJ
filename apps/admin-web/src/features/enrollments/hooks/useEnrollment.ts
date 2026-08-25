@@ -42,6 +42,9 @@ export const useEnrollment = (
   const fetchEnrollment =
     useCallback(async () => {
       if (!id) {
+        setEnrollment(null);
+        setError(null);
+        setLoading(false);
         return;
       }
 

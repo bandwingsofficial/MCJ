@@ -8,13 +8,9 @@ import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 
 import { AuthModule } from '../auth/auth.module';
-import { BATCH_TOKENS } from '../batch/batch.tokens';
-import { BatchModule } from '../batch/batch.module';
-import type { BatchRepository } from '../batch/domain/repositories/batch.repository';
 import { BranchUserModule } from '../branch-user/branch-user.module';
 import { ENROLLMENT_TOKENS } from '../enrollment/enrollment.tokens';
 import { EnrollmentModule } from '../enrollment/enrollment.module';
-import { EnrollmentSideEffectsService } from '../enrollment/application/shared/enrollment-side-effects.service';
 import type { EnrollmentRepository } from '../enrollment/domain/repositories/enrollment.repository';
 import { STUDENT_TOKENS } from '../student/student.tokens';
 import { StudentModule } from '../student/student.module';
@@ -46,7 +42,6 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
     BranchUserModule,
     forwardRef(() => EnrollmentModule),
     StudentModule,
-    BatchModule,
   ],
 
   controllers: [AdminPaymentController, PublicPaymentController],

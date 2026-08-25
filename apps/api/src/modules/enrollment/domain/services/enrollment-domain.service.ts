@@ -46,7 +46,6 @@ import {
   EnrollmentDeletedException,
   EnrollmentNotDeletedException,
   InvalidStatusTransitionException,
-  StudentBranchMismatchException,
   StudentDeletedException,
   StudentInactiveException,
   StudentNotFoundException,
@@ -181,6 +180,7 @@ export class EnrollmentDomainService {
     enrollmentRepo: EnrollmentRepository,
     studentId: string,
     batchId: string,
+    excludeId?: string,
   ): Promise<void> {
     const existing =
       await enrollmentRepo.findByStudentAndBatch(
@@ -189,7 +189,7 @@ export class EnrollmentDomainService {
         true,
       );
 
-    if (existing) {
+    if (existing && existing.id !== excludeId) {
       throw new EnrollmentAlreadyExistsException();
     }
   }
@@ -356,10 +356,9 @@ export class EnrollmentDomainService {
       throw new BranchInactiveException();
     }
 
-    // Hierarchy alignment — branch assignment may come from enrollment workflow.
-    if (student.branchId && student.branchId !== branchId) {
-      throw new StudentBranchMismatchException();
-    }
+    // Enrollment is the source of truth for branch assignment. A student
+    // profile may already have a different branchId from a prior enrollment;
+    // the create/update handlers associate the student with this batch's branch.
 
     // Batch is the source of truth for branch + course alignment.
     // If an active batch exists for this branch and course, the offering is valid

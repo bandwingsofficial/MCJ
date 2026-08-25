@@ -1,14 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  CircleCheck,
-  MoreVertical,
-  Pencil,
-  Power,
-  RotateCcw,
-  Trash2,
-} from "lucide-react";
+import { MoreVertical, Pencil } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Dropdown } from "@/src/shared/components/ui/dropdown";
@@ -21,8 +14,6 @@ interface Props {
   student: Student;
   activeSection?: string;
   onEdit: () => void;
-  onActivate: () => void;
-  onDeactivate: () => void;
   onArchive: () => void;
   onRestore: () => void;
   onPermanentDelete: () => void;
@@ -39,8 +30,6 @@ export function StudentManageHeader({
   student,
   activeSection,
   onEdit,
-  onActivate,
-  onDeactivate,
   onArchive,
   onRestore,
   onPermanentDelete,
@@ -56,13 +45,12 @@ export function StudentManageHeader({
           onClick: onRestore,
         },
         {
-          label: "Permanent Delete",
+          label: "Permanently Delete",
           onClick: onPermanentDelete,
           destructive: true,
         },
       ]
     : [
-        { label: "Edit", onClick: onEdit },
         { label: "Archive", onClick: onArchive, destructive: true },
       ];
 
@@ -105,85 +93,34 @@ export function StudentManageHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {isArchived ? (
-            <>
-              <Button
-                type="button"
-                size="sm"
-                disabled={actionsDisabled}
-                onClick={onRestore}
-                className="border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-              >
-                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                Restore
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="danger"
-                disabled={actionsDisabled}
-                onClick={onPermanentDelete}
-              >
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                Permanently Delete
-              </Button>
-            </>
-          ) : (
-            <>
+          {!isArchived ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={actionsDisabled}
+              onClick={onEdit}
+            >
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              Edit Student
+            </Button>
+          ) : null}
+
+          <Dropdown
+            trigger={
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
                 disabled={actionsDisabled}
-                onClick={onEdit}
+                aria-label="More student actions"
               >
-                <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                Edit Student
+                <MoreVertical className="mr-1.5 h-3.5 w-3.5" />
+                More
               </Button>
-
-              {student.isActive ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={actionsDisabled}
-                  onClick={onDeactivate}
-                  className="border-red-200 text-red-700 hover:bg-red-50"
-                >
-                  <Power className="mr-1.5 h-3.5 w-3.5" />
-                  Deactivate
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={actionsDisabled}
-                  onClick={onActivate}
-                  className="border-emerald-200 text-emerald-800 hover:bg-emerald-50"
-                >
-                  <CircleCheck className="mr-1.5 h-3.5 w-3.5" />
-                  Activate
-                </Button>
-              )}
-
-              <Dropdown
-                trigger={
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    disabled={actionsDisabled}
-                    aria-label="More student actions"
-                  >
-                    <MoreVertical className="mr-1.5 h-3.5 w-3.5" />
-                    More
-                  </Button>
-                }
-                items={moreItems}
-              />
-            </>
-          )}
+            }
+            items={moreItems}
+          />
         </div>
       </div>
     </div>

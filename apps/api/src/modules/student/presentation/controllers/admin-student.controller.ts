@@ -27,10 +27,16 @@ import { BranchUserRole } from '@modules/branch-user/domain/enums/branch-user-ro
 
 import { CreateStudentCommand } from '../../application/create-student/create-student.command';
 import { CreateStudentHandler } from '../../application/create-student/create-student.handler';
+import { CreateStudentDocumentCommand } from '../../application/create-student-document/create-student-document.command';
+import { CreateStudentDocumentHandler } from '../../application/create-student-document/create-student-document.handler';
 import { DeleteStudentCommand } from '../../application/delete-student/delete-student.command';
 import { DeleteStudentHandler } from '../../application/delete-student/delete-student.handler';
+import { DeleteStudentDocumentCommand } from '../../application/delete-student-document/delete-student-document.command';
+import { DeleteStudentDocumentHandler } from '../../application/delete-student-document/delete-student-document.handler';
 import { GetStudentHandler } from '../../application/get-student/get-student.handler';
 import { GetStudentQuery } from '../../application/get-student/get-student.query';
+import { ListStudentDocumentsHandler } from '../../application/list-student-documents/list-student-documents.handler';
+import { ListStudentDocumentsQuery } from '../../application/list-student-documents/list-student-documents.query';
 import { ListStudentsHandler } from '../../application/list-students/list-students.handler';
 import { ListStudentsQuery } from '../../application/list-students/list-students.query';
 import { PermanentDeleteStudentCommand } from '../../application/permanent-delete-student/permanent-delete-student.command';
@@ -39,6 +45,8 @@ import { RestoreStudentCommand } from '../../application/restore-student/restore
 import { RestoreStudentHandler } from '../../application/restore-student/restore-student.handler';
 import { UpdateStudentCommand } from '../../application/update-student/update-student.command';
 import { UpdateStudentHandler } from '../../application/update-student/update-student.handler';
+import { UpdateStudentDocumentCommand } from '../../application/update-student-document/update-student-document.command';
+import { UpdateStudentDocumentHandler } from '../../application/update-student-document/update-student-document.handler';
 import { UpdateStudentStatusCommand } from '../../application/update-student-status/update-student-status.command';
 import { UpdateStudentStatusHandler } from '../../application/update-student-status/update-student-status.handler';
 import { SuggestStudentCodeHandler } from '../../application/suggest-student-code/suggest-student-code.handler';
@@ -54,8 +62,10 @@ import { BulkUpdateStudentStatusHandler } from '../../application/bulk-update-st
 import { BulkStudentIdsDto } from '../dtos/bulk-student-ids.dto';
 import { BulkUpdateStudentStatusDto } from '../dtos/bulk-update-student-status.dto';
 import { CreateStudentDto } from '../dtos/create-student.dto';
+import { CreateStudentDocumentDto } from '../dtos/create-student-document.dto';
 import { ListStudentsQueryDto } from '../dtos/list-students-query.dto';
 import { UpdateStudentDto } from '../dtos/update-student.dto';
+import { UpdateStudentDocumentDto } from '../dtos/update-student-document.dto';
 
 type StudentAdminUser = AuthUser & {
   branchId?: string;
@@ -79,6 +89,10 @@ export class AdminStudentController {
     private readonly bulkDeleteStudentsHandler: BulkDeleteStudentsHandler,
     private readonly bulkRestoreStudentsHandler: BulkRestoreStudentsHandler,
     private readonly bulkPermanentDeleteStudentsHandler: BulkPermanentDeleteStudentsHandler,
+    private readonly listStudentDocumentsHandler: ListStudentDocumentsHandler,
+    private readonly createStudentDocumentHandler: CreateStudentDocumentHandler,
+    private readonly updateStudentDocumentHandler: UpdateStudentDocumentHandler,
+    private readonly deleteStudentDocumentHandler: DeleteStudentDocumentHandler,
   ) {}
 
   @Post()
@@ -148,7 +162,7 @@ export class AdminStudentController {
         query.status,
         query.search,
         query.includeDeleted,
-        false,
+        query.onlyActive === true,
         query.skip,
         query.take,
       ),
@@ -347,6 +361,121 @@ export class AdminStudentController {
     return {
       success: true,
       message: 'Student fetched successfully',
+      data: result,
+    };
+  }
+
+  @Get(':id/documents')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async listDocuments(
+    @Param('id') id: string,
+    @CurrentUser() user: StudentAdminUser,
+  ) {
+    const result = await this.listStudentDocumentsHandler.execute(
+      new ListStudentDocumentsQuery(
+        id,
+        this.resolveBranchId(undefined, user),
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Student documents fetched successfully',
+      data: result,
+    };
+  }
+
+  @Post(':id/documents')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+    BranchAccessGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async createDocument(
+    @Param('id') id: string,
+    @Body() dto: CreateStudentDocumentDto,
+    @CurrentUser() user: StudentAdminUser,
+  ) {
+    const result = await this.createStudentDocumentHandler.execute(
+      new CreateStudentDocumentCommand(
+        id,
+        dto.name,
+        dto.type,
+        dto.fileId,
+        dto.description,
+        user.sub,
+        this.resolveBranchId(undefined, user),
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Student document uploaded successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':id/documents/:documentId')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+    BranchAccessGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async updateDocument(
+    @Param('id') id: string,
+    @Param('documentId') documentId: string,
+    @Body() dto: UpdateStudentDocumentDto,
+    @CurrentUser() user: StudentAdminUser,
+  ) {
+    const result = await this.updateStudentDocumentHandler.execute(
+      new UpdateStudentDocumentCommand(
+        id,
+        documentId,
+        dto.name,
+        dto.type,
+        dto.fileId,
+        dto.description,
+        user.sub,
+        this.resolveBranchId(undefined, user),
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Student document updated successfully',
+      data: result,
+    };
+  }
+
+  @Delete(':id/documents/:documentId')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+    BranchAccessGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async deleteDocument(
+    @Param('id') id: string,
+    @Param('documentId') documentId: string,
+    @CurrentUser() user: StudentAdminUser,
+  ) {
+    const result = await this.deleteStudentDocumentHandler.execute(
+      new DeleteStudentDocumentCommand(
+        id,
+        documentId,
+        this.resolveBranchId(undefined, user),
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Student document deleted successfully',
       data: result,
     };
   }

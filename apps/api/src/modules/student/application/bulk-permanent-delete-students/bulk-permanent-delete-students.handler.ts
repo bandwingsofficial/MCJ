@@ -4,6 +4,7 @@ import { BaseException } from '@common/exceptions/base.exception';
 import { UploadDomainService } from '@modules/uploads/domain/services/upload-domain.service';
 
 import type { Student } from '../../domain/entities/student.entity';
+import type { StudentDocumentRepository } from '../../domain/repositories/student-document.repository';
 import type { StudentRepository } from '../../domain/repositories/student.repository';
 
 import { ValidationError } from '../errors/validation.error';
@@ -20,6 +21,7 @@ export class BulkPermanentDeleteStudentsHandler {
 
   constructor(
     private readonly studentRepo: StudentRepository,
+    private readonly documentRepo: StudentDocumentRepository,
     private readonly uploadDomainService: UploadDomainService,
   ) {}
 
@@ -93,12 +95,20 @@ export class BulkPermanentDeleteStudentsHandler {
   }
 
   private async deleteStudentPermanently(student: Student): Promise<void> {
-    const profileImageFileId = student.profileImageFileId;
+    const documents = await this.documentRepo.findByStudentId(student.id);
+    const fileIds = [
+      ...documents.map((document) => document.fileId),
+      ...(student.profileImageFileId ? [student.profileImageFileId] : []),
+    ];
 
     await this.studentRepo.deletePermanent(student.id);
 
-    if (profileImageFileId) {
-      await this.uploadDomainService.permanentDelete(profileImageFileId);
+    for (const fileId of fileIds) {
+      try {
+        await this.uploadDomainService.permanentDelete(fileId);
+      } catch {
+        // File may already be gone; student deletion still succeeds.
+      }
     }
   }
 }

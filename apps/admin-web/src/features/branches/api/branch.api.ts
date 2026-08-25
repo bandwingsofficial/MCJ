@@ -13,10 +13,15 @@ import {
   UpdateBranchStatusRequest,
 } from "@/src/features/branches/types/branch.types";
 
+const MAX_BRANCH_PAGE_SIZE = 100;
+
 export const branchApi = {
   async getBranches(filters?: BranchFilters) {
     const page = filters?.page ?? 1;
-    const pageSize = filters?.pageSize ?? 20;
+    const pageSize = Math.min(
+      filters?.pageSize ?? 20,
+      MAX_BRANCH_PAGE_SIZE,
+    );
     const skip = (page - 1) * pageSize;
 
     const response = await apiClient.get<

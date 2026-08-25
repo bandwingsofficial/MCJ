@@ -105,23 +105,64 @@ export class EnrollmentSideEffectsService {
       enrollment.status,
     );
 
-    if (!studentStatus) {
-      return;
-    }
-
     const student = await this.studentRepo.findById(
       enrollment.studentId,
     );
-    if (!student || student.status === studentStatus) {
+    if (!student) {
+      return;
+    }
+
+    const nextBranchId =
+      student.branchId === enrollment.branchId
+        ? undefined
+        : enrollment.branchId;
+    const nextStatus =
+      studentStatus && student.status !== studentStatus
+        ? studentStatus
+        : undefined;
+
+    if (!nextBranchId && !nextStatus) {
       return;
     }
 
     student.update({
-      status: studentStatus,
+      ...(nextStatus ? { status: nextStatus } : {}),
+      ...(nextBranchId ? { branchId: nextBranchId } : {}),
       updatedBy: actorId,
     });
 
     await this.studentRepo.save(student);
+  }
+
+  async transferSeat(
+    fromBatchId: string,
+    toBatchId: string,
+    actorId?: string | null,
+  ): Promise<void> {
+    if (fromBatchId === toBatchId) {
+      return;
+    }
+
+    const fromBatch = await this.batchRepo.findById(fromBatchId);
+    if (fromBatch) {
+      fromBatch.update({
+        enrolledCount: Math.max(0, fromBatch.enrolledCount - 1),
+        updatedBy: actorId,
+      });
+      await this.batchRepo.save(fromBatch);
+    }
+
+    const toBatch = await this.batchRepo.findById(toBatchId);
+    if (!toBatch) {
+      return;
+    }
+
+    this.domainService.ensureBatchHasCapacity(toBatch);
+    toBatch.update({
+      enrolledCount: toBatch.enrolledCount + 1,
+      updatedBy: actorId,
+    });
+    await this.batchRepo.save(toBatch);
   }
 
   // Releases a batch seat when an occupying enrollment is removed.

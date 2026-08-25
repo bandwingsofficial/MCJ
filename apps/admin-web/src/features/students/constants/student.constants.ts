@@ -4,6 +4,7 @@ import type {
   StudentFilters,
   StudentGender,
   StudentStatus,
+  StudentDocumentType,
 } from "@/src/features/students/types/student.types";
 import { DELETED_STUDENTS_FILTER } from "@/src/features/students/utils/student-list.utils";
 import type { StudentFormSchema } from "@/src/features/students/schemas/student.schema";
@@ -68,3 +69,15 @@ export const DEFAULT_STUDENT_FORM_VALUES: StudentFormSchema = {
   status: "LEAD",
   profileImageFileId: "",
 };
+
+export const STUDENT_DOCUMENT_TYPE_OPTIONS: ReadonlyArray<{
+  label: string;
+  value: StudentDocumentType;
+}> = [
+  { label: "Marks Card", value: "MARKS_CARD" },
+  { label: "Aadhaar", value: "AADHAAR" },
+  { label: "ID Proof", value: "ID_PROOF" },
+  { label: "Certificate", value: "CERTIFICATE" },
+  { label: "Photo", value: "PHOTO" },
+  { label: "Other", value: "OTHER" },
+];

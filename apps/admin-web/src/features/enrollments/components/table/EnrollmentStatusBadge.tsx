@@ -19,6 +19,13 @@ export function EnrollmentStatusBadge({
         </Badge>
       );
 
+    case EnrollmentStatus.PENDING_APPROVAL:
+      return (
+        <Badge variant="warning">
+          Pending Approval
+        </Badge>
+      );
+
     case EnrollmentStatus.ADMITTED:
       return (
         <Badge variant="info">
@@ -51,6 +58,13 @@ export function EnrollmentStatusBadge({
       return (
         <Badge variant="danger">
           Dropped
+        </Badge>
+      );
+
+    case EnrollmentStatus.REJECTED:
+      return (
+        <Badge variant="danger">
+          Rejected
         </Badge>
       );
 

@@ -1,83 +1,28 @@
 "use client";
 
-import {
-  Search,
-} from "lucide-react";
-
-import { Input } from "@/src/shared/components/ui/input";
-
-import {
-  AppSelect,
-  SelectOption,
-} from "@/src/shared/components/ui/select";
+import { SearchInput } from "@/src/shared/components/ui/search-input";
+import { AppSelect } from "@/src/shared/components/ui/select";
 
 import {
   EnrollmentFilters as Filters,
   EnrollmentStatus,
-  PaymentStatus,
-  SortOrder,
 } from "../../types";
 
 interface EnrollmentFiltersProps {
   filters: Filters;
-
-  onChange: (
-    filters: Filters,
-  ) => void;
+  onChange: (filters: Filters) => void;
 }
 
-const statusOptions: SelectOption[] = [
-  {
-    label: "All Status",
-    value: "ALL",
-  },
-  ...Object.values(
-    EnrollmentStatus,
-  ).map((status) => ({
-    label: status,
-    value: status,
-  })),
-];
-
-const paymentOptions: SelectOption[] =
-  [
-    {
-      label: "All Payments",
-      value: "ALL",
-    },
-    ...Object.values(
-      PaymentStatus,
-    ).map((status) => ({
-      label: status,
-      value: status,
-    })),
-  ];
-
-const activeOptions: SelectOption[] =
-  [
-    {
-      label: "All",
-      value: "ALL",
-    },
-    {
-      label: "Active",
-      value: "true",
-    },
-    {
-      label: "Inactive",
-      value: "false",
-    },
-  ];
-
-const sortOptions: SelectOption[] = [
-  {
-    label: "Newest",
-    value: SortOrder.DESC,
-  },
-  {
-    label: "Oldest",
-    value: SortOrder.ASC,
-  },
+const STATUS_OPTIONS = [
+  { label: "All Status", value: "ALL" },
+  { label: "Pending", value: EnrollmentStatus.PENDING },
+  { label: "Pending Approval", value: EnrollmentStatus.PENDING_APPROVAL },
+  { label: "Admitted", value: EnrollmentStatus.ADMITTED },
+  { label: "Active", value: EnrollmentStatus.ACTIVE },
+  { label: "Completed", value: EnrollmentStatus.COMPLETED },
+  { label: "Cancelled", value: EnrollmentStatus.CANCELLED },
+  { label: "Dropped", value: EnrollmentStatus.DROPPED },
+  { label: "Rejected", value: EnrollmentStatus.REJECTED },
 ];
 
 export function EnrollmentFilters({
@@ -85,124 +30,37 @@ export function EnrollmentFilters({
   onChange,
 }: EnrollmentFiltersProps) {
   return (
-    <div className="grid grid-cols-1 gap-2 md:grid-cols-5">
-
-      <div className="relative">
-
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-
-        <Input
-          placeholder="Search..."
-          className="pl-9"
-          value={
-            filters.search ?? ""
-          }
-          onChange={(e) =>
+    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+      <div className="min-w-0 flex-1">
+        <SearchInput
+          value={filters.search ?? ""}
+          placeholder="Search enrollments..."
+          className="!h-10 rounded-lg !py-2 pl-9 text-[15px]"
+          onChange={(value: string) =>
             onChange({
               ...filters,
-              search:
-                e.target.value,
+              search: value,
               skip: 0,
             })
           }
         />
-
       </div>
 
-      <AppSelect
-        placeholder="Status"
-        value={
-          filters.status ??
-          "ALL"
-        }
-        options={
-          statusOptions
-        }
-        onValueChange={(
-          value: string,
-        ) =>
-          onChange({
-            ...filters,
-            status:
-              value === "ALL"
-                ? undefined
-                : value as EnrollmentStatus,
-            skip: 0,
-          })
-        }
-      />
-
-      <AppSelect
-        placeholder="Payment"
-        value={
-          filters.paymentStatus ??
-          "ALL"
-        }
-        options={
-          paymentOptions
-        }
-        onValueChange={(
-          value: string,
-        ) =>
-          onChange({
-            ...filters,
-            paymentStatus:
-              value === "ALL"
-                ? undefined
-                : value as PaymentStatus,
-            skip: 0,
-          })
-        }
-      />
-
-      <AppSelect
-        placeholder="Active"
-        value={
-          filters.isActive ===
-          undefined
-            ? "ALL"
-            : String(
-                filters.isActive,
-              )
-        }
-        options={
-          activeOptions
-        }
-        onValueChange={(
-          value: string,
-        ) =>
-          onChange({
-            ...filters,
-            isActive:
-              value === "ALL"
-                ? undefined
-                : value ===
-                  "true",
-            skip: 0,
-          })
-        }
-      />
-
-      <AppSelect
-        placeholder="Sort"
-        value={
-          filters.sortOrder ??
-          SortOrder.DESC
-        }
-        options={
-          sortOptions
-        }
-        onValueChange={(
-          value: string,
-        ) =>
-          onChange({
-            ...filters,
-            sortOrder:
-              value as SortOrder,
-          })
-        }
-      />
-
+      <div className="w-full shrink-0 sm:w-48">
+        <AppSelect
+          value={filters.status ?? "ALL"}
+          triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
+          onValueChange={(value) =>
+            onChange({
+              ...filters,
+              status:
+                value === "ALL" ? undefined : (value as EnrollmentStatus),
+              skip: 0,
+            })
+          }
+          options={STATUS_OPTIONS}
+        />
+      </div>
     </div>
   );
 }

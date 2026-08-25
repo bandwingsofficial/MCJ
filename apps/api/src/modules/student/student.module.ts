@@ -36,8 +36,14 @@ import { BulkDeleteStudentsHandler } from './application/bulk-delete-students/bu
 import { BulkRestoreStudentsHandler } from './application/bulk-restore-students/bulk-restore-students.handler';
 import { BulkUpdateStudentStatusHandler } from './application/bulk-update-student-status/bulk-update-student-status.handler';
 import { BulkPermanentDeleteStudentsHandler } from './application/bulk-permanent-delete-students/bulk-permanent-delete-students.handler';
+import { CreateStudentDocumentHandler } from './application/create-student-document/create-student-document.handler';
+import { DeleteStudentDocumentHandler } from './application/delete-student-document/delete-student-document.handler';
+import { ListStudentDocumentsHandler } from './application/list-student-documents/list-student-documents.handler';
+import { UpdateStudentDocumentHandler } from './application/update-student-document/update-student-document.handler';
+import type { StudentDocumentRepository } from './domain/repositories/student-document.repository';
 import type { StudentRepository } from './domain/repositories/student.repository';
 import { StudentDomainService } from './domain/services/student-domain.service';
+import { PrismaStudentDocumentRepository } from './infrastructure/repositories/prisma-student-document.repository';
 import { PrismaStudentRepository } from './infrastructure/repositories/prisma-student.repository';
 import { AdminStudentController } from './presentation/controllers/admin-student.controller';
 import { PublicStudentController } from './presentation/controllers/public-student.controller';
@@ -64,6 +70,13 @@ import { PublicStudentController } from './presentation/controllers/public-stude
       provide: STUDENT_TOKENS.STUDENT_REPOSITORY,
       useFactory: (prisma: PrismaService) =>
         new PrismaStudentRepository(prisma),
+      inject: [PrismaService],
+    },
+
+    {
+      provide: STUDENT_TOKENS.STUDENT_DOCUMENT_REPOSITORY,
+      useFactory: (prisma: PrismaService) =>
+        new PrismaStudentDocumentRepository(prisma),
       inject: [PrismaService],
     },
 
@@ -243,16 +256,19 @@ import { PublicStudentController } from './presentation/controllers/public-stude
       provide: PermanentDeleteStudentHandler,
       useFactory: (
         studentRepo: StudentRepository,
+        documentRepo: StudentDocumentRepository,
         uploadDomainService: UploadDomainService,
         domainService: StudentDomainService,
       ) =>
         new PermanentDeleteStudentHandler(
           studentRepo,
+          documentRepo,
           uploadDomainService,
           domainService,
         ),
       inject: [
         STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.STUDENT_DOCUMENT_REPOSITORY,
         UploadDomainService,
         StudentDomainService,
       ],
@@ -324,14 +340,102 @@ import { PublicStudentController } from './presentation/controllers/public-stude
       provide: BulkPermanentDeleteStudentsHandler,
       useFactory: (
         studentRepo: StudentRepository,
+        documentRepo: StudentDocumentRepository,
         uploadDomainService: UploadDomainService,
       ) =>
         new BulkPermanentDeleteStudentsHandler(
           studentRepo,
+          documentRepo,
           uploadDomainService,
         ),
       inject: [
         STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.STUDENT_DOCUMENT_REPOSITORY,
+        UploadDomainService,
+      ],
+    },
+
+    {
+      provide: ListStudentDocumentsHandler,
+      useFactory: (
+        studentRepo: StudentRepository,
+        documentRepo: StudentDocumentRepository,
+        domainService: StudentDomainService,
+      ) =>
+        new ListStudentDocumentsHandler(
+          studentRepo,
+          documentRepo,
+          domainService,
+        ),
+      inject: [
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.STUDENT_DOCUMENT_REPOSITORY,
+        StudentDomainService,
+      ],
+    },
+
+    {
+      provide: CreateStudentDocumentHandler,
+      useFactory: (
+        studentRepo: StudentRepository,
+        documentRepo: StudentDocumentRepository,
+        domainService: StudentDomainService,
+        uploadDomainService: UploadDomainService,
+      ) =>
+        new CreateStudentDocumentHandler(
+          studentRepo,
+          documentRepo,
+          domainService,
+          uploadDomainService,
+        ),
+      inject: [
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.STUDENT_DOCUMENT_REPOSITORY,
+        StudentDomainService,
+        UploadDomainService,
+      ],
+    },
+
+    {
+      provide: UpdateStudentDocumentHandler,
+      useFactory: (
+        studentRepo: StudentRepository,
+        documentRepo: StudentDocumentRepository,
+        domainService: StudentDomainService,
+        uploadDomainService: UploadDomainService,
+      ) =>
+        new UpdateStudentDocumentHandler(
+          studentRepo,
+          documentRepo,
+          domainService,
+          uploadDomainService,
+        ),
+      inject: [
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.STUDENT_DOCUMENT_REPOSITORY,
+        StudentDomainService,
+        UploadDomainService,
+      ],
+    },
+
+    {
+      provide: DeleteStudentDocumentHandler,
+      useFactory: (
+        studentRepo: StudentRepository,
+        documentRepo: StudentDocumentRepository,
+        domainService: StudentDomainService,
+        uploadDomainService: UploadDomainService,
+      ) =>
+        new DeleteStudentDocumentHandler(
+          studentRepo,
+          documentRepo,
+          domainService,
+          uploadDomainService,
+        ),
+      inject: [
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.STUDENT_DOCUMENT_REPOSITORY,
+        StudentDomainService,
         UploadDomainService,
       ],
     },

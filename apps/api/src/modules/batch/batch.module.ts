@@ -46,17 +46,16 @@ import { BatchController } from './presentation/controllers/batch.controller';
 import { BRANCH_TOKENS } from '../branch/branch.tokens';
 import { BranchModule } from '../branch/branch.module';
 import type { BranchRepository } from '../branch/domain/repositories/branch.repository';
-import { EnrollmentModule } from '../enrollment/enrollment.module';
 
 @Module({
   imports: [
     PrismaModule,
     AuthModule,
+    // Course <-> Enrollment <-> Batch is a genuine module cycle.
     forwardRef(() => CourseModule),
-    forwardRef(() => CategoryModule),
+    CategoryModule,
     TrainerModule,
     BranchModule,
-    forwardRef(() => EnrollmentModule),
   ],
 
   controllers: [

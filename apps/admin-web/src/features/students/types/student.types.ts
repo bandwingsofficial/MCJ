@@ -10,6 +10,16 @@ export type StudentStatus =
   | "DROPPED"
   | "PLACED";
 
+export type StudentDocumentType =
+  | "MARKS_CARD"
+  | "AADHAAR"
+  | "ID_PROOF"
+  | "CERTIFICATE"
+  | "PHOTO"
+  | "OTHER";
+
+export type StudentDocumentStatus = "UPLOADED";
+
 export interface Student {
   id: string;
   firstName: string;
@@ -51,6 +61,7 @@ export interface Student {
 export interface StudentFilters {
   search?: string;
   includeDeleted?: boolean;
+  onlyActive?: boolean;
   status?: StudentStatus;
   gender?: StudentGender;
   branchId?: string;
@@ -128,4 +139,36 @@ export interface ApiSuccessResponse<T> {
   success: boolean;
   message: string;
   data: T;
+}
+
+export interface StudentDocument {
+  id: string;
+  studentId: string;
+  name: string;
+  type: StudentDocumentType;
+  description: string | null;
+  fileId: string;
+  fileName: string | null;
+  fileSize: number | null;
+  fileUrl: string | null;
+  mimeType: string | null;
+  status: StudentDocumentStatus;
+  createdBy: string | null;
+  updatedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateStudentDocumentRequest {
+  name: string;
+  type: StudentDocumentType;
+  fileId: string;
+  description?: string;
+}
+
+export interface UpdateStudentDocumentRequest {
+  name?: string;
+  type?: StudentDocumentType;
+  fileId?: string;
+  description?: string;
 }

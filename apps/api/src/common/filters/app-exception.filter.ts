@@ -26,6 +26,33 @@ interface ApplicationErrorLike {
   metadata?: Record<string, unknown>;
 }
 
+function formatValidationErrorMessage(errors: unknown): string {
+  if (!errors || typeof errors !== 'object') {
+    return 'Request validation failed.';
+  }
+
+  const messages: string[] = [];
+
+  for (const [field, value] of Object.entries(
+    errors as Record<string, unknown>,
+  )) {
+    if (Array.isArray(value) && value.length > 0) {
+      messages.push(
+        value
+          .filter((item): item is string => typeof item === 'string')
+          .join(', ') || `${field} is invalid.`,
+      );
+      continue;
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      messages.push(value);
+    }
+  }
+
+  return messages[0] ?? 'Request validation failed.';
+}
+
 function isApplicationErrorLike(
   exception: unknown,
 ): exception is ApplicationErrorLike {
@@ -95,9 +122,18 @@ export class AppExceptionFilter implements ExceptionFilter {
       this.logException(status, exception, request);
 
       if (responseBody.code === 'VALIDATION_ERROR') {
+        const validationMessage = formatValidationErrorMessage(
+          responseBody.errors,
+        );
+
+        this.logger.warn(
+          `Validation failed for ${request.method} ${request.originalUrl}: ${validationMessage}`,
+        );
+
         response.status(status).json({
           success: false,
           code: responseBody.code,
+          message: validationMessage,
           errors: responseBody.errors,
           ...(responseBody.meta
             ? { meta: responseBody.meta }

@@ -12,14 +12,9 @@ import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
-import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
-import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
 import { useStudents } from "@/src/features/students/hooks/useStudents";
 import { useActivateStudent } from "@/src/features/students/hooks/useActivateStudent";
 import { useDeactivateStudent } from "@/src/features/students/hooks/useDeactivateStudent";
-import { useDeleteStudent } from "@/src/features/students/hooks/useDeleteStudent";
-import { useRestoreStudent } from "@/src/features/students/hooks/useRestoreStudent";
-import { usePermanentDeleteStudent } from "@/src/features/students/hooks/usePermanentDeleteStudent";
 import { studentService } from "@/src/features/students/services/student.service";
 import { DEFAULT_STUDENT_FILTERS } from "@/src/features/students/constants/student.constants";
 
@@ -62,17 +57,9 @@ export function StudentsPage() {
 
   const { activateStudent, isLoading: isActivating } = useActivateStudent();
   const { deactivateStudent, isLoading: isDeactivating } = useDeactivateStudent();
-  const { deleteStudent, isPending: isDeleting } = useDeleteStudent();
-  const { restoreStudent, isPending: isRestoring } = useRestoreStudent();
-  const { permanentDeleteStudent, isPending: isPermanentlyDeleting } =
-    usePermanentDeleteStudent();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<StudentListItem | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<StudentListItem | null>(null);
-  const [restoreTarget, setRestoreTarget] = useState<StudentListItem | null>(null);
-  const [permanentDeleteTarget, setPermanentDeleteTarget] =
-    useState<StudentListItem | null>(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [bulkConfirmAction, setBulkConfirmAction] =
     useState<BulkStudentAction | null>(null);
@@ -82,45 +69,12 @@ export function StudentsPage() {
   } | null>(null);
   const [isBulkLoading, setIsBulkLoading] = useState(false);
   const [branches, setBranches] = useState<BranchOption[]>([]);
-  const [enrolledStudentIds, setEnrolledStudentIds] = useState<Set<string>>(
-    new Set(),
-  );
 
   const pageSize = filters.pageSize ?? 20;
   const page = filters.page ?? 1;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
-
-  useEffect(() => {
-    const loadEnrollmentStatus = async () => {
-      try {
-        const response = await enrollmentService.getEnrollments({
-          skip: 0,
-          take: 1000,
-        });
-        const parsed = parseEnrollmentListResponse(response);
-        const enrolled = new Set<string>();
-
-        for (const enrollment of parsed.items) {
-          if (enrollment.isDeleted) {
-            continue;
-          }
-
-          const studentId = enrollment.student?.id;
-          if (studentId) {
-            enrolled.add(studentId);
-          }
-        }
-
-        setEnrolledStudentIds(enrolled);
-      } catch {
-        setEnrolledStudentIds(new Set());
-      }
-    };
-
-    void loadEnrollmentStatus();
-  }, [students]);
 
   const hasActiveFilters = Boolean(
     (filters.search ?? "").trim() ||
@@ -132,10 +86,7 @@ export function StudentsPage() {
   const actionLoading =
     isActivating ||
     isDeactivating ||
-    isBulkLoading ||
-    isDeleting ||
-    isRestoring ||
-    isPermanentlyDeleting;
+    isBulkLoading;
 
   useEffect(() => {
     const loadFilterOptions = async () => {
@@ -356,7 +307,6 @@ export function StudentsPage() {
           <div className="overflow-x-auto">
             <StudentTable
               students={students}
-              enrolledStudentIds={enrolledStudentIds}
               selectedStudentIds={selectedStudentIds}
               onSelectionChange={setSelectedStudentIds}
               actionsDisabled={actionLoading}
@@ -380,9 +330,6 @@ export function StudentsPage() {
               onDeactivate={(student) =>
                 setStatusTarget({ student, action: "deactivate" })
               }
-              onDelete={setDeleteTarget}
-              onRestore={setRestoreTarget}
-              onPermanentDelete={setPermanentDeleteTarget}
             />
           </div>
         )}
@@ -455,87 +402,6 @@ export function StudentsPage() {
           }}
         />
       ) : null}
-
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        title="Archive student?"
-        description={
-          deleteTarget
-            ? `Archive "${[deleteTarget.firstName, deleteTarget.lastName].filter(Boolean).join(" ")}"? They can be restored later.`
-            : ""
-        }
-        confirmLabel="Archive"
-        loading={isDeleting}
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={async () => {
-          if (!deleteTarget) {
-            return;
-          }
-
-          try {
-            await deleteStudent(deleteTarget.id);
-            appToast.success("Student archived successfully");
-            setDeleteTarget(null);
-            await refetch();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          }
-        }}
-      />
-
-      <ConfirmDialog
-        open={Boolean(restoreTarget)}
-        title="Restore student?"
-        description={
-          restoreTarget
-            ? `Restore "${[restoreTarget.firstName, restoreTarget.lastName].filter(Boolean).join(" ")}"?`
-            : ""
-        }
-        confirmLabel="Restore"
-        loading={isRestoring}
-        onCancel={() => setRestoreTarget(null)}
-        onConfirm={async () => {
-          if (!restoreTarget) {
-            return;
-          }
-
-          try {
-            await restoreStudent(restoreTarget.id);
-            appToast.success("Student restored successfully");
-            setRestoreTarget(null);
-            await refetch();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          }
-        }}
-      />
-
-      <ConfirmDialog
-        open={Boolean(permanentDeleteTarget)}
-        title="Permanently delete student?"
-        description={
-          permanentDeleteTarget
-            ? `Permanently delete "${[permanentDeleteTarget.firstName, permanentDeleteTarget.lastName].filter(Boolean).join(" ")}"? This cannot be undone.`
-            : ""
-        }
-        confirmLabel="Permanently Delete"
-        loading={isPermanentlyDeleting}
-        onCancel={() => setPermanentDeleteTarget(null)}
-        onConfirm={async () => {
-          if (!permanentDeleteTarget) {
-            return;
-          }
-
-          try {
-            await permanentDeleteStudent(permanentDeleteTarget.id);
-            appToast.success("Student permanently deleted");
-            setPermanentDeleteTarget(null);
-            await refetch();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          }
-        }}
-      />
 
       <ConfirmDialog
         open={Boolean(statusTarget)}
