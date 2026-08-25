@@ -22,6 +22,7 @@ import {
   useCreateCourseModule,
   useUpdateCourseModule,
   useDeleteCourseModule,
+  useDeactivateCourseModule,
   useMoveCourseModule,
   useRestoreCourseModule,
 } from "@/src/features/course-modules/hooks";
@@ -59,6 +60,8 @@ export function CourseManageModulesPanel({
     useUpdateCourseModule();
   const { deleteCourseModule, isSubmitting: isDeleting } =
     useDeleteCourseModule();
+  const { deactivateCourseModule, isSubmitting: isDeactivating } =
+    useDeactivateCourseModule();
   const { restoreCourseModule, isSubmitting: isRestoring } =
     useRestoreCourseModule();
   const { moveCourseModule } = useMoveCourseModule();
@@ -90,7 +93,7 @@ export function CourseManageModulesPanel({
   }, [sortedModules]);
 
   const actionsDisabled =
-    disabled || isDeleting || isRestoring || isReordering;
+    disabled || isDeleting || isDeactivating || isRestoring || isReordering;
 
   const handleDrop = async (targetId: string) => {
     if (
@@ -339,7 +342,7 @@ export function CourseManageModulesPanel({
       <CourseModuleStatusDialog
         open={statusOpen}
         module={selectedModule}
-        isLoading={isDeleting || isRestoring}
+        isLoading={isDeactivating || isRestoring}
         onClose={() => {
           setStatusOpen(false);
           setSelectedModule(null);
@@ -358,7 +361,7 @@ export function CourseManageModulesPanel({
               await restoreCourseModule(selectedModule.id);
               appToast.success("Module activated successfully");
             } else {
-              await deleteCourseModule(selectedModule.id);
+              await deactivateCourseModule(selectedModule.id);
               appToast.success("Module deactivated successfully");
             }
 
@@ -376,10 +379,22 @@ export function CourseManageModulesPanel({
       <CourseModuleDeleteDialog
         open={deleteOpen}
         moduleTitle={selectedModule?.title}
+        contentCounts={
+          selectedModule
+            ? (() => {
+                const treeModule = moduleTreeById.get(selectedModule.id);
+                return treeModule
+                  ? getModuleContentCounts(treeModule)
+                  : undefined;
+              })()
+            : undefined
+        }
         loading={isDeleting}
         onClose={() => {
-          setDeleteOpen(false);
-          setSelectedModule(null);
+          if (!isDeleting) {
+            setDeleteOpen(false);
+            setSelectedModule(null);
+          }
         }}
         onConfirm={async () => {
           if (!selectedModule) {

@@ -67,18 +67,6 @@ export function CourseModuleActions({
           <Pencil className={iconClass} />
         </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={() => onDelete(module)}
-          title="Delete module"
-          aria-label="Delete module"
-          className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
-        >
-          <Trash2 className={iconClass} />
-        </Button>
-
         <Link
           href={manageHref}
           title="Manage module"

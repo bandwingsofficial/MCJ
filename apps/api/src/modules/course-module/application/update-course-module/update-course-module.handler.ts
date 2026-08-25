@@ -17,7 +17,7 @@ export class UpdateCourseModuleHandler {
     command: UpdateCourseModuleCommand,
   ): Promise<CourseModuleResult> {
     const module = await this.domainService.ensureExists(
-      await this.courseModuleRepo.findById(command.id),
+      await this.courseModuleRepo.findById(command.id, true),
     );
 
     const nextSlug =

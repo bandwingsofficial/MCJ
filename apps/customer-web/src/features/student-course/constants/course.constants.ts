@@ -1,7 +1,6 @@
 import {
   CourseDurationType,
   CourseLevel,
-  CourseMode,
   CourseStatus,
 } from "@/src/features/student-course/types/course.types";
 
@@ -37,20 +36,6 @@ export const COURSE_LEVEL_LABELS: Record<
 
   [CourseLevel.ADVANCED]:
     "Advanced",
-};
-
-export const COURSE_MODE_LABELS: Record<
-  CourseMode,
-  string
-> = {
-  [CourseMode.ONLINE]:
-    "Online",
-
-  [CourseMode.OFFLINE]:
-    "Offline",
-
-  [CourseMode.RECORDED]:
-    "Recorded",
 };
 
 export const COURSE_DURATION_LABELS: Record<

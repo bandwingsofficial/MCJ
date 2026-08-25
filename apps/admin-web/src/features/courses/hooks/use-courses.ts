@@ -27,7 +27,6 @@ function hasActiveCourseFilters(filters: CourseFilters): boolean {
   return Boolean(
     (filters.search ?? "").trim() ||
       filters.categoryId ||
-      filters.mode ||
       filters.status,
   );
 }
@@ -86,7 +85,6 @@ export const useCourses = (options?: {
     useState<CourseFilters>({
       search: "",
       categoryId: undefined,
-      mode: undefined,
       status: undefined,
       page: 1,
       pageSize: defaultPageSize,
@@ -108,15 +106,12 @@ export const useCourses = (options?: {
           next.status !== prev.status;
         const categoryChanged =
           next.categoryId !== prev.categoryId;
-        const modeChanged =
-          next.mode !== prev.mode;
         const pageSizeChanged =
           next.pageSize !== prev.pageSize;
 
         const shouldResetPage =
           statusChanged ||
           categoryChanged ||
-          modeChanged ||
           pageSizeChanged;
 
         return {
@@ -170,7 +165,6 @@ export const useCourses = (options?: {
         const response = await courseService.getCourses({
           search: debouncedSearch,
           categoryId: filters.categoryId,
-          mode: filters.mode,
           status: filters.status,
           page: filters.page ?? 1,
           pageSize:
@@ -213,7 +207,6 @@ export const useCourses = (options?: {
     [
       debouncedSearch,
       filters.categoryId,
-      filters.mode,
       filters.status,
       filters.page,
       filters.pageSize,

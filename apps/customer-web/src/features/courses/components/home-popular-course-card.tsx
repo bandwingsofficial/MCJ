@@ -59,14 +59,6 @@ export function HomePopularCourseCard({ course }: HomePopularCourseCardProps) {
           >
             {course.level}
           </Badge>
-          {course.mode ? (
-            <Badge
-              variant="default"
-              className="rounded-sm px-1.5 py-0 text-[10px] font-semibold uppercase tracking-wide text-slate-600"
-            >
-              {course.mode}
-            </Badge>
-          ) : null}
         </div>
 
         <p className="text-[11px] font-medium leading-tight text-blue-600">

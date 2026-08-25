@@ -112,7 +112,6 @@ export function CourseFormModal({
         currency: pricingInput.currency,
         isFree: pricingInput.isFree,
         level: values.level,
-        modes: values.modes,
         minimumQualifications: values.minimumQualifications,
         language: values.language,
         displayOrder: values.displayOrder,
@@ -177,12 +176,6 @@ export function CourseFormModal({
                 currency: course.pricing.currency,
                 isFree: course.pricing.isFree,
                 level: course.level,
-                modes:
-                  course.modes?.length
-                    ? course.modes
-                    : course.mode
-                      ? [course.mode]
-                      : ["ONLINE"],
                 minimumQualifications:
                   course.minimumQualifications ?? [],
                 language: course.language,

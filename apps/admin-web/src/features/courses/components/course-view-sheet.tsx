@@ -83,16 +83,6 @@ export function CourseViewSheet({
           <div className="space-y-3 p-4">
             <div>
               <p className="text-sm text-muted-foreground">
-                Mode
-              </p>
-
-              <p>
-                {course.mode}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-sm text-muted-foreground">
                 Level
               </p>
 

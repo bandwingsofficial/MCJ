@@ -77,7 +77,6 @@ function buildListParams(filters?: CourseFilters) {
     search: filters?.search?.trim() || undefined,
     categoryId: filters?.categoryId || undefined,
     branchId: filters?.branchId || undefined,
-    mode: filters?.mode || undefined,
     status: isArchivedFilter ? "ARCHIVED" : status || undefined,
     includeDeleted: isArchivedFilter
       ? true

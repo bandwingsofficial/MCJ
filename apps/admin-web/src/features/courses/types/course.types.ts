@@ -5,11 +5,6 @@ export type CourseLevel =
   | "INTERMEDIATE"
   | "ADVANCED";
 
-export type CourseMode =
-  | "ONLINE"
-  | "OFFLINE"
-  | "RECORDED";
-
 export type CourseQualification =
   | "B_COM"
   | "M_COM"
@@ -80,8 +75,6 @@ export interface Course {
   durationType: CourseDurationType | null;
 
   level: CourseLevel;
-
-  mode: CourseMode;
 
   minimumQualifications?: CourseQualification[];
 
@@ -201,8 +194,6 @@ export interface CourseDetails
 
   categoryName?: string | null;
 
-  modes?: CourseMode[];
-
   minimumQualifications?: CourseQualification[];
 
   modules?: CourseModuleTree[];
@@ -230,10 +221,6 @@ export interface CourseListItem {
   isFree: boolean;
 
   level: CourseLevel;
-
-  mode?: CourseMode;
-
-  modes?: CourseMode[];
 
   minimumQualifications?: CourseQualification[];
 
@@ -325,8 +312,6 @@ export interface CreateCourseRequest {
 
   level?: CourseLevel;
 
-  modes?: CourseMode[];
-
   minimumQualifications?: CourseQualification[];
 
   language?: string;
@@ -376,8 +361,6 @@ export interface UpdateCourseRequest {
 
   level?: CourseLevel;
 
-  modes?: CourseMode[];
-
   minimumQualifications?: CourseQualification[];
 
   language?: string;
@@ -412,8 +395,6 @@ export interface CourseFilters {
   branchId?: string;
 
   categoryId?: string;
-
-  mode?: CourseMode;
 
   status?: CourseFilterStatus;
 

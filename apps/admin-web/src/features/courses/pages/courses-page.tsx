@@ -123,7 +123,6 @@ export function CoursesPage() {
   const hasActiveFilters = Boolean(
     (filters.search ?? "").trim() ||
       filters.categoryId ||
-      filters.mode ||
       filters.status
   );
 
@@ -175,7 +174,6 @@ export function CoursesPage() {
     filters.pageSize,
     filters.status,
     filters.categoryId,
-    filters.mode,
     filters.search,
   ]);
 
@@ -445,7 +443,6 @@ export function CoursesPage() {
                     !!filters.status ||
                     !!(filters.search ?? "").trim() ||
                     !!filters.categoryId ||
-                    !!filters.mode ||
                     isFetching ||
                     selectedCourseIds.length > 0
                   }

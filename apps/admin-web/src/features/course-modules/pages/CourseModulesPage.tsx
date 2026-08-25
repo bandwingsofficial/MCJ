@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Button } from "@/src/shared/components/ui/button";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { PageHeader } from "@/src/shared/components/ui/page-header";
+import { appToast } from "@/src/shared/components/ui/toast";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import {
   CourseModuleDeleteDialog,
@@ -12,6 +14,7 @@ import {
   CourseModuleList,
   CourseModuleMoveDialog,
   CourseModuleSkeleton,
+  CourseModuleStatusDialog,
 } from "@/src/features/course-modules/components";
 
 import {
@@ -19,6 +22,7 @@ import {
   useCreateCourseModule,
   useUpdateCourseModule,
   useDeleteCourseModule,
+  useDeactivateCourseModule,
   useMoveCourseModule,
   useRestoreCourseModule,
 } from "@/src/features/course-modules/hooks";
@@ -41,7 +45,7 @@ export function CourseModulesPage({
     refetch,
   } = useCourseModules({
     courseId,
-    includeDeleted: false,
+    includeDeleted: true,
   });
 
   const {
@@ -57,11 +61,19 @@ export function CourseModulesPage({
 
   const {
     deleteCourseModule,
+    isSubmitting: isDeleting,
   } =
     useDeleteCourseModule();
 
   const {
+    deactivateCourseModule,
+    isSubmitting: isDeactivating,
+  } =
+    useDeactivateCourseModule();
+
+  const {
     restoreCourseModule,
+    isSubmitting: isRestoring,
   } =
     useRestoreCourseModule();
 
@@ -86,6 +98,11 @@ export function CourseModulesPage({
   const [
     deleteOpen,
     setDeleteOpen,
+  ] = useState(false);
+
+  const [
+    statusOpen,
+    setStatusOpen,
   ] = useState(false);
 
   const [
@@ -126,114 +143,137 @@ export function CourseModulesPage({
       />
 
       <CourseModuleList
-  courseId={courseId}
-  modules={modules}
-  onCreate={() =>
-    setFormOpen(true)
-  }
-  onEdit={(module) => {
-    setSelectedModule(
-      module,
-    );
+        courseId={courseId}
+        modules={modules}
+        onCreate={() =>
+          setFormOpen(true)
+        }
+        onEdit={(module) => {
+          setSelectedModule(
+            module,
+          );
 
-    setFormOpen(true);
-  }}
-  onDeactivate={(module) => {
-    setSelectedModule(module);
-    setDeleteOpen(true);
-  }}
-  onActivate={async (module) => {
-    await restoreCourseModule(module.id);
-    await refetch();
-  }}
-  onDelete={(module) => {
-    setSelectedModule(
-      module,
-    );
+          setFormOpen(true);
+        }}
+        onDeactivate={(module) => {
+          setSelectedModule(module);
+          setStatusOpen(true);
+        }}
+        onActivate={(module) => {
+          setSelectedModule(module);
+          setStatusOpen(true);
+        }}
+        onDelete={(module) => {
+          setSelectedModule(
+            module,
+          );
 
-    setDeleteOpen(true);
-  }}
-/>
+          setDeleteOpen(true);
+        }}
+      />
 
       <CourseModuleForm
-  open={formOpen}
-  loading={
-    isSubmitting ||
-    isUpdating
-  }
-  module={
-    selectedModule ??
-    undefined
-  }
-  courseId={courseId}
-  onClose={() => {
-    setSelectedModule(
-      null
-    );
+        open={formOpen}
+        loading={
+          isSubmitting ||
+          isUpdating
+        }
+        module={
+          selectedModule ??
+          undefined
+        }
+        courseId={courseId}
+        onClose={() => {
+          setSelectedModule(
+            null
+          );
 
-    setFormOpen(false);
-  }}
-  onSubmit={async (
-    values
-  ) => {
-    try {
-      console.log(
-        "Form Values:",
-        values
-      );
-
-      if (
-        selectedModule
-      ) {
-        console.log(
-          "Updating Module..."
-        );
-
-        await updateCourseModule(
-          selectedModule.id,
-          {
-            title:
-              values.title,
-            description:
-              values.description,
-            keySkills:
-              values.keySkills,
-          }
-        );
-      } else {
-        console.log(
-          "Creating Module..."
-        );
-
-        await createCourseModule(
+          setFormOpen(false);
+        }}
+        onSubmit={async (
           values
-        );
-      }
+        ) => {
+          try {
+            if (
+              selectedModule
+            ) {
+              await updateCourseModule(
+                selectedModule.id,
+                {
+                  title:
+                    values.title,
+                  description:
+                    values.description,
+                  keySkills:
+                    values.keySkills,
+                }
+              );
+              appToast.success("Module updated successfully");
+            } else {
+              await createCourseModule(
+                values
+              );
+              appToast.success("Module created successfully");
+            }
 
-      console.log(
-        "Success"
-      );
+            setSelectedModule(
+              null
+            );
 
-      setSelectedModule(
-        null
-      );
+            setFormOpen(false);
 
-      setFormOpen(false);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
+        }}
+      />
 
-      await refetch();
-    } catch (error) {
-      console.error(
-        "Module submit failed:",
-        error
-      );
-    }
-  }}
-/>
+      <CourseModuleStatusDialog
+        open={statusOpen}
+        module={selectedModule}
+        isLoading={isDeactivating || isRestoring}
+        onClose={() => {
+          setStatusOpen(false);
+          setSelectedModule(null);
+        }}
+        onConfirm={async () => {
+          if (!selectedModule) {
+            return;
+          }
+
+          try {
+            const isArchived = Boolean(
+              selectedModule.isDeleted || selectedModule.deletedAt,
+            );
+
+            if (isArchived) {
+              await restoreCourseModule(selectedModule.id);
+              appToast.success("Module activated successfully");
+            } else {
+              await deactivateCourseModule(selectedModule.id);
+              appToast.success("Module deactivated successfully");
+            }
+
+            setStatusOpen(false);
+            setSelectedModule(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
+        }}
+      />
+
       <CourseModuleDeleteDialog
         open={deleteOpen}
-        onClose={() =>
-          setDeleteOpen(false)
-        }
+        moduleTitle={selectedModule?.title}
+        loading={isDeleting}
+        onClose={() => {
+          if (!isDeleting) {
+            setDeleteOpen(false);
+            setSelectedModule(null);
+          }
+        }}
         onConfirm={async () => {
           if (
             !selectedModule
@@ -241,13 +281,17 @@ export function CourseModulesPage({
             return;
           }
 
-          await deleteCourseModule(
-            selectedModule.id
-          );
-
-          setDeleteOpen(false);
-
-          await refetch();
+          try {
+            await deleteCourseModule(
+              selectedModule.id
+            );
+            appToast.success("Module deleted successfully");
+            setDeleteOpen(false);
+            setSelectedModule(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
         }}
       />
 
@@ -270,16 +314,18 @@ export function CourseModulesPage({
             return;
           }
 
-          await moveCourseModule(
-            selectedModule.id,
-            {
-              newPosition,
-            }
-          );
-
-          setMoveOpen(false);
-
-          await refetch();
+          try {
+            await moveCourseModule(
+              selectedModule.id,
+              {
+                newPosition,
+              }
+            );
+            setMoveOpen(false);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
         }}
       />
     </>

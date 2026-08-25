@@ -15,15 +15,6 @@ export enum CourseLevel {
 }
 
 /**
- * Supported course delivery modes.
- */
-export enum CourseMode {
-  ONLINE = "ONLINE",
-  OFFLINE = "OFFLINE",
-  RECORDED = "RECORDED",
-}
-
-/**
  * Course duration units.
  */
 export enum CourseDurationType {
@@ -113,11 +104,6 @@ export interface StudentCourse {
    * Course difficulty.
    */
   level: CourseLevel;
-
-  /**
-   * Delivery modes.
-   */
-  modes: CourseMode[];
 
   /**
    * Teaching language.

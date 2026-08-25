@@ -5,11 +5,6 @@ export type CourseLevel =
   | "INTERMEDIATE"
   | "ADVANCED";
 
-export type CourseMode =
-  | "ONLINE"
-  | "OFFLINE"
-  | "RECORDED";
-
 export type CourseStatus =
   | "ACTIVE"
   | "INACTIVE"
@@ -66,8 +61,6 @@ export interface CourseDto {
   duration: number | null;
   durationType: string | null;
   level: CourseLevel;
-  modes?: CourseMode[];
-  mode?: CourseMode;
   language: string;
   averageRating: number;
   totalReviews: number;
@@ -116,8 +109,6 @@ export interface Course {
   duration: number | null;
   durationType: string | null;
   level: CourseLevel;
-  mode: CourseMode;
-  modes: CourseMode[];
   language: string;
   averageRating: number;
   totalReviews: number;

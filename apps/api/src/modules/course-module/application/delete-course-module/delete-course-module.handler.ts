@@ -13,30 +13,18 @@ export class DeleteCourseModuleHandler {
   async execute(
     command: DeleteCourseModuleCommand,
   ): Promise<DeleteCourseModuleResult> {
-    const module = await this.domainService.ensureExists(
-      await this.courseModuleRepo.findById(command.id),
-    );
+    const record = await this.courseModuleRepo.findById(command.id, true);
+    const module = await this.domainService.ensureExists(record);
 
-    const deletedDisplayOrder = module.displayOrder;
+    if (!module.isDeleted) {
+      await this.courseModuleRepo.closeDisplayOrderGap(
+        module.courseId,
+        module.displayOrder,
+      );
+    }
 
-    module.softDelete(command.deletedBy);
+    await this.courseModuleRepo.deletePermanent(module.id);
 
-    await this.courseModuleRepo.save(module);
-
-    await this.courseModuleRepo.closeDisplayOrderGap(
-      module.courseId,
-      deletedDisplayOrder,
-    );
-
-    await this.courseModuleRepo.cascadeSoftDelete(
-      module.id,
-      command.deletedBy,
-    );
-
-    return new DeleteCourseModuleResult(
-      module.id,
-      true,
-      module.deletedAt,
-    );
+    return new DeleteCourseModuleResult(module.id);
   }
 }

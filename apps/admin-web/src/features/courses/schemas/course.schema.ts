@@ -2,7 +2,6 @@ import { z } from "zod";
 
 import {
   COURSE_LEVELS,
-  COURSE_MODES,
   COURSE_QUALIFICATIONS,
 } from "@/src/features/courses/constants/course.constants";
 import {
@@ -84,10 +83,6 @@ const courseFields = {
   isFree: z.boolean().default(false),
 
   level: z.enum(COURSE_LEVELS).default("BEGINNER"),
-
-  modes: z
-    .array(z.enum(COURSE_MODES))
-    .min(1, "Please select a mode"),
 
   minimumQualifications: z
     .array(z.enum(COURSE_QUALIFICATIONS))

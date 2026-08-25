@@ -1,6 +1,5 @@
 import type {
   CourseLevel,
-  CourseMode,
   CourseQualification,
   CourseStatus,
 } from "@/src/features/courses/types/course.types";
@@ -10,18 +9,6 @@ export const COURSE_LEVELS = [
   "INTERMEDIATE",
   "ADVANCED",
 ] as const satisfies readonly CourseLevel[];
-
-export const COURSE_MODES = [
-  "ONLINE",
-  "OFFLINE",
-  "RECORDED",
-] as const satisfies readonly CourseMode[];
-
-export const COURSE_MODE_LABELS: Record<CourseMode, string> = {
-  ONLINE: "Online",
-  OFFLINE: "Offline",
-  RECORDED: "Recorded",
-};
 
 export const COURSE_QUALIFICATIONS = [
   "B_COM",
@@ -67,8 +54,6 @@ export const DEFAULT_COURSE_FILTERS = {
   search: "",
 
   categoryId: undefined,
-
-  mode: undefined,
 
   status: undefined,
 

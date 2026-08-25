@@ -10,7 +10,6 @@ import {
   FolderOpen,
   GraduationCap,
   IndianRupee,
-  Monitor,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,8 +28,6 @@ import { cn } from "@/src/shared/lib/cn";
 
 import {
   COURSE_LEVELS,
-  COURSE_MODES,
-  COURSE_MODE_LABELS,
 } from "@/src/features/courses/constants/course.constants";
 import {
   createCourseSchema,
@@ -89,7 +86,6 @@ const defaultFormValues: CreateCourseFormValues = {
   currency: "INR",
   isFree: false,
   level: "BEGINNER",
-  modes: ["ONLINE"],
   minimumQualifications: [],
   language: "English",
   displayOrder: 0,
@@ -187,7 +183,6 @@ export function CourseForm({
   const shortDescriptionValue = watch("shortDescription");
   const descriptionValue = watch("description");
   const categoryIdValue = watch("categoryId");
-  const modesValue = watch("modes");
   const minimumQualificationsValue = watch("minimumQualifications");
   const levelValue = watch("level");
   const languageValue = watch("language");
@@ -395,13 +390,6 @@ export function CourseForm({
     { required: true },
   );
 
-  const modeState = getSyncFieldState(
-    Boolean(touchedFields.modes || showValidation),
-    errors.modes?.message,
-    modesValue?.[0],
-    { required: true },
-  );
-
   const qualificationsState = getSyncFieldState(
     Boolean(touchedFields.minimumQualifications || showValidation),
     errors.minimumQualifications?.message,
@@ -500,7 +488,6 @@ export function CourseForm({
       "shortDescription",
       "description",
       "categoryId",
-      "modes",
       "minimumQualifications",
       "level",
       "language",
@@ -661,37 +648,6 @@ export function CourseForm({
       </div>
 
       <div className={GRID_CLASS}>
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Mode"
-            required
-            state={modeState}
-            errorMessage={errors.modes?.message}
-          >
-            <Controller
-              control={control}
-              name="modes"
-              render={({ field }) => (
-                <>
-                  <AppSelect
-                    value={field.value?.[0]}
-                    onValueChange={(value) =>
-                      field.onChange(value ? [value] : [])
-                    }
-                    placeholder="Select course mode"
-                    options={COURSE_MODES.map((mode) => ({
-                      label: COURSE_MODE_LABELS[mode],
-                      value: mode,
-                    }))}
-                    triggerClassName={iconInputClass(modeState)}
-                  />
-                  <FieldIcon icon={Monitor} />
-                </>
-              )}
-            />
-          </ValidatedField>
-        </div>
-
         <div className={CELL_CLASS}>
           <ValidatedField
             label="Level"

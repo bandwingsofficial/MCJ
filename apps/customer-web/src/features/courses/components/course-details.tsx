@@ -26,7 +26,6 @@ import type {
 } from "@/src/features/courses/types/course.types";
 import {
   formatCourseLevel,
-  formatCourseMode,
   formatDuration,
   getCourseLearningOutcomes,
 } from "@/src/features/courses/utils/course-display.utils";
@@ -89,7 +88,6 @@ export function CourseDetails({ course }: CourseDetailsProps) {
     course.duration
       ? formatDuration(course.duration, course.durationType)
       : null,
-    course.mode ? formatCourseMode(course.mode) : null,
     course.level ? formatCourseLevel(course.level) : null,
     trainerCount > 0
       ? `${trainerCount} Trainer${trainerCount === 1 ? "" : "s"}`
@@ -201,12 +199,6 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                   {course.level ? (
                     <Badge className="border-0 bg-slate-100 px-3 py-0.5 text-xs font-medium uppercase text-slate-700 hover:bg-slate-100">
                       {formatCourseLevel(course.level)}
-                    </Badge>
-                  ) : null}
-
-                  {course.mode ? (
-                    <Badge className="border-0 bg-slate-100 px-3 py-0.5 text-xs font-medium uppercase text-slate-700 hover:bg-slate-100">
-                      {formatCourseMode(course.mode)}
                     </Badge>
                   ) : null}
                 </div>

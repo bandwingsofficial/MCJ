@@ -165,21 +165,6 @@ export function CourseCard({
             </Badge>
           )}
 
-          {course.mode && (
-            <Badge
-              className="
-                border-0
-                bg-slate-100
-                px-2
-                py-1
-                text-[10px]
-                font-medium
-                text-slate-600
-              "
-            >
-              {course.mode}
-            </Badge>
-          )}
         </div>
 
         {/* Course code */}

@@ -8,7 +8,6 @@ import { Badge } from "@/src/shared/components/ui/badge";
 import type { Course } from "@/src/features/courses/types/course.types";
 import {
   formatCourseLevel,
-  formatCourseMode,
 } from "@/src/features/courses/utils/course-display.utils";
 
 interface EnrollmentCourseSummaryProps {
@@ -69,11 +68,6 @@ export function EnrollmentCourseSummary({
             {course.level ? (
               <Badge variant="info">
                 {formatCourseLevel(course.level)}
-              </Badge>
-            ) : null}
-            {course.mode ? (
-              <Badge variant="default">
-                {formatCourseMode(course.mode)}
               </Badge>
             ) : null}
           </div>

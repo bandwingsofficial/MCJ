@@ -417,10 +417,6 @@ if (course.branchIds.length) {
       where.isPopular = filters.isPopular;
     }
 
-    if (filters.mode) {
-      where.mode = { has: filters.mode };
-    }
-
     if (filters.search) {
       where.OR = [
         {

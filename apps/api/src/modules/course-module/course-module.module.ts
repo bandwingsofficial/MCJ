@@ -11,6 +11,7 @@ import type { CourseRepository } from '../course/domain/repositories/course.repo
 
 import { COURSE_MODULE_TOKENS } from './course-module.tokens';
 import { CreateCourseModuleHandler } from './application/create-course-module/create-course-module.handler';
+import { DeactivateCourseModuleHandler } from './application/deactivate-course-module/deactivate-course-module.handler';
 import { DeleteCourseModuleHandler } from './application/delete-course-module/delete-course-module.handler';
 import { GetCourseModuleHandler } from './application/get-course-module/get-course-module.handler';
 import { ListCourseModulesHandler } from './application/list-course-modules/list-course-modules.handler';
@@ -108,6 +109,22 @@ import { CourseModuleController } from './presentation/controllers/course-module
         domainService: CourseModuleDomainService,
       ) =>
         new DeleteCourseModuleHandler(
+          courseModuleRepo,
+          domainService,
+        ),
+      inject: [
+        COURSE_MODULE_TOKENS.COURSE_MODULE_REPOSITORY,
+        CourseModuleDomainService,
+      ],
+    },
+
+    {
+      provide: DeactivateCourseModuleHandler,
+      useFactory: (
+        courseModuleRepo: CourseModuleRepository,
+        domainService: CourseModuleDomainService,
+      ) =>
+        new DeactivateCourseModuleHandler(
           courseModuleRepo,
           domainService,
         ),

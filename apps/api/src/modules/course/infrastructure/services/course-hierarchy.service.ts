@@ -4,6 +4,7 @@ import { PrismaService } from '../../../../infrastructure/prisma/prisma.service'
 
 import {
   CourseLessonPreviewResult,
+  CourseLessonQuizTreeResult,
   CourseLessonTreeResult,
   CourseModulePreviewResult,
   CourseModuleTreeResult,
@@ -101,6 +102,16 @@ export class CourseHierarchyService {
               where: { isDeleted: false },
               orderBy: { displayOrder: 'asc' },
             },
+            quiz: {
+              where: { isDeleted: false },
+              select: {
+                id: true,
+                title: true,
+                status: true,
+                passingScore: true,
+                timeLimitMinutes: true,
+              },
+            },
           },
         },
       },
@@ -126,6 +137,16 @@ export class CourseHierarchyService {
         resources: {
           where: { isDeleted: false },
           orderBy: { displayOrder: 'asc' },
+        },
+        quiz: {
+          where: { isDeleted: false },
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            passingScore: true,
+            timeLimitMinutes: true,
+          },
         },
       },
     });
@@ -309,6 +330,16 @@ export class CourseHierarchyService {
               where: { isDeleted: false },
               orderBy: { displayOrder: 'asc' },
             },
+            quiz: {
+              where: { isDeleted: false },
+              select: {
+                id: true,
+                title: true,
+                status: true,
+                passingScore: true,
+                timeLimitMinutes: true,
+              },
+            },
           },
         },
       },
@@ -355,10 +386,21 @@ export class CourseHierarchyService {
       ReturnType<CourseHierarchyService['loadModules']>
     >[number]['lessons'][number],
   ): CourseLessonTreeResult {
+    const quiz = lesson.quiz
+      ? new CourseLessonQuizTreeResult(
+          lesson.quiz.id,
+          lesson.quiz.title,
+          lesson.quiz.status,
+          lesson.quiz.passingScore,
+          lesson.quiz.timeLimitMinutes,
+        )
+      : null;
+
     return new CourseLessonTreeResult(
       lesson.id,
       lesson.title,
       lesson.videoUrl,
+      lesson.contentType,
       lesson.duration,
       lesson.displayOrder,
       lesson.isPreview,
@@ -372,6 +414,7 @@ export class CourseHierarchyService {
             resource.displayOrder,
           ),
       ),
+      quiz,
     );
   }
 }

@@ -42,7 +42,6 @@ export interface CourseInfo {
   durationType: string;
   level: string;
   language: string;
-  modes: string[];
   thumbnailUrl: string | null;
   status: string;
   averageRating: number;

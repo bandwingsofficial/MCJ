@@ -8,6 +8,7 @@ import type {
   CreateCourseModuleRequest,
   CreateCourseModuleResponse,
   DeleteCourseModuleResponse,
+  DeactivateCourseModuleResponse,
   MoveCourseModuleRequest,
   MoveCourseModuleResponse,
   RestoreCourseModuleResponse,
@@ -115,6 +116,21 @@ class CourseModuleService {
         ApiSuccessResponse<DeleteCourseModuleResponse>
       >(
         `${this.basePath}/${moduleId}`
+      );
+
+    return response.data;
+  }
+
+  async deactivateCourseModule(
+    moduleId: string
+  ): Promise<
+    ApiSuccessResponse<DeactivateCourseModuleResponse>
+  > {
+    const response =
+      await apiClient.patch<
+        ApiSuccessResponse<DeactivateCourseModuleResponse>
+      >(
+        `${this.basePath}/${moduleId}/deactivate`
       );
 
     return response.data;

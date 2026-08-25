@@ -5,21 +5,8 @@ import { normalizeCoursePricing } from "@/src/features/courses/utils/course-pric
 import type {
   Course,
   CourseDto,
-  CourseMode,
   CoursePreviewModule,
 } from "@/src/features/courses/types/course.types";
-
-function resolveModes(dto: CourseDto): CourseMode[] {
-  if (dto.modes?.length) {
-    return dto.modes;
-  }
-
-  return dto.mode ? [dto.mode] : ["ONLINE"];
-}
-
-function resolveMode(dto: CourseDto): CourseMode {
-  return resolveModes(dto)[0];
-}
 
 function resolvePreviewModules(
   dto: CourseDto,
@@ -52,8 +39,6 @@ export function mapCourseDtoToCourse(dto: CourseDto): Course {
     duration: dto.duration,
     durationType: dto.durationType,
     level: dto.level,
-    mode: resolveMode(dto),
-    modes: resolveModes(dto),
     language: dto.language,
     averageRating: dto.averageRating ?? 0,
     totalReviews: dto.totalReviews ?? 0,

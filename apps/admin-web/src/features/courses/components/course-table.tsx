@@ -16,10 +16,6 @@ import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
 import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
 import { isArchivedCourse } from "@/src/features/courses/utils/course-bulk.utils";
-import {
-  formatCourseMode,
-  formatCourseModes,
-} from "@/src/features/courses/utils/course-display.utils";
 
 import { CourseStatusBadge } from "./course-status-badge";
 import { CourseActions } from "./course-actions";
@@ -50,12 +46,8 @@ function canReorder(course: CourseListItem): boolean {
   );
 }
 
-function resolveCourseMode(course: CourseListItem): string {
-  if (course.modes?.length) {
-    return formatCourseModes(course.modes);
-  }
-
-  return formatCourseMode(course.mode);
+function resolveCourseLevel(course: CourseListItem): string {
+  return course.level.replaceAll("_", " ").toLowerCase();
 }
 
 export function CourseTable({
@@ -243,9 +235,6 @@ export function CourseTable({
               Category
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Mode
-            </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Level
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -357,12 +346,8 @@ export function CourseTable({
                   {getCourseCategoryDisplayName(course)}
                 </td>
 
-                <td className="px-3 py-3 align-middle text-sm text-slate-700">
-                  {resolveCourseMode(course)}
-                </td>
-
                 <td className="px-3 py-3 align-middle text-sm capitalize text-slate-700">
-                  {course.level.replaceAll("_", " ").toLowerCase()}
+                  {resolveCourseLevel(course)}
                 </td>
 
                 <td className="px-3 py-3 align-middle">

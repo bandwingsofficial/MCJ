@@ -1,5 +1,4 @@
 import { CourseLevel } from '../enums/course-level.enum';
-import { CourseMode } from '../enums/course-mode.enum';
 import { CourseQualification } from '../enums/course-qualification.enum';
 import { CourseStatus } from '../enums/course-status.enum';
 import { DurationType } from '../enums/duration-type.enum';
@@ -34,7 +33,6 @@ export class Course {
     public duration: Duration,
     public durationType: DurationType | null,
     public level: CourseLevel,
-    public modes: CourseMode[],
     public minimumQualifications: CourseQualification[],
     public language: string,
     public averageRating: number,
@@ -88,7 +86,6 @@ export class Course {
       Duration.create(params.duration),
       params.durationType ?? null,
       params.level ?? CourseLevel.BEGINNER,
-      params.modes ?? [CourseMode.OFFLINE],
       params.minimumQualifications ?? [],
       params.language?.trim() || 'English',
       params.averageRating ?? 0,
@@ -133,7 +130,6 @@ export class Course {
       Duration.create(params.duration),
       params.durationType,
       params.level,
-      params.modes,
       params.minimumQualifications,
       params.language,
       params.averageRating,
@@ -214,7 +210,6 @@ export class Course {
     if (params.duration !== undefined) this.duration = Duration.create(params.duration);
     if (params.durationType !== undefined) this.durationType = params.durationType;
     if (params.level !== undefined) this.level = params.level;
-    if (params.modes !== undefined) this.modes = params.modes;
     if (params.minimumQualifications !== undefined) {
       this.minimumQualifications = params.minimumQualifications;
     }
@@ -308,7 +303,6 @@ export interface CourseCreateParams {
   duration?: number | null;
   durationType?: DurationType | null;
   level?: CourseLevel;
-  modes?: CourseMode[];
   minimumQualifications?: CourseQualification[];
   language?: string;
   averageRating?: number;

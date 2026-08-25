@@ -9,7 +9,6 @@ import { normalizeCoursePricing } from "@/src/features/courses/utils/course-pric
 import {
   CourseDurationType,
   CourseLevel,
-  CourseMode,
   CourseStatus,
   type CourseBranch,
   type StudentCourse,
@@ -37,7 +36,6 @@ export class CourseMapper {
       duration: dto.duration,
       durationType: this.toDurationType(dto.durationType),
       level: this.toCourseLevel(dto.level),
-      modes: dto.modes.map(this.toCourseMode),
       language: dto.language,
       averageRating: dto.averageRating,
       totalReviews: dto.totalReviews,
@@ -123,19 +121,6 @@ export class CourseMapper {
         return CourseStatus.ARCHIVED;
       default:
         return CourseStatus.DRAFT;
-    }
-  }
-
-  private static toCourseMode(mode: string): CourseMode {
-    switch (mode) {
-      case CourseMode.ONLINE:
-        return CourseMode.ONLINE;
-      case CourseMode.OFFLINE:
-        return CourseMode.OFFLINE;
-      case CourseMode.RECORDED:
-        return CourseMode.RECORDED;
-      default:
-        return CourseMode.ONLINE;
     }
   }
 

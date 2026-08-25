@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  COURSE_MODES,
-  COURSE_MODE_LABELS,
   DEFAULT_COURSE_FILTERS,
 } from "@/src/features/courses/constants/course.constants";
 
@@ -33,7 +31,6 @@ export function CourseFilters({
   const hasActiveFilters = Boolean(
     (filters.search ?? "").trim() ||
       filters.categoryId ||
-      filters.mode ||
       filters.status
   );
 
@@ -89,29 +86,6 @@ export function CourseFilters({
             { label: "Active", value: "ACTIVE" },
             { label: "Inactive", value: "INACTIVE" },
             { label: "Archived", value: "ARCHIVED" },
-          ]}
-        />
-      </div>
-
-      <div className="w-full shrink-0 sm:w-44">
-        <AppSelect
-          value={filters.mode ?? "ALL"}
-          triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
-          onValueChange={(value) =>
-            onChange({
-              ...filters,
-              mode:
-                value === "ALL"
-                  ? undefined
-                  : (value as CourseFiltersType["mode"]),
-            })
-          }
-          options={[
-            { label: "All Modes", value: "ALL" },
-            ...COURSE_MODES.map((mode) => ({
-              label: COURSE_MODE_LABELS[mode],
-              value: mode,
-            })),
           ]}
         />
       </div>

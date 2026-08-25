@@ -3,7 +3,6 @@ import { IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUU
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { CourseLevel } from '../../domain/enums/course-level.enum';
-import { CourseMode } from '../../domain/enums/course-mode.enum';
 import { CourseQualification } from '../../domain/enums/course-qualification.enum';
 import { CourseStatus } from '../../domain/enums/course-status.enum';
 import { DurationType } from '../../domain/enums/duration-type.enum';
@@ -149,20 +148,6 @@ export class CreateCourseDto {
   @IsOptional()
   @IsEnum(CourseLevel)
   level?: CourseLevel;
-
-@ApiPropertyOptional({
-  enum: CourseMode,
-  isArray: true,
-})
-@IsOptional()
-@Transform(({ value }) =>
-  typeof value === 'string'
-    ? JSON.parse(value)
-    : value,
-)
-@IsArray()
-@IsEnum(CourseMode, { each: true })
-modes?: CourseMode[];
 
   @ApiPropertyOptional({
     enum: CourseQualification,

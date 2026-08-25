@@ -8,6 +8,7 @@ import {
   FileText,
   HelpCircle,
   PlayCircle,
+  Radio,
   Video,
 } from "lucide-react";
 
@@ -16,14 +17,13 @@ import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
 
 import { useCourse } from "@/src/features/courses/hooks/use-course";
-import type {
-  CourseLessonTree,
-  CourseModuleTree,
-} from "@/src/features/courses/types/course.types";
 import { CourseStatusBadge } from "@/src/features/courses/components/course-status-badge";
+import type { PreviewContentItem } from "@/src/features/courses/utils/course-preview-content.util";
 import {
-  isResourceOnlyLesson,
-} from "@/src/features/courses/utils/course-content-stats.util";
+  buildModulePreviewSections,
+  formatModuleHeading,
+  sortModulesForPreview,
+} from "@/src/features/courses/utils/course-preview-content.util";
 
 interface Props {
   courseId: string;
@@ -39,101 +39,69 @@ function formatDuration(
   return `${duration} ${durationType.toLowerCase()}`;
 }
 
-function getLessonLabel(lesson: CourseLessonTree) {
-  if (lesson.quiz) {
-    return "Quiz";
+function PreviewIcon({ kind }: { kind: PreviewContentItem["kind"] }) {
+  switch (kind) {
+    case "self-paced-video":
+      return <Video className="h-4 w-4 shrink-0 text-blue-600" />;
+    case "live-recorded-video":
+      return <Radio className="h-4 w-4 shrink-0 text-violet-600" />;
+    case "resource":
+      return <FileText className="h-4 w-4 shrink-0 text-amber-600" />;
+    case "quiz":
+      return <HelpCircle className="h-4 w-4 shrink-0 text-emerald-600" />;
+    default:
+      return <BookOpen className="h-4 w-4 shrink-0 text-slate-600" />;
   }
-  if (lesson.videoUrl?.trim()) {
-    return "Self-Paced Video";
-  }
-  return "Lesson";
 }
 
-function ModulePreviewContent({ module }: { module: CourseModuleTree }) {
-  const lessons = [...module.lessons].sort(
-    (a, b) => a.displayOrder - b.displayOrder,
-  );
-
-  const learningLessons = lessons.filter(
-    (lesson) => !lesson.quiz && !isResourceOnlyLesson(lesson),
-  );
-
-  const resources = lessons.flatMap((lesson) =>
-    (lesson.resources ?? []).map((resource) => ({
-      ...resource,
-      lessonTitle: lesson.title,
-    })),
-  );
-
-  const quizzes = lessons.filter((lesson) => lesson.quiz);
-
+function PreviewSection({
+  title,
+  items,
+  emptyMessage,
+}: {
+  title: string;
+  items: PreviewContentItem[];
+  emptyMessage: string;
+}) {
   return (
-    <div className="space-y-4 border-t border-slate-100 pt-4">
-      {learningLessons.length > 0 ? (
-        <ul className="space-y-2">
-          {learningLessons.map((lesson) => (
+    <div className="ml-4 border-l border-slate-200 pl-4">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {title}
+      </h4>
+      {items.length === 0 ? (
+        <p className="mt-2 text-sm text-slate-500">{emptyMessage}</p>
+      ) : (
+        <ul className="mt-2 space-y-2">
+          {items.map((item) => (
             <li
-              key={lesson.id}
-              className="flex items-center gap-2 text-sm text-slate-800"
+              key={item.id}
+              className="flex items-start gap-2 text-sm text-slate-800"
             >
-              {lesson.videoUrl ? (
-                <Video className="h-4 w-4 shrink-0 text-blue-600" />
-              ) : (
-                <BookOpen className="h-4 w-4 shrink-0 text-slate-600" />
-              )}
-              <span>▶ {lesson.title}</span>
-              <span className="text-xs text-slate-500">
-                ({getLessonLabel(lesson)})
-              </span>
+              <PreviewIcon kind={item.kind} />
+              <div className="min-w-0 flex-1">
+                {item.kind === "resource" && item.fileUrl ? (
+                  <a
+                    href={item.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-[#2447A8] hover:underline"
+                  >
+                    {item.title}
+                  </a>
+                ) : (
+                  <span className="font-medium text-slate-900">
+                    {item.title}
+                  </span>
+                )}
+                <span className="mt-0.5 block text-xs text-slate-500">
+                  {item.typeLabel}
+                  {item.resourceType ? ` · ${item.resourceType}` : ""}
+                </span>
+              </div>
             </li>
           ))}
         </ul>
-      ) : null}
-
-      {resources.length > 0 ? (
-        <ul className="space-y-2">
-          {resources.map((resource) => (
-            <li
-              key={resource.id}
-              className="flex items-center gap-2 text-sm text-slate-800"
-            >
-              <FileText className="h-4 w-4 shrink-0 text-amber-600" />
-              {resource.fileUrl ? (
-                <a
-                  href={resource.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-[#2447A8] hover:underline"
-                >
-                  {resource.title}
-                </a>
-              ) : (
-                <span>{resource.title}</span>
-              )}
-              <span className="text-xs text-slate-500">({resource.type})</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      {quizzes.length > 0 ? (
-        <ul className="space-y-2">
-          {quizzes.map((lesson) => (
-            <li
-              key={lesson.id}
-              className="flex items-center gap-2 text-sm text-slate-800"
-            >
-              <HelpCircle className="h-4 w-4 shrink-0 text-emerald-600" />
-              <span>📝 {lesson.quiz?.title ?? lesson.title}</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      <div className="flex items-center gap-2 text-sm text-slate-400">
-        <ClipboardList className="h-4 w-4 shrink-0" />
-        <span>Assignments — not available yet</span>
-      </div>
+      )}
     </div>
   );
 }
@@ -157,20 +125,12 @@ export function CoursePreviewPage({ courseId }: Props) {
     );
   }
 
-  const modules = [...(course.modules ?? [])].sort(
-    (a, b) => a.displayOrder - b.displayOrder,
-  );
-
+  const modules = sortModulesForPreview(course.modules ?? []);
   const moduleCount = course.moduleCount ?? modules.length;
   const lessonCount =
     course.lessonCount ??
     modules.reduce((total, module) => total + module.lessons.length, 0);
-
-  const durationLabel = formatDuration(
-    course.duration,
-    course.durationType,
-  );
-
+  const durationLabel = formatDuration(course.duration, course.durationType);
   const isDraft = course.status === "DRAFT";
 
   return (
@@ -204,14 +164,15 @@ export function CoursePreviewPage({ courseId }: Props) {
               deletedAt={course.deletedAt}
               isDeleted={course.isDeleted}
             />
-            {isDraft ? (
-              <Badge variant="default">Draft Preview</Badge>
-            ) : null}
+            {isDraft ? <Badge variant="default">Draft Preview</Badge> : null}
             <Badge variant="info">{course.level}</Badge>
           </div>
 
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Course
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
               {course.title}
             </h1>
             {course.tagline ? (
@@ -242,32 +203,68 @@ export function CoursePreviewPage({ courseId }: Props) {
 
         {modules.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-            No modules published for preview yet.
+            No modules available for preview yet.
           </div>
         ) : (
           <div className="space-y-4">
-            {modules.map((module) => (
-              <article
-                key={module.id}
-                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-              >
-                <header>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Module {String(module.displayOrder).padStart(2, "0")}
-                  </p>
-                  <h3 className="mt-1 text-base font-semibold text-slate-900">
-                    {module.title}
-                  </h3>
-                  {module.description ? (
-                    <p className="mt-1 text-sm text-slate-500">
-                      {module.description}
-                    </p>
-                  ) : null}
-                </header>
+            {modules.map((module, index) => {
+              const sections = buildModulePreviewSections(module);
 
-                <ModulePreviewContent module={module} />
-              </article>
-            ))}
+              return (
+                <article
+                  key={module.id}
+                  className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                >
+                  <header className="border-b border-slate-100 pb-4">
+                    <h3 className="text-base font-semibold text-slate-900">
+                      {formatModuleHeading(module, index)}
+                    </h3>
+                    {module.description?.trim() ? (
+                      <p className="mt-1 text-sm text-slate-500">
+                        {module.description.trim()}
+                      </p>
+                    ) : null}
+                  </header>
+
+                  <div className="mt-4 space-y-5">
+                    <PreviewSection
+                      title="Lessons"
+                      items={sections.lessons}
+                      emptyMessage="No lessons available yet."
+                    />
+                    <PreviewSection
+                      title="Self-Paced Videos"
+                      items={sections.selfPacedVideos}
+                      emptyMessage="No self-paced videos available yet."
+                    />
+                    <PreviewSection
+                      title="Live Recorded Videos"
+                      items={sections.liveRecordedVideos}
+                      emptyMessage="No live recorded videos available yet."
+                    />
+                    <PreviewSection
+                      title="Resources"
+                      items={sections.resources}
+                      emptyMessage="No resources available yet."
+                    />
+                    <PreviewSection
+                      title="Quizzes"
+                      items={sections.quizzes}
+                      emptyMessage="No quizzes available yet."
+                    />
+                    <div className="ml-4 border-l border-slate-200 pl-4">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Assignments
+                      </h4>
+                      <p className="mt-2 flex items-center gap-2 text-sm text-slate-500">
+                        <ClipboardList className="h-4 w-4 shrink-0" />
+                        No assignments available yet.
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>

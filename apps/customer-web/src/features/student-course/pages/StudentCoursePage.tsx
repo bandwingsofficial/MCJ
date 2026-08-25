@@ -75,7 +75,6 @@ export function StudentCoursePage({ courseId }: StudentCoursePageProps) {
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
                 <Badge variant="info">{course.level}</Badge>
-                <Badge variant="default">{course.modes[0]}</Badge>
               </div>
 
               {course.code ? (

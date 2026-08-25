@@ -312,7 +312,6 @@ model Course {
   duration         Int?
   durationType     DurationType?
   level                  CourseLevel            @default(BEGINNER)
-  mode                   CourseMode[]
   minimumQualifications  CourseQualification[]
   language               String                 @default("English")
   averageRating    Float            @default(0)

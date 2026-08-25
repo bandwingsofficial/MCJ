@@ -273,7 +273,6 @@ export class UpdateCourseHandler {
       duration: command.duration,
       durationType: command.durationType,
       level: command.level,
-      modes: command.modes,
       minimumQualifications: command.minimumQualifications,
       language: command.language,
       averageRating: command.averageRating,

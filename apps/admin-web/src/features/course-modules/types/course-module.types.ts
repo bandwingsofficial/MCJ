@@ -74,11 +74,9 @@ export interface CourseModuleFilters {
 
 export interface DeleteCourseModuleResponse {
   id: string;
-
-  isDeleted: boolean;
-
-  deletedAt: string;
 }
+
+export interface DeactivateCourseModuleResponse extends CourseModule {}
 
 export type RestoreCourseModuleResponse =
   CourseModule;

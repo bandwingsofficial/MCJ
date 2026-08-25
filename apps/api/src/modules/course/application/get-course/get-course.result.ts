@@ -1,6 +1,5 @@
 import { Course } from '../../domain/entities/course.entity';
 import { CourseLevel } from '../../domain/enums/course-level.enum';
-import { CourseMode } from '../../domain/enums/course-mode.enum';
 import { CourseQualification } from '../../domain/enums/course-qualification.enum';
 import { CourseStatus } from '../../domain/enums/course-status.enum';
 import { DurationType } from '../../domain/enums/duration-type.enum';
@@ -82,15 +81,27 @@ export class CourseResourceTreeResult {
   ) {}
 }
 
+export class CourseLessonQuizTreeResult {
+  constructor(
+    public readonly id: string,
+    public readonly title: string,
+    public readonly status: string,
+    public readonly passingScore: number | null,
+    public readonly timeLimitMinutes: number | null,
+  ) {}
+}
+
 export class CourseLessonTreeResult {
   constructor(
     public readonly id: string,
     public readonly title: string,
     public readonly videoUrl: string | null,
+    public readonly contentType: string,
     public readonly duration: number | null,
     public readonly displayOrder: number,
     public readonly isPreview: boolean,
     public readonly resources: CourseResourceTreeResult[],
+    public readonly quiz: CourseLessonQuizTreeResult | null,
   ) {}
 }
 
@@ -131,7 +142,6 @@ export class GetCourseResult {
     public readonly duration: number | null,
     public readonly durationType: DurationType | null,
     public readonly level: CourseLevel,
-    public readonly modes: CourseMode[],
     public readonly minimumQualifications: CourseQualification[],
     public readonly language: string,
     public readonly averageRating: number,
@@ -239,7 +249,6 @@ export class GetCourseResult {
       course.duration.getValue(),
       course.durationType,
       course.level,
-      course.modes,
       course.minimumQualifications,
       course.language,
       course.averageRating,

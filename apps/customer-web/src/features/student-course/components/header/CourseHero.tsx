@@ -16,7 +16,6 @@ import { Separator } from "@/src/shared/components/ui/separator";
 import {
   COURSE_DURATION_LABELS,
   COURSE_LEVEL_LABELS,
-  COURSE_MODE_LABELS,
 } from "@/src/features/student-course/constants/course.constants";
 
 import {
@@ -76,21 +75,6 @@ export function CourseHero({
                 ]
               }
             </Badge>
-
-            {course.modes.map(
-              (mode) => (
-                <Badge
-                  key={mode}
-                  variant="info"
-                >
-                  {
-                    COURSE_MODE_LABELS[
-                      mode
-                    ]
-                  }
-                </Badge>
-              ),
-            )}
           </div>
 
           <div className="space-y-2">

@@ -302,6 +302,9 @@ export function CourseManageOverviewPanel({
       <CourseModuleDeleteDialog
         open={deleteTarget !== null}
         moduleTitle={deleteTarget?.title}
+        contentCounts={
+          deleteTarget ? getModuleCounts(deleteTarget) : undefined
+        }
         loading={isDeletingModule}
         onClose={() => {
           if (!isDeletingModule) {

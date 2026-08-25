@@ -74,7 +74,6 @@ export interface EnrollmentCourseView {
   durationType: string | null;
   level: string;
   language: string;
-  modes: string[];
   thumbnailUrl: string | null;
   status: string;
   averageRating: number;

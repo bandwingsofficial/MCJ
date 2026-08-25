@@ -18,6 +18,8 @@ import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 
 import { CreateCourseModuleCommand } from '../../application/create-course-module/create-course-module.command';
 import { CreateCourseModuleHandler } from '../../application/create-course-module/create-course-module.handler';
+import { DeactivateCourseModuleCommand } from '../../application/deactivate-course-module/deactivate-course-module.command';
+import { DeactivateCourseModuleHandler } from '../../application/deactivate-course-module/deactivate-course-module.handler';
 import { DeleteCourseModuleCommand } from '../../application/delete-course-module/delete-course-module.command';
 import { DeleteCourseModuleHandler } from '../../application/delete-course-module/delete-course-module.handler';
 import { GetCourseModuleHandler } from '../../application/get-course-module/get-course-module.handler';
@@ -46,6 +48,7 @@ export class AdminCourseModuleController {
     private readonly listCourseModulesHandler: ListCourseModulesHandler,
     private readonly getCourseModuleHandler: GetCourseModuleHandler,
     private readonly deleteCourseModuleHandler: DeleteCourseModuleHandler,
+    private readonly deactivateCourseModuleHandler: DeactivateCourseModuleHandler,
     private readonly restoreCourseModuleHandler: RestoreCourseModuleHandler,
     private readonly moveCourseModuleHandler: MoveCourseModuleHandler,
   ) {}
@@ -127,6 +130,22 @@ export class AdminCourseModuleController {
     return {
       success: true,
       message: 'Course module updated successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':id/deactivate')
+  async deactivate(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.deactivateCourseModuleHandler.execute(
+      new DeactivateCourseModuleCommand(id, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: 'Course module deactivated successfully',
       data: result,
     };
   }

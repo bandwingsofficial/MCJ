@@ -59,7 +59,6 @@ export interface StudentCourseResponseDto {
   duration: number;
   durationType: string;
   level: string;
-  modes: string[];
   language: string;
   averageRating: number;
   totalReviews: number;

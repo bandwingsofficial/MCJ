@@ -158,7 +158,6 @@ export class EnrollmentResponseMapper {
       durationType: course.durationType,
       level: course.level,
       language: course.language,
-      modes: course.mode,
       thumbnailUrl: course.thumbnailUrl,
       status: course.status,
       averageRating: course.averageRating,
