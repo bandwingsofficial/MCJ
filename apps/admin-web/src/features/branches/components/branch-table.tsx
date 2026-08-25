@@ -1,25 +1,10 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { GripVertical } from "lucide-react";
 
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/src/shared/components/ui/table";
-
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
 import type { BranchListItem } from "@/src/features/branches/types/branch.types";
 
@@ -28,23 +13,19 @@ import { BranchActions } from "./branch-actions";
 
 interface BranchTableProps {
   branches: BranchListItem[];
-
   selectedBranchIds?: string[];
-
   onSelectionChange?: (ids: string[]) => void;
-
   actionsDisabled?: boolean;
-
   selectionDisabled?: boolean;
-
   reorderDisabled?: boolean;
-
+  emptyMessage?: string;
+  onEdit: (branch: BranchListItem) => void;
   onManage: (branch: BranchListItem) => void;
-
   onActivate: (branch: BranchListItem) => void;
-
   onDeactivate: (branch: BranchListItem) => void;
-
+  onDelete: (branch: BranchListItem) => void;
+  onRestore: (branch: BranchListItem) => void;
+  onPermanentDelete: (branch: BranchListItem) => void;
   onReorder: (payload: {
     branchId: string;
     newDisplayOrder: number;
@@ -66,16 +47,19 @@ export function BranchTable({
   actionsDisabled = false,
   selectionDisabled = false,
   reorderDisabled = false,
+  emptyMessage = "No branches found.",
+  onEdit,
   onManage,
   onActivate,
   onDeactivate,
+  onDelete,
+  onRestore,
+  onPermanentDelete,
   onReorder,
 }: BranchTableProps) {
   const [rows, setRows] = useState(branches);
   const [dragId, setDragId] = useState<string | null>(null);
-  const [dropTargetId, setDropTargetId] = useState<
-    string | null
-  >(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
@@ -83,13 +67,14 @@ export function BranchTable({
   const selectionEnabled = Boolean(onSelectionChange);
   const visibleIds = rows.map((branch) => branch.id);
   const selectedVisibleCount = visibleIds.filter((id) =>
-    safeSelectedIds.includes(id)
+    safeSelectedIds.includes(id),
   ).length;
   const allVisibleSelected =
-    visibleIds.length > 0 &&
-    selectedVisibleCount === visibleIds.length;
+    visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
   const someVisibleSelected =
     selectedVisibleCount > 0 && !allVisibleSelected;
+
+  const columnCount = selectionEnabled ? 8 : 7;
 
   useEffect(() => {
     setRows(branches);
@@ -120,24 +105,15 @@ export function BranchTable({
 
     if (!checked) {
       onSelectionChange(
-        safeSelectedIds.filter((id) => !visibleIds.includes(id))
+        safeSelectedIds.filter((id) => !visibleIds.includes(id)),
       );
       return;
     }
 
     onSelectionChange(
-      Array.from(new Set([...safeSelectedIds, ...visibleIds]))
+      Array.from(new Set([...safeSelectedIds, ...visibleIds])),
     );
   };
-
-  if (rows.length === 0) {
-    return (
-      <EmptyState
-        title="No Branches Found"
-        description="Create your first branch to get started."
-      />
-    );
-  }
 
   const handleDrop = async (targetId: string) => {
     if (
@@ -154,12 +130,8 @@ export function BranchTable({
 
     const previous = rows;
     const next = [...rows];
-    const fromIndex = next.findIndex(
-      (item) => item.id === dragId
-    );
-    const toIndex = next.findIndex(
-      (item) => item.id === targetId
-    );
+    const fromIndex = next.findIndex((item) => item.id === dragId);
+    const toIndex = next.findIndex((item) => item.id === targetId);
 
     if (fromIndex < 0 || toIndex < 0) {
       setDragId(null);
@@ -181,7 +153,6 @@ export function BranchTable({
     }
 
     const newDisplayOrder = target.displayOrder;
-
     const [moved] = next.splice(fromIndex, 1);
     next.splice(toIndex, 0, moved);
     setRows(next);
@@ -202,156 +173,174 @@ export function BranchTable({
   };
 
   const dragDisabled =
-    reorderDisabled ||
-    isSavingOrder ||
-    safeSelectedIds.length > 0;
+    reorderDisabled || isSavingOrder || safeSelectedIds.length > 0;
 
   return (
-    <Table className="rounded-none border-0">
-      <TableHeader>
-        <TableRow>
-          {selectionEnabled ? (
-            <TableHead className="w-10">
-              <input
-                ref={selectAllRef}
-                type="checkbox"
-                className="h-4 w-4 rounded border-slate-300"
-                checked={allVisibleSelected}
-                disabled={selectionDisabled}
-                onChange={(event) => {
-                  toggleAllVisible(event.target.checked);
-                }}
-                aria-label="Select all branches on this page"
-              />
-            </TableHead>
-          ) : null}
+    <div className="overflow-x-auto">
+      <table className="min-w-full border-collapse">
+        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
+          <tr>
+            {selectionEnabled ? (
+              <th className="w-11 px-3 py-3 text-left">
+                <input
+                  ref={selectAllRef}
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-slate-300"
+                  checked={allVisibleSelected}
+                  disabled={selectionDisabled}
+                  onChange={(event) => {
+                    toggleAllVisible(event.target.checked);
+                  }}
+                  aria-label="Select all branches on this page"
+                />
+              </th>
+            ) : null}
 
-          <TableHead className="w-10">
-            <span className="sr-only">Reorder</span>
-          </TableHead>
-          <TableHead>Code</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>City</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Order</TableHead>
-          <TableHead className="text-right">
-            Actions
-          </TableHead>
-        </TableRow>
-      </TableHeader>
+            <th className="w-10 px-2 py-3">
+              <span className="sr-only">Reorder</span>
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Code
+            </th>
+            <th className="min-w-[180px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Name
+            </th>
+            <th className="min-w-[120px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              City
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Status
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Order
+            </th>
+            <th className="w-[10.5rem] px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Actions
+            </th>
+          </tr>
+        </thead>
 
-      <TableBody>
-        {rows.map((branch) => {
-          const draggable =
-            canReorder(branch) && !dragDisabled;
+        <tbody className="divide-y divide-slate-100">
+          {rows.length === 0 ? (
+            <tr>
+              <td
+                colSpan={columnCount}
+                className="px-3 py-12 text-center align-middle"
+              >
+                <p className="text-sm font-medium text-slate-900">
+                  {emptyMessage}
+                </p>
+              </td>
+            </tr>
+          ) : (
+            rows.map((branch) => {
+              const draggable = canReorder(branch) && !dragDisabled;
+              const isArchived = Boolean(branch.deletedAt);
 
-          return (
-            <TableRow
-              key={branch.id}
-              draggable={draggable}
-              onDragStart={() => {
-                if (!draggable) {
-                  return;
-                }
-                setDragId(branch.id);
-              }}
-              onDragOver={(event) => {
-                if (!draggable || !dragId) {
-                  return;
-                }
-                event.preventDefault();
-                setDropTargetId(branch.id);
-              }}
-              onDragLeave={() => {
-                if (dropTargetId === branch.id) {
-                  setDropTargetId(null);
-                }
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                void handleDrop(branch.id);
-              }}
-              onDragEnd={() => {
-                setDragId(null);
-                setDropTargetId(null);
-              }}
-              className={`${
-                dropTargetId === branch.id
-                  ? "bg-slate-50"
-                  : ""
-              } ${
-                dragId === branch.id ? "opacity-60" : ""
-              }`}
-            >
-              {selectionEnabled ? (
-                <TableCell className="w-10">
-                  <Checkbox
-                    checked={safeSelectedIds.includes(
-                      branch.id
-                    )}
-                    disabled={selectionDisabled}
-                    onCheckedChange={(checked) => {
-                      toggleRow(branch.id, checked);
-                    }}
-                  />
-                </TableCell>
-              ) : null}
-
-              <TableCell className="w-10">
-                {draggable ? (
-                  <GripVertical
-                    className="h-3.5 w-3.5 cursor-grab text-slate-400"
-                    aria-label="Drag to reorder"
-                  />
-                ) : (
-                  <span className="inline-block w-3.5" />
-                )}
-              </TableCell>
-
-              <TableCell className="text-[15px] font-medium text-slate-900">
-                {branch.branchCode}
-              </TableCell>
-
-              <TableCell className="text-[15px] font-medium text-slate-900">
-                <button
-                  type="button"
-                  className="text-left text-[#2447A8] hover:underline"
-                  onClick={() => onManage(branch)}
+              return (
+                <tr
+                  key={branch.id}
+                  draggable={draggable}
+                  onDragStart={() => {
+                    if (!draggable) {
+                      return;
+                    }
+                    setDragId(branch.id);
+                  }}
+                  onDragOver={(event) => {
+                    if (!draggable || !dragId) {
+                      return;
+                    }
+                    event.preventDefault();
+                    setDropTargetId(branch.id);
+                  }}
+                  onDragLeave={() => {
+                    if (dropTargetId === branch.id) {
+                      setDropTargetId(null);
+                    }
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    void handleDrop(branch.id);
+                  }}
+                  onDragEnd={() => {
+                    setDragId(null);
+                    setDropTargetId(null);
+                  }}
+                  className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${
+                    dropTargetId === branch.id ? "bg-blue-50/60" : ""
+                  } ${dragId === branch.id ? "opacity-60" : ""} ${
+                    isArchived ? "bg-slate-50/40" : "bg-white"
+                  }`}
                 >
-                  {branch.branchName}
-                </button>
-              </TableCell>
+                  {selectionEnabled ? (
+                    <td className="w-11 px-3 py-3 align-middle">
+                      <Checkbox
+                        checked={safeSelectedIds.includes(branch.id)}
+                        disabled={selectionDisabled}
+                        onCheckedChange={(checked) => {
+                          toggleRow(branch.id, Boolean(checked));
+                        }}
+                      />
+                    </td>
+                  ) : null}
 
-              <TableCell>
-                {branch.city ?? "—"}
-              </TableCell>
+                  <td className="w-10 px-2 py-3 align-middle">
+                    {draggable ? (
+                      <GripVertical className="h-4 w-4 cursor-grab text-slate-400 active:cursor-grabbing" />
+                    ) : (
+                      <span className="inline-block w-4" />
+                    )}
+                  </td>
 
-              <TableCell>
-                <BranchStatusBadge
-                  status={branch.status}
-                  deletedAt={branch.deletedAt}
-                />
-              </TableCell>
+                  <td className="px-3 py-3 align-middle text-[15px] font-medium text-slate-900">
+                    {branch.branchCode}
+                  </td>
 
-              <TableCell>
-                {branch.displayOrder ?? "—"}
-              </TableCell>
+                  <td className="px-3 py-3 align-middle">
+                    <button
+                      type="button"
+                      className="text-left text-[15px] font-medium text-[#2447A8] hover:underline"
+                      onClick={() => onManage(branch)}
+                    >
+                      {branch.branchName}
+                    </button>
+                  </td>
 
-              <TableCell className="text-right">
-                <BranchActions
-                  branch={branch}
-                  disabled={
-                    actionsDisabled || isSavingOrder
-                  }
-                  onManage={onManage}
-                  onActivate={onActivate}
-                  onDeactivate={onDeactivate}
-                />
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+                  <td className="px-3 py-3 align-middle text-slate-700">
+                    {branch.city ?? "—"}
+                  </td>
+
+                  <td className="px-3 py-3 align-middle">
+                    <BranchStatusBadge
+                      status={branch.status}
+                      deletedAt={branch.deletedAt}
+                    />
+                  </td>
+
+                  <td className="px-3 py-3 align-middle text-slate-700">
+                    {branch.displayOrder ?? "—"}
+                  </td>
+
+                  <td className="px-2 py-3 align-middle">
+                    <BranchActions
+                      branch={branch}
+                      disabled={actionsDisabled || isSavingOrder}
+                      onEdit={onEdit}
+                      onManage={onManage}
+                      onActivate={onActivate}
+                      onDeactivate={onDeactivate}
+                      onDelete={onDelete}
+                      onRestore={onRestore}
+                      onPermanentDelete={onPermanentDelete}
+                    />
+                  </td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 }

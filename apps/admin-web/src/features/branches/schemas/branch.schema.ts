@@ -9,10 +9,9 @@ export const createBranchSchema = z.object({
   branchCode: z
     .string()
     .trim()
-    .min(2, "Branch code is required")
     .regex(
-      /^[A-Za-z0-9_-]{2,20}$/,
-      "Invalid branch code format"
+      /^(MCJB\d{3}|[A-Za-z0-9_-]{2,20})$/,
+      "Invalid branch code format",
     ),
 
   email: z

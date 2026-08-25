@@ -67,8 +67,8 @@ const METRICS: MetricConfig[] = [
   },
   {
     key: "instructors",
-    label: "Instructors",
-    hint: "Assigned instructors",
+    label: "Trainers",
+    hint: "Assigned trainers",
     icon: UserSquare2,
     iconClass: "text-sky-600",
     bgClass: "bg-sky-50",

@@ -5,7 +5,7 @@ import { createBranchSchema } from "@/src/features/branches/schemas/branch.schem
 describe("createBranchSchema", () => {
   const validBase = {
     branchName: "Malleshwaram",
-    branchCode: "MAL001",
+    branchCode: "MCJB001",
     email: "branch@example.com",
     phone: "9876543210",
     addressLine1: "Main Street",

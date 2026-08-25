@@ -28,7 +28,7 @@ class BranchService {
     }
   }
 
-  async suggestBranchCode(branchName: string) {
+  async suggestBranchCode(branchName?: string) {
     try {
       return await branchApi.suggestBranchCode(branchName);
     } catch (error) {

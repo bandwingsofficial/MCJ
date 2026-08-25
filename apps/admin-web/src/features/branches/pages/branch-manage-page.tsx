@@ -33,7 +33,7 @@ const TAB_LABELS: Record<string, string> = {
   batches: "Batches",
   students: "Students",
   enrollments: "Enrollments",
-  instructors: "Instructors",
+  trainers: "Trainers",
   reports: "Reports",
 };
 
@@ -109,7 +109,7 @@ export function BranchManagePage({ branchId }: Props) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="-m-6 min-h-full space-y-4 bg-white p-6">
       <BranchManageHeader
         branch={branch}
         activeSection={activeSection}

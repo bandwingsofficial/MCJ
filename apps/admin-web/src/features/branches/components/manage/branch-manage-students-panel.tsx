@@ -5,12 +5,17 @@ import { useRouter } from "next/navigation";
 
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { Pagination } from "@/src/shared/components/ui/pagination";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
+import {
+  AssignEntitiesModal,
+  type AssignableItem,
+} from "@/src/features/branches/components/manage/assign-entities-modal";
+import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
+import { assignStudentToBranch } from "@/src/features/branches/utils/branch-assign.utils";
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import { useActivateStudent } from "@/src/features/students/hooks/useActivateStudent";
@@ -28,14 +33,6 @@ import { StudentStatusBadge } from "@/src/features/students/components/StudentSt
 import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.utils";
 import { studentManagePath } from "@/src/features/students/utils/student-manage.routes";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/src/shared/components/ui/table";
 
 const PAGE_SIZE = 10;
 
@@ -69,6 +66,14 @@ export function BranchManageStudentsPanel({
     student: StudentListItem;
     action: "activate" | "deactivate";
   } | null>(null);
+
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignSearch, setAssignSearch] = useState("");
+  const [assignCandidates, setAssignCandidates] = useState<AssignableItem[]>(
+    [],
+  );
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
 
   const { activateStudent, isLoading: isActivating } = useActivateStudent();
   const { deactivateStudent, isLoading: isDeactivating } = useDeactivateStudent();
@@ -133,6 +138,64 @@ export function BranchManageStudentsPanel({
     setPage(1);
   }, [search]);
 
+  const openAssign = async () => {
+    setAssignOpen(true);
+    setAssignSearch("");
+    setAssignLoading(true);
+    try {
+      const response = await studentService.getStudents({
+        includeDeleted: false,
+        page: 1,
+        pageSize: 200,
+      });
+      const payload = parseStudentListResponse(response.data);
+      setAssignCandidates(
+        payload.items
+          .filter(
+            (item) =>
+              item.isActive &&
+              !isArchivedStudent(item) &&
+              item.branchId !== branchId,
+          )
+          .map((item) => ({
+            id: item.id,
+            label: formatPersonName(item.firstName, item.lastName),
+            meta: item.studentCode ?? item.email ?? undefined,
+          })),
+      );
+    } catch (error) {
+      appToast.error(getErrorMessage(error));
+      setAssignOpen(false);
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
+  const handleAssign = async (ids: string[]) => {
+    if (ids.length === 0) {
+      return;
+    }
+
+    setAssignSubmitting(true);
+    try {
+      for (const id of ids) {
+        await assignStudentToBranch(id, branchId);
+      }
+      appToast.success(
+        ids.length === 1
+          ? "Student assigned successfully"
+          : `${ids.length} students assigned successfully`,
+      );
+      setAssignOpen(false);
+      await loadData();
+      await onSummaryRefresh?.();
+    } catch (error) {
+      appToast.error(getErrorMessage(error));
+    } finally {
+      setAssignSubmitting(false);
+    }
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const handleStatusChange = async () => {
@@ -163,100 +226,113 @@ export function BranchManageStudentsPanel({
           search={search}
           onSearchChange={setSearch}
           searchPlaceholder="Search students..."
-          createHref={`/students/create?branchId=${branchId}`}
-          createLabel="Add Student"
+          assignLabel="Assign Student"
+          onAssign={() => {
+            void openAssign();
+          }}
+          assignDisabled={assignmentsDisabled}
         />
 
-        {isLoading ? (
-          <p className="py-8 text-center text-sm text-slate-500">
-            Loading students...
-          </p>
-        ) : students.length === 0 ? (
-          <EmptyState
-            title="No students found"
-            description="No students belong to this branch yet."
-          />
-        ) : (
-          <>
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student Code</TableHead>
-                    <TableHead>Student Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Enrollment Count</TableHead>
-                    <TableHead>Admission Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-mono text-sm text-slate-700">
-                        {student.studentCode}
-                      </TableCell>
-                      <TableCell className="font-medium text-slate-900">
-                        {formatPersonName(student.firstName, student.lastName)}
-                      </TableCell>
-                      <TableCell>{student.email ?? "—"}</TableCell>
-                      <TableCell>{student.phone ?? "—"}</TableCell>
-                      <TableCell>
-                        {enrollmentCountByStudent[student.id] ?? 0}
-                      </TableCell>
-                      <TableCell>
-                        {formatStudentDate(student.admissionDate)}
-                      </TableCell>
-                      <TableCell>
-                        <StudentStatusBadge
-                          status={student.status}
-                          isActive={student.isActive}
-                          isDeleted={isArchivedStudent(student)}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <StudentRowActionsMenu
-                          student={student}
-                          disabled={assignmentsDisabled || actionLoading}
-                          onManage={(item) =>
-                            router.push(studentManagePath(item.id))
-                          }
-                          onEdit={setEditTarget}
-                          onActivate={(item) =>
-                            setStatusTarget({
-                              student: item,
-                              action: "activate",
-                            })
-                          }
-                          onDeactivate={(item) =>
-                            setStatusTarget({
-                              student: item,
-                              action: "deactivate",
-                            })
-                          }
-                          onDelete={setDeleteTarget}
-                          onRestore={setRestoreTarget}
-                          onPermanentDelete={setPermanentDeleteTarget}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+        <BranchManageTableShell
+          columns={[
+            { key: "code", label: "Student Code" },
+            { key: "name", label: "Student" },
+            { key: "email", label: "Email" },
+            { key: "phone", label: "Phone" },
+            { key: "enrollments", label: "Enrollments", className: "w-[6rem]" },
+            { key: "admission", label: "Admission Date", className: "w-[7rem]" },
+            { key: "status", label: "Status", className: "w-[8rem]" },
+            {
+              key: "actions",
+              label: "Actions",
+              className: "w-[4.5rem] text-right",
+            },
+          ]}
+          isLoading={isLoading}
+          isEmpty={!isLoading && students.length === 0}
+          emptyMessage="No students assigned yet"
+          emptyDescription="Assign students to this branch to get started."
+        >
+          {students.map((student) => (
+            <tr key={student.id} className="hover:bg-slate-50">
+              <td className="truncate px-4 py-3 font-mono text-sm text-slate-700">
+                {student.studentCode}
+              </td>
+              <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
+                {formatPersonName(student.firstName, student.lastName)}
+              </td>
+              <td className="truncate px-4 py-3 text-sm text-slate-700">
+                {student.email ?? ""}
+              </td>
+              <td className="truncate px-4 py-3 text-sm text-slate-700">
+                {student.phone ?? ""}
+              </td>
+              <td className="px-4 py-3 text-sm text-slate-700">
+                {enrollmentCountByStudent[student.id] ?? 0}
+              </td>
+              <td className="px-4 py-3 text-sm text-slate-700">
+                {formatStudentDate(student.admissionDate)}
+              </td>
+              <td className="px-4 py-3">
+                <StudentStatusBadge
+                  status={student.status}
+                  isActive={student.isActive}
+                  isDeleted={isArchivedStudent(student)}
+                />
+              </td>
+              <td className="px-4 py-3 text-right">
+                <StudentRowActionsMenu
+                  student={student}
+                  disabled={assignmentsDisabled || actionLoading}
+                  onManage={(item) =>
+                    router.push(studentManagePath(item.id))
+                  }
+                  onEdit={setEditTarget}
+                  onActivate={(item) =>
+                    setStatusTarget({
+                      student: item,
+                      action: "activate",
+                    })
+                  }
+                  onDeactivate={(item) =>
+                    setStatusTarget({
+                      student: item,
+                      action: "deactivate",
+                    })
+                  }
+                  onDelete={setDeleteTarget}
+                  onRestore={setRestoreTarget}
+                  onPermanentDelete={setPermanentDeleteTarget}
+                />
+              </td>
+            </tr>
+          ))}
+        </BranchManageTableShell>
 
-            <div className="mt-4">
-              <Pagination
-                page={page}
-                totalPages={totalPages}
-                onPageChange={setPage}
-              />
-            </div>
-          </>
-        )}
+        {!isLoading && students.length > 0 ? (
+          <div className="mt-4">
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </div>
+        ) : null}
       </Card>
+
+      <AssignEntitiesModal
+        open={assignOpen}
+        title="Assign Students"
+        items={assignCandidates}
+        isLoading={assignLoading}
+        isSubmitting={assignSubmitting}
+        search={assignSearch}
+        onSearchChange={setAssignSearch}
+        searchPlaceholder="Search students..."
+        emptyMessage="No active students available to assign"
+        onClose={() => setAssignOpen(false)}
+        onAssign={handleAssign}
+      />
 
       {editTarget ? (
         <UpdateStudentModal

@@ -8,7 +8,6 @@ import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
-import { branchService } from "@/src/features/branches/services/branch.service";
 import {
   AssignEntitiesModal,
   type AssignableItem,
@@ -16,10 +15,10 @@ import {
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
 import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
-import { categoryService } from "@/src/features/categories/services/category.service";
-import { CategoryStatusBadge } from "@/src/features/categories/components/category-status-badge";
-import type { CategoryListItem } from "@/src/features/categories/types/category.types";
-import { courseService } from "@/src/features/courses/services/course.service";
+import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
+import { TrainerStatusBadge } from "@/src/features/trainers/components/trainer-status-badge";
+import { trainerService } from "@/src/features/trainers/services/trainer.service";
+import type { TrainerListItem } from "@/src/features/trainers/types/trainer.types";
 
 interface Props {
   branchId: string;
@@ -27,21 +26,20 @@ interface Props {
   onSummaryRefresh?: () => Promise<void>;
 }
 
-export function BranchManageCategoriesPanel({
+export function BranchManageTrainersPanel({
   branchId,
   assignmentsDisabled = false,
   onSummaryRefresh,
 }: Props) {
   const [search, setSearch] = useState("");
-  const [categories, setCategories] = useState<CategoryListItem[]>([]);
-  const [courseCountByCategory, setCourseCountByCategory] = useState<
-    Record<string, number>
-  >({});
+  const [trainers, setTrainers] = useState<TrainerListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignSearch, setAssignSearch] = useState("");
-  const [assignCandidates, setAssignCandidates] = useState<AssignableItem[]>([]);
+  const [assignCandidates, setAssignCandidates] = useState<AssignableItem[]>(
+    [],
+  );
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignSubmitting, setAssignSubmitting] = useState(false);
 
@@ -54,37 +52,18 @@ export function BranchManageCategoriesPanel({
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [categoryResponse, courseResponse] = await Promise.all([
-        categoryService.getCategories({
-          search,
-          status: "ACTIVE",
-          branchId,
-          page: 1,
-          pageSize: 100,
-        }),
-        courseService.getCourses({
-          branchId,
-          page: 1,
-          pageSize: 200,
-        }),
-      ]);
-
-      const items = (categoryResponse.data ?? []).filter(
-        (item) => !item.isDeleted && item.status === "ACTIVE",
-      );
-      setCategories(items);
-
-      const counts: Record<string, number> = {};
-      for (const course of courseResponse.data.items ?? []) {
-        if (course.categoryId) {
-          counts[course.categoryId] = (counts[course.categoryId] ?? 0) + 1;
-        }
-      }
-      setCourseCountByCategory(counts);
+      const response = await trainerService.getTrainers({
+        search,
+        branchId,
+        status: "ACTIVE",
+        page: 1,
+        pageSize: 100,
+        isDeleted: false,
+      });
+      setTrainers(response.data.items ?? []);
     } catch (error) {
       appToast.error(getErrorMessage(error));
-      setCategories([]);
-      setCourseCountByCategory({});
+      setTrainers([]);
     } finally {
       setIsLoading(false);
     }
@@ -99,26 +78,28 @@ export function BranchManageCategoriesPanel({
     setAssignSearch("");
     setAssignLoading(true);
     try {
-      const response = await categoryService.getCategories({
-        search: "",
+      const response = await trainerService.getTrainers({
         status: "ACTIVE",
         page: 1,
         pageSize: 200,
+        isDeleted: false,
       });
-      const assignedIds = new Set(categories.map((item) => item.id));
+      const assigned = new Set(trainers.map((item) => item.id));
       setAssignCandidates(
-        (response.data ?? [])
+        (response.data.items ?? [])
           .filter(
             (item) =>
-              !item.isDeleted &&
               item.status === "ACTIVE" &&
-              !assignedIds.has(item.id),
+              !item.deletedAt &&
+              !assigned.has(item.id) &&
+              (item.branchId == null ||
+                item.branchId === "" ||
+                item.branchId !== branchId),
           )
           .map((item) => ({
             id: item.id,
-            label: item.name,
-            meta: item.status,
-            imageUrl: item.thumbnailUrl,
+            label: formatPersonName(item.firstName, item.lastName),
+            meta: item.email ?? item.employeeCode ?? undefined,
           })),
       );
     } catch (error) {
@@ -136,8 +117,14 @@ export function BranchManageCategoriesPanel({
 
     setAssignSubmitting(true);
     try {
-      await branchService.assignCategories(branchId, ids);
-      appToast.success("Categories assigned");
+      for (const id of ids) {
+        await trainerService.updateTrainer(id, { branchId });
+      }
+      appToast.success(
+        ids.length === 1
+          ? "Trainer assigned successfully"
+          : `${ids.length} trainers assigned successfully`,
+      );
       setAssignOpen(false);
       await loadData();
       await onSummaryRefresh?.();
@@ -155,8 +142,10 @@ export function BranchManageCategoriesPanel({
 
     setUnassignLoading(true);
     try {
-      await branchService.unassignCategory(branchId, unassignTarget.id);
-      appToast.success("Category unassigned");
+      await trainerService.updateTrainer(unassignTarget.id, {
+        branchId: null,
+      });
+      appToast.success("Trainer unassigned");
       setUnassignTarget(null);
       await loadData();
       await onSummaryRefresh?.();
@@ -173,8 +162,8 @@ export function BranchManageCategoriesPanel({
         <BranchSectionToolbar
           search={search}
           onSearchChange={setSearch}
-          searchPlaceholder="Search categories..."
-          assignLabel="Assign Categories"
+          searchPlaceholder="Search trainers..."
+          assignLabel="Assign Trainer"
           onAssign={() => {
             void openAssign();
           }}
@@ -183,10 +172,8 @@ export function BranchManageCategoriesPanel({
 
         <BranchManageTableShell
           columns={[
-            { key: "image", label: "Category Image", className: "w-[5rem]" },
-            { key: "name", label: "Category Name" },
-            { key: "description", label: "Description" },
-            { key: "courses", label: "Courses Count", className: "w-[7rem]" },
+            { key: "name", label: "Trainer" },
+            { key: "email", label: "Email" },
             { key: "status", label: "Status", className: "w-[8rem]" },
             {
               key: "actions",
@@ -195,46 +182,34 @@ export function BranchManageCategoriesPanel({
             },
           ]}
           isLoading={isLoading}
-          isEmpty={!isLoading && categories.length === 0}
-          emptyMessage="No categories assigned yet"
-          emptyDescription="Assign categories to this branch to get started."
+          isEmpty={!isLoading && trainers.length === 0}
+          emptyMessage="No trainers assigned yet"
+          emptyDescription="Assign trainers to this branch to get started."
         >
-          {categories.map((item) => (
-            <tr key={item.id} className="hover:bg-slate-50">
-              <td className="px-4 py-3">
-                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                  {item.thumbnailUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.thumbnailUrl}
-                      alt={item.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : null}
-                </div>
-              </td>
+          {trainers.map((trainer) => (
+            <tr key={trainer.id} className="hover:bg-slate-50">
               <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
-                {item.name}
+                {formatPersonName(trainer.firstName, trainer.lastName)}
               </td>
-              <td className="max-w-xs truncate px-4 py-3 text-sm text-slate-700">
-                {item.description?.trim() ?? ""}
-              </td>
-              <td className="px-4 py-3 text-sm text-slate-700">
-                {courseCountByCategory[item.id] ?? 0}
+              <td className="truncate px-4 py-3 text-sm text-slate-700">
+                {trainer.email ?? ""}
               </td>
               <td className="px-4 py-3">
-                <CategoryStatusBadge status={item.status} />
+                <TrainerStatusBadge status={trainer.status} />
               </td>
               <td className="px-4 py-3 text-right">
                 <BranchIconAction
                   icon={Link2Off}
-                  label="Unassign Category"
+                  label="Unassign trainer"
                   destructive
                   disabled={assignmentsDisabled}
                   onClick={() =>
                     setUnassignTarget({
-                      id: item.id,
-                      label: item.name,
+                      id: trainer.id,
+                      label: formatPersonName(
+                        trainer.firstName,
+                        trainer.lastName,
+                      ),
                     })
                   }
                 />
@@ -246,22 +221,22 @@ export function BranchManageCategoriesPanel({
 
       <AssignEntitiesModal
         open={assignOpen}
-        title="Assign Categories"
+        title="Assign Trainers"
         items={assignCandidates}
         isLoading={assignLoading}
         isSubmitting={assignSubmitting}
         search={assignSearch}
         onSearchChange={setAssignSearch}
-        searchPlaceholder="Search categories..."
-        emptyMessage="No active categories available to assign"
+        searchPlaceholder="Search trainers..."
+        emptyMessage="No active trainers available to assign"
         onClose={() => setAssignOpen(false)}
         onAssign={handleAssign}
       />
 
       <ConfirmDialog
         open={Boolean(unassignTarget)}
-        title="Unassign Category"
-        description={`Remove "${unassignTarget?.label ?? "this category"}" from this branch? The category itself will not be deleted.`}
+        title="Unassign trainer?"
+        description={`Remove "${unassignTarget?.label ?? "this trainer"}" from this branch? The trainer record will not be deleted.`}
         confirmLabel="Unassign"
         loading={unassignLoading}
         onCancel={() => setUnassignTarget(null)}

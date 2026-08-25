@@ -6,13 +6,23 @@ import {
   useState,
   type ChangeEvent,
   type FocusEvent,
+  type ReactNode,
 } from "react";
 
 import Image from "next/image";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ImageIcon, Upload, X } from "lucide-react";
+import {
+  FileText,
+  Hash,
+  ImageIcon,
+  ListOrdered,
+  Tag,
+  Upload,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 
 import { Input } from "@/src/shared/components/ui/input";
 import { Textarea } from "@/src/shared/components/ui/textarea";
@@ -24,6 +34,7 @@ import {
   ValidatedField,
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
+import { cn } from "@/src/shared/lib/cn";
 
 import {
   categoryFormSchema,
@@ -43,6 +54,68 @@ const ACCEPTED_TYPES = [
   "image/webp",
   "image/gif",
 ];
+
+function FieldIcon({
+  icon: Icon,
+  alignTop = false,
+}: {
+  icon: LucideIcon;
+  alignTop?: boolean;
+}) {
+  return (
+    <Icon
+      className={cn(
+        "pointer-events-none absolute right-9 z-[1] h-4 w-4 text-slate-400",
+        alignTop ? "top-3" : "top-1/2 -translate-y-1/2",
+      )}
+      aria-hidden="true"
+    />
+  );
+}
+
+function iconInputClass(state: FieldVisualState, extra = "") {
+  return cn(
+    validatedFieldInputClass(state, "w-full min-w-0 max-w-full"),
+    "pr-16",
+    extra,
+  );
+}
+
+function IconField({
+  label,
+  required,
+  state,
+  errorMessage,
+  checkingMessage,
+  successMessage,
+  icon,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  state: FieldVisualState;
+  errorMessage?: string;
+  checkingMessage?: string;
+  successMessage?: string;
+  icon: LucideIcon;
+  children: ReactNode;
+}) {
+  return (
+    <ValidatedField
+      label={label}
+      required={required}
+      state={state}
+      errorMessage={errorMessage}
+      checkingMessage={checkingMessage}
+      successMessage={successMessage}
+    >
+      <div className="relative">
+        {children}
+        <FieldIcon icon={icon} />
+      </div>
+    </ValidatedField>
+  );
+}
 
 type SyncFieldName = "description" | "displayOrder";
 
@@ -404,7 +477,7 @@ export function CategoryForm({
       errorMessage: errors[fieldName]?.message,
       inputProps: {
         ...registration,
-        className: validatedFieldInputClass(state),
+        className: iconInputClass(state),
         onBlur: (event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
           registration.onBlur(event);
           void trigger(fieldName);
@@ -560,18 +633,19 @@ export function CategoryForm({
         </div>
       ) : null}
 
-      <ValidatedField
+      <IconField
         label="Name"
         required
         state={nameState}
         errorMessage={nameAsyncError ?? errors.name?.message}
         successMessage="Available"
+        icon={Tag}
       >
         <Input
           {...nameRegister}
           placeholder="Enter category name"
           disabled={isSubmitting}
-          className={validatedFieldInputClass(nameState)}
+          className={iconInputClass(nameState)}
           onBlur={(event) => {
             nameRegister.onBlur(event);
             setNameTouched(true);
@@ -583,9 +657,9 @@ export function CategoryForm({
             void trigger("name");
           }}
         />
-      </ValidatedField>
+      </IconField>
 
-      <ValidatedField
+      <IconField
         label={
           isEdit ? "Slug" : "Slug (auto-generated from name)"
         }
@@ -593,12 +667,13 @@ export function CategoryForm({
         state={slugState}
         errorMessage={slugAsyncError ?? errors.slug?.message}
         successMessage="Available"
+        icon={Hash}
       >
         <Input
           {...slugRegister}
           placeholder="category-slug"
           disabled={isSubmitting}
-          className={validatedFieldInputClass(slugState)}
+          className={iconInputClass(slugState)}
           onBlur={(event) => {
             slugRegister.onBlur(event);
             setSlugTouched(true);
@@ -620,7 +695,7 @@ export function CategoryForm({
             void trigger("slug");
           }}
         />
-      </ValidatedField>
+      </IconField>
 
       <ValidatedField
         label="Description"
@@ -628,11 +703,18 @@ export function CategoryForm({
         state={descriptionField.state}
         errorMessage={descriptionField.errorMessage}
       >
-        <Textarea
-          {...descriptionField.inputProps}
-          placeholder="Enter category description (minimum 10 words)"
-          disabled={isSubmitting}
-        />
+        <div className="relative">
+          <Textarea
+            {...descriptionField.inputProps}
+            placeholder="Enter category description (minimum 10 words)"
+            disabled={isSubmitting}
+            className={cn(
+              iconInputClass(descriptionField.state),
+              "min-h-[96px] resize-y",
+            )}
+          />
+          <FieldIcon icon={FileText} alignTop />
+        </div>
         <WordCount
           value={values.description ?? ""}
           maxWords={CATEGORY_DESCRIPTION_MAX_WORDS}
@@ -746,36 +828,39 @@ export function CategoryForm({
       </div>
 
       {isEdit ? (
-        <ValidatedField
-          label="Display Order"
-          state={displayOrderField.state}
-          errorMessage={displayOrderField.errorMessage}
-        >
-          <Input
-            type="number"
-            min={0}
-            step={1}
-            placeholder="0"
-            disabled={isSubmitting}
-            {...register("displayOrder", {
-              valueAsNumber: true,
-              setValueAs: (value) =>
-                value === "" || Number.isNaN(Number(value))
-                  ? undefined
-                  : Number(value),
-            })}
-            className={validatedFieldInputClass(displayOrderField.state)}
-            onBlur={(event) => {
-              displayOrderField.inputProps.onBlur(event);
-            }}
-            onChange={(event) => {
-              displayOrderField.inputProps.onChange(event);
-            }}
-          />
+        <>
+          <ValidatedField
+            label="Display Order"
+            state={displayOrderField.state}
+            errorMessage={displayOrderField.errorMessage}
+          >
+            <Input
+              type="number"
+              min={0}
+              step={1}
+              placeholder="0"
+              disabled={isSubmitting}
+              {...register("displayOrder", {
+                valueAsNumber: true,
+                setValueAs: (value) =>
+                  value === "" || Number.isNaN(Number(value))
+                    ? undefined
+                    : Number(value),
+              })}
+              className={iconInputClass(displayOrderField.state)}
+              onBlur={(event) => {
+                displayOrderField.inputProps.onBlur(event);
+              }}
+              onChange={(event) => {
+                displayOrderField.inputProps.onChange(event);
+              }}
+            />
+            <FieldIcon icon={ListOrdered} />
+          </ValidatedField>
           <p className="mt-1 text-xs text-slate-500">
             Lower numbers appear first in category lists.
           </p>
-        </ValidatedField>
+        </>
       ) : null}
 
       <Button

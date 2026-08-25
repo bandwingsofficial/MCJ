@@ -5,20 +5,12 @@ import { useRouter } from "next/navigation";
 import { Eye } from "lucide-react";
 
 import { Card } from "@/src/shared/components/ui/card";
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { Pagination } from "@/src/shared/components/ui/pagination";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/src/shared/components/ui/table";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
+import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
 import {
   formatBatchLabel,
@@ -107,95 +99,89 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
         searchPlaceholder="Search enrollments..."
       />
 
-      {isLoading ? (
-        <p className="py-8 text-center text-sm text-slate-500">
-          Loading enrollments...
-        </p>
-      ) : enrollments.length === 0 ? (
-        <EmptyState
-          title="No enrollments found"
-          description="No enrollments for this branch yet."
-        />
-      ) : (
-        <>
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Batch</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Enrollment Date</TableHead>
-                  <TableHead>Fee</TableHead>
-                  <TableHead>Discount</TableHead>
-                  <TableHead>Final Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {enrollments.map((enrollment) => (
-                  <TableRow key={enrollment.id}>
-                    <TableCell className="font-medium text-slate-900">
-                      {formatStudentName(enrollment)}
-                    </TableCell>
-                    <TableCell>
-                      {formatBatchLabel(
-                        enrollment.batch?.name,
-                        enrollment.batch?.code,
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enrollment.course?.title ?? "—"}
-                    </TableCell>
-                    <TableCell>
-                      {formatStudentDate(
-                        enrollment.admissionDate ?? enrollment.createdAt,
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(enrollment.feeAmount)}
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(enrollment.discountAmount)}
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(formatEnrollmentFinalAmount(enrollment))}
-                    </TableCell>
-                    <TableCell>
-                      <StudentEnrollmentActiveBadge enrollment={enrollment} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {enrollment.student?.id ? (
-                        <BranchIconAction
-                          icon={Eye}
-                          label="Manage"
-                          onClick={() =>
-                            router.push(
-                              studentManageTabPath(
-                                enrollment.student.id,
-                                "enrollments",
-                              ),
-                            )
-                          }
-                        />
-                      ) : null}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+      <BranchManageTableShell
+        columns={[
+          { key: "student", label: "Student" },
+          { key: "batch", label: "Batch" },
+          { key: "course", label: "Course" },
+          { key: "date", label: "Enrollment Date", className: "w-[8rem]" },
+          { key: "fee", label: "Fee", className: "w-[6rem]" },
+          { key: "discount", label: "Discount", className: "w-[6rem]" },
+          { key: "final", label: "Final Amount", className: "w-[7rem]" },
+          { key: "status", label: "Status", className: "w-[8rem]" },
+          {
+            key: "actions",
+            label: "Actions",
+            className: "w-[4.5rem] text-right",
+          },
+        ]}
+        isLoading={isLoading}
+        isEmpty={!isLoading && enrollments.length === 0}
+        emptyMessage="No enrollments found yet"
+        emptyDescription="Enrollments for this branch will appear here."
+      >
+        {enrollments.map((enrollment) => (
+          <tr key={enrollment.id} className="hover:bg-slate-50">
+            <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
+              {formatStudentName(enrollment)}
+            </td>
+            <td className="truncate px-4 py-3 text-sm text-slate-700">
+              {enrollment.batch?.name
+                ? formatBatchLabel(
+                    enrollment.batch.name,
+                    enrollment.batch.code,
+                  )
+                : ""}
+            </td>
+            <td className="truncate px-4 py-3 text-sm text-slate-700">
+              {enrollment.course?.title ?? ""}
+            </td>
+            <td className="px-4 py-3 text-sm text-slate-700">
+              {formatStudentDate(
+                enrollment.admissionDate ?? enrollment.createdAt,
+              )}
+            </td>
+            <td className="px-4 py-3 text-sm text-slate-700">
+              {formatCurrency(enrollment.feeAmount)}
+            </td>
+            <td className="px-4 py-3 text-sm text-slate-700">
+              {formatCurrency(enrollment.discountAmount)}
+            </td>
+            <td className="px-4 py-3 text-sm text-slate-700">
+              {formatCurrency(formatEnrollmentFinalAmount(enrollment))}
+            </td>
+            <td className="px-4 py-3">
+              <StudentEnrollmentActiveBadge enrollment={enrollment} />
+            </td>
+            <td className="px-4 py-3 text-right">
+              {enrollment.student?.id ? (
+                <BranchIconAction
+                  icon={Eye}
+                  label="Manage"
+                  onClick={() =>
+                    router.push(
+                      studentManageTabPath(
+                        enrollment.student.id,
+                        "enrollments",
+                      ),
+                    )
+                  }
+                />
+              ) : null}
+            </td>
+          </tr>
+        ))}
+      </BranchManageTableShell>
 
-          <div className="mt-4">
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-            />
-          </div>
-        </>
-      )}
+      {!isLoading && enrollments.length > 0 ? (
+        <div className="mt-4">
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        </div>
+      ) : null}
     </Card>
   );
 }

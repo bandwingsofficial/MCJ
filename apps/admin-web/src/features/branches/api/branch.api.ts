@@ -45,11 +45,11 @@ export const branchApi = {
     return response.data;
   },
 
-  async suggestBranchCode(branchName: string) {
+  async suggestBranchCode(branchName?: string) {
     const response = await apiClient.get<
       ApiResponse<SuggestBranchCodeResponse>
     >("/admin/branches/suggest-code", {
-      params: { branchName },
+      params: branchName ? { branchName } : undefined,
     });
 
     return response.data;

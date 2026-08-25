@@ -98,3 +98,23 @@ export function truncateText(value?: string | null, max = 80): string {
 
   return trimmed.length > max ? `${trimmed.slice(0, max)}…` : trimmed;
 }
+
+export function formatBranchAddress(branch: {
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  postalCode?: string | null;
+}): string {
+  const locality = [branch.city, branch.state].filter(Boolean).join(", ");
+  const parts = [
+    branch.addressLine1,
+    branch.addressLine2,
+    locality,
+    branch.country,
+    branch.postalCode,
+  ].filter((part) => Boolean(part?.trim()));
+
+  return parts.join(", ");
+}

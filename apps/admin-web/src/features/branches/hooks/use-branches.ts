@@ -22,6 +22,9 @@ interface UseBranchesReturn {
 
   total: number;
 
+  /** Total branches in the catalog (non-archived, unfiltered). */
+  catalogTotal: number;
+
   /** Alias of total for legacy callers. */
   count: number;
 
@@ -55,6 +58,8 @@ export const useBranches = (options?: {
   >([]);
 
   const [total, setTotal] = useState(0);
+
+  const [catalogTotal, setCatalogTotal] = useState(0);
 
   const [isInitialLoading, setIsInitialLoading] =
     useState(true);
@@ -129,6 +134,23 @@ export const useBranches = (options?: {
     };
   }, [filters.search]);
 
+  const refreshCatalogTotal = useCallback(async () => {
+    try {
+      const response = await branchService.getBranches({
+        page: 1,
+        pageSize: 1,
+        includeDeleted: false,
+      });
+      setCatalogTotal(
+        response.data.meta?.total ??
+          response.data.count ??
+          response.data.items.length,
+      );
+    } catch {
+      // Header total is non-critical.
+    }
+  }, []);
+
   const fetchBranches = useCallback(
     async (options?: { silent?: boolean }) => {
       const requestId = ++requestIdRef.current;
@@ -194,9 +216,14 @@ export const useBranches = (options?: {
     void fetchBranches();
   }, [fetchBranches]);
 
+  useEffect(() => {
+    void refreshCatalogTotal();
+  }, [refreshCatalogTotal]);
+
   return {
     branches,
     total,
+    catalogTotal,
     count: total,
     isInitialLoading,
     isFetching,
@@ -205,6 +232,9 @@ export const useBranches = (options?: {
     error,
     filters,
     setFilters,
-    refetch: () => fetchBranches({ silent: false }),
+    refetch: async () => {
+      await fetchBranches({ silent: false });
+      await refreshCatalogTotal();
+    },
   };
 };

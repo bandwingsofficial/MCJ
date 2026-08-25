@@ -6,11 +6,27 @@ import {
   useState,
   type ChangeEvent,
   type FocusEvent,
+  type ReactNode,
 } from "react";
 
 import { useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+
+import {
+  Building2,
+  Compass,
+  FileText,
+  Globe,
+  Hash,
+  Mail,
+  Map,
+  MapPin,
+  MapPinned,
+  Phone,
+  Tag,
+  type LucideIcon,
+} from "lucide-react";
 
 import { Input } from "@/src/shared/components/ui/input";
 import { Textarea } from "@/src/shared/components/ui/textarea";
@@ -22,6 +38,7 @@ import {
   ValidatedField,
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
+import { cn } from "@/src/shared/lib/cn";
 
 import {
   createBranchSchema,
@@ -31,7 +48,59 @@ import {
 import { branchService } from "@/src/features/branches/services/branch.service";
 
 const AVAILABILITY_DEBOUNCE_MS = 400;
-const SUGGEST_DEBOUNCE_MS = 450;
+
+function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <Icon
+      className="pointer-events-none absolute right-9 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
+      aria-hidden="true"
+    />
+  );
+}
+
+function iconInputClass(state: FieldVisualState, extra = "") {
+  return cn(
+    validatedFieldInputClass(state, "w-full min-w-0 max-w-full"),
+    "pr-16",
+    extra,
+  );
+}
+
+function IconField({
+  label,
+  required,
+  state,
+  errorMessage,
+  checkingMessage,
+  successMessage,
+  icon,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  state: FieldVisualState;
+  errorMessage?: string;
+  checkingMessage?: string;
+  successMessage?: string;
+  icon: LucideIcon;
+  children: ReactNode;
+}) {
+  return (
+    <ValidatedField
+      label={label}
+      required={required}
+      state={state}
+      errorMessage={errorMessage}
+      checkingMessage={checkingMessage}
+      successMessage={successMessage}
+    >
+      <div className="relative">
+        {children}
+        <FieldIcon icon={icon} />
+      </div>
+    </ValidatedField>
+  );
+}
 
 type SyncFieldName = Exclude<
   keyof CreateBranchFormValues,
@@ -62,13 +131,10 @@ export function BranchForm({
 }: BranchFormProps) {
   const isEdit = Boolean(excludeId);
 
-  const codeManuallyEditedRef = useRef(isEdit);
-  const lastSuggestedCodeRef = useRef(
-    defaultValues?.branchCode?.toUpperCase() ?? ""
-  );
   const suggestRequestIdRef = useRef(0);
   const nameCheckIdRef = useRef(0);
   const codeCheckIdRef = useRef(0);
+  const [isSuggestingCode, setIsSuggestingCode] = useState(false);
 
   const [nameTouched, setNameTouched] = useState(false);
   const [codeTouched, setCodeTouched] = useState(false);
@@ -146,11 +212,6 @@ export function BranchForm({
       description: "",
       ...defaultValues,
     });
-    codeManuallyEditedRef.current = isEdit;
-    lastSuggestedCodeRef.current =
-      defaultValues.branchCode?.toUpperCase() ?? "";
-    // Run availability with excludeId so the current branch name/code
-    // show as available rather than a false duplicate.
     setNameTouched(true);
     setCodeTouched(true);
     setNameAvailable(null);
@@ -176,51 +237,38 @@ export function BranchForm({
     reset,
   ]);
 
-  // Auto-suggest branch code on create only.
+  // Auto-generate branch code on create (MCJB001, MCJB002, …).
   useEffect(() => {
     if (isEdit) {
       return;
     }
 
-    const trimmed = (branchName ?? "").trim();
+    const requestId = ++suggestRequestIdRef.current;
+    setIsSuggestingCode(true);
 
-    if (trimmed.length < 3) {
-      return;
-    }
-
-    if (codeManuallyEditedRef.current) {
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      const requestId = ++suggestRequestIdRef.current;
-
-      try {
-        const response =
-          await branchService.suggestBranchCode(trimmed);
-
+    void branchService
+      .suggestBranchCode()
+      .then((response) => {
         if (requestId !== suggestRequestIdRef.current) {
           return;
         }
 
-        if (codeManuallyEditedRef.current) {
-          return;
-        }
-
         const suggested = response.data.branchCode;
-        lastSuggestedCodeRef.current = suggested;
         setValue("branchCode", suggested, {
           shouldDirty: true,
           shouldValidate: true,
         });
         setCodeTouched(true);
-      } catch {
-        // Suggestion is UX-only; keep typing uninterrupted.
-      }
-    }, SUGGEST_DEBOUNCE_MS);
-
-    return () => clearTimeout(timer);
-  }, [branchName, isEdit, setValue]);
+      })
+      .catch(() => {
+        // Suggestion is UX-only; keep form usable.
+      })
+      .finally(() => {
+        if (requestId === suggestRequestIdRef.current) {
+          setIsSuggestingCode(false);
+        }
+      });
+  }, [isEdit, setValue]);
 
   // Live name uniqueness (case-insensitive via backend; exclude current id in edit)
   useEffect(() => {
@@ -375,17 +423,19 @@ export function BranchForm({
             ? "invalid"
             : "neutral";
 
-  const codeState: FieldVisualState = codeChecking
+  const codeState: FieldVisualState = isSuggestingCode
     ? "checking"
-    : codeAvailable === false || errors.branchCode
-      ? "invalid"
-      : !codeTouched
-        ? "neutral"
-        : codeAvailable === true
-          ? "valid"
-          : errors.branchCode
-            ? "invalid"
-            : "neutral";
+    : codeChecking
+      ? "checking"
+      : codeAvailable === false || errors.branchCode
+        ? "invalid"
+        : !codeTouched
+          ? "neutral"
+          : codeAvailable === true
+            ? "valid"
+            : errors.branchCode
+              ? "invalid"
+              : "neutral";
 
   const getSyncFieldState = (
     name: SyncFieldName
@@ -427,7 +477,7 @@ export function BranchForm({
       errorMessage: errors[name]?.message,
       inputProps: {
         ...registration,
-        className: validatedFieldInputClass(state),
+        className: iconInputClass(state),
         onBlur: (
           event: FocusEvent<HTMLInputElement>
         ) => {
@@ -525,7 +575,7 @@ export function BranchForm({
       className="space-y-5"
     >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <ValidatedField
+        <IconField
           label="Branch Name"
           required
           state={nameState}
@@ -533,11 +583,12 @@ export function BranchForm({
             nameAsyncError ?? errors.branchName?.message
           }
           successMessage="Available"
+          icon={Tag}
         >
           <Input
             {...nameRegister}
             placeholder="Enter branch name"
-            className={validatedFieldInputClass(nameState)}
+            className={iconInputClass(nameState)}
             onBlur={(event) => {
               nameRegister.onBlur(event);
               setNameTouched(true);
@@ -549,142 +600,141 @@ export function BranchForm({
               void trigger("branchName");
             }}
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
+        <IconField
           label="Branch Code"
           required
           state={codeState}
+          checkingMessage={isSuggestingCode ? "Generating code..." : undefined}
           errorMessage={
             codeAsyncError ?? errors.branchCode?.message
           }
           successMessage="Available"
+          icon={Hash}
         >
           <Input
             {...codeRegister}
-            placeholder="Auto-generated branch code"
-            className={validatedFieldInputClass(codeState)}
+            readOnly
+            placeholder="MCJB001"
+            className={iconInputClass(codeState, "bg-slate-50")}
             onBlur={(event) => {
               codeRegister.onBlur(event);
               setCodeTouched(true);
               void trigger("branchCode");
             }}
-            onChange={(event) => {
-              const value = event.target.value;
-              const normalized = value.trim().toUpperCase();
-
-              if (
-                normalized &&
-                normalized !== lastSuggestedCodeRef.current
-              ) {
-                codeManuallyEditedRef.current = true;
-              }
-
-              codeRegister.onChange(event);
-              setCodeTouched(true);
-              void trigger("branchCode");
-            }}
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
+        <IconField
           label="Email"
           required
           state={emailField.state}
           errorMessage={emailField.errorMessage}
+          icon={Mail}
         >
           <Input
             {...emailField.inputProps}
             placeholder="Enter branch email"
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
+        <IconField
           label="Phone"
           required
           state={phoneField.state}
           errorMessage={phoneField.errorMessage}
+          icon={Phone}
         >
           <Input
             {...phoneField.inputProps}
             placeholder="Enter branch phone number"
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
+        <IconField
           label="Address Line 1"
           required
           state={address1Field.state}
           errorMessage={address1Field.errorMessage}
+          icon={MapPin}
         >
           <Input
             {...address1Field.inputProps}
             placeholder="Enter address line 1"
           />
-        </ValidatedField>
+        </IconField>
 
-        <div className="min-w-0">
-          <Label>Address Line 2</Label>
+        <IconField
+          label="Address Line 2"
+          state="neutral"
+          icon={MapPinned}
+        >
           <Input
             {...register("addressLine2")}
             placeholder="Enter address line 2 (optional)"
+            className={iconInputClass("neutral")}
           />
-          <div className="mt-1 min-h-[1.25rem]" />
-        </div>
+        </IconField>
 
-        <ValidatedField
+        <IconField
           label="City"
           required
           state={cityField.state}
           errorMessage={cityField.errorMessage}
+          icon={Building2}
         >
           <Input
             {...cityField.inputProps}
             placeholder="Enter city"
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
+        <IconField
           label="State"
           required
           state={stateField.state}
           errorMessage={stateField.errorMessage}
+          icon={Map}
         >
           <Input
             {...stateField.inputProps}
             placeholder="Enter state"
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
+        <IconField
           label="Country"
           required
           state={countryField.state}
           errorMessage={countryField.errorMessage}
+          icon={Globe}
         >
           <Input
             {...countryField.inputProps}
             placeholder="Enter country"
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
+        <IconField
           label="Postal Code"
           required
           state={postalField.state}
           errorMessage={postalField.errorMessage}
+          icon={MapPin}
         >
           <Input
             {...postalField.inputProps}
             placeholder="Enter postal code"
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
+        <IconField
           label="Latitude"
           required
           state={latField.state}
           errorMessage={latField.errorMessage}
+          icon={Compass}
         >
           <Input
             type="number"
@@ -692,13 +742,14 @@ export function BranchForm({
             {...latField.inputProps}
             placeholder="Enter latitude"
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
+        <IconField
           label="Longitude"
           required
           state={lngField.state}
           errorMessage={lngField.errorMessage}
+          icon={Compass}
         >
           <Input
             type="number"
@@ -706,15 +757,22 @@ export function BranchForm({
             {...lngField.inputProps}
             placeholder="Enter longitude"
           />
-        </ValidatedField>
+        </IconField>
       </div>
 
       <div>
         <Label>Description</Label>
-        <Textarea
-          {...register("description")}
-          placeholder="Enter branch description (optional)"
-        />
+        <div className="relative mt-1.5">
+          <Textarea
+            {...register("description")}
+            placeholder="Enter branch description (optional)"
+            className="min-h-[96px] pr-16"
+          />
+          <FileText
+            className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-slate-400"
+            aria-hidden="true"
+          />
+        </div>
         <FormError
           message={errors.description?.message}
         />
@@ -725,6 +783,7 @@ export function BranchForm({
         loading={isSubmitting}
         disabled={
           isSubmitting ||
+          isSuggestingCode ||
           nameChecking ||
           codeChecking ||
           nameAvailable === false ||

@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Pagination } from "@/src/shared/components/ui/pagination";
@@ -14,7 +13,11 @@ import { appToast } from "@/src/shared/components/ui/toast";
 import { BranchListItem } from "@/src/features/branches/types/branch.types";
 
 import { useBranches } from "@/src/features/branches/hooks/use-branches";
+import { useBranch } from "@/src/features/branches/hooks/use-branch";
 import { useUpdateStatus } from "@/src/features/branches/hooks/use-update-status";
+import { useDeleteBranch } from "@/src/features/branches/hooks/use-delete-branch";
+import { useRestoreBranch } from "@/src/features/branches/hooks/use-restore-branch";
+import { usePermanentDeleteBranch } from "@/src/features/branches/hooks/use-permanent-delete-branch";
 import { useBulkUpdateStatus } from "@/src/features/branches/hooks/use-bulk-update-status";
 import { useBulkDeleteBranches } from "@/src/features/branches/hooks/use-bulk-delete-branches";
 import { useBulkRestoreBranches } from "@/src/features/branches/hooks/use-bulk-restore-branches";
@@ -22,11 +25,17 @@ import { useBulkPermanentDeleteBranches } from "@/src/features/branches/hooks/us
 
 import { branchService } from "@/src/features/branches/services/branch.service";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { getBranchEmptyMessage } from "@/src/features/branches/utils/branch-list.utils";
 
 import { BranchFilters } from "@/src/features/branches/components/branch-filters";
 import { BranchTable } from "@/src/features/branches/components/branch-table";
+import { BranchSummaryHeader } from "@/src/features/branches/components/branch-summary-header";
 import { CreateBranchModal } from "@/src/features/branches/components/create-branch-modal";
+import { UpdateBranchModal } from "@/src/features/branches/components/update-branch-modal";
 import { StatusBranchDialog } from "@/src/features/branches/components/status-branch-dialog";
+import { DeleteBranchDialog } from "@/src/features/branches/components/delete-branch-dialog";
+import { RestoreBranchDialog } from "@/src/features/branches/components/restore-branch-dialog";
+import { PermanentDeleteBranchDialog } from "@/src/features/branches/components/permanent-delete-branch-dialog";
 import {
   BranchBulkActionsToolbar,
   type BulkBranchAction,
@@ -45,6 +54,7 @@ export default function BranchesPage() {
   const {
     branches,
     total,
+    catalogTotal,
     filters,
     setFilters,
     isInitialLoading,
@@ -54,7 +64,12 @@ export default function BranchesPage() {
   } = useBranches();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isRestoreOpen, setIsRestoreOpen] = useState(false);
+  const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] =
+    useState(false);
   const [selectedBranchIds, setSelectedBranchIds] = useState<
     string[]
   >([]);
@@ -70,6 +85,12 @@ export default function BranchesPage() {
 
   const { updateStatus, isPending: isUpdatingStatus } =
     useUpdateStatus();
+  const { deleteBranch, isPending: isDeleting } = useDeleteBranch();
+  const { restoreBranch, isPending: isRestoring } = useRestoreBranch();
+  const {
+    permanentDeleteBranch,
+    isPending: isPermanentDeleting,
+  } = usePermanentDeleteBranch();
   const {
     bulkUpdateStatus,
     isPending: isBulkUpdatingStatus,
@@ -101,7 +122,22 @@ export default function BranchesPage() {
     isBulkPermanentDeleting;
 
   const actionLoading =
-    isUpdatingStatus || isReordering || bulkActionLoading;
+    isUpdatingStatus ||
+    isDeleting ||
+    isRestoring ||
+    isPermanentDeleting ||
+    isReordering ||
+    bulkActionLoading;
+
+  const emptyMessage = useMemo(
+    () => getBranchEmptyMessage(filters),
+    [filters],
+  );
+
+  const {
+    branch: editBranch,
+    isLoading: isEditBranchLoading,
+  } = useBranch(isEditOpen ? selectedBranch?.id : undefined);
 
   const eligibleBulkIds = useMemo(() => {
     if (!bulkConfirmAction) {
@@ -330,106 +366,103 @@ export default function BranchesPage() {
   }
 
   return (
-    <>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">
-            Branches
-          </h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            Manage organization branches
-          </p>
-        </div>
+    <div className="-m-6 min-h-full bg-white p-6">
+      <BranchSummaryHeader
+        total={catalogTotal}
+        isLoading={isInitialLoading}
+        createDisabled={bulkActionLoading}
+        onCreate={() => setIsCreateOpen(true)}
+      />
 
-        <Button
-          onClick={() => setIsCreateOpen(true)}
-          className="h-9 rounded-lg px-4"
-          disabled={bulkActionLoading}
-        >
-          Create Branch
-        </Button>
-      </div>
+      <div className="mt-6 space-y-3">
+        <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
+          <div className="border-b border-slate-200 bg-white px-4 py-3">
+            <BranchFilters
+              filters={filters}
+              onChange={setFilters}
+            />
+          </div>
 
-      <div className="space-y-3">
-        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-          <BranchFilters
-            filters={filters}
-            onChange={setFilters}
+          <BranchBulkActionsToolbar
+            branches={branches}
+            selectedBranchIds={selectedBranchIds}
+            disabled={actionLoading || isFetching}
+            onAction={setBulkConfirmAction}
           />
-        </div>
 
-        {isInitialLoading ? (
-          <SkeletonTable rows={10} />
-        ) : (
-          <Card className="overflow-hidden p-0 shadow-sm">
-            {error && (
-              <div className="border-b border-red-100 bg-red-50 px-3.5 py-2 text-sm text-red-700">
-                {error}{" "}
-                <button
-                  type="button"
-                  className="font-medium underline"
-                  onClick={() => {
-                    void refetch();
+          {isInitialLoading ? (
+            <SkeletonTable rows={10} />
+          ) : (
+            <>
+              {error ? (
+                <div className="border-b border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                  {error}{" "}
+                  <button
+                    type="button"
+                    className="font-medium underline"
+                    onClick={() => {
+                      void refetch();
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : null}
+
+              <div aria-busy={isFetching} className="relative">
+                {isFetching ? (
+                  <span className="sr-only">Updating branches</span>
+                ) : null}
+
+                <BranchTable
+                  branches={branches}
+                  selectedBranchIds={selectedBranchIds}
+                  onSelectionChange={setSelectedBranchIds}
+                  actionsDisabled={actionLoading || isFetching}
+                  selectionDisabled={actionLoading || isFetching}
+                  reorderDisabled={
+                    isReordering ||
+                    !!filters.status ||
+                    !!(filters.search ?? "").trim() ||
+                    isFetching ||
+                    selectedBranchIds.length > 0
+                  }
+                  emptyMessage={emptyMessage}
+                  onEdit={(item) => {
+                    setSelectedBranch(item);
+                    setIsEditOpen(true);
                   }}
-                >
-                  Retry
-                </button>
+                  onManage={(item) => {
+                    router.push(`/branches/${item.id}/manage`);
+                  }}
+                  onActivate={(item) => {
+                    setSelectedBranch(item);
+                    setStatusTarget("ACTIVE");
+                    setIsStatusOpen(true);
+                  }}
+                  onDeactivate={(item) => {
+                    setSelectedBranch(item);
+                    setStatusTarget("INACTIVE");
+                    setIsStatusOpen(true);
+                  }}
+                  onDelete={(item) => {
+                    setSelectedBranch(item);
+                    setIsDeleteOpen(true);
+                  }}
+                  onRestore={(item) => {
+                    setSelectedBranch(item);
+                    setIsRestoreOpen(true);
+                  }}
+                  onPermanentDelete={(item) => {
+                    setSelectedBranch(item);
+                    setIsPermanentDeleteOpen(true);
+                  }}
+                  onReorder={handleReorder}
+                />
               </div>
-            )}
 
-            <div className="px-3 pt-3">
-              <BranchBulkActionsToolbar
-                branches={branches}
-                selectedBranchIds={selectedBranchIds}
-                disabled={actionLoading || isFetching}
-                onAction={setBulkConfirmAction}
-              />
-            </div>
-
-            <div aria-busy={isFetching} className="relative">
-              {isFetching && (
-                <span className="sr-only">
-                  Updating branches
-                </span>
-              )}
-
-              <BranchTable
-                branches={branches}
-                selectedBranchIds={selectedBranchIds}
-                onSelectionChange={setSelectedBranchIds}
-                actionsDisabled={
-                  actionLoading || isFetching
-                }
-                selectionDisabled={
-                  actionLoading || isFetching
-                }
-                reorderDisabled={
-                  isReordering ||
-                  !!filters.status ||
-                  !!(filters.search ?? "").trim() ||
-                  isFetching ||
-                  selectedBranchIds.length > 0
-                }
-                onManage={(item) => {
-                  router.push(`/branches/${item.id}/manage`);
-                }}
-                onActivate={(item) => {
-                  setSelectedBranch(item);
-                  setStatusTarget("ACTIVE");
-                  setIsStatusOpen(true);
-                }}
-                onDeactivate={(item) => {
-                  setSelectedBranch(item);
-                  setStatusTarget("INACTIVE");
-                  setIsStatusOpen(true);
-                }}
-                onReorder={handleReorder}
-              />
-            </div>
-
-            <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
               {total > 0 ? (
-                <>
+                <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-slate-600">
                     <span className="leading-9">
                       Showing {from}–{to} of {total}
@@ -446,13 +479,11 @@ export default function BranchesPage() {
                         onChange={(event) =>
                           setFilters({
                             ...filters,
-                            pageSize: Number(
-                              event.target.value
-                            ),
+                            pageSize: Number(event.target.value),
                           })
                         }
                       >
-                        {[10, 20, 50].map((size) => (
+                        {[10, 20, 50, 100].map((size) => (
                           <option key={size} value={size}>
                             {size}
                           </option>
@@ -471,20 +502,28 @@ export default function BranchesPage() {
                       })
                     }
                   />
-                </>
-              ) : (
-                <p className="text-[15px] leading-9 text-slate-500">
-                  No branches to paginate
-                </p>
-              )}
-            </div>
-          </Card>
-        )}
+                </div>
+              ) : null}
+            </>
+          )}
+        </Card>
       </div>
 
       <CreateBranchModal
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
+        onSuccess={() => {
+          void refetch();
+        }}
+      />
+
+      <UpdateBranchModal
+        open={isEditOpen}
+        branch={editBranch}
+        isLoading={isEditBranchLoading}
+        onClose={() => {
+          setIsEditOpen(false);
+        }}
         onSuccess={() => {
           void refetch();
         }}
@@ -513,6 +552,58 @@ export default function BranchesPage() {
         }}
       />
 
+      <DeleteBranchDialog
+        open={isDeleteOpen}
+        branch={selectedBranch}
+        isLoading={isDeleting}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={async () => {
+          if (!selectedBranch) {
+            return;
+          }
+
+          await deleteBranch(selectedBranch.id);
+          setIsDeleteOpen(false);
+          await refetch();
+        }}
+      />
+
+      <RestoreBranchDialog
+        open={isRestoreOpen}
+        branch={selectedBranch}
+        isLoading={isRestoring}
+        onClose={() => setIsRestoreOpen(false)}
+        onConfirm={async () => {
+          if (!selectedBranch) {
+            return;
+          }
+
+          await restoreBranch(selectedBranch.id);
+          setIsRestoreOpen(false);
+          await refetch();
+        }}
+      />
+
+      <PermanentDeleteBranchDialog
+        open={isPermanentDeleteOpen}
+        branch={selectedBranch}
+        isLoading={isPermanentDeleting}
+        onClose={() => setIsPermanentDeleteOpen(false)}
+        onConfirm={async () => {
+          if (!selectedBranch) {
+            return;
+          }
+
+          const ok = await permanentDeleteBranch(selectedBranch.id);
+          if (!ok) {
+            return;
+          }
+
+          setIsPermanentDeleteOpen(false);
+          await refetch();
+        }}
+      />
+
       <ConfirmDialog
         open={bulkConfirmAction !== null}
         title={bulkDialogCopy.title}
@@ -529,6 +620,6 @@ export default function BranchesPage() {
           void handleBulkConfirm();
         }}
       />
-    </>
+    </div>
   );
 }

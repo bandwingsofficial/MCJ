@@ -3,21 +3,8 @@ import type { BranchRepository } from '../../domain/repositories/branch.reposito
 import { SuggestBranchCodeQuery } from './suggest-branch-code.query';
 import { SuggestBranchCodeResult } from './suggest-branch-code.result';
 
-export function buildBranchCodePrefix(branchName: string): string {
-  const letters = (branchName ?? '')
-    .replace(/[^a-zA-Z]/g, '')
-    .toUpperCase();
-
-  if (!letters) {
-    return 'BRN';
-  }
-
-  if (letters.length >= 3) {
-    return letters.slice(0, 3);
-  }
-
-  return letters.padEnd(3, 'X');
-}
+/** MCJ = organization prefix, B = branch identifier. */
+export const BRANCH_CODE_PREFIX = 'MCJB';
 
 export class SuggestBranchCodeHandler {
   constructor(
@@ -25,9 +12,9 @@ export class SuggestBranchCodeHandler {
   ) {}
 
   async execute(
-    query: SuggestBranchCodeQuery,
+    _query: SuggestBranchCodeQuery,
   ): Promise<SuggestBranchCodeResult> {
-    const prefix = buildBranchCodePrefix(query.branchName);
+    const prefix = BRANCH_CODE_PREFIX;
     const maxSuffix =
       await this.branchRepo.getMaxNumericSuffixForPrefix(prefix);
     const next = maxSuffix + 1;

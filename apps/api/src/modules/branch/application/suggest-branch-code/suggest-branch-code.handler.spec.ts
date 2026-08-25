@@ -1,31 +1,13 @@
 import {
-  buildBranchCodePrefix,
+  BRANCH_CODE_PREFIX,
   SuggestBranchCodeHandler,
 } from './suggest-branch-code.handler';
 import { SuggestBranchCodeQuery } from './suggest-branch-code.query';
 
-describe('buildBranchCodePrefix', () => {
-  it('builds a 3-letter prefix from branch name', () => {
-    expect(buildBranchCodePrefix('Malleshwaram')).toBe('MAL');
-    expect(buildBranchCodePrefix('Mangalore')).toBe('MAN');
-    expect(buildBranchCodePrefix('Bangalore')).toBe('BAN');
-  });
-
-  it('pads short names', () => {
-    expect(buildBranchCodePrefix('Go')).toBe('GOX');
-  });
-
-  it('falls back when no letters', () => {
-    expect(buildBranchCodePrefix('123')).toBe('BRN');
-  });
-});
-
 describe('SuggestBranchCodeHandler', () => {
-  it('suggests next available numbered code for prefix', async () => {
+  it('suggests the next MCJB sequential code including archived records', async () => {
     const branchRepo = {
-      getMaxNumericSuffixForPrefix: jest
-        .fn()
-        .mockResolvedValue(3),
+      getMaxNumericSuffixForPrefix: jest.fn().mockResolvedValue(2),
     };
 
     const handler = new SuggestBranchCodeHandler(
@@ -33,13 +15,29 @@ describe('SuggestBranchCodeHandler', () => {
     );
 
     const result = await handler.execute(
-      new SuggestBranchCodeQuery('Malleshwaram'),
+      new SuggestBranchCodeQuery('Any Branch Name'),
     );
 
     expect(
       branchRepo.getMaxNumericSuffixForPrefix,
-    ).toHaveBeenCalledWith('MAL');
-    expect(result.branchCode).toBe('MAL004');
-    expect(result.prefix).toBe('MAL');
+    ).toHaveBeenCalledWith(BRANCH_CODE_PREFIX);
+    expect(result.branchCode).toBe('MCJB003');
+    expect(result.prefix).toBe(BRANCH_CODE_PREFIX);
+  });
+
+  it('starts at MCJB001 when no branch codes exist', async () => {
+    const branchRepo = {
+      getMaxNumericSuffixForPrefix: jest.fn().mockResolvedValue(0),
+    };
+
+    const handler = new SuggestBranchCodeHandler(
+      branchRepo as never,
+    );
+
+    const result = await handler.execute(
+      new SuggestBranchCodeQuery(''),
+    );
+
+    expect(result.branchCode).toBe('MCJB001');
   });
 });
