@@ -12,11 +12,27 @@ import {
 
 const phoneRegex = /^[6-9]\d{9}$/;
 
+function isOptionalHttpUrl(value: string | undefined): boolean {
+  const trimmed = value?.trim() ?? "";
+
+  if (!trimmed) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 const optionalUrl = z
   .string()
-  .url("Enter a valid URL")
-  .optional()
-  .or(z.literal(""));
+  .trim()
+  .refine(isOptionalHttpUrl, {
+    message: "Enter a valid URL",
+  });
 
 const optionalEmail = z
   .string()

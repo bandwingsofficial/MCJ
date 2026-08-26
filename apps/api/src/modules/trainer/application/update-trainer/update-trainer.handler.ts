@@ -31,6 +31,7 @@ export class UpdateTrainerHandler {
     await this.domainService.ensurePhoneIsAvailable(
       this.trainerRepo,
       command.phone,
+      trainer.id,
     );
 
     await this.domainService.ensureEmployeeCodeIsAvailable(

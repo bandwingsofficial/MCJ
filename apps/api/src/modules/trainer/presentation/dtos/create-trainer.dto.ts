@@ -31,6 +31,22 @@ const toNumber = (value: unknown) =>
     ? Number(value)
     : undefined;
 
+const emptyStringToUndefined = ({ value }: { value: unknown }) => {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === '' ? undefined : trimmed;
+};
+
+const HTTP_URL_OPTIONS = {
+  require_protocol: true,
+  require_valid_protocol: true,
+  protocols: ['http', 'https'],
+  require_tld: true,
+};
+
 const toStringArray = (value: unknown): string[] | undefined => {
   if (value === undefined || value === null || value === '') {
     return undefined;
@@ -156,18 +172,21 @@ export class CreateTrainerDto {
   trainerType?: TrainerType;
 
   @ApiPropertyOptional()
+  @Transform(emptyStringToUndefined)
   @IsOptional()
-  @IsUrl()
+  @IsUrl(HTTP_URL_OPTIONS)
   linkedInUrl?: string;
 
   @ApiPropertyOptional()
+  @Transform(emptyStringToUndefined)
   @IsOptional()
-  @IsUrl()
+  @IsUrl(HTTP_URL_OPTIONS)
   youtubeUrl?: string;
 
   @ApiPropertyOptional()
+  @Transform(emptyStringToUndefined)
   @IsOptional()
-  @IsUrl()
+  @IsUrl(HTTP_URL_OPTIONS)
   instagramUrl?: string;
 
   @ApiPropertyOptional({ nullable: true })
