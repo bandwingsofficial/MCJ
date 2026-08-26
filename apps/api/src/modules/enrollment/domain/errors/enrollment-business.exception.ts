@@ -211,6 +211,16 @@ export class BatchCourseMismatchException extends BaseException {
   }
 }
 
+export class BatchBranchMismatchException extends BaseException {
+  constructor() {
+    super(
+      ERROR_CODES.BATCH_BRANCH_MISMATCH,
+      'Batch does not belong to the selected branch.',
+      400,
+    );
+  }
+}
+
 export class StudentBranchMismatchException extends BaseException {
   constructor() {
     super(

@@ -20,18 +20,19 @@ export function EnrollmentMissingBatch({
       </div>
 
       <h3 className="mt-4 text-base font-semibold text-slate-900">
-        Please select an available batch to continue
+        Please select a branch and batch to continue
       </h3>
 
       <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
-        Choose a batch from the course page before completing your enrollment.
+        Choose a branch and then a batch from the course page before completing
+        your enrollment.
       </p>
 
       <Link
         href={getCourseBatchesSectionPath(course)}
         className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white hover:bg-blue-700"
       >
-        View Available Batches
+        View Available Branches
       </Link>
     </section>
   );

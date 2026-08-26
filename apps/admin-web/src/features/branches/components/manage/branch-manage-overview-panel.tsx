@@ -147,7 +147,7 @@ export function BranchManageOverviewPanel({
         courseService.getCourses({
           branchId,
           page: 1,
-          pageSize: 200,
+          pageSize: 100,
         }),
         batchService.getBatches({
           branchId,
@@ -159,7 +159,7 @@ export function BranchManageOverviewPanel({
           branchId,
           includeDeleted: false,
           page: 1,
-          pageSize: 200,
+          pageSize: 100,
         }),
         enrollmentService.getEnrollments({
           branchId,

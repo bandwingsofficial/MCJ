@@ -30,7 +30,7 @@ export function CourseManageBatchesPanel({ courseId }: Props) {
         search,
         includeDeleted: false,
         page: 1,
-        pageSize: 200,
+        pageSize: 100,
       });
       setBatches(response.data.items ?? []);
     } catch (error) {

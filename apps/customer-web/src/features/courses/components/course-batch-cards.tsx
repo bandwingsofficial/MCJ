@@ -14,11 +14,18 @@ import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import type { Batch } from "@/src/features/batches/types/batch.types";
 import { formatCourseMode } from "@/src/features/courses/utils/course-display.utils";
 import { getCourseEnrollPath } from "@/src/features/courses/utils/course-route.utils";
+import {
+  formatBatchDays,
+  formatEnrollmentTime,
+  getBatchAvailableSeats,
+} from "@/src/features/enrollments/utils/enrollment-batch.utils";
 
 interface Props {
   batches: Batch[] | unknown;
   isLoading?: boolean;
   courseSlug: string;
+  courseId?: string;
+  branchId?: string;
   variant?: "grid" | "list";
 }
 
@@ -55,6 +62,8 @@ export function CourseBatchCards({
   batches,
   isLoading = false,
   courseSlug,
+  courseId,
+  branchId,
   variant = "list",
 }: Props) {
   const router = useRouter();
@@ -97,7 +106,9 @@ export function CourseBatchCards({
     );
   }
 
-  const handleEnroll = (batchId: string) => {
+  const handleEnroll = (batch: Batch) => {
+    const batchId = batch?.id;
+
     if (!courseSlug || !batchId) {
       return;
     }
@@ -105,7 +116,11 @@ export function CourseBatchCards({
     router.push(
       getCourseEnrollPath(
         { slug: courseSlug },
-        { batchId },
+        {
+          batchId,
+          branchId: branchId ?? batch.branchId ?? undefined,
+          courseId: courseId ?? batch.courseId ?? undefined,
+        },
       ),
     );
   };
@@ -170,12 +185,29 @@ export function CourseBatchCards({
                       </span>
                     </p>
                   </div>
+
+                  <p className="mt-2 text-xs text-slate-500">
+                    {formatEnrollmentTime(batch.startTime)} –{" "}
+                    {formatEnrollmentTime(batch.endTime)}
+                    {batch.daysOfWeek?.length
+                      ? ` · ${formatBatchDays(batch.daysOfWeek)}`
+                      : ""}
+                    {` · ${getBatchAvailableSeats(batch)} seats left`}
+                    {batch.trainers?.length
+                      ? ` · ${batch.trainers
+                          .map((trainer) =>
+                            `${trainer.firstName} ${trainer.lastName}`.trim(),
+                          )
+                          .filter(Boolean)
+                          .join(", ")}`
+                      : ""}
+                  </p>
                 </div>
 
                 {/* Enroll action */}
                 <button
                   type="button"
-                  onClick={() => handleEnroll(batchId)}
+                  onClick={() => handleEnroll(batch)}
                   className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   Enroll
@@ -240,7 +272,7 @@ export function CourseBatchCards({
 
             <button
               type="button"
-              onClick={() => handleEnroll(batchId)}
+              onClick={() => handleEnroll(batch)}
               className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               Enroll

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -16,6 +16,8 @@ import { Button } from "@/src/shared/components/ui/button";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
 import { useCourseBatches } from "@/src/features/batches/hooks/useCourseBatches";
+import type { BatchBranch } from "@/src/features/batches/types/batch.types";
+import { CourseAvailableBranches } from "@/src/features/courses/components/course-available-branches";
 import { CourseBatchCards } from "@/src/features/courses/components/course-batch-cards";
 import { CourseCurriculumAccordion } from "@/src/features/courses/components/course-curriculum-accordion";
 import { CourseDetailPricingCard } from "@/src/features/courses/components/course-detail-pricing-card";
@@ -31,6 +33,7 @@ import {
 } from "@/src/features/courses/utils/course-display.utils";
 import { useCourseTrainers } from "@/src/features/trainers/hooks/useCourseTrainers";
 import type { Trainer } from "@/src/features/trainers/types/trainer.types";
+import { isBatchSelectable } from "@/src/features/enrollments/utils/enrollment-batch.utils";
 
 interface CourseDetailsProps {
   course: Course;
@@ -40,10 +43,15 @@ type DetailTab = "overview" | "curriculum" | "instructor" | "faq";
 
 export function CourseDetails({ course }: CourseDetailsProps) {
   const router = useRouter();
+  const branchesSectionRef = useRef<HTMLDivElement>(null);
   const batchesSectionRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
+  const [selectedBranchId, setSelectedBranchId] = useState<string>();
 
-  const { batches, isLoading: batchesLoading } = useCourseBatches(course.id);
+  const { batches: courseBatches, isLoading: courseBatchesLoading } =
+    useCourseBatches(course.id);
+  const { batches: branchBatches, isLoading: branchBatchesLoading } =
+    useCourseBatches(course.id, selectedBranchId, Boolean(selectedBranchId));
   const { data: summary } = useCourseSummary(course.id);
 
   const {
@@ -53,7 +61,50 @@ export function CourseDetails({ course }: CourseDetailsProps) {
     refetch: refetchTrainers,
   } = useCourseTrainers(course.id);
 
-  const safeBatches = Array.isArray(batches) ? batches : [];
+  const selectableCourseBatches = useMemo(
+    () => (Array.isArray(courseBatches) ? courseBatches : []).filter(isBatchSelectable),
+    [courseBatches],
+  );
+
+  const availableBranches = useMemo(() => {
+    const byId = new Map<string, BatchBranch>();
+
+    for (const batch of selectableCourseBatches) {
+      const branchId = batch.branchId ?? batch.branch?.id;
+      if (!branchId) {
+        continue;
+      }
+
+      byId.set(branchId, {
+        id: branchId,
+        branchName: batch.branch?.branchName ?? "Branch",
+        branchCode: batch.branch?.branchCode ?? "",
+      });
+    }
+
+    return Array.from(byId.values());
+  }, [selectableCourseBatches]);
+
+  useEffect(() => {
+    if (!selectedBranchId && availableBranches.length === 1) {
+      setSelectedBranchId(availableBranches[0].id);
+      return;
+    }
+
+    if (
+      selectedBranchId &&
+      availableBranches.length > 0 &&
+      !availableBranches.some((branch) => branch.id === selectedBranchId)
+    ) {
+      setSelectedBranchId(undefined);
+    }
+  }, [availableBranches, selectedBranchId]);
+
+  const safeBatches = (Array.isArray(branchBatches) ? branchBatches : []).filter(
+    (batch) =>
+      isBatchSelectable(batch) &&
+      (!selectedBranchId || batch.branchId === selectedBranchId),
+  );
   const safeTrainers = Array.isArray(courseTrainers) ? courseTrainers : [];
   const safeModules = Array.isArray(course.previewModules)
     ? course.previewModules
@@ -94,8 +145,8 @@ export function CourseDetails({ course }: CourseDetailsProps) {
       : null,
   ].filter(Boolean) as string[];
 
-  const scrollToAvailableBatches = () => {
-    batchesSectionRef.current?.scrollIntoView({
+  const scrollToAvailableBranches = () => {
+    branchesSectionRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
@@ -107,10 +158,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
       return;
     }
 
-    if (safeBatches.length > 0) {
-      scrollToAvailableBatches();
-      return;
-    }
+    scrollToAvailableBranches();
   };
 
   const tabs: { id: DetailTab; label: string }[] = [
@@ -148,7 +196,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
 
       {/* Hero: left = image + info, right = pricing */}
       <section className="bg-white">
-        <div className="mx-auto max-w-7xl px-4 pt-5 pb-8 sm:px-6 lg:px-8 lg:pt-6">
+        <div className="mx-auto max-w-7xl px-4 pt-5 pb-6 sm:px-6 lg:px-8 lg:pt-6">
           <div className="grid gap-6 lg:grid-cols-[7fr_3fr] lg:items-start lg:gap-8">
             {/* LEFT 70% */}
             <div className="min-w-0">
@@ -210,7 +258,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
               <CourseDetailPricingCard
                 course={course}
                 summary={summary}
-                batchCount={safeBatches.length}
+                batchCount={selectableCourseBatches.length}
                 sticky={false}
                 onPrimaryAction={handleEnroll}
               />
@@ -220,7 +268,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
       </section>
 
       {/* Main content: modules + sidebar, then tabs */}
-      <section className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[7fr_3fr] lg:items-start lg:gap-8">
           {/* LEFT column */}
           <div className="min-w-0 space-y-6">
@@ -358,7 +406,36 @@ export function CourseDetails({ course }: CourseDetailsProps) {
               </div>
             </div>
 
-            {batchesLoading || safeBatches.length > 0 ? (
+            <div
+              id="available-branches"
+              ref={branchesSectionRef}
+              className="scroll-mt-24 rounded-xl border border-slate-200 bg-white p-5"
+            >
+              <h2 className="text-base font-bold text-slate-950">
+                Available Branches
+              </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Select a branch to view batches for this course.
+              </p>
+              <div className="mt-4">
+                <CourseAvailableBranches
+                  branches={availableBranches}
+                  selectedBranchId={selectedBranchId}
+                  isLoading={courseBatchesLoading}
+                  onSelect={(branchId) => {
+                    setSelectedBranchId(branchId);
+                    window.requestAnimationFrame(() => {
+                      batchesSectionRef.current?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
+                    });
+                  }}
+                />
+              </div>
+            </div>
+
+            {selectedBranchId ? (
               <div
                 id="available-batches"
                 ref={batchesSectionRef}
@@ -370,8 +447,10 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                 <div className="mt-4">
                   <CourseBatchCards
                     batches={safeBatches}
-                    isLoading={batchesLoading}
+                    isLoading={branchBatchesLoading}
                     courseSlug={course.slug}
+                    courseId={course.id}
+                    branchId={selectedBranchId}
                     variant="list"
                   />
                 </div>
@@ -382,7 +461,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
       </section>
 
       {/* Bottom CTA */}
-      <section className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8">
         <div className="overflow-hidden rounded-xl border border-blue-100 bg-blue-50/70">
           <div className="flex flex-col items-center justify-between gap-4 px-6 py-6 sm:px-8 lg:flex-row">
             <div className="text-center lg:text-left">
@@ -390,7 +469,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                 Ready to start your learning journey?
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Select an available batch below to continue enrollment.
+                Select an available branch and batch below to continue enrollment.
               </p>
             </div>
             <Button

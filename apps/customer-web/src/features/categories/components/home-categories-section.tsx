@@ -14,8 +14,8 @@ export function HomeCategoriesSection() {
   const visibleCategories = categories?.slice(0, 6) ?? [];
 
   return (
-    <section className="w-full py-10">
-      <div className="mx-auto max-w-7xl px-6">
+    <section className="w-full pt-8 pb-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold">Explore Categories</h2>

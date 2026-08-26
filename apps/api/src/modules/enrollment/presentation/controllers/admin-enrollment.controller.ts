@@ -104,6 +104,7 @@ export class AdminEnrollmentController {
         dto.installments ?? [],
         EnrollmentSource.ADMIN,
         user.sub,
+        dto.branchId,
       ),
     );
 

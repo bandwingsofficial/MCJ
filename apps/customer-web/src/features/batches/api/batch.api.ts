@@ -8,10 +8,21 @@ import type {
   BatchListData,
 } from "@/src/features/batches/types/batch-list.types";
 
+const MAX_BATCH_PAGE_SIZE = 100;
+
 export const batchApi = {
   getBatches(filters?: BatchFilters) {
+    const take = Math.min(filters?.take ?? MAX_BATCH_PAGE_SIZE, MAX_BATCH_PAGE_SIZE);
+    const skip = Math.max(filters?.skip ?? 0, 0);
+
     return apiClient.get<ApiResponse<BatchListData>>("/batches", {
-      params: filters,
+      params: {
+        courseId: filters?.courseId,
+        branchId: filters?.branchId,
+        search: filters?.search,
+        skip,
+        take,
+      },
     });
   },
 

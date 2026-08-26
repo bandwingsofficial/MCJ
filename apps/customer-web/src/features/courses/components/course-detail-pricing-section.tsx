@@ -14,7 +14,7 @@ import {
   getDiscountPercent,
 } from "@/src/features/courses/utils/course-display.utils";
 
-import { getCourseEnrollPath } from "@/src/features/courses/utils/course-route.utils";
+import { getCourseBatchesSectionPath } from "@/src/features/courses/utils/course-route.utils";
 
 interface CourseDetailPricingSectionProps {
   course: Course;
@@ -41,7 +41,7 @@ export function CourseDetailPricingSection({
       return;
     }
 
-    router.push(getCourseEnrollPath(course));
+    router.push(getCourseBatchesSectionPath(course));
   };
 
   const buttonLabel = isEnrolled

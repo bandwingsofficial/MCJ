@@ -55,9 +55,10 @@ class CategoryService {
       meta?: CategoryListMeta;
     }
   > {
+    const pageSize = Math.min(filters.pageSize, 100);
     const skip =
       (filters.page - 1) *
-      filters.pageSize;
+      pageSize;
 
     const response =
       await apiClient.get<
@@ -82,7 +83,7 @@ class CategoryService {
 
           skip,
 
-          take: filters.pageSize,
+          take: pageSize,
         },
       });
 

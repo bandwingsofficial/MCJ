@@ -143,7 +143,7 @@ export function BranchCreateEnrollmentModal({
           branchId,
           includeDeleted: false,
           page: 1,
-          pageSize: 200,
+          pageSize: 100,
         });
         setBatches((response.data.items ?? []).filter(isSelectableBatch));
       } catch (error) {
@@ -178,13 +178,13 @@ export function BranchCreateEnrollmentModal({
               branchId,
               batchId,
               skip: 0,
-              take: 500,
+              take: 100,
             }),
             studentService.getStudents({
               includeDeleted: false,
               onlyActive: true,
               page: 1,
-              pageSize: 200,
+              pageSize: 100,
             }),
           ]);
 
@@ -329,6 +329,7 @@ export function BranchCreateEnrollmentModal({
       await enrollmentService.createEnrollment({
         studentId,
         batchId,
+        branchId,
         feeAmount,
         discountAmount,
         admissionDate,

@@ -63,6 +63,8 @@ export class CreatePublicEnrollmentHandler {
       {
         studentId: student.id,
         batchId: command.batchId,
+        expectedBranchId: command.expectedBranchId,
+        expectedCourseId: command.expectedCourseId,
       },
     );
 

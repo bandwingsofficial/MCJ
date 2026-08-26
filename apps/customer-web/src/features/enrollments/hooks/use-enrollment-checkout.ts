@@ -16,6 +16,8 @@ export type EnrollmentCheckoutStatus =
 
 interface CompleteEnrollmentCheckoutInput {
   batchId: string;
+  branchId?: string;
+  courseId?: string;
   remarks?: string;
   isFree: boolean;
 }
@@ -52,6 +54,8 @@ export function useEnrollmentCheckout(): UseEnrollmentCheckoutReturn {
 
       const enrollment = await createEnrollment({
         batchId: input.batchId,
+        branchId: input.branchId,
+        courseId: input.courseId,
         remarks: input.remarks,
       });
 

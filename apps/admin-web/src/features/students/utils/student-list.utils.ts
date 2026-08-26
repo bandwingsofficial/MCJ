@@ -54,7 +54,7 @@ export function applyStudentStatusFilter(
 
 export function buildStudentListQueryParams(filters?: StudentFilters) {
   const page = filters?.page ?? 1;
-  const pageSize = filters?.pageSize ?? 20;
+  const pageSize = Math.min(filters?.pageSize ?? 20, 100);
   const skip = (page - 1) * pageSize;
   const includeDeleted = filters?.includeDeleted === true;
 

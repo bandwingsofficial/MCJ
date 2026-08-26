@@ -14,6 +14,16 @@ export class CreatePublicEnrollmentDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsUUID()
+  branchId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  courseId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
   @MaxLength(4000)
   @Transform(({ value }) => trimOrUndefined(value))

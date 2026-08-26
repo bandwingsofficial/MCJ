@@ -138,6 +138,10 @@ export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
           />
           <EnrollmentDetailItem label="Batch Timing" value={batchTiming} />
           <EnrollmentDetailItem
+            label="Source"
+            value={enrollment.source === "ADMIN" ? "OFFLINE" : "ONLINE"}
+          />
+          <EnrollmentDetailItem
             label="Enrollment Date"
             value={formatStudentDate(
               enrollment.admissionDate ?? enrollment.createdAt,

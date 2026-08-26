@@ -74,7 +74,7 @@ export function BranchManageCoursesPanel({
           branchId,
           includeDeleted: false,
           page: 1,
-          pageSize: 200,
+          pageSize: 100,
         }),
       ]);
 
@@ -111,7 +111,7 @@ export function BranchManageCoursesPanel({
         search: "",
         status: "ACTIVE",
         page: 1,
-        pageSize: 200,
+        pageSize: 100,
       });
       const assigned = new Set(courses.map((course) => course.id));
       setAssignCandidates(

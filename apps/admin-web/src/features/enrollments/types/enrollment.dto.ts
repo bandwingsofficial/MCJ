@@ -11,6 +11,7 @@ import {
 export interface CreateEnrollmentRequest {
   studentId: string;
   batchId: string;
+  branchId?: string;
   feeAmount: number;
   discountAmount?: number;
   admissionDate?: string;

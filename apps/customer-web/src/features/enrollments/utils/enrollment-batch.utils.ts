@@ -23,6 +23,14 @@ export function isBatchSelectable(batch: Batch): boolean {
     return false;
   }
 
+  if (!batch.branchId) {
+    return false;
+  }
+
+  if (!batch.courseId) {
+    return false;
+  }
+
   if (INACTIVE_BATCH_STATUSES.includes(batch.status)) {
     return false;
   }

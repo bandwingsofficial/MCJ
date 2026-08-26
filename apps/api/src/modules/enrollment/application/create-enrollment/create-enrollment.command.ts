@@ -16,5 +16,6 @@ export class CreateEnrollmentCommand {
     public readonly installments: CreateEnrollmentInstallmentDto[] = [],
     public readonly source: EnrollmentSource = EnrollmentSource.ADMIN,
     public readonly createdBy?: string,
+    public readonly expectedBranchId?: string,
   ) {}
 }

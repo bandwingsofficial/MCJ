@@ -166,7 +166,7 @@ export function CreateEnrollmentForm({
           branchId,
           includeDeleted: false,
           page: 1,
-          pageSize: 200,
+          pageSize: 100,
         });
         const nextBatches = (response.data.items ?? []).filter((batch) => {
           if (batch.branchId && batch.branchId !== branchId) {
@@ -224,13 +224,13 @@ export function CreateEnrollmentForm({
               branchId,
               batchId,
               skip: 0,
-              take: 500,
+              take: 100,
             }),
             studentService.getStudents({
               includeDeleted: false,
               onlyActive: true,
               page: 1,
-              pageSize: 200,
+              pageSize: 100,
             }),
           ]);
 
@@ -426,6 +426,7 @@ export function CreateEnrollmentForm({
         await enrollmentService.createEnrollment({
           studentId,
           batchId,
+          branchId,
           feeAmount,
           discountAmount,
           admissionDate: apiAdmissionDate,

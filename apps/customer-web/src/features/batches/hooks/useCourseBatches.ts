@@ -5,13 +5,17 @@ import { useEffect, useState } from "react";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type { Batch } from "@/src/features/batches/types/batch.types";
 
-export function useCourseBatches(courseId?: string) {
+export function useCourseBatches(
+  courseId?: string,
+  branchId?: string,
+  enabled = true,
+) {
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [isLoading, setIsLoading] = useState(Boolean(courseId));
+  const [isLoading, setIsLoading] = useState(Boolean(courseId) && enabled);
   const [error, setError] = useState<string | null>(null);
 
   const fetchBatches = async () => {
-    if (!courseId) {
+    if (!courseId || !enabled) {
       setBatches([]);
       setIsLoading(false);
       return;
@@ -19,7 +23,10 @@ export function useCourseBatches(courseId?: string) {
 
     try {
       setIsLoading(true);
-      const data = await batchService.getBatches({ courseId });
+      const data = await batchService.getAllBatches({
+        courseId,
+        branchId,
+      });
       setBatches(data);
       setError(null);
     } catch (err) {
@@ -34,7 +41,7 @@ export function useCourseBatches(courseId?: string) {
 
   useEffect(() => {
     void fetchBatches();
-  }, [courseId]);
+  }, [courseId, branchId, enabled]);
 
   return {
     batches,

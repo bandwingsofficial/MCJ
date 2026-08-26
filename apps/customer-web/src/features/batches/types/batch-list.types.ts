@@ -9,4 +9,6 @@ export interface BatchFilters {
   courseId?: string;
   branchId?: string;
   search?: string;
+  skip?: number;
+  take?: number;
 }

@@ -49,6 +49,8 @@ export class PublicEnrollmentController {
           user.sub,
           dto.batchId,
           dto.remarks,
+          dto.branchId,
+          dto.courseId,
         ),
       );
 

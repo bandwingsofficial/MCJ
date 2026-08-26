@@ -13,6 +13,7 @@ import { Textarea } from "@/src/shared/components/ui/textarea";
 import { appToast } from "@/src/shared/components/ui/toast";
 
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
+import { tokenStorage } from "@/src/core/storage/token-storage";
 import { useBatch } from "@/src/features/batches/hooks/useBatch";
 import { useCourse } from "@/src/features/courses/hooks/use-course";
 import {
@@ -20,13 +21,11 @@ import {
   getCourseDetailPath,
   getCourseEnrollPath,
   getEnrollmentLoginPath,
-  getEnrollmentRegisterPath,
 } from "@/src/features/courses/utils/course-route.utils";
 import {
   formatCurrency,
   getCoursePricing,
 } from "@/src/features/courses/utils/course-display.utils";
-import { EnrollmentAuthRequired } from "@/src/features/enrollments/components/enrollment-auth-required";
 import { EnrollmentBranchInfo } from "@/src/features/enrollments/components/enrollment-branch-info";
 import {
   EnrollmentPaymentCancelled,
@@ -52,25 +51,48 @@ type EnrollmentPageView =
 type BatchValidationError =
   | "not_found"
   | "wrong_course"
+  | "wrong_branch"
   | "unavailable";
 
 interface EnrollPageProps {
   slug: string;
 }
 
+function useAuthSessionReady() {
+  const [authReady, setAuthReady] = useState(false);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  useEffect(() => {
+    if (useAuthStore.persist.hasHydrated()) {
+      setAuthReady(true);
+      return;
+    }
+
+    return useAuthStore.persist.onFinishHydration(() => {
+      setAuthReady(true);
+    });
+  }, []);
+
+  const hasSession =
+    authReady && Boolean(tokenStorage.getAccessToken()) && isAuthenticated;
+
+  return { authReady, hasSession };
+}
+
 export function EnrollPage({ slug }: EnrollPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlBatchId = searchParams.get("batchId") ?? undefined;
+  const urlBranchId = searchParams.get("branchId") ?? undefined;
+  const urlCourseId = searchParams.get("courseId") ?? undefined;
 
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { authReady, hasSession } = useAuthSessionReady();
   const authUser = useAuthStore((state) => state.user);
 
   const [remarks, setRemarks] = useState("");
   const [pageView, setPageView] = useState<EnrollmentPageView>("checkout");
   const [completedEnrollment, setCompletedEnrollment] =
     useState<Enrollment | null>(null);
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const {
     data: course,
@@ -90,7 +112,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     isLoading: profileLoading,
     error: profileError,
   } = useStudentProfile({
-    enabled: isAuthenticated,
+    enabled: hasSession,
   });
 
   const {
@@ -101,6 +123,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
   } = useEnrollmentCheckout();
 
   const selectedBatchId = urlBatchId;
+  const selectedBranchId = urlBranchId;
 
   const selectedBatch = useMemo(() => {
     if (!selectedBatchId) {
@@ -125,6 +148,18 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       return "wrong_course";
     }
 
+    if (
+      selectedBatch &&
+      selectedBranchId &&
+      selectedBatch.branchId !== selectedBranchId
+    ) {
+      return "wrong_branch";
+    }
+
+    if (selectedBatch && !selectedBranchId) {
+      return "wrong_branch";
+    }
+
     if (selectedBatch && !isBatchSelectable(selectedBatch)) {
       return "unavailable";
     }
@@ -143,29 +178,35 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     isBatchResolving,
     selectedBatch,
     selectedBatchId,
+    selectedBranchId,
   ]);
 
   const pricing = course ? getCoursePricing(course) : null;
 
   const enrollPath = useMemo(
-    () => getCourseEnrollPath({ slug }, { batchId: selectedBatchId }),
-    [selectedBatchId, slug],
+    () =>
+      getCourseEnrollPath(
+        { slug },
+        {
+          batchId: selectedBatchId,
+          branchId: selectedBranchId,
+          courseId: course?.id ?? urlCourseId,
+        },
+      ),
+    [course?.id, selectedBatchId, selectedBranchId, slug, urlCourseId],
   );
 
   useEffect(() => {
-    if (isAuthenticated) {
-      setShowAuthPrompt(false);
+    if (!authReady || hasSession) {
+      return;
     }
-  }, [isAuthenticated]);
 
-  const canSubmit =
-    Boolean(isAuthenticated) &&
-    Boolean(studentProfile) &&
-    Boolean(selectedBatchId) &&
-    Boolean(selectedBatch && isBatchSelectable(selectedBatch)) &&
-    !batchValidationError &&
-    !isProcessing &&
-    pageView === "checkout";
+    if (courseLoading) {
+      return;
+    }
+
+    router.replace(getEnrollmentLoginPath(enrollPath));
+  }, [authReady, courseLoading, enrollPath, hasSession, router]);
 
   const checkoutButtonLabel = useMemo(() => {
     if (!pricing) {
@@ -176,20 +217,16 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       return "Complete Enrollment";
     }
 
-    if (isAuthenticated) {
-      return `Pay ${formatCurrency(pricing.discountedPrice, pricing.currency)}`;
-    }
-
-    return "Continue to Payment";
-  }, [isAuthenticated, pricing]);
+    return `Pay ${formatCurrency(pricing.discountedPrice, pricing.currency)}`;
+  }, [pricing]);
 
   const handlePayNow = async () => {
-    if (!course || !selectedBatchId || !pricing) {
+    if (!course || !selectedBatchId || !selectedBranchId || !pricing) {
       return;
     }
 
-    if (!isAuthenticated) {
-      setShowAuthPrompt(true);
+    if (!hasSession) {
+      router.replace(getEnrollmentLoginPath(enrollPath));
       return;
     }
 
@@ -211,10 +248,11 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     }
 
     clearError();
-    setShowAuthPrompt(false);
 
     const result = await completeCheckout({
       batchId: selectedBatchId,
+      branchId: selectedBranchId,
+      courseId: course.id,
       remarks: remarks.trim() || undefined,
       isFree: pricing.isFree,
     });
@@ -243,7 +281,12 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     appToast.error(checkoutError ?? "Payment failed. Please try again.");
   };
 
-  if (courseLoading || (selectedBatchId && isBatchResolving && !course)) {
+  if (
+    !authReady ||
+    !hasSession ||
+    courseLoading ||
+    (selectedBatchId && isBatchResolving && !course)
+  ) {
     return <EnrollmentPageSkeleton />;
   }
 
@@ -280,6 +323,8 @@ export function EnrollPage({ slug }: EnrollPageProps) {
   const batchErrorMessage =
     batchValidationError === "wrong_course"
       ? "This batch is not available for this course."
+      : batchValidationError === "wrong_branch"
+        ? "This batch is not available at the selected branch."
       : batchValidationError === "unavailable"
         ? "This batch is no longer available. Please select another batch."
         : batchValidationError === "not_found"
@@ -318,7 +363,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">
             Complete Your Enrollment
@@ -344,7 +389,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
             />
           </div>
         ) : (
-          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
+          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
             <div className="space-y-6">
               <EnrollmentCourseSummary course={course} />
 
@@ -363,7 +408,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
                     Continue Learning
                   </Link>
                 </div>
-              ) : !selectedBatchId ? (
+              ) : !selectedBatchId || !selectedBranchId ? (
                 <EnrollmentMissingBatch course={course} />
               ) : (
                 <>
@@ -391,20 +436,12 @@ export function EnrollPage({ slug }: EnrollPageProps) {
                     <EnrollmentBranchInfo batch={selectedBatch} />
                   ) : null}
 
-                  {!isAuthenticated ? (
-                    <EnrollmentAuthRequired
-                      variant="inline"
-                      loginHref={getEnrollmentLoginPath(enrollPath)}
-                      registerHref={getEnrollmentRegisterPath(enrollPath)}
-                    />
-                  ) : (
-                    <EnrollmentStudentInfo
-                      authUser={authUser}
-                      studentProfile={studentProfile}
-                      isLoading={profileLoading}
-                      profileError={profileError}
-                    />
-                  )}
+                  <EnrollmentStudentInfo
+                    authUser={authUser}
+                    studentProfile={studentProfile}
+                    isLoading={profileLoading}
+                    profileError={profileError}
+                  />
 
                   <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                     <Label htmlFor="remarks">Remarks (Optional)</Label>
@@ -430,30 +467,21 @@ export function EnrollPage({ slug }: EnrollPageProps) {
 
               {!pricing?.isFree ? <EnrollmentSecurePaymentNote /> : null}
 
-              {!isAlreadyEnrolled && selectedBatchId ? (
+              {!isAlreadyEnrolled && selectedBatchId && selectedBranchId ? (
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  {showAuthPrompt && !isAuthenticated ? (
-                    <div className="mb-4">
-                      <EnrollmentAuthRequired
-                        loginHref={getEnrollmentLoginPath(enrollPath)}
-                        registerHref={getEnrollmentRegisterPath(enrollPath)}
-                      />
-                    </div>
-                  ) : null}
-
                   <FormError message={checkoutError ?? undefined} />
                   <Button
                     type="button"
                     className="h-12 w-full rounded-xl bg-blue-600 text-sm font-semibold hover:bg-blue-700"
                     disabled={
                       !selectedBatchId ||
+                      !selectedBranchId ||
                       Boolean(batchValidationError) ||
                       isBatchResolving ||
                       isProcessing ||
-                      (isAuthenticated &&
-                        (!studentProfile ||
-                          !selectedBatch ||
-                          !isBatchSelectable(selectedBatch)))
+                      !studentProfile ||
+                      !selectedBatch ||
+                      !isBatchSelectable(selectedBatch)
                     }
                     loading={isProcessing}
                     onClick={handlePayNow}

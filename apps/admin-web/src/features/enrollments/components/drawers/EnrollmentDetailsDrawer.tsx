@@ -256,6 +256,10 @@ export function EnrollmentDetailsDrawer({
               {enrollment.paymentStatus}
             </Badge>
 
+            <Badge>
+              {enrollment.source === "ADMIN" ? "OFFLINE" : "ONLINE"}
+            </Badge>
+
           </div>
 
         </section>

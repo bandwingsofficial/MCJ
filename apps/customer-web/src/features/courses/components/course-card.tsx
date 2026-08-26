@@ -15,7 +15,7 @@ import { Button } from "@/src/shared/components/ui/button";
 import type { Course } from "@/src/features/courses/types/course.types";
 import {
   getCourseDetailPath,
-  getCourseEnrollPath,
+  getCourseBatchesSectionPath,
 } from "@/src/features/courses/utils/course-route.utils";
 import {
   formatCoursePrice,
@@ -49,7 +49,7 @@ export function CourseCard({
   };
 
   const handleEnroll = () => {
-    router.push(getCourseEnrollPath(course));
+    router.push(getCourseBatchesSectionPath(course));
   };
 
   const duration = formatDuration(

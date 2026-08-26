@@ -9,13 +9,13 @@ export function EnrollmentPageSkeleton() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="space-y-3">
           <Skeleton className="h-8 w-80 max-w-full" />
           <Skeleton className="h-4 w-[32rem] max-w-full" />
         </div>
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
+        <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
           <div className="space-y-6">
             <Skeleton className="h-56 w-full rounded-2xl" />
             <Skeleton className="h-40 w-full rounded-2xl" />

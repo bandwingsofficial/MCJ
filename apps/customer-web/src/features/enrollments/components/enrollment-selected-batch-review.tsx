@@ -3,8 +3,10 @@
 import Link from "next/link";
 import {
   CalendarDays,
+  Clock3,
   MapPin,
   Monitor,
+  Users,
 } from "lucide-react";
 
 import { Badge } from "@/src/shared/components/ui/badge";
@@ -12,10 +14,13 @@ import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
 import type { Batch } from "@/src/features/batches/types/batch.types";
 import type { Course } from "@/src/features/courses/types/course.types";
-import { formatCourseMode } from "@/src/features/courses/utils/course-display.utils";
+import { formatCourseMode, formatCurrency, getCoursePricing } from "@/src/features/courses/utils/course-display.utils";
 import { getCourseBatchesSectionPath } from "@/src/features/courses/utils/course-route.utils";
 import {
+  formatBatchDays,
   formatEnrollmentDate,
+  formatEnrollmentTime,
+  getBatchAvailableSeats,
   getBatchStatusLabel,
 } from "@/src/features/enrollments/utils/enrollment-batch.utils";
 
@@ -120,6 +125,63 @@ export function EnrollmentSelectedBatchReview({
             icon={CalendarDays}
             label="End Date"
             value={formatEnrollmentDate(batch.endDate)}
+          />
+          <DetailRow
+            icon={Clock3}
+            label="Timing"
+            value={`${formatEnrollmentTime(batch.startTime)} – ${formatEnrollmentTime(batch.endTime)}`}
+          />
+          <DetailRow
+            icon={CalendarDays}
+            label="Working Days"
+            value={formatBatchDays(batch.daysOfWeek ?? [])}
+          />
+          <DetailRow
+            icon={Users}
+            label="Capacity"
+            value={String(batch.capacity)}
+          />
+          <DetailRow
+            icon={Users}
+            label="Enrolled"
+            value={String(batch.enrolledCount)}
+          />
+          <DetailRow
+            icon={Users}
+            label="Available Seats"
+            value={String(getBatchAvailableSeats(batch))}
+          />
+          <DetailRow
+            icon={Users}
+            label="Trainer"
+            value={
+              batch.trainers?.length
+                ? batch.trainers
+                    .map((trainer) =>
+                      `${trainer.firstName} ${trainer.lastName}`.trim(),
+                    )
+                    .filter(Boolean)
+                    .join(", ")
+                : "—"
+            }
+          />
+          <DetailRow
+            icon={Monitor}
+            label="Course"
+            value={course.title}
+          />
+          <DetailRow
+            icon={Monitor}
+            label="Course Category"
+            value={course.categoryName?.trim() || "—"}
+          />
+          <DetailRow
+            icon={Monitor}
+            label="Fee"
+            value={(() => {
+              const pricing = getCoursePricing(course);
+              return formatCurrency(pricing.discountedPrice, pricing.currency);
+            })()}
           />
         </div>
       </div>

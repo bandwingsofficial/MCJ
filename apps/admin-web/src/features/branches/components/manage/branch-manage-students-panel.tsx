@@ -103,7 +103,7 @@ export function BranchManageStudentsPanel({
         enrollmentService.getEnrollments({
           branchId,
           skip: 0,
-          take: 500,
+          take: 100,
         }),
       ]);
 
@@ -147,7 +147,7 @@ export function BranchManageStudentsPanel({
         includeDeleted: false,
         onlyActive: true,
         page: 1,
-        pageSize: 200,
+        pageSize: 100,
       });
       const payload = parseStudentListResponse(response.data);
       setAssignCandidates(

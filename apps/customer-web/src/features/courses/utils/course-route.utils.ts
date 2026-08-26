@@ -9,24 +9,30 @@ export function getCourseDetailPath(course: { slug: string }): string {
 }
 
 export function getCourseBatchesSectionPath(course: { slug: string }): string {
-  return `${getCourseDetailPath(course)}#available-batches`;
+  return `${getCourseDetailPath(course)}#available-branches`;
 }
 
 export function getCourseEnrollPath(
   course: { slug: string },
-  options?: { batchId?: string },
+  options?: { batchId?: string; branchId?: string; courseId?: string },
 ): string {
   const base = `/courses/${encodeURIComponent(course.slug)}/enroll`;
+  const params = new URLSearchParams();
 
-  if (!options?.batchId) {
-    return base;
+  if (options?.courseId) {
+    params.set("courseId", options.courseId);
   }
 
-  const params = new URLSearchParams({
-    batchId: options.batchId,
-  });
+  if (options?.branchId) {
+    params.set("branchId", options.branchId);
+  }
 
-  return `${base}?${params.toString()}`;
+  if (options?.batchId) {
+    params.set("batchId", options.batchId);
+  }
+
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
 }
 
 export function getEnrollmentLoginPath(returnPath: string): string {

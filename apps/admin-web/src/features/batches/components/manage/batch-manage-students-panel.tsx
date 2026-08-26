@@ -60,7 +60,7 @@ export function BatchManageStudentsPanel({
       const response = await enrollmentService.getEnrollments({
         batchId: batch.id,
         skip: 0,
-        take: 500,
+        take: 100,
         includeDeleted: false,
       });
       const payload = parseEnrollmentListResponse(response);
@@ -141,7 +141,7 @@ export function BatchManageStudentsPanel({
         includeDeleted: false,
         onlyActive: true,
         page: 1,
-        pageSize: 200,
+        pageSize: 100,
       });
       const payload = parseStudentListResponse(response.data);
       setActiveStudents(
@@ -179,6 +179,7 @@ export function BatchManageStudentsPanel({
       await enrollmentService.createEnrollment({
         studentId: selectedStudentId,
         batchId: batch.id,
+        branchId: batch.branchId ?? undefined,
         feeAmount: 0,
         discountAmount: 0,
       });

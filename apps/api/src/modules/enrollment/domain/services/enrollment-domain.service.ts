@@ -23,6 +23,7 @@ import { Enrollment } from '../entities/enrollment.entity';
 import { EnrollmentStatus } from '../enums/enrollment-status.enum';
 import { BatchFullException } from '../errors/batch-full.exception';
 import {
+  BatchBranchMismatchException,
   BatchCancelledException,
   BatchCompletedException,
   BatchCourseMismatchException,
@@ -220,9 +221,9 @@ export class EnrollmentDomainService {
     );
   }
 
-  // Validates the Branch → Category → Course → Batch → Student hierarchy.
-  // The branch, course and category are derived from the batch — the client
-  // never supplies them, so they cannot be spoofed.
+  // Validates Branch → Course → Batch using database IDs.
+  // Stored enrollment FKs are always taken from the batch record.
+  // Optional expectedBranchId / expectedCourseId reject client spoofing.
   async validateHierarchy(
     repos: {
       studentRepo: StudentRepository;
@@ -234,6 +235,9 @@ export class EnrollmentDomainService {
     params: {
       studentId: string;
       batchId: string;
+      expectedBranchId?: string;
+      expectedCourseId?: string;
+      actorBranchId?: string;
     },
   ): Promise<EnrollmentHierarchy> {
     const batch = await repos.batchRepo.findById(
@@ -260,6 +264,24 @@ export class EnrollmentDomainService {
       throw new BatchCancelledException();
     }
 
+    if (!batch.branchId) {
+      throw new BranchNotFoundException();
+    }
+
+    if (
+      params.expectedBranchId &&
+      batch.branchId !== params.expectedBranchId
+    ) {
+      throw new BatchBranchMismatchException();
+    }
+
+    if (
+      params.actorBranchId &&
+      batch.branchId !== params.actorBranchId
+    ) {
+      throw new EnrollmentBranchAccessDeniedException();
+    }
+
     const student = await repos.studentRepo.findById(
       params.studentId,
       true,
@@ -276,10 +298,7 @@ export class EnrollmentDomainService {
       throw new StudentInactiveException();
     }
 
-    const branchId = batch.branchId ?? student.branchId;
-    if (!branchId) {
-      throw new BranchNotFoundException();
-    }
+    const branchId = batch.branchId;
 
     let courseId = batch.courseId;
     let courseResolvedFromAssignment = false;
@@ -293,6 +312,10 @@ export class EnrollmentDomainService {
 
     if (!courseId) {
       throw new CourseNotFoundException();
+    }
+
+    if (params.expectedCourseId && courseId !== params.expectedCourseId) {
+      throw new BatchCourseMismatchException();
     }
 
     const course = await repos.courseRepo.findById(courseId, true);
@@ -315,9 +338,6 @@ export class EnrollmentDomainService {
     if (course.status === CourseStatus.INACTIVE) {
       throw new CourseInactiveException();
     }
-
-    // Batch at branch is the authoritative proof of course availability.
-    // course.branchIds may be out of sync with active batch offerings.
 
     if (batch.courseId && batch.courseId !== course.id) {
       throw new BatchCourseMismatchException();
@@ -360,11 +380,8 @@ export class EnrollmentDomainService {
     // profile may already have a different branchId from a prior enrollment;
     // the create/update handlers associate the student with this batch's branch.
 
-    // Batch is the source of truth for branch + course alignment.
-    // If an active batch exists for this branch and course, the offering is valid
-    // even when the legacy branchCategory junction row is missing.
     const batchProvesBranchOffering =
-      (batch.branchId === branchId || batch.branchId === null) &&
+      batch.branchId === branchId &&
       (batch.courseId === course.id || courseResolvedFromAssignment);
 
     const isCategoryAssigned = category

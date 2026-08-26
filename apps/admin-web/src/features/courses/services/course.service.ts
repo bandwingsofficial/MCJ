@@ -68,7 +68,7 @@ function normalizeListResponse(
 
 function buildListParams(filters?: CourseFilters) {
   const page = filters?.page ?? 1;
-  const pageSize = filters?.pageSize ?? DEFAULT_PAGE_SIZE;
+  const pageSize = Math.min(filters?.pageSize ?? DEFAULT_PAGE_SIZE, 100);
   const skip = (page - 1) * pageSize;
   const status = filters?.status;
   const isArchivedFilter = status === "ARCHIVED";

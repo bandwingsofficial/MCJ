@@ -56,6 +56,7 @@ export class CreateEnrollmentHandler {
       {
         studentId: command.studentId,
         batchId: command.batchId,
+        expectedBranchId: command.expectedBranchId,
       },
     );
 

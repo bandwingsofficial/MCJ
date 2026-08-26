@@ -45,8 +45,8 @@ export function HomeCourses() {
   };
 
   return (
-    <section className="w-full py-10">
-      <div className="mx-auto max-w-7xl px-6">
+    <section className="w-full pt-4 pb-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold">Popular Courses</h2>
@@ -59,7 +59,7 @@ export function HomeCourses() {
           </Button>
         </div>
 
-        {isLoading && <HomePopularCourseSkeleton count={5} />}
+        {isLoading && <HomePopularCourseSkeleton count={4} />}
 
         {isError && (
           <ErrorState
@@ -77,7 +77,7 @@ export function HomeCourses() {
         )}
 
         {!isLoading && !isError && courses.length > 0 && (
-          <div className="grid grid-cols-1 items-stretch gap-3.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+          <div className="grid grid-cols-1 items-stretch gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
             {courses.map((course) => (
               <HomePopularCourseCard key={course.id} course={course} />
             ))}

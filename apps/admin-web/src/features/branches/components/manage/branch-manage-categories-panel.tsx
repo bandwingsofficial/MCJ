@@ -70,7 +70,7 @@ export function BranchManageCategoriesPanel({
         courseService.getCourses({
           branchId,
           page: 1,
-          pageSize: 200,
+          pageSize: 100,
         }),
       ]);
 
@@ -108,7 +108,7 @@ export function BranchManageCategoriesPanel({
         search: "",
         status: "ACTIVE",
         page: 1,
-        pageSize: 200,
+        pageSize: 100,
       });
       const assignedIds = new Set(categories.map((item) => item.id));
       setAssignCandidates(

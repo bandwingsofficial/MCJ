@@ -51,7 +51,7 @@ export default function CoursesPage() {
 
   return (
     <main className="w-full bg-slate-50/40 py-12">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-4xl font-bold tracking-tight text-slate-900">

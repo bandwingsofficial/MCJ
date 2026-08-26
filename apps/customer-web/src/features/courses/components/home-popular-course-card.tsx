@@ -11,7 +11,7 @@ import {
   formatCoursePrice,
   formatDuration,
 } from "@/src/features/courses/utils/course-display.utils";
-import { getCourseDetailPath, getCourseEnrollPath } from "@/src/features/courses/utils/course-route.utils";
+import { getCourseDetailPath, getCourseBatchesSectionPath } from "@/src/features/courses/utils/course-route.utils";
 
 interface HomePopularCourseCardProps {
   course: Course;
@@ -102,7 +102,7 @@ export function HomePopularCourseCard({ course }: HomePopularCourseCardProps) {
             <Button
               size="sm"
               className="h-7 shrink-0 rounded-md bg-blue-600 px-2.5 text-[10px] font-medium text-white shadow-none hover:bg-blue-700"
-              onClick={() => router.push(getCourseEnrollPath(course))}
+              onClick={() => router.push(getCourseBatchesSectionPath(course))}
             >
               Enroll Now
             </Button>

@@ -125,7 +125,7 @@ export function BranchManageBatchesPanel({
         status: "ACTIVE",
         includeDeleted: false,
         page: 1,
-        pageSize: 200,
+        pageSize: 100,
       });
       const assigned = new Set(batches.map((item) => item.id));
       setAssignCandidates(

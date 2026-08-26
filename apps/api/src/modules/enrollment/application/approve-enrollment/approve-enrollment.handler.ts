@@ -4,6 +4,9 @@ import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { PaymentStatus } from '../../domain/enums/payment-status.enum';
 import type { EnrollmentRepository } from '../../domain/repositories/enrollment.repository';
 import {
+  BatchBranchMismatchException,
+  BatchCourseMismatchException,
+  BatchNotFoundException,
   EnrollmentNotPendingApprovalException,
   EnrollmentPaymentNotVerifiedException,
 } from '../../domain/errors/enrollment-business.exception';
@@ -51,6 +54,18 @@ export class ApproveEnrollmentHandler {
       enrollment.batchId,
       true,
     );
+
+    if (!batch) {
+      throw new BatchNotFoundException();
+    }
+
+    if (batch.branchId !== enrollment.branchId) {
+      throw new BatchBranchMismatchException();
+    }
+
+    if (batch.courseId && batch.courseId !== enrollment.courseId) {
+      throw new BatchCourseMismatchException();
+    }
 
     enrollment.update({
       status: EnrollmentStatus.ADMITTED,

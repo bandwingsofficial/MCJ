@@ -81,7 +81,7 @@ export function BranchManageTrainersPanel({
       const response = await trainerService.getTrainers({
         status: "ACTIVE",
         page: 1,
-        pageSize: 200,
+        pageSize: 100,
         isDeleted: false,
       });
       const assigned = new Set(trainers.map((item) => item.id));

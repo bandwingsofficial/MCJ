@@ -74,7 +74,7 @@ export function Header() {
             />
           </div>
           <span className="text-xl font-bold tracking-tight text-gray-900 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text transition-all duration-300 group-hover:from-orange-500 group-hover:to-blue-600">
-            MCJ Institute
+            MCJ Academy
           </span>
         </Link>
 

@@ -21,7 +21,10 @@ export const enrollmentApi = {
     return apiClient.get<EnrollmentListResponse>(
       ENROLLMENT_ENDPOINTS.LIST,
       {
-        params: filters,
+        params: {
+          ...filters,
+          take: Math.min(filters.take ?? 10, 100),
+        },
       },
     );
   },

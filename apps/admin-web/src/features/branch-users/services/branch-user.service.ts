@@ -36,8 +36,9 @@ class BranchUserService {
   ): Promise<
     ApiSuccessResponse<BranchUserListResponse>
   > {
+    const pageSize = Math.min(filters.pageSize, 100);
     const skip =
-      (filters.page - 1) * filters.pageSize;
+      (filters.page - 1) * pageSize;
 
     const statusParams = (() => {
       if (!filters.status) {
@@ -75,7 +76,7 @@ class BranchUserService {
           role: filters.role || undefined,
           ...statusParams,
           skip,
-          take: filters.pageSize,
+          take: pageSize,
         },
       });
 

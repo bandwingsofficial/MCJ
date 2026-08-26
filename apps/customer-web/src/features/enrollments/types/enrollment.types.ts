@@ -17,6 +17,8 @@ export type PaymentStatus =
 
 export interface CreateEnrollmentRequest {
   batchId: string;
+  branchId?: string;
+  courseId?: string;
   remarks?: string;
 }
 
