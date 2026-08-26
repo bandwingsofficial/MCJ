@@ -138,6 +138,9 @@ export interface TrainerFilters {
   /** Optional for non-trainers-page callers (e.g. branch manage). */
   branchId?: string;
 
+  /** When set, only trainers assigned to this course are returned. */
+  courseId?: string;
+
   trainerType?: TrainerType;
 
   status?: TrainerFilterStatus;

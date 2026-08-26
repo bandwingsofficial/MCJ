@@ -114,7 +114,7 @@ export function CourseFormModal({
         level: values.level,
         minimumQualifications: values.minimumQualifications,
         language: values.language,
-        displayOrder: values.displayOrder,
+        displayOrder: isEditMode ? values.displayOrder : undefined,
         slug: values.slug?.trim() || undefined,
         metaTitle: values.metaTitle?.trim() || undefined,
         metaDescription: values.metaDescription?.trim() || undefined,

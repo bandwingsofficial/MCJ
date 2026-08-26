@@ -139,7 +139,7 @@ if (course.branchIds.length) {
             nulls: 'last',
           },
         },
-        { createdAt: 'desc' },
+        { createdAt: 'asc' },
       ],
       skip: filters.skip,
       take: filters.take,

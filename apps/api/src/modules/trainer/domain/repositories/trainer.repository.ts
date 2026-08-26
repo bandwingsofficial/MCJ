@@ -4,6 +4,7 @@ import { TrainerType } from '../enums/trainer-type.enum';
 
 export interface TrainerListFilters {
   branchId?: string;
+  courseId?: string;
   status?: TrainerStatus;
   trainerType?: TrainerType;
   search?: string;
@@ -38,6 +39,8 @@ export interface TrainerRepository {
   ): Promise<Trainer | null>;
   findAll(filters?: TrainerListFilters): Promise<Trainer[]>;
   count(filters?: TrainerListFilters): Promise<number>;
+  assignCourse(trainerId: string, courseId: string): Promise<void>;
+  unassignCourse(trainerId: string, courseId: string): Promise<void>;
   getMaxNumericSuffixForPrefix(prefix: string): Promise<number>;
   getMaxDisplayOrder(): Promise<number>;
   getMaxActiveDisplayOrder(): Promise<number>;

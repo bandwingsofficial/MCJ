@@ -31,13 +31,18 @@ export function CourseModuleManagePage({
     setModuleError(null);
     try {
       const response = await courseModuleService.getCourseModule(moduleId);
+      if (response.data.courseId !== courseId) {
+        setModuleError("This module does not belong to the selected course.");
+        setModule(null);
+        return;
+      }
       setModule(response.data);
     } catch (error) {
       setModuleError(getErrorMessage(error));
     } finally {
       setModuleLoading(false);
     }
-  }, [moduleId]);
+  }, [courseId, moduleId]);
 
   useEffect(() => {
     void loadModule();

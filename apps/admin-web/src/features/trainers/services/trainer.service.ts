@@ -55,6 +55,7 @@ class TrainerService {
       const params: Record<string, unknown> = {
         search: filters?.search?.trim() || undefined,
         branchId: filters?.branchId || undefined,
+        courseId: filters?.courseId || undefined,
         trainerType: filters?.trainerType || undefined,
         status: status || undefined,
         includeDeleted: filters?.includeDeleted ?? true,
@@ -140,13 +141,16 @@ class TrainerService {
     }
   }
 
-  async listAllTrainers(filters?: Pick<TrainerFilters, "status">) {
+  async listAllTrainers(
+    filters?: Pick<TrainerFilters, "status" | "courseId">,
+  ) {
     const collected: TrainerDetails[] = [];
     let page = 1;
 
     while (true) {
       const response = await this.getTrainers({
         status: filters?.status,
+        courseId: filters?.courseId,
         ...(filters?.status ? {} : { isDeleted: false }),
         page,
         pageSize: TRAINER_LOOKUP_PAGE_SIZE,
@@ -167,10 +171,7 @@ class TrainerService {
 
   async getTrainersForCourse(courseId: string) {
     try {
-      const trainers = await this.listAllTrainers();
-      return trainers.filter((trainer) =>
-        (trainer.courses ?? []).some((course) => course.id === courseId),
-      );
+      return await this.listAllTrainers({ courseId });
     } catch (error) {
       throw this.handleError(error);
     }
@@ -179,34 +180,27 @@ class TrainerService {
   async assignTrainersToCourse(courseId: string, trainerIds: string[]) {
     const uniqueTrainerIds = Array.from(new Set(trainerIds));
 
-    await Promise.all(
-      uniqueTrainerIds.map(async (trainerId) => {
-        const response = await this.getTrainer(trainerId);
-        const trainer = response.data;
-        const existingCourseIds = (trainer.courses ?? []).map(
-          (course) => course.id,
-        );
-
-        if (existingCourseIds.includes(courseId)) {
-          return;
-        }
-
-        await this.assignTrainerCourses(trainerId, [
-          ...existingCourseIds,
-          courseId,
-        ]);
-      }),
-    );
+    try {
+      await Promise.all(
+        uniqueTrainerIds.map((trainerId) =>
+          apiClient.post<ApiSuccessResponse<TrainerDetails>>(
+            `${this.basePath}/${trainerId}/courses/${courseId}`,
+          ),
+        ),
+      );
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
   async unassignTrainerFromCourse(courseId: string, trainerId: string) {
-    const response = await this.getTrainer(trainerId);
-    const trainer = response.data;
-    const nextCourseIds = (trainer.courses ?? [])
-      .map((course) => course.id)
-      .filter((id) => id !== courseId);
-
-    await this.assignTrainerCourses(trainerId, nextCourseIds);
+    try {
+      await apiClient.delete<ApiSuccessResponse<TrainerDetails>>(
+        `${this.basePath}/${trainerId}/courses/${courseId}`,
+      );
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 
   async getActiveTrainersForAssignment() {

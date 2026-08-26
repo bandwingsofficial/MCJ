@@ -2,12 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
-import { countWords } from '@common/utils/word-count.util';
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
-
-export const COURSE_FAQ_MIN_WORDS = 10;
-export const COURSE_FAQ_MAX_WORDS = 100;
 
 export interface CourseFaqRecord {
   id: string;
@@ -24,6 +20,8 @@ export class CourseFaqService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listByCourseId(courseId: string): Promise<CourseFaqRecord[]> {
+    await this.ensureCourseExists(courseId);
+
     return this.prisma.courseFaq.findMany({
       where: { courseId },
       orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
@@ -36,6 +34,8 @@ export class CourseFaqService {
     answer: string,
     createdBy?: string,
   ): Promise<CourseFaqRecord> {
+    await this.ensureCourseExists(courseId);
+
     const normalizedQuestion = this.normalizeFaqField('question', question);
     const normalizedAnswer = this.normalizeFaqField('answer', answer);
 
@@ -129,39 +129,18 @@ export class CourseFaqService {
       );
     }
 
-    const words = countWords(trimmed);
-
-    if (words < COURSE_FAQ_MIN_WORDS) {
-      throw new BaseException(
-        ERROR_CODES.VALIDATION_ERROR,
-        `${label} must be at least ${COURSE_FAQ_MIN_WORDS} words`,
-        400,
-        {
-          errors: {
-            [field]: [
-              `${label} must be at least ${COURSE_FAQ_MIN_WORDS} words`,
-            ],
-          },
-        },
-      );
-    }
-
-    if (words > COURSE_FAQ_MAX_WORDS) {
-      throw new BaseException(
-        ERROR_CODES.VALIDATION_ERROR,
-        `${label} cannot exceed ${COURSE_FAQ_MAX_WORDS} words`,
-        400,
-        {
-          errors: {
-            [field]: [
-              `${label} cannot exceed ${COURSE_FAQ_MAX_WORDS} words`,
-            ],
-          },
-        },
-      );
-    }
-
     return trimmed;
+  }
+
+  private async ensureCourseExists(courseId: string) {
+    const course = await this.prisma.course.findFirst({
+      where: { id: courseId },
+      select: { id: true },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
   }
 
   private async ensureExists(courseId: string, faqId: string) {

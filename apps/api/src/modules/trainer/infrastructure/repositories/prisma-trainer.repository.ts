@@ -141,6 +141,19 @@ export class PrismaTrainerRepository implements TrainerRepository {
     });
   }
 
+  async assignCourse(trainerId: string, courseId: string): Promise<void> {
+    await this.prisma.trainerCourse.createMany({
+      data: [{ trainerId, courseId }],
+      skipDuplicates: true,
+    });
+  }
+
+  async unassignCourse(trainerId: string, courseId: string): Promise<void> {
+    await this.prisma.trainerCourse.deleteMany({
+      where: { trainerId, courseId },
+    });
+  }
+
   async getMaxNumericSuffixForPrefix(prefix: string): Promise<number> {
     const normalized = prefix.trim().toUpperCase();
 
@@ -318,6 +331,14 @@ export class PrismaTrainerRepository implements TrainerRepository {
 
     if (filters.branchId !== undefined) {
       where.branchId = filters.branchId;
+    }
+
+    if (filters.courseId) {
+      where.courses = {
+        some: {
+          courseId: filters.courseId,
+        },
+      };
     }
 
     if (filters.trainerType) {

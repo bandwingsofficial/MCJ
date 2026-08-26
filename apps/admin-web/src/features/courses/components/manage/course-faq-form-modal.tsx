@@ -14,14 +14,11 @@ import {
   validatedFieldInputClass,
   type FieldVisualState,
 } from "@/src/shared/components/ui/validated-field";
-import { WordCount } from "@/src/shared/components/ui/word-count";
-import { truncateToMaxWords } from "@/src/shared/utils/word-count";
 import { cn } from "@/src/shared/lib/cn";
-import { getWordCountState } from "@/src/features/courses/utils/course-form-validation";
+import { getSyncFieldState } from "@/src/features/courses/utils/course-form-validation";
 
 import {
   courseFaqSchema,
-  COURSE_FAQ_MAX_WORDS,
   type CourseFaqFormValues,
 } from "@/src/features/courses/schemas/course-faq.schema";
 import type { CourseFaq } from "@/src/features/courses/types/course-faq.types";
@@ -80,18 +77,18 @@ export function CourseFaqFormModal({
   const questionValue = watch("question");
   const answerValue = watch("answer");
 
-  const questionState = getWordCountState(
+  const questionState = getSyncFieldState(
     Boolean(touchedFields.question || showValidation),
     errors.question?.message,
     questionValue,
-    COURSE_FAQ_MAX_WORDS,
+    { required: true },
   );
 
-  const answerState = getWordCountState(
+  const answerState = getSyncFieldState(
     Boolean(touchedFields.answer || showValidation),
     errors.answer?.message,
     answerValue,
-    COURSE_FAQ_MAX_WORDS,
+    { required: true },
   );
 
   const handleClose = () => {
@@ -130,16 +127,12 @@ export function CourseFaqFormModal({
         >
           <>
             <Input
-              placeholder="Enter the FAQ question (minimum 10 words)"
+              placeholder="Enter the FAQ question"
               disabled={isSubmitting}
               className={iconInputClass(questionState)}
               value={questionValue ?? ""}
               onChange={(event) => {
-                const next = truncateToMaxWords(
-                  event.target.value,
-                  COURSE_FAQ_MAX_WORDS,
-                );
-                setValue("question", next, {
+                setValue("question", event.target.value, {
                   shouldDirty: true,
                   shouldTouch: true,
                   shouldValidate: true,
@@ -152,10 +145,6 @@ export function CourseFaqFormModal({
               aria-hidden="true"
             />
           </>
-          <WordCount
-            value={questionValue ?? ""}
-            maxWords={COURSE_FAQ_MAX_WORDS}
-          />
         </ValidatedField>
 
         <ValidatedField
@@ -167,16 +156,12 @@ export function CourseFaqFormModal({
           <>
             <Textarea
               rows={5}
-              placeholder="Enter the FAQ answer (minimum 10 words)"
+              placeholder="Enter the FAQ answer"
               disabled={isSubmitting}
               className={iconInputClass(answerState, "min-h-[7rem] resize-y")}
               value={answerValue ?? ""}
               onChange={(event) => {
-                const next = truncateToMaxWords(
-                  event.target.value,
-                  COURSE_FAQ_MAX_WORDS,
-                );
-                setValue("answer", next, {
+                setValue("answer", event.target.value, {
                   shouldDirty: true,
                   shouldTouch: true,
                   shouldValidate: true,
@@ -189,7 +174,6 @@ export function CourseFaqFormModal({
               aria-hidden="true"
             />
           </>
-          <WordCount value={answerValue ?? ""} maxWords={COURSE_FAQ_MAX_WORDS} />
         </ValidatedField>
 
         <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">

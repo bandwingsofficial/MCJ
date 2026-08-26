@@ -12,14 +12,16 @@ export class ListCourseModulesHandler {
   async execute(
     query: ListCourseModulesQuery,
   ): Promise<CourseModuleResult[]> {
-    const modules = await this.courseModuleRepo.findAll({
-      courseId: query.courseId,
-      search: query.search,
-      includeDeleted: query.includeDeleted,
-      skip: query.skip,
-      take: query.take,
-    });
-
-    return CourseModuleResponseMapper.toResultList(modules);
+    return CourseModuleResponseMapper.toResultList(
+      query.courseId
+        ? await this.courseModuleRepo.findAll({
+            courseId: query.courseId,
+            search: query.search,
+            includeDeleted: query.includeDeleted,
+            skip: query.skip,
+            take: query.take,
+          })
+        : [],
+    );
   }
 }

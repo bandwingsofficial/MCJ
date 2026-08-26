@@ -325,7 +325,10 @@ export function CourseManageModulesPanel({
               });
               appToast.success("Module updated successfully");
             } else {
-              await createCourseModule(values);
+              await createCourseModule({
+                ...values,
+                courseId,
+              });
               appToast.success("Module created successfully");
             }
             setSelectedModule(null);

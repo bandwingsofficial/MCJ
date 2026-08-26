@@ -12,6 +12,10 @@ export class ListCourseResourcesHandler {
   async execute(
     query: ListCourseResourcesQuery,
   ): Promise<CourseResourceResult[]> {
+    if (!query.lessonId) {
+      return [];
+    }
+
     const resources = await this.courseResourceRepo.findAll({
       lessonId: query.lessonId,
       type: query.type,

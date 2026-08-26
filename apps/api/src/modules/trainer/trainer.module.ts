@@ -13,6 +13,8 @@ import { UploadDomainService } from '../uploads/domain/services/upload-domain.se
 
 import { TRAINER_TOKENS } from './trainer.tokens';
 import { AssignTrainerCoursesHandler } from './application/assign-trainer-courses/assign-trainer-courses.handler';
+import { AssignTrainerCourseHandler } from './application/assign-trainer-course/assign-trainer-course.handler';
+import { UnassignTrainerCourseHandler } from './application/unassign-trainer-course/unassign-trainer-course.handler';
 import { BulkDeleteTrainersHandler } from './application/bulk-delete-trainers/bulk-delete-trainers.handler';
 import { BulkPermanentDeleteTrainersHandler } from './application/bulk-permanent-delete-trainers/bulk-permanent-delete-trainers.handler';
 import { BulkRestoreTrainersHandler } from './application/bulk-restore-trainers/bulk-restore-trainers.handler';
@@ -210,6 +212,38 @@ import { BranchModule } from '../branch/branch.module';
       inject: [
         TRAINER_TOKENS.TRAINER_REPOSITORY,
         COURSE_TOKENS.COURSE_REPOSITORY,
+        TrainerDomainService,
+      ],
+    },
+
+    {
+      provide: AssignTrainerCourseHandler,
+      useFactory: (
+        trainerRepo: TrainerRepository,
+        courseRepo: CourseRepository,
+        domainService: TrainerDomainService,
+      ) =>
+        new AssignTrainerCourseHandler(
+          trainerRepo,
+          courseRepo,
+          domainService,
+        ),
+      inject: [
+        TRAINER_TOKENS.TRAINER_REPOSITORY,
+        COURSE_TOKENS.COURSE_REPOSITORY,
+        TrainerDomainService,
+      ],
+    },
+
+    {
+      provide: UnassignTrainerCourseHandler,
+      useFactory: (
+        trainerRepo: TrainerRepository,
+        domainService: TrainerDomainService,
+      ) =>
+        new UnassignTrainerCourseHandler(trainerRepo, domainService),
+      inject: [
+        TRAINER_TOKENS.TRAINER_REPOSITORY,
         TrainerDomainService,
       ],
     },

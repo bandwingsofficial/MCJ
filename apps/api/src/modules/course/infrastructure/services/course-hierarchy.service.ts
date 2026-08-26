@@ -355,7 +355,9 @@ export class CourseHierarchyService {
       module.description,
       module.keySkills,
       module.displayOrder,
-      module.lessons.map((lesson) => this.toFullLesson(lesson)),
+      module.lessons
+        .filter((lesson) => !lesson.parentLessonId)
+        .map((lesson) => this.toFullLesson(lesson)),
     );
   }
 
@@ -367,7 +369,9 @@ export class CourseHierarchyService {
       module.title,
       module.description,
       module.displayOrder,
-      module.lessons.map(
+      module.lessons
+        .filter((lesson) => !lesson.parentLessonId)
+        .map(
         (lesson) =>
           new CourseLessonPreviewResult(
             lesson.id,

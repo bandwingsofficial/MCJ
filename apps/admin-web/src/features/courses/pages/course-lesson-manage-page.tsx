@@ -41,6 +41,13 @@ export function CourseLessonManagePage({
         courseLessonService.getCourseLesson(lessonId),
       ]);
 
+      if (moduleResponse.data.courseId !== courseId) {
+        setError("This module does not belong to the selected course.");
+        setModule(null);
+        setLesson(null);
+        return;
+      }
+
       if (lessonResponse.data.moduleId !== moduleId) {
         setError("This lesson does not belong to the selected module.");
         setModule(null);
@@ -57,7 +64,7 @@ export function CourseLessonManagePage({
     } finally {
       setLoading(false);
     }
-  }, [lessonId, moduleId]);
+  }, [courseId, lessonId, moduleId]);
 
   useEffect(() => {
     void loadData();

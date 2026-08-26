@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { useCategories } from "@/src/features/categories/hooks/use-categories";
 
@@ -49,8 +48,6 @@ import type {
 } from "@/src/features/courses/types/course.types";
 
 export function CoursesPage() {
-  const router = useRouter();
-
   const {
     courses,
     total,
@@ -523,11 +520,8 @@ export function CoursesPage() {
         open={isCreateOpen}
         categoryOptions={categoryOptions}
         onClose={() => setIsCreateOpen(false)}
-        onSuccess={async (createdCourseId) => {
+        onSuccess={async () => {
           await refetch();
-          if (createdCourseId) {
-            router.push(`/courses/${createdCourseId}/manage`);
-          }
         }}
       />
 

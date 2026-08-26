@@ -20,7 +20,10 @@ export function useCourseFaqs(courseId?: string) {
       setIsLoading(true);
       setError(null);
       const response = await courseFaqService.list(courseId);
-      setFaqs(response.data ?? []);
+      const faqsForCourse = (response.data ?? []).filter(
+        (faq) => faq.courseId === courseId,
+      );
+      setFaqs(faqsForCourse);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load course FAQs",

@@ -119,9 +119,10 @@ export function CourseLessonForm({
     }
 
     if (!lesson) {
-      reset(
-        DEFAULT_COURSE_LESSON_FORM_VALUES,
-      );
+      reset({
+        ...DEFAULT_COURSE_LESSON_FORM_VALUES,
+        moduleId,
+      });
 
       return;
     }
@@ -143,6 +144,7 @@ export function CourseLessonForm({
     });
   }, [
     lesson,
+    moduleId,
     open,
     reset,
   ]);
@@ -196,9 +198,7 @@ export function CourseLessonForm({
                   field.onChange
                 }
                 disabled={
-                  isLoadingModules ||
-                  loading ||
-                  isSubmitting
+                  true
                 }
                 options={
                   moduleOptions

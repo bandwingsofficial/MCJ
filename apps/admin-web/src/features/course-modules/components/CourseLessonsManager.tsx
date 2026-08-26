@@ -293,7 +293,10 @@ export function CourseLessonsManager({
           } else {
             await appToast.promise(
               createCourseLesson(
-                values,
+                {
+                  ...values,
+                  moduleId,
+                },
               ),
               {
                 loading:

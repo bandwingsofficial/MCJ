@@ -211,7 +211,10 @@ export function CourseModulesPage({
               appToast.success("Module updated successfully");
             } else {
               await createCourseModule(
-                values
+                {
+                  ...values,
+                  courseId,
+                }
               );
               appToast.success("Module created successfully");
             }

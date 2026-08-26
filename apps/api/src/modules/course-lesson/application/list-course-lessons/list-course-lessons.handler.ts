@@ -12,6 +12,10 @@ export class ListCourseLessonsHandler {
   async execute(
     query: ListCourseLessonsQuery,
   ): Promise<CourseLessonResult[]> {
+    if (!query.moduleId) {
+      return [];
+    }
+
     const lessons = await this.courseLessonRepo.findAll({
       moduleId: query.moduleId,
       parentLessonId: query.parentLessonId,

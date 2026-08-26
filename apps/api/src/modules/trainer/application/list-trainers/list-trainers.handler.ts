@@ -14,6 +14,7 @@ export class ListTrainersHandler {
   ): Promise<ListTrainersResult> {
     const filters = {
       branchId: query.branchId,
+      courseId: query.courseId,
       status: query.status,
       trainerType: query.trainerType,
       search: query.search,

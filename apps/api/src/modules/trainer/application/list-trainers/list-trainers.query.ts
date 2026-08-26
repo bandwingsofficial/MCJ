@@ -13,5 +13,6 @@ export class ListTrainersQuery {
     public readonly onlyActive = false,
     public readonly skip?: number,
     public readonly take?: number,
+    public readonly courseId?: string,
   ) {}
 }

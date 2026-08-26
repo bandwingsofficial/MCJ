@@ -22,6 +22,10 @@ import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 
 import { AssignTrainerCoursesCommand } from '../../application/assign-trainer-courses/assign-trainer-courses.command';
 import { AssignTrainerCoursesHandler } from '../../application/assign-trainer-courses/assign-trainer-courses.handler';
+import { AssignTrainerCourseCommand } from '../../application/assign-trainer-course/assign-trainer-course.command';
+import { AssignTrainerCourseHandler } from '../../application/assign-trainer-course/assign-trainer-course.handler';
+import { UnassignTrainerCourseCommand } from '../../application/unassign-trainer-course/unassign-trainer-course.command';
+import { UnassignTrainerCourseHandler } from '../../application/unassign-trainer-course/unassign-trainer-course.handler';
 import { BulkDeleteTrainersCommand } from '../../application/bulk-delete-trainers/bulk-delete-trainers.command';
 import { BulkDeleteTrainersHandler } from '../../application/bulk-delete-trainers/bulk-delete-trainers.handler';
 import { BulkPermanentDeleteTrainersCommand } from '../../application/bulk-permanent-delete-trainers/bulk-permanent-delete-trainers.command';
@@ -74,6 +78,8 @@ export class AdminTrainerController {
     private readonly permanentDeleteTrainerHandler: PermanentDeleteTrainerHandler,
     private readonly updateTrainerStatusHandler: UpdateTrainerStatusHandler,
     private readonly assignTrainerCoursesHandler: AssignTrainerCoursesHandler,
+    private readonly assignTrainerCourseHandler: AssignTrainerCourseHandler,
+    private readonly unassignTrainerCourseHandler: UnassignTrainerCourseHandler,
     private readonly suggestTrainerCodeHandler: SuggestTrainerCodeHandler,
     private readonly reorderTrainersHandler: ReorderTrainersHandler,
     private readonly bulkUpdateTrainerStatusHandler: BulkUpdateTrainerStatusHandler,
@@ -138,6 +144,7 @@ export class AdminTrainerController {
         false,
         query.skip,
         query.take,
+        query.courseId,
       ),
     );
 
@@ -261,6 +268,39 @@ export class AdminTrainerController {
     return {
       success: true,
       message: 'Trainers permanently deleted successfully',
+      data: result,
+    };
+  }
+
+  @Post(':id/courses/:courseId')
+  async assignCourse(
+    @Param('id') id: string,
+    @Param('courseId') courseId: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.assignTrainerCourseHandler.execute(
+      new AssignTrainerCourseCommand(id, courseId, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: 'Trainer assigned to course successfully',
+      data: result,
+    };
+  }
+
+  @Delete(':id/courses/:courseId')
+  async unassignCourse(
+    @Param('id') id: string,
+    @Param('courseId') courseId: string,
+  ) {
+    const result = await this.unassignTrainerCourseHandler.execute(
+      new UnassignTrainerCourseCommand(id, courseId),
+    );
+
+    return {
+      success: true,
+      message: 'Trainer unassigned from course successfully',
       data: result,
     };
   }

@@ -18,6 +18,11 @@ export class ListTrainersQueryDto extends PaginationQueryDto {
   @IsUUID()
   branchId?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  courseId?: string;
+
   @ApiPropertyOptional({ enum: TrainerStatus })
   @IsOptional()
   @IsEnum(TrainerStatus)

@@ -114,6 +114,7 @@ export function CourseManagePage({ courseId }: Props) {
       />
 
       <CourseManageWorkspace
+        courseId={courseId}
         course={course}
         summary={summary}
         summaryLoading={summaryLoading}

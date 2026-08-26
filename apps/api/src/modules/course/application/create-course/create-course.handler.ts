@@ -174,10 +174,7 @@ export class CreateCourseHandler {
 
     const status = command.status ?? CourseStatus.DRAFT;
     const displayOrder =
-      command.displayOrder ??
-      (status === CourseStatus.ACTIVE
-        ? (await this.courseRepo.getMaxActiveDisplayOrder()) + 1
-        : null);
+      (await this.courseRepo.getMaxDisplayOrder()) + 1;
 
     const course = Course.create({
       id: courseId,

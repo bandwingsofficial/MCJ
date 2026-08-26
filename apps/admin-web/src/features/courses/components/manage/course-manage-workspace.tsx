@@ -19,6 +19,7 @@ import { CourseManageOverviewPanel } from "./course-manage-overview-panel";
 import { CourseManageTrainersPanel } from "./course-manage-trainers-panel";
 
 interface Props {
+  courseId: string;
   course: CourseDetails;
   summary: CourseSummary | null;
   summaryLoading?: boolean;
@@ -39,6 +40,7 @@ const TAB_ITEMS: readonly [TabKey, string][] = [
 ];
 
 export function CourseManageWorkspace({
+  courseId,
   course,
   summary,
   summaryLoading = false,
@@ -47,7 +49,6 @@ export function CourseManageWorkspace({
   onTabChange,
   onMutationSuccess,
 }: Props) {
-  const courseId = course.id;
   const isArchived = Boolean(course.deletedAt || course.isDeleted);
   const contentDisabled = isArchived || course.status === "ARCHIVED";
 
