@@ -62,7 +62,12 @@ export function EditCategoryModal({
   };
 
   return (
-    <Modal open={open} title="Edit Category" onClose={onClose}>
+    <Modal
+      open={open}
+      title="Edit Category"
+      onClose={onClose}
+      contentClassName="!max-w-xl"
+    >
       <CategoryForm
         key={category.id}
         excludeId={category.id}

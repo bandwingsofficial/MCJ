@@ -4,7 +4,6 @@ import { countWords } from "@/src/shared/utils/word-count";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export const CATEGORY_DESCRIPTION_MIN_WORDS = 10;
 export const CATEGORY_DESCRIPTION_MAX_WORDS = 100;
 
 /** Matches backend `Slug.normalize()` / `@common/value-objects/slug.vo`. */
@@ -49,17 +48,12 @@ const optionalSlugSchema = z
 const descriptionSchema = z
   .string()
   .trim()
-  .min(1, "Description is required")
   .superRefine((value, ctx) => {
-    const words = countWords(value);
-
-    if (words < CATEGORY_DESCRIPTION_MIN_WORDS) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Description must be at least ${CATEGORY_DESCRIPTION_MIN_WORDS} words`,
-      });
+    if (!value) {
       return;
     }
+
+    const words = countWords(value);
 
     if (words > CATEGORY_DESCRIPTION_MAX_WORDS) {
       ctx.addIssue({

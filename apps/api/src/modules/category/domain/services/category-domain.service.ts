@@ -8,47 +8,20 @@ import type { Category } from '../entities/category.entity';
 import type { CategoryRepository } from '../repositories/category.repository';
 import { CategoryName } from '../value-objects/category-name.vo';
 
-export const CATEGORY_DESCRIPTION_MIN_WORDS = 10;
 export const CATEGORY_DESCRIPTION_MAX_WORDS = 100;
 
 @Injectable()
 export class CategoryDomainService {
   normalizeDescription(
     description?: string | null,
-  ): string {
+  ): string | null {
     const trimmed = description?.trim() ?? '';
 
     if (!trimmed) {
-      throw new BaseException(
-        ERROR_CODES.VALIDATION_ERROR,
-        'Description is required',
-        400,
-        {
-          errors: {
-            description: [
-              `Description must be at least ${CATEGORY_DESCRIPTION_MIN_WORDS} words`,
-            ],
-          },
-        },
-      );
+      return null;
     }
 
     const words = countWords(trimmed);
-
-    if (words < CATEGORY_DESCRIPTION_MIN_WORDS) {
-      throw new BaseException(
-        ERROR_CODES.VALIDATION_ERROR,
-        `Description must be at least ${CATEGORY_DESCRIPTION_MIN_WORDS} words`,
-        400,
-        {
-          errors: {
-            description: [
-              `Description must be at least ${CATEGORY_DESCRIPTION_MIN_WORDS} words`,
-            ],
-          },
-        },
-      );
-    }
 
     if (words > CATEGORY_DESCRIPTION_MAX_WORDS) {
       throw new BaseException(

@@ -462,6 +462,10 @@ export function CategoryForm({
     }
 
     if (typeof raw === "string" && raw.trim() === "") {
+      if (fieldName === "description") {
+        return "neutral";
+      }
+
       return "invalid";
     }
 
@@ -699,14 +703,13 @@ export function CategoryForm({
 
       <ValidatedField
         label="Description"
-        required
         state={descriptionField.state}
         errorMessage={descriptionField.errorMessage}
       >
         <div className="relative">
           <Textarea
             {...descriptionField.inputProps}
-            placeholder="Enter category description (minimum 10 words)"
+            placeholder="Enter category description"
             disabled={isSubmitting}
             className={cn(
               iconInputClass(descriptionField.state),

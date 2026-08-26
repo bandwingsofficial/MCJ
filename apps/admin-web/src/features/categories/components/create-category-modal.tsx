@@ -48,7 +48,12 @@ export function CreateCategoryModal({
   };
 
   return (
-    <Modal open={open} title="Create Category" onClose={onClose}>
+    <Modal
+      open={open}
+      title="Create Category"
+      onClose={onClose}
+      contentClassName="!max-w-xl"
+    >
       <CategoryForm
         key={open ? "create-category-open" : "create-category-closed"}
         submitLabel="Create Category"
