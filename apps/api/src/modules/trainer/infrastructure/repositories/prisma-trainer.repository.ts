@@ -293,8 +293,19 @@ export class PrismaTrainerRepository implements TrainerRepository {
   }
 
   async deletePermanent(id: string): Promise<void> {
-    await this.prisma.trainer.delete({
-      where: { id },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.trainerCourse.deleteMany({
+        where: { trainerId: id },
+      });
+      await tx.batchTrainer.deleteMany({
+        where: { trainerId: id },
+      });
+      await tx.batchCourse.deleteMany({
+        where: { trainerId: id },
+      });
+      await tx.trainer.delete({
+        where: { id },
+      });
     });
   }
 
