@@ -3,6 +3,7 @@
 import { Eye, Link2Off } from "lucide-react";
 
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
+import { COURSE_TRAINER_UNASSIGNED_LABEL } from "@/src/features/batches/utils/batch-course.utils";
 import { formatTrainerNames } from "@/src/features/branches/utils/branch-display.utils";
 import { BatchModeBadge } from "@/src/features/batches/components/BatchModeBadge";
 import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
@@ -19,6 +20,8 @@ import {
 interface Props {
   batch: Batch;
   courseTitles?: string[];
+  categoryLabel?: string;
+  trainerLabel?: string;
   assignmentsDisabled?: boolean;
   onUnassign?: () => void;
   compact?: boolean;
@@ -42,6 +45,8 @@ function BatchDetailRow({
 export function BranchBatchCard({
   batch,
   courseTitles,
+  categoryLabel,
+  trainerLabel,
   assignmentsDisabled = false,
   onUnassign,
   compact = false,
@@ -55,9 +60,12 @@ export function BranchBatchCard({
     (batch.course?.title ? [batch.course.title] : []);
   const courseLabel =
     courses.length > 0 ? courses.join(", ") : "No course assigned";
-  const trainerLabel = batch.trainers?.length
-    ? formatTrainerNames(batch.trainers)
-    : "—";
+  const resolvedCategory =
+    categoryLabel?.trim() || batch.category?.name?.trim() || "";
+  const resolvedTrainer =
+    trainerLabel?.trim() ||
+    (batch.trainers?.length ? formatTrainerNames(batch.trainers) : "") ||
+    COURSE_TRAINER_UNASSIGNED_LABEL;
 
   return (
     <article
@@ -120,6 +128,12 @@ export function BranchBatchCard({
         }
       >
         <BatchDetailRow label="Course" value={courseLabel} />
+        {!compact && resolvedCategory ? (
+          <BatchDetailRow label="Category" value={resolvedCategory} />
+        ) : null}
+        {!compact ? (
+          <BatchDetailRow label="Trainer" value={resolvedTrainer} />
+        ) : null}
         <BatchDetailRow
           label="Students"
           value={`${enrolledCount} / ${capacity}`}
@@ -142,7 +156,6 @@ export function BranchBatchCard({
                   : formatProgressDayLabel(progress.daysRemaining, "day")
               }
             />
-            <BatchDetailRow label="Trainer(s)" value={trainerLabel} />
           </>
         ) : null}
       </div>

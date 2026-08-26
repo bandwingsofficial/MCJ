@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Archive,
   CircleCheck,
   Pencil,
   Power,
@@ -38,7 +37,6 @@ export function BranchActions({
   onManage,
   onActivate,
   onDeactivate,
-  onDelete,
   onRestore,
   onPermanentDelete,
 }: Props) {
@@ -139,19 +137,6 @@ export function BranchActions({
           className={`${iconBtnClass} text-slate-700 hover:bg-slate-100 hover:text-slate-900`}
         >
           <Settings2 className={iconClass} />
-        </Button>
-      </Tooltip>
-
-      <Tooltip content="Archive branch">
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={() => onDelete(branch)}
-          aria-label="Archive branch"
-          className={`${iconBtnClass} text-slate-600 hover:bg-slate-100 hover:text-slate-900`}
-        >
-          <Archive className={iconClass} />
         </Button>
       </Tooltip>
     </div>

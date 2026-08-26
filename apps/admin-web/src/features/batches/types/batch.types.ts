@@ -149,7 +149,9 @@ export interface CreateBatchRequest {
   status?: BatchStatus;
 }
 
-export interface UpdateBatchRequest extends Partial<CreateBatchRequest> {}
+export interface UpdateBatchRequest extends Partial<CreateBatchRequest> {
+  branchId?: string | null;
+}
 
 export interface AssignBatchTrainersRequest {
   trainerIds: string[];

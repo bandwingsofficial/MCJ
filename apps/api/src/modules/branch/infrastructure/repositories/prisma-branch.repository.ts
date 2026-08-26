@@ -638,4 +638,53 @@ export class PrismaBranchRepository
 
     return where;
   }
+
+  async findCoursesByIds(
+    courseIds: string[],
+  ): Promise<
+    Array<{ id: string; status: string; isDeleted: boolean }>
+  > {
+    const uniqueIds = [...new Set(courseIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return [];
+    }
+
+    return this.prisma.course.findMany({
+      where: { id: { in: uniqueIds } },
+      select: {
+        id: true,
+        status: true,
+        isDeleted: true,
+      },
+    });
+  }
+
+  async assignCoursesToBranch(
+    branchId: string,
+    courseIds: string[],
+  ): Promise<number> {
+    const uniqueIds = [...new Set(courseIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return 0;
+    }
+
+    const result = await this.prisma.courseBranch.createMany({
+      data: uniqueIds.map((courseId) => ({
+        courseId,
+        branchId,
+      })),
+      skipDuplicates: true,
+    });
+
+    return result.count;
+  }
+
+  async unassignCourseFromBranch(
+    branchId: string,
+    courseId: string,
+  ): Promise<void> {
+    await this.prisma.courseBranch.deleteMany({
+      where: { branchId, courseId },
+    });
+  }
 }

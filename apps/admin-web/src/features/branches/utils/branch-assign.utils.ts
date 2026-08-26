@@ -6,8 +6,6 @@ import {
 } from "@/src/features/students/utils/student-form.utils";
 import type { StudentFormSchema } from "@/src/features/students/schemas/student.schema";
 
-import type { UpdateBatchRequest } from "@/src/features/batches/types/batch.types";
-
 export async function assignBatchToBranch(
   batchId: string,
   branchId: string,
@@ -18,7 +16,7 @@ export async function assignBatchToBranch(
 export async function unassignBatchFromBranch(batchId: string): Promise<void> {
   await batchService.updateBatch(batchId, {
     branchId: null,
-  } as unknown as UpdateBatchRequest);
+  });
 }
 
 export async function assignStudentToBranch(

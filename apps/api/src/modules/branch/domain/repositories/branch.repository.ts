@@ -14,6 +14,12 @@ export interface BranchListFilters {
   take?: number;
 }
 
+export interface BranchAssignableCourse {
+  id: string;
+  status: string;
+  isDeleted: boolean;
+}
+
 export interface BranchBlockingReferences {
   branchUsers: number;
   students: number;
@@ -125,5 +131,19 @@ export interface BranchRepository {
   updateStatus(
     branchId: string,
     status: BranchStatus,
+  ): Promise<void>;
+
+  findCoursesByIds(
+    courseIds: string[],
+  ): Promise<BranchAssignableCourse[]>;
+
+  assignCoursesToBranch(
+    branchId: string,
+    courseIds: string[],
+  ): Promise<number>;
+
+  unassignCourseFromBranch(
+    branchId: string,
+    courseId: string,
   ): Promise<void>;
 }

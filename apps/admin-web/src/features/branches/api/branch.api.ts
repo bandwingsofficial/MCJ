@@ -169,6 +169,38 @@ export const branchApi = {
     return response.data;
   },
 
+  async assignCourses(
+    branchId: string,
+    courseIds: string[]
+  ) {
+    const response = await apiClient.post<
+      ApiResponse<{
+        branchId: string;
+        assignedCount: number;
+        courseIds: string[];
+      }>
+    >(`/admin/branches/${branchId}/courses/assign`, {
+      courseIds,
+    });
+
+    return response.data;
+  },
+
+  async unassignCourse(
+    branchId: string,
+    courseId: string
+  ) {
+    const response = await apiClient.delete<
+      ApiResponse<{
+        branchId: string;
+        courseId: string;
+        unassigned: boolean;
+      }>
+    >(`/admin/branches/${branchId}/courses/${courseId}`);
+
+    return response.data;
+  },
+
   async restoreBranch(id: string) {
     const response = await apiClient.patch(
       `/admin/branches/${id}/restore`

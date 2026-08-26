@@ -10,25 +10,24 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import type { Branch } from "@/src/features/branches/types/branch.types";
 import type { BranchSummaryCounts } from "@/src/features/branches/hooks/use-branch-summary";
 import { BranchStatusBadge } from "@/src/features/branches/components/branch-status-badge";
-import { BranchOverviewMetricCards } from "@/src/features/branches/components/manage/branch-overview-metric-cards";
 import { BranchOverviewSectionHeader } from "@/src/features/branches/components/manage/branch-overview-section-header";
 import { BranchManageCardGrid } from "@/src/features/branches/components/manage/branch-manage-card-grid";
 import { BranchSummaryModuleCard } from "@/src/features/branches/components/manage/branch-summary-module-card";
 import { BranchBatchCard } from "@/src/features/branches/components/manage/branch-batch-card";
 import { BranchStudentEnrolledCard } from "@/src/features/branches/components/manage/branch-student-enrolled-card";
 import type { BranchManageTabKey } from "@/src/features/branches/components/manage/branch-manage-tab.types";
-import { formatBranchAddress } from "@/src/features/branches/utils/branch-display.utils";
+import {
+  formatBranchAddress,
+  formatCourseDuration,
+  formatCourseLevel,
+  formatCoursePrice,
+} from "@/src/features/branches/utils/branch-display.utils";
 import { categoryService } from "@/src/features/categories/services/category.service";
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
 import { CategoryStatusBadge } from "@/src/features/categories/components/category-status-badge";
 import { courseService } from "@/src/features/courses/services/course.service";
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
 import { CourseStatusBadge } from "@/src/features/courses/components/course-status-badge";
-import {
-  formatCourseDuration,
-  formatCourseLevel,
-  formatCoursePrice,
-} from "@/src/features/branches/utils/branch-display.utils";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type { Batch } from "@/src/features/batches/types/batch.types";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
@@ -256,8 +255,6 @@ export function BranchManageOverviewPanel({
           ) : null}
         </dl>
       </Card>
-
-      <BranchOverviewMetricCards summary={summary} isLoading={summaryLoading} />
 
       <Card className="rounded-xl border border-slate-200/80 p-5 shadow-sm">
         <BranchOverviewSectionHeader

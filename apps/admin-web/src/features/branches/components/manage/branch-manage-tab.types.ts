@@ -5,5 +5,4 @@ export type BranchManageTabKey =
   | "courses"
   | "batches"
   | "students"
-  | "trainers"
   | "reports";

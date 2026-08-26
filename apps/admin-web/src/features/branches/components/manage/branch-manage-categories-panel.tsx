@@ -5,6 +5,7 @@ import { Link2Off } from "lucide-react";
 
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
+import { Badge } from "@/src/shared/components/ui/badge";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
@@ -14,13 +15,10 @@ import {
   type AssignableItem,
 } from "@/src/features/branches/components/manage/assign-entities-modal";
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
-import { BranchManageCardGrid } from "@/src/features/branches/components/manage/branch-manage-card-grid";
+import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
-import { BranchSummaryModuleCard } from "@/src/features/branches/components/manage/branch-summary-module-card";
 import { categoryService } from "@/src/features/categories/services/category.service";
-import { CategoryStatusBadge } from "@/src/features/categories/components/category-status-badge";
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
-import { courseService } from "@/src/features/courses/services/course.service";
 
 interface Props {
   branchId: string;
@@ -39,9 +37,6 @@ export function BranchManageCategoriesPanel({
 }: Props) {
   const [search, setSearch] = useState("");
   const [categories, setCategories] = useState<CategoryListItem[]>([]);
-  const [courseCountByCategory, setCourseCountByCategory] = useState<
-    Record<string, number>
-  >({});
   const [isLoading, setIsLoading] = useState(true);
 
   const [assignOpen, setAssignOpen] = useState(false);
@@ -57,39 +52,27 @@ export function BranchManageCategoriesPanel({
   const [unassignLoading, setUnassignLoading] = useState(false);
 
   const loadData = useCallback(async () => {
+    if (!branchId) {
+      setCategories([]);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const [categoryResponse, courseResponse] = await Promise.all([
-        categoryService.getCategories({
-          search,
-          status: "ACTIVE",
-          branchId,
-          page: 1,
-          pageSize: 100,
-        }),
-        courseService.getCourses({
-          branchId,
-          page: 1,
-          pageSize: 100,
-        }),
-      ]);
+      const categoryResponse = await categoryService.getCategories({
+        search,
+        branchId,
+        page: 1,
+        pageSize: 100,
+      });
 
-      const items = (categoryResponse.data ?? []).filter(
-        (item) => !item.isDeleted && item.status === "ACTIVE",
+      setCategories(
+        (categoryResponse.data ?? []).filter((item) => !item.isDeleted),
       );
-      setCategories(items);
-
-      const counts: Record<string, number> = {};
-      for (const course of courseResponse.data.items ?? []) {
-        if (course.categoryId) {
-          counts[course.categoryId] = (counts[course.categoryId] ?? 0) + 1;
-        }
-      }
-      setCourseCountByCategory(counts);
     } catch (error) {
       appToast.error(getErrorMessage(error));
       setCategories([]);
-      setCourseCountByCategory({});
     } finally {
       setIsLoading(false);
     }
@@ -100,19 +83,35 @@ export function BranchManageCategoriesPanel({
   }, [loadData]);
 
   const openAssign = async () => {
+    if (!branchId) {
+      return;
+    }
+
     setAssignOpen(true);
     setAssignSearch("");
     setAssignLoading(true);
     try {
-      const response = await categoryService.getCategories({
-        search: "",
-        status: "ACTIVE",
-        page: 1,
-        pageSize: 100,
-      });
-      const assignedIds = new Set(categories.map((item) => item.id));
+      const [assignedResponse, availableResponse] = await Promise.all([
+        categoryService.getCategories({
+          search: "",
+          branchId,
+          page: 1,
+          pageSize: 100,
+        }),
+        categoryService.getCategories({
+          search: "",
+          status: "ACTIVE",
+          page: 1,
+          pageSize: 100,
+        }),
+      ]);
+      const assignedIds = new Set(
+        (assignedResponse.data ?? [])
+          .filter((item) => !item.isDeleted)
+          .map((item) => item.id),
+      );
       setAssignCandidates(
-        (response.data ?? [])
+        (availableResponse.data ?? [])
           .filter(
             (item) =>
               !item.isDeleted &&
@@ -145,14 +144,18 @@ export function BranchManageCategoriesPanel({
   }, [assignOnMount, assignmentsDisabled, onAssignOnMountHandled]);
 
   const handleAssign = async (ids: string[]) => {
-    if (ids.length === 0) {
+    if (ids.length === 0 || !branchId) {
       return;
     }
 
     setAssignSubmitting(true);
     try {
       await branchService.assignCategories(branchId, ids);
-      appToast.success("Categories assigned");
+      appToast.success(
+        ids.length === 1
+          ? "Category assigned successfully"
+          : `${ids.length} categories assigned successfully`,
+      );
       setAssignOpen(false);
       await loadData();
       await onSummaryRefresh?.();
@@ -164,7 +167,7 @@ export function BranchManageCategoriesPanel({
   };
 
   const handleUnassign = async () => {
-    if (!unassignTarget) {
+    if (!unassignTarget || !branchId) {
       return;
     }
 
@@ -189,39 +192,44 @@ export function BranchManageCategoriesPanel({
           search={search}
           onSearchChange={setSearch}
           searchPlaceholder="Search categories..."
-          assignLabel="Assign Categories"
+          assignLabel="Assign Category"
           onAssign={() => {
             void openAssign();
           }}
           assignDisabled={assignmentsDisabled}
         />
 
-        <BranchManageCardGrid
+        <BranchManageTableShell
+          columns={[
+            { key: "category", label: "Category" },
+            { key: "status", label: "Status", className: "w-[8rem]" },
+            {
+              key: "actions",
+              label: "Actions",
+              className: "w-[4.5rem] text-right",
+            },
+          ]}
           isLoading={isLoading}
           isEmpty={!isLoading && categories.length === 0}
-          emptyMessage="No Categories Yet"
+          emptyMessage="No categories assigned yet"
           emptyDescription="Assign categories to this branch to get started."
         >
           {categories.map((item) => (
-            <BranchSummaryModuleCard
-              key={item.id}
-              title={item.name}
-              subtitle={item.description?.trim() || undefined}
-              imageUrl={item.thumbnailUrl}
-              imageAlt={item.name}
-              assignedCount={courseCountByCategory[item.id] ?? 0}
-              assignedLabel={
-                (courseCountByCategory[item.id] ?? 0) === 1
-                  ? "course"
-                  : "courses"
-              }
-              badge={<CategoryStatusBadge status={item.status} />}
-              footer={
+            <tr key={item.id} className="hover:bg-slate-50">
+              <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
+                {item.name}
+              </td>
+              <td className="px-4 py-3">
+                <Badge variant="success" className="px-2.5 py-0.5 text-sm">
+                  Assigned
+                </Badge>
+              </td>
+              <td className="px-4 py-3 text-right">
                 <BranchIconAction
                   icon={Link2Off}
-                  label="Unassign Category"
+                  label="Unassign"
                   destructive
-                  disabled={assignmentsDisabled}
+                  disabled={assignmentsDisabled || unassignLoading}
                   onClick={() =>
                     setUnassignTarget({
                       id: item.id,
@@ -229,10 +237,10 @@ export function BranchManageCategoriesPanel({
                     })
                   }
                 />
-              }
-            />
+              </td>
+            </tr>
           ))}
-        </BranchManageCardGrid>
+        </BranchManageTableShell>
       </Card>
 
       <AssignEntitiesModal
@@ -251,12 +259,14 @@ export function BranchManageCategoriesPanel({
 
       <ConfirmDialog
         open={Boolean(unassignTarget)}
-        title="Unassign Category"
+        title="Unassign category?"
         description={`Remove "${unassignTarget?.label ?? "this category"}" from this branch? The category itself will not be deleted.`}
         confirmLabel="Unassign"
         loading={unassignLoading}
         onCancel={() => setUnassignTarget(null)}
-        onConfirm={handleUnassign}
+        onConfirm={() => {
+          void handleUnassign();
+        }}
       />
     </>
   );

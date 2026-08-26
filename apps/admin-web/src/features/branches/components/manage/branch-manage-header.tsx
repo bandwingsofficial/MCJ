@@ -1,14 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import {
-  MoreVertical,
-  Pencil,
-  RotateCcw,
-} from "lucide-react";
+import { RotateCcw, Trash2 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
-import { Dropdown } from "@/src/shared/components/ui/dropdown";
 
 import type { Branch } from "@/src/features/branches/types/branch.types";
 import { BranchStatusBadge } from "@/src/features/branches/components/branch-status-badge";
@@ -16,7 +11,6 @@ import { BranchStatusBadge } from "@/src/features/branches/components/branch-sta
 interface Props {
   branch: Branch;
   activeSection?: string;
-  onEdit: () => void;
   onArchive: () => void;
   onRestore: () => void;
   onPermanentDelete: () => void;
@@ -26,7 +20,6 @@ interface Props {
 export function BranchManageHeader({
   branch,
   activeSection,
-  onEdit,
   onArchive,
   onRestore,
   onPermanentDelete,
@@ -39,26 +32,6 @@ export function BranchManageHeader({
   const meta = [branch.branchCode, location]
     .filter(Boolean)
     .join(" · ");
-
-  const moreItems = isArchived
-    ? [
-        {
-          label: "Restore Branch",
-          onClick: onRestore,
-        },
-        {
-          label: "Permanently Delete",
-          onClick: onPermanentDelete,
-          destructive: true,
-        },
-      ]
-    : [
-        {
-          label: "Archive Branch",
-          onClick: onArchive,
-          destructive: true,
-        },
-      ];
 
   return (
     <div className="space-y-3">
@@ -102,46 +75,41 @@ export function BranchManageHeader({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {!isArchived ? (
-            <Button
-              type="button"
-              size="sm"
-              disabled={actionsDisabled}
-              onClick={onEdit}
-            >
-              <Pencil className="mr-1.5 h-3.5 w-3.5" />
-              Edit Branch
-            </Button>
-          ) : null}
-
-          <Dropdown
-            trigger={
+          {isArchived ? (
+            <>
               <Button
                 type="button"
                 size="sm"
-                variant="outline"
                 disabled={actionsDisabled}
-                aria-label="More branch actions"
+                onClick={onRestore}
+                className="border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
               >
-                <MoreVertical className="mr-1.5 h-3.5 w-3.5" />
-                More
+                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                Restore
               </Button>
-            }
-            items={moreItems}
-          />
-
-          {isArchived ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="danger"
+                disabled={actionsDisabled}
+                onClick={onPermanentDelete}
+              >
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                Permanent Delete
+              </Button>
+            </>
+          ) : (
             <Button
               type="button"
               size="sm"
+              variant="outline"
               disabled={actionsDisabled}
-              onClick={onRestore}
-              className="border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+              onClick={onArchive}
             >
-              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-              Restore
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              Archive
             </Button>
-          ) : null}
+          )}
         </div>
       </div>
     </div>

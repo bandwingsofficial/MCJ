@@ -7,13 +7,11 @@ import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
 import { appToast } from "@/src/shared/components/ui/toast";
 
-import type { Branch } from "@/src/features/branches/types/branch.types";
 import { useBranch } from "@/src/features/branches/hooks/use-branch";
 import { useBranchSummary } from "@/src/features/branches/hooks/use-branch-summary";
 import { useDeleteBranch } from "@/src/features/branches/hooks/use-delete-branch";
 import { usePermanentDeleteBranch } from "@/src/features/branches/hooks/use-permanent-delete-branch";
 import { useRestoreBranch } from "@/src/features/branches/hooks/use-restore-branch";
-import { UpdateBranchModal } from "@/src/features/branches/components/update-branch-modal";
 import { DeleteBranchDialog } from "@/src/features/branches/components/delete-branch-dialog";
 import { PermanentDeleteBranchDialog } from "@/src/features/branches/components/permanent-delete-branch-dialog";
 import { RestoreBranchDialog } from "@/src/features/branches/components/restore-branch-dialog";
@@ -31,8 +29,7 @@ const TAB_LABELS: Record<string, string> = {
   categories: "Categories",
   courses: "Courses",
   batches: "Batches",
-  students: "Students",
-  trainers: "Trainers",
+  students: "Enrolled Students",
   reports: "Reports",
 };
 
@@ -44,7 +41,6 @@ export function BranchManagePage({ branchId }: Props) {
     isLoading,
     error,
     refetch,
-    setBranchData,
   } = useBranch(branchId);
 
   const {
@@ -62,7 +58,6 @@ export function BranchManagePage({ branchId }: Props) {
     isPending: isPermanentlyDeleting,
   } = usePermanentDeleteBranch();
 
-  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isRestoreOpen, setIsRestoreOpen] = useState(false);
   const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] =
@@ -113,7 +108,6 @@ export function BranchManagePage({ branchId }: Props) {
         branch={branch}
         activeSection={activeSection}
         actionsDisabled={actionsDisabled}
-        onEdit={() => setIsEditOpen(true)}
         onArchive={() => setIsArchiveOpen(true)}
         onRestore={() => setIsRestoreOpen(true)}
         onPermanentDelete={() =>
@@ -128,17 +122,6 @@ export function BranchManagePage({ branchId }: Props) {
         onSummaryRefresh={refetchSummary}
         onTabChange={(tab) => {
           setActiveSection(TAB_LABELS[tab]);
-        }}
-      />
-
-      <UpdateBranchModal
-        open={isEditOpen}
-        branch={branch}
-        onClose={() => setIsEditOpen(false)}
-        onSuccess={async (updated: Branch) => {
-          setBranchData(updated);
-          await refetch();
-          await refetchSummary();
         }}
       />
 

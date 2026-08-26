@@ -18,6 +18,10 @@ import {
   assignBatchToBranch,
   unassignBatchFromBranch,
 } from "@/src/features/branches/utils/branch-assign.utils";
+import {
+  COURSE_TRAINER_UNASSIGNED_LABEL,
+  formatAssignmentTrainerNames,
+} from "@/src/features/batches/utils/batch-course.utils";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type { Batch } from "@/src/features/batches/types/batch.types";
 
@@ -29,30 +33,60 @@ interface Props {
   onSummaryRefresh?: () => Promise<void>;
 }
 
-async function loadCourseTitlesByBatch(
+interface BatchDisplayMeta {
+  courseTitles: string[];
+  categoryLabel: string;
+  trainerLabel: string;
+}
+
+async function loadBatchDisplayMeta(
   batches: Batch[],
-): Promise<Record<string, string[]>> {
+): Promise<Record<string, BatchDisplayMeta>> {
   const entries = await Promise.all(
     batches.map(async (batch) => {
       try {
         const assignments = await batchService.getBatchCourses(batch.id);
-        const titles = assignments
+        const courseTitles = assignments
           .map((item) => item.course?.title?.trim())
           .filter((title): title is string => Boolean(title));
+        const categories = Array.from(
+          new Set(
+            assignments
+              .map((item) => item.course?.category?.name?.trim())
+              .filter((name): name is string => Boolean(name)),
+          ),
+        );
+        const trainers = Array.from(
+          new Set(
+            assignments
+              .map((item) => formatAssignmentTrainerNames(item))
+              .filter(Boolean),
+          ),
+        );
 
-        if (titles.length > 0) {
-          return [batch.id, titles] as const;
-        }
-
-        if (batch.course?.title) {
-          return [batch.id, [batch.course.title]] as const;
-        }
-
-        return [batch.id, []] as const;
+        return [
+          batch.id,
+          {
+            courseTitles:
+              courseTitles.length > 0
+                ? courseTitles
+                : batch.course?.title
+                  ? [batch.course.title]
+                  : [],
+            categoryLabel:
+              categories.join(", ") || batch.category?.name?.trim() || "",
+            trainerLabel:
+              trainers.join(", ") || COURSE_TRAINER_UNASSIGNED_LABEL,
+          },
+        ] as const;
       } catch {
         return [
           batch.id,
-          batch.course?.title ? [batch.course.title] : [],
+          {
+            courseTitles: batch.course?.title ? [batch.course.title] : [],
+            categoryLabel: batch.category?.name?.trim() || "",
+            trainerLabel: COURSE_TRAINER_UNASSIGNED_LABEL,
+          },
         ] as const;
       }
     }),
@@ -70,8 +104,8 @@ export function BranchManageBatchesPanel({
 }: Props) {
   const [search, setSearch] = useState("");
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [courseTitlesByBatchId, setCourseTitlesByBatchId] = useState<
-    Record<string, string[]>
+  const [displayMetaByBatchId, setDisplayMetaByBatchId] = useState<
+    Record<string, BatchDisplayMeta>
   >({});
   const [isLoading, setIsLoading] = useState(true);
 
@@ -102,11 +136,11 @@ export function BranchManageBatchesPanel({
 
       const items = batchResponse.data.items ?? [];
       setBatches(items);
-      setCourseTitlesByBatchId(await loadCourseTitlesByBatch(items));
+      setDisplayMetaByBatchId(await loadBatchDisplayMeta(items));
     } catch (error) {
       appToast.error(getErrorMessage(error));
       setBatches([]);
-      setCourseTitlesByBatchId({});
+      setDisplayMetaByBatchId({});
     } finally {
       setIsLoading(false);
     }
@@ -123,7 +157,9 @@ export function BranchManageBatchesPanel({
     try {
       const response = await batchService.getBatches({
         status: "ACTIVE",
+        isActive: true,
         includeDeleted: false,
+        isDeleted: false,
         page: 1,
         pageSize: 100,
       });
@@ -232,7 +268,9 @@ export function BranchManageBatchesPanel({
             <BranchBatchCard
               key={batch.id}
               batch={batch}
-              courseTitles={courseTitlesByBatchId[batch.id]}
+              courseTitles={displayMetaByBatchId[batch.id]?.courseTitles}
+              categoryLabel={displayMetaByBatchId[batch.id]?.categoryLabel}
+              trainerLabel={displayMetaByBatchId[batch.id]?.trainerLabel}
               assignmentsDisabled={assignmentsDisabled}
               onUnassign={() =>
                 setUnassignTarget({

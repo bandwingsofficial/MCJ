@@ -4,7 +4,11 @@ import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 
 import { BranchController } from './presentation/controllers/branch.controller';
+import { BranchCourseController } from './presentation/controllers/branch-course.controller';
 import { PublicBranchController } from './presentation/controllers/public-branch.controller';
+
+import { AssignCoursesToBranchHandler } from './application/assign-courses-to-branch/assign-courses-to-branch.handler';
+import { UnassignCourseFromBranchHandler } from './application/unassign-course-from-branch/unassign-course-from-branch.handler';
 
 import { CreateBranchHandler } from './application/create-branch/create-branch.handler';
 import { DeleteBranchHandler } from './application/delete-branch/delete-branch.handler';
@@ -33,7 +37,11 @@ import { BRANCH_TOKENS } from './branch.tokens';
 @Module({
   imports: [PrismaModule],
 
-  controllers: [BranchController, PublicBranchController],
+  controllers: [
+    BranchController,
+    BranchCourseController,
+    PublicBranchController,
+  ],
 
   providers: [
     BranchDomainService,
@@ -234,6 +242,20 @@ import { BRANCH_TOKENS } from './branch.tokens';
       provide: BulkPermanentDeleteBranchesHandler,
       useFactory: (branchRepo: BranchRepository) =>
         new BulkPermanentDeleteBranchesHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
+
+    {
+      provide: AssignCoursesToBranchHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new AssignCoursesToBranchHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
+
+    {
+      provide: UnassignCourseFromBranchHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new UnassignCourseFromBranchHandler(branchRepo),
       inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
     },
   ],

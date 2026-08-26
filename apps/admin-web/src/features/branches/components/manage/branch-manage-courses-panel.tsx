@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Eye, Link2Off, Settings2 } from "lucide-react";
+import { Link2Off } from "lucide-react";
 
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
+import { Badge } from "@/src/shared/components/ui/badge";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
@@ -13,18 +14,18 @@ import {
   type AssignableItem,
 } from "@/src/features/branches/components/manage/assign-entities-modal";
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
-import { BranchManageCardGrid } from "@/src/features/branches/components/manage/branch-manage-card-grid";
+import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
-import { BranchSummaryModuleCard } from "@/src/features/branches/components/manage/branch-summary-module-card";
-import { batchService } from "@/src/features/batches/services/batch.service";
-import {
-  formatCourseDuration,
-  formatCourseLevel,
-  formatCoursePrice,
-} from "@/src/features/branches/utils/branch-display.utils";
-import { CourseStatusBadge } from "@/src/features/courses/components/course-status-badge";
+import { branchService } from "@/src/features/branches/services/branch.service";
+import { COURSE_TRAINER_UNASSIGNED_LABEL } from "@/src/features/batches/utils/batch-course.utils";
 import { courseService } from "@/src/features/courses/services/course.service";
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
+import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
+import { trainerService } from "@/src/features/trainers/services/trainer.service";
+
+interface CourseRow extends CourseListItem {
+  trainerLabel: string;
+}
 
 interface Props {
   branchId: string;
@@ -32,6 +33,18 @@ interface Props {
   assignOnMount?: boolean;
   onAssignOnMountHandled?: () => void;
   onSummaryRefresh?: () => Promise<void>;
+}
+
+function formatTrainerLabel(
+  trainers: Array<{ firstName?: string | null; lastName?: string | null }>,
+): string {
+  const names = trainers
+    .map((trainer) =>
+      [trainer.firstName, trainer.lastName].filter(Boolean).join(" ").trim(),
+    )
+    .filter(Boolean);
+
+  return names.join(", ");
 }
 
 export function BranchManageCoursesPanel({
@@ -42,15 +55,14 @@ export function BranchManageCoursesPanel({
   onSummaryRefresh,
 }: Props) {
   const [search, setSearch] = useState("");
-  const [courses, setCourses] = useState<CourseListItem[]>([]);
-  const [batchCountByCourse, setBatchCountByCourse] = useState<
-    Record<string, number>
-  >({});
+  const [courses, setCourses] = useState<CourseRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignSearch, setAssignSearch] = useState("");
-  const [assignCandidates, setAssignCandidates] = useState<AssignableItem[]>([]);
+  const [assignCandidates, setAssignCandidates] = useState<AssignableItem[]>(
+    [],
+  );
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignSubmitting, setAssignSubmitting] = useState(false);
 
@@ -60,69 +72,98 @@ export function BranchManageCoursesPanel({
   } | null>(null);
   const [unassignLoading, setUnassignLoading] = useState(false);
 
+  const loadAssignedCourses = useCallback(async () => {
+    if (!branchId) {
+      return [];
+    }
+
+    const courseResponse = await courseService.getCourses({
+      search,
+      branchId,
+      page: 1,
+      pageSize: 100,
+    });
+
+    const items = (courseResponse.data.items ?? []).filter(
+      (item) => !item.isDeleted,
+    );
+
+    return Promise.all(
+      items.map(async (course) => {
+        try {
+          const trainers = await trainerService.getTrainersForCourse(course.id);
+          return {
+            ...course,
+            trainerLabel:
+              formatTrainerLabel(trainers) || COURSE_TRAINER_UNASSIGNED_LABEL,
+          };
+        } catch {
+          return {
+            ...course,
+            trainerLabel: COURSE_TRAINER_UNASSIGNED_LABEL,
+          };
+        }
+      }),
+    );
+  }, [branchId, search]);
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [courseResponse, batchResponse] = await Promise.all([
-        courseService.getCourses({
-          search,
-          branchId,
-          page: 1,
-          pageSize: 100,
-        }),
-        batchService.getBatches({
-          branchId,
-          includeDeleted: false,
-          page: 1,
-          pageSize: 100,
-        }),
-      ]);
-
-      setCourses(courseResponse.data.items ?? []);
-
-      const counts: Record<string, number> = {};
-      for (const batch of batchResponse.data.items ?? []) {
-        if (!batch.courseId) {
-          continue;
-        }
-
-        counts[batch.courseId] = (counts[batch.courseId] ?? 0) + 1;
-      }
-      setBatchCountByCourse(counts);
+      setCourses(await loadAssignedCourses());
     } catch (error) {
       appToast.error(getErrorMessage(error));
       setCourses([]);
-      setBatchCountByCourse({});
     } finally {
       setIsLoading(false);
     }
-  }, [branchId, search]);
+  }, [loadAssignedCourses]);
 
   useEffect(() => {
     void loadData();
   }, [loadData]);
 
   const openAssign = async () => {
+    if (!branchId) {
+      return;
+    }
+
     setAssignOpen(true);
     setAssignSearch("");
     setAssignLoading(true);
     try {
-      const response = await courseService.getCourses({
-        search: "",
-        status: "ACTIVE",
-        page: 1,
-        pageSize: 100,
-      });
-      const assigned = new Set(courses.map((course) => course.id));
+      const [assignedResponse, availableResponse] = await Promise.all([
+        courseService.getCourses({
+          search: "",
+          branchId,
+          page: 1,
+          pageSize: 100,
+        }),
+        courseService.getCourses({
+          search: "",
+          status: "ACTIVE",
+          page: 1,
+          pageSize: 100,
+        }),
+      ]);
+      const assigned = new Set(
+        (assignedResponse.data.items ?? [])
+          .filter((item) => !item.isDeleted)
+          .map((item) => item.id),
+      );
       setAssignCandidates(
-        (response.data.items ?? [])
+        (availableResponse.data.items ?? [])
           .filter(
-            (item) => item.status === "ACTIVE" && !assigned.has(item.id),
+            (item) =>
+              item.status === "ACTIVE" &&
+              !item.isDeleted &&
+              !assigned.has(item.id),
           )
           .map((item) => ({
             id: item.id,
             label: item.title,
             meta: item.code,
+            imageUrl: item.thumbnailUrl,
           })),
       );
     } catch (error) {
@@ -144,20 +185,18 @@ export function BranchManageCoursesPanel({
   }, [assignOnMount, assignmentsDisabled, onAssignOnMountHandled]);
 
   const handleAssign = async (ids: string[]) => {
-    if (ids.length === 0) {
+    if (ids.length === 0 || !branchId) {
       return;
     }
 
     setAssignSubmitting(true);
     try {
-      for (const id of ids) {
-        const detail = await courseService.getCourse(id);
-        const existing =
-          detail.data.branches?.map((branch) => branch.id) ?? [];
-        const next = Array.from(new Set([...existing, branchId]));
-        await courseService.updateCourse(id, { branchIds: next });
-      }
-      appToast.success("Courses assigned");
+      await branchService.assignCourses(branchId, ids);
+      appToast.success(
+        ids.length === 1
+          ? "Course assigned successfully"
+          : `${ids.length} courses assigned successfully`,
+      );
       setAssignOpen(false);
       await loadData();
       await onSummaryRefresh?.();
@@ -169,17 +208,13 @@ export function BranchManageCoursesPanel({
   };
 
   const handleUnassign = async () => {
-    if (!unassignTarget) {
+    if (!unassignTarget || !branchId) {
       return;
     }
 
     setUnassignLoading(true);
     try {
-      const detail = await courseService.getCourse(unassignTarget.id);
-      const existing = detail.data.branches?.map((branch) => branch.id) ?? [];
-      await courseService.updateCourse(unassignTarget.id, {
-        branchIds: existing.filter((id) => id !== branchId),
-      });
+      await branchService.unassignCourse(branchId, unassignTarget.id);
       appToast.success("Course unassigned");
       setUnassignTarget(null);
       await loadData();
@@ -205,71 +240,56 @@ export function BranchManageCoursesPanel({
           assignDisabled={assignmentsDisabled}
         />
 
-        <BranchManageCardGrid
+        <BranchManageTableShell
+          columns={[
+            { key: "course", label: "Course" },
+            { key: "category", label: "Category" },
+            { key: "trainer", label: "Trainer" },
+            { key: "status", label: "Status", className: "w-[8rem]" },
+            {
+              key: "actions",
+              label: "Actions",
+              className: "w-[4.5rem] text-right",
+            },
+          ]}
           isLoading={isLoading}
           isEmpty={!isLoading && courses.length === 0}
-          emptyMessage="No Courses Yet"
+          emptyMessage="No courses assigned yet"
           emptyDescription="Assign courses to this branch to get started."
         >
           {courses.map((course) => (
-            <BranchSummaryModuleCard
-              key={course.id}
-              title={course.title}
-              subtitle={course.code ?? undefined}
-              assignedCount={batchCountByCourse[course.id] ?? 0}
-              assignedLabel={
-                (batchCountByCourse[course.id] ?? 0) === 1 ? "batch" : "batches"
-              }
-              badge={<CourseStatusBadge status={course.status} />}
-              meta={
-                <>
-                  <p>
-                    <span className="text-slate-500">Category: </span>
-                    {course.category?.name ?? course.categoryName ?? "—"}
-                  </p>
-                  <p>
-                    <span className="text-slate-500">Level: </span>
-                    {formatCourseLevel(course.level)}
-                  </p>
-                  <p>
-                    <span className="text-slate-500">Duration: </span>
-                    {formatCourseDuration(course.duration, course.durationType)}
-                  </p>
-                  <p>
-                    <span className="text-slate-500">Price: </span>
-                    {formatCoursePrice(course)}
-                  </p>
-                </>
-              }
-              footer={
-                <div className="flex items-center gap-1">
-                  <BranchIconAction
-                    icon={Settings2}
-                    label="Manage"
-                    href={`/courses/${course.id}/manage`}
-                  />
-                  <BranchIconAction
-                    icon={Eye}
-                    label="Preview"
-                    href={`/courses/${course.id}/preview`}
-                  />
-                  <BranchIconAction
-                    icon={Link2Off}
-                    label="Unassign Course"
-                    destructive
-                    disabled={assignmentsDisabled}
-                    onClick={() =>
-                      setUnassignTarget({
-                        id: course.id,
-                        label: course.title,
-                      })
-                    }
-                  />
-                </div>
-              }
-            />
+            <tr key={course.id} className="hover:bg-slate-50">
+              <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
+                {course.title}
+              </td>
+              <td className="truncate px-4 py-3 text-sm text-slate-700">
+                {getCourseCategoryDisplayName(course)}
+              </td>
+              <td className="truncate px-4 py-3 text-sm text-slate-700">
+                {course.trainerLabel}
+              </td>
+              <td className="px-4 py-3">
+                <Badge variant="success" className="px-2.5 py-0.5 text-sm">
+                  Assigned
+                </Badge>
+              </td>
+              <td className="px-4 py-3 text-right">
+                <BranchIconAction
+                  icon={Link2Off}
+                  label="Unassign"
+                  destructive
+                  disabled={assignmentsDisabled || unassignLoading}
+                  onClick={() =>
+                    setUnassignTarget({
+                      id: course.id,
+                      label: course.title,
+                    })
+                  }
+                />
+              </td>
+            </tr>
           ))}
-        </BranchManageCardGrid>
+        </BranchManageTableShell>
       </Card>
 
       <AssignEntitiesModal
@@ -288,12 +308,14 @@ export function BranchManageCoursesPanel({
 
       <ConfirmDialog
         open={Boolean(unassignTarget)}
-        title="Unassign Course"
+        title="Unassign course?"
         description={`Remove "${unassignTarget?.label ?? "this course"}" from this branch? The course itself will not be deleted.`}
         confirmLabel="Unassign"
         loading={unassignLoading}
         onCancel={() => setUnassignTarget(null)}
-        onConfirm={handleUnassign}
+        onConfirm={() => {
+          void handleUnassign();
+        }}
       />
     </>
   );

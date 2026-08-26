@@ -17,7 +17,6 @@ import { BranchManageBatchesPanel } from "./branch-manage-batches-panel";
 import { BranchManageCategoriesPanel } from "./branch-manage-categories-panel";
 import { BranchManageCoursesPanel } from "./branch-manage-courses-panel";
 import { BranchManageEnrollmentsPanel } from "./branch-manage-enrollments-panel";
-import { BranchManageTrainersPanel } from "./branch-manage-trainers-panel";
 import { BranchManageUsersPanel } from "./branch-manage-users-panel";
 import { BranchManageOverviewPanel } from "./branch-manage-overview-panel";
 import type { BranchManageTabKey } from "./branch-manage-tab.types";
@@ -82,8 +81,7 @@ export function BranchManageWorkspace({
             ["batches", "Batches"],
             ["categories", "Categories"],
             ["courses", "Courses"],
-            ["students", "Students"],
-            ["trainers", "Trainers"],
+            ["students", "Enrolled Students"],
             ["reports", "Reports"],
           ] as const
         ).map(([value, label]) => (
@@ -148,14 +146,6 @@ export function BranchManageWorkspace({
 
       <TabsContent value="students">
         <BranchManageEnrollmentsPanel branchId={branchId} />
-      </TabsContent>
-
-      <TabsContent value="trainers">
-        <BranchManageTrainersPanel
-          branchId={branchId}
-          assignmentsDisabled={assignmentsDisabled}
-          onSummaryRefresh={onSummaryRefresh}
-        />
       </TabsContent>
 
       <TabsContent value="reports">
