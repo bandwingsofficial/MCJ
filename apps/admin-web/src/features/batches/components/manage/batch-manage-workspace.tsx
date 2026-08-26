@@ -17,9 +17,9 @@ import type {
 
 import { BatchManageCoursesPanel } from "./batch-manage-courses-panel";
 import { BatchManageOverviewPanel } from "./batch-manage-overview-panel";
-import { BatchManageStudentsPanel } from "./batch-manage-students-panel";
 
 interface Props {
+  batchId: string;
   batch: Batch;
   summary: BatchSummary | null;
   summaryLoading?: boolean;
@@ -32,12 +32,11 @@ interface Props {
   onTabChange?: (tab: TabKey) => void;
 }
 
-export type TabKey = "overview" | "courses" | "students";
+export type TabKey = "overview" | "courses";
 
 export function BatchManageWorkspace({
+  batchId,
   batch,
-  summary,
-  summaryLoading = false,
   assignments,
   assignmentsLoading = false,
   onAssignmentsChange,
@@ -69,7 +68,6 @@ export function BatchManageWorkspace({
           [
             ["overview", "Overview"],
             ["courses", "Courses"],
-            ["students", "Students"],
           ] as const
         ).map(([value, label]) => (
           <TabsTrigger
@@ -92,19 +90,11 @@ export function BatchManageWorkspace({
 
       <TabsContent value="courses">
         <BatchManageCoursesPanel
-          batch={batch}
+          batchId={batchId}
           disabled={isArchived}
           assignments={assignments}
           assignmentsLoading={assignmentsLoading}
           onAssignmentsChange={onAssignmentsChange}
-          onUpdated={handleUpdated}
-        />
-      </TabsContent>
-
-      <TabsContent value="students">
-        <BatchManageStudentsPanel
-          batch={batch}
-          disabled={isArchived}
           onUpdated={handleUpdated}
         />
       </TabsContent>

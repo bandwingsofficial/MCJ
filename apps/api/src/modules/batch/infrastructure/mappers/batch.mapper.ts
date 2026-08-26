@@ -39,6 +39,14 @@ export type BatchWithRelations = PrismaBatch & {
     employeeCode: string | null;
   };
 })[];
+
+  batchCourses?: {
+    course: {
+      id: string;
+      title: string;
+      slug: string;
+    };
+  }[];
 };
 
 export class BatchMapper {
@@ -50,12 +58,17 @@ export class BatchMapper {
     slug: record.slug,
     description: record.description,
 
-    course: record.course
-      ? {
-          id: record.course.id,
-          title: record.course.title,
-        }
-      : null,
+    course: (() => {
+      const assignedCourse =
+        record.batchCourses?.[0]?.course ?? record.course;
+
+      return assignedCourse
+        ? {
+            id: assignedCourse.id,
+            title: assignedCourse.title,
+          }
+        : null;
+    })(),
 
     branch: record.branch
       ? {

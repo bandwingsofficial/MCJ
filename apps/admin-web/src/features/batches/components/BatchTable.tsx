@@ -31,7 +31,6 @@ interface Props {
   onDeactivate: (batch: BatchListItem) => void;
   onEdit: (batch: BatchListItem) => void;
   onManage: (batch: BatchListItem) => void;
-  onDelete: (batch: BatchListItem) => void;
   onRestore: (batch: BatchListItem) => void;
   onPermanentDelete: (batch: BatchListItem) => void;
   onReorder: (payload: {
@@ -52,7 +51,6 @@ export function BatchTable({
   onDeactivate,
   onEdit,
   onManage,
-  onDelete,
   onRestore,
   onPermanentDelete,
   onReorder,
@@ -312,7 +310,7 @@ export function BatchTable({
                   </td>
 
                   <td className="truncate px-3 py-3 align-middle text-slate-700">
-                    {batch.course?.title ?? "—"}
+                    {batch.course?.title?.trim() || "Not yet assigned"}
                   </td>
 
                   <td className="px-3 py-3 align-middle">
@@ -341,7 +339,6 @@ export function BatchTable({
                       onDeactivate={onDeactivate}
                       onEdit={onEdit}
                       onManage={onManage}
-                      onDelete={onDelete}
                       onRestore={onRestore}
                       onPermanentDelete={onPermanentDelete}
                     />

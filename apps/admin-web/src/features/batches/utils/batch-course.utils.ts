@@ -1,6 +1,31 @@
-import type { BatchCourseAssignment } from "@/src/features/batches/types/batch.types";
+import type {
+  BatchCourseAssignment,
+  BatchTrainer,
+} from "@/src/features/batches/types/batch.types";
 
 export const NO_BATCH_COURSES_LABEL = "No courses assigned yet";
+export const COURSE_TRAINER_UNASSIGNED_LABEL = "Not yet assigned";
+
+export function getAssignmentCourseTrainers(
+  assignment: BatchCourseAssignment,
+): BatchTrainer[] {
+  if (assignment.trainers?.length) {
+    return assignment.trainers;
+  }
+
+  return assignment.trainer ? [assignment.trainer] : [];
+}
+
+export function formatAssignmentTrainerNames(
+  assignment: BatchCourseAssignment,
+): string {
+  return getAssignmentCourseTrainers(assignment)
+    .map((trainer) =>
+      [trainer.firstName, trainer.lastName].filter(Boolean).join(" ").trim(),
+    )
+    .filter(Boolean)
+    .join(", ");
+}
 
 export function getCourseCategoryName(
   assignment: BatchCourseAssignment,
@@ -64,17 +89,19 @@ export function formatAssignedTrainerNames(
   const names: string[] = [];
 
   for (const assignment of assignments) {
-    const name = [assignment.trainer.firstName, assignment.trainer.lastName]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
+    for (const trainer of getAssignmentCourseTrainers(assignment)) {
+      const name = [trainer.firstName, trainer.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
 
-    if (!name || seen.has(name)) {
-      continue;
+      if (!name || seen.has(name)) {
+        continue;
+      }
+
+      seen.add(name);
+      names.push(name);
     }
-
-    seen.add(name);
-    names.push(name);
   }
 
   return names.length > 0 ? names.join(", ") : NO_BATCH_COURSES_LABEL;
@@ -195,32 +222,32 @@ export function getUniqueBatchTrainers(
   }
 
   for (const assignment of assignments) {
-    const trainer = assignment.trainer;
+    for (const trainer of getAssignmentCourseTrainers(assignment)) {
+      if (trainers.has(trainer.id)) {
+        const existing = trainers.get(trainer.id)!;
+        trainers.set(trainer.id, {
+          ...existing,
+          profileImageUrl: existing.profileImageUrl ?? trainer.profileImageUrl ?? null,
+          specialization: existing.specialization ?? trainer.specialization ?? null,
+          status: existing.status ?? trainer.status,
+          email: existing.email ?? trainer.email ?? null,
+          qualification: existing.qualification ?? trainer.qualification ?? null,
+        });
+        continue;
+      }
 
-    if (trainers.has(trainer.id)) {
-      const existing = trainers.get(trainer.id)!;
       trainers.set(trainer.id, {
-        ...existing,
-        profileImageUrl: existing.profileImageUrl ?? trainer.profileImageUrl ?? null,
-        specialization: existing.specialization ?? trainer.specialization ?? null,
-        status: existing.status ?? trainer.status,
-        email: existing.email ?? trainer.email ?? null,
-        qualification: existing.qualification ?? trainer.qualification ?? null,
+        id: trainer.id,
+        firstName: trainer.firstName,
+        lastName: trainer.lastName,
+        employeeCode: trainer.employeeCode,
+        profileImageUrl: trainer.profileImageUrl ?? null,
+        specialization: trainer.specialization ?? null,
+        status: trainer.status,
+        email: trainer.email ?? null,
+        qualification: trainer.qualification ?? null,
       });
-      continue;
     }
-
-    trainers.set(trainer.id, {
-      id: trainer.id,
-      firstName: trainer.firstName,
-      lastName: trainer.lastName,
-      employeeCode: trainer.employeeCode,
-      profileImageUrl: trainer.profileImageUrl ?? null,
-      specialization: trainer.specialization ?? null,
-      status: trainer.status,
-      email: trainer.email ?? null,
-      qualification: trainer.qualification ?? null,
-    });
   }
 
   return Array.from(trainers.values());

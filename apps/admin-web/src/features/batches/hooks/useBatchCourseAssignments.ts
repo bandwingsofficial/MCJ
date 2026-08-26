@@ -30,7 +30,9 @@ export function useBatchCourseAssignments(
       setIsLoading(true);
       setError(null);
       const items = await batchService.getBatchCourses(batchId);
-      setAssignments(items);
+      setAssignments(
+        items.filter((item) => item.batchId === batchId),
+      );
     } catch (fetchError) {
       const message =
         fetchError instanceof Error

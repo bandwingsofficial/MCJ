@@ -1,8 +1,20 @@
+export interface BatchCourseTrainerRecord {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  employeeCode: string | null;
+  status: string;
+  profileImageUrl: string | null;
+  specialization: string | null;
+  email: string | null;
+  qualification: string | null;
+}
+
 export interface BatchCourseAssignmentRecord {
   id: string;
   batchId: string;
   courseId: string;
-  trainerId: string;
+  trainerId: string | null;
   isActive: boolean;
   isDeleted: boolean;
   deletedAt: Date | null;
@@ -26,15 +38,6 @@ export interface BatchCourseAssignmentRecord {
       name: string;
     } | null;
   };
-  trainer: {
-    id: string;
-    firstName: string;
-    lastName: string | null;
-    employeeCode: string | null;
-    status: string;
-    profileImageUrl: string | null;
-    specialization: string | null;
-    email: string | null;
-    qualification: string | null;
-  };
+  trainers: BatchCourseTrainerRecord[];
+  trainer: BatchCourseTrainerRecord | null;
 }

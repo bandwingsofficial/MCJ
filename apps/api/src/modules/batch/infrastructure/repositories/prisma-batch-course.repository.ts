@@ -1,7 +1,10 @@
 import { randomUUID } from 'crypto';
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
-import type { BatchCourseAssignmentRecord } from '../../application/batch-courses/batch-course.types';
+import type {
+  BatchCourseAssignmentRecord,
+  BatchCourseTrainerRecord,
+} from '../../application/batch-courses/batch-course.types';
 
 const courseAssignmentSelect = {
   id: true,
@@ -38,12 +41,83 @@ const trainerAssignmentSelect = {
 
 const assignmentInclude = {
   course: {
-    select: courseAssignmentSelect,
-  },
-  trainer: {
-    select: trainerAssignmentSelect,
+    select: {
+      ...courseAssignmentSelect,
+      trainers: {
+        where: {
+          trainer: {
+            isDeleted: false,
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+        select: {
+          trainer: {
+            select: trainerAssignmentSelect,
+          },
+        },
+      },
+    },
   },
 } as const;
+
+type AssignmentQueryRecord = {
+  id: string;
+  batchId: string;
+  courseId: string;
+  trainerId: string | null;
+  isActive: boolean;
+  isDeleted: boolean;
+  deletedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  course: {
+    id: string;
+    title: string;
+    code: string;
+    tagline: string | null;
+    shortDescription: string | null;
+    description: string | null;
+    thumbnailUrl: string | null;
+    minimumQualifications: string[];
+    isFree: boolean;
+    currency: string;
+    discountedPrice: unknown;
+    originalPrice: unknown;
+    category: {
+      id: string;
+      name: string;
+    } | null;
+    trainers: Array<{
+      trainer: BatchCourseTrainerRecord | null;
+    }>;
+  };
+};
+
+function toAssignmentRecord(
+  record: AssignmentQueryRecord,
+): BatchCourseAssignmentRecord {
+  const { trainers: trainerLinks, ...course } = record.course;
+  const trainers = trainerLinks
+    .map((link) => link.trainer)
+    .filter((trainer): trainer is BatchCourseTrainerRecord => trainer != null);
+
+  return {
+    id: record.id,
+    batchId: record.batchId,
+    courseId: record.courseId,
+    trainerId: record.trainerId,
+    isActive: record.isActive,
+    isDeleted: record.isDeleted,
+    deletedAt: record.deletedAt,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+    course,
+    trainers,
+    trainer: trainers[0] ?? null,
+  };
+}
 
 export class PrismaBatchCourseRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -60,13 +134,14 @@ export class PrismaBatchCourseRepository {
       },
     });
 
-    return records as BatchCourseAssignmentRecord[];
+    return records.map((record) =>
+      toAssignmentRecord(record as AssignmentQueryRecord),
+    );
   }
 
   async assign(params: {
     batchId: string;
     courseId: string;
-    trainerId: string;
   }): Promise<BatchCourseAssignmentRecord> {
     const existing = await this.prisma.batchCourse.findUnique({
       where: {
@@ -85,7 +160,6 @@ export class PrismaBatchCourseRepository {
       ? await this.prisma.batchCourse.update({
           where: { id: existing.id },
           data: {
-            trainerId: params.trainerId,
             isActive: true,
             isDeleted: false,
             deletedAt: null,
@@ -97,12 +171,11 @@ export class PrismaBatchCourseRepository {
             id: randomUUID(),
             batchId: params.batchId,
             courseId: params.courseId,
-            trainerId: params.trainerId,
           },
           include: assignmentInclude,
         });
 
-    return record as BatchCourseAssignmentRecord;
+    return toAssignmentRecord(record as AssignmentQueryRecord);
   }
 
   async remove(assignmentId: string, batchId: string): Promise<void> {

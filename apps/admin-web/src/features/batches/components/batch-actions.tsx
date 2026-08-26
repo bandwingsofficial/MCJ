@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Archive,
   CircleCheck,
   Pencil,
   Power,
@@ -27,7 +26,6 @@ interface Props {
   onDeactivate: (batch: BatchListItem) => void;
   onEdit: (batch: BatchListItem) => void;
   onManage: (batch: BatchListItem) => void;
-  onDelete: (batch: BatchListItem) => void;
   onRestore: (batch: BatchListItem) => void;
   onPermanentDelete: (batch: BatchListItem) => void;
 }
@@ -39,7 +37,6 @@ export function BatchActions({
   onDeactivate,
   onEdit,
   onManage,
-  onDelete,
   onRestore,
   onPermanentDelete,
 }: Props) {
@@ -127,19 +124,6 @@ export function BatchActions({
           className={`${iconBtnClass} text-slate-700 hover:bg-slate-100 hover:text-slate-900`}
         >
           <Settings2 className={iconClass} />
-        </Button>
-      </Tooltip>
-
-      <Tooltip content="Archive batch">
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={() => onDelete(batch)}
-          aria-label="Archive batch"
-          className={`${iconBtnClass} text-slate-600 hover:bg-slate-100 hover:text-slate-900`}
-        >
-          <Archive className={iconClass} />
         </Button>
       </Tooltip>
     </div>

@@ -8,25 +8,20 @@ import { AppSelect } from "@/src/shared/components/ui/select";
 import { Modal } from "@/src/shared/components/ui/model";
 
 import type { CourseOption } from "@/src/features/batches/types/batch.types";
-import type { TrainerListItem } from "@/src/features/trainers/types/trainer.types";
 import { uniqueSelectOptions } from "@/src/features/batches/utils/batch-select.utils";
 
 interface AssignmentDraft {
   id: string;
   courseId?: string;
-  trainerId?: string;
 }
 
 interface Props {
   open: boolean;
   courses: CourseOption[];
-  trainers: TrainerListItem[];
   assignedCourseIds: Set<string>;
   isSubmitting?: boolean;
   onClose: () => void;
-  onAssign: (
-    assignments: Array<{ courseId: string; trainerId: string }>,
-  ) => Promise<void>;
+  onAssign: (assignments: Array<{ courseId: string }>) => Promise<void>;
 }
 
 function createDraft(): AssignmentDraft {
@@ -38,7 +33,6 @@ function createDraft(): AssignmentDraft {
 export function AssignBatchCoursesModal({
   open,
   courses,
-  trainers,
   assignedCourseIds,
   isSubmitting = false,
   onClose,
@@ -49,17 +43,6 @@ export function AssignBatchCoursesModal({
   const availableCourses = useMemo(
     () => courses.filter((course) => !assignedCourseIds.has(course.id)),
     [assignedCourseIds, courses],
-  );
-
-  const trainerOptions = useMemo(
-    () =>
-      uniqueSelectOptions(
-        trainers.map((trainer) => ({
-          label: [trainer.firstName, trainer.lastName].filter(Boolean).join(" "),
-          value: trainer.id,
-        })),
-      ),
-    [trainers],
   );
 
   const resetRows = () => {
@@ -98,7 +81,7 @@ export function AssignBatchCoursesModal({
 
   const updateRow = (
     rowId: string,
-    patch: Partial<Pick<AssignmentDraft, "courseId" | "trainerId">>,
+    patch: Partial<Pick<AssignmentDraft, "courseId">>,
   ) => {
     setRows((current) =>
       current.map((row) => (row.id === rowId ? { ...row, ...patch } : row)),
@@ -117,8 +100,7 @@ export function AssignBatchCoursesModal({
   };
 
   const validAssignments = rows.filter(
-    (row): row is AssignmentDraft & { courseId: string; trainerId: string } =>
-      Boolean(row.courseId && row.trainerId),
+    (row): row is AssignmentDraft & { courseId: string } => Boolean(row.courseId),
   );
 
   const canAddAnotherRow =
@@ -133,7 +115,6 @@ export function AssignBatchCoursesModal({
     await onAssign(
       validAssignments.map((row) => ({
         courseId: row.courseId,
-        trainerId: row.trainerId,
       })),
     );
 
@@ -149,14 +130,14 @@ export function AssignBatchCoursesModal({
     >
       <div className="space-y-4">
         <p className="text-sm text-slate-600">
-          Select one or more courses and assign an active trainer to each.
+          Select one or more courses to assign to this batch.
         </p>
 
         <div className="space-y-3">
           {rows.map((row, index) => (
             <div
               key={row.id}
-              className="grid gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-[1fr_1fr_auto]"
+              className="grid gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-[1fr_auto]"
             >
               <div>
                 <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -168,20 +149,6 @@ export function AssignBatchCoursesModal({
                   options={getCourseOptions(row.id, row.courseId)}
                   onValueChange={(value) => {
                     updateRow(row.id, { courseId: value });
-                  }}
-                />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Trainer
-                </label>
-                <AppSelect
-                  value={row.trainerId}
-                  placeholder="Select active trainer"
-                  options={trainerOptions}
-                  onValueChange={(value) => {
-                    updateRow(row.id, { trainerId: value });
                   }}
                 />
               </div>

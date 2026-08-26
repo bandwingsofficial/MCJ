@@ -704,7 +704,7 @@ model BatchCourse {
   id        String    @id @default(uuid())
   batchId   String
   courseId  String
-  trainerId String
+  trainerId String?
   isActive  Boolean   @default(true)
   isDeleted Boolean   @default(false)
   deletedAt DateTime?
@@ -712,7 +712,7 @@ model BatchCourse {
   updatedAt DateTime  @updatedAt
   batch     Batch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
   course    Course    @relation(fields: [courseId], references: [id])
-  trainer   Trainer   @relation(fields: [trainerId], references: [id])
+  trainer   Trainer?  @relation(fields: [trainerId], references: [id])
 
   @@unique([batchId, courseId])
   @@index([batchId])

@@ -11,19 +11,21 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
 import type {
-  Batch,
   BatchCourseAssignment,
   CourseOption,
 } from "@/src/features/batches/types/batch.types";
 import { batchService } from "@/src/features/batches/services/batch.service";
-import { getCourseCategoryName } from "@/src/features/batches/utils/batch-course.utils";
+import {
+  COURSE_TRAINER_UNASSIGNED_LABEL,
+  formatAssignmentTrainerNames,
+  getCourseCategoryName,
+} from "@/src/features/batches/utils/batch-course.utils";
 import { TrainerStatusBadge } from "@/src/features/trainers/components/trainer-status-badge";
-import type { TrainerListItem } from "@/src/features/trainers/types/trainer.types";
 
 import { AssignBatchCoursesModal } from "./assign-batch-courses-modal";
 
 interface Props {
-  batch: Batch;
+  batchId: string;
   disabled?: boolean;
   assignments: BatchCourseAssignment[];
   assignmentsLoading?: boolean;
@@ -31,14 +33,8 @@ interface Props {
   onUpdated: () => Promise<void>;
 }
 
-function formatTrainerName(
-  trainer: Pick<BatchCourseAssignment["trainer"], "firstName" | "lastName">,
-) {
-  return [trainer.firstName, trainer.lastName].filter(Boolean).join(" ");
-}
-
 export function BatchManageCoursesPanel({
-  batch,
+  batchId,
   disabled = false,
   assignments,
   assignmentsLoading = false,
@@ -46,7 +42,6 @@ export function BatchManageCoursesPanel({
   onUpdated,
 }: Props) {
   const [courses, setCourses] = useState<CourseOption[]>([]);
-  const [trainers, setTrainers] = useState<TrainerListItem[]>([]);
   const [search, setSearch] = useState("");
   const [optionsLoading, setOptionsLoading] = useState(true);
   const [assignOpen, setAssignOpen] = useState(false);
@@ -58,13 +53,8 @@ export function BatchManageCoursesPanel({
   const loadOptions = async () => {
     setOptionsLoading(true);
     try {
-      const [courseItems, trainerItems] = await Promise.all([
-        batchService.getCourses(),
-        batchService.getActiveTrainers(),
-      ]);
-
+      const courseItems = await batchService.getCourses();
       setCourses(courseItems);
-      setTrainers(trainerItems);
     } catch (error) {
       appToast.error(getErrorMessage(error));
     } finally {
@@ -74,47 +64,56 @@ export function BatchManageCoursesPanel({
 
   useEffect(() => {
     void loadOptions();
-  }, [batch.id]);
+  }, [batchId]);
+
+  const scopedAssignments = useMemo(
+    () => assignments.filter((item) => item.batchId === batchId),
+    [assignments, batchId],
+  );
 
   const assignedCourseIds = useMemo(
-    () => new Set(assignments.map((item) => item.courseId)),
-    [assignments],
+    () => new Set(scopedAssignments.map((item) => item.courseId)),
+    [scopedAssignments],
   );
 
   const filteredAssignments = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     if (!query) {
-      return assignments;
+      return scopedAssignments;
     }
 
-    return assignments.filter((assignment) => {
+    return scopedAssignments.filter((assignment) => {
       const haystack = [
         assignment.course.title,
         assignment.course.code ?? "",
         getCourseCategoryName(assignment),
-        formatTrainerName(assignment.trainer),
+        formatAssignmentTrainerNames(assignment),
       ]
         .join(" ")
         .toLowerCase();
 
       return haystack.includes(query);
     });
-  }, [assignments, search]);
+  }, [scopedAssignments, search]);
 
   const handleAssignMany = async (
-    items: Array<{ courseId: string; trainerId: string }>,
+    items: Array<{ courseId: string }>,
   ) => {
+    if (!batchId) {
+      return;
+    }
+
     setIsAssigning(true);
     try {
       const created: BatchCourseAssignment[] = [];
 
       for (const item of items) {
-        const assignment = await batchService.assignBatchCourse(batch.id, item);
+        const assignment = await batchService.assignBatchCourse(batchId, item);
         created.push(assignment);
       }
 
-      onAssignmentsChange([...assignments, ...created]);
+      onAssignmentsChange([...scopedAssignments, ...created]);
 
       appToast.success(
         items.length === 1
@@ -132,17 +131,17 @@ export function BatchManageCoursesPanel({
   };
 
   const handleRemove = async () => {
-    if (!removeTarget) {
+    if (!removeTarget || !batchId) {
       return;
     }
 
     setIsRemoving(true);
     try {
-      await batchService.removeBatchCourse(batch.id, removeTarget.id);
+      await batchService.removeBatchCourse(batchId, removeTarget.id);
       appToast.success("Course removed from batch");
       setRemoveTarget(null);
       onAssignmentsChange(
-        assignments.filter((item) => item.id !== removeTarget.id),
+        scopedAssignments.filter((item) => item.id !== removeTarget.id),
       );
       await onUpdated();
     } catch (error) {
@@ -225,16 +224,12 @@ export function BatchManageCoursesPanel({
                       {getCourseCategoryName(assignment)}
                     </td>
                     <td className="truncate px-4 py-3 text-sm text-slate-700">
-                      {formatTrainerName(assignment.trainer)}
+                      {formatAssignmentTrainerNames(assignment) ||
+                        COURSE_TRAINER_UNASSIGNED_LABEL}
                     </td>
                     <td className="px-4 py-3">
                       <TrainerStatusBadge
-                        status={
-                          assignment.isActive &&
-                          assignment.trainer.status === "ACTIVE"
-                            ? "ACTIVE"
-                            : "INACTIVE"
-                        }
+                        status={assignment.isActive ? "ACTIVE" : "INACTIVE"}
                       />
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -261,7 +256,6 @@ export function BatchManageCoursesPanel({
       <AssignBatchCoursesModal
         open={assignOpen}
         courses={courses}
-        trainers={trainers}
         assignedCourseIds={assignedCourseIds}
         isSubmitting={isAssigning}
         onClose={() => setAssignOpen(false)}

@@ -247,21 +247,18 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
         batchRepo: BatchRepository,
         batchCourseRepo: PrismaBatchCourseRepository,
         courseRepo: CourseRepository,
-        trainerRepo: TrainerRepository,
         domainService: BatchDomainService,
       ) =>
         new AssignBatchCourseHandler(
           batchRepo,
           batchCourseRepo,
           courseRepo,
-          trainerRepo,
           domainService,
         ),
       inject: [
         BATCH_TOKENS.BATCH_REPOSITORY,
         PrismaBatchCourseRepository,
         COURSE_TOKENS.COURSE_REPOSITORY,
-        TRAINER_TOKENS.TRAINER_REPOSITORY,
         BatchDomainService,
       ],
     },

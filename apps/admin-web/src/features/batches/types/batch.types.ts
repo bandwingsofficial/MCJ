@@ -114,19 +114,19 @@ export interface BatchCourseAssignment {
   id: string;
   batchId: string;
   courseId: string;
-  trainerId: string;
+  trainerId?: string | null;
   isActive: boolean;
   isDeleted: boolean;
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
   course: BatchCourse;
-  trainer: BatchTrainer;
+  trainers?: BatchTrainer[];
+  trainer?: BatchTrainer | null;
 }
 
 export interface AssignBatchCourseRequest {
   courseId: string;
-  trainerId: string;
 }
 
 export interface CreateBatchRequest {

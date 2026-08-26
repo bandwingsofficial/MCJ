@@ -28,7 +28,6 @@ import {
 import { CreateBatchModal } from "@/src/features/batches/components/create-batch-modal";
 import { UpdateBatchModal } from "@/src/features/batches/components/update-batch-modal";
 import { PermanentDeleteBatchDialog } from "@/src/features/batches/components/permanent-delete-batch-dialog";
-import { BatchDeleteDialog } from "@/src/features/batches/components/BatchDeleteDialog";
 
 import type {
   BatchListItem,
@@ -68,7 +67,6 @@ export function BatchPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<BatchListItem | null>(null);
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
-  const [archiveTarget, setArchiveTarget] = useState<BatchListItem | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<BatchListItem | null>(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] =
     useState<BatchListItem | null>(null);
@@ -367,7 +365,6 @@ export function BatchPage() {
                   onManage={(batch) =>
                     router.push(`/batches/${batch.id}/manage`)
                   }
-                  onDelete={setArchiveTarget}
                   onRestore={setRestoreTarget}
                   onPermanentDelete={setPermanentDeleteTarget}
                   onReorder={handleReorder}
@@ -435,26 +432,6 @@ export function BatchPage() {
         }}
         onSuccess={async () => {
           await refetch();
-        }}
-      />
-
-      <BatchDeleteDialog
-        open={Boolean(archiveTarget)}
-        isLoading={isArchiving}
-        onCancel={() => setArchiveTarget(null)}
-        onConfirm={async () => {
-          if (!archiveTarget) {
-            return;
-          }
-
-          try {
-            await deleteBatch(archiveTarget.id);
-            appToast.success("Batch archived successfully");
-            setArchiveTarget(null);
-            await refetch();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          }
         }}
       />
 

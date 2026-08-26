@@ -310,6 +310,24 @@ export class PrismaBatchRepository implements BatchRepository {
         },
       },
 
+      batchCourses: {
+        where: {
+          isDeleted: false,
+        },
+        orderBy: {
+          createdAt: 'asc' as const,
+        },
+        select: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+            },
+          },
+        },
+      },
+
       branch: {
         select: {
           id: true,

@@ -17,7 +17,6 @@ import { batchService } from "@/src/features/batches/services/batch.service";
 
 import { BatchDeleteDialog } from "@/src/features/batches/components/BatchDeleteDialog";
 import { PermanentDeleteBatchDialog } from "@/src/features/batches/components/permanent-delete-batch-dialog";
-import { UpdateBatchModal } from "@/src/features/batches/components/update-batch-modal";
 import { BatchManageHeader } from "@/src/features/batches/components/manage/batch-manage-header";
 import { BatchManageWorkspace } from "@/src/features/batches/components/manage/batch-manage-workspace";
 import type { BatchCourseAssignment } from "@/src/features/batches/types/batch.types";
@@ -42,13 +41,14 @@ export function BatchManagePage({ batchId }: Props) {
   const [assignments, setAssignments] = useState<BatchCourseAssignment[]>([]);
 
   useEffect(() => {
-    setAssignments(fetchedAssignments);
-  }, [fetchedAssignments]);
+    setAssignments(
+      fetchedAssignments.filter((item) => item.batchId === batchId),
+    );
+  }, [batchId, fetchedAssignments]);
 
   const { deleteBatch, isLoading: isArchiving } = useDeleteBatch();
   const { restoreBatch, isLoading: isRestoring } = useRestoreBatch();
 
-  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] = useState(false);
   const [isPermanentDeleting, setIsPermanentDeleting] = useState(false);
@@ -81,7 +81,6 @@ export function BatchManagePage({ batchId }: Props) {
         assignments={assignments}
         assignmentsLoading={assignmentsLoading}
         activeSection={activeSection}
-        onEdit={() => setIsEditOpen(true)}
         onArchive={() => setIsArchiveOpen(true)}
         onRestore={async () => {
           try {
@@ -98,6 +97,7 @@ export function BatchManagePage({ batchId }: Props) {
 
       <div className="mt-4">
         <BatchManageWorkspace
+          batchId={batchId}
           batch={batch}
           summary={summary}
           summaryLoading={summaryLoading}
@@ -111,24 +111,12 @@ export function BatchManagePage({ batchId }: Props) {
             const labels: Record<string, string> = {
               overview: "Overview",
               courses: "Courses",
-              students: "Students",
             };
             setActiveSection(labels[tab]);
           }}
         />
       </div>
       </div>
-
-      <UpdateBatchModal
-        open={isEditOpen}
-        batch={batch}
-        onClose={() => setIsEditOpen(false)}
-        onSuccess={async () => {
-          appToast.success("Batch updated successfully");
-          await refetch();
-          await refetchSummary();
-        }}
-      />
 
       <BatchDeleteDialog
         open={isArchiveOpen}

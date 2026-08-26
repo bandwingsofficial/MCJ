@@ -5,8 +5,4 @@ export class AssignBatchCourseDto {
   @ApiProperty()
   @IsUUID()
   courseId!: string;
-
-  @ApiProperty()
-  @IsUUID()
-  trainerId!: string;
 }

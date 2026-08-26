@@ -462,7 +462,6 @@ export class AdminBatchController {
     const result = await this.assignBatchCourseHandler.execute({
       batchId: id,
       courseId: dto.courseId,
-      trainerId: dto.trainerId,
     });
 
     return {

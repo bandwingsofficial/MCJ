@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { RotateCcw, Trash2 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 
@@ -24,7 +24,6 @@ interface Props {
   assignments: BatchCourseAssignment[];
   assignmentsLoading?: boolean;
   activeSection?: string;
-  onEdit: () => void;
   onArchive: () => void;
   onRestore: () => void;
   onPermanentDelete: () => void;
@@ -36,7 +35,6 @@ export function BatchManageHeader({
   assignments,
   assignmentsLoading = false,
   activeSection,
-  onEdit,
   onArchive,
   onRestore,
   onPermanentDelete,
@@ -118,28 +116,16 @@ export function BatchManageHeader({
               </Button>
             </>
           ) : (
-            <>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={actionsDisabled}
-                onClick={onEdit}
-              >
-                <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                Edit Batch
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={actionsDisabled}
-                onClick={onArchive}
-              >
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                Archive
-              </Button>
-            </>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={actionsDisabled}
+              onClick={onArchive}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              Archive
+            </Button>
           )}
         </div>
       </div>
