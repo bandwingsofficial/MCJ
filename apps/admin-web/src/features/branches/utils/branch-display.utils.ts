@@ -59,15 +59,18 @@ export function formatTrainerNames(
   }>,
 ): string {
   if (!trainers.length) {
-    return "—";
+    return "";
   }
 
   return trainers
     .map((trainer) =>
       [trainer.firstName, trainer.lastName].filter(Boolean).join(" "),
     )
+    .filter(Boolean)
     .join(", ");
 }
+
+export const BRANCH_COURSE_TRAINER_UNASSIGNED_LABEL = "Not assigned";
 
 export function formatBatchLabel(
   name?: string | null,

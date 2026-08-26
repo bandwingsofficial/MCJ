@@ -17,7 +17,7 @@ import { BranchIconAction } from "@/src/features/branches/components/manage/bran
 import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
 import { branchService } from "@/src/features/branches/services/branch.service";
-import { COURSE_TRAINER_UNASSIGNED_LABEL } from "@/src/features/batches/utils/batch-course.utils";
+import { BRANCH_COURSE_TRAINER_UNASSIGNED_LABEL } from "@/src/features/branches/utils/branch-display.utils";
 import { courseService } from "@/src/features/courses/services/course.service";
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
 import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
@@ -95,12 +95,13 @@ export function BranchManageCoursesPanel({
           return {
             ...course,
             trainerLabel:
-              formatTrainerLabel(trainers) || COURSE_TRAINER_UNASSIGNED_LABEL,
+              formatTrainerLabel(trainers) ||
+              BRANCH_COURSE_TRAINER_UNASSIGNED_LABEL,
           };
         } catch {
           return {
             ...course,
-            trainerLabel: COURSE_TRAINER_UNASSIGNED_LABEL,
+            trainerLabel: BRANCH_COURSE_TRAINER_UNASSIGNED_LABEL,
           };
         }
       }),
@@ -229,6 +230,9 @@ export function BranchManageCoursesPanel({
   return (
     <>
       <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold text-slate-900">Courses</h2>
+        </div>
         <BranchSectionToolbar
           search={search}
           onSearchChange={setSearch}
@@ -243,13 +247,14 @@ export function BranchManageCoursesPanel({
         <BranchManageTableShell
           columns={[
             { key: "course", label: "Course" },
+            { key: "code", label: "Course Code", className: "w-[9rem]" },
             { key: "category", label: "Category" },
             { key: "trainer", label: "Trainer" },
             { key: "status", label: "Status", className: "w-[8rem]" },
             {
               key: "actions",
               label: "Actions",
-              className: "w-[4.5rem] text-right",
+              className: "w-[5.5rem] text-right",
             },
           ]}
           isLoading={isLoading}
@@ -261,6 +266,9 @@ export function BranchManageCoursesPanel({
             <tr key={course.id} className="hover:bg-slate-50">
               <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
                 {course.title}
+              </td>
+              <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-slate-700">
+                {course.code ?? ""}
               </td>
               <td className="truncate px-4 py-3 text-sm text-slate-700">
                 {getCourseCategoryDisplayName(course)}

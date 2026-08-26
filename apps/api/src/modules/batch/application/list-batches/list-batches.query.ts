@@ -16,5 +16,6 @@ export class ListBatchesQuery {
     public readonly isActive?: boolean,
     public readonly skip?: number,
     public readonly take?: number,
+    public readonly categoryId?: string,
   ) {}
 }

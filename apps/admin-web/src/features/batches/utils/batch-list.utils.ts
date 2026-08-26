@@ -88,7 +88,11 @@ export function buildBatchListQueryParams(filters?: BatchFilters) {
 
     courseId: filters?.courseId || undefined,
 
+    categoryId: filters?.categoryId || undefined,
+
     branchId: filters?.branchId || undefined,
+
+    mode: filters?.mode || undefined,
 
     skip,
 

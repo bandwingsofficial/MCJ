@@ -28,14 +28,14 @@ export function BranchManageTableShell({
   const colSpan = columns.length;
 
   return (
-    <div className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200">
-      <table className="w-full table-fixed border-collapse">
+    <div className="w-full min-w-0 overflow-x-auto rounded-xl border border-slate-200">
+      <table className="w-full min-w-[40rem] border-collapse">
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50">
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 ${column.className ?? ""}`}
+                className={`whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 ${column.className ?? ""}`}
               >
                 {column.label}
               </th>

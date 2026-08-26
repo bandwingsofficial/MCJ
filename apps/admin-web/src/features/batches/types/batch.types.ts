@@ -99,6 +99,7 @@ export type BatchListItem = Batch;
 export interface BatchFilters {
   search?: string;
   courseId?: string;
+  categoryId?: string;
   branchId?: string;
   trainerId?: string;
   mode?: BatchMode;

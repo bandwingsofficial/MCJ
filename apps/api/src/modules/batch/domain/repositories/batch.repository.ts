@@ -5,6 +5,7 @@ import { BatchStatus } from '../enums/batch-status.enum';
 
 export interface BatchListFilters {
   courseId?: string;
+  categoryId?: string;
   branchId?: string;
   trainerId?: string;
   mode?: CourseMode;

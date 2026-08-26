@@ -12,6 +12,7 @@ export class ListBatchesHandler {
   ): Promise<ListBatchesResult> {
     const filters = {
       courseId: query.courseId,
+      categoryId: query.categoryId,
       branchId: query.branchId,
       trainerId: query.trainerId,
       mode: query.mode,

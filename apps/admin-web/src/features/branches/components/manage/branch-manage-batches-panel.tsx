@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Eye, Link2Off, Plus } from "lucide-react";
 
+import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { appToast } from "@/src/shared/components/ui/toast";
@@ -11,19 +13,19 @@ import {
   AssignEntitiesModal,
   type AssignableItem,
 } from "@/src/features/branches/components/manage/assign-entities-modal";
-import { BranchBatchCard } from "@/src/features/branches/components/manage/branch-batch-card";
-import { BranchManageCardGrid } from "@/src/features/branches/components/manage/branch-manage-card-grid";
-import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
+import { BranchBatchFiltersBar } from "@/src/features/branches/components/manage/branch-batch-filters";
+import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
+import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
 import {
   assignBatchToBranch,
   unassignBatchFromBranch,
 } from "@/src/features/branches/utils/branch-assign.utils";
-import {
-  COURSE_TRAINER_UNASSIGNED_LABEL,
-  formatAssignmentTrainerNames,
-} from "@/src/features/batches/utils/batch-course.utils";
+import { BatchModeBadge } from "@/src/features/batches/components/BatchModeBadge";
+import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
 import { batchService } from "@/src/features/batches/services/batch.service";
-import type { Batch } from "@/src/features/batches/types/batch.types";
+import type { Batch, BatchFilters } from "@/src/features/batches/types/batch.types";
+import { categoryService } from "@/src/features/categories/services/category.service";
+import type { CategoryListItem } from "@/src/features/categories/types/category.types";
 
 interface Props {
   branchId: string;
@@ -34,9 +36,7 @@ interface Props {
 }
 
 interface BatchDisplayMeta {
-  courseTitles: string[];
   categoryLabel: string;
-  trainerLabel: string;
 }
 
 async function loadBatchDisplayMeta(
@@ -46,9 +46,6 @@ async function loadBatchDisplayMeta(
     batches.map(async (batch) => {
       try {
         const assignments = await batchService.getBatchCourses(batch.id);
-        const courseTitles = assignments
-          .map((item) => item.course?.title?.trim())
-          .filter((title): title is string => Boolean(title));
         const categories = Array.from(
           new Set(
             assignments
@@ -56,36 +53,19 @@ async function loadBatchDisplayMeta(
               .filter((name): name is string => Boolean(name)),
           ),
         );
-        const trainers = Array.from(
-          new Set(
-            assignments
-              .map((item) => formatAssignmentTrainerNames(item))
-              .filter(Boolean),
-          ),
-        );
 
         return [
           batch.id,
           {
-            courseTitles:
-              courseTitles.length > 0
-                ? courseTitles
-                : batch.course?.title
-                  ? [batch.course.title]
-                  : [],
             categoryLabel:
               categories.join(", ") || batch.category?.name?.trim() || "",
-            trainerLabel:
-              trainers.join(", ") || COURSE_TRAINER_UNASSIGNED_LABEL,
           },
         ] as const;
       } catch {
         return [
           batch.id,
           {
-            courseTitles: batch.course?.title ? [batch.course.title] : [],
             categoryLabel: batch.category?.name?.trim() || "",
-            trainerLabel: COURSE_TRAINER_UNASSIGNED_LABEL,
           },
         ] as const;
       }
@@ -102,11 +82,17 @@ export function BranchManageBatchesPanel({
   onAssignOnMountHandled,
   onSummaryRefresh,
 }: Props) {
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<BatchFilters>({
+    search: "",
+    includeDeleted: false,
+  });
   const [batches, setBatches] = useState<Batch[]>([]);
   const [displayMetaByBatchId, setDisplayMetaByBatchId] = useState<
     Record<string, BatchDisplayMeta>
   >({});
+  const [categoryOptions, setCategoryOptions] = useState<CategoryListItem[]>(
+    [],
+  );
   const [isLoading, setIsLoading] = useState(true);
 
   const [assignOpen, setAssignOpen] = useState(false);
@@ -123,13 +109,38 @@ export function BranchManageBatchesPanel({
   } | null>(null);
   const [unassignLoading, setUnassignLoading] = useState(false);
 
+  const loadCategories = useCallback(async () => {
+    try {
+      const categoryResponse = await categoryService.getCategories({
+        search: "",
+        status: "ACTIVE",
+        page: 1,
+        pageSize: 100,
+      });
+      setCategoryOptions(
+        (categoryResponse.data ?? []).filter((item) => !item.isDeleted),
+      );
+    } catch {
+      setCategoryOptions([]);
+    }
+  }, []);
+
   const loadData = useCallback(async () => {
+    if (!branchId) {
+      setBatches([]);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const batchResponse = await batchService.getBatches({
-        search,
+        search: filters.search,
         branchId,
-        includeDeleted: false,
+        mode: filters.mode,
+        categoryId: filters.categoryId,
+        status: filters.status,
+        includeDeleted: filters.status === "ARCHIVED",
         page: 1,
         pageSize: 100,
       });
@@ -144,28 +155,46 @@ export function BranchManageBatchesPanel({
     } finally {
       setIsLoading(false);
     }
-  }, [branchId, search]);
+  }, [branchId, filters]);
+
+  useEffect(() => {
+    void loadCategories();
+  }, [loadCategories]);
 
   useEffect(() => {
     void loadData();
   }, [loadData]);
 
   const openAssign = async () => {
+    if (!branchId) {
+      return;
+    }
+
     setAssignOpen(true);
     setAssignSearch("");
     setAssignLoading(true);
     try {
-      const response = await batchService.getBatches({
-        status: "ACTIVE",
-        isActive: true,
-        includeDeleted: false,
-        isDeleted: false,
-        page: 1,
-        pageSize: 100,
-      });
-      const assigned = new Set(batches.map((item) => item.id));
+      const [assignedResponse, availableResponse] = await Promise.all([
+        batchService.getBatches({
+          branchId,
+          includeDeleted: false,
+          page: 1,
+          pageSize: 100,
+        }),
+        batchService.getBatches({
+          status: "ACTIVE",
+          isActive: true,
+          includeDeleted: false,
+          isDeleted: false,
+          page: 1,
+          pageSize: 100,
+        }),
+      ]);
+      const assigned = new Set(
+        (assignedResponse.data.items ?? []).map((item) => item.id),
+      );
       setAssignCandidates(
-        (response.data.items ?? [])
+        (availableResponse.data.items ?? [])
           .filter(
             (item) =>
               !item.deletedAt &&
@@ -199,7 +228,7 @@ export function BranchManageBatchesPanel({
   }, [assignOnMount, assignmentsDisabled, onAssignOnMountHandled]);
 
   const handleAssign = async (ids: string[]) => {
-    if (ids.length === 0) {
+    if (ids.length === 0 || !branchId) {
       return;
     }
 
@@ -245,42 +274,97 @@ export function BranchManageBatchesPanel({
   return (
     <>
       <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-        <BranchSectionToolbar
-          search={search}
-          onSearchChange={setSearch}
-          searchPlaceholder="Search batches..."
-          assignLabel="Assign Batch"
-          onAssign={() => {
-            void openAssign();
-          }}
-          assignDisabled={assignmentsDisabled}
-        />
+        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">Batches</h2>
+          <Button
+            type="button"
+            size="sm"
+            disabled={assignmentsDisabled}
+            onClick={() => {
+              void openAssign();
+            }}
+          >
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            Assign Batch
+          </Button>
+        </div>
 
-        <BranchManageCardGrid
+        <div className="mb-3">
+          <BranchBatchFiltersBar
+            filters={filters}
+            categories={categoryOptions}
+            onChange={setFilters}
+          />
+        </div>
+
+        <BranchManageTableShell
+          columns={[
+            { key: "batch", label: "Batch" },
+            { key: "mode", label: "Mode", className: "w-[8rem]" },
+            { key: "category", label: "Category" },
+            { key: "status", label: "Status", className: "w-[8rem]" },
+            {
+              key: "actions",
+              label: "Actions",
+              className: "w-[6.5rem] text-right",
+            },
+          ]}
           isLoading={isLoading}
           isEmpty={!isLoading && batches.length === 0}
           emptyMessage="No Batches Yet"
           emptyDescription="Assign batches to this branch to get started."
-          columnsClassName="grid grid-cols-1 gap-4 xl:grid-cols-2"
-          skeletonCount={2}
         >
           {batches.map((batch) => (
-            <BranchBatchCard
-              key={batch.id}
-              batch={batch}
-              courseTitles={displayMetaByBatchId[batch.id]?.courseTitles}
-              categoryLabel={displayMetaByBatchId[batch.id]?.categoryLabel}
-              trainerLabel={displayMetaByBatchId[batch.id]?.trainerLabel}
-              assignmentsDisabled={assignmentsDisabled}
-              onUnassign={() =>
-                setUnassignTarget({
-                  id: batch.id,
-                  label: batch.name,
-                })
-              }
-            />
+            <tr key={batch.id} className="hover:bg-slate-50">
+              <td className="px-4 py-3">
+                <p className="truncate text-sm font-medium text-slate-900">
+                  {batch.name}
+                </p>
+                {batch.code ? (
+                  <p className="truncate font-mono text-xs text-slate-500">
+                    {batch.code}
+                  </p>
+                ) : null}
+              </td>
+              <td className="px-4 py-3">
+                <BatchModeBadge mode={batch.mode} />
+              </td>
+              <td className="truncate px-4 py-3 text-sm text-slate-700">
+                {displayMetaByBatchId[batch.id]?.categoryLabel ||
+                  batch.category?.name ||
+                  ""}
+              </td>
+              <td className="px-4 py-3">
+                <BatchStatusBadge
+                  status={batch.status}
+                  isActive={batch.isActive}
+                  isDeleted={Boolean(batch.isDeleted || batch.deletedAt)}
+                />
+              </td>
+              <td className="px-4 py-3 text-right">
+                <div className="inline-flex items-center justify-end gap-1">
+                  <BranchIconAction
+                    icon={Eye}
+                    label="View batch"
+                    href={`/batches/${batch.id}/manage`}
+                  />
+                  <BranchIconAction
+                    icon={Link2Off}
+                    label="Unassign"
+                    destructive
+                    disabled={assignmentsDisabled || unassignLoading}
+                    onClick={() =>
+                      setUnassignTarget({
+                        id: batch.id,
+                        label: batch.name,
+                      })
+                    }
+                  />
+                </div>
+              </td>
+            </tr>
           ))}
-        </BranchManageCardGrid>
+        </BranchManageTableShell>
       </Card>
 
       <AssignEntitiesModal

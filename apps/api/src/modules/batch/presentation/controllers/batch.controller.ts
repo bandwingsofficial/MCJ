@@ -41,6 +41,7 @@ export class BatchController {
         undefined,
         query.skip,
         query.take,
+        query.categoryId,
       ),
     );
 

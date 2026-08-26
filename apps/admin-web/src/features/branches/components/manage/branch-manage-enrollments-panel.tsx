@@ -76,6 +76,11 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
 
   return (
     <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
+      <div className="mb-3">
+        <h2 className="text-lg font-semibold text-slate-900">
+          Enrolled Students
+        </h2>
+      </div>
       <BranchSectionToolbar
         search={search}
         onSearchChange={setSearch}
@@ -84,14 +89,14 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
 
       <BranchManageTableShell
         columns={[
-          { key: "code", label: "Student Code", className: "w-[8rem]" },
+          { key: "code", label: "Student Code", className: "w-[10rem]" },
           { key: "name", label: "Student Name" },
           { key: "batch", label: "Batch" },
-          { key: "status", label: "Status", className: "w-[8rem]" },
+          { key: "status", label: "Status", className: "w-[9rem]" },
           {
             key: "actions",
             label: "Actions",
-            className: "w-[4.5rem] text-right",
+            className: "w-[5.5rem] text-right",
           },
         ]}
         isLoading={isLoading}
@@ -101,7 +106,7 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
       >
         {enrollments.map((enrollment) => (
           <tr key={enrollment.id} className="hover:bg-slate-50">
-            <td className="px-4 py-3 font-mono text-sm text-slate-700">
+            <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-slate-700">
               {enrollment.student?.studentCode ?? ""}
             </td>
             <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
@@ -115,7 +120,7 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
                   )
                 : ""}
             </td>
-            <td className="px-4 py-3">
+            <td className="whitespace-nowrap px-4 py-3">
               <EnrollmentStatusBadge status={enrollment.status} />
             </td>
             <td className="px-4 py-3 text-right">

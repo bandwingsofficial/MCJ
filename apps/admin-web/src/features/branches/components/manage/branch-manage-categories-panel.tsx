@@ -188,6 +188,9 @@ export function BranchManageCategoriesPanel({
   return (
     <>
       <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold text-slate-900">Categories</h2>
+        </div>
         <BranchSectionToolbar
           search={search}
           onSearchChange={setSearch}

@@ -150,6 +150,7 @@ export class AdminBatchController {
         query.isActive,
         query.skip,
         query.take,
+        query.categoryId,
       ),
     );
 

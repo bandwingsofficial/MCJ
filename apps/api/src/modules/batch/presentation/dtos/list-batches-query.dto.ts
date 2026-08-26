@@ -24,6 +24,11 @@ export class ListBatchesQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsUUID()
+  categoryId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
   branchId?: string;
 
   @ApiPropertyOptional()

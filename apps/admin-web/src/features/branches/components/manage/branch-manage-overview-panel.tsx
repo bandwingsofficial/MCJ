@@ -18,21 +18,19 @@ import { BranchStudentEnrolledCard } from "@/src/features/branches/components/ma
 import type { BranchManageTabKey } from "@/src/features/branches/components/manage/branch-manage-tab.types";
 import {
   formatBranchAddress,
-  formatCourseDuration,
-  formatCourseLevel,
-  formatCoursePrice,
+  formatTrainerNames,
 } from "@/src/features/branches/utils/branch-display.utils";
 import { categoryService } from "@/src/features/categories/services/category.service";
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
 import { CategoryStatusBadge } from "@/src/features/categories/components/category-status-badge";
 import { courseService } from "@/src/features/courses/services/course.service";
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
-import { CourseStatusBadge } from "@/src/features/courses/components/course-status-badge";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type { Batch } from "@/src/features/batches/types/batch.types";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
+import { trainerService } from "@/src/features/trainers/services/trainer.service";
 
 interface Props {
   branch: Branch;
@@ -43,6 +41,10 @@ interface Props {
     tab: BranchManageTabKey,
     options?: { assign?: boolean },
   ) => void;
+}
+
+interface OverviewCourse extends CourseListItem {
+  trainerLabel: string;
 }
 
 const PREVIEW_LIMIT = 4;
@@ -95,6 +97,27 @@ async function loadCourseTitlesByBatch(
   return Object.fromEntries(entries);
 }
 
+async function loadCourseTrainers(
+  courses: CourseListItem[],
+): Promise<OverviewCourse[]> {
+  return Promise.all(
+    courses.map(async (course) => {
+      try {
+        const trainers = await trainerService.getTrainersForCourse(course.id);
+        return {
+          ...course,
+          trainerLabel: formatTrainerNames(trainers),
+        };
+      } catch {
+        return {
+          ...course,
+          trainerLabel: "",
+        };
+      }
+    }),
+  );
+}
+
 export function BranchManageOverviewPanel({
   branch,
   summary,
@@ -107,16 +130,13 @@ export function BranchManageOverviewPanel({
 
   const [previewLoading, setPreviewLoading] = useState(true);
   const [categories, setCategories] = useState<CategoryListItem[]>([]);
-  const [courses, setCourses] = useState<CourseListItem[]>([]);
+  const [courses, setCourses] = useState<OverviewCourse[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [courseTitlesByBatchId, setCourseTitlesByBatchId] = useState<
     Record<string, string[]>
   >({});
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [courseCountByCategory, setCourseCountByCategory] = useState<
-    Record<string, number>
-  >({});
-  const [batchCountByCourse, setBatchCountByCourse] = useState<
     Record<string, number>
   >({});
 
@@ -128,7 +148,6 @@ export function BranchManageOverviewPanel({
         courseResponse,
         allCoursesResponse,
         batchResponse,
-        allBatchesResponse,
         enrollmentResponse,
       ] = await Promise.all([
         categoryService.getCategories({
@@ -154,12 +173,6 @@ export function BranchManageOverviewPanel({
           page: 1,
           pageSize: BATCH_PREVIEW_LIMIT,
         }),
-        batchService.getBatches({
-          branchId,
-          includeDeleted: false,
-          page: 1,
-          pageSize: 100,
-        }),
         enrollmentService.getEnrollments({
           branchId,
           skip: 0,
@@ -170,32 +183,27 @@ export function BranchManageOverviewPanel({
       const categoryItems = (categoryResponse.data ?? []).filter(
         (item) => !item.isDeleted && item.status === "ACTIVE",
       );
-      const courseItems = courseResponse.data.items ?? [];
+      const courseItems = (courseResponse.data.items ?? []).filter(
+        (item) => !item.isDeleted,
+      );
       const batchItems = batchResponse.data.items ?? [];
       const enrollmentItems = parseEnrollmentListResponse(enrollmentResponse)
         .items;
 
       setCategories(categoryItems);
-      setCourses(courseItems);
+      setCourses(await loadCourseTrainers(courseItems));
       setBatches(batchItems);
       setEnrollments(enrollmentItems);
       setCourseTitlesByBatchId(await loadCourseTitlesByBatch(batchItems));
 
       const categoryCounts: Record<string, number> = {};
-      const batchCounts: Record<string, number> = {};
       for (const course of allCoursesResponse.data.items ?? []) {
         if (course.categoryId) {
           categoryCounts[course.categoryId] =
             (categoryCounts[course.categoryId] ?? 0) + 1;
         }
       }
-      for (const batch of allBatchesResponse.data.items ?? []) {
-        if (batch.courseId) {
-          batchCounts[batch.courseId] = (batchCounts[batch.courseId] ?? 0) + 1;
-        }
-      }
       setCourseCountByCategory(categoryCounts);
-      setBatchCountByCourse(batchCounts);
     } catch (error) {
       appToast.error(getErrorMessage(error));
       setCategories([]);
@@ -204,7 +212,6 @@ export function BranchManageOverviewPanel({
       setEnrollments([]);
       setCourseTitlesByBatchId({});
       setCourseCountByCategory({});
-      setBatchCountByCourse({});
     } finally {
       setPreviewLoading(false);
     }
@@ -342,26 +349,9 @@ export function BranchManageOverviewPanel({
               <BranchSummaryModuleCard
                 key={course.id}
                 title={course.title}
-                subtitle={course.code ?? undefined}
-                assignedCount={batchCountByCourse[course.id] ?? 0}
-                assignedLabel={
-                  (batchCountByCourse[course.id] ?? 0) === 1
-                    ? "batch"
-                    : "batches"
-                }
-                badge={<CourseStatusBadge status={course.status} />}
-                meta={
-                  <>
-                    <p>
-                      {formatCourseLevel(course.level)} ·{" "}
-                      {formatCourseDuration(
-                        course.duration,
-                        course.durationType,
-                      )}
-                    </p>
-                    <p>{formatCoursePrice(course)}</p>
-                  </>
-                }
+                subtitle={course.trainerLabel || undefined}
+                imageUrl={course.thumbnailUrl}
+                imageAlt={course.title}
               />
             ))}
           </BranchManageCardGrid>

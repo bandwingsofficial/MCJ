@@ -384,6 +384,29 @@ export class PrismaBatchRepository implements BatchRepository {
     if (filters.courseId) where.courseId = filters.courseId;
     if (filters.branchId) where.branchId = filters.branchId;
     if (filters.mode) where.mode = filters.mode;
+    if (filters.categoryId) {
+      where.AND = [
+        ...(Array.isArray(where.AND)
+          ? where.AND
+          : where.AND
+            ? [where.AND]
+            : []),
+        {
+          OR: [
+            { categoryId: filters.categoryId },
+            { course: { categoryId: filters.categoryId } },
+            {
+              batchCourses: {
+                some: {
+                  isDeleted: false,
+                  course: { categoryId: filters.categoryId },
+                },
+              },
+            },
+          ],
+        },
+      ];
+    }
     if (filters.isFeatured !== undefined) where.isFeatured = filters.isFeatured;
 
     if (filters.trainerId) {
