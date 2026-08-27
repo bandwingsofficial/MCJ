@@ -2,14 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/src/shared/lib/cn";
+import { Tooltip } from "@/src/shared/components/ui/tooltip";
+import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 
 import { useAuth } from "@/src/features/auth/hooks/use-auth";
-
-import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 
 import { toast } from "sonner";
 
@@ -30,7 +30,15 @@ import {
   ClipboardList,
   Settings,
   LogOut,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
+
+import {
+  ADMIN_SIDEBAR_WIDTH_COLLAPSED_PX,
+  ADMIN_SIDEBAR_WIDTH_EXPANDED_PX,
+} from "./admin-sidebar.constants";
+import { useAdminSidebarCollapsed } from "./use-admin-sidebar";
 
 const menu = [
   {
@@ -135,9 +143,35 @@ const menu = [
   },
 ];
 
+function SidebarTooltip({
+  label,
+  enabled,
+  children,
+}: {
+  label: string;
+  enabled: boolean;
+  children: ReactNode;
+}) {
+  if (!enabled) {
+    return children;
+  }
+
+  return (
+    <Tooltip
+      content={label}
+      side="right"
+      sideOffset={12}
+      delayDuration={120}
+    >
+      {children}
+    </Tooltip>
+  );
+}
+
 export function AdminSidebar() {
   const pathname = usePathname();
   const { logout } = useAuth();
+  const { collapsed, toggleCollapsed } = useAdminSidebarCollapsed();
 
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
@@ -155,12 +189,23 @@ export function AdminSidebar() {
     }
   };
 
+  const sidebarWidth = collapsed
+    ? ADMIN_SIDEBAR_WIDTH_COLLAPSED_PX
+    : ADMIN_SIDEBAR_WIDTH_EXPANDED_PX;
+
   return (
     <>
-      <aside className="w-64 h-screen bg-gradient-to-b from-[#0B1120] to-[#111827] text-white flex flex-col border-r border-white/5 shadow-2xl shadow-black/40">
-        {/* LOGO */}
-        <div className="h-20 flex items-center gap-3 px-5 border-b border-white/10 bg-[#0B1120]/80 backdrop-blur-sm">
-          <div className="relative w-10 h-10">
+      <aside
+        style={{ width: sidebarWidth }}
+        className="flex h-screen shrink-0 flex-col border-r border-white/5 bg-gradient-to-b from-[#0B1120] to-[#111827] text-white shadow-2xl shadow-black/40 transition-[width] duration-200 ease-in-out"
+      >
+        <div
+          className={cn(
+            "flex h-20 shrink-0 items-center border-b border-white/10 bg-[#0B1120]/80 backdrop-blur-sm",
+            collapsed ? "justify-center px-2" : "gap-3 px-5",
+          )}
+        >
+          <div className="relative h-10 w-10 shrink-0">
             <Image
               src="/Logo/MCJ_logo.png"
               alt="logo"
@@ -169,23 +214,33 @@ export function AdminSidebar() {
             />
           </div>
 
-          <div>
-            <h2 className="text-sm font-bold tracking-tight text-white">
-              MCJ Institute
-            </h2>
-            <p className="text-[10px] uppercase tracking-widest text-amber-400 font-medium">
-              Admin Platform
-            </p>
-          </div>
+          {!collapsed ? (
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold tracking-tight text-white">
+                MCJ Institute
+              </h2>
+              <p className="text-[10px] font-medium uppercase tracking-widest text-amber-400">
+                Admin Platform
+              </p>
+            </div>
+          ) : null}
         </div>
 
-        {/* MENU */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6 custom-scrollbar">
+        <div
+          className={cn(
+            "custom-scrollbar flex-1 space-y-6 overflow-y-auto overflow-x-hidden py-4",
+            collapsed ? "px-2" : "px-3",
+          )}
+        >
           {menu.map((group) => (
             <div key={group.section}>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500 px-3 mb-2 font-semibold">
-                {group.section}
-              </p>
+              {!collapsed ? (
+                <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+                  {group.section}
+                </p>
+              ) : (
+                <div className="mx-auto mb-2 h-px w-6 bg-white/10" />
+              )}
 
               <div className="space-y-1">
                 {group.items.map((item) => {
@@ -193,28 +248,39 @@ export function AdminSidebar() {
                   const isActive = pathname === item.path;
 
                   return (
-                    <Link href={item.path} key={item.name}>
-                      <div
+                    <SidebarTooltip
+                      key={item.name}
+                      label={item.name}
+                      enabled={collapsed}
+                    >
+                      <Link
+                        href={item.path}
                         className={cn(
-                          "group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 cursor-pointer",
-                          "hover:bg-white/5 hover:translate-x-1",
+                          "group flex items-center rounded-xl text-sm transition-all duration-200",
+                          collapsed
+                            ? "h-10 justify-center px-0"
+                            : "gap-3 px-3 py-2.5 hover:translate-x-1",
+                          "hover:bg-white/5",
                           isActive
-                            ? "bg-gradient-to-r from-amber-500/10 to-amber-600/5 text-amber-300 border border-amber-500/20 shadow-[0_0_12px_rgba(251,191,36,0.15)]"
-                            : "text-gray-400 hover:text-white"
+                            ? "border border-amber-500/20 bg-gradient-to-r from-amber-500/10 to-amber-600/5 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.15)]"
+                            : "text-gray-400 hover:text-white",
                         )}
                       >
                         <Icon
                           className={cn(
-                            "w-4 h-4 transition-transform duration-200",
-                            isActive && "text-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.5)]",
-                            "group-hover:scale-110"
+                            "h-5 w-5 shrink-0 transition-transform duration-200",
+                            isActive &&
+                              "text-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.5)]",
+                            "group-hover:scale-110",
                           )}
                         />
-                        <span className={cn(isActive && "font-medium")}>
-                          {item.name}
-                        </span>
-                      </div>
-                    </Link>
+                        {!collapsed ? (
+                          <span className={cn("truncate", isActive && "font-medium")}>
+                            {item.name}
+                          </span>
+                        ) : null}
+                      </Link>
+                    </SidebarTooltip>
                   );
                 })}
               </div>
@@ -222,16 +288,52 @@ export function AdminSidebar() {
           ))}
         </div>
 
-        {/* LOGOUT */}
-        <div className="p-4 border-t border-white/10 bg-gradient-to-t from-[#0B1120] to-transparent">
-          <button
-            type="button"
-            onClick={() => setLogoutOpen(true)}
-            className="w-full flex items-center gap-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 px-3 py-2.5 rounded-xl transition-all duration-200 group"
+        <div
+          className={cn(
+            "shrink-0 border-t border-white/10 bg-gradient-to-t from-[#0B1120] to-transparent",
+            collapsed ? "p-2" : "p-4",
+          )}
+        >
+          <SidebarTooltip
+            label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            enabled={collapsed}
           >
-            <LogOut className="w-4 h-4 transition-transform group-hover:scale-110 group-hover:-translate-x-1" />
-            <span className="text-sm font-medium">Sign Out</span>
-          </button>
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-expanded={!collapsed}
+              className={cn(
+                "mb-1 flex w-full items-center rounded-xl text-gray-400 transition-all duration-200 hover:bg-white/5 hover:text-white",
+                collapsed ? "h-10 justify-center" : "gap-3 px-3 py-2.5",
+              )}
+            >
+              {collapsed ? (
+                <ChevronsRight className="h-5 w-5 shrink-0" />
+              ) : (
+                <>
+                  <ChevronsLeft className="h-5 w-5 shrink-0" />
+                  <span className="text-sm font-medium">Collapse</span>
+                </>
+              )}
+            </button>
+          </SidebarTooltip>
+
+          <SidebarTooltip label="Sign Out" enabled={collapsed}>
+            <button
+              type="button"
+              onClick={() => setLogoutOpen(true)}
+              className={cn(
+                "group flex w-full items-center rounded-xl text-red-400 transition-all duration-200 hover:bg-red-500/10 hover:text-red-300",
+                collapsed ? "h-10 justify-center" : "gap-3 px-3 py-2.5",
+              )}
+            >
+              <LogOut className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110 group-hover:-translate-x-1" />
+              {!collapsed ? (
+                <span className="text-sm font-medium">Sign Out</span>
+              ) : null}
+            </button>
+          </SidebarTooltip>
         </div>
       </aside>
 

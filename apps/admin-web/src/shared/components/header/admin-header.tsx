@@ -66,8 +66,8 @@ export function AdminHeader() {
     .toUpperCase();
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm">
-      <div className="w-[380px]">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-gray-100 bg-white px-6 shadow-sm">
+      <div className="min-w-0 w-full max-w-[380px]">
         <Input
           placeholder="Search analytics, students or courses..."
           className="h-10"
