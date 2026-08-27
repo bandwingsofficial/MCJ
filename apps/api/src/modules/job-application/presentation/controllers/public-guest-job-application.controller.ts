@@ -72,6 +72,7 @@ export class PublicGuestJobApplicationController {
         dto.coverLetter,
         dto.remarks,
         resume ?? null,
+        dto.expectedSalary,
       ),
     );
 

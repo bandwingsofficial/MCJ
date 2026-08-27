@@ -116,7 +116,13 @@ export const useAuthBootstrap = (): void => {
         if (payload.action === "logout") {
           TokenStorage.clear();
           markUnauthenticated();
-          if (window.location.pathname !== "/login") {
+          const pathname = window.location.pathname;
+          const stayOnPublicPage =
+            pathname.startsWith("/login") ||
+            pathname.startsWith("/onboarding") ||
+            pathname.startsWith("/verify-totp") ||
+            /^\/jobs\/[^/]+\/apply(?:\/.*)?$/.test(pathname);
+          if (!stayOnPublicPage) {
             window.location.href = "/login";
           }
         }

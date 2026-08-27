@@ -10,5 +10,6 @@ export class CreatePublicJobApplicationCommand {
     public readonly coverLetter?: string | null,
     public readonly remarks?: string | null,
     public readonly resume?: Express.Multer.File | null,
+    public readonly expectedSalary?: number | null,
   ) {}
 }

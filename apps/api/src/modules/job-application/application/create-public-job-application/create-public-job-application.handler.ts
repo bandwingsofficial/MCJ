@@ -98,6 +98,7 @@ export class CreatePublicJobApplicationHandler {
       coverLetter: command.coverLetter,
       currentLocation: command.currentLocation,
       remarks: command.remarks,
+      expectedSalary: command.expectedSalary,
     });
 
     await this.applicationRepo.save(application);

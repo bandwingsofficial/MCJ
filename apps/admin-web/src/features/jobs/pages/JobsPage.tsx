@@ -23,7 +23,7 @@ import type {
   CreateJobRequest,
   Job,
 } from "@/src/features/jobs/types/job.types";
-import { getJobApplicationUrl } from "@/src/features/jobs/utils/job-form.utils";
+import { getCompanyOnboardingUrl, getJobApplicationUrl } from "@/src/features/jobs/utils/job-form.utils";
 import { useJobApplications } from "@/src/features/job-applications/hooks/useJobApplications";
 import type { OnboardingStatusFilter } from "@/src/features/job-applications/types/job-application.types";
 
@@ -242,6 +242,17 @@ export function JobsPage() {
           setDialogMode("create");
           setEditingJob(undefined);
           setDialogOpen(true);
+        }}
+        onCopyOnboardingLink={() => {
+          const url = getCompanyOnboardingUrl();
+          void navigator.clipboard.writeText(url).then(
+            () => {
+              appToast.success("Company onboarding link copied.");
+            },
+            () => {
+              appToast.error("Unable to copy the onboarding link.");
+            },
+          );
         }}
         search={headerSearch}
         onSearchChange={(search) => {

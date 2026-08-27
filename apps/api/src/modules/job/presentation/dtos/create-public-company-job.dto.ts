@@ -54,6 +54,28 @@ const toStringArray = (value: unknown): string[] | undefined => {
   return undefined;
 };
 
+const toInterviewProcess = (value: unknown) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      return Array.isArray(parsed) ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  return undefined;
+};
+
 export class CreatePublicCompanyJobDto {
   @ApiProperty()
   @IsString()
@@ -72,17 +94,29 @@ export class CreatePublicCompanyJobDto {
   @Transform(({ value }) => trimOrUndefined(value))
   companyEmail!: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsString()
   @MaxLength(20)
   @Transform(({ value }) => trimOrUndefined(value))
-  companyPhone?: string;
+  companyPhone!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsUrl()
+  @Transform(({ value }) => trimOrUndefined(value))
   companyWebsite?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => trimOrUndefined(value))
+  companyDescription?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => trimOrUndefined(value))
+  shortDescription?: string;
 
   @ApiProperty()
   @IsString()
@@ -93,6 +127,24 @@ export class CreatePublicCompanyJobDto {
   @IsString()
   @Transform(({ value }) => trimOrUndefined(value))
   location!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => trimOrUndefined(value))
+  city?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => trimOrUndefined(value))
+  state?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => trimOrUndefined(value))
+  country?: string;
 
   @ApiProperty({ enum: EmploymentType })
   @IsEnum(EmploymentType)
@@ -145,6 +197,12 @@ export class CreatePublicCompanyJobDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  @Transform(({ value }) => trimOrUndefined(value))
+  salaryCurrency?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsInt()
   @Min(1)
   @Transform(({ value }) => toNumber(value))
@@ -186,6 +244,12 @@ export class CreatePublicCompanyJobDto {
   @IsOptional()
   @IsString()
   benefits?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => toInterviewProcess(value))
+  interviewProcess?: Array<{ title: string; description: string }>;
 
   @ApiPropertyOptional()
   @IsOptional()

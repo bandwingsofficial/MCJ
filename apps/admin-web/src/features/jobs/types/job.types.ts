@@ -57,7 +57,7 @@ export interface Job {
   city: string | null;
   state: string | null;
   country: string | null;
-  isRemote: boolean;
+  isRemote?: boolean;
   workMode: JobWorkMode;
   employmentType: EmploymentType;
   workingDays: WorkingDays;
@@ -89,6 +89,55 @@ export interface Job {
   isAcceptingApplications: boolean;
 }
 
+export function isJobExpired(
+  job: Pick<Job, "applicationDeadline" | "isExpired">,
+): boolean {
+  if (typeof job.isExpired === "boolean") {
+    return job.isExpired;
+  }
+
+  if (!job.applicationDeadline) {
+    return false;
+  }
+
+  return new Date(job.applicationDeadline) < new Date();
+}
+
+export function isJobAcceptingApplications(
+  job: Pick<
+    Job,
+    | "isActive"
+    | "status"
+    | "isDeleted"
+    | "applicationDeadline"
+    | "isExpired"
+    | "isAcceptingApplications"
+  >,
+): boolean {
+  if (typeof job.isAcceptingApplications === "boolean") {
+    return job.isAcceptingApplications;
+  }
+
+  return (
+    job.isActive &&
+    job.status === "ACTIVE" &&
+    !job.isDeleted &&
+    !isJobExpired(job)
+  );
+}
+
+export interface PublicJobApplicationResult {
+  id: string;
+  applicationNumber: string;
+  createdAt: string;
+  status: string;
+  job?: {
+    title: string;
+    jobNumber?: string | null;
+    companyName?: string;
+  };
+}
+
 export interface CreateJobRequest {
   title: string;
   status?: JobStatus;
@@ -104,7 +153,6 @@ export interface CreateJobRequest {
   city?: string;
   state?: string;
   country?: string;
-  isRemote?: boolean;
   workMode: JobWorkMode;
   employmentType: EmploymentType;
   workingDays: WorkingDays;
@@ -190,3 +238,13 @@ export interface PermanentDeleteJobData {
 }
 
 export type PermanentDeleteJobResponse = ApiResponse<PermanentDeleteJobData>;
+
+export interface CompanyJobSubmitResult {
+  id: string;
+  title: string;
+  companyName: string;
+  status: JobStatus;
+  createdAt: string;
+}
+
+export type CompanyJobSubmitResponse = ApiResponse<CompanyJobSubmitResult>;

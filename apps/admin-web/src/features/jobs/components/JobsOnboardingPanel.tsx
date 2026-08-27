@@ -44,6 +44,17 @@ function salaryLabel(job: Job) {
   return `${formatInr(job.minSalary)} – ${formatInr(job.maxSalary)}`;
 }
 
+function experienceLabel(job: Job) {
+  const min = job.minExperience ?? 0;
+  const max = job.maxExperience;
+
+  if (max == null || max === min) {
+    return `${min} yr${min === 1 ? "" : "s"}`;
+  }
+
+  return `${min}–${max} yrs`;
+}
+
 export function JobsOnboardingPanel({
   jobs,
   total,
@@ -175,10 +186,11 @@ export function JobsOnboardingPanel({
                           {[
                             "Company",
                             "Job Title",
-                            "Job Type",
                             "Category",
-                            "Location",
+                            "Job Type",
                             "Salary",
+                            "Experience",
+                            "Openings",
                             "Submitted Date",
                             "Status",
                             "Actions",
@@ -193,7 +205,10 @@ export function JobsOnboardingPanel({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {jobs.map((job) => (
+                        {jobs.map((job) => {
+                          const pending = job.status === "PENDING_APPROVAL";
+
+                          return (
                           <tr
                             key={job.id}
                             className="h-14 bg-white transition-colors hover:bg-[#F8FBFF]"
@@ -204,19 +219,22 @@ export function JobsOnboardingPanel({
                             <td className="px-3 py-3 text-sm text-[#102A56]">
                               {job.title}
                             </td>
+                            <td className="px-3 py-3 text-sm text-[#102A56]">
+                              {job.category || "—"}
+                            </td>
                             <td className="whitespace-nowrap px-3 py-3 text-sm text-[#102A56]">
                               {EMPLOYMENT_TYPES.find(
                                 (item) => item.value === job.employmentType,
                               )?.label ?? job.employmentType}
                             </td>
-                            <td className="px-3 py-3 text-sm text-[#102A56]">
-                              {job.category || "—"}
-                            </td>
-                            <td className="px-3 py-3 text-sm text-[#102A56]">
-                              {job.location || job.city || "—"}
-                            </td>
                             <td className="whitespace-nowrap px-3 py-3 text-sm tabular-nums text-[#102A56]">
                               {salaryLabel(job)}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-3 text-sm text-[#102A56]">
+                              {experienceLabel(job)}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-3 text-sm tabular-nums text-[#102A56]">
+                              {job.vacancies}
                             </td>
                             <td className="whitespace-nowrap px-3 py-3 text-sm text-[#647A9B]">
                               {new Date(job.createdAt).toLocaleDateString(
@@ -232,18 +250,50 @@ export function JobsOnboardingPanel({
                               <JobStatusBadge variant="onboarding" job={job} />
                             </td>
                             <td className="px-3 py-3">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={actionsDisabled || isActing}
-                                onClick={() => openReview(job)}
-                              >
-                                Review
-                              </Button>
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={actionsDisabled || isActing}
+                                  onClick={() => openReview(job)}
+                                >
+                                  View
+                                </Button>
+                                {pending ? (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      className="admin-create-btn"
+                                      disabled={actionsDisabled || isActing}
+                                      onClick={() => {
+                                        setSelectedJob(job);
+                                        setConfirmAccept(true);
+                                      }}
+                                    >
+                                      Accept
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      disabled={actionsDisabled || isActing}
+                                      onClick={() => {
+                                        setSelectedJob(job);
+                                        setRejectReason("");
+                                        setRejectOpen(true);
+                                      }}
+                                    >
+                                      Reject
+                                    </Button>
+                                  </>
+                                ) : null}
+                              </div>
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

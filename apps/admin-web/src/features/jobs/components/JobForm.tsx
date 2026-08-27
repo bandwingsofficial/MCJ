@@ -36,6 +36,7 @@ import {
   WORKING_DAYS,
 } from "@/src/features/jobs/constants/job.constants";
 import {
+  companyOnboardingSchema,
   createJobSchema,
   updateJobSchema,
   type CreateJobFormValues,
@@ -57,6 +58,7 @@ interface JobFormProps {
   initialData?: Job;
   isSubmitting: boolean;
   companyNameDefault?: string;
+  variant?: "admin" | "company";
   onSubmit: (
     values: CreateJobRequest,
     image: File | null,
@@ -99,6 +101,7 @@ export function JobForm({
   initialData,
   isSubmitting,
   companyNameDefault,
+  variant = "admin",
   onSubmit,
 }: JobFormProps) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -107,9 +110,16 @@ export function JobForm({
   const [imageTouched, setImageTouched] = useState(false);
 
   const defaults = createDefaultJobFormValues();
-  if (companyNameDefault !== undefined) {
-    defaults.companyName = companyNameDefault;
+  if (companyNameDefault !== undefined || variant === "company") {
+    defaults.companyName = companyNameDefault ?? "";
   }
+
+  const schema =
+    variant === "company"
+      ? companyOnboardingSchema
+      : initialData
+        ? updateJobSchema
+        : createJobSchema;
 
   const {
     register,
@@ -119,10 +129,8 @@ export function JobForm({
     watch,
     formState: { errors, touchedFields, isSubmitted },
   } = useForm<CreateJobFormValues>({
-    resolver: zodResolver(
-      initialData ? updateJobSchema : createJobSchema,
-    ) as never,
-    mode: "onBlur",
+    resolver: zodResolver(schema) as never,
+    mode: variant === "company" ? "onChange" : "onBlur",
     reValidateMode: "onChange",
     defaultValues: initialData ? jobToFormValues(initialData) : defaults,
   });
@@ -131,15 +139,15 @@ export function JobForm({
     const next = initialData
       ? jobToFormValues(initialData)
       : createDefaultJobFormValues();
-    if (!initialData && companyNameDefault !== undefined) {
-      next.companyName = companyNameDefault;
+    if (!initialData && (companyNameDefault !== undefined || variant === "company")) {
+      next.companyName = companyNameDefault ?? "";
     }
     reset(next);
     setSelectedImage(null);
     setRemoveImage(false);
     setImageError(null);
     setImageTouched(false);
-  }, [companyNameDefault, initialData, reset]);
+  }, [companyNameDefault, initialData, reset, variant]);
 
   const values = watch();
   const showValidation = isSubmitted;
@@ -175,6 +183,11 @@ export function JobForm({
       : "neutral";
 
   const submit = handleSubmit(async (formValues) => {
+    if (imageError) {
+      setImageTouched(true);
+      return;
+    }
+
     await onSubmit(
       formValuesToCreateRequest(formValues, { removeLogo: removeImage }),
       selectedImage,
@@ -244,20 +257,26 @@ export function JobForm({
 
         <ValidatedField
           label="Company Phone"
-          state={fieldState("companyPhone", false)}
+          required={variant === "company"}
+          state={fieldState("companyPhone", variant === "company")}
           errorMessage={errors.companyPhone?.message}
         >
           <FieldIcon icon={Phone} />
           <Input
             placeholder="9876543210"
             disabled={isSubmitting}
-            className={inputClass(fieldState("companyPhone", false), "pl-10")}
+            className={inputClass(
+              fieldState("companyPhone", variant === "company"),
+              "pl-10",
+            )}
             {...register("companyPhone")}
           />
         </ValidatedField>
       </div>
 
-      <SectionTitle>Job Information</SectionTitle>
+      <SectionTitle>
+        {variant === "company" ? "Job Details" : "Job Information"}
+      </SectionTitle>
       <div className={GRID_CLASS}>
         <ValidatedField
           label="Job Title"
@@ -277,7 +296,12 @@ export function JobForm({
         <ValidatedField label="Job Number" state="neutral">
           <FieldIcon icon={Hash} />
           <Input
-            value={initialData?.jobNumber ?? "Auto generated after save"}
+            value={
+              initialData?.jobNumber ??
+              (variant === "company"
+                ? "Assigned after admin approval"
+                : "Auto generated after save")
+            }
             readOnly
             disabled
             className="h-[46px] pl-10"
@@ -286,7 +310,7 @@ export function JobForm({
         </ValidatedField>
 
         <ValidatedField
-          label="Category"
+          label={variant === "company" ? "Job Category" : "Category"}
           required
           state={fieldState("category")}
           errorMessage={errors.category?.message}
@@ -372,7 +396,7 @@ export function JobForm({
         </ValidatedField>
 
         <ValidatedField
-          label="Location"
+          label={variant === "company" ? "Work Location" : "Location"}
           required
           state={fieldState("location")}
           errorMessage={errors.location?.message}
@@ -453,9 +477,21 @@ export function JobForm({
             )}
           />
         </ValidatedField>
+
+        <ValidatedField label="Salary Period" state="neutral">
+          <Input
+            value="Monthly (INR)"
+            readOnly
+            disabled
+            className="h-[46px]"
+            aria-label="Salary period"
+          />
+        </ValidatedField>
       </div>
 
-      <SectionTitle>Qualification & Experience</SectionTitle>
+      <SectionTitle>
+        {variant === "company" ? "Requirements" : "Qualification & Experience"}
+      </SectionTitle>
       <div className={GRID_CLASS}>
         <ValidatedField
           label="Minimum Experience (years)"
@@ -650,7 +686,9 @@ export function JobForm({
         />
       </ValidatedField>
 
-      <SectionTitle>Recruitment</SectionTitle>
+      <SectionTitle>
+        {variant === "company" ? "Application Details" : "Recruitment"}
+      </SectionTitle>
       <div className={GRID_CLASS}>
         <ValidatedField
           label="Number of Openings"
@@ -713,7 +751,9 @@ export function JobForm({
         />
       </ValidatedField>
 
-      <SectionTitle>Media</SectionTitle>
+      <SectionTitle>
+        {variant === "company" ? "Company Logo" : "Media"}
+      </SectionTitle>
       <div>
         <p className="mb-2 text-sm font-medium text-slate-700">
           Company Logo / Job Image

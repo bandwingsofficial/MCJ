@@ -78,4 +78,11 @@ export class CreatePublicJobApplicationDto {
   @MaxLength(2000)
   @Transform(({ value }) => trim(value))
   remarks?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Transform(({ value }) => toOptionalInt(value))
+  expectedSalary?: number;
 }

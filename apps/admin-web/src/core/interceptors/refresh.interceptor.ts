@@ -30,6 +30,8 @@ const AUTH_SKIP_REFRESH_PATHS = [
   "/auth/refresh",
   "/auth/login",
   "/auth/register",
+  "/jobs/company-submit",
+  "/public-apply",
 ];
 
 const processQueue = (
@@ -50,8 +52,26 @@ const shouldSkipRefresh = (url?: string): boolean => {
   if (!url) {
     return false;
   }
-  return AUTH_SKIP_REFRESH_PATHS.some((path) => url.includes(path));
+
+  if (AUTH_SKIP_REFRESH_PATHS.some((path) => url.includes(path))) {
+    return true;
+  }
+
+  if (url.includes("/admin/")) {
+    return false;
+  }
+
+  return /\/jobs(\/|\?|$)/.test(url);
 };
+
+function isPublicUnauthenticatedPath(pathname: string): boolean {
+  return (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/verify-totp") ||
+    /^\/jobs\/[^/]+\/apply(?:\/.*)?$/.test(pathname)
+  );
+}
 
 const forceLogout = (): void => {
   TokenStorage.clear();
@@ -59,7 +79,10 @@ const forceLogout = (): void => {
   clearAuthCaches();
   useAuthStore.getState().markUnauthenticated();
 
-  if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+  if (
+    typeof window !== "undefined" &&
+    !isPublicUnauthenticatedPath(window.location.pathname)
+  ) {
     window.location.href = "/login";
   }
 };

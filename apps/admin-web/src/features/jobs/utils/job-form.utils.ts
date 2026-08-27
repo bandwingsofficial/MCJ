@@ -183,7 +183,6 @@ export function formValuesToCreateRequest(
     city: formValues.city || undefined,
     state: formValues.state || undefined,
     country: formValues.country || "India",
-    isRemote: formValues.workMode === "REMOTE",
     workMode: formValues.workMode,
     employmentType: formValues.employmentType,
     workingDays: formValues.workingDays,
@@ -242,7 +241,19 @@ export function getCustomerWebOrigin(): string {
 }
 
 export function getJobApplicationUrl(slug: string): string {
-  return `${getCustomerWebOrigin()}/jobs/${encodeURIComponent(slug)}/apply`;
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/jobs/${encodeURIComponent(slug)}/apply`;
+  }
+
+  return `/jobs/${encodeURIComponent(slug)}/apply`;
+}
+
+export function getCompanyOnboardingUrl(): string {
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/onboarding/job`;
+  }
+
+  return "/onboarding/job";
 }
 
 export function getOnboardingStatusLabel(status: Job["status"]): string {

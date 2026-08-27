@@ -153,6 +153,14 @@ export function JobApplicationDetailsDialog({
                   : `${application.yearsOfExperience} years`
               }
             />
+            <Info
+              label="Expected Salary"
+              value={
+                application.expectedSalary == null
+                  ? "—"
+                  : `₹${application.expectedSalary.toLocaleString("en-IN")}`
+              }
+            />
           </div>
         </section>
 

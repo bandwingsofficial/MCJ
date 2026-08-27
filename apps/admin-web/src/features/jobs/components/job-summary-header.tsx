@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Copy, Plus } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { SearchInput } from "@/src/shared/components/ui/search-input";
@@ -34,6 +34,7 @@ interface JobSummaryHeaderProps {
   pendingApplicationCount?: number;
   isLoading?: boolean;
   onCreate: () => void;
+  onCopyOnboardingLink?: () => void;
   createDisabled?: boolean;
   search: string;
   onSearchChange: (value: string) => void;
@@ -53,6 +54,7 @@ export function JobSummaryHeader({
   pendingApplicationCount = 0,
   isLoading = false,
   onCreate,
+  onCopyOnboardingLink,
   createDisabled = false,
   search,
   onSearchChange,
@@ -113,6 +115,21 @@ export function JobSummaryHeader({
             >
               <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
               Create Job
+            </Button>
+          )
+        ) : isOnboarding ? (
+          isLoading ? (
+            <Skeleton className="h-[52px] w-full rounded-[14px] sm:w-[280px]" />
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCopyOnboardingLink}
+              className="h-[52px] w-full shrink-0 px-5 font-semibold sm:w-auto"
+              aria-label="Copy company onboarding link"
+            >
+              <Copy className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              Copy Company Onboarding Link
             </Button>
           )
         ) : null}

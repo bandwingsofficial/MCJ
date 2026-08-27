@@ -141,4 +141,16 @@ export const updateJobSchema = jobFormObject.superRefine((data, ctx) =>
   applyJobFormRules(data, ctx, false),
 );
 
+const companyJobFormObject = jobFormObject.extend({
+  companyPhone: z
+    .string()
+    .trim()
+    .min(1, "Company phone is required.")
+    .min(10, "Enter a valid phone number."),
+});
+
+export const companyOnboardingSchema = companyJobFormObject.superRefine(
+  (data, ctx) => applyJobFormRules(data, ctx, true),
+);
+
 export type CreateJobFormValues = z.infer<typeof jobFormObject>;
