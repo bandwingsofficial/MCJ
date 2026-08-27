@@ -1,7 +1,5 @@
 export * from "./components/branch-status-badge";
 
-export * from "./components/branch-filters";
-
 export * from "./components/branch-table";
 
 export * from "./components/branch-form";

@@ -13,6 +13,7 @@ import {
 } from "../types";
 
 import { ENROLLMENT_ENDPOINTS } from "./enrollment.endpoints";
+import { buildEnrollmentQuery } from "./enrollment.helper";
 
 export const enrollmentApi = {
   async getEnrollments(
@@ -21,10 +22,10 @@ export const enrollmentApi = {
     return apiClient.get<EnrollmentListResponse>(
       ENROLLMENT_ENDPOINTS.LIST,
       {
-        params: {
+        params: buildEnrollmentQuery({
           ...filters,
           take: Math.min(filters.take ?? 10, 100),
-        },
+        }),
       },
     );
   },

@@ -3,14 +3,6 @@
 import { useEffect, useRef } from "react";
 
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/src/shared/components/ui/table";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
 import type { StudentListItem } from "@/src/features/students/types/student.types";
@@ -105,82 +97,109 @@ export function StudentTable({
   }
 
   return (
-    <Table className="rounded-none border-0">
-      <TableHeader>
-        <TableRow>
-          {selectionEnabled ? (
-            <TableHead className="w-10">
-              <Checkbox
-                checked={allVisibleSelected}
-                disabled={selectionDisabled}
-                onCheckedChange={(checked) =>
-                  toggleAllVisible(Boolean(checked))
-                }
-                aria-label="Select all students on this page"
-              />
-            </TableHead>
-          ) : null}
-          <TableHead>Student Code</TableHead>
-          <TableHead>Student</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Phone</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {students.map((student) => (
-          <TableRow key={student.id}>
+    <div className="overflow-x-auto">
+      <table className="min-w-full border-collapse">
+        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
+          <tr>
             {selectionEnabled ? (
-              <TableCell>
-                <Checkbox
-                  checked={safeSelectedIds.includes(student.id)}
+              <th className="w-11 px-3 py-3 text-left">
+                <input
+                  ref={selectAllRef}
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-slate-300"
+                  checked={allVisibleSelected}
                   disabled={selectionDisabled}
-                  onCheckedChange={(checked) =>
-                    toggleRow(student.id, Boolean(checked))
-                  }
-                  aria-label={`Select ${formatStudentName(student)}`}
+                  onChange={(event) => {
+                    toggleAllVisible(event.target.checked);
+                  }}
+                  aria-label="Select all students on this page"
                 />
-              </TableCell>
+              </th>
             ) : null}
+            <th className="min-w-[140px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Student Code
+            </th>
+            <th className="min-w-[180px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Student
+            </th>
+            <th className="min-w-[180px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Email
+            </th>
+            <th className="min-w-[120px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Phone
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Status
+            </th>
+            <th className="w-[7.5rem] px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Actions
+            </th>
+          </tr>
+        </thead>
 
-            <TableCell className="font-mono text-[15px] text-slate-700">
-              {student.studentCode}
-            </TableCell>
+        <tbody className="divide-y divide-slate-100">
+          {students.map((student) => {
+            const isArchived = isArchivedStudent(student);
 
-            <TableCell className="text-[15px] font-medium text-slate-900">
-              {formatStudentName(student)}
-            </TableCell>
+            return (
+              <tr
+                key={student.id}
+                className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${
+                  isArchived ? "bg-slate-50/40" : "bg-white"
+                }`}
+              >
+                {selectionEnabled ? (
+                  <td className="w-11 px-3 py-3 align-middle">
+                    <Checkbox
+                      checked={safeSelectedIds.includes(student.id)}
+                      disabled={selectionDisabled}
+                      onCheckedChange={(checked) =>
+                        toggleRow(student.id, Boolean(checked))
+                      }
+                      aria-label={`Select ${formatStudentName(student)}`}
+                    />
+                  </td>
+                ) : null}
 
-            <TableCell className="text-[15px] text-slate-700">
-              {student.email ?? "—"}
-            </TableCell>
+                <td className="px-3 py-3 align-middle font-mono text-[15px] text-slate-700">
+                  {student.studentCode}
+                </td>
 
-            <TableCell className="text-[15px] text-slate-700">
-              {student.phone ?? "—"}
-            </TableCell>
+                <td className="px-3 py-3 align-middle text-[15px] font-medium text-slate-900">
+                  {formatStudentName(student)}
+                </td>
 
-            <TableCell>
-              <StudentStatusBadge
-                status={student.status}
-                isActive={student.isActive}
-                isDeleted={isArchivedStudent(student)}
-              />
-            </TableCell>
+                <td className="px-3 py-3 align-middle text-[15px] text-slate-700">
+                  {student.email ?? "—"}
+                </td>
 
-            <TableCell className="text-right">
-              <StudentRowActionsMenu
-                student={student}
-                disabled={actionsDisabled}
-                onManage={onManage}
-                onEdit={onEdit}
-                onActivate={onActivate}
-                onDeactivate={onDeactivate}
-              />
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+                <td className="px-3 py-3 align-middle text-[15px] text-slate-700">
+                  {student.phone ?? "—"}
+                </td>
+
+                <td className="px-3 py-3 align-middle">
+                  <StudentStatusBadge
+                    status={student.status}
+                    isActive={student.isActive}
+                    isDeleted={isArchived}
+                  />
+                </td>
+
+                <td className="px-2 py-3 text-right align-middle">
+                  <StudentRowActionsMenu
+                    student={student}
+                    disabled={actionsDisabled}
+                    onManage={onManage}
+                    onEdit={onEdit}
+                    onActivate={onActivate}
+                    onDeactivate={onDeactivate}
+                  />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

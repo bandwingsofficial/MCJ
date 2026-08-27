@@ -23,7 +23,6 @@ import { useBulkPermanentDeleteCourses } from "@/src/features/courses/hooks/use-
 import { courseService } from "@/src/features/courses/services/course.service";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
-import { CourseFilters } from "@/src/features/courses/components/course-filters";
 import { CourseTable } from "@/src/features/courses/components/course-table";
 import { CourseSummaryHeader } from "@/src/features/courses/components/course-summary-header";
 import { CourseFormModal } from "@/src/features/courses/components/course-form-modal";
@@ -384,18 +383,32 @@ export function CoursesPage() {
         isLoading={isInitialLoading && courses.length === 0}
         onCreate={() => setIsCreateOpen(true)}
         createDisabled={bulkActionLoading}
+        search={filters.search ?? ""}
+        onSearchChange={(value) =>
+          setFilters({
+            ...filters,
+            search: value,
+          })
+        }
+        categoryId={filters.categoryId}
+        categoryOptions={categoryOptions}
+        onCategoryChange={(categoryId) =>
+          setFilters({
+            ...filters,
+            categoryId,
+          })
+        }
+        status={filters.status}
+        onStatusChange={(status) =>
+          setFilters({
+            ...filters,
+            status,
+          })
+        }
       />
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-5 space-y-3">
         <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
-          <div className="border-b border-slate-200 bg-white px-4 py-3">
-            <CourseFilters
-              filters={filters}
-              categoryOptions={categoryOptions}
-              onChange={setFilters}
-            />
-          </div>
-
           <CourseBulkActionsToolbar
             courses={courses}
             selectedCourseIds={selectedCourseIds}

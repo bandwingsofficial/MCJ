@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -16,9 +15,8 @@ import { useStudents } from "@/src/features/students/hooks/useStudents";
 import { useActivateStudent } from "@/src/features/students/hooks/useActivateStudent";
 import { useDeactivateStudent } from "@/src/features/students/hooks/useDeactivateStudent";
 import { studentService } from "@/src/features/students/services/student.service";
-import { DEFAULT_STUDENT_FILTERS } from "@/src/features/students/constants/student.constants";
 
-import { StudentFiltersPanel } from "@/src/features/students/components/student-filters";
+import { StudentSummaryHeader } from "@/src/features/students/components/student-summary-header";
 import { StudentTable } from "@/src/features/students/components/student-table";
 import {
   StudentBulkActionsToolbar,
@@ -260,127 +258,123 @@ export function StudentsPage() {
   }
 
   return (
-    <>
-      {error && students.length > 0 ? (
-        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-          {error}
-        </div>
-      ) : null}
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Students</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            Manage student profiles and admissions
-          </p>
-        </div>
-        <Button type="button" onClick={() => setIsCreateOpen(true)}>
-          + Create Student
-        </Button>
-      </div>
-
-      <StudentFiltersPanel
+    <div className="-m-6 min-h-full bg-white p-6">
+      <StudentSummaryHeader
+        total={total}
+        isLoading={isInitialLoading && students.length === 0}
+        createDisabled={actionLoading}
+        onCreate={() => setIsCreateOpen(true)}
         filters={filters}
         branches={branches}
-        onChange={setFilters}
-        onReset={() =>
-          setFilters({
-            ...DEFAULT_STUDENT_FILTERS,
-            page: 1,
-            pageSize,
-          })
-        }
+        onFiltersChange={setFilters}
       />
 
-      <StudentBulkActionsToolbar
-        students={students}
-        selectedStudentIds={selectedStudentIds}
-        disabled={actionLoading}
-        onAction={setBulkConfirmAction}
-      />
+      <div className="mt-5">
+        <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
+          <StudentBulkActionsToolbar
+            students={students}
+            selectedStudentIds={selectedStudentIds}
+            disabled={actionLoading || isFetching}
+            onAction={setBulkConfirmAction}
+          />
 
-      <Card className="mt-4 overflow-hidden">
-        {isInitialLoading ? (
-          <div className="p-4">
-            <SkeletonTable />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <StudentTable
-              students={students}
-              selectedStudentIds={selectedStudentIds}
-              onSelectionChange={setSelectedStudentIds}
-              actionsDisabled={actionLoading}
-              emptyTitle={
-                hasActiveFilters
-                  ? "No students match your current filters"
-                  : "No Students Yet"
-              }
-              emptyDescription={
-                hasActiveFilters
-                  ? "Try adjusting your search or filter criteria."
-                  : "Create your first student to get started."
-              }
-              onManage={(student) =>
-                router.push(studentManagePath(student.id))
-              }
-              onEdit={setEditTarget}
-              onActivate={(student) =>
-                setStatusTarget({ student, action: "activate" })
-              }
-              onDeactivate={(student) =>
-                setStatusTarget({ student, action: "deactivate" })
-              }
-            />
-          </div>
-        )}
+          {isInitialLoading ? (
+            <SkeletonTable rows={10} />
+          ) : (
+            <>
+              {error ? (
+                <div className="border-b border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                  {error}{" "}
+                  <button
+                    type="button"
+                    className="font-medium underline"
+                    onClick={() => {
+                      void refetch();
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : null}
 
-        {isFetching && !isInitialLoading ? (
-          <p className="border-t border-slate-100 px-4 py-2 text-xs text-slate-500">
-            Updating students...
-          </p>
-        ) : null}
-      </Card>
+              <div aria-busy={isFetching} className="relative">
+                {isFetching ? (
+                  <span className="sr-only">Updating students</span>
+                ) : null}
 
-      <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-3 sm:flex-row sm:items-center sm:justify-between">
-        {total > 0 ? (
-          <>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600">
-              <span>
-                Showing {from}–{to} of {total}
-              </span>
-              <label className="flex items-center gap-2">
-                <span className="whitespace-nowrap">Rows per page</span>
-                <select
-                  className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm"
-                  value={pageSize}
-                  disabled={actionLoading}
-                  onChange={(event) =>
-                    setFilters({
-                      ...filters,
-                      pageSize: Number(event.target.value),
-                      page: 1,
-                    })
+                <StudentTable
+                  students={students}
+                  selectedStudentIds={selectedStudentIds}
+                  onSelectionChange={setSelectedStudentIds}
+                  actionsDisabled={actionLoading || isFetching}
+                  selectionDisabled={actionLoading || isFetching}
+                  emptyTitle={
+                    hasActiveFilters
+                      ? "No students match your current filters"
+                      : "No Students Yet"
                   }
-                >
-                  {[10, 20, 50].map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              onPageChange={(nextPage) =>
-                setFilters({ ...filters, page: nextPage })
-              }
-            />
-          </>
-        ) : (
-          <p className="text-sm text-slate-600">Showing 0 students</p>
-        )}
+                  emptyDescription={
+                    hasActiveFilters
+                      ? "Try adjusting your search or filter criteria."
+                      : "Create your first student to get started."
+                  }
+                  onManage={(student) =>
+                    router.push(studentManagePath(student.id))
+                  }
+                  onEdit={setEditTarget}
+                  onActivate={(student) =>
+                    setStatusTarget({ student, action: "activate" })
+                  }
+                  onDeactivate={(student) =>
+                    setStatusTarget({ student, action: "deactivate" })
+                  }
+                />
+              </div>
+
+              {total > 0 ? (
+                <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-slate-600">
+                    <span className="leading-9">
+                      Showing {from}–{to} of {total}
+                    </span>
+
+                    <label className="flex items-center gap-2 leading-9">
+                      <span className="whitespace-nowrap">
+                        Rows per page
+                      </span>
+                      <select
+                        className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-[15px]"
+                        value={pageSize}
+                        disabled={actionLoading}
+                        onChange={(event) =>
+                          setFilters({
+                            ...filters,
+                            pageSize: Number(event.target.value),
+                            page: 1,
+                          })
+                        }
+                      >
+                        {[10, 20, 50].map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <Pagination
+                    page={page}
+                    totalPages={totalPages}
+                    onPageChange={(nextPage) =>
+                      setFilters({ ...filters, page: nextPage })
+                    }
+                  />
+                </div>
+              ) : null}
+            </>
+          )}
+        </Card>
       </div>
 
       <CreateStudentModal
@@ -453,6 +447,6 @@ export function StudentsPage() {
           void handleBulkConfirm();
         }}
       />
-    </>
+    </div>
   );
 }

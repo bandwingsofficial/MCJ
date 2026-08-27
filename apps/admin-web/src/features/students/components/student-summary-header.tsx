@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
 
@@ -8,30 +9,68 @@ import { SearchInput } from "@/src/shared/components/ui/search-input";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
-import type { BranchFilterStatus } from "@/src/features/branches/types/branch.types";
+import {
+  STUDENT_STATUS_FILTER_OPTIONS,
+} from "@/src/features/students/constants/student.constants";
+import type {
+  BranchOption,
+  StudentFilters,
+} from "@/src/features/students/types/student.types";
+import {
+  applyStudentStatusFilter,
+  getStudentStatusFilterValue,
+  type StudentStatusFilterValue,
+} from "@/src/features/students/utils/student-list.utils";
+import {
+  STUDENT_SELECT_ALL,
+  uniqueSelectOptions,
+} from "@/src/features/students/utils/student-select.utils";
 
-interface BranchSummaryHeaderProps {
+interface StudentSummaryHeaderProps {
   total: number;
   isLoading?: boolean;
   onCreate: () => void;
   createDisabled?: boolean;
-  search: string;
-  onSearchChange: (value: string) => void;
-  status?: BranchFilterStatus;
-  onStatusChange: (status: BranchFilterStatus | undefined) => void;
+  filters: StudentFilters;
+  branches: BranchOption[];
+  onFiltersChange: (filters: StudentFilters) => void;
 }
 
-export function BranchSummaryHeader({
+export function StudentSummaryHeader({
   total,
   isLoading = false,
   onCreate,
   createDisabled = false,
-  search,
-  onSearchChange,
-  status,
-  onStatusChange,
-}: BranchSummaryHeaderProps) {
-  const searchValue = search ?? "";
+  filters,
+  branches,
+  onFiltersChange,
+}: StudentSummaryHeaderProps) {
+  const searchValue = filters.search ?? "";
+  const statusFilterValue = getStudentStatusFilterValue(filters);
+
+  const branchOptions = useMemo(
+    () =>
+      uniqueSelectOptions([
+        { label: "All branch", value: STUDENT_SELECT_ALL },
+        ...branches.map((branch) => ({
+          label: `${branch.branchName} (${branch.branchCode})`,
+          value: branch.id,
+        })),
+      ]),
+    [branches],
+  );
+
+  const statusOptions = useMemo(
+    () =>
+      uniqueSelectOptions([
+        { label: "All Status", value: STUDENT_SELECT_ALL },
+        ...STUDENT_STATUS_FILTER_OPTIONS.map((item) => ({
+          label: item.label,
+          value: item.value,
+        })),
+      ]),
+    [],
+  );
 
   return (
     <header>
@@ -56,7 +95,7 @@ export function BranchSummaryHeader({
             aria-current="page"
             className="font-medium text-slate-900"
           >
-            Branches
+            Students
           </span>
         </nav>
 
@@ -68,10 +107,10 @@ export function BranchSummaryHeader({
             onClick={onCreate}
             disabled={createDisabled}
             className="h-10 w-full shrink-0 rounded-lg bg-blue-600 px-4 font-semibold shadow-sm transition-all hover:bg-blue-700 hover:shadow-md sm:w-auto"
-            aria-label="Create a new branch"
+            aria-label="Add a new student"
           >
             <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
-            Create Branch
+            Add Student
           </Button>
         )}
       </div>
@@ -83,11 +122,11 @@ export function BranchSummaryHeader({
           ) : (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                Branches
+                Students
               </h1>
 
               <span className="text-sm text-slate-500">
-                Total Branches:
+                Total Students:
                 <span className="ml-1 font-semibold tabular-nums text-slate-900">
                   {total}
                 </span>
@@ -100,6 +139,7 @@ export function BranchSummaryHeader({
           {isLoading ? (
             <>
               <Skeleton className="h-10 w-full rounded-lg sm:w-[340px]" />
+              <Skeleton className="h-10 w-full rounded-lg sm:w-[180px]" />
               <Skeleton className="h-10 w-full rounded-lg sm:w-[160px]" />
             </>
           ) : (
@@ -107,29 +147,44 @@ export function BranchSummaryHeader({
               <div className="w-full sm:w-[340px]">
                 <SearchInput
                   value={searchValue}
-                  placeholder="Search branches..."
+                  placeholder="Search students..."
                   className="!h-10 rounded-lg !py-2 pl-9 text-[15px]"
-                  onChange={onSearchChange}
+                  onChange={(value) =>
+                    onFiltersChange({ ...filters, search: value })
+                  }
+                />
+              </div>
+
+              <div className="w-full sm:w-[180px]">
+                <AppSelect
+                  value={filters.branchId ?? STUDENT_SELECT_ALL}
+                  triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
+                  onValueChange={(value) =>
+                    onFiltersChange({
+                      ...filters,
+                      branchId:
+                        value === STUDENT_SELECT_ALL ? undefined : value,
+                    })
+                  }
+                  options={branchOptions}
                 />
               </div>
 
               <div className="w-full sm:w-[160px]">
                 <AppSelect
-                  value={status ?? "ALL"}
+                  value={statusFilterValue}
                   triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
                   onValueChange={(value) =>
-                    onStatusChange(
-                      value === "ALL"
-                        ? undefined
-                        : (value as BranchFilterStatus),
+                    onFiltersChange(
+                      applyStudentStatusFilter(
+                        filters,
+                        value as
+                          | StudentStatusFilterValue
+                          | typeof STUDENT_SELECT_ALL,
+                      ),
                     )
                   }
-                  options={[
-                    { label: "All Status", value: "ALL" },
-                    { label: "Active", value: "ACTIVE" },
-                    { label: "Inactive", value: "INACTIVE" },
-                    { label: "Archived", value: "ARCHIVED" },
-                  ]}
+                  options={statusOptions}
                 />
               </div>
             </>

@@ -8,7 +8,7 @@ import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Pagination } from "@/src/shared/components/ui/pagination";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 
-import { EnrollmentFilters } from "@/src/features/enrollments/components/filters/EnrollmentFilters";
+import { branchService } from "@/src/features/branches/services/branch.service";
 import { CreateEnrollmentModal } from "@/src/features/enrollments/components/form/create-enrollment-modal";
 import { UpdateEnrollmentModal } from "@/src/features/enrollments/components/form/update-enrollment-modal";
 import { EnrollmentSummaryHeader } from "@/src/features/enrollments/components/table/enrollment-summary-header";
@@ -34,6 +34,9 @@ export function EnrollmentListPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedEnrollment, setSelectedEnrollment] =
     useState<Enrollment | null>(null);
+  const [branches, setBranches] = useState<
+    Array<{ id: string; branchName: string; branchCode: string }>
+  >([]);
 
   const { enrollment: editEnrollment, isLoading: isEditLoading } =
     useEnrollment(isEditOpen ? selectedEnrollment?.id ?? "" : "");
@@ -55,11 +58,40 @@ export function EnrollmentListPage() {
   }, [count, page, pageSize, filters, setFilters]);
 
   const emptyMessage = useMemo(() => {
-    if ((filters.search ?? "").trim() || filters.status) {
-      return "No data yet";
+    if (
+      (filters.search ?? "").trim() ||
+      filters.status ||
+      filters.branchId
+    ) {
+      return "No enrolments match your filters.";
     }
     return "No data yet";
-  }, [filters.search, filters.status]);
+  }, [filters.search, filters.status, filters.branchId]);
+
+  useEffect(() => {
+    const loadBranches = async () => {
+      try {
+        const response = await branchService.getBranches({
+          status: "ACTIVE",
+          page: 1,
+          pageSize: 100,
+          includeDeleted: false,
+        });
+
+        setBranches(
+          (response.data.items ?? []).map((branch) => ({
+            id: branch.id,
+            branchName: branch.branchName,
+            branchCode: branch.branchCode,
+          })),
+        );
+      } catch {
+        setBranches([]);
+      }
+    };
+
+    void loadBranches();
+  }, []);
 
   if (error && enrollments.length === 0 && !isLoading) {
     return (
@@ -79,14 +111,13 @@ export function EnrollmentListPage() {
         total={count}
         isLoading={isLoading && enrollments.length === 0}
         onCreate={() => setIsCreateOpen(true)}
+        filters={filters}
+        branches={branches}
+        onFiltersChange={setFilters}
       />
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-5">
         <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
-          <div className="border-b border-slate-200 bg-white px-4 py-3">
-            <EnrollmentFilters filters={filters} onChange={setFilters} />
-          </div>
-
           {isLoading && enrollments.length === 0 ? (
             <SkeletonTable rows={10} />
           ) : (

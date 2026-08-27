@@ -29,7 +29,7 @@ export function SearchInput({
       />
 
       <Input
-        value={value}
+        value={value ?? ""}
         placeholder={placeholder}
         className={cn("pl-10", className)}
         onChange={(e) =>

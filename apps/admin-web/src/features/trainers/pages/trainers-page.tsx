@@ -29,7 +29,6 @@ import { useBulkPermanentDeleteTrainers } from "@/src/features/trainers/hooks/us
 import { trainerService } from "@/src/features/trainers/services/trainer.service";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
-import { TrainerFilters as TrainerFiltersBar } from "@/src/features/trainers/components/trainer-filters";
 import { TrainerTable } from "@/src/features/trainers/components/trainer-table";
 import { TrainerSummaryHeader } from "@/src/features/trainers/components/trainer-summary-header";
 import { CreateTrainerModal } from "@/src/features/trainers/components/create-trainer-modal";
@@ -375,17 +374,31 @@ export function TrainersPage() {
         isLoading={isInitialLoading}
         createDisabled={bulkActionLoading}
         onCreate={() => setIsCreateOpen(true)}
+        search={filters.search ?? ""}
+        onSearchChange={(value) =>
+          setFilters({
+            ...filters,
+            search: value,
+          })
+        }
+        trainerType={filters.trainerType}
+        onTrainerTypeChange={(trainerType) =>
+          setFilters({
+            ...filters,
+            trainerType,
+          })
+        }
+        status={filters.status}
+        onStatusChange={(status) =>
+          setFilters({
+            ...filters,
+            status,
+          })
+        }
       />
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-5 space-y-3">
         <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
-          <div className="border-b border-slate-200 bg-white px-4 py-3">
-            <TrainerFiltersBar
-              filters={filters}
-              onChange={setFilters}
-            />
-          </div>
-
           <TrainerBulkActionsToolbar
             trainers={trainers}
             selectedTrainerIds={selectedTrainerIds}

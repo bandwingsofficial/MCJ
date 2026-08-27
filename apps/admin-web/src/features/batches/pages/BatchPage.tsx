@@ -18,7 +18,6 @@ import { useDeleteBatch } from "@/src/features/batches/hooks/useDeleteBatch";
 import { useRestoreBatch } from "@/src/features/batches/hooks/useRestoreBatch";
 import { batchService } from "@/src/features/batches/services/batch.service";
 
-import { BatchFilters } from "@/src/features/batches/components/batch-filters";
 import { BatchSummaryHeader } from "@/src/features/batches/components/batch-summary-header";
 import { BatchTable } from "@/src/features/batches/components/BatchTable";
 import {
@@ -301,18 +300,13 @@ export function BatchPage() {
         isLoading={isInitialLoading}
         createDisabled={actionLoading}
         onCreate={() => setIsCreateOpen(true)}
+        filters={filters}
+        courses={courses}
+        onFiltersChange={setFilters}
       />
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-5 space-y-3">
         <Card className="min-w-0 overflow-hidden border-slate-200 p-0 shadow-sm">
-          <div className="border-b border-slate-200 bg-white px-4 py-3">
-            <BatchFilters
-              filters={filters}
-              courses={courses}
-              onChange={setFilters}
-            />
-          </div>
-
           <BatchBulkActionsToolbar
             batches={batches}
             selectedBatchIds={selectedBatchIds}

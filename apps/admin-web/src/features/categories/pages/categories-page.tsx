@@ -34,8 +34,6 @@ import { useBulkPermanentDeleteCategories } from "@/src/features/categories/hook
 
 
 
-import { CategoryFilters } from "@/src/features/categories/components/category-filters";
-
 import { CategoryTable } from "@/src/features/categories/components/category-table";
 
 import { CategorySummaryHeader } from "@/src/features/categories/components/category-summary-header";
@@ -1000,21 +998,41 @@ export function CategoriesPage() {
 
         onCreate={() => setCreateOpen(true)}
 
+        search={filters.search ?? ""}
+
+        onSearchChange={(value) =>
+
+          setFilters({
+
+            ...filters,
+
+            search: value,
+
+          })
+
+        }
+
+        status={filters.status}
+
+        onStatusChange={(status) =>
+
+          setFilters({
+
+            ...filters,
+
+            status,
+
+          })
+
+        }
+
       />
 
 
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-5">
 
         <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
-
-          <div className="border-b border-slate-200 bg-white px-4 py-3">
-
-            <CategoryFilters filters={filters} onChange={setFilters} />
-
-          </div>
-
-
 
           <CategoryBulkActionsToolbar
 

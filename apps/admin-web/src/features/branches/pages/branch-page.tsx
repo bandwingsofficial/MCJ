@@ -27,7 +27,6 @@ import { branchService } from "@/src/features/branches/services/branch.service";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { getBranchEmptyMessage } from "@/src/features/branches/utils/branch-list.utils";
 
-import { BranchFilters } from "@/src/features/branches/components/branch-filters";
 import { BranchTable } from "@/src/features/branches/components/branch-table";
 import { BranchSummaryHeader } from "@/src/features/branches/components/branch-summary-header";
 import { CreateBranchModal } from "@/src/features/branches/components/create-branch-modal";
@@ -372,17 +371,24 @@ export default function BranchesPage() {
         isLoading={isInitialLoading}
         createDisabled={bulkActionLoading}
         onCreate={() => setIsCreateOpen(true)}
+        search={filters.search ?? ""}
+        onSearchChange={(value) =>
+          setFilters({
+            ...filters,
+            search: value,
+          })
+        }
+        status={filters.status}
+        onStatusChange={(status) =>
+          setFilters({
+            ...filters,
+            status,
+          })
+        }
       />
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-5 space-y-3">
         <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
-          <div className="border-b border-slate-200 bg-white px-4 py-3">
-            <BranchFilters
-              filters={filters}
-              onChange={setFilters}
-            />
-          </div>
-
           <BranchBulkActionsToolbar
             branches={branches}
             selectedBranchIds={selectedBranchIds}

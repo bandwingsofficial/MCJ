@@ -193,7 +193,7 @@ export function CategoryTable({
         <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
           <tr>
             {selectionEnabled ? (
-              <th className="w-11 px-3 py-3 text-left">
+              <th className="w-11 text-left">
                 <input
                   ref={selectAllRef}
                   type="checkbox"
