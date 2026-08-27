@@ -110,7 +110,7 @@ export function ModuleLessonsTab({
   return (
     <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-sm font-semibold text-slate-900">Lessons</h2>
+        <h2 className="text-sm font-semibold text-[#102A56]">Lessons</h2>
         <Button
           type="button"
           size="sm"
@@ -154,7 +154,7 @@ export function ModuleLessonsTab({
             header: "Lesson",
             render: (row) => (
               <div>
-                <p className="font-medium text-slate-900">{row.title}</p>
+                <p className="font-medium text-[#102A56]">{row.title}</p>
                 <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
                   {row.description?.trim() || "—"}
                 </p>

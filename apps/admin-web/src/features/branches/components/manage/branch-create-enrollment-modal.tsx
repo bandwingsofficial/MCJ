@@ -375,9 +375,9 @@ export function BranchCreateEnrollmentModal({
         <div className="space-y-2">
           <p className="text-sm font-medium text-slate-700">Select Batch</p>
           {isLoadingBatches ? (
-            <p className="text-sm text-slate-500">Loading batches...</p>
+            <p className="text-sm text-[#647A9B]">Loading batches...</p>
           ) : batches.length === 0 ? (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-[#647A9B]">
               No active batches available for this branch.
             </p>
           ) : (
@@ -414,9 +414,9 @@ export function BranchCreateEnrollmentModal({
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-700">Select Student</p>
             {isLoadingContext ? (
-              <p className="text-sm text-slate-500">Loading students...</p>
+              <p className="text-sm text-[#647A9B]">Loading students...</p>
             ) : students.length === 0 ? (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-[#647A9B]">
                 No active students available for this batch.
               </p>
             ) : (
@@ -432,7 +432,7 @@ export function BranchCreateEnrollmentModal({
 
         {batchId && studentId ? (
           <div className="space-y-4 rounded-xl border border-slate-200 p-4">
-            <h3 className="text-sm font-semibold text-slate-900">Payment</h3>
+            <h3 className="text-sm font-semibold text-[#102A56]">Payment</h3>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>

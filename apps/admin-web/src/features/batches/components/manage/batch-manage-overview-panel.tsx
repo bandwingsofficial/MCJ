@@ -53,7 +53,7 @@ function SectionCard({
   return (
     <Card className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
       <div className="border-b border-slate-200 px-4 py-3">
-        <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+        <h2 className="text-sm font-semibold text-[#102A56]">{title}</h2>
       </div>
       <div className="p-4">{children}</div>
     </Card>
@@ -70,7 +70,7 @@ function OverviewField({
   return (
     <div className="min-w-0">
       <dt className="text-xs text-slate-500">{label}</dt>
-      <dd className="mt-0.5 break-words text-sm font-medium text-slate-900">
+      <dd className="mt-0.5 break-words text-sm font-medium text-[#102A56]">
         {value}
       </dd>
     </div>
@@ -87,7 +87,7 @@ function resolveTrainerStatus(status?: string): TrainerStatus {
 
 function EmptySectionMessage({ message }: { message: string }) {
   return (
-    <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+    <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-[#647A9B]">
       {message}
     </p>
   );
@@ -158,7 +158,7 @@ export function BatchManageOverviewPanel({
 
       <SectionCard title="Course Information">
         {assignmentsLoading ? (
-          <p className="text-sm text-slate-500">Loading assigned courses…</p>
+          <p className="text-sm text-[#647A9B]">Loading assigned courses…</p>
         ) : assignedCourses.length === 0 ? (
           <EmptySectionMessage message="No courses yet" />
         ) : (
@@ -192,7 +192,7 @@ export function BatchManageOverviewPanel({
 
                   <div className="min-w-0 flex-1 space-y-2">
                     <div>
-                      <h3 className="text-sm font-semibold text-slate-900">
+                      <h3 className="text-sm font-semibold text-[#102A56]">
                         {course.title}
                       </h3>
                       {course.code ? (
@@ -211,7 +211,7 @@ export function BatchManageOverviewPanel({
                     <dl className="grid min-w-0 gap-2 text-sm sm:grid-cols-2">
                       <div>
                         <dt className="text-xs text-slate-500">Category</dt>
-                        <dd className="font-medium text-slate-900">
+                        <dd className="font-medium text-[#102A56]">
                           {categoryName || "—"}
                         </dd>
                       </div>
@@ -219,13 +219,13 @@ export function BatchManageOverviewPanel({
                         <dt className="text-xs text-slate-500">
                           Minimum Qualification Required
                         </dt>
-                        <dd className="font-medium text-slate-900">
+                        <dd className="font-medium text-[#102A56]">
                           {formatAssignedCourseQualifications(course)}
                         </dd>
                       </div>
                       <div>
                         <dt className="text-xs text-slate-500">Final Price</dt>
-                        <dd className="font-medium text-slate-900">
+                        <dd className="font-medium text-[#102A56]">
                           {formatAssignedCoursePrice(course)}
                         </dd>
                       </div>
@@ -240,7 +240,7 @@ export function BatchManageOverviewPanel({
 
       <SectionCard title="Trainer Information">
         {assignmentsLoading ? (
-          <p className="text-sm text-slate-500">Loading assigned trainers…</p>
+          <p className="text-sm text-[#647A9B]">Loading assigned trainers…</p>
         ) : assignedTrainers.length === 0 ? (
           <EmptySectionMessage message="No trainers yet" />
         ) : (
@@ -271,7 +271,7 @@ export function BatchManageOverviewPanel({
 
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-sm font-semibold text-slate-900">
+                      <h3 className="text-sm font-semibold text-[#102A56]">
                         {name}
                       </h3>
                       <TrainerStatusBadge
@@ -287,7 +287,7 @@ export function BatchManageOverviewPanel({
                       {trainer.employeeCode ? (
                         <div>
                           <dt className="text-xs text-slate-500">Employee Code</dt>
-                          <dd className="font-medium text-slate-900">
+                          <dd className="font-medium text-[#102A56]">
                             {trainer.employeeCode}
                           </dd>
                         </div>
@@ -295,7 +295,7 @@ export function BatchManageOverviewPanel({
                       {trainer.specialization?.trim() ? (
                         <div>
                           <dt className="text-xs text-slate-500">Specialization</dt>
-                          <dd className="font-medium text-slate-900">
+                          <dd className="font-medium text-[#102A56]">
                             {trainer.specialization}
                           </dd>
                         </div>
@@ -303,7 +303,7 @@ export function BatchManageOverviewPanel({
                       {trainer.qualification?.trim() ? (
                         <div>
                           <dt className="text-xs text-slate-500">Qualification</dt>
-                          <dd className="font-medium text-slate-900">
+                          <dd className="font-medium text-[#102A56]">
                             {trainer.qualification}
                           </dd>
                         </div>
@@ -311,7 +311,7 @@ export function BatchManageOverviewPanel({
                       {trainer.email?.trim() ? (
                         <div className="sm:col-span-2">
                           <dt className="text-xs text-slate-500">Email</dt>
-                          <dd className="break-all font-medium text-slate-900">
+                          <dd className="break-all font-medium text-[#102A56]">
                             {trainer.email}
                           </dd>
                         </div>

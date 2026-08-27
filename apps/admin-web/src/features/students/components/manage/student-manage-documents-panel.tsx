@@ -69,8 +69,8 @@ export function StudentManageDocumentsPanel({
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">Documents</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-base font-semibold text-[#102A56]">Documents</h2>
+          <p className="text-sm text-[#647A9B]">
             Files uploaded for {student.studentCode}
           </p>
         </div>
@@ -99,7 +99,7 @@ export function StudentManageDocumentsPanel({
               <p className="mt-3 text-sm font-medium text-slate-700">
                 No documents uploaded
               </p>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-[#647A9B]">
                 Add a document to keep student files with this profile.
               </p>
             </div>
@@ -120,7 +120,7 @@ export function StudentManageDocumentsPanel({
             <TableBody>
               {documents.map((document) => (
                 <TableRow key={document.id}>
-                  <TableCell className="text-[15px] font-medium text-slate-900">
+                  <TableCell className="text-[15px] font-medium text-[#102A56]">
                     {document.name}
                   </TableCell>
                   <TableCell className="text-[15px] text-slate-700">
@@ -130,7 +130,7 @@ export function StudentManageDocumentsPanel({
                     {document.fileUrl ? (
                       <button
                         type="button"
-                        className="inline-flex items-center gap-1.5 font-medium text-[#2447A8] hover:underline"
+                        className="inline-flex items-center gap-1.5 font-medium text-[#2563EB] hover:underline"
                         onClick={() => {
                           window.open(
                             document.fileUrl ?? "",
@@ -166,7 +166,7 @@ export function StudentManageDocumentsPanel({
                           size="sm"
                           onClick={() => setEditTarget(document)}
                           aria-label="Edit document"
-                          className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+                          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
                         >
                           <Pencil className={iconClass} />
                         </Button>

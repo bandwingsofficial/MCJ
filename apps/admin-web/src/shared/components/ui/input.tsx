@@ -13,11 +13,11 @@ export const Input = React.forwardRef<
     <input
       ref={ref}
       className={cn(
-        "flex h-11 w-full rounded-xl border border-slate-300",
-        "bg-white px-4 py-2 text-sm",
-        "placeholder:text-slate-400",
+        "flex h-[46px] w-full rounded-xl border border-[#DCE8F5]",
+        "bg-white px-4 py-2 text-sm text-[#102A56]",
+        "placeholder:text-[#8AA0BB]",
         "focus:outline-none",
-        "focus:ring-2 focus:ring-[#2447A8]",
+        "focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}

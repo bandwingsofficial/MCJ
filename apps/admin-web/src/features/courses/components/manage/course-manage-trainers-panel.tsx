@@ -170,7 +170,7 @@ export function CourseManageTrainersPanel({
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse">
-              <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
+              <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
                 <tr>
                   {[
                     "Profile",
@@ -196,7 +196,7 @@ export function CourseManageTrainersPanel({
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-4 py-10 text-center text-sm text-slate-500"
+                      className="px-4 py-10 text-center text-sm text-[#647A9B]"
                     >
                       {trainers.length === 0
                         ? "No trainers assigned to this course."
@@ -225,7 +225,7 @@ export function CourseManageTrainersPanel({
                         )}
                       </td>
                       <td className="px-3 py-3 align-middle">
-                        <p className="font-medium text-slate-900">
+                        <p className="font-medium text-[#102A56]">
                           {formatTrainerName(trainer) || "—"}
                         </p>
                         {trainer.employeeCode ? (

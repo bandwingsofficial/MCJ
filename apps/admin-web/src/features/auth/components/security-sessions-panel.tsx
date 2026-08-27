@@ -156,9 +156,9 @@ export function SecuritySessionsPanel() {
         <div>
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-amber-600" />
-            <h2 className="text-lg font-semibold text-slate-900">Security</h2>
+            <h2 className="text-lg font-semibold text-[#102A56]">Security</h2>
           </div>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-[#647A9B]">
             Manage devices signed in to your admin account. Revoking a session
             immediately invalidates its refresh credential on the server.
           </p>
@@ -209,7 +209,7 @@ export function SecuritySessionsPanel() {
                     <SessionIcon session={current} />
                   </div>
                   <div>
-                    <p className="font-medium text-slate-900">
+                    <p className="font-medium text-[#102A56]">
                       {current.device}
                     </p>
                     <p className="text-sm text-slate-600">
@@ -238,7 +238,7 @@ export function SecuritySessionsPanel() {
             </h3>
 
             {others.length === 0 ? (
-              <p className="mt-3 text-sm text-slate-500">
+              <p className="mt-3 text-sm text-[#647A9B]">
                 No other devices are signed in.
               </p>
             ) : (
@@ -253,7 +253,7 @@ export function SecuritySessionsPanel() {
                         <SessionIcon session={session} />
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900">
+                        <p className="font-medium text-[#102A56]">
                           {session.device}
                         </p>
                         <p className="text-sm text-slate-600">

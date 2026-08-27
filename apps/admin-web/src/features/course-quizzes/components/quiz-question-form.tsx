@@ -247,7 +247,7 @@ export function QuizQuestionForm({
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-slate-900">Options</p>
+            <p className="text-sm font-medium text-[#102A56]">Options</p>
             {questionType !== "TRUE_FALSE" ? (
               <Button
                 type="button"

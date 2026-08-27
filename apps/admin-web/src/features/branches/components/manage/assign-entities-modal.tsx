@@ -91,11 +91,11 @@ export function AssignEntitiesModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-slate-200 p-2">
           {isLoading ? (
-            <p className="px-2 py-6 text-center text-sm text-slate-500">
+            <p className="px-2 py-6 text-center text-sm text-[#647A9B]">
               Loading...
             </p>
           ) : filtered.length === 0 ? (
-            <p className="px-2 py-6 text-center text-sm text-slate-500">
+            <p className="px-2 py-6 text-center text-sm text-[#647A9B]">
               {emptyMessage}
             </p>
           ) : (
@@ -124,7 +124,7 @@ export function AssignEntitiesModal({
                       )}
                     </div>
                     <span className="min-w-0">
-                      <span className="block text-sm font-medium text-slate-900">
+                      <span className="block text-sm font-medium text-[#102A56]">
                         {item.label}
                       </span>
                       {item.meta ? (
@@ -141,7 +141,7 @@ export function AssignEntitiesModal({
         </div>
 
         <div className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200 pt-4">
-          <p className="text-sm text-slate-500">{selected.length} selected</p>
+          <p className="text-sm text-[#647A9B]">{selected.length} selected</p>
           <div className="flex gap-2">
             <Button
               type="button"

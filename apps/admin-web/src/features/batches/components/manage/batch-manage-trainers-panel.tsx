@@ -236,7 +236,7 @@ export function BatchManageTrainersPanel({
       <Card className="rounded-xl border border-slate-200/80 p-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">
+            <h2 className="text-sm font-semibold text-[#102A56]">
               Assigned Trainers
             </h2>
             <p className="mt-0.5 text-xs text-slate-500">
@@ -331,7 +331,7 @@ export function BatchManageTrainersPanel({
                       className="transition-colors hover:bg-slate-50"
                     >
                       <td className="px-4 py-3">
-                        <p className="text-sm font-medium text-slate-900">
+                        <p className="text-sm font-medium text-[#102A56]">
                           {formatTrainerName(trainer) || "—"}
                         </p>
                       </td>
@@ -397,7 +397,7 @@ export function BatchManageTrainersPanel({
               <label className="flex items-center gap-2">
                 <span className="whitespace-nowrap">Rows per page</span>
                 <select
-                  className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-sm"
+                  className="h-9 rounded-xl border border-[#DCE8F5] bg-white px-2 text-sm text-[#102A56]"
                   value={pageSize}
                   onChange={(event) => setPageSize(Number(event.target.value))}
                 >

@@ -64,7 +64,7 @@ export function QualificationMultiSelect({
       ? "border-red-400 focus:ring-red-200"
       : state === "valid"
         ? "border-emerald-400 focus:ring-emerald-200"
-        : "border-slate-300 focus:ring-[#2447A8]";
+        : "border-slate-300 focus:ring-[#2563EB]";
 
   return (
     <DropdownMenu.Root
@@ -84,7 +84,7 @@ export function QualificationMultiSelect({
         <span
           className={cn(
             "min-w-0 flex-1 truncate pr-8",
-            selected.length === 0 ? "text-slate-400" : "text-slate-900",
+            selected.length === 0 ? "text-slate-400" : "text-[#102A56]",
           )}
         >
           {selected.length === 0

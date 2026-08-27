@@ -53,7 +53,7 @@ export function StudentOverviewPrimaryMetrics({ stats, isLoading }: Props) {
       hint: "Enrolled courses",
       value: stats.activeCourseCount,
       icon: BookOpen,
-      iconClass: "text-[#2447A8]",
+      iconClass: "text-[#2563EB]",
       bgClass: "bg-blue-50",
     },
     {
@@ -113,7 +113,7 @@ export function StudentOverviewSummaryMetrics({ stats, isLoading }: Props) {
       hint: "Enrolled courses",
       value: stats.activeCourseCount,
       icon: BookOpen,
-      iconClass: "text-[#2447A8]",
+      iconClass: "text-[#2563EB]",
       bgClass: "bg-blue-50",
     },
     {

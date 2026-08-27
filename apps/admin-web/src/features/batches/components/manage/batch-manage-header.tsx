@@ -48,10 +48,10 @@ export function BatchManageHeader({
 
   return (
     <div className="space-y-3">
-      <nav className="flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
+      <nav className="flex flex-wrap items-center gap-1.5 text-sm text-[#647A9B]">
         <Link
           href="/batches"
-          className="font-medium text-[#2447A8] hover:underline"
+          className="font-medium text-[#2563EB] hover:underline"
         >
           Batches
         </Link>
@@ -60,7 +60,7 @@ export function BatchManageHeader({
           {batch.name} ({batch.code})
         </span>
         <span aria-hidden>›</span>
-        <span className="text-slate-900">Management</span>
+        <span className="text-[#102A56]">Management</span>
         {activeSection ? (
           <>
             <span aria-hidden>›</span>
@@ -71,10 +71,10 @@ export function BatchManageHeader({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+          <h1 className="truncate text-xl font-semibold tracking-tight text-[#102A56] sm:text-2xl">
             {batch.name}
           </h1>
-          <p className="mt-1 text-sm text-slate-500">{meta}</p>
+          <p className="mt-1 text-sm text-[#647A9B]">{meta}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <BatchStatusBadge
               status={batch.status}

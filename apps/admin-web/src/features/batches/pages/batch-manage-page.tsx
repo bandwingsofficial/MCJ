@@ -75,7 +75,7 @@ export function BatchManagePage({ batchId }: Props) {
 
   return (
     <>
-      <div className="-m-6 min-h-full min-w-0 bg-white p-6">
+      <div className="min-h-full min-w-0">
       <BatchManageHeader
         batch={batch}
         assignments={assignments}

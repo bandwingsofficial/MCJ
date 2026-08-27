@@ -12,7 +12,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-slate-200 bg-white p-6 shadow-sm",
+        "rounded-2xl border border-[#E1EBF5] bg-white p-6 shadow-[0_2px_10px_rgba(16,42,86,0.05)]",
         className
       )}
     >

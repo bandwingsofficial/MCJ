@@ -26,7 +26,7 @@ function InfoField({
   return (
     <div className="min-w-0">
       <dt className="text-xs font-medium text-slate-500">{label}</dt>
-      <dd className="mt-1 text-sm font-medium text-slate-900">{children}</dd>
+      <dd className="mt-1 text-sm font-medium text-[#102A56]">{children}</dd>
     </div>
   );
 }
@@ -52,7 +52,7 @@ export function CourseOverviewInformation({ course }: Props) {
   return (
     <Card className="overflow-hidden border-slate-200 bg-white p-0 shadow-sm">
       <div className="border-b border-slate-200 px-4 py-3">
-        <h2 className="text-base font-semibold text-slate-900">
+        <h2 className="text-base font-semibold text-[#102A56]">
           Course Information
         </h2>
       </div>

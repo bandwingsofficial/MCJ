@@ -50,7 +50,7 @@ export function StudentStatusBadge({
       {STATUS_LABELS[status]}
     </Badge>
     {isActive === false ? (
-      <Badge variant="warning" className="px-2.5 py-0.5 text-sm">
+      <Badge variant="danger" className="px-2.5 py-0.5 text-sm">
         Inactive
       </Badge>
     ) : null}

@@ -60,7 +60,7 @@ function OverviewField({
   return (
     <div>
       <dt className="text-xs text-slate-500">{label}</dt>
-      <dd className="text-sm font-medium text-slate-900">{value}</dd>
+      <dd className="text-sm font-medium text-[#102A56]">{value}</dd>
     </div>
   );
 }

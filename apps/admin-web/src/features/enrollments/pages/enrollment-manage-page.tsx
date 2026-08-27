@@ -68,7 +68,7 @@ export function EnrollmentManagePage({ enrollmentId, initialTab }: Props) {
   }
 
   return (
-    <div className="-m-6 min-h-full space-y-4 bg-white p-6">
+    <div className="min-h-full space-y-4">
       <EnrollmentManageHeader
         enrollment={enrollment}
         activeSection={activeSection}

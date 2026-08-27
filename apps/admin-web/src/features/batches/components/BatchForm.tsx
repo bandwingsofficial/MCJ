@@ -433,7 +433,7 @@ export function BatchForm({
         </IconField>
 
         <div className="md:col-span-2">
-          <p className="text-sm font-medium text-slate-900">Duration</p>
+          <p className="text-sm font-medium text-[#102A56]">Duration</p>
         </div>
 
         <ValidatedField
@@ -485,7 +485,7 @@ export function BatchForm({
         </div>
 
         <div className="md:col-span-2">
-          <p className="text-sm font-medium text-slate-900">Schedule</p>
+          <p className="text-sm font-medium text-[#102A56]">Schedule</p>
         </div>
 
         <div className="md:col-span-2">

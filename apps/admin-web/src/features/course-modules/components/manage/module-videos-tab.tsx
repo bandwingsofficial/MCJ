@@ -139,7 +139,7 @@ export function ModuleVideosTab({
               header: "Title",
               render: (row) => (
                 <div>
-                  <p className="font-medium text-slate-900">{row.title}</p>
+                  <p className="font-medium text-[#102A56]">{row.title}</p>
                   {row.description?.trim() ? (
                     <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
                       {row.description}

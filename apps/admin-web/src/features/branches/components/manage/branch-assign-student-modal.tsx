@@ -292,9 +292,9 @@ export function BranchAssignStudentModal({
             Step 1: Select Batch
           </p>
           {isLoadingBatches ? (
-            <p className="text-sm text-slate-500">Loading batches...</p>
+            <p className="text-sm text-[#647A9B]">Loading batches...</p>
           ) : batches.length === 0 ? (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-[#647A9B]">
               No active batches available for this branch.
             </p>
           ) : (
@@ -332,11 +332,11 @@ export function BranchAssignStudentModal({
             />
             <div className="max-h-56 overflow-y-auto rounded-xl border border-slate-200 p-2">
               {isLoadingStudents ? (
-                <p className="px-2 py-6 text-center text-sm text-slate-500">
+                <p className="px-2 py-6 text-center text-sm text-[#647A9B]">
                   Loading students...
                 </p>
               ) : filteredStudents.length === 0 ? (
-                <p className="px-2 py-6 text-center text-sm text-slate-500">
+                <p className="px-2 py-6 text-center text-sm text-[#647A9B]">
                   {enrolledStudentIds.size > 0 && students.length === 0
                     ? "All active students are already enrolled in this batch."
                     : "No active students available to assign."}
@@ -355,7 +355,7 @@ export function BranchAssignStudentModal({
                           onCheckedChange={() => toggleStudent(student.id)}
                         />
                         <span className="min-w-0">
-                          <span className="block text-sm font-medium text-slate-900">
+                          <span className="block text-sm font-medium text-[#102A56]">
                             {student.label}
                           </span>
                           {student.meta ? (
@@ -375,7 +375,7 @@ export function BranchAssignStudentModal({
       </div>
 
       <div className="mt-4 flex shrink-0 items-center justify-between gap-3 border-t border-slate-200 pt-4">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-[#647A9B]">
           {selectedStudentIds.length} student
           {selectedStudentIds.length === 1 ? "" : "s"} selected
         </p>

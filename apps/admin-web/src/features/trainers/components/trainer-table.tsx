@@ -179,7 +179,7 @@ export function TrainerTable({
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border-collapse">
-        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
+        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
           <tr>
             {selectionEnabled ? (
               <th className="w-11 px-3 py-3 text-left">
@@ -228,7 +228,7 @@ export function TrainerTable({
                 colSpan={columnCount}
                 className="px-3 py-12 text-center align-middle"
               >
-                <p className="text-sm font-medium text-slate-900">
+                <p className="text-sm font-medium text-[#102A56]">
                   {emptyMessage}
                 </p>
               </td>
@@ -315,7 +315,7 @@ export function TrainerTable({
                   </td>
 
                   <td className="px-3 py-3 align-middle">
-                    <p className="font-medium text-slate-900">{fullName}</p>
+                    <p className="font-medium text-[#102A56]">{fullName}</p>
                     {trainer.employeeCode ? (
                       <p className="mt-0.5 text-xs text-slate-500">
                         {trainer.employeeCode}

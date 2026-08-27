@@ -259,7 +259,7 @@ export function BranchManageStudentsPanel({
               <td className="truncate px-4 py-3 font-mono text-sm text-slate-700">
                 {student.studentCode}
               </td>
-              <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
+              <td className="truncate px-4 py-3 text-sm font-medium text-[#102A56]">
                 {formatPersonName(student.firstName, student.lastName)}
               </td>
               <td className="truncate px-4 py-3 text-sm text-slate-700">

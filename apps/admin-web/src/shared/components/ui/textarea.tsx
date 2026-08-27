@@ -13,11 +13,11 @@ export const Textarea = React.forwardRef<
     <textarea
       ref={ref}
       className={cn(
-        "min-h-[120px] w-full rounded-xl border border-slate-300",
+        "min-h-[120px] w-full rounded-xl border border-[#DCE8F5] bg-white",
         "px-4 py-3",
-        "text-sm",
+        "text-sm text-[#102A56] placeholder:text-[#8AA0BB]",
         "focus:outline-none",
-        "focus:ring-2 focus:ring-[#2447A8]",
+        "focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20",
         className
       )}
       {...props}

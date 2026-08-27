@@ -33,17 +33,17 @@ export function LessonManageHeader({
 }: Props) {
   return (
     <>
-      <nav className="flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
+      <nav className="flex flex-wrap items-center gap-1.5 text-sm text-[#647A9B]">
         <Link
           href="/courses"
-          className="font-medium text-[#2447A8] hover:underline"
+          className="font-medium text-[#2563EB] hover:underline"
         >
           Courses
         </Link>
         <span aria-hidden>›</span>
         <Link
           href={courseManagePath(courseId)}
-          className="font-medium text-[#2447A8] hover:underline"
+          className="font-medium text-[#2563EB] hover:underline"
         >
           {courseTitle} ({courseCode})
         </Link>
@@ -52,19 +52,19 @@ export function LessonManageHeader({
         <span aria-hidden>›</span>
         <Link
           href={courseManagePath(courseId)}
-          className="font-medium text-[#2447A8] hover:underline"
+          className="font-medium text-[#2563EB] hover:underline"
         >
           Modules
         </Link>
         <span aria-hidden>›</span>
         <Link
           href={courseManageModulePath(courseId, module.id)}
-          className="font-medium text-[#2447A8] hover:underline"
+          className="font-medium text-[#2563EB] hover:underline"
         >
           {module.title}
         </Link>
         <span aria-hidden>›</span>
-        <span className="font-medium text-slate-900">{lesson.title}</span>
+        <span className="font-medium text-[#102A56]">{lesson.title}</span>
       </nav>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -73,10 +73,10 @@ export function LessonManageHeader({
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
               Module
             </p>
-            <h2 className="mt-1 text-lg font-semibold text-slate-900">
+            <h2 className="mt-1 text-lg font-semibold text-[#102A56]">
               {module.title}
             </h2>
-            <p className="mt-0.5 text-sm text-slate-500">
+            <p className="mt-0.5 text-sm text-[#647A9B]">
               Module {formatModuleOrderLabel(module.displayOrder)}
             </p>
           </div>
@@ -85,10 +85,10 @@ export function LessonManageHeader({
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
               Lesson
             </p>
-            <h1 className="mt-1 text-xl font-semibold text-slate-900 sm:text-2xl">
+            <h1 className="mt-1 text-xl font-semibold text-[#102A56] sm:text-2xl">
               {lesson.title}
             </h1>
-            <p className="mt-0.5 text-sm text-slate-500">
+            <p className="mt-0.5 text-sm text-[#647A9B]">
               Lesson {formatLessonOrderLabel(lessonPosition)}
             </p>
           </div>

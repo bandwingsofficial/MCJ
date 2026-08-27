@@ -31,7 +31,7 @@ function DetailRow({
       <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">
         {label}
       </dt>
-      <dd className="text-[15px] font-medium text-slate-900 break-words">
+      <dd className="text-[15px] font-medium text-[#102A56] break-words">
         {value || "—"}
       </dd>
     </div>
@@ -91,7 +91,7 @@ export function BranchDetailsModal({
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
               Branch Name
             </p>
-            <p className="mt-1 text-xl font-semibold text-slate-900">
+            <p className="mt-1 text-xl font-semibold text-[#102A56]">
               {branch.branchName}
             </p>
 

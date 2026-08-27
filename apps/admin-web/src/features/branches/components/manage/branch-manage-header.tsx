@@ -35,10 +35,10 @@ export function BranchManageHeader({
 
   return (
     <div className="space-y-3">
-      <nav className="flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
+      <nav className="flex flex-wrap items-center gap-1.5 text-sm text-[#647A9B]">
         <Link
           href="/branches"
-          className="font-medium text-[#2447A8] hover:underline"
+          className="font-medium text-[#2563EB] hover:underline"
         >
           Branches
         </Link>
@@ -47,7 +47,7 @@ export function BranchManageHeader({
           {branch.branchName} ({branch.branchCode})
         </span>
         <span aria-hidden>›</span>
-        <span className="text-slate-900">Management</span>
+        <span className="text-[#102A56]">Management</span>
         {activeSection ? (
           <>
             <span aria-hidden>›</span>
@@ -60,11 +60,11 @@ export function BranchManageHeader({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+          <h1 className="truncate text-xl font-semibold tracking-tight text-[#102A56] sm:text-2xl">
             {branch.branchName}
           </h1>
           {meta ? (
-            <p className="mt-1 text-sm text-slate-500">{meta}</p>
+            <p className="mt-1 text-sm text-[#647A9B]">{meta}</p>
           ) : null}
           <div className="mt-2">
             <BranchStatusBadge

@@ -51,7 +51,7 @@ export function LessonQuizPreview({ lessonId }: LessonQuizPreviewProps) {
     <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/60 p-3">
       <div className="flex flex-wrap items-center gap-2">
         <HelpCircle className="h-4 w-4 text-emerald-600" />
-        <p className="text-sm font-medium text-slate-900">{quiz.title}</p>
+        <p className="text-sm font-medium text-[#102A56]">{quiz.title}</p>
         {quiz.status === "PUBLISHED" ? (
           <Badge variant="success">Published</Badge>
         ) : (

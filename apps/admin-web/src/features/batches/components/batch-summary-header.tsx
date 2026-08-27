@@ -79,7 +79,7 @@ export function BatchSummaryHeader({
         >
           <Link
             href="/dashboard"
-            className="text-slate-500 transition-colors hover:text-blue-600"
+            className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
           >
             Home
           </Link>
@@ -91,20 +91,20 @@ export function BatchSummaryHeader({
 
           <span
             aria-current="page"
-            className="font-medium text-slate-900"
+            className="font-medium text-[#102A56]"
           >
             Batches
           </span>
         </nav>
 
         {isLoading ? (
-          <Skeleton className="h-10 w-full rounded-lg sm:w-[170px]" />
+          <Skeleton className="h-[52px] w-full rounded-[14px] sm:w-[170px]" />
         ) : (
           <Button
             type="button"
             onClick={onCreate}
             disabled={createDisabled}
-            className="h-10 w-full shrink-0 rounded-lg bg-blue-600 px-4 font-semibold shadow-sm transition-all hover:bg-blue-700 hover:shadow-md sm:w-auto"
+            className="admin-create-btn h-[52px] w-full shrink-0 px-5 font-semibold sm:w-auto"
             aria-label="Create a new batch"
           >
             <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
@@ -119,13 +119,13 @@ export function BatchSummaryHeader({
             <Skeleton className="h-8 w-52 rounded-md" />
           ) : (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              <h1 className="text-[30px] font-bold tracking-tight text-[#102A56]">
                 Batches
               </h1>
 
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-[#647A9B]">
                 Total Batches:
-                <span className="ml-1 font-semibold tabular-nums text-slate-900">
+                <span className="ml-1 font-semibold tabular-nums text-[#102A56]">
                   {total}
                 </span>
               </span>
@@ -136,9 +136,9 @@ export function BatchSummaryHeader({
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto lg:shrink-0 lg:justify-end">
           {isLoading ? (
             <>
-              <Skeleton className="h-10 w-full rounded-lg sm:w-[340px]" />
-              <Skeleton className="h-10 w-full rounded-lg sm:w-[190px]" />
-              <Skeleton className="h-10 w-full rounded-lg sm:w-[160px]" />
+              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[340px]" />
+              <Skeleton className="h-[52px] w-full rounded-[14px] sm:w-[190px]" />
+              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[160px]" />
             </>
           ) : (
             <>
@@ -146,7 +146,7 @@ export function BatchSummaryHeader({
                 <SearchInput
                   value={searchValue}
                   placeholder="Search batches..."
-                  className="!h-10 rounded-lg !py-2 pl-9 text-[15px]"
+                  className="h-[46px] rounded-xl !py-2 pl-9 text-[15px]"
                   onChange={(value) =>
                     onFiltersChange({ ...filters, search: value })
                   }
@@ -156,7 +156,7 @@ export function BatchSummaryHeader({
               <div className="w-full sm:w-[190px]">
                 <AppSelect
                   value={filters.courseId ?? BATCH_SELECT_ALL}
-                  triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
+                  triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
                   onValueChange={(value) =>
                     onFiltersChange({
                       ...filters,
@@ -171,7 +171,7 @@ export function BatchSummaryHeader({
               <div className="w-full sm:w-[160px]">
                 <AppSelect
                   value={statusFilterValue}
-                  triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
+                  triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
                   onValueChange={(value) =>
                     onFiltersChange(
                       applyBatchStatusFilter(

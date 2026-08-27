@@ -81,7 +81,7 @@ export function UpdateBranchModal({
   return (
     <Modal open={open} title="Update Branch" onClose={onClose}>
       {isLoading || !branch ? (
-        <p className="py-6 text-sm text-slate-500">
+        <p className="py-6 text-sm text-[#647A9B]">
           Loading branch details…
         </p>
       ) : (

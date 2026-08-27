@@ -186,7 +186,7 @@ export function BatchTable({
           <col className="w-[9%]" />
           <col className="w-[9rem]" />
         </colgroup>
-        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
+        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
           <tr>
             {selectionEnabled ? (
               <th className="w-11 px-3 py-3 text-left">
@@ -235,7 +235,7 @@ export function BatchTable({
                 colSpan={columnCount}
                 className="px-3 py-12 text-center align-middle"
               >
-                <p className="text-sm font-medium text-slate-900">
+                <p className="text-sm font-medium text-[#102A56]">
                   {emptyMessage}
                 </p>
               </td>
@@ -301,11 +301,11 @@ export function BatchTable({
                     )}
                   </td>
 
-                  <td className="truncate px-3 py-3 align-middle font-medium text-slate-900">
+                  <td className="truncate px-3 py-3 align-middle font-medium text-[#102A56]">
                     {batch.code}
                   </td>
 
-                  <td className="truncate px-3 py-3 align-middle font-medium text-slate-900">
+                  <td className="truncate px-3 py-3 align-middle font-medium text-[#102A56]">
                     {batch.name}
                   </td>
 
@@ -315,7 +315,7 @@ export function BatchTable({
 
                   <td className="px-3 py-3 align-middle">
                     <div className="min-w-0 flex flex-col gap-0.5 leading-snug">
-                      <span className="truncate whitespace-nowrap text-sm text-slate-900">
+                      <span className="truncate whitespace-nowrap text-sm text-[#102A56]">
                         {formatBatchDateRange(batch.startDate, batch.endDate)}
                       </span>
                       <span className="truncate whitespace-nowrap text-sm text-slate-600">

@@ -155,7 +155,7 @@ export function ModuleLiveRecordedVideosTab({
               key: "title",
               header: "Title",
               render: (row) => (
-                <p className="font-medium text-slate-900">{row.title}</p>
+                <p className="font-medium text-[#102A56]">{row.title}</p>
               ),
             },
             {

@@ -46,7 +46,7 @@ export function BatchStatusBadge({
 
   if (isActive === false) {
     return (
-      <Badge variant="warning" className="px-2.5 py-0.5 text-sm">
+      <Badge variant="danger" className="px-2.5 py-0.5 text-sm">
         Inactive
       </Badge>
     );

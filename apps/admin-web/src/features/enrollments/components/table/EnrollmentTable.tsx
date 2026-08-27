@@ -24,7 +24,7 @@ export function EnrollmentTable({
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border-collapse">
-        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
+        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
           <tr>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Enrollment No
@@ -59,7 +59,7 @@ export function EnrollmentTable({
                 colSpan={8}
                 className="px-3 py-12 text-center align-middle"
               >
-                <p className="text-sm font-medium text-slate-900">
+                <p className="text-sm font-medium text-[#102A56]">
                   {emptyMessage}
                 </p>
               </td>
@@ -77,13 +77,13 @@ export function EnrollmentTable({
                   key={enrollment.id}
                   className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
                 >
-                  <td className="px-3 py-3 align-middle font-mono text-[15px] font-medium text-slate-900">
+                  <td className="px-3 py-3 align-middle font-mono text-[15px] font-medium text-[#102A56]">
                     {enrollment.enrollmentNumber}
                   </td>
                   <td className="px-3 py-3 align-middle">
                     <button
                       type="button"
-                      className="text-left text-[15px] font-medium text-[#2447A8] hover:underline"
+                      className="text-left text-[15px] font-medium text-[#2563EB] hover:underline"
                       onClick={() => onManage(enrollment)}
                     >
                       {studentName}

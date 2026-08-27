@@ -189,7 +189,7 @@ export function BranchManageCategoriesPanel({
     <>
       <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
         <div className="mb-3">
-          <h2 className="text-lg font-semibold text-slate-900">Categories</h2>
+          <h2 className="text-lg font-semibold text-[#102A56]">Categories</h2>
         </div>
         <BranchSectionToolbar
           search={search}
@@ -219,7 +219,7 @@ export function BranchManageCategoriesPanel({
         >
           {categories.map((item) => (
             <tr key={item.id} className="hover:bg-slate-50">
-              <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
+              <td className="truncate px-4 py-3 text-sm font-medium text-[#102A56]">
                 {item.name}
               </td>
               <td className="px-4 py-3">

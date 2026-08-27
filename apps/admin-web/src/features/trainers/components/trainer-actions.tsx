@@ -111,7 +111,7 @@ export function TrainerActions({
           disabled={disabled}
           onClick={() => onEdit(trainer)}
           aria-label="Edit trainer"
-          className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
         >
           <Pencil className={iconClass} />
         </Button>
@@ -124,7 +124,7 @@ export function TrainerActions({
           disabled={disabled}
           onClick={() => onDelete(trainer)}
           aria-label="Archive trainer"
-          className={`${iconBtnClass} text-slate-600 hover:bg-slate-100 hover:text-slate-900`}
+          className={`${iconBtnClass} text-slate-600 hover:bg-slate-100 hover:text-[#102A56]`}
         >
           <Archive className={iconClass} />
         </Button>

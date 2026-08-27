@@ -58,7 +58,7 @@ export function CourseManageSettingsPanel({
 
   return (
     <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-900">Course Settings</h2>
+      <h2 className="text-sm font-semibold text-[#102A56]">Course Settings</h2>
       <p className="mt-1 text-xs text-slate-500">
         Manage visibility and featured flags for this course.
       </p>

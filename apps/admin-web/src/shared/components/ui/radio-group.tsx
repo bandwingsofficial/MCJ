@@ -31,10 +31,10 @@ export function RadioGroup({
         >
           <RadioGroupPrimitive.Item
             value={option.value}
-            className="h-5 w-5 rounded-full border border-slate-300 data-[state=checked]:border-[#2447A8]"
+            className="h-5 w-5 rounded-full border border-[#DCE8F5] data-[state=checked]:border-[#2563EB]"
           >
             <RadioGroupPrimitive.Indicator className="flex items-center justify-center">
-              <div className="h-2.5 w-2.5 rounded-full bg-[#2447A8]" />
+              <div className="h-2.5 w-2.5 rounded-full bg-[#2563EB]" />
             </RadioGroupPrimitive.Indicator>
           </RadioGroupPrimitive.Item>
 

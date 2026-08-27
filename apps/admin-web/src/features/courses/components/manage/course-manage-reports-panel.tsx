@@ -57,7 +57,7 @@ export function CourseManageReportsPanel({
   return (
     <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
       <div className="mb-4">
-        <h2 className="text-sm font-semibold text-slate-900">
+        <h2 className="text-sm font-semibold text-[#102A56]">
           Course Metrics
         </h2>
         <p className="mt-1 text-xs text-slate-500">
@@ -74,7 +74,7 @@ export function CourseManageReportsPanel({
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
               {metric.label}
             </p>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
+            <p className="mt-1 text-2xl font-semibold tabular-nums text-[#102A56]">
               {isLoading ? "—" : (summary?.[metric.key] ?? 0)}
             </p>
             <p className="mt-1 text-xs text-slate-500">

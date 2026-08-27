@@ -178,7 +178,7 @@ export function BranchTable({
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border-collapse">
-        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
+        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
           <tr>
             {selectionEnabled ? (
               <th className="w-11 px-3 py-3 text-left">
@@ -227,7 +227,7 @@ export function BranchTable({
                 colSpan={columnCount}
                 className="px-3 py-12 text-center align-middle"
               >
-                <p className="text-sm font-medium text-slate-900">
+                <p className="text-sm font-medium text-[#102A56]">
                   {emptyMessage}
                 </p>
               </td>
@@ -293,14 +293,14 @@ export function BranchTable({
                     )}
                   </td>
 
-                  <td className="px-3 py-3 align-middle text-[15px] font-medium text-slate-900">
+                  <td className="px-3 py-3 align-middle text-[15px] font-medium text-[#102A56]">
                     {branch.branchCode}
                   </td>
 
                   <td className="px-3 py-3 align-middle">
                     <button
                       type="button"
-                      className="text-left text-[15px] font-medium text-[#2447A8] hover:underline"
+                      className="text-left text-[15px] font-medium text-[#2563EB] hover:underline"
                       onClick={() => onManage(branch)}
                     >
                       {branch.branchName}

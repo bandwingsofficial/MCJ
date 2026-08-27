@@ -31,7 +31,7 @@ export function ModuleContentPagination({
 
   return (
     <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-[#647A9B]">
         Showing {from}–{to} of {total}
       </p>
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">

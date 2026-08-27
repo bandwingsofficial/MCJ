@@ -52,11 +52,11 @@ export function ConfirmDialog({
         <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
 
         <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(450px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-xl">
-          <AlertDialog.Title className="text-lg font-semibold text-slate-900">
+          <AlertDialog.Title className="text-lg font-semibold text-[#102A56]">
             {title}
           </AlertDialog.Title>
 
-          <AlertDialog.Description className="mt-2 whitespace-pre-line text-sm text-slate-500">
+          <AlertDialog.Description className="mt-2 whitespace-pre-line text-sm text-[#647A9B]">
             {description}
           </AlertDialog.Description>
 

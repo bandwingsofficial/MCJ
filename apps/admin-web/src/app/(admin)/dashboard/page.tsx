@@ -1,7 +1,7 @@
 export default function DashboardPage() {
   return (
-    <div className="text-xl font-semibold">
-      Dashboard Page
-    </div>
+    <h1 className="text-[30px] font-bold tracking-tight text-[#102A56]">
+      Dashboard
+    </h1>
   );
 }

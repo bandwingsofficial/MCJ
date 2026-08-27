@@ -275,7 +275,7 @@ export function BranchManageBatchesPanel({
     <>
       <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
         <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Batches</h2>
+          <h2 className="text-lg font-semibold text-[#102A56]">Batches</h2>
           <Button
             type="button"
             size="sm"
@@ -317,7 +317,7 @@ export function BranchManageBatchesPanel({
           {batches.map((batch) => (
             <tr key={batch.id} className="hover:bg-slate-50">
               <td className="px-4 py-3">
-                <p className="truncate text-sm font-medium text-slate-900">
+                <p className="truncate text-sm font-medium text-[#102A56]">
                   {batch.name}
                 </p>
                 {batch.code ? (

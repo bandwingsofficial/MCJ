@@ -56,7 +56,7 @@ export function CourseAddLessonModal({
           <button
             key={option.type}
             type="button"
-            className="flex w-full items-start gap-3 rounded-xl border border-slate-200 px-4 py-3 text-left transition-colors hover:border-[#2447A8] hover:bg-slate-50"
+            className="flex w-full items-start gap-3 rounded-xl border border-slate-200 px-4 py-3 text-left transition-colors hover:border-[#2563EB] hover:bg-slate-50"
             onClick={() => {
               onSelect(option.type);
               onClose();
@@ -64,7 +64,7 @@ export function CourseAddLessonModal({
           >
             <div className="mt-0.5">{option.icon}</div>
             <span>
-              <span className="block text-sm font-medium text-slate-900">
+              <span className="block text-sm font-medium text-[#102A56]">
                 {option.label}
               </span>
               <span className="mt-0.5 block text-xs text-slate-500">

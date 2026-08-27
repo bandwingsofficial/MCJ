@@ -77,8 +77,8 @@ export function StudentManagePaymentsPanel({ student, refreshKey = 0 }: Props) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-base font-semibold text-slate-900">Payments</h2>
-        <p className="text-sm text-slate-500">
+        <h2 className="text-base font-semibold text-[#102A56]">Payments</h2>
+        <p className="text-sm text-[#647A9B]">
           Payment history for {student.studentCode}
         </p>
       </div>
@@ -91,7 +91,7 @@ export function StudentManagePaymentsPanel({ student, refreshKey = 0 }: Props) {
         ) : payments.length === 0 ? (
           <div className="px-4 py-12 text-center">
             <p className="text-sm font-medium text-slate-700">No payments yet</p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-[#647A9B]">
               Payments recorded for this student will appear here.
             </p>
           </div>
@@ -113,13 +113,13 @@ export function StudentManagePaymentsPanel({ student, refreshKey = 0 }: Props) {
                     <TableCell className="text-sm text-slate-700">
                       {formatStudentDate(payment.paidAt ?? payment.createdAt)}
                     </TableCell>
-                    <TableCell className="text-sm font-medium text-slate-900">
+                    <TableCell className="text-sm font-medium text-[#102A56]">
                       {payment.paymentNumber}
                     </TableCell>
                     <TableCell className="text-sm text-slate-700">
                       {payment.enrollment?.courseTitle ?? "—"}
                     </TableCell>
-                    <TableCell className="text-sm font-medium text-slate-900">
+                    <TableCell className="text-sm font-medium text-[#102A56]">
                       {formatCurrency(payment.amount)}
                     </TableCell>
                     <TableCell>

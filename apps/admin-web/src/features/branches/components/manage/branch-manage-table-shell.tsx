@@ -47,7 +47,7 @@ export function BranchManageTableShell({
             <tr>
               <td
                 colSpan={colSpan}
-                className="px-4 py-12 text-center text-sm text-slate-500"
+                className="px-4 py-12 text-center text-sm text-[#647A9B]"
               >
                 Loading...
               </td>
@@ -55,11 +55,11 @@ export function BranchManageTableShell({
           ) : isEmpty ? (
             <tr>
               <td colSpan={colSpan} className="px-4 py-12 text-center">
-                <p className="text-sm font-medium text-slate-900">
+                <p className="text-sm font-medium text-[#102A56]">
                   {emptyMessage}
                 </p>
                 {emptyDescription ? (
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-[#647A9B]">
                     {emptyDescription}
                   </p>
                 ) : null}

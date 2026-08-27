@@ -38,7 +38,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="text-xs text-slate-500">{label}</p>
-      <p className="truncate text-sm font-medium text-slate-900">{value}</p>
+      <p className="truncate text-sm font-medium text-[#102A56]">{value}</p>
     </div>
   );
 }
@@ -59,7 +59,7 @@ export function BranchStudentEnrolledCard({
     <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate text-sm font-semibold text-slate-900">
+          <h3 className="truncate text-sm font-semibold text-[#102A56]">
             {studentName || "Unknown student"}
           </h3>
           <p className="mt-0.5 font-mono text-xs text-slate-500">

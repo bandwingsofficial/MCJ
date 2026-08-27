@@ -70,7 +70,7 @@ export function StudentEnrollmentRowActions({
               disabled={disabled}
               title="Manage enrollment"
               aria-label="Manage enrollment"
-              className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+              className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
             >
               <Settings2 className={iconClass} />
             </Button>
@@ -92,7 +92,7 @@ export function StudentEnrollmentRowActions({
             disabled={disabled}
             title="Manage enrollment"
             aria-label="Manage enrollment"
-            className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+            className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
           >
             <Settings2 className={iconClass} />
           </Button>

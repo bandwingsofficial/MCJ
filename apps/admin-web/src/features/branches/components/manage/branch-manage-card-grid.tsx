@@ -51,9 +51,9 @@ export function BranchManageCardGrid({
           className,
         )}
       >
-        <p className="text-sm font-medium text-slate-900">{emptyMessage}</p>
+        <p className="text-sm font-medium text-[#102A56]">{emptyMessage}</p>
         {emptyDescription ? (
-          <p className="mt-1 text-sm text-slate-500">{emptyDescription}</p>
+          <p className="mt-1 text-sm text-[#647A9B]">{emptyDescription}</p>
         ) : null}
       </div>
     );

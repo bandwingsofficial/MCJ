@@ -33,7 +33,7 @@ export function ModuleContentFilters({
         value={search}
         onChange={onSearchChange}
         placeholder={searchPlaceholder}
-        className="!h-10 rounded-lg text-[15px]"
+        className="h-[46px] rounded-xl text-[15px]"
       />
       <div className="sm:w-48">
         <AppSelect

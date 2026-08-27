@@ -101,14 +101,14 @@ export function QuizBuilderPage({
   };
 
   const breadcrumbs = (
-    <nav className="flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
-      <Link href="/courses" className="font-medium text-[#2447A8] hover:underline">
+    <nav className="flex flex-wrap items-center gap-1.5 text-sm text-[#647A9B]">
+      <Link href="/courses" className="font-medium text-[#2563EB] hover:underline">
         Courses
       </Link>
       <span aria-hidden>›</span>
       <Link
         href={courseManagePath(courseId)}
-        className="font-medium text-[#2447A8] hover:underline"
+        className="font-medium text-[#2563EB] hover:underline"
       >
         {course?.title ?? "Course"}
         {course?.slug ? ` (${course.slug})` : ""}
@@ -118,14 +118,14 @@ export function QuizBuilderPage({
       <span aria-hidden>›</span>
       <Link
         href={courseManagePath(courseId)}
-        className="font-medium text-[#2447A8] hover:underline"
+        className="font-medium text-[#2563EB] hover:underline"
       >
         Modules
       </Link>
       <span aria-hidden>›</span>
       <Link
         href={courseManageModulePath(courseId, moduleId)}
-        className="font-medium text-[#2447A8] hover:underline"
+        className="font-medium text-[#2563EB] hover:underline"
       >
         Module
       </Link>
@@ -134,12 +134,12 @@ export function QuizBuilderPage({
       <span aria-hidden>›</span>
       <Link
         href={courseManageLessonPath(courseId, moduleId, lessonId)}
-        className="font-medium text-[#2447A8] hover:underline"
+        className="font-medium text-[#2563EB] hover:underline"
       >
         {lesson?.title ?? "Lesson"}
       </Link>
       <span aria-hidden>›</span>
-      <span className="font-medium text-slate-900">Quiz Builder</span>
+      <span className="font-medium text-[#102A56]">Quiz Builder</span>
     </nav>
   );
 
@@ -161,7 +161,7 @@ export function QuizBuilderPage({
 
   if (!quizId) {
     return (
-      <div className="-m-6 min-h-full space-y-4 bg-white p-6">
+      <div className="min-h-full space-y-4">
         {breadcrumbs}
 
         <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
@@ -196,14 +196,14 @@ export function QuizBuilderPage({
   }
 
   return (
-    <div className="-m-6 min-h-full space-y-4 bg-white p-6">
+    <div className="min-h-full space-y-4">
       {breadcrumbs}
 
       <div>
-        <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">
+        <h1 className="text-xl font-semibold text-[#102A56] sm:text-2xl">
           {lesson?.title ?? quiz.title}
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-[#647A9B]">
           Build and publish the quiz for this lesson.
         </p>
       </div>

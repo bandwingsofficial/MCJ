@@ -190,7 +190,7 @@ export function CategoryTable({
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border-collapse">
-        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
+        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
           <tr>
             {selectionEnabled ? (
               <th className="w-11 text-left">
@@ -311,7 +311,7 @@ export function CategoryTable({
                 </td>
 
                 <td className="px-3 py-3 align-middle">
-                  <p className="font-medium text-slate-900">{category.name}</p>
+                  <p className="font-medium text-[#102A56]">{category.name}</p>
                 </td>
 
                 <td className="px-3 py-3 align-middle">

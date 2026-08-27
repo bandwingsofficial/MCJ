@@ -12,14 +12,14 @@ interface EnrollmentFormProps {
 export function EnrollmentForm({ mode }: EnrollmentFormProps) {
   if (mode === "create") {
     return (
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-[#647A9B]">
         Use Enrollment → Create Enrollment to add a new enrollment.
       </p>
     );
   }
 
   return (
-    <p className="text-sm text-slate-500">
+    <p className="text-sm text-[#647A9B]">
       Enrollment fee and assignment details are managed from the enrollment
       details view. Branch, batch, and student cannot be changed after creation.
     </p>

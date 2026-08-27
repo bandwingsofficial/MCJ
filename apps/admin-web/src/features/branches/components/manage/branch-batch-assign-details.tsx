@@ -24,7 +24,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="text-xs text-slate-500">{label}</p>
-      <p className="text-sm font-medium text-slate-900">{value}</p>
+      <p className="text-sm font-medium text-[#102A56]">{value}</p>
     </div>
   );
 }
@@ -38,7 +38,7 @@ export function BranchBatchAssignDetails({
   if (isLoading) {
     return (
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <p className="text-sm text-slate-500">Loading batch information...</p>
+        <p className="text-sm text-[#647A9B]">Loading batch information...</p>
       </div>
     );
   }
@@ -59,7 +59,7 @@ export function BranchBatchAssignDetails({
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-semibold text-slate-900">{batch.name}</h3>
+        <h3 className="text-sm font-semibold text-[#102A56]">{batch.name}</h3>
         <span className="font-mono text-xs text-slate-500">{batch.code}</span>
         <BatchStatusBadge status={batch.status} />
         <BatchModeBadge mode={batch.mode} />

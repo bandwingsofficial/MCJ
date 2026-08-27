@@ -18,7 +18,7 @@ export function Switch({
       checked={checked}
       disabled={disabled}
       onCheckedChange={onCheckedChange}
-      className="relative h-6 w-11 rounded-full bg-slate-300 data-[state=checked]:bg-[#2447A8]"
+      className="relative h-6 w-11 rounded-full bg-slate-300 data-[state=checked]:bg-[#2563EB]"
     >
       <SwitchPrimitive.Thumb className="block h-5 w-5 translate-x-0.5 rounded-full bg-white transition-transform data-[state=checked]:translate-x-5" />
     </SwitchPrimitive.Root>

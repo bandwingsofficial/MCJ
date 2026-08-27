@@ -71,7 +71,7 @@ export function CourseManageStudentsPanel({ courseId }: Props) {
       </div>
 
       {isLoading ? (
-        <p className="py-8 text-center text-sm text-slate-500">
+        <p className="py-8 text-center text-sm text-[#647A9B]">
           Loading students...
         </p>
       ) : uniqueStudents.length === 0 ? (
@@ -105,7 +105,7 @@ export function CourseManageStudentsPanel({ courseId }: Props) {
                   .join(" ");
                 return (
                   <tr key={student.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                    <td className="px-4 py-3 text-sm font-medium text-[#102A56]">
                       {name || "—"}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-700">
@@ -119,7 +119,7 @@ export function CourseManageStudentsPanel({ courseId }: Props) {
                     <td className="px-4 py-3 text-right">
                       <Link
                         href={studentManagePath(student.id)}
-                        className="text-sm font-medium text-[#2447A8] hover:underline"
+                        className="text-sm font-medium text-[#2563EB] hover:underline"
                       >
                         View
                       </Link>

@@ -129,7 +129,7 @@ export function ModuleContentTable<T extends ModuleContentRow>({
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full border-collapse">
-        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
+        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
           <tr>
             {showReorderColumn && onReorder ? (
               <th className="w-[4.5rem] px-3 py-3">
@@ -158,7 +158,7 @@ export function ModuleContentTable<T extends ModuleContentRow>({
                 <p className="text-sm font-medium text-slate-700">
                   {isTrulyEmpty ? emptyTitle : emptySearchDescription}
                 </p>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-[#647A9B]">
                   {isTrulyEmpty ? emptyDescription : ""}
                 </p>
               </td>

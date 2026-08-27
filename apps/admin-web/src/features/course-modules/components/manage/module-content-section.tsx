@@ -46,7 +46,7 @@ export function ModuleContentSection({
   return (
     <Card className="overflow-hidden border-slate-200 bg-white p-0 shadow-sm">
       <div className="border-b border-slate-200 px-4 py-3">
-        <h2 className="mb-3 text-sm font-semibold text-slate-900">{title}</h2>
+        <h2 className="mb-3 text-sm font-semibold text-[#102A56]">{title}</h2>
 
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">

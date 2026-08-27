@@ -226,8 +226,8 @@ export function StudentManageEnrollmentsPanel({
     <>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">Enrollments</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-base font-semibold text-[#102A56]">Enrollments</h2>
+          <p className="text-sm text-[#647A9B]">
             Manage batch enrollments for this student
           </p>
         </div>

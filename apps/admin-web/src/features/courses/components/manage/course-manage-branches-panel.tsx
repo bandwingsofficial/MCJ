@@ -188,7 +188,7 @@ export function CourseManageBranchesPanel({
         </div>
 
         {isLoading ? (
-          <p className="py-8 text-center text-sm text-slate-500">
+          <p className="py-8 text-center text-sm text-[#647A9B]">
             Loading branches...
           </p>
         ) : filteredBranches.length === 0 ? (
@@ -215,7 +215,7 @@ export function CourseManageBranchesPanel({
               <tbody className="divide-y divide-slate-200">
                 {filteredBranches.map((branch) => (
                   <tr key={branch.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                    <td className="px-4 py-3 text-sm font-medium text-[#102A56]">
                       {branch.branchName}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-700">

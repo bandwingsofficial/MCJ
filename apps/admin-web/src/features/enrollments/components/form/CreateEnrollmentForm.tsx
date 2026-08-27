@@ -468,7 +468,7 @@ export function CreateEnrollmentForm({
             Select Branch
           </label>
           {isLoadingBranches ? (
-            <p className="text-sm text-slate-500">Loading branches...</p>
+            <p className="text-sm text-[#647A9B]">Loading branches...</p>
           ) : (
             <AppSelect
               value={branchId || undefined}
@@ -488,9 +488,9 @@ export function CreateEnrollmentForm({
         <div className="space-y-2">
           <p className="text-sm font-medium text-slate-700">Select Batch</p>
           {isLoadingBatches ? (
-            <p className="text-sm text-slate-500">Loading batches...</p>
+            <p className="text-sm text-[#647A9B]">Loading batches...</p>
           ) : batches.length === 0 ? (
-            <p className="text-sm text-slate-500">No data yet</p>
+            <p className="text-sm text-[#647A9B]">No data yet</p>
           ) : (
             <AppSelect
               value={batchId || undefined}
@@ -528,9 +528,9 @@ export function CreateEnrollmentForm({
         <div className="space-y-2">
           <p className="text-sm font-medium text-slate-700">Select Student</p>
           {isLoadingContext ? (
-            <p className="text-sm text-slate-500">Loading students...</p>
+            <p className="text-sm text-[#647A9B]">Loading students...</p>
           ) : students.length === 0 ? (
-            <p className="text-sm text-slate-500">No data yet</p>
+            <p className="text-sm text-[#647A9B]">No data yet</p>
           ) : (
             <AppSelect
               value={studentId || undefined}
@@ -544,7 +544,7 @@ export function CreateEnrollmentForm({
 
       {!isEdit && batchId && studentId ? (
         <div className="space-y-4 rounded-xl border border-slate-200 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Payment</h3>
+          <h3 className="text-sm font-semibold text-[#102A56]">Payment</h3>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -610,7 +610,7 @@ export function CreateEnrollmentForm({
 
       {isEdit && batchId && studentId ? (
         <div className="space-y-4 rounded-xl border border-slate-200 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Payment</h3>
+          <h3 className="text-sm font-semibold text-[#102A56]">Payment</h3>
           <p className="text-xs text-slate-500">
             Existing payments are historical records and are not changed when
             you update branch, batch, or student.

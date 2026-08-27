@@ -15,9 +15,9 @@ export function CommunityToolbar({
       title="Community Posts"
       description="Manage all community posts"
       actions={
-        <Button onClick={onCreate}>
-    Create Post
-</Button>
+        <Button className="admin-create-btn" size="lg" onClick={onCreate}>
+          Create Post
+        </Button>
       }
     />
   );

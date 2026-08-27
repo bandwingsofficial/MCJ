@@ -22,22 +22,22 @@ export interface ButtonProps
 
 const variantClasses = {
   primary:
-    "bg-[#2447A8] text-white hover:bg-[#1E3A8A]",
+    "bg-[#2563EB] text-white shadow-[0_4px_14px_rgba(37,99,235,0.2)] hover:bg-[#1D4ED8] hover:shadow-[0_6px_16px_rgba(37,99,235,0.24)]",
 
   secondary:
-    "bg-[#F29A2E] text-white hover:bg-[#E28718]",
+    "bg-[#F4F9FF] text-[#102A56] hover:bg-[#EAF4FF]",
 
   outline:
-    "border border-slate-300 bg-white hover:bg-slate-50",
+    "border border-[#DCE8F5] bg-white text-[#102A56] hover:bg-[#F8FBFF]",
 
   danger:
-    "bg-red-600 text-white hover:bg-red-700",
+    "bg-rose-600 text-white hover:bg-rose-700",
 
   success:
     "bg-emerald-600 text-white hover:bg-emerald-700",
 
   ghost:
-    "hover:bg-slate-100",
+    "hover:bg-[#F4F9FF]",
 };
 
 const sizeClasses = {
@@ -45,7 +45,7 @@ const sizeClasses = {
 
   md: "h-11 px-5 text-sm",
 
-  lg: "h-12 px-6 text-base",
+  lg: "h-[52px] px-5 text-sm",
 };
 
 export function Button({
@@ -62,8 +62,8 @@ export function Button({
       aria-busy={loading}
       disabled={loading || disabled}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-colors",
-        "focus:outline-none focus:ring-2 focus:ring-[#2447A8]",
+        "inline-flex items-center justify-center gap-2 rounded-[14px] font-medium transition-all",
+        "focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30",
         "disabled:pointer-events-none disabled:opacity-50",
         variantClasses[variant],
         sizeClasses[size],

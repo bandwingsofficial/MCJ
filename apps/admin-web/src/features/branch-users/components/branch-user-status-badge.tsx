@@ -35,7 +35,7 @@ export function BranchUserStatusBadge({
 
   return (
     <Badge
-      variant="warning"
+      variant="danger"
       className="px-2.5 py-0.5 text-sm"
     >
       Inactive

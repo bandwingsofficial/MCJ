@@ -26,7 +26,7 @@ function InfoField({
   return (
     <div>
       <dt className="text-xs font-medium text-slate-500">{label}</dt>
-      <dd className="mt-1 text-sm font-medium text-slate-900">{children}</dd>
+      <dd className="mt-1 text-sm font-medium text-[#102A56]">{children}</dd>
     </div>
   );
 }
@@ -37,7 +37,7 @@ export function StudentOverviewInformation({ student }: Props) {
 
   return (
     <Card className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-      <h2 className="text-base font-semibold text-slate-900">
+      <h2 className="text-base font-semibold text-[#102A56]">
         Student Information
       </h2>
 
@@ -57,8 +57,8 @@ export function StudentOverviewInformation({ student }: Props) {
         )}
 
         <div className="min-w-0">
-          <p className="text-lg font-semibold text-slate-900">{fullName}</p>
-          <p className="mt-0.5 text-sm text-slate-500">{student.studentCode}</p>
+          <p className="text-lg font-semibold text-[#102A56]">{fullName}</p>
+          <p className="mt-0.5 text-sm text-[#647A9B]">{student.studentCode}</p>
           <div className="mt-2">
             <StudentStatusBadge
               status={student.status}

@@ -81,7 +81,7 @@ export function CourseActions({
           disabled={disabled}
           onClick={() => onEdit(course)}
           aria-label="Edit course"
-          className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
         >
           <Pencil className={iconClass} />
         </Button>
@@ -91,7 +91,7 @@ export function CourseActions({
         <Link
           href={courseManagePath(course.id)}
           aria-label="Manage course"
-          className={`${iconBtnClass} inline-flex items-center justify-center text-slate-700 hover:bg-slate-100 hover:text-slate-900 ${
+          className={`${iconBtnClass} inline-flex items-center justify-center text-slate-700 hover:bg-slate-100 hover:text-[#102A56] ${
             disabled ? "pointer-events-none opacity-50" : ""
           }`}
         >

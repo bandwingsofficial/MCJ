@@ -231,7 +231,7 @@ export function BranchManageCoursesPanel({
     <>
       <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
         <div className="mb-3">
-          <h2 className="text-lg font-semibold text-slate-900">Courses</h2>
+          <h2 className="text-lg font-semibold text-[#102A56]">Courses</h2>
         </div>
         <BranchSectionToolbar
           search={search}
@@ -264,7 +264,7 @@ export function BranchManageCoursesPanel({
         >
           {courses.map((course) => (
             <tr key={course.id} className="hover:bg-slate-50">
-              <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
+              <td className="truncate px-4 py-3 text-sm font-medium text-[#102A56]">
                 {course.title}
               </td>
               <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-slate-700">

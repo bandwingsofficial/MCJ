@@ -8,7 +8,7 @@ import { Tooltip } from "@/src/shared/components/ui/tooltip";
 import { cn } from "@/src/shared/lib/cn";
 
 const iconBtnClass =
-  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg p-0 text-slate-600 hover:bg-slate-100 hover:text-slate-900";
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg p-0 text-slate-600 hover:bg-slate-100 hover:text-[#102A56]";
 
 interface Props {
   icon: LucideIcon;

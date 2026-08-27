@@ -76,7 +76,7 @@ export function FileUploadField({
         className={cn(
           "rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors",
           isDragging
-            ? "border-[#2447A8] bg-blue-50/40"
+            ? "border-[#2563EB] bg-blue-50/40"
             : "border-slate-300 bg-slate-50/50",
           Boolean(error) && "border-red-300 bg-red-50/30",
           disabled && "opacity-60",
@@ -127,7 +127,7 @@ export function FileUploadField({
 
       {hasSelection ? (
         <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
-          <p className="font-medium text-slate-900">{displayName}</p>
+          <p className="font-medium text-[#102A56]">{displayName}</p>
           {file ? (
             <p className="text-xs text-slate-500">{formatFileSize(file.size)}</p>
           ) : null}

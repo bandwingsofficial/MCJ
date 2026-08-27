@@ -23,7 +23,7 @@ export function CommunityPostCard({
       onClick={() => onClick?.(post)}
     >
       <Card
-        className="overflow-hidden transition-shadow hover:shadow-lg"
+        className="overflow-hidden transition-shadow hover:shadow-[0_2px_10px_rgba(16,42,86,0.08)]"
       >
         {post.mediaUrl && (
           <img

@@ -88,7 +88,7 @@ export function BranchManageWorkspace({
           <TabsTrigger
             key={value}
             value={value}
-            className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2447A8] data-[state=active]:bg-transparent data-[state=active]:text-[#2447A8] data-[state=active]:shadow-none"
+            className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none"
           >
             {label}
           </TabsTrigger>
@@ -153,7 +153,7 @@ export function BranchManageWorkspace({
           <p className="text-sm font-medium text-slate-700">
             Reports coming soon
           </p>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-[#647A9B]">
             Branch-level reporting will be available in a future update.
           </p>
         </Card>

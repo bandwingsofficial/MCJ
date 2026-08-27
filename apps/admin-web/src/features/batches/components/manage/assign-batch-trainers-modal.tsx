@@ -110,11 +110,11 @@ export function AssignBatchTrainersModal({
 
         <div className="max-h-80 space-y-1 overflow-y-auto rounded-xl border border-slate-200 p-2">
           {isLoading ? (
-            <p className="px-2 py-6 text-center text-sm text-slate-500">
+            <p className="px-2 py-6 text-center text-sm text-[#647A9B]">
               Loading trainers...
             </p>
           ) : filteredTrainers.length === 0 ? (
-            <p className="px-2 py-6 text-center text-sm text-slate-500">
+            <p className="px-2 py-6 text-center text-sm text-[#647A9B]">
               No active trainers match your search.
             </p>
           ) : (
@@ -132,7 +132,7 @@ export function AssignBatchTrainersModal({
                     onCheckedChange={() => toggleTrainer(trainer.id)}
                   />
                   <span className="min-w-0">
-                    <span className="block text-sm font-medium text-slate-900">
+                    <span className="block text-sm font-medium text-[#102A56]">
                       {formatTrainerName(trainer) || "—"}
                     </span>
                     {meta ? (
@@ -146,7 +146,7 @@ export function AssignBatchTrainersModal({
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-4">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-[#647A9B]">
             {selectedIds.length} selected
           </p>
           <div className="flex gap-2">

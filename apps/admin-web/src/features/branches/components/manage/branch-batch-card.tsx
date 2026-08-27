@@ -37,7 +37,7 @@ function BatchDetailRow({
   return (
     <div>
       <p className="text-xs text-slate-500">{label}</p>
-      <p className="text-sm font-medium text-slate-900">{value}</p>
+      <p className="text-sm font-medium text-[#102A56]">{value}</p>
     </div>
   );
 }
@@ -77,10 +77,10 @@ export function BranchBatchCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold text-slate-900">
+          <h3 className="truncate text-base font-semibold text-[#102A56]">
             {batch.name}
           </h3>
-          <p className="mt-0.5 font-mono text-sm text-slate-500">
+          <p className="mt-0.5 font-mono text-sm text-[#647A9B]">
             {batch.code}
           </p>
         </div>

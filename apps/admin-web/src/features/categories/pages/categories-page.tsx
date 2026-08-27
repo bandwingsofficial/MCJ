@@ -984,7 +984,7 @@ export function CategoriesPage() {
 
   return (
 
-    <div className="-m-6 min-h-full bg-white p-6">
+    <div className="min-h-full">
 
     <>
 
@@ -1032,7 +1032,7 @@ export function CategoriesPage() {
 
       <div className="mt-5">
 
-        <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
+        <Card className="overflow-hidden p-0">
 
           <CategoryBulkActionsToolbar
 
@@ -1160,13 +1160,13 @@ export function CategoriesPage() {
 
 
 
-              <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-[#DCE8F5] bg-[#F8FBFF] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
 
                 {total > 0 ? (
 
                   <>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-slate-600">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-[#647A9B]">
 
                       <span className="leading-9">
 
@@ -1182,7 +1182,7 @@ export function CategoriesPage() {
 
                         <select
 
-                          className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-[15px]"
+                          className="h-9 rounded-xl border border-[#DCE8F5] bg-white px-2 text-[15px] text-[#102A56]"
 
                           value={filters.pageSize}
 

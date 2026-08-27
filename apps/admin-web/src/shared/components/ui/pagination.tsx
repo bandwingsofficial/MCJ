@@ -37,7 +37,7 @@ export function Pagination({
         <ChevronLeft className="h-4 w-4" />
       </Button>
 
-      <span className="min-w-[8rem] text-center text-[15px] leading-9 text-slate-600">
+      <span className="min-w-[8rem] text-center text-[15px] leading-9 text-[#647A9B]">
         Page {page} of {totalPages}
       </span>
 

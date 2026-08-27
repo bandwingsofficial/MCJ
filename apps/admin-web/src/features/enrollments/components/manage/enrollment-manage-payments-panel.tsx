@@ -61,7 +61,7 @@ export function EnrollmentManagePaymentsPanel({
       <Card className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-semibold text-slate-900">
+            <h2 className="text-base font-semibold text-[#102A56]">
               Payment Summary
             </h2>
             <PaymentStatusBadge status={enrollment.paymentStatus} />
@@ -69,7 +69,7 @@ export function EnrollmentManagePaymentsPanel({
           <Button
             type="button"
             disabled={remaining <= 0}
-            className="h-10 rounded-lg bg-blue-600 px-4 font-semibold hover:bg-blue-700"
+            className="h-[52px] rounded-[14px] px-5 font-semibold"
             onClick={() => setIsCreateOpen(true)}
           >
             <Plus className="mr-1.5 h-4 w-4" />
@@ -94,7 +94,7 @@ export function EnrollmentManagePaymentsPanel({
 
       <Card className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-sm">
         <div className="border-b border-slate-200 px-5 py-4">
-          <h2 className="text-base font-semibold text-slate-900">
+          <h2 className="text-base font-semibold text-[#102A56]">
             Payment History
           </h2>
         </div>
@@ -106,15 +106,15 @@ export function EnrollmentManagePaymentsPanel({
           </div>
         ) : payments.length === 0 ? (
           <div className="px-5 py-12 text-center">
-            <p className="text-sm font-medium text-slate-900">No data yet</p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="text-sm font-medium text-[#102A56]">No data yet</p>
+            <p className="mt-1 text-sm text-[#647A9B]">
               Payments recorded for this enrollment will appear here.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse">
-              <thead className="border-b border-slate-200 bg-slate-50/95">
+              <thead className="border-b border-slate-200 bg-[#F6F9FD]">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Payment No
@@ -145,7 +145,7 @@ export function EnrollmentManagePaymentsPanel({
                     <td className="px-4 py-3 text-sm text-slate-700">
                       {payment.paymentMethod}
                     </td>
-                    <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                    <td className="px-4 py-3 text-sm font-medium text-[#102A56]">
                       {formatCurrency(payment.amount)}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-700">

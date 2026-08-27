@@ -39,15 +39,15 @@ export function StudentManageAttendancePanel({ student, refreshKey = 0 }: Props)
 
   return (
     <Card className="rounded-2xl border border-slate-200/80 p-6 shadow-sm">
-      <h2 className="text-base font-semibold text-slate-900">Attendance</h2>
-      <p className="mt-1 text-sm text-slate-500">
+      <h2 className="text-base font-semibold text-[#102A56]">Attendance</h2>
+      <p className="mt-1 text-sm text-[#647A9B]">
         Attendance records for {student.studentCode}
       </p>
       <div className="mt-6 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-12 text-center">
         <p className="text-sm font-medium text-slate-700">
           No attendance records yet
         </p>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-[#647A9B]">
           Attendance tracking will appear here once the attendance module is
           connected.
         </p>

@@ -30,8 +30,8 @@ import {
   ClipboardList,
   Settings,
   LogOut,
-  ChevronsLeft,
-  ChevronsRight,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import {
@@ -197,11 +197,13 @@ export function AdminSidebar() {
     <>
       <aside
         style={{ width: sidebarWidth }}
-        className="flex h-screen shrink-0 flex-col border-r border-white/5 bg-gradient-to-b from-[#0B1120] to-[#111827] text-white shadow-2xl shadow-black/40 transition-[width] duration-200 ease-in-out"
+        className="admin-sidebar relative flex h-screen shrink-0 flex-col border-r border-[#DCE8F5] text-[#102A56] transition-[width] duration-200 ease-in-out"
       >
+        <div className="admin-sidebar-wash" aria-hidden="true" />
+
         <div
           className={cn(
-            "flex h-20 shrink-0 items-center border-b border-white/10 bg-[#0B1120]/80 backdrop-blur-sm",
+            "flex h-[88px] shrink-0 items-center",
             collapsed ? "justify-center px-2" : "gap-3 px-5",
           )}
         >
@@ -210,16 +212,16 @@ export function AdminSidebar() {
               src="/Logo/MCJ_logo.png"
               alt="logo"
               fill
-              className="object-contain drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]"
+              className="object-contain"
             />
           </div>
 
           {!collapsed ? (
             <div className="min-w-0">
-              <h2 className="text-sm font-bold tracking-tight text-white">
+              <h2 className="text-[15px] font-bold tracking-tight text-[#102A56]">
                 MCJ Institute
               </h2>
-              <p className="text-[10px] font-medium uppercase tracking-widest text-amber-400">
+              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2563EB]">
                 Admin Platform
               </p>
             </div>
@@ -228,24 +230,26 @@ export function AdminSidebar() {
 
         <div
           className={cn(
-            "custom-scrollbar flex-1 space-y-6 overflow-y-auto overflow-x-hidden py-4",
+            "custom-scrollbar flex-1 space-y-6 overflow-y-auto overflow-x-hidden py-3",
             collapsed ? "px-2" : "px-3",
           )}
         >
           {menu.map((group) => (
             <div key={group.section}>
               {!collapsed ? (
-                <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+                <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#647A9B]">
                   {group.section}
                 </p>
               ) : (
-                <div className="mx-auto mb-2 h-px w-6 bg-white/10" />
+                <div className="mx-auto mb-2 h-px w-6 bg-[#DCE8F5]" />
               )}
 
               <div className="space-y-1">
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive = pathname === item.path;
+                  const isActive =
+                    pathname === item.path ||
+                    pathname.startsWith(`${item.path}/`);
 
                   return (
                     <SidebarTooltip
@@ -256,28 +260,21 @@ export function AdminSidebar() {
                       <Link
                         href={item.path}
                         className={cn(
-                          "group flex items-center rounded-xl text-sm transition-all duration-200",
+                          "group flex items-center text-sm transition-all duration-200",
                           collapsed
-                            ? "h-10 justify-center px-0"
-                            : "gap-3 px-3 py-2.5 hover:translate-x-1",
-                          "hover:bg-white/5",
+                            ? "h-11 justify-center rounded-2xl px-0"
+                            : "gap-3 rounded-2xl px-3 py-2.5",
                           isActive
-                            ? "border border-amber-500/20 bg-gradient-to-r from-amber-500/10 to-amber-600/5 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.15)]"
-                            : "text-gray-400 hover:text-white",
+                            ? "bg-white font-medium text-[#2563EB] shadow-[0_2px_10px_rgba(16,42,86,0.07)]"
+                            : "bg-transparent text-[#102A56] hover:bg-white/70",
                         )}
                       >
                         <Icon
-                          className={cn(
-                            "h-5 w-5 shrink-0 transition-transform duration-200",
-                            isActive &&
-                              "text-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.5)]",
-                            "group-hover:scale-110",
-                          )}
+                          className="h-[22px] w-[22px] shrink-0 text-[#2563EB]"
+                          strokeWidth={1.75}
                         />
                         {!collapsed ? (
-                          <span className={cn("truncate", isActive && "font-medium")}>
-                            {item.name}
-                          </span>
+                          <span className="truncate">{item.name}</span>
                         ) : null}
                       </Link>
                     </SidebarTooltip>
@@ -290,51 +287,40 @@ export function AdminSidebar() {
 
         <div
           className={cn(
-            "shrink-0 border-t border-white/10 bg-gradient-to-t from-[#0B1120] to-transparent",
-            collapsed ? "p-2" : "p-4",
+            "shrink-0 pb-6",
+            collapsed ? "p-2" : "px-3 pt-3",
           )}
         >
-          <SidebarTooltip
-            label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            enabled={collapsed}
-          >
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-expanded={!collapsed}
-              className={cn(
-                "mb-1 flex w-full items-center rounded-xl text-gray-400 transition-all duration-200 hover:bg-white/5 hover:text-white",
-                collapsed ? "h-10 justify-center" : "gap-3 px-3 py-2.5",
-              )}
-            >
-              {collapsed ? (
-                <ChevronsRight className="h-5 w-5 shrink-0" />
-              ) : (
-                <>
-                  <ChevronsLeft className="h-5 w-5 shrink-0" />
-                  <span className="text-sm font-medium">Collapse</span>
-                </>
-              )}
-            </button>
-          </SidebarTooltip>
-
           <SidebarTooltip label="Sign Out" enabled={collapsed}>
             <button
               type="button"
               onClick={() => setLogoutOpen(true)}
               className={cn(
-                "group flex w-full items-center rounded-xl text-red-400 transition-all duration-200 hover:bg-red-500/10 hover:text-red-300",
-                collapsed ? "h-10 justify-center" : "gap-3 px-3 py-2.5",
+                "group flex w-full items-center rounded-2xl text-rose-500 transition-colors duration-200 hover:bg-white/80 hover:text-rose-600",
+                collapsed ? "h-11 justify-center" : "gap-3 px-3 py-2.5",
               )}
             >
-              <LogOut className="h-5 w-5 shrink-0 transition-transform group-hover:scale-110 group-hover:-translate-x-1" />
+              <LogOut className="h-[22px] w-[22px] shrink-0" strokeWidth={1.75} />
               {!collapsed ? (
                 <span className="text-sm font-medium">Sign Out</span>
               ) : null}
             </button>
           </SidebarTooltip>
         </div>
+
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!collapsed}
+          className="absolute -right-3 bottom-24 z-30 flex h-8 w-8 items-center justify-center rounded-full border border-[#DCE8F5] bg-white text-[#102A56] shadow-[0_2px_10px_rgba(16,42,86,0.08)] transition-colors hover:bg-[#F8FBFF]"
+        >
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </button>
       </aside>
 
       <ConfirmDialog

@@ -16,12 +16,12 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">
+        <h1 className="text-[30px] font-bold tracking-tight text-[#102A56]">
           {title}
         </h1>
 
         {description && (
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-[#647A9B]">
             {description}
           </p>
         )}

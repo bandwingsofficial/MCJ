@@ -50,7 +50,7 @@ export function CourseOverviewMetricCards({ stats, isLoading }: Props) {
       label: "Total Modules",
       value: stats.modules,
       icon: Layers,
-      iconClass: "text-[#2447A8]",
+      iconClass: "text-[#2563EB]",
       bgClass: "bg-blue-50",
     },
     {
@@ -120,7 +120,7 @@ export function CourseOverviewMetricCards({ stats, isLoading }: Props) {
                 <p className="text-sm font-medium text-slate-500">
                   {metric.label}
                 </p>
-                <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-slate-900">
+                <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-[#102A56]">
                   {metric.value}
                 </p>
               </div>

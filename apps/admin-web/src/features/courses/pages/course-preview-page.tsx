@@ -69,7 +69,7 @@ function PreviewSection({
         {title}
       </h4>
       {items.length === 0 ? (
-        <p className="mt-2 text-sm text-slate-500">{emptyMessage}</p>
+        <p className="mt-2 text-sm text-[#647A9B]">{emptyMessage}</p>
       ) : (
         <ul className="mt-2 space-y-2">
           {items.map((item) => (
@@ -84,12 +84,12 @@ function PreviewSection({
                     href={item.fileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-medium text-[#2447A8] hover:underline"
+                    className="font-medium text-[#2563EB] hover:underline"
                   >
                     {item.title}
                   </a>
                 ) : (
-                  <span className="font-medium text-slate-900">
+                  <span className="font-medium text-[#102A56]">
                     {item.title}
                   </span>
                 )}
@@ -137,7 +137,7 @@ export function CoursePreviewPage({ courseId }: Props) {
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-6">
       <Link
         href={`/courses/${courseId}/manage`}
-        className="inline-flex items-center text-sm font-medium text-[#2447A8] hover:underline"
+        className="inline-flex items-center text-sm font-medium text-[#2563EB] hover:underline"
       >
         <ArrowLeft className="mr-1.5 h-4 w-4" />
         Back to Management
@@ -172,7 +172,7 @@ export function CoursePreviewPage({ courseId }: Props) {
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Course
             </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#102A56] sm:text-3xl">
               {course.title}
             </h1>
             {course.tagline ? (
@@ -199,10 +199,10 @@ export function CoursePreviewPage({ courseId }: Props) {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-900">Course Content</h2>
+        <h2 className="text-lg font-semibold text-[#102A56]">Course Content</h2>
 
         {modules.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-[#647A9B]">
             No modules available for preview yet.
           </div>
         ) : (
@@ -216,11 +216,11 @@ export function CoursePreviewPage({ courseId }: Props) {
                   className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
                   <header className="border-b border-slate-100 pb-4">
-                    <h3 className="text-base font-semibold text-slate-900">
+                    <h3 className="text-base font-semibold text-[#102A56]">
                       {formatModuleHeading(module, index)}
                     </h3>
                     {module.description?.trim() ? (
-                      <p className="mt-1 text-sm text-slate-500">
+                      <p className="mt-1 text-sm text-[#647A9B]">
                         {module.description.trim()}
                       </p>
                     ) : null}
@@ -256,7 +256,7 @@ export function CoursePreviewPage({ courseId }: Props) {
                       <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Assignments
                       </h4>
-                      <p className="mt-2 flex items-center gap-2 text-sm text-slate-500">
+                      <p className="mt-2 flex items-center gap-2 text-sm text-[#647A9B]">
                         <ClipboardList className="h-4 w-4 shrink-0" />
                         No assignments available yet.
                       </p>

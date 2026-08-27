@@ -21,7 +21,7 @@ export function Checkbox({
       onCheckedChange={(value) =>
         onCheckedChange(Boolean(value))
       }
-      className="flex h-5 w-5 items-center justify-center rounded border border-slate-300 bg-white data-[state=checked]:border-[#2447A8] data-[state=checked]:bg-[#2447A8]"
+      className="flex h-5 w-5 items-center justify-center rounded border border-[#DCE8F5] bg-white data-[state=checked]:border-[#2563EB] data-[state=checked]:bg-[#2563EB]"
     >
       <CheckboxPrimitive.Indicator>
         <Check className="h-4 w-4 text-white" />

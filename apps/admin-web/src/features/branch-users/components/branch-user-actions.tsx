@@ -139,7 +139,7 @@ export function BranchUserActions({
         onClick={() => onResetPassword(branchUser)}
         title="Reset password"
         aria-label="Reset password"
-        className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+        className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
       >
         <KeyRound className={iconClass} />
       </Button>

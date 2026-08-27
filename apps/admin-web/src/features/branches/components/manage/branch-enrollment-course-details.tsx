@@ -14,7 +14,7 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="text-xs text-slate-500">{label}</p>
-      <p className="text-sm font-medium text-slate-900">{value}</p>
+      <p className="text-sm font-medium text-[#102A56]">{value}</p>
     </div>
   );
 }
@@ -27,7 +27,7 @@ export function BranchEnrollmentCourseDetails({
   if (isLoading) {
     return (
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <p className="text-sm text-slate-500">Loading course information...</p>
+        <p className="text-sm text-[#647A9B]">Loading course information...</p>
       </div>
     );
   }
@@ -51,7 +51,7 @@ export function BranchEnrollmentCourseDetails({
           />
         ) : null}
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-slate-900">{course.title}</h3>
+          <h3 className="text-sm font-semibold text-[#102A56]">{course.title}</h3>
           <p className="font-mono text-xs text-slate-500">{course.code}</p>
         </div>
       </div>

@@ -25,7 +25,7 @@ function DetailItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="text-xs text-slate-500">{label}</p>
-      <p className="text-sm font-medium text-slate-900">{value}</p>
+      <p className="text-sm font-medium text-[#102A56]">{value}</p>
     </div>
   );
 }
@@ -47,7 +47,7 @@ export function StudentOverviewEnrollmentCard({
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm font-semibold text-slate-900">
+        <p className="text-sm font-semibold text-[#102A56]">
           {formatEnrollmentBatchName(enrollment)}
         </p>
         <span className="font-mono text-xs text-slate-500">

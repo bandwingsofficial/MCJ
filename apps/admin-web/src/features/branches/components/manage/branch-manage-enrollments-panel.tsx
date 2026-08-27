@@ -77,7 +77,7 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
   return (
     <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
       <div className="mb-3">
-        <h2 className="text-lg font-semibold text-slate-900">
+        <h2 className="text-lg font-semibold text-[#102A56]">
           Enrolled Students
         </h2>
       </div>
@@ -109,7 +109,7 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
             <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-slate-700">
               {enrollment.student?.studentCode ?? ""}
             </td>
-            <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
+            <td className="truncate px-4 py-3 text-sm font-medium text-[#102A56]">
               {formatStudentName(enrollment)}
             </td>
             <td className="truncate px-4 py-3 text-sm text-slate-700">

@@ -198,7 +198,7 @@ export function BatchManageCoursesPanel({
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-4 py-12 text-center text-sm text-slate-500"
+                    className="px-4 py-12 text-center text-sm text-[#647A9B]"
                   >
                     Loading courses...
                   </td>
@@ -206,10 +206,10 @@ export function BatchManageCoursesPanel({
               ) : filteredAssignments.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-12 text-center">
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-[#102A56]">
                       No courses assigned yet
                     </p>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="mt-1 text-sm text-[#647A9B]">
                       Add courses to this batch to get started.
                     </p>
                   </td>
@@ -217,7 +217,7 @@ export function BatchManageCoursesPanel({
               ) : (
                 filteredAssignments.map((assignment) => (
                   <tr key={assignment.id} className="hover:bg-slate-50">
-                    <td className="truncate px-4 py-3 text-sm font-medium text-slate-900">
+                    <td className="truncate px-4 py-3 text-sm font-medium text-[#102A56]">
                       {assignment.course.title}
                     </td>
                     <td className="truncate px-4 py-3 text-sm text-slate-700">

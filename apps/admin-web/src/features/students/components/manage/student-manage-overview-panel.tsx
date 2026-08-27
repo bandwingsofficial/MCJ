@@ -37,11 +37,11 @@ export function StudentManageOverviewPanel({
 
       <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-base font-semibold text-slate-900">Documents</h2>
+          <h2 className="text-base font-semibold text-[#102A56]">Documents</h2>
           <button
             type="button"
             onClick={() => onNavigateToTab("documents")}
-            className="text-sm font-medium text-[#2447A8] hover:underline"
+            className="text-sm font-medium text-[#2563EB] hover:underline"
           >
             View all
           </button>
@@ -61,11 +61,11 @@ export function StudentManageOverviewPanel({
                 className="rounded-xl border border-slate-200 bg-slate-50/40 p-4"
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-[#2447A8]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-[#2563EB]">
                     <FileText className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-slate-900">
+                    <p className="truncate font-medium text-[#102A56]">
                       {document.name}
                     </p>
                     <p className="text-xs text-slate-500">
@@ -93,7 +93,7 @@ export function StudentManageOverviewPanel({
             <p className="mt-3 text-sm font-medium text-slate-700">
               No documents uploaded
             </p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-[#647A9B]">
               Student documents will appear here once uploaded.
             </p>
           </div>

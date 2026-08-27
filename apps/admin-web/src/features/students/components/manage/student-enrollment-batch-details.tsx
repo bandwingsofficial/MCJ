@@ -20,8 +20,8 @@ interface Props {
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid grid-cols-[120px_1fr] gap-x-3 gap-y-1 sm:grid-cols-[140px_1fr]">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="text-sm font-medium text-slate-900">{value}</p>
+      <p className="text-sm text-[#647A9B]">{label}</p>
+      <p className="text-sm font-medium text-[#102A56]">{value}</p>
     </div>
   );
 }
@@ -32,10 +32,10 @@ export function StudentEnrollmentBatchDetails({
 }: Props) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <h3 className="text-sm font-semibold text-slate-900">Batch Details</h3>
+      <h3 className="text-sm font-semibold text-[#102A56]">Batch Details</h3>
       <div className="mt-3 space-y-2">
         {isLoading ? (
-          <p className="text-sm text-slate-500">Loading batch details...</p>
+          <p className="text-sm text-[#647A9B]">Loading batch details...</p>
         ) : (
           <>
             <DetailRow label="Course" value={details.courseTitle} />

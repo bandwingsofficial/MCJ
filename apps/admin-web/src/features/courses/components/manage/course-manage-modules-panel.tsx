@@ -172,7 +172,7 @@ export function CourseManageModulesPanel({
     <>
       <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-sm font-semibold text-slate-900">Modules</h2>
+          <h2 className="text-sm font-semibold text-[#102A56]">Modules</h2>
           <Button
             type="button"
             size="sm"
@@ -254,7 +254,7 @@ export function CourseManageModulesPanel({
                           <span className="text-xs font-semibold tabular-nums text-slate-500">
                             {formatContentOrderNumber(index + 1)}
                           </span>
-                          <h3 className="text-sm font-semibold text-slate-900">
+                          <h3 className="text-sm font-semibold text-[#102A56]">
                             {module.title}
                           </h3>
                         </div>

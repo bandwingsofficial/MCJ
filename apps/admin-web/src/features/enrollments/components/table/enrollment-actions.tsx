@@ -33,7 +33,7 @@ export function EnrollmentActions({
           disabled={disabled}
           onClick={() => onEdit(enrollment)}
           aria-label="Edit enrollment"
-          className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
         >
           <Pencil className={iconClass} />
         </Button>
@@ -46,7 +46,7 @@ export function EnrollmentActions({
           disabled={disabled}
           onClick={() => onManage(enrollment)}
           aria-label="Manage enrollment"
-          className={`${iconBtnClass} text-slate-700 hover:bg-slate-100 hover:text-slate-900`}
+          className={`${iconBtnClass} text-slate-700 hover:bg-slate-100 hover:text-[#102A56]`}
         >
           <Settings2 className={iconClass} />
         </Button>

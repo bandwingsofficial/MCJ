@@ -235,7 +235,7 @@ export function QuizBuilder({ quiz, onQuizUpdated }: QuizBuilderProps) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {statusBadge}
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-[#647A9B]">
             {sortedQuestions.length} question
             {sortedQuestions.length === 1 ? "" : "s"}
           </span>
@@ -263,7 +263,7 @@ export function QuizBuilder({ quiz, onQuizUpdated }: QuizBuilderProps) {
       ) : null}
 
       <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">Quiz Settings</h2>
+        <h2 className="text-sm font-semibold text-[#102A56]">Quiz Settings</h2>
 
         <form
           className="mt-4 space-y-4"
@@ -351,7 +351,7 @@ export function QuizBuilder({ quiz, onQuizUpdated }: QuizBuilderProps) {
 
       <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-slate-900">Questions</h2>
+          <h2 className="text-sm font-semibold text-[#102A56]">Questions</h2>
           <Button
             type="button"
             size="sm"
@@ -366,7 +366,7 @@ export function QuizBuilder({ quiz, onQuizUpdated }: QuizBuilderProps) {
         </div>
 
         {sortedQuestions.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-500">
+          <p className="py-8 text-center text-sm text-[#647A9B]">
             No questions yet. Add a question to build this quiz.
           </p>
         ) : (
@@ -418,7 +418,7 @@ export function QuizBuilder({ quiz, onQuizUpdated }: QuizBuilderProps) {
                         </span>
                       </div>
 
-                      <p className="mt-2 text-sm font-medium text-slate-900">
+                      <p className="mt-2 text-sm font-medium text-[#102A56]">
                         {question.questionText}
                       </p>
 

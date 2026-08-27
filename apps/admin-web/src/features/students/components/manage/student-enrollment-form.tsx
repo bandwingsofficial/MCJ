@@ -339,12 +339,12 @@ export function StudentEnrollmentForm({
         {mode === "edit" && editBatchDetails ? (
           <div>
             <p className="text-sm font-medium text-slate-700">Batch</p>
-            <p className="mt-1 text-sm text-slate-900">
+            <p className="mt-1 text-sm text-[#102A56]">
               {editBatchDetails.batchLabel}
             </p>
           </div>
         ) : batches.length === 0 ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-[#647A9B]">
             No eligible batches available for this student.
           </p>
         ) : (
@@ -422,7 +422,7 @@ export function StudentEnrollmentForm({
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
             Final Amount
           </p>
-          <p className="mt-1 text-base font-semibold text-slate-900">
+          <p className="mt-1 text-base font-semibold text-[#102A56]">
             {formatCurrency(finalAmount)}
           </p>
         </div>

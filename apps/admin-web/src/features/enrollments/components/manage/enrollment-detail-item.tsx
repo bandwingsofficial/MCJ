@@ -10,7 +10,7 @@ export function EnrollmentDetailItem({
   return (
     <div>
       <p className="text-xs text-slate-500">{label}</p>
-      <p className="mt-0.5 text-sm font-medium text-slate-900">{value}</p>
+      <p className="mt-0.5 text-sm font-medium text-[#102A56]">{value}</p>
     </div>
   );
 }

@@ -64,7 +64,7 @@ export function StudentOverviewMetricGrid({ metrics, isLoading }: Props) {
                 </p>
                 <p
                   className={cn(
-                    "mt-1 font-semibold tabular-nums tracking-tight text-slate-900",
+                    "mt-1 font-semibold tabular-nums tracking-tight text-[#102A56]",
                     metric.isText ? "text-lg" : "text-3xl",
                   )}
                 >

@@ -25,7 +25,7 @@ export function SearchInput({
   return (
     <div className="relative w-full">
       <Search
-        className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
+        className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8AA0BB]"
       />
 
       <Input

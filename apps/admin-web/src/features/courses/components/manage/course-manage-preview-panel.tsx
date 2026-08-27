@@ -16,7 +16,7 @@ export function CourseManagePreviewPanel({
 }: Props) {
   return (
     <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-900">
+      <h2 className="text-sm font-semibold text-[#102A56]">
         Learner Preview
       </h2>
       <p className="mt-1 text-xs text-slate-500">
@@ -30,7 +30,7 @@ export function CourseManagePreviewPanel({
         </p>
         <Link
           href={`/courses/${courseId}/preview`}
-          className="mt-4 inline-flex h-9 items-center rounded-lg bg-[#2447A8] px-4 text-sm font-medium text-white hover:bg-[#1d3a8a]"
+          className="mt-4 inline-flex h-9 items-center rounded-lg bg-[#2563EB] px-4 text-sm font-medium text-white hover:bg-[#1d3a8a]"
         >
           <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
           Open Preview

@@ -136,11 +136,11 @@ export function CourseManageFaqPanel({ courseId, disabled = false }: Props) {
 
   return (
     <>
-      <Card className="overflow-hidden border-slate-200 p-0 shadow-sm">
+      <Card className="overflow-hidden p-0">
         <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">FAQ</h2>
-            <p className="mt-0.5 text-sm text-slate-500">
+            <h2 className="text-base font-semibold text-[#102A56]">FAQ</h2>
+            <p className="mt-0.5 text-sm text-[#647A9B]">
               Manage frequently asked questions for this course.
             </p>
           </div>
@@ -175,7 +175,7 @@ export function CourseManageFaqPanel({ courseId, disabled = false }: Props) {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse">
-              <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
+              <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
                 <tr>
                   <th className="w-10 px-2 py-3">
                     <span className="sr-only">Reorder</span>
@@ -199,7 +199,7 @@ export function CourseManageFaqPanel({ courseId, disabled = false }: Props) {
                       <p className="text-sm font-medium text-slate-700">
                         No FAQs found
                       </p>
-                      <p className="mt-1 text-sm text-slate-500">
+                      <p className="mt-1 text-sm text-[#647A9B]">
                         Create your first FAQ for this course.
                       </p>
                     </td>
@@ -242,7 +242,7 @@ export function CourseManageFaqPanel({ courseId, disabled = false }: Props) {
                           )}
                         </td>
                         <td className="max-w-xs px-3 py-3 align-top">
-                          <p className="text-sm font-medium text-slate-900">
+                          <p className="text-sm font-medium text-[#102A56]">
                             {faq.question}
                           </p>
                         </td>
@@ -260,7 +260,7 @@ export function CourseManageFaqPanel({ courseId, disabled = false }: Props) {
                               disabled={actionsDisabled}
                               title="Edit FAQ"
                               aria-label="Edit FAQ"
-                              className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+                              className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
                               onClick={() => {
                                 setEditTarget(faq);
                                 setFormOpen(true);

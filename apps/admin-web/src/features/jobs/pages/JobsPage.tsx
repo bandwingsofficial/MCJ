@@ -372,6 +372,8 @@ export function JobsPage() {
         description="Manage all job postings."
         actions={
           <Button
+            className="admin-create-btn"
+            size="lg"
             onClick={
               handleCreate
             }

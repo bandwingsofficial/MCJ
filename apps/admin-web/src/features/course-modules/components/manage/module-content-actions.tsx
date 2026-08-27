@@ -89,7 +89,7 @@ export function ModuleContentActions({
             onClick={onManage}
             title="Manage"
             aria-label="Manage"
-            className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+            className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
           >
             <Settings2 className={iconClass} />
           </Button>
@@ -150,7 +150,7 @@ export function ModuleContentActions({
           onClick={onManage}
           title="Manage"
           aria-label="Manage"
-          className={`${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
         >
           <Settings2 className={iconClass} />
         </Button>

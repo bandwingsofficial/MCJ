@@ -26,17 +26,17 @@ export function ModuleManageHeader({
 }: Props) {
   return (
     <>
-      <nav className="flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
+      <nav className="flex flex-wrap items-center gap-1.5 text-sm text-[#647A9B]">
         <Link
           href="/courses"
-          className="font-medium text-[#2447A8] hover:underline"
+          className="font-medium text-[#2563EB] hover:underline"
         >
           Courses
         </Link>
         <span aria-hidden>›</span>
         <Link
           href={courseManagePath(courseId)}
-          className="font-medium text-[#2447A8] hover:underline"
+          className="font-medium text-[#2563EB] hover:underline"
         >
           {courseTitle} ({courseCode})
         </Link>
@@ -45,20 +45,20 @@ export function ModuleManageHeader({
         <span aria-hidden>›</span>
         <Link
           href={courseManagePath(courseId)}
-          className="font-medium text-[#2447A8] hover:underline"
+          className="font-medium text-[#2563EB] hover:underline"
         >
           Modules
         </Link>
         <span aria-hidden>›</span>
-        <span className="font-medium text-slate-900">{module.title}</span>
+        <span className="font-medium text-[#102A56]">{module.title}</span>
       </nav>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">
+          <h1 className="text-xl font-semibold text-[#102A56] sm:text-2xl">
             {module.title}
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-[#647A9B]">
             Module {formatModuleNumber(module.displayOrder)}
           </p>
           {module.description ? (

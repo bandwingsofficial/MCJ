@@ -12,7 +12,7 @@ export function Table({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-slate-200 bg-white",
+        "overflow-hidden rounded-2xl border border-[#E1EBF5] bg-white shadow-[0_2px_10px_rgba(16,42,86,0.05)]",
         className
       )}
     >
@@ -31,7 +31,7 @@ export function TableHeader({
   children: React.ReactNode;
 }) {
   return (
-    <thead className="bg-slate-50">
+    <thead className="bg-[#F6F9FD]">
       {children}
     </thead>
   );
@@ -55,7 +55,7 @@ export function TableRow({
   return (
     <tr
       className={cn(
-        "border-b last:border-0",
+        "border-b border-[#EAF0F7] last:border-0 transition-colors hover:bg-[#F4F9FF]",
         className
       )}
       {...props}
@@ -75,7 +75,7 @@ export function TableHead({
   return (
     <th
       className={cn(
-        "px-3.5 py-2.5 text-left text-sm font-semibold uppercase tracking-wide text-slate-600",
+        "px-3.5 py-3.5 text-left text-[14px] font-semibold uppercase tracking-wide text-[#647A9B]",
         className
       )}
     >
@@ -94,7 +94,7 @@ export function TableCell({
   return (
     <td
       className={cn(
-        "px-3.5 py-2.5 text-[15px] text-slate-700",
+        "px-3.5 py-[1.05rem] text-[15px] text-[#102A56]",
         className
       )}
     >

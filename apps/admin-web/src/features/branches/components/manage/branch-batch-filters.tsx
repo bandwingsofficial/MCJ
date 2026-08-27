@@ -62,7 +62,7 @@ export function BranchBatchFiltersBar({
         <SearchInput
           value={filters.search ?? ""}
           placeholder="Search batches..."
-          className="!h-10 rounded-lg !py-2 pl-9 text-[15px]"
+          className="h-[46px] rounded-xl !py-2 pl-9 text-[15px]"
           onChange={(value) => onChange({ ...filters, search: value })}
         />
       </div>
@@ -70,7 +70,7 @@ export function BranchBatchFiltersBar({
       <div className="w-full shrink-0 sm:w-44">
         <AppSelect
           value={filters.mode ?? BATCH_SELECT_ALL}
-          triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
+          triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
           onValueChange={(value) =>
             onChange({
               ...filters,
@@ -84,7 +84,7 @@ export function BranchBatchFiltersBar({
       <div className="w-full shrink-0 sm:w-48">
         <AppSelect
           value={filters.categoryId ?? BATCH_SELECT_ALL}
-          triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
+          triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
           onValueChange={(value) =>
             onChange({
               ...filters,
@@ -98,7 +98,7 @@ export function BranchBatchFiltersBar({
       <div className="w-full shrink-0 sm:w-44">
         <AppSelect
           value={statusFilterValue}
-          triggerClassName="!h-10 rounded-lg px-3 text-[15px]"
+          triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
           onValueChange={(value) =>
             onChange(
               applyBatchStatusFilter(

@@ -722,7 +722,7 @@ export function CourseForm({
 
       <div className={GRID_CLASS}>
         <div className={`${CELL_CLASS} md:col-span-2`}>
-          <h3 className="text-sm font-semibold text-slate-900">Pricing</h3>
+          <h3 className="text-sm font-semibold text-[#102A56]">Pricing</h3>
         </div>
 
         <div className={CELL_CLASS}>
@@ -757,7 +757,7 @@ export function CourseForm({
           >
             <>
               {!pricesDisabled ? (
-                <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-slate-500">
+                <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-[#647A9B]">
                   ₹
                 </span>
               ) : null}
@@ -831,7 +831,7 @@ export function CourseForm({
           >
             <>
               {!pricesDisabled ? (
-                <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-slate-500">
+                <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-[#647A9B]">
                   ₹
                 </span>
               ) : null}
@@ -1001,7 +1001,7 @@ export function CourseForm({
       </ValidatedField>
 
       <div className="space-y-4 border-t border-slate-200 pt-4">
-        <h3 className="text-sm font-semibold text-slate-900">
+        <h3 className="text-sm font-semibold text-[#102A56]">
           SEO / Meta Information
         </h3>
 

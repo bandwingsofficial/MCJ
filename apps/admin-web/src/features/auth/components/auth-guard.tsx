@@ -38,7 +38,7 @@ export const AuthGuard = ({ children }: Props) => {
     status === "REFRESHING"
   ) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="flex h-screen items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-3 text-slate-600">
           <Loader />
           <p className="text-sm">Checking your session…</p>
@@ -49,7 +49,7 @@ export const AuthGuard = ({ children }: Props) => {
 
   if (!isAuthenticated || status === "UNAUTHENTICATED") {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="flex h-screen items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-3 text-slate-600">
           <Loader />
           <p className="text-sm">Redirecting to login…</p>

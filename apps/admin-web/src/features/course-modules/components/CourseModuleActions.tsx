@@ -71,7 +71,7 @@ export function CourseModuleActions({
           href={manageHref}
           title="Manage module"
           aria-label="Manage module"
-          className={`inline-flex items-center justify-center ${iconBtnClass} text-[#2447A8] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+          className={`inline-flex items-center justify-center ${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
         >
           <Settings2 className={iconClass} />
         </Link>

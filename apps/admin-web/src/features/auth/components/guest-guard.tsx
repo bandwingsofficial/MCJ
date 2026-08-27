@@ -24,7 +24,7 @@ export const GuestGuard = ({ children }: Props) => {
 
   if (status === "UNKNOWN" || status === "BOOTSTRAPPING") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#060A14]">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <Loader />
       </div>
     );
@@ -32,7 +32,7 @@ export const GuestGuard = ({ children }: Props) => {
 
   if (status === "AUTHENTICATED" && isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#060A14]">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <Loader />
       </div>
     );

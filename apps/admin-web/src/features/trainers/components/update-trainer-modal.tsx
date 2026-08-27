@@ -149,7 +149,7 @@ export function UpdateTrainerModal({
       bodyClassName="overflow-y-auto bg-white px-6 py-5"
     >
       {isLoadingDetails || !details ? (
-        <p className="py-6 text-sm text-slate-500">
+        <p className="py-6 text-sm text-[#647A9B]">
           Loading trainer details…
         </p>
       ) : (

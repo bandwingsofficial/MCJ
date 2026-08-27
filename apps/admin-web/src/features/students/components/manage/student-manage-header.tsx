@@ -56,17 +56,17 @@ export function StudentManageHeader({
 
   return (
     <div className="space-y-3">
-      <nav className="flex flex-wrap items-center gap-1.5 text-sm text-slate-500">
+      <nav className="flex flex-wrap items-center gap-1.5 text-sm text-[#647A9B]">
         <Link
           href="/students"
-          className="font-medium text-[#2447A8] hover:underline"
+          className="font-medium text-[#2563EB] hover:underline"
         >
           Students
         </Link>
         <span aria-hidden>›</span>
         <span className="font-medium text-slate-700">{student.studentCode}</span>
         <span aria-hidden>›</span>
-        <span className="text-slate-900">Management</span>
+        <span className="text-[#102A56]">Management</span>
         {activeSection ? (
           <>
             <span aria-hidden>›</span>
@@ -77,11 +77,11 @@ export function StudentManageHeader({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+          <h1 className="truncate text-xl font-semibold tracking-tight text-[#102A56] sm:text-2xl">
             {formatStudentName(student.firstName, student.lastName)}
           </h1>
           {metaLine ? (
-            <p className="mt-1 text-sm text-slate-500">{metaLine}</p>
+            <p className="mt-1 text-sm text-[#647A9B]">{metaLine}</p>
           ) : null}
           <div className="mt-2">
             <StudentStatusBadge

@@ -27,7 +27,7 @@ export function EnrollmentManageHeader({ enrollment, activeSection }: Props) {
       >
         <Link
           href="/enrollments"
-          className="text-slate-500 transition-colors hover:text-blue-600"
+          className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
         >
           Enrollments
         </Link>
@@ -36,7 +36,7 @@ export function EnrollmentManageHeader({ enrollment, activeSection }: Props) {
           {enrollment.enrollmentNumber}
         </span>
         <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden="true" />
-        <span className="text-slate-900">Management</span>
+        <span className="text-[#102A56]">Management</span>
         {activeSection ? (
           <>
             <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden="true" />
@@ -47,7 +47,7 @@ export function EnrollmentManageHeader({ enrollment, activeSection }: Props) {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="truncate text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="truncate text-2xl font-bold tracking-tight text-[#102A56]">
             {studentName || "Enrollment"}
           </h1>
           <p className="mt-1.5 text-sm leading-6 text-slate-500">

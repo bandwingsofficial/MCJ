@@ -53,7 +53,7 @@ export function StudentBulkActionsToolbar({
   ).length;
 
   return (
-    <div className="mb-3 flex flex-col gap-2 rounded-lg border border-[#2447A8]/20 bg-[#2447A8]/5 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-3 flex flex-col gap-2 rounded-lg border border-[#2563EB]/20 bg-[#2563EB]/5 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm font-medium text-slate-800">
         {selectedCount} student{selectedCount === 1 ? "" : "s"} selected
       </p>

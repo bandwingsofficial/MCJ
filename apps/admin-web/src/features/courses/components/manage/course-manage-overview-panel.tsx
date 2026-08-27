@@ -51,9 +51,9 @@ function SectionCard({
   return (
     <Card className="overflow-hidden border-slate-200 bg-white p-0 shadow-sm">
       <div className="border-b border-slate-200 px-4 py-3">
-        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+        <h2 className="text-base font-semibold text-[#102A56]">{title}</h2>
         {description ? (
-          <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+          <p className="mt-0.5 text-sm text-[#647A9B]">{description}</p>
         ) : null}
       </div>
       <div className="p-4">{children}</div>
@@ -172,7 +172,7 @@ export function CourseManageOverviewPanel({
             ))}
           </div>
         ) : sortedModules.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500">
+          <p className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-10 text-center text-sm text-[#647A9B]">
             No modules available
           </p>
         ) : (
@@ -203,7 +203,7 @@ export function CourseManageOverviewPanel({
                       <Trash2 className="h-[1.25rem] w-[1.25rem]" />
                     </Button>
                   </div>
-                  <p className="mt-3 font-semibold text-slate-900">
+                  <p className="mt-3 font-semibold text-[#102A56]">
                     {module.title}
                   </p>
                   {module.description?.trim() ? (
@@ -229,13 +229,13 @@ export function CourseManageOverviewPanel({
         description="Files and materials linked to this course."
       >
         {lessonResources.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
+          <p className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-sm text-[#647A9B]">
             No resources available
           </p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-200">
             <table className="min-w-full border-collapse">
-              <thead className="border-b border-slate-200 bg-slate-50/95">
+              <thead className="border-b border-slate-200 bg-[#F6F9FD]">
                 <tr>
                   {["Resource", "Type", "Module", "Lesson"].map((label) => (
                     <th
@@ -261,12 +261,12 @@ export function CourseManageOverviewPanel({
                             href={resource.fileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm font-medium text-[#2447A8] hover:underline"
+                            className="text-sm font-medium text-[#2563EB] hover:underline"
                           >
                             {resource.title}
                           </a>
                         ) : (
-                          <span className="text-sm font-medium text-slate-900">
+                          <span className="text-sm font-medium text-[#102A56]">
                             {resource.title}
                           </span>
                         )}
@@ -290,7 +290,7 @@ export function CourseManageOverviewPanel({
       </SectionCard>
 
       <section>
-        <h2 className="mb-4 text-base font-semibold text-slate-900">
+        <h2 className="mb-4 text-base font-semibold text-[#102A56]">
           Course Content Summary
         </h2>
         <CourseOverviewMetricCards

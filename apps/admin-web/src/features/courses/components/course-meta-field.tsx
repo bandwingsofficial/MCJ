@@ -39,7 +39,7 @@ export function CourseMetaField({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-auto shrink-0 px-0 py-0 text-xs font-medium text-[#2447A8] hover:bg-transparent hover:underline"
+            className="h-auto shrink-0 px-0 py-0 text-xs font-medium text-[#2563EB] hover:bg-transparent hover:underline"
             onClick={onReset}
           >
             Reset to auto

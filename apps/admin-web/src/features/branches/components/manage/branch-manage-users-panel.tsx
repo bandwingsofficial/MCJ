@@ -151,10 +151,10 @@ export function BranchManageUsersPanel({
       <div className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="text-lg font-semibold text-[#102A56]">
               Users
             </h2>
-            <p className="mt-0.5 text-sm text-slate-500">
+            <p className="mt-0.5 text-sm text-[#647A9B]">
               Manage users for {branchName}
             </p>
           </div>
@@ -228,7 +228,7 @@ export function BranchManageUsersPanel({
 
           {count > 0 ? (
             <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-slate-600">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-[#647A9B]">
                 <span className="leading-9">
                   Showing {from}–{to} of {count}
                 </span>
@@ -238,7 +238,7 @@ export function BranchManageUsersPanel({
                     Rows per page
                   </span>
                   <select
-                    className="h-9 rounded-lg border border-slate-300 bg-white px-2 text-[15px]"
+                    className="h-9 rounded-xl border border-[#DCE8F5] bg-white px-2 text-[15px] text-[#102A56]"
                     value={filters.pageSize}
                     disabled={tableDisabled}
                     onChange={(event) =>

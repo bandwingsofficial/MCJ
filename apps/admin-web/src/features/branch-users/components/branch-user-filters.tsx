@@ -30,7 +30,7 @@ export function BranchUserFiltersBar({
         <SearchInput
           value={filters.search}
           placeholder="Search users..."
-          className="!h-10 rounded-lg !py-2 pl-9 text-[15px]"
+          className="h-[46px] rounded-xl !py-2 pl-9 text-[15px]"
           onChange={(value) =>
             onChange({
               ...filters,

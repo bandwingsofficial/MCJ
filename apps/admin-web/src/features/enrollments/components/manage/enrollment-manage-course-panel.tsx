@@ -66,15 +66,15 @@ export function EnrollmentManageCoursePanel({ enrollment }: Props) {
       />
 
       <Card className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-900">
+        <h2 className="text-base font-semibold text-[#102A56]">
           Course Modules
         </h2>
         {modules.length === 0 ? (
           <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-10 text-center">
-            <p className="text-sm font-medium text-slate-900">
+            <p className="text-sm font-medium text-[#102A56]">
               No data yet
             </p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-[#647A9B]">
               Course modules will appear here once they are added to this course.
             </p>
           </div>
@@ -85,7 +85,7 @@ export function EnrollmentManageCoursePanel({ enrollment }: Props) {
                 key={item.id}
                 className="rounded-xl border border-slate-200 bg-slate-50/40 p-4"
               >
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-[#102A56]">
                   {item.title}
                 </p>
                 {item.description ? (
@@ -100,7 +100,7 @@ export function EnrollmentManageCoursePanel({ enrollment }: Props) {
       </Card>
 
       <Card className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-        <h2 className="text-base font-semibold text-slate-900">
+        <h2 className="text-base font-semibold text-[#102A56]">
           Enrollment Course Snapshot
         </h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">

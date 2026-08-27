@@ -78,7 +78,7 @@ export function ImageUploadField({
       : visualState === "invalid"
         ? "border-red-300 bg-red-50/30"
         : isDragging
-          ? "border-[#2447A8] bg-blue-50/40"
+          ? "border-[#2563EB] bg-blue-50/40"
           : "border-slate-300 bg-slate-50/50";
 
   return (
@@ -163,7 +163,7 @@ export function ImageUploadField({
               <p className="mt-2 text-sm font-medium text-slate-700">
                 Drag & drop {entityLabel} image here
               </p>
-              <p className="mt-1 text-sm text-slate-500">or Browse</p>
+              <p className="mt-1 text-sm text-[#647A9B]">or Browse</p>
               <p className="mt-3 text-xs text-slate-400">{hint}</p>
             </>
           )}
@@ -185,7 +185,7 @@ export function ImageUploadField({
       />
 
       {imageBroken && previewUrl ? (
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 text-sm text-[#647A9B]">
           <ImageIcon className="h-4 w-4" />
           Unable to preview the existing image.
         </div>

@@ -55,7 +55,7 @@ export function BranchUserTable({
       <TableBody>
         {branchUsers.map((branchUser) => (
           <TableRow key={branchUser.id}>
-            <TableCell className="text-[15px] font-medium text-slate-900">
+            <TableCell className="text-[15px] font-medium text-[#102A56]">
               {branchUser.email}
             </TableCell>
 
@@ -74,7 +74,7 @@ export function BranchUserTable({
               />
             </TableCell>
 
-            <TableCell className="text-[15px] text-slate-600">
+            <TableCell className="text-[15px] text-[#647A9B]">
               {branchUser.lastLoginAt
                 ? new Date(branchUser.lastLoginAt).toLocaleString(
                     undefined,
