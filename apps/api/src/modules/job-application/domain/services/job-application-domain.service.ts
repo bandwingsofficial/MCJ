@@ -70,6 +70,26 @@ export class JobApplicationDomainService {
     }
   }
 
+  async ensureNotDuplicateEmail(
+    repo: JobApplicationRepository,
+    jobId: string,
+    email: string,
+  ): Promise<void> {
+    const existing = await repo.findByJobAndEmail(
+      jobId,
+      email,
+      true,
+    );
+
+    if (existing && !existing.isDeleted) {
+      throw new BaseException(
+        ERROR_CODES.JOB_ALREADY_APPLIED,
+        'An application with this email already exists for this job.',
+        409,
+      );
+    }
+  }
+
   ensureValidStatusTransition(
     from: JobApplicationStatus,
     to: JobApplicationStatus,
@@ -84,6 +104,7 @@ export class JobApplicationDomainService {
     > = {
       [JobApplicationStatus.APPLIED]: [
         JobApplicationStatus.SHORTLISTED,
+        JobApplicationStatus.SELECTED,
         JobApplicationStatus.REJECTED,
       ],
       [JobApplicationStatus.SHORTLISTED]: [

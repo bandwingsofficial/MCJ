@@ -1,8 +1,10 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsDateString,
+  IsEmail,
   IsEnum,
   IsInt,
   IsNumber,
@@ -11,12 +13,14 @@ import {
   IsUrl,
   MaxLength,
   Min,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { EmploymentType } from '../../domain/enums/employment-type.enum';
 import { JobStatus } from '../../domain/enums/job-status.enum';
+import { JobWorkMode } from '../../domain/enums/job-work-mode.enum';
 import { WorkingDays } from '../../domain/enums/working-days.enum';
 
 const trimOrUndefined = (value: unknown) =>
@@ -74,15 +78,27 @@ export class CreateJobDto {
   @IsUrl()
   companyWebsite?: string;
 
+  @ApiProperty()
+  @IsEmail()
+  @Transform(({ value }) => trimOrUndefined(value))
+  companyEmail!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  @Transform(({ value }) => trimOrUndefined(value))
+  companyPhone?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   companyDescription?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsString()
-  description?: string;
+  @MinLength(20)
+  description!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -90,10 +106,10 @@ export class CreateJobDto {
   @MaxLength(500)
   shortDescription?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsString()
-  location?: string;
+  @MinLength(2)
+  location!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -115,6 +131,24 @@ export class CreateJobDto {
   @IsBoolean()
   @Transform(({ value }) => toBoolean(value))
   isRemote?: boolean;
+
+  @ApiPropertyOptional({ enum: JobWorkMode })
+  @IsOptional()
+  @IsEnum(JobWorkMode)
+  workMode?: JobWorkMode;
+
+  @ApiProperty()
+  @IsString()
+  @MaxLength(80)
+  @Transform(({ value }) => trimOrUndefined(value))
+  category!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  @Transform(({ value }) => trimOrUndefined(value))
+  department?: string;
 
   @ApiProperty({ enum: EmploymentType })
   @IsEnum(EmploymentType)
@@ -138,12 +172,11 @@ export class CreateJobDto {
   @Transform(({ value }) => toNumber(value))
   maxExperience?: number;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsNumber()
-  @Min(0)
+  @Min(15000)
   @Transform(({ value }) => toNumber(value))
-  minSalary?: number;
+  minSalary!: number;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -164,10 +197,9 @@ export class CreateJobDto {
   @Transform(({ value }) => toNumber(value))
   vacancies?: number;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsDateString()
-  applicationDeadline?: string;
+  applicationDeadline!: string;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
@@ -175,11 +207,28 @@ export class CreateJobDto {
   @IsString({ each: true })
   responsibilities?: string[];
 
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  skills!: string[];
+
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  skills?: string[];
+  preferredSkills?: string[];
+
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  qualifications!: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  benefits?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

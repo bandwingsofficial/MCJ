@@ -4,14 +4,17 @@ import { SuperAdminGuard } from '@common/guards/super-admin.guard';
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { AuthModule } from '../auth/auth.module';
+import { UploadsModule } from '../uploads/uploads.module';
 
 import { JOB_TOKENS } from './job.tokens';
+import { ApproveJobHandler } from './application/approve-job/approve-job.handler';
 import { CreateJobHandler } from './application/create-job/create-job.handler';
 import { DeleteJobHandler } from './application/delete-job/delete-job.handler';
 import { GetJobBySlugHandler } from './application/get-job-by-slug/get-job-by-slug.handler';
 import { GetJobHandler } from './application/get-job/get-job.handler';
 import { ListJobsHandler } from './application/list-jobs/list-jobs.handler';
 import { PermanentDeleteJobHandler } from './application/permanent-delete-job/permanent-delete-job.handler';
+import { RejectJobHandler } from './application/reject-job/reject-job.handler';
 import { RestoreJobHandler } from './application/restore-job/restore-job.handler';
 import { UpdateJobActivationHandler } from './application/update-job-activation/update-job-activation.handler';
 import { UpdateJobHandler } from './application/update-job/update-job.handler';
@@ -20,10 +23,15 @@ import { JobDomainService } from './domain/services/job-domain.service';
 import { PrismaJobRepository } from './infrastructure/repositories/prisma-job.repository';
 import { AdminJobController } from './presentation/controllers/admin-job.controller';
 import { JobController } from './presentation/controllers/job.controller';
+import { PublicCompanyJobController } from './presentation/controllers/public-company-job.controller';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
-  controllers: [AdminJobController, JobController],
+  imports: [PrismaModule, AuthModule, UploadsModule],
+  controllers: [
+    AdminJobController,
+    PublicCompanyJobController,
+    JobController,
+  ],
   providers: [
     JobDomainService,
     SuperAdminGuard,
@@ -101,6 +109,22 @@ import { JobController } from './presentation/controllers/job.controller';
         jobRepo: JobRepository,
         domainService: JobDomainService,
       ) => new UpdateJobActivationHandler(jobRepo, domainService),
+      inject: [JOB_TOKENS.JOB_REPOSITORY, JobDomainService],
+    },
+    {
+      provide: ApproveJobHandler,
+      useFactory: (
+        jobRepo: JobRepository,
+        domainService: JobDomainService,
+      ) => new ApproveJobHandler(jobRepo, domainService),
+      inject: [JOB_TOKENS.JOB_REPOSITORY, JobDomainService],
+    },
+    {
+      provide: RejectJobHandler,
+      useFactory: (
+        jobRepo: JobRepository,
+        domainService: JobDomainService,
+      ) => new RejectJobHandler(jobRepo, domainService),
       inject: [JOB_TOKENS.JOB_REPOSITORY, JobDomainService],
     },
   ],

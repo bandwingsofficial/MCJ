@@ -5,6 +5,7 @@ export interface JobApplicationJobView {
   id: string;
   title: string;
   slug: string;
+  jobNumber?: string | null;
   companyName: string;
   status: string;
   employmentType: string;
@@ -35,7 +36,13 @@ export interface JobApplicationUserView {
 export interface JobApplicationDetailView {
   id: string;
   jobId: string;
-  studentId: string;
+  studentId: string | null;
+  applicationNumber: string;
+  applicantName: string | null;
+  applicantEmail: string | null;
+  applicantPhone: string | null;
+  highestQualification: string | null;
+  yearsOfExperience: number | null;
   resumeFileId: string | null;
   coverLetter: string | null;
   currentLocation: string | null;
@@ -45,7 +52,7 @@ export interface JobApplicationDetailView {
   isDeleted: boolean;
   deletedAt: Date | null;
   job: JobApplicationJobView;
-  user: JobApplicationUserView;
+  user: JobApplicationUserView | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -79,9 +86,19 @@ export interface JobApplicationRepository {
     includeDeleted?: boolean,
   ): Promise<JobApplication | null>;
 
+  findByJobAndEmail(
+    jobId: string,
+    email: string,
+    includeDeleted?: boolean,
+  ): Promise<JobApplication | null>;
+
+  nextApplicationNumber(): Promise<string>;
+
   findDetails(
     filters?: JobApplicationListFilters,
   ): Promise<JobApplicationDetailView[]>;
+
+  count(filters?: JobApplicationListFilters): Promise<number>;
 
   findDetailsByStudentId(
     studentId: string,

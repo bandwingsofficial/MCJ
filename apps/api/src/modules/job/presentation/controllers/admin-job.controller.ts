@@ -20,6 +20,7 @@ import type { AuthUser } from '@common/decorators/current-user.decorator';
 import { SuperAdminGuard } from '@common/guards/super-admin.guard';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 
+import { ApproveJobCommand, ApproveJobHandler } from '../../application/approve-job/approve-job.handler';
 import { CreateJobCommand } from '../../application/create-job/create-job.command';
 import { CreateJobHandler } from '../../application/create-job/create-job.handler';
 import { DeleteJobCommand } from '../../application/delete-job/delete-job.command';
@@ -30,14 +31,19 @@ import { ListJobsHandler } from '../../application/list-jobs/list-jobs.handler';
 import { ListJobsQuery } from '../../application/list-jobs/list-jobs.query';
 import { PermanentDeleteJobCommand } from '../../application/permanent-delete-job/permanent-delete-job.command';
 import { PermanentDeleteJobHandler } from '../../application/permanent-delete-job/permanent-delete-job.handler';
+import { RejectJobCommand } from '../../application/reject-job/reject-job.handler';
+import { RejectJobHandler } from '../../application/reject-job/reject-job.handler';
 import { RestoreJobCommand } from '../../application/restore-job/restore-job.command';
 import { RestoreJobHandler } from '../../application/restore-job/restore-job.handler';
 import { UpdateJobActivationCommand } from '../../application/update-job-activation/update-job-activation.command';
 import { UpdateJobActivationHandler } from '../../application/update-job-activation/update-job-activation.handler';
 import { UpdateJobCommand } from '../../application/update-job/update-job.command';
 import { UpdateJobHandler } from '../../application/update-job/update-job.handler';
+import { JobSource } from '../../domain/enums/job-source.enum';
+import { JobStatus } from '../../domain/enums/job-status.enum';
 import { CreateJobDto } from '../dtos/create-job.dto';
 import { ListJobsQueryDto } from '../dtos/list-jobs-query.dto';
+import { RejectJobDto } from '../dtos/reject-job.dto';
 import { UpdateJobDto } from '../dtos/update-job.dto';
 
 @ApiTags('Admin Jobs')
@@ -54,6 +60,8 @@ export class AdminJobController {
     private readonly restoreJobHandler: RestoreJobHandler,
     private readonly permanentDeleteJobHandler: PermanentDeleteJobHandler,
     private readonly updateJobActivationHandler: UpdateJobActivationHandler,
+    private readonly approveJobHandler: ApproveJobHandler,
+    private readonly rejectJobHandler: RejectJobHandler,
   ) {}
 
   @Post()
@@ -63,38 +71,47 @@ export class AdminJobController {
     @CurrentUser() user: AuthUser,
   ) {
     const result = await this.createJobHandler.execute(
-      new CreateJobCommand(
-        dto.title,
-        dto.companyName,
-        dto.employmentType,
-        dto.workingDays,
-        dto.slug,
-        dto.companyLogo,
-        dto.companyWebsite,
-        dto.companyDescription,
-        dto.description,
-        dto.shortDescription,
-        dto.location,
-        dto.city,
-        dto.state,
-        dto.country,
-        dto.isRemote,
-        dto.minExperience,
-        dto.maxExperience,
-        dto.minSalary,
-        dto.maxSalary,
-        dto.salaryCurrency,
-        dto.vacancies,
-        dto.applicationDeadline
+      new CreateJobCommand({
+        title: dto.title,
+        companyName: dto.companyName,
+        employmentType: dto.employmentType,
+        workingDays: dto.workingDays,
+        slug: dto.slug,
+        companyLogo: dto.companyLogo,
+        companyWebsite: dto.companyWebsite,
+        companyEmail: dto.companyEmail,
+        companyPhone: dto.companyPhone,
+        companyDescription: dto.companyDescription,
+        description: dto.description,
+        shortDescription: dto.shortDescription,
+        location: dto.location,
+        city: dto.city,
+        state: dto.state,
+        country: dto.country,
+        isRemote: dto.isRemote,
+        workMode: dto.workMode,
+        category: dto.category,
+        department: dto.department,
+        minExperience: dto.minExperience,
+        maxExperience: dto.maxExperience,
+        minSalary: dto.minSalary,
+        maxSalary: dto.maxSalary,
+        salaryCurrency: dto.salaryCurrency,
+        vacancies: dto.vacancies,
+        applicationDeadline: dto.applicationDeadline
           ? new Date(dto.applicationDeadline)
           : undefined,
-        dto.responsibilities,
-        dto.skills,
-        dto.eligibilityTitle,
-        dto.interviewProcess,
-        dto.status,
-        user?.sub,
-      ),
+        responsibilities: dto.responsibilities,
+        skills: dto.skills,
+        preferredSkills: dto.preferredSkills,
+        qualifications: dto.qualifications,
+        benefits: dto.benefits,
+        eligibilityTitle: dto.eligibilityTitle,
+        interviewProcess: dto.interviewProcess,
+        status: dto.status ?? JobStatus.ACTIVE,
+        source: JobSource.ADMIN,
+        createdBy: user?.sub,
+      }),
     );
 
     return {
@@ -114,15 +131,26 @@ export class AdminJobController {
         query.includeDeleted,
         false,
         false,
+        query.isActive,
+        query.onlyDeleted,
         query.skip,
         query.take,
+        query.source,
+        query.catalogOnly
+          ? [JobStatus.PENDING_APPROVAL, JobStatus.REJECTED]
+          : undefined,
       ),
     );
 
     return {
       success: true,
       message: 'Jobs fetched successfully',
-      data: result,
+      data: result.items,
+      meta: {
+        total: result.total,
+        skip: result.skip,
+        take: result.take,
+      },
     };
   }
 
@@ -146,44 +174,85 @@ export class AdminJobController {
     @CurrentUser() user: AuthUser,
   ) {
     const result = await this.updateJobHandler.execute(
-      new UpdateJobCommand(
+      new UpdateJobCommand({
         id,
-        dto.title,
-        dto.slug,
-        dto.companyName,
-        dto.companyLogo,
-        dto.companyWebsite,
-        dto.companyDescription,
-        dto.description,
-        dto.shortDescription,
-        dto.location,
-        dto.city,
-        dto.state,
-        dto.country,
-        dto.isRemote,
-        dto.employmentType,
-        dto.workingDays,
-        dto.minExperience,
-        dto.maxExperience,
-        dto.minSalary,
-        dto.maxSalary,
-        dto.salaryCurrency,
-        dto.vacancies,
-        dto.applicationDeadline
+        title: dto.title,
+        slug: dto.slug,
+        companyName: dto.companyName,
+        companyLogo: dto.companyLogo,
+        companyWebsite: dto.companyWebsite,
+        companyEmail: dto.companyEmail,
+        companyPhone: dto.companyPhone,
+        companyDescription: dto.companyDescription,
+        description: dto.description,
+        shortDescription: dto.shortDescription,
+        location: dto.location,
+        city: dto.city,
+        state: dto.state,
+        country: dto.country,
+        isRemote: dto.isRemote,
+        workMode: dto.workMode,
+        employmentType: dto.employmentType,
+        workingDays: dto.workingDays,
+        category: dto.category,
+        department: dto.department,
+        minExperience: dto.minExperience,
+        maxExperience: dto.maxExperience,
+        minSalary: dto.minSalary,
+        maxSalary: dto.maxSalary,
+        salaryCurrency: dto.salaryCurrency,
+        vacancies: dto.vacancies,
+        applicationDeadline: dto.applicationDeadline
           ? new Date(dto.applicationDeadline)
           : undefined,
-        dto.responsibilities,
-        dto.skills,
-        dto.eligibilityTitle,
-        dto.interviewProcess,
-        dto.status,
-        user?.sub,
-      ),
+        responsibilities: dto.responsibilities,
+        skills: dto.skills,
+        preferredSkills: dto.preferredSkills,
+        qualifications: dto.qualifications,
+        benefits: dto.benefits,
+        eligibilityTitle: dto.eligibilityTitle,
+        interviewProcess: dto.interviewProcess,
+        status: dto.status,
+        updatedBy: user?.sub,
+      }),
     );
 
     return {
       success: true,
       message: 'Job updated successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':id/approve')
+  async approve(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.approveJobHandler.execute(
+      new ApproveJobCommand(id, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: 'Job approved successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':id/reject')
+  async reject(
+    @Param('id') id: string,
+    @Body() dto: RejectJobDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.rejectJobHandler.execute(
+      new RejectJobCommand(id, dto.reason, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: 'Job submission rejected',
       data: result,
     };
   }

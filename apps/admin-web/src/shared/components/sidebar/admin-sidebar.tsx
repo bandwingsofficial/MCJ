@@ -125,11 +125,6 @@ const menu = [
         path: "/jobs",
       },
       {
-        name: "Job Applications",
-        icon: FileText,
-        path: "/job-applications",
-      },
-      {
         name: "Placements",
         icon: FileText,
         path: "/placements",

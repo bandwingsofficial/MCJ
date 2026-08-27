@@ -5,6 +5,8 @@ export const DEFAULT_ALLOWED_MIME_TYPES = [
   'image/webp',
   'image/avif',
   'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'video/mp4',
   'video/webm',
   'video/quicktime',

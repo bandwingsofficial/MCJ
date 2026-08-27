@@ -1,5 +1,5 @@
-import JobApplicationsPage from "@/src/features/job-applications/pages/job-applications-page";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <JobApplicationsPage />;
+  redirect("/jobs?tab=onboarding");
 }

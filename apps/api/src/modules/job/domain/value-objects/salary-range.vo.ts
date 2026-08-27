@@ -15,10 +15,10 @@ export class SalaryRange {
   ): SalaryRange {
     const normalizedCurrency = currency?.trim() || 'INR';
 
-    if (min !== null && min !== undefined && min < 0) {
+    if (min !== null && min !== undefined && min < 15000) {
       throw new BaseException(
         ERROR_CODES.VALIDATION_ERROR,
-        'Minimum salary cannot be negative',
+        'Minimum salary must be at least ₹15,000.',
         400,
       );
     }
@@ -40,7 +40,7 @@ export class SalaryRange {
     ) {
       throw new BaseException(
         ERROR_CODES.VALIDATION_ERROR,
-        'Maximum salary cannot be less than minimum salary',
+        'Maximum salary must be greater than or equal to minimum salary.',
         400,
       );
     }

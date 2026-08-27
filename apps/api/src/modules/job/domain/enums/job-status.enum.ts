@@ -1,6 +1,8 @@
 export enum JobStatus {
   DRAFT = 'DRAFT',
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
   ACTIVE = 'ACTIVE',
   CLOSED = 'CLOSED',
   EXPIRED = 'EXPIRED',
+  REJECTED = 'REJECTED',
 }

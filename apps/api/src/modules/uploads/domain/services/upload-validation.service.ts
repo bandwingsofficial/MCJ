@@ -76,8 +76,13 @@ export class UploadValidationService {
     fileName: string,
     mimeType: string,
   ): string {
-    if (mimeType === 'application/pdf') {
-      return this.sanitizeDocumentName(fileName);
+    if (
+      mimeType === 'application/pdf' ||
+      mimeType === 'application/msword' ||
+      mimeType ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      return this.sanitizeDocumentName(fileName, mimeType);
     }
 
     return this.sanitizeFileName(fileName);
@@ -99,7 +104,7 @@ export class UploadValidationService {
     return `${baseName}.webp`;
   }
 
-  sanitizeDocumentName(fileName: string): string {
+  sanitizeDocumentName(fileName: string, mimeType?: string): string {
     const baseName = fileName
       .replace(/\.[^/.]+$/, '')
       .trim()
@@ -112,7 +117,15 @@ export class UploadValidationService {
       throw new InvalidFileException('Invalid file name');
     }
 
-    return `${baseName}.pdf`;
+    const extension =
+      mimeType === 'application/msword'
+        ? 'doc'
+        : mimeType ===
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          ? 'docx'
+          : 'pdf';
+
+    return `${baseName}.${extension}`;
   }
 
   getMaxSizeMb(): number {

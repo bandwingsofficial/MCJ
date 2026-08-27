@@ -4,7 +4,13 @@ export class JobApplication {
   private constructor(
     public readonly id: string,
     public jobId: string,
-    public studentId: string,
+    public studentId: string | null,
+    public applicationNumber: string,
+    public applicantName: string | null,
+    public applicantEmail: string | null,
+    public applicantPhone: string | null,
+    public highestQualification: string | null,
+    public yearsOfExperience: number | null,
     public resumeFileId: string | null,
     public coverLetter: string | null,
     public currentLocation: string | null,
@@ -24,7 +30,13 @@ export class JobApplication {
     return new JobApplication(
       params.id,
       params.jobId,
-      params.studentId,
+      params.studentId ?? null,
+      params.applicationNumber,
+      params.applicantName ?? null,
+      params.applicantEmail ?? null,
+      params.applicantPhone ?? null,
+      params.highestQualification ?? null,
+      params.yearsOfExperience ?? null,
       params.resumeFileId ?? null,
       params.coverLetter ?? null,
       params.currentLocation ?? null,
@@ -48,6 +60,12 @@ export class JobApplication {
       params.id,
       params.jobId,
       params.studentId,
+      params.applicationNumber,
+      params.applicantName,
+      params.applicantEmail,
+      params.applicantPhone,
+      params.highestQualification,
+      params.yearsOfExperience,
       params.resumeFileId,
       params.coverLetter,
       params.currentLocation,
@@ -121,7 +139,13 @@ export class JobApplication {
 export interface JobApplicationCreateParams {
   id: string;
   jobId: string;
-  studentId: string;
+  applicationNumber: string;
+  studentId?: string | null;
+  applicantName?: string | null;
+  applicantEmail?: string | null;
+  applicantPhone?: string | null;
+  highestQualification?: string | null;
+  yearsOfExperience?: number | null;
   resumeFileId?: string | null;
   coverLetter?: string | null;
   currentLocation?: string | null;

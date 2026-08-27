@@ -29,6 +29,8 @@ export class JobController {
         false,
         false,
         true,
+        undefined,
+        false,
         query.skip,
         query.take,
       ),
@@ -37,14 +39,19 @@ export class JobController {
     return {
       success: true,
       message: 'Jobs fetched successfully',
-      data: result,
+      data: result.items,
+      meta: {
+        total: result.total,
+        skip: result.skip,
+        take: result.take,
+      },
     };
   }
 
   @Get(':slug')
   async getBySlug(@Param('slug') slug: string) {
     const result = await this.getJobBySlugHandler.execute(
-      new GetJobBySlugQuery(slug, true),
+      new GetJobBySlugQuery(slug, false),
     );
 
     return {

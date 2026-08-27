@@ -12,8 +12,10 @@ import {
   JobInactiveException,
   JobNotDeletedException,
   JobNotFoundException,
+  JobNotPendingApprovalException,
 } from '../errors/job-business.exception';
 import type { JobRepository } from '../repositories/job.repository';
+import { Slug } from '../value-objects/slug.vo';
 
 @Injectable()
 export class JobDomainService {
@@ -64,12 +66,32 @@ export class JobDomainService {
   ensureAcceptingApplications(job: Job): void {
     this.ensurePubliclyVisible(job);
 
-    if (
-      job.applicationDeadline &&
-      job.applicationDeadline < new Date()
-    ) {
+    if (job.isExpired()) {
       throw new JobExpiredException();
     }
+  }
+
+  ensurePendingApproval(job: Job): void {
+    if (job.status !== JobStatus.PENDING_APPROVAL) {
+      throw new JobNotPendingApprovalException();
+    }
+  }
+
+  async resolveAvailableSlug(
+    jobRepo: JobRepository,
+    title: string,
+    excludeId?: string,
+  ): Promise<string> {
+    const base = Slug.fromTitle(title).getValue();
+    let slug = base;
+    let suffix = 2;
+
+    while (await jobRepo.existsBySlug(slug, excludeId)) {
+      slug = `${base}-${suffix}`;
+      suffix += 1;
+    }
+
+    return slug;
   }
 
   async ensureSlugIsAvailable(

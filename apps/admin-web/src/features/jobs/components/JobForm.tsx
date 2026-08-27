@@ -1,1047 +1,751 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-import { useFieldArray, useForm } from "react-hook-form";
-
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Briefcase,
+  Building2,
+  Calendar,
+  Folder,
+  Hash,
+  IndianRupee,
+  Mail,
+  MapPin,
+  Phone,
+  User,
+  type LucideIcon,
+} from "lucide-react";
 
-import { Button } from "@/src/shared/components/ui/button";
-import { Card } from "@/src/shared/components/ui/card";
 import { Input } from "@/src/shared/components/ui/input";
 import { Textarea } from "@/src/shared/components/ui/textarea";
-import { Label } from "@/src/shared/components/ui/label";
-import { Switch } from "@/src/shared/components/ui/switch";
-import { Separator } from "@/src/shared/components/ui/separator";
 import { AppSelect } from "@/src/shared/components/ui/select";
-import { FormError } from "@/src/shared/components/ui/form-error";
+import { ImageUploadField } from "@/src/shared/components/ui/image-upload-field";
+import {
+  ValidatedField,
+  validatedFieldInputClass,
+} from "@/src/shared/components/ui/validated-field";
+import { cn } from "@/src/shared/lib/cn";
 
+import { JobTagInput } from "@/src/features/jobs/components/JobTagInput";
 import {
   EMPLOYMENT_TYPES,
-  JOB_STATUS_OPTIONS,
+  JOB_CATEGORIES,
+  JOB_QUALIFICATIONS,
+  WORK_MODES,
   WORKING_DAYS,
 } from "@/src/features/jobs/constants/job.constants";
-
 import {
   createJobSchema,
+  updateJobSchema,
   type CreateJobFormValues,
 } from "@/src/features/jobs/schemas/job.schema";
-
-import { JobFormUtils } from "@/src/features/jobs/utils/job-form.utils";
-
-import type {
-  Job,
-  CreateJobRequest,
-} from "@/src/features/jobs/types/job.types";
+import type { CreateJobRequest, Job } from "@/src/features/jobs/types/job.types";
+import {
+  createDefaultJobFormValues,
+  formatSalaryInput,
+  formValuesToCreateRequest,
+  getSyncFieldState,
+  jobToFormValues,
+  parseSalaryInput,
+  tomorrowDateInputValue,
+  validateJobImageFile,
+} from "@/src/features/jobs/utils/job-form.utils";
 
 interface JobFormProps {
+  formId?: string;
   initialData?: Job;
-
   isSubmitting: boolean;
-
+  companyNameDefault?: string;
   onSubmit: (
-  values: CreateJobRequest,
-  image: File | null,
-) => Promise<void>;
+    values: CreateJobRequest,
+    image: File | null,
+    removeImage: boolean,
+  ) => Promise<void>;
+}
+
+const GRID_CLASS =
+  "grid w-full min-w-0 grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2";
+
+function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <Icon
+      className="pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
+      aria-hidden="true"
+    />
+  );
+}
+
+function SectionTitle({ children }: { children: string }) {
+  return (
+    <h3 className="border-b border-[#E8F1FF] pb-1.5 text-xs font-semibold uppercase tracking-wide text-[#2563EB]">
+      {children}
+    </h3>
+  );
+}
+
+function inputClass(
+  state: ReturnType<typeof getSyncFieldState>,
+  extra = "",
+) {
+  return validatedFieldInputClass(
+    state,
+    cn("h-[46px] w-full min-w-0 max-w-full", extra),
+  );
 }
 
 export function JobForm({
+  formId = "job-form",
   initialData,
   isSubmitting,
+  companyNameDefault,
   onSubmit,
 }: JobFormProps) {
-  const form = useForm<CreateJobFormValues>({
-    resolver: zodResolver(
-      createJobSchema,
-    ),
-    defaultValues:
-      JobFormUtils.createDefaultValues(),
-    mode: "onBlur",
-  });
-  
-  const [selectedImage, setSelectedImage] =
-  useState<File | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [imageTouched, setImageTouched] = useState(false);
+
+  const defaults = createDefaultJobFormValues();
+  if (companyNameDefault !== undefined) {
+    defaults.companyName = companyNameDefault;
+  }
 
   const {
     register,
     control,
-    reset,
     handleSubmit,
+    reset,
     watch,
-    setValue,
-    formState: { errors },
-  } = form;
-
-  const {
-    fields,
-    append,
-    remove,
-  } = useFieldArray({
-    control,
-    name: "interviewProcess",
+    formState: { errors, touchedFields, isSubmitted },
+  } = useForm<CreateJobFormValues>({
+    resolver: zodResolver(
+      initialData ? updateJobSchema : createJobSchema,
+    ) as never,
+    mode: "onBlur",
+    reValidateMode: "onChange",
+    defaultValues: initialData ? jobToFormValues(initialData) : defaults,
   });
 
   useEffect(() => {
-    if (!initialData) {
-      return;
+    const next = initialData
+      ? jobToFormValues(initialData)
+      : createDefaultJobFormValues();
+    if (!initialData && companyNameDefault !== undefined) {
+      next.companyName = companyNameDefault;
     }
-
-    reset({
-      title: initialData.title,
-
-      companyName:
-        initialData.companyName,
-
-      companyWebsite:
-        initialData.companyWebsite ??
-        "",
-
-      companyDescription:
-        initialData.companyDescription ??
-        "",
-
-      shortDescription:
-        initialData.shortDescription ??
-        "",
-
-      description:
-        initialData.description,
-
-      location:
-        initialData.location,
-
-      city: initialData.city,
-
-      state: initialData.state,
-
-      country:
-        initialData.country,
-
-      isRemote:
-        initialData.isRemote,
-
-      employmentType:
-        initialData.employmentType,
-
-      workingDays:
-        initialData.workingDays,
-        status: initialData.status,
-
-      minExperience:
-        initialData.minExperience,
-
-      maxExperience:
-        initialData.maxExperience,
-
-      minSalary:
-        initialData.minSalary,
-
-      maxSalary:
-        initialData.maxSalary,
-
-      salaryCurrency:
-        initialData.salaryCurrency,
-
-      vacancies:
-        initialData.vacancies,
-
-      applicationDeadline:
-        initialData.applicationDeadline.slice(
-          0,
-          10,
-        ),
-
-      responsibilities:
-        JobFormUtils.arrayToString(
-          initialData.responsibilities,
-        ),
-
-      skills:
-        JobFormUtils.arrayToString(
-          initialData.skills,
-        ),
-
-      eligibilityTitle:
-        initialData.eligibilityTitle,
-
-      interviewProcess:
-        initialData
-          .interviewProcess,
-    });
+    reset(next);
     setSelectedImage(null);
-  }, [initialData, reset]);
+    setRemoveImage(false);
+    setImageError(null);
+    setImageTouched(false);
+  }, [companyNameDefault, initialData, reset]);
 
-  const submitHandler = async (
-    values: CreateJobFormValues,
+  const values = watch();
+  const showValidation = isSubmitted;
+
+  const fieldState = (
+    name: keyof CreateJobFormValues,
+    required = true,
   ) => {
-    await onSubmit(
-  {
-    ...values,
-    status: values.status,
-    responsibilities:
-      JobFormUtils.stringToArray(
-        values.responsibilities,
-      ),
-    skills:
-      JobFormUtils.stringToArray(
-        values.skills,
-      ),
-    interviewProcess:
-      JobFormUtils.normalizeInterviewProcess(
-        values.interviewProcess,
-      ),
-  },
-  selectedImage,
-);
+    const current = values[name];
+    const asString = Array.isArray(current)
+      ? current.join(",")
+      : typeof current === "number"
+        ? String(current ?? "")
+        : String(current ?? "");
+
+    return getSyncFieldState(
+      Boolean(touchedFields[name] || showValidation),
+      errors[name]?.message,
+      asString,
+      { required },
+    );
   };
+
+  const imagePreviewUrl = removeImage
+    ? null
+    : selectedImage
+      ? null
+      : initialData?.companyLogo ?? null;
+  const imageState = imageError
+    ? "invalid"
+    : selectedImage || (imagePreviewUrl && imageTouched)
+      ? "valid"
+      : "neutral";
+
+  const submit = handleSubmit(async (formValues) => {
+    await onSubmit(
+      formValuesToCreateRequest(formValues, { removeLogo: removeImage }),
+      selectedImage,
+      removeImage,
+    );
+  });
+
+  const categoryOptions = JOB_CATEGORIES.map((item) => ({
+    value: item,
+    label: item,
+  }));
 
   return (
     <form
-      onSubmit={handleSubmit(
-        submitHandler,
-      )}
-      className="space-y-8"
+      id={formId}
+      className="space-y-4"
+      noValidate
+      onSubmit={(event) => {
+        void submit(event);
+      }}
     >
-      <Card className="space-y-6 p-6">
-        <div>
-          <h2 className="text-lg font-semibold">
-            Basic Information
-          </h2>
-
-          <p className="text-sm text-muted-foreground">
-            Enter the primary job
-            details.
-          </p>
-        </div>
-
-        <Separator />
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label required>
-              Job Title
-            </Label>
-
-            <Input
-              placeholder="Senior Frontend Developer"
-              {...register("title")}
-            />
-
-            <FormError
-              message={
-                errors.title
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label required>
-              Company Name
-            </Label>
-
-            <Input
-              placeholder="OpenAI"
-              {...register(
-                "companyName",
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .companyName
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2 md:col-span-2">
-            <Label required>
-              Description
-            </Label>
-
-            <Textarea
-              rows={6}
-              placeholder="Write detailed job description..."
-              {...register(
-                "description",
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .description
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2 md:col-span-2">
-            <Label>
-              Short Description
-            </Label>
-
-            <Textarea
-              rows={3}
-              placeholder="Short summary..."
-              {...register(
-                "shortDescription",
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .shortDescription
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label required>
-              Employment Type
-            </Label>
-
-            <AppSelect
-              value={watch(
-                "employmentType",
-              )}
-              options={
-                EMPLOYMENT_TYPES
-              }
-              onValueChange={(value) => {
-  setValue("employmentType", value as CreateJobFormValues["employmentType"], {
-    shouldValidate: true,
-  });
-}}
-            />
-
-            <FormError
-              message={
-                errors
-                  .employmentType
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label required>
-              Working Days
-            </Label>
-
-            <AppSelect
-              value={watch(
-                "workingDays",
-              )}
-              options={
-                WORKING_DAYS
-              }
-              onValueChange={(
-                value,
-              ) =>
-                setValue(
-                  "workingDays",
-                  value as never,
-                  {
-                    shouldValidate: true,
-                  },
-                )
-              }
-            />
-
-            <FormError
-              message={
-                errors
-                  .workingDays
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="flex items-center gap-3 pt-8">
-            <Switch
-              checked={watch(
-                "isRemote",
-              )}
-              onCheckedChange={(
-                checked,
-              ) =>
-                setValue(
-                  "isRemote",
-                  checked,
-                  {
-                    shouldValidate: true,
-                  },
-                )
-              }
-            />
-
-            <Label>
-              Remote Job
-            </Label>
-          </div>
-        </div>
-      </Card>
-            <Card className="space-y-6 p-6">
-        <div>
-          <h2 className="text-lg font-semibold">
-            Company Information
-          </h2>
-
-          <p className="text-sm text-muted-foreground">
-            Provide company related
-            information.
-          </p>
-        </div>
-
-        <Separator />
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>
-              Company Website
-            </Label>
-
-            <Input
-              placeholder="https://company.com"
-              {...register(
-                "companyWebsite",
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .companyWebsite
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="space-y-2">
-  <Label>
-    Company Logo
-  </Label>
-
-  <Input
-    type="file"
-    accept="image/*"
-    disabled={isSubmitting}
-    onChange={(event) => {
-      const file =
-        event.target.files?.[0] ??
-        null;
-
-      setSelectedImage(file);
-    }}
-  />
-
-  {initialData?.companyLogo && (
-    <img
-      src={initialData.companyLogo}
-      alt="Company Logo"
-      className="mt-2 h-20 w-20 rounded-md border object-cover"
-    />
-  )}
-
-  {selectedImage && (
-    <p className="text-xs text-muted-foreground">
-      {selectedImage.name}
-    </p>
-  )}
-</div>
-
-            <FormError
-              message={
-                errors
-                  .companyLogo
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2 md:col-span-2">
-            <Label>
-              Company Description
-            </Label>
-
-            <Textarea
-              rows={5}
-              placeholder="Brief description about the company..."
-              {...register(
-                "companyDescription",
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .companyDescription
-                  ?.message
-              }
-            />
-          </div>
-        </div>
-      </Card>
-
-      <Card className="space-y-6 p-6">
-        <div>
-          <h2 className="text-lg font-semibold">
-            Job Location
-          </h2>
-
-          <p className="text-sm text-muted-foreground">
-            Specify where this job
-            is located.
-          </p>
-        </div>
-
-        <Separator />
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label required>
-              Country
-            </Label>
-
-            <Input
-              placeholder="India"
-              {...register(
-                "country",
-              )}
-            />
-
-            <FormError
-              message={
-                errors.country
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label required>
-              State
-            </Label>
-
-            <Input
-              placeholder="Karnataka"
-              {...register(
-                "state",
-              )}
-            />
-
-            <FormError
-              message={
-                errors.state
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label required>
-              City
-            </Label>
-
-            <Input
-              placeholder="Bangalore"
-              {...register(
-                "city",
-              )}
-            />
-
-            <FormError
-              message={
-                errors.city
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label required>
-              Full Location
-            </Label>
-
-            <Input
-              placeholder="Whitefield, Bangalore"
-              {...register(
-                "location",
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .location
-                  ?.message
-              }
-            />
-          </div>
-        </div>
-      </Card>
-
-      <Card className="space-y-6 p-6">
-        <div>
-          <h2 className="text-lg font-semibold">
-            Employment Details
-          </h2>
-
-          <p className="text-sm text-muted-foreground">
-            Experience, salary and
-            vacancy information.
-          </p>
-        </div>
-
-        <Separator />
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label required>
-              Minimum Experience
-            </Label>
-
-            <Input
-              type="number"
-              {...register(
-                "minExperience",
-                {
-                  valueAsNumber: true,
-                },
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .minExperience
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label required>
-              Maximum Experience
-            </Label>
-
-            <Input
-              type="number"
-              {...register(
-                "maxExperience",
-                {
-                  valueAsNumber: true,
-                },
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .maxExperience
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label required>
-              Minimum Salary
-            </Label>
-
-            <Input
-              type="number"
-              {...register(
-                "minSalary",
-                {
-                  valueAsNumber: true,
-                },
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .minSalary
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label required>
-              Maximum Salary
-            </Label>
-
-            <Input
-              type="number"
-              {...register(
-                "maxSalary",
-                {
-                  valueAsNumber: true,
-                },
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .maxSalary
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label required>
-              Currency
-            </Label>
-
-            <Input
-              placeholder="INR"
-              {...register(
-                "salaryCurrency",
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .salaryCurrency
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label required>
-              Vacancies
-            </Label>
-
-            <Input
-              type="number"
-              {...register(
-                "vacancies",
-                {
-                  valueAsNumber: true,
-                },
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .vacancies
-                  ?.message
-              }
-            />
-          </div>
-        </div>
-      </Card>
-            <Card className="space-y-6 p-6">
-        <div>
-          <h2 className="text-lg font-semibold">
-            Eligibility & Application
-          </h2>
-
-          <p className="text-sm text-muted-foreground">
-            Configure eligibility and
-            application deadline.
-          </p>
-        </div>
-
-        <Separator />
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label required>
-              Eligibility
-            </Label>
-
-            <Input
-              placeholder="B.E / B.Tech"
-              {...register(
-                "eligibilityTitle",
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .eligibilityTitle
-                  ?.message
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label required>
-              Application Deadline
-            </Label>
-
-            <Input
-              type="date"
-              {...register(
-                "applicationDeadline",
-              )}
-            />
-
-            <FormError
-              message={
-                errors
-                  .applicationDeadline
-                  ?.message
-              }
-            />
-          </div>
-
-          {initialData && (
-            <div className="space-y-2">
-              <Label>Status</Label>
-
+      <SectionTitle>Company Information</SectionTitle>
+      <div className={GRID_CLASS}>
+        <ValidatedField
+          label="Company Name"
+          required
+          state={fieldState("companyName")}
+          errorMessage={errors.companyName?.message}
+        >
+          <FieldIcon icon={Building2} />
+          <Input
+            placeholder="ABC Technologies"
+            disabled={isSubmitting}
+            className={inputClass(fieldState("companyName"), "pl-10")}
+            {...register("companyName")}
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Company Website"
+          state={fieldState("companyWebsite", false)}
+          errorMessage={errors.companyWebsite?.message}
+        >
+          <Input
+            placeholder="https://company.com"
+            disabled={isSubmitting}
+            className={inputClass(fieldState("companyWebsite", false))}
+            {...register("companyWebsite")}
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Company Email"
+          required
+          state={fieldState("companyEmail")}
+          errorMessage={errors.companyEmail?.message}
+        >
+          <FieldIcon icon={Mail} />
+          <Input
+            type="email"
+            placeholder="hr@company.com"
+            disabled={isSubmitting}
+            className={inputClass(fieldState("companyEmail"), "pl-10")}
+            {...register("companyEmail")}
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Company Phone"
+          state={fieldState("companyPhone", false)}
+          errorMessage={errors.companyPhone?.message}
+        >
+          <FieldIcon icon={Phone} />
+          <Input
+            placeholder="9876543210"
+            disabled={isSubmitting}
+            className={inputClass(fieldState("companyPhone", false), "pl-10")}
+            {...register("companyPhone")}
+          />
+        </ValidatedField>
+      </div>
+
+      <SectionTitle>Job Information</SectionTitle>
+      <div className={GRID_CLASS}>
+        <ValidatedField
+          label="Job Title"
+          required
+          state={fieldState("title")}
+          errorMessage={errors.title?.message}
+        >
+          <FieldIcon icon={Briefcase} />
+          <Input
+            placeholder="Software Developer"
+            disabled={isSubmitting}
+            className={inputClass(fieldState("title"), "pl-10")}
+            {...register("title")}
+          />
+        </ValidatedField>
+
+        <ValidatedField label="Job Number" state="neutral">
+          <FieldIcon icon={Hash} />
+          <Input
+            value={initialData?.jobNumber ?? "Auto generated after save"}
+            readOnly
+            disabled
+            className="h-[46px] pl-10"
+            aria-label="Job number"
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Category"
+          required
+          state={fieldState("category")}
+          errorMessage={errors.category?.message}
+        >
+          <FieldIcon icon={Folder} />
+          <Controller
+            name="category"
+            control={control}
+            render={({ field }) => (
               <AppSelect
-  value={watch("status")}
-  options={JOB_STATUS_OPTIONS}
-  onValueChange={(value) => {
-    setValue(
-      "status",
-      value as CreateJobFormValues["status"],
-      {
-        shouldValidate: true,
-        shouldDirty: true,
-      },
-    );
-  }}
-/>
-
-              <FormError
-                message={
-                  errors.status
-                    ?.message
-                }
+                value={field.value || undefined}
+                disabled={isSubmitting}
+                placeholder="Select category"
+                triggerClassName={inputClass(fieldState("category"), "pl-10 pr-16")}
+                onValueChange={field.onChange}
+                options={categoryOptions}
               />
-            </div>
-          )}
-        </div>
-      </Card>
-
-      <Card className="space-y-6 p-6">
-        <div>
-          <h2 className="text-lg font-semibold">
-            Responsibilities
-          </h2>
-
-          <p className="text-sm text-muted-foreground">
-            One responsibility per line.
-          </p>
-        </div>
-
-        <Separator />
-
-        <div className="space-y-2">
-          <Label required>
-            Responsibilities
-          </Label>
-
-          <Textarea
-            rows={8}
-            placeholder={`Develop scalable applications
-Review pull requests
-Mentor junior developers`}
-            {...register(
-              "responsibilities",
             )}
           />
+        </ValidatedField>
 
-          <FormError
-            message={
-              errors
-                .responsibilities
-                ?.message
-            }
-          />
-        </div>
-      </Card>
-
-      <Card className="space-y-6 p-6">
-        <div>
-          <h2 className="text-lg font-semibold">
-            Skills
-          </h2>
-
-          <p className="text-sm text-muted-foreground">
-            One skill per line.
-          </p>
-        </div>
-
-        <Separator />
-
-        <div className="space-y-2">
-          <Label required>
-            Required Skills
-          </Label>
-
-          <Textarea
-            rows={8}
-            placeholder={`React
-Next.js
-TypeScript
-Node.js`}
-            {...register("skills")}
-          />
-
-          <FormError
-            message={
-              errors.skills
-                ?.message
-            }
-          />
-        </div>
-      </Card>
-
-      <Card className="space-y-6 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">
-              Interview Process
-            </h2>
-
-            <p className="text-sm text-muted-foreground">
-              Add interview rounds.
-            </p>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              append(
-                JobFormUtils.createEmptyInterview(),
-              )
-            }
-          >
-            Add Round
-          </Button>
-        </div>
-
-        <Separator />
-
-        <div className="space-y-6">
-          {fields.map(
-            (
-              field,
-              index,
-            ) => (
-              <Card
-                key={field.id}
-                className="space-y-4 border p-4"
-              >
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium">
-                    Round{" "}
-                    {index + 1}
-                  </h3>
-
-                  {fields.length >
-                    1 && (
-                    <Button
-                      type="button"
-                      variant="danger"
-                      onClick={() =>
-                        remove(
-                          index,
-                        )
-                      }
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label required>
-                    Round Title
-                  </Label>
-
-                  <Input
-                    placeholder="Technical Interview"
-                    {...register(
-                      `interviewProcess.${index}.title`,
-                    )}
-                  />
-
-                  <FormError
-                    message={
-                      errors
-                        .interviewProcess?.[
-                        index
-                      ]?.title
-                        ?.message
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label required>
-                    Description
-                  </Label>
-
-                  <Textarea
-                    rows={3}
-                    placeholder="Describe this interview round..."
-                    {...register(
-                      `interviewProcess.${index}.description`,
-                    )}
-                  />
-
-                  <FormError
-                    message={
-                      errors
-                        .interviewProcess?.[
-                        index
-                      ]
-                        ?.description
-                        ?.message
-                    }
-                  />
-                </div>
-              </Card>
-            ),
-          )}
-        </div>
-      </Card>
-
-      <div className="flex justify-end gap-4">
-       <Button
-  type="button"
-  variant="outline"
-  onClick={() => {
-    reset(
-      JobFormUtils.createDefaultValues(),
-    );
-
-    setSelectedImage(null);
-  }}
->
-          Reset
-        </Button>
-
-        <Button
-          type="submit"
-          loading={
-            isSubmitting
-          }
+        <ValidatedField
+          label="Job Type"
+          required
+          state={fieldState("employmentType")}
+          errorMessage={errors.employmentType?.message}
         >
-          {initialData
-            ? "Update Job"
-            : "Create Job"}
-        </Button>
+          <Controller
+            name="employmentType"
+            control={control}
+            render={({ field }) => (
+              <AppSelect
+                value={field.value ?? ""}
+                disabled={isSubmitting}
+                triggerClassName={inputClass(fieldState("employmentType"))}
+                onValueChange={field.onChange}
+                options={EMPLOYMENT_TYPES}
+              />
+            )}
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Work Mode"
+          required
+          state={fieldState("workMode")}
+          errorMessage={errors.workMode?.message}
+        >
+          <Controller
+            name="workMode"
+            control={control}
+            render={({ field }) => (
+              <AppSelect
+                value={field.value ?? ""}
+                disabled={isSubmitting}
+                triggerClassName={inputClass(fieldState("workMode"))}
+                onValueChange={field.onChange}
+                options={WORK_MODES}
+              />
+            )}
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Working Days"
+          required
+          state={fieldState("workingDays")}
+          errorMessage={errors.workingDays?.message}
+        >
+          <Controller
+            name="workingDays"
+            control={control}
+            render={({ field }) => (
+              <AppSelect
+                value={field.value ?? ""}
+                disabled={isSubmitting}
+                triggerClassName={inputClass(fieldState("workingDays"))}
+                onValueChange={field.onChange}
+                options={WORKING_DAYS}
+              />
+            )}
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Location"
+          required
+          state={fieldState("location")}
+          errorMessage={errors.location?.message}
+        >
+          <FieldIcon icon={MapPin} />
+          <Input
+            placeholder="Bengaluru"
+            disabled={isSubmitting}
+            className={inputClass(fieldState("location"), "pl-10")}
+            {...register("location")}
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Department"
+          state={fieldState("department", false)}
+          errorMessage={errors.department?.message}
+        >
+          <Input
+            placeholder="Engineering"
+            disabled={isSubmitting}
+            className={inputClass(fieldState("department", false))}
+            {...register("department")}
+          />
+        </ValidatedField>
+      </div>
+
+      <SectionTitle>Compensation</SectionTitle>
+      <div className={GRID_CLASS}>
+        <ValidatedField
+          label="Minimum Salary"
+          required
+          state={fieldState("minSalary")}
+          errorMessage={errors.minSalary?.message}
+        >
+          <FieldIcon icon={IndianRupee} />
+          <Controller
+            name="minSalary"
+            control={control}
+            render={({ field }) => (
+              <Input
+                inputMode="numeric"
+                placeholder="15,000"
+                disabled={isSubmitting}
+                className={inputClass(fieldState("minSalary"), "pl-10")}
+                value={formatSalaryInput(field.value) || ""}
+                onBlur={field.onBlur}
+                onChange={(event) => {
+                  field.onChange(parseSalaryInput(event.target.value));
+                }}
+              />
+            )}
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Maximum Salary"
+          required
+          state={fieldState("maxSalary")}
+          errorMessage={errors.maxSalary?.message}
+        >
+          <FieldIcon icon={IndianRupee} />
+          <Controller
+            name="maxSalary"
+            control={control}
+            render={({ field }) => (
+              <Input
+                inputMode="numeric"
+                placeholder="40,000"
+                disabled={isSubmitting}
+                className={inputClass(fieldState("maxSalary"), "pl-10")}
+                value={formatSalaryInput(field.value) || ""}
+                onBlur={field.onBlur}
+                onChange={(event) => {
+                  field.onChange(parseSalaryInput(event.target.value));
+                }}
+              />
+            )}
+          />
+        </ValidatedField>
+      </div>
+
+      <SectionTitle>Qualification & Experience</SectionTitle>
+      <div className={GRID_CLASS}>
+        <ValidatedField
+          label="Minimum Experience (years)"
+          required
+          state={fieldState("minExperience")}
+          errorMessage={errors.minExperience?.message}
+        >
+          <FieldIcon icon={User} />
+          <Controller
+            name="minExperience"
+            control={control}
+            render={({ field }) => (
+              <Input
+                type="number"
+                min={0}
+                disabled={isSubmitting}
+                className={inputClass(fieldState("minExperience"), "pl-10")}
+                value={Number.isFinite(field.value) ? String(field.value) : "0"}
+                onBlur={field.onBlur}
+                onChange={(event) => {
+                  field.onChange(
+                    event.target.value === "" ? 0 : Number(event.target.value),
+                  );
+                }}
+              />
+            )}
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Maximum Experience (years)"
+          required
+          state={fieldState("maxExperience")}
+          errorMessage={errors.maxExperience?.message}
+        >
+          <Controller
+            name="maxExperience"
+            control={control}
+            render={({ field }) => (
+              <Input
+                type="number"
+                min={0}
+                disabled={isSubmitting}
+                className={inputClass(fieldState("maxExperience"))}
+                value={Number.isFinite(field.value) ? String(field.value) : "0"}
+                onBlur={field.onBlur}
+                onChange={(event) => {
+                  field.onChange(
+                    event.target.value === "" ? 0 : Number(event.target.value),
+                  );
+                }}
+              />
+            )}
+          />
+        </ValidatedField>
+      </div>
+
+      <ValidatedField
+        label="Minimum Required Qualification"
+        required
+        state={fieldState("qualifications")}
+        errorMessage={errors.qualifications?.message}
+      >
+        <Controller
+          name="qualifications"
+          control={control}
+          render={({ field }) => (
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+              {JOB_QUALIFICATIONS.map((item) => {
+                const checked = field.value.includes(item);
+                return (
+                  <label
+                    key={item}
+                    className={cn(
+                      "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm",
+                      checked
+                        ? "border-[#2563EB] bg-[#E8F1FF] text-[#1E3A8A]"
+                        : "border-[#DCE8F5] bg-white text-[#102A56]",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={checked}
+                      disabled={isSubmitting}
+                      onBlur={field.onBlur}
+                      onChange={(event) => {
+                        field.onChange(
+                          event.target.checked
+                            ? [...field.value, item]
+                            : field.value.filter((value) => value !== item),
+                        );
+                      }}
+                    />
+                    {item}
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        />
+      </ValidatedField>
+
+      <SectionTitle>Skills</SectionTitle>
+      <ValidatedField
+        label="Required Skills"
+        required
+        state={fieldState("skills")}
+        errorMessage={errors.skills?.message}
+      >
+        <Controller
+          name="skills"
+          control={control}
+          render={({ field }) => (
+            <JobTagInput
+              values={field.value}
+              disabled={isSubmitting}
+              state={fieldState("skills")}
+              placeholder="React, Node.js, PostgreSQL"
+              onBlur={field.onBlur}
+              onChange={field.onChange}
+            />
+          )}
+        />
+      </ValidatedField>
+
+      <ValidatedField
+        label="Preferred Skills"
+        state={fieldState("preferredSkills", false)}
+        errorMessage={errors.preferredSkills?.message}
+      >
+        <Controller
+          name="preferredSkills"
+          control={control}
+          render={({ field }) => (
+            <JobTagInput
+              values={field.value ?? []}
+              disabled={isSubmitting}
+              state={fieldState("preferredSkills", false)}
+              placeholder="AWS, Docker"
+              onBlur={field.onBlur}
+              onChange={field.onChange}
+            />
+          )}
+        />
+      </ValidatedField>
+
+      <SectionTitle>Description</SectionTitle>
+      <ValidatedField
+        label="Job Description"
+        required
+        state={fieldState("description")}
+        errorMessage={errors.description?.message}
+      >
+        <Textarea
+          rows={4}
+          placeholder="Describe the role, team, and impact."
+          disabled={isSubmitting}
+          className={inputClass(fieldState("description"), "min-h-[96px]")}
+          {...register("description")}
+        />
+      </ValidatedField>
+
+      <ValidatedField
+        label="Responsibilities"
+        state={fieldState("responsibilities", false)}
+        errorMessage={errors.responsibilities?.message}
+      >
+        <Textarea
+          rows={3}
+          placeholder="One responsibility per line"
+          disabled={isSubmitting}
+          className={inputClass(
+            fieldState("responsibilities", false),
+            "min-h-[80px]",
+          )}
+          {...register("responsibilities")}
+        />
+      </ValidatedField>
+
+      <ValidatedField
+        label="Benefits / Perks"
+        state={fieldState("benefits", false)}
+        errorMessage={errors.benefits?.message}
+      >
+        <Textarea
+          rows={2}
+          placeholder="Health insurance, flexible hours..."
+          disabled={isSubmitting}
+          className={inputClass(fieldState("benefits", false), "min-h-[72px]")}
+          {...register("benefits")}
+        />
+      </ValidatedField>
+
+      <SectionTitle>Recruitment</SectionTitle>
+      <div className={GRID_CLASS}>
+        <ValidatedField
+          label="Number of Openings"
+          required
+          state={fieldState("vacancies")}
+          errorMessage={errors.vacancies?.message}
+        >
+          <Controller
+            name="vacancies"
+            control={control}
+            render={({ field }) => (
+              <Input
+                type="number"
+                min={1}
+                disabled={isSubmitting}
+                className={inputClass(fieldState("vacancies"))}
+                value={Number.isFinite(field.value) ? String(field.value) : "1"}
+                onBlur={field.onBlur}
+                onChange={(event) => {
+                  field.onChange(
+                    event.target.value === "" ? 1 : Number(event.target.value),
+                  );
+                }}
+              />
+            )}
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Job Expiry Date"
+          required
+          state={fieldState("applicationDeadline")}
+          errorMessage={errors.applicationDeadline?.message}
+        >
+          <FieldIcon icon={Calendar} />
+          <Input
+            type="date"
+            min={tomorrowDateInputValue()}
+            disabled={isSubmitting}
+            className={inputClass(fieldState("applicationDeadline"), "pl-10")}
+            {...register("applicationDeadline")}
+          />
+        </ValidatedField>
+      </div>
+
+      <ValidatedField
+        label="Interview Process"
+        state={fieldState("interviewNotes", false)}
+        errorMessage={errors.interviewNotes?.message}
+      >
+        <Textarea
+          rows={2}
+          placeholder="Phone screen, technical round, HR discussion"
+          disabled={isSubmitting}
+          className={inputClass(
+            fieldState("interviewNotes", false),
+            "min-h-[72px]",
+          )}
+          {...register("interviewNotes")}
+        />
+      </ValidatedField>
+
+      <SectionTitle>Media</SectionTitle>
+      <div>
+        <p className="mb-2 text-sm font-medium text-slate-700">
+          Company Logo / Job Image
+        </p>
+        <ImageUploadField
+          compact
+          entityLabel="job"
+          previewUrl={imagePreviewUrl}
+          file={selectedImage}
+          disabled={isSubmitting}
+          error={imageError}
+          state={imageState}
+          hint="PNG, JPG, JPEG, WEBP"
+          onFileSelect={(file) => {
+            setImageTouched(true);
+            const message = file ? validateJobImageFile(file) : null;
+            setImageError(message);
+            if (message) {
+              setSelectedImage(null);
+              return;
+            }
+            setSelectedImage(file);
+            setRemoveImage(false);
+          }}
+          onRemove={() => {
+            setImageTouched(true);
+            setSelectedImage(null);
+            setRemoveImage(true);
+            setImageError(null);
+          }}
+          validateFile={validateJobImageFile}
+        />
       </div>
     </form>
   );

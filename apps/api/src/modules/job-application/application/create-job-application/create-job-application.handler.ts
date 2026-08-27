@@ -53,6 +53,8 @@ export class CreateJobApplicationHandler {
     );
 
     const applicationId = randomUUID();
+    const applicationNumber =
+      await this.applicationRepo.nextApplicationNumber();
 
     let resumeFileId: string | null = null;
 
@@ -73,6 +75,13 @@ export class CreateJobApplicationHandler {
       id: applicationId,
       jobId: command.jobId,
       studentId: student.id,
+      applicationNumber,
+      applicantName: [student.firstName, student.lastName]
+        .filter(Boolean)
+        .join(' ')
+        .trim(),
+      applicantEmail: student.email.getValue(),
+      applicantPhone: student.phone.getValue(),
       resumeFileId,
       coverLetter: command.coverLetter,
       currentLocation: command.currentLocation,

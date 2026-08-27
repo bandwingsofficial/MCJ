@@ -1,485 +1,486 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { JobViewDrawer } from "@/src/features/jobs/components/JobViewDrawer";
-import { PageHeader } from "@/src/shared/components/ui/page-header";
-import { Button } from "@/src/shared/components/ui/button";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
+import { Pagination } from "@/src/shared/components/ui/pagination";
+import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { appToast } from "@/src/shared/components/ui/toast";
 
 import { JobDialog } from "@/src/features/jobs/components/JobDialog";
-import { JobFilters } from "@/src/features/jobs/components/JobFilters";
+import { JobSummaryHeader } from "@/src/features/jobs/components/job-summary-header";
+import type { JobsModuleTab } from "@/src/features/jobs/components/job-summary-header";
 import { JobTable } from "@/src/features/jobs/components/JobTable";
-
-import { useJobs } from "@/src/features/jobs/hooks/useJobs";
-
+import { JobViewDrawer } from "@/src/features/jobs/components/JobViewDrawer";
+import { JobsApplicationsPanel } from "@/src/features/jobs/components/JobsApplicationsPanel";
+import { JobsOnboardingPanel } from "@/src/features/jobs/components/JobsOnboardingPanel";
+import { DEFAULT_JOB_PAGE_SIZE } from "@/src/features/jobs/constants/job.constants";
+import { useJobOnboarding, useJobs } from "@/src/features/jobs/hooks/useJobs";
 import { jobService } from "@/src/features/jobs/services/job.service";
-
 import type {
   CreateJobRequest,
   Job,
 } from "@/src/features/jobs/types/job.types";
+import { getJobApplicationUrl } from "@/src/features/jobs/utils/job-form.utils";
+import { useJobApplications } from "@/src/features/job-applications/hooks/useJobApplications";
+import type { OnboardingStatusFilter } from "@/src/features/job-applications/types/job-application.types";
 
-import type {
-  EmploymentType,
-  JobStatus,
-} from "@/src/features/jobs/types/job.types";
+type ConfirmAction = "activate" | "deactivate" | "archive" | "restore";
 
-type DialogMode =
-  | "create"
-  | "edit";
+function resolveTab(value: string | null): JobsModuleTab {
+  if (value === "onboarding") {
+    return "onboarding";
+  }
+
+  if (value === "applications") {
+    return "applications";
+  }
+
+  return "jobs";
+}
 
 export function JobsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tab = resolveTab(searchParams.get("tab"));
+
   const {
     jobs,
-    isLoading,
+    total,
+    catalogTotal,
+    isInitialLoading,
+    isFetching,
     error,
+    filters,
+    setFilters,
     refetch,
   } = useJobs();
 
-  const [
-    dialogOpen,
-    setDialogOpen,
-  ] = useState(false);
+  const onboarding = useJobOnboarding();
+  const applications = useJobApplications();
 
-  const [
-  viewDrawerOpen,
-  setViewDrawerOpen,
-] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedJob, setSelectedJob] = useState<Job>();
+  const [viewJob, setViewJob] = useState<Job>();
+  const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<Job>();
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
+    null,
+  );
+  const [isActing, setIsActing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [
-    dialogMode,
-    setDialogMode,
-  ] =
-    useState<DialogMode>(
-      "create",
-    );
+  const page = filters.page ?? 1;
+  const pageSize = filters.pageSize ?? DEFAULT_JOB_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
 
-  const [
-    isSubmitting,
-    setIsSubmitting,
-  ] = useState(false);
+  const headerTotal =
+    tab === "jobs"
+      ? catalogTotal
+      : tab === "onboarding"
+        ? onboarding.catalogTotal
+        : applications.catalogTotal;
+  const headerLoading =
+    tab === "jobs"
+      ? isInitialLoading
+      : tab === "onboarding"
+        ? onboarding.isInitialLoading
+        : applications.isInitialLoading;
+  const headerSearch =
+    tab === "jobs"
+      ? filters.search
+      : tab === "onboarding"
+        ? onboarding.filters.search
+        : applications.filters.search;
 
-  const [
-    selectedJob,
-    setSelectedJob,
-  ] =
-    useState<Job>();
+  const confirmCopy = useMemo(() => {
+    switch (confirmAction) {
+      case "activate":
+        return {
+          title: "Activate Job",
+          description:
+            "This job will become visible and open for applications.",
+        };
+      case "deactivate":
+        return {
+          title: "Deactivate Job",
+          description: "This job will be hidden from public listings.",
+        };
+      case "archive":
+        return {
+          title: "Archive Job",
+          description: "This job will be archived and can be restored later.",
+        };
+      case "restore":
+        return {
+          title: "Restore Job",
+          description: "This job will be restored to the active catalog.",
+        };
+      default:
+        return { title: "", description: "" };
+    }
+  }, [confirmAction]);
 
-  const [
-    deleteDialog,
-    setDeleteDialog,
-  ] = useState(false);
+  const setTab = (nextTab: JobsModuleTab) => {
+    if (nextTab === "onboarding") {
+      router.replace("/jobs?tab=onboarding");
+      return;
+    }
 
-  const [
-    restoreDialog,
-    setRestoreDialog,
-  ] = useState(false);
+    if (nextTab === "applications") {
+      router.replace("/jobs?tab=applications");
+      return;
+    }
 
-  const [
-  filters,
-  setFilters,
-] = useState<{
-  search: string;
-  includeDeleted: boolean;
-  status: JobStatus | "";
-  employmentType: EmploymentType | "";
-}>({
-  search: "",
-  includeDeleted: false,
-  status: "",
-  employmentType: "",
-});
-
-  const filteredJobs =
-    useMemo(() => {
-      return jobs.filter(
-        (job) => {
-          const search =
-            filters.search
-              .trim()
-              .toLowerCase();
-
-          const matchesSearch =
-            !search ||
-            job.title
-              .toLowerCase()
-              .includes(
-                search,
-              ) ||
-            job.companyName
-              .toLowerCase()
-              .includes(
-                search,
-              );
-
-          const matchesStatus =
-            !filters.status ||
-            job.status ===
-              filters.status;
-
-          const matchesEmployment =
-            !filters.employmentType ||
-            job.employmentType ===
-              filters.employmentType;
-
-          const matchesDeleted =
-            filters.includeDeleted ||
-            !job.isDeleted;
-
-          return (
-            matchesSearch &&
-            matchesStatus &&
-            matchesEmployment &&
-            matchesDeleted
-          );
-        },
-      );
-    }, [
-      jobs,
-      filters,
-    ]);
-
-  const handleCreate =
-    () => {
-      setSelectedJob(
-        undefined,
-      );
-
-      setDialogMode(
-        "create",
-      );
-
-      setDialogOpen(true);
-    };
-
-  const handleEdit = (
-    job: Job,
-  ) => {
-    setSelectedJob(job);
-
-    setDialogMode(
-      "edit",
-    );
-
-    setDialogOpen(true);
+    router.replace("/jobs");
   };
 
-  const handleDialogClose =
-    () => {
+  const copyApplicationLink = async (job: Job) => {
+    try {
+      await navigator.clipboard.writeText(getJobApplicationUrl(job.slug));
+      appToast.success("Application link copied.");
+    } catch {
+      appToast.error("Unable to copy the application link.");
+    }
+  };
+
+  const openApplicationPage = (job: Job) => {
+    window.open(getJobApplicationUrl(job.slug), "_blank", "noopener,noreferrer");
+  };
+
+  const runAction = async () => {
+    if (!selectedJob || !confirmAction) {
+      return;
+    }
+
+    try {
+      setIsActing(true);
+
+      if (confirmAction === "activate") {
+        await jobService.activateJob(selectedJob.id);
+        appToast.success("Job activated successfully.");
+      } else if (confirmAction === "deactivate") {
+        await jobService.deactivateJob(selectedJob.id);
+        appToast.success("Job deactivated successfully.");
+      } else if (confirmAction === "archive") {
+        await jobService.deleteJob(selectedJob.id);
+        appToast.success("Job archived successfully.");
+      } else {
+        await jobService.restoreJob(selectedJob.id);
+        appToast.success("Job restored successfully.");
+      }
+
+      setConfirmAction(null);
+      setSelectedJob(undefined);
+      await refetch();
+    } catch (err) {
+      appToast.error(err instanceof Error ? err.message : "Action failed.");
+    } finally {
+      setIsActing(false);
+    }
+  };
+
+  const handleJobSubmit = async (
+    values: CreateJobRequest,
+    image: File | null,
+    removeImage: boolean,
+  ) => {
+    if (isSubmitting) {
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      if (dialogMode === "edit" && editingJob) {
+        await jobService.updateJob(
+          editingJob.id,
+          {
+            ...values,
+            companyLogo: removeImage && !image ? "" : values.companyLogo,
+          },
+          image,
+        );
+        appToast.success("Job updated successfully.");
+      } else {
+        const created = await jobService.createJob(values, image);
+        appToast.success(
+          created.data.jobNumber
+            ? `Job created successfully. ${created.data.jobNumber}`
+            : "Job created successfully.",
+        );
+      }
+
       setDialogOpen(false);
-
-      setSelectedJob(
-        undefined,
+      setEditingJob(undefined);
+      await refetch();
+    } catch (err) {
+      appToast.error(
+        err instanceof Error ? err.message : "Unable to save job.",
       );
-    };
-
-  const handleSubmit = async (
-  values: CreateJobRequest,
-  image: File | null,
-) => {
-      try {
-        setIsSubmitting(
-          true,
-        );
-
-        if (
-          dialogMode ===
-            "create"
-        ) {
-         await jobService.createJob(
-  values,
-  image,
-);
-          appToast.success(
-            "Job created successfully.",
-          );
-        } else if (
-          selectedJob
-        ) {
-          await jobService.updateJob(
-            selectedJob.id,
-            values,
-          );
-
-          appToast.success(
-            "Job updated successfully.",
-          );
-        }
-
-        handleDialogClose();
-
-        await refetch();
-      } catch (error) {
-        const message =
-          error instanceof
-          Error
-            ? error.message
-            : "Operation failed.";
-
-        appToast.error(
-          message,
-        );
-      } finally {
-        setIsSubmitting(
-          false,
-        );
-      }
-    };
-
-  const handleView = (
-  job: Job,
-) => {
-  setSelectedJob(job);
-  setViewDrawerOpen(true);
-};
-
-  const handleDelete = (
-    job: Job,
-  ) => {
-    setSelectedJob(job);
-
-    setDeleteDialog(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
-  const handleRestore = (
-    job: Job,
-  ) => {
-    setSelectedJob(job);
-
-    setRestoreDialog(true);
-  };
-
-  const handleActivate =
-    async (
-      job: Job,
-    ) => {
-      try {
-        await jobService.activateJob(
-          job.id,
-        );
-
-        appToast.success(
-          "Job activated successfully.",
-        );
-
-        await refetch();
-      } catch (error) {
-        appToast.error(
-          error instanceof
-            Error
-            ? error.message
-            : "Activation failed.",
-        );
-      }
-    };
-
-  const handleDeactivate =
-    async (
-      job: Job,
-    ) => {
-      try {
-        await jobService.deactivateJob(
-          job.id,
-        );
-
-        appToast.success(
-          "Job deactivated successfully.",
-        );
-
-        await refetch();
-      } catch (error) {
-        appToast.error(
-          error instanceof
-            Error
-            ? error.message
-            : "Deactivation failed.",
-        );
-      }
-    };
-      const confirmDelete =
-    async () => {
-      if (!selectedJob) {
-        return;
-      }
-
-      try {
-        await jobService.deleteJob(
-          selectedJob.id,
-        );
-
-        appToast.success(
-          "Job deleted successfully.",
-        );
-
-        setDeleteDialog(
-          false,
-        );
-
-        setSelectedJob(
-          undefined,
-        );
-
-        await refetch();
-      } catch (error) {
-        appToast.error(
-          error instanceof
-            Error
-            ? error.message
-            : "Delete failed.",
-        );
-      }
-    };
-
-  const confirmRestore =
-    async () => {
-      if (!selectedJob) {
-        return;
-      }
-
-      try {
-        await jobService.restoreJob(
-          selectedJob.id,
-        );
-
-        appToast.success(
-          "Job restored successfully.",
-        );
-
-        setRestoreDialog(
-          false,
-        );
-
-        setSelectedJob(
-          undefined,
-        );
-
-        await refetch();
-      } catch (error) {
-        appToast.error(
-          error instanceof
-            Error
-            ? error.message
-            : "Restore failed.",
-        );
-      }
-    };
 
   return (
-    <>
-      <PageHeader
-        title="Jobs"
-        description="Manage all job postings."
-        actions={
-          <Button
-            className="admin-create-btn"
-            size="lg"
-            onClick={
-              handleCreate
-            }
-          >
-            Create Job
-          </Button>
+    <div>
+      <JobSummaryHeader
+        tab={tab}
+        onTabChange={setTab}
+        total={headerTotal}
+        pendingOnboardingCount={onboarding.pendingCount}
+        pendingApplicationCount={applications.pendingCount}
+        isLoading={headerLoading}
+        createDisabled={isActing || isSubmitting}
+        onCreate={() => {
+          setDialogMode("create");
+          setEditingJob(undefined);
+          setDialogOpen(true);
+        }}
+        search={headerSearch}
+        onSearchChange={(search) => {
+          if (tab === "onboarding") {
+            onboarding.setFilters({ ...onboarding.filters, search });
+            return;
+          }
+
+          if (tab === "applications") {
+            applications.setFilters({ ...applications.filters, search });
+            return;
+          }
+
+          setFilters({ ...filters, search });
+        }}
+        jobStatus={filters.status}
+        onJobStatusChange={(status) => setFilters({ ...filters, status })}
+        onboardingStatus={onboarding.filters.status}
+        onOnboardingStatusChange={(status) =>
+          onboarding.setFilters({ ...onboarding.filters, status })
+        }
+        applicationStatus={applications.filters.status}
+        onApplicationStatusChange={(status: OnboardingStatusFilter) =>
+          applications.setFilters({ ...applications.filters, status })
         }
       />
 
-      <div className="mt-6 space-y-6">
-        <JobFilters
-          value={filters}
-          onChange={
-            setFilters
-          }
-        />
+      {tab === "jobs" && onboarding.pendingCount > 0 ? (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          New Job Submission — {onboarding.pendingCount} hiring{" "}
+          {onboarding.pendingCount === 1 ? "requirement is" : "requirements are"}{" "}
+          awaiting review.{" "}
+          <button
+            type="button"
+            className="font-semibold underline"
+            onClick={() => setTab("onboarding")}
+          >
+            Review
+          </button>
+        </div>
+      ) : null}
 
-        <JobTable
-          jobs={filteredJobs}
-          isLoading={
-            isLoading
-          }
-          error={error}
-          onRetry={refetch}
-          onView={
-            handleView
-          }
-          onEdit={
-            handleEdit
-          }
-          onActivate={
-            handleActivate
-          }
-          onDeactivate={
-            handleDeactivate
-          }
-          onDelete={
-            handleDelete
-          }
-          onRestore={
-            handleRestore
-          }
+      {tab === "jobs" && applications.pendingCount > 0 ? (
+        <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          New Job Application — {applications.pendingCount} candidate{" "}
+          {applications.pendingCount === 1
+            ? "application is"
+            : "applications are"}{" "}
+          pending review.{" "}
+          <button
+            type="button"
+            className="font-semibold underline"
+            onClick={() => setTab("applications")}
+          >
+            Review
+          </button>
+        </div>
+      ) : null}
+
+      {tab === "onboarding" ? (
+        <JobsOnboardingPanel
+          jobs={onboarding.jobs}
+          total={onboarding.total}
+          isInitialLoading={onboarding.isInitialLoading}
+          isFetching={onboarding.isFetching}
+          error={onboarding.error}
+          filters={onboarding.filters}
+          setFilters={onboarding.setFilters}
+          refetch={onboarding.refetch}
+          actionsDisabled={isActing}
         />
-      </div>
+      ) : tab === "applications" ? (
+        <JobsApplicationsPanel
+          applications={applications.jobApplications}
+          total={applications.total}
+          isInitialLoading={applications.isInitialLoading}
+          isFetching={applications.isFetching}
+          error={applications.error}
+          filters={applications.filters}
+          setFilters={applications.setFilters}
+          refetch={applications.refetch}
+          actionsDisabled={isActing}
+        />
+      ) : (
+        <div className="mt-5">
+          <Card className="overflow-hidden p-0">
+            {isInitialLoading ? (
+              <div className="p-4">
+                <SkeletonTable rows={8} />
+              </div>
+            ) : (
+              <>
+                {error ? (
+                  <div className="border-b border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                    {error}{" "}
+                    <button
+                      type="button"
+                      className="font-medium underline"
+                      onClick={() => {
+                        void refetch();
+                      }}
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : null}
+
+                <div aria-busy={isFetching} className="relative">
+                  {isFetching ? (
+                    <div className="pointer-events-none absolute inset-0 z-10 bg-white/40" />
+                  ) : null}
+                  <JobTable
+                    jobs={jobs}
+                    selectedJobIds={selectedIds}
+                    onSelectionChange={setSelectedIds}
+                    actionsDisabled={isActing || isFetching || isSubmitting}
+                    onView={setViewJob}
+                    onEdit={(job) => {
+                      setDialogMode("edit");
+                      setEditingJob(job);
+                      setDialogOpen(true);
+                    }}
+                    onCopyLink={(job) => {
+                      void copyApplicationLink(job);
+                    }}
+                    onOpenLink={openApplicationPage}
+                    onActivate={(job) => {
+                      setSelectedJob(job);
+                      setConfirmAction("activate");
+                    }}
+                    onDeactivate={(job) => {
+                      setSelectedJob(job);
+                      setConfirmAction("deactivate");
+                    }}
+                    onArchive={(job) => {
+                      setSelectedJob(job);
+                      setConfirmAction("archive");
+                    }}
+                    onRestore={(job) => {
+                      setSelectedJob(job);
+                      setConfirmAction("restore");
+                    }}
+                  />
+                </div>
+
+                <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-[#DCE8F5] bg-[#F8FBFF] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  {total > 0 ? (
+                    <>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-[#647A9B]">
+                        <span className="leading-9">
+                          Showing {from}–{to} of {total}
+                        </span>
+                        <label className="flex items-center gap-2 leading-9">
+                          <span className="whitespace-nowrap">
+                            Rows per page
+                          </span>
+                          <select
+                            className="h-9 rounded-xl border border-[#DCE8F5] bg-white px-2 text-[15px] text-[#102A56]"
+                            value={pageSize}
+                            disabled={isActing}
+                            onChange={(event) =>
+                              setFilters({
+                                ...filters,
+                                pageSize: Number(event.target.value),
+                              })
+                            }
+                          >
+                            {[10, 20, 50, 100].map((size) => (
+                              <option key={size} value={size}>
+                                {size}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                      <Pagination
+                        page={page}
+                        totalPages={totalPages}
+                        onPageChange={(nextPage) =>
+                          setFilters({ ...filters, page: nextPage })
+                        }
+                      />
+                    </>
+                  ) : (
+                    <p className="text-[15px] leading-9 text-slate-500">
+                      No jobs to paginate
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+          </Card>
+        </div>
+      )}
 
       <JobDialog
-        open={
-          dialogOpen
-        }
-        mode={
-          dialogMode
-        }
-        job={
-          selectedJob
-        }
-        isSubmitting={
-          isSubmitting
-        }
-        onClose={
-          handleDialogClose
-        }
-        onSubmit={
-          handleSubmit
-        }
+        open={dialogOpen}
+        mode={dialogMode}
+        job={editingJob}
+        isSubmitting={isSubmitting}
+        onClose={() => {
+          if (isSubmitting) {
+            return;
+          }
+          setDialogOpen(false);
+          setEditingJob(undefined);
+        }}
+        onSubmit={handleJobSubmit}
       />
 
       <JobViewDrawer
-  open={viewDrawerOpen}
-  job={selectedJob}
-  onClose={() => {
-    setViewDrawerOpen(false);
-    setSelectedJob(undefined);
-  }}
-/>
-
-      <ConfirmDialog
-        open={
-          deleteDialog
-        }
-        title="Delete Job"
-        description="This action will soft delete the selected job."
-        onConfirm={
-          confirmDelete
-        }
-        onCancel={() =>
-          setDeleteDialog(
-            false,
-          )
-        }
+        open={Boolean(viewJob)}
+        job={viewJob}
+        onClose={() => setViewJob(undefined)}
       />
 
       <ConfirmDialog
-        open={
-          restoreDialog
+        open={Boolean(confirmAction)}
+        title={confirmCopy.title}
+        description={confirmCopy.description}
+        loading={isActing}
+        confirmVariant={
+          confirmAction === "activate" || confirmAction === "restore"
+            ? "success"
+            : confirmAction === "archive"
+              ? "danger"
+              : "primary"
         }
-        title="Restore Job"
-        description="Do you want to restore this job?"
-        onConfirm={
-          confirmRestore
-        }
-        onCancel={() =>
-          setRestoreDialog(
-            false,
-          )
-        }
+        onConfirm={() => {
+          void runAction();
+        }}
+        onCancel={() => {
+          if (isActing) {
+            return;
+          }
+          setConfirmAction(null);
+          setSelectedJob(undefined);
+        }}
       />
-    </>
+    </div>
   );
 }

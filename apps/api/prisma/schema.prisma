@@ -915,9 +915,13 @@ model Job {
   id                  String           @id @default(uuid())
   title               String
   slug                String           @unique
+  jobNumber           String?          @unique
+  source              JobSource        @default(ADMIN)
   companyName         String
   companyLogo         String?
   companyWebsite      String?
+  companyEmail        String?
+  companyPhone        String?
   companyDescription  String?
   description         String?
   shortDescription    String?
@@ -926,8 +930,11 @@ model Job {
   state               String?
   country             String?
   isRemote            Boolean          @default(false)
+  workMode            JobWorkMode      @default(ONSITE)
   employmentType      EmploymentType
   workingDays         WorkingDays
+  category            String?
+  department          String?
   minExperience       Int?
   maxExperience       Int?
   minSalary           Decimal?         @db.Decimal(12, 2)
@@ -937,10 +944,16 @@ model Job {
   applicationDeadline DateTime?
   responsibilities    String[]
   skills              String[]
+  preferredSkills     String[]
+  qualifications      String[]
+  benefits            String?
   eligibilityTitle    String?
   interviewProcess    Json?
   status              JobStatus        @default(DRAFT)
   isActive            Boolean          @default(true)
+  rejectionReason     String?
+  reviewedAt          DateTime?
+  reviewedBy          String?
   createdBy           String?
   updatedBy           String?
   isDeleted           Boolean          @default(false)
@@ -952,7 +965,9 @@ model Job {
   placements          Placement[]
 
   @@index([slug])
+  @@index([jobNumber])
   @@index([status])
+  @@index([source])
   @@index([isActive])
   @@index([isDeleted])
   @@index([status, isActive, isDeleted])
@@ -961,29 +976,37 @@ model Job {
 }
 
 model JobApplication {
-  id              String               @id @default(uuid())
-  jobId           String
-  studentId       String
-  resumeFileId    String?
-  coverLetter     String?
-  currentLocation String?
-  expectedSalary  Decimal?             @db.Decimal(12, 2)
-  remarks         String?
-  status          JobApplicationStatus @default(APPLIED)
-  createdBy       String?
-  updatedBy       String?
-  isDeleted       Boolean              @default(false)
-  deletedAt       DateTime?
-  deletedBy       String?
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  job             Job                  @relation(fields: [jobId], references: [id])
-  resumeUpload    Upload?              @relation("JobApplicationResume", fields: [resumeFileId], references: [id], onDelete: SetNull)
-  Student         Student              @relation(fields: [studentId], references: [id])
-  placement       Placement?
+  id                   String               @id @default(uuid())
+  jobId                String
+  studentId            String?
+  applicationNumber    String               @unique
+  applicantName        String?
+  applicantEmail       String?
+  applicantPhone       String?
+  highestQualification String?
+  yearsOfExperience    Int?
+  resumeFileId         String?
+  coverLetter          String?
+  currentLocation      String?
+  expectedSalary       Decimal?             @db.Decimal(12, 2)
+  remarks              String?
+  status               JobApplicationStatus @default(APPLIED)
+  createdBy            String?
+  updatedBy            String?
+  isDeleted            Boolean              @default(false)
+  deletedAt            DateTime?
+  deletedBy            String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  job                  Job                  @relation(fields: [jobId], references: [id])
+  resumeUpload         Upload?              @relation("JobApplicationResume", fields: [resumeFileId], references: [id], onDelete: SetNull)
+  Student              Student?             @relation(fields: [studentId], references: [id])
+  placement            Placement?
 
   @@unique([jobId, studentId])
   @@index([jobId])
+  @@index([applicationNumber])
+  @@index([applicantEmail])
   @@index([status])
   @@index([isDeleted])
   @@index([createdAt])
@@ -1433,9 +1456,22 @@ enum WorkingDays {
 
 enum JobStatus {
   DRAFT
+  PENDING_APPROVAL
   ACTIVE
   CLOSED
   EXPIRED
+  REJECTED
+}
+
+enum JobSource {
+  ADMIN
+  COMPANY_ONBOARDING
+}
+
+enum JobWorkMode {
+  ONSITE
+  REMOTE
+  HYBRID
 }
 
 enum JobApplicationStatus {

@@ -2,62 +2,76 @@
 
 import { Badge } from "@/src/shared/components/ui/badge";
 
-import type {
-  JobStatus,
-} from "@/src/features/jobs/types/job.types";
+import type { Job, JobLifecycleStatus } from "@/src/features/jobs/types/job.types";
+import { getOnboardingStatusLabel } from "@/src/features/jobs/utils/job-form.utils";
 
 interface JobStatusBadgeProps {
-  status: JobStatus;
-
-  isActive: boolean;
+  status?: JobLifecycleStatus;
+  job?: Job;
+  variant?: "lifecycle" | "onboarding";
 }
 
 export function JobStatusBadge({
   status,
-  isActive,
+  job,
+  variant = "lifecycle",
 }: JobStatusBadgeProps) {
-  if (!isActive) {
+  if (variant === "onboarding" && job) {
+    if (job.status === "PENDING_APPROVAL") {
+      return (
+        <Badge variant="warning" className="px-2.5 py-0.5 text-sm">
+          Pending
+        </Badge>
+      );
+    }
+
+    if (job.status === "REJECTED") {
+      return (
+        <Badge variant="danger" className="px-2.5 py-0.5 text-sm">
+          Rejected
+        </Badge>
+      );
+    }
+
     return (
-      <Badge variant="danger">
+      <Badge variant="success" className="px-2.5 py-0.5 text-sm">
+        {getOnboardingStatusLabel(job.status)}
+      </Badge>
+    );
+  }
+
+  if (job?.isExpired && status === "ACTIVE") {
+    return (
+      <span className="inline-flex flex-wrap gap-1">
+        <Badge variant="success" className="px-2.5 py-0.5 text-sm">
+          Active
+        </Badge>
+        <Badge variant="default" className="px-2.5 py-0.5 text-sm">
+          Expired
+        </Badge>
+      </span>
+    );
+  }
+
+  if (status === "ACTIVE") {
+    return (
+      <Badge variant="success" className="px-2.5 py-0.5 text-sm">
+        Active
+      </Badge>
+    );
+  }
+
+  if (status === "INACTIVE") {
+    return (
+      <Badge variant="danger" className="px-2.5 py-0.5 text-sm">
         Inactive
       </Badge>
     );
   }
 
-  switch (status) {
-    case "ACTIVE":
-      return (
-        <Badge variant="success">
-          Active
-        </Badge>
-      );
-
-    case "DRAFT":
-      return (
-        <Badge variant="warning">
-          Draft
-        </Badge>
-      );
-
-    case "CLOSED":
-      return (
-        <Badge variant="danger">
-          Closed
-        </Badge>
-      );
-
-    case "EXPIRED":
-      return (
-        <Badge variant="info">
-          Expired
-        </Badge>
-      );
-
-    default:
-      return (
-        <Badge variant="default">
-          Unknown
-        </Badge>
-      );
-  }
+  return (
+    <Badge variant="default" className="px-2.5 py-0.5 text-sm">
+      Archived
+    </Badge>
+  );
 }

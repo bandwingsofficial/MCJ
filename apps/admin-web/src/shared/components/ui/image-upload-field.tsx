@@ -20,6 +20,7 @@ interface Props {
   hint?: string;
   entityLabel?: string;
   previewAlt?: string;
+  compact?: boolean;
   onFileSelect: (file: File | null) => void;
   onRemove: () => void;
   validateFile?: (file: File) => string | null;
@@ -36,6 +37,7 @@ export function ImageUploadField({
   hint = "PNG, JPG, JPEG, WEBP",
   entityLabel = "course",
   previewAlt,
+  compact = false,
   onFileSelect,
   onRemove,
   validateFile,
@@ -86,12 +88,18 @@ export function ImageUploadField({
       {hasPreview ? (
         <div
           className={cn(
-            "rounded-xl border-2 border-dashed px-4 py-5 text-center transition-colors",
+            "rounded-xl border-2 border-dashed px-4 text-center transition-colors",
+            compact ? "py-4" : "py-5",
             borderClass,
             disabled && "opacity-60",
           )}
         >
-          <div className="mx-auto mb-3 h-40 w-full max-w-sm overflow-hidden rounded-lg border border-slate-200 bg-white">
+          <div
+            className={cn(
+              "mx-auto mb-3 w-full max-w-sm overflow-hidden rounded-lg border border-slate-200 bg-white",
+              compact ? "h-28" : "h-40",
+            )}
+          >
             <Image
               src={displayUrl!}
               alt={previewAlt ?? `${entityLabel} image preview`}
@@ -131,12 +139,22 @@ export function ImageUploadField({
         </div>
       ) : (
         <div
+          role="button"
+          tabIndex={disabled || isUploading ? -1 : 0}
+          aria-label={`Upload ${entityLabel} image`}
           className={cn(
-            "cursor-pointer rounded-xl border-2 border-dashed px-4 py-10 text-center transition-colors",
+            "cursor-pointer rounded-xl border-2 border-dashed px-4 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/30",
+            compact ? "py-6" : "py-10",
             borderClass,
             (disabled || isUploading) && "pointer-events-none opacity-60",
           )}
           onClick={() => inputRef.current?.click()}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              inputRef.current?.click();
+            }
+          }}
           onDragOver={(event) => {
             event.preventDefault();
             if (!disabled && !isUploading) {

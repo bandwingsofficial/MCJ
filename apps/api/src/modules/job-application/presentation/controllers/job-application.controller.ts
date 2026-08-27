@@ -105,7 +105,12 @@ export class AdminJobApplicationController {
     return {
       success: true,
       message: 'Job applications fetched successfully',
-      data: result,
+      data: result.items,
+      meta: {
+        total: result.total,
+        skip: query.skip,
+        take: query.take,
+      },
     };
   }
 

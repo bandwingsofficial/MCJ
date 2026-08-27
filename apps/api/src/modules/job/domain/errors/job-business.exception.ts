@@ -15,7 +15,11 @@ export class JobAlreadyExistsException extends BaseException {
 
 export class JobInactiveException extends BaseException {
   constructor() {
-    super(ERROR_CODES.JOB_INACTIVE, 'Job is inactive.', 400);
+    super(
+      ERROR_CODES.JOB_INACTIVE,
+      'This position is currently not accepting applications.',
+      400,
+    );
   }
 }
 
@@ -33,7 +37,21 @@ export class JobDeletedException extends BaseException {
 
 export class JobExpiredException extends BaseException {
   constructor() {
-    super(ERROR_CODES.JOB_EXPIRED, 'Job has expired.', 400);
+    super(
+      ERROR_CODES.JOB_EXPIRED,
+      'This position is no longer accepting applications.',
+      400,
+    );
+  }
+}
+
+export class JobNotPendingApprovalException extends BaseException {
+  constructor() {
+    super(
+      ERROR_CODES.VALIDATION_ERROR,
+      'This job submission is not pending approval.',
+      400,
+    );
   }
 }
 

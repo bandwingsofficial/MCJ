@@ -135,7 +135,7 @@ export interface CreateBatchRequest {
   code?: string;
   description?: string;
   courseId?: string;
-  branchId?: string;
+  branchId?: string | null;
   startDate: string;
   endDate: string;
   startTime: string;

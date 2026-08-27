@@ -20,6 +20,8 @@ interface ModalProps {
 
   bodyClassName?: string;
 
+  footer?: React.ReactNode;
+
   bodyRef?: RefObject<HTMLDivElement | null>;
 }
 
@@ -30,6 +32,7 @@ export function Modal({
   onClose,
   contentClassName,
   bodyClassName,
+  footer,
   bodyRef,
 }: ModalProps) {
   return (
@@ -74,6 +77,12 @@ export function Modal({
           >
             {children}
           </div>
+
+          {footer ? (
+            <div className="flex shrink-0 items-center justify-end gap-3 border-t border-[#DCE8F5] bg-[#F8FBFF] px-6 py-4">
+              {footer}
+            </div>
+          ) : null}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

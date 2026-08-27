@@ -1,5 +1,8 @@
 import { randomUUID } from 'crypto';
 
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+
 import { Placement } from '../../domain/entities/placement.entity';
 import type { PlacementRepository } from '../../domain/repositories/placement.repository';
 import { PlacementDomainService } from '../../domain/services/placement-domain.service';
@@ -19,6 +22,14 @@ export class CreatePlacementFromApplicationHandler {
       this.placementRepo,
       command.application.id,
     );
+
+    if (!command.application.studentId) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'This application is not linked to a student and cannot be placed.',
+        400,
+      );
+    }
 
     const placement = Placement.create({
       id: randomUUID(),

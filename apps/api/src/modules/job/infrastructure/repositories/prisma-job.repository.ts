@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { buildNextSerialNumber } from '@common/utils/serial-number';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { Job } from '../../domain/entities/job.entity';
 import { JobStatus } from '../../domain/enums/job-status.enum';
@@ -63,6 +64,32 @@ export class PrismaJobRepository implements JobRepository {
     return records.map((record) => JobMapper.toDomain(record));
   }
 
+  async count(filters: JobListFilters = {}): Promise<number> {
+    return this.prisma.job.count({
+      where: this.buildWhere(filters),
+    });
+  }
+
+  async nextJobNumber(): Promise<string> {
+    const year = new Date().getFullYear();
+    const prefix = `JOB-${year}-`;
+    const latest = await this.prisma.job.findFirst({
+      where: {
+        jobNumber: {
+          startsWith: prefix,
+        },
+      },
+      orderBy: {
+        jobNumber: 'desc',
+      },
+      select: {
+        jobNumber: true,
+      },
+    });
+
+    return buildNextSerialNumber(latest?.jobNumber, 'JOB', 5);
+  }
+
   async existsBySlug(
     slug: string,
     excludeId?: string,
@@ -93,22 +120,40 @@ export class PrismaJobRepository implements JobRepository {
   private buildWhere(filters: JobListFilters): Prisma.JobWhereInput {
     const where: Prisma.JobWhereInput = {};
 
-    if (!filters.includeDeleted) {
+    if (filters.onlyDeleted) {
+      where.isDeleted = true;
+    } else if (!filters.includeDeleted) {
       where.isDeleted = false;
     }
 
     if (filters.onlyActive) {
       where.isActive = true;
+    } else if (typeof filters.isActive === 'boolean') {
+      where.isActive = filters.isActive;
     }
+
+    const and: Prisma.JobWhereInput[] = [];
 
     if (filters.onlyPublic) {
       where.isActive = true;
       where.status = JobStatus.ACTIVE;
       where.isDeleted = false;
+      and.push({
+        OR: [
+          { applicationDeadline: null },
+          { applicationDeadline: { gte: new Date() } },
+        ],
+      });
     }
 
     if (filters.status) {
       where.status = filters.status;
+    } else if (filters.excludeStatuses?.length) {
+      where.status = { notIn: filters.excludeStatuses };
+    }
+
+    if (filters.source) {
+      where.source = filters.source;
     }
 
     if (filters.employmentType) {
@@ -118,12 +163,21 @@ export class PrismaJobRepository implements JobRepository {
 
     if (filters.search?.trim()) {
       const search = filters.search.trim();
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { companyName: { contains: search, mode: 'insensitive' } },
-        { city: { contains: search, mode: 'insensitive' } },
-        { skills: { has: search } },
-      ];
+      and.push({
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { jobNumber: { contains: search, mode: 'insensitive' } },
+          { companyName: { contains: search, mode: 'insensitive' } },
+          { location: { contains: search, mode: 'insensitive' } },
+          { city: { contains: search, mode: 'insensitive' } },
+          { category: { contains: search, mode: 'insensitive' } },
+          { skills: { has: search } },
+        ],
+      });
+    }
+
+    if (and.length > 0) {
+      where.AND = and;
     }
 
     return where;

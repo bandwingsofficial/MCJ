@@ -18,6 +18,8 @@ import { CreatePlacementFromApplicationHandler } from '../placement/application/
 
 import { JOB_APPLICATION_TOKENS } from './job-application.tokens';
 import { CreateJobApplicationHandler } from './application/create-job-application/create-job-application.handler';
+import { CreatePublicJobApplicationHandler } from './application/create-public-job-application/create-public-job-application.handler';
+import { UploadFileHandler } from '../uploads/application/upload-file/upload-file.handler';
 import { DeleteJobApplicationHandler } from './application/delete-job-application/delete-job-application.handler';
 import { GetJobApplicationHandler } from './application/get-job-application/get-job-application.handler';
 import { GetMyJobApplicationHandler } from './application/get-my-job-application/get-my-job-application.handler';
@@ -33,6 +35,7 @@ import {
   AdminJobApplicationController,
   PublicJobApplicationController,
 } from './presentation/controllers/job-application.controller';
+import { PublicGuestJobApplicationController } from './presentation/controllers/public-guest-job-application.controller';
 import { StudentJobApplicationController } from './presentation/controllers/student-job-application.controller';
 
 @Module({
@@ -45,6 +48,7 @@ import { StudentJobApplicationController } from './presentation/controllers/stud
     PlacementModule,
   ],
   controllers: [
+    PublicGuestJobApplicationController,
     PublicJobApplicationController,
     AdminJobApplicationController,
     StudentJobApplicationController,
@@ -82,6 +86,33 @@ import { StudentJobApplicationController } from './presentation/controllers/stud
         STUDENT_TOKENS.STUDENT_REPOSITORY,
         JobDomainService,
         JobApplicationDomainService,
+        UploadDomainService,
+      ],
+    },
+    {
+      provide: CreatePublicJobApplicationHandler,
+      useFactory: (
+        applicationRepo: JobApplicationRepository,
+        jobRepo: JobRepository,
+        jobDomainService: JobDomainService,
+        domainService: JobApplicationDomainService,
+        uploadFileHandler: UploadFileHandler,
+        uploadDomainService: UploadDomainService,
+      ) =>
+        new CreatePublicJobApplicationHandler(
+          applicationRepo,
+          jobRepo,
+          jobDomainService,
+          domainService,
+          uploadFileHandler,
+          uploadDomainService,
+        ),
+      inject: [
+        JOB_APPLICATION_TOKENS.JOB_APPLICATION_REPOSITORY,
+        JOB_TOKENS.JOB_REPOSITORY,
+        JobDomainService,
+        JobApplicationDomainService,
+        UploadFileHandler,
         UploadDomainService,
       ],
     },

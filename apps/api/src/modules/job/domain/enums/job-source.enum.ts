@@ -1,0 +1,4 @@
+export enum JobSource {
+  ADMIN = 'ADMIN',
+  COMPANY_ONBOARDING = 'COMPANY_ONBOARDING',
+}

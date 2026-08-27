@@ -26,23 +26,40 @@ export const JOB_APPLICATION_STATUS_FLOW: Record<
 > = {
   APPLIED: [
     "SHORTLISTED",
+    "SELECTED",
+    "REJECTED",
   ],
 
   SHORTLISTED: [
     "ASSESSMENT",
+    "REJECTED",
   ],
 
   ASSESSMENT: [
     "INTERVIEW",
+    "REJECTED",
   ],
 
   INTERVIEW: [
     "SELECTED",
+    "REJECTED",
   ],
 
   SELECTED: [
     "PLACED",
+    "REJECTED",
   ],
 
   PLACED: [],
+
+  REJECTED: [],
 };
+
+export const DEFAULT_APPLICATION_PAGE_SIZE = 20;
+
+export const ONBOARDING_STATUS_OPTIONS = [
+  { value: "ALL", label: "All Status" },
+  { value: "PENDING", label: "Pending" },
+  { value: "ACCEPTED", label: "Accepted" },
+  { value: "REJECTED", label: "Rejected" },
+] as const;

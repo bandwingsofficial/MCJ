@@ -31,16 +31,27 @@ export class UploadFileHandler {
     const uploadId = randomUUID();
 
     this.validationService.validate(command.file);
-    this.validationService.validateContent(
-      command.file.buffer,
-      command.file.mimetype.toLowerCase(),
-    );
 
-    const isPdf =
-      command.file.mimetype.toLowerCase() === 'application/pdf';
+    const mimeType = command.file.mimetype.trim().toLowerCase();
+    const isPdf = mimeType === 'application/pdf';
+    const isDocument =
+      isPdf ||
+      mimeType === 'application/msword' ||
+      mimeType ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-    const sanitizedStoredName = isPdf
-      ? this.validationService.sanitizeDocumentName(command.fileName)
+    if (isPdf) {
+      this.validationService.validateContent(
+        command.file.buffer,
+        mimeType,
+      );
+    }
+
+    const sanitizedStoredName = isDocument
+      ? this.validationService.sanitizeDocumentName(
+          command.fileName,
+          mimeType,
+        )
       : this.validationService.sanitizeFileName(command.fileName);
 
     const objectKey = this.objectKeyService
@@ -56,11 +67,11 @@ export class UploadFileHandler {
       `Upload started: ${objectKey} by ${command.createdBy ?? 'system'}`,
     );
 
-    const processed = isPdf
+    const processed = isDocument
       ? {
           buffer: command.file.buffer,
-          mimeType: 'application/pdf',
-          extension: 'pdf',
+          mimeType,
+          extension: this.extensionFromMime(mimeType),
           storedName: sanitizedStoredName,
           size: command.file.size,
           width: null as number | null,
@@ -122,5 +133,24 @@ export class UploadFileHandler {
     );
 
     return UploadFileResult.fromUpload(upload);
+  }
+
+  private extensionFromMime(mimeType: string): string {
+    if (mimeType === 'application/msword') {
+      return 'doc';
+    }
+
+    if (
+      mimeType ===
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      return 'docx';
+    }
+
+    if (mimeType === 'application/pdf') {
+      return 'pdf';
+    }
+
+    return 'bin';
   }
 }

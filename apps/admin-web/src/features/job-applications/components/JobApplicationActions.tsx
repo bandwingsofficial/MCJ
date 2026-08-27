@@ -1,82 +1,79 @@
 "use client";
 
-import { Button } from "@/src/shared/components/ui/button";
-import { Dropdown } from "@/src/shared/components/ui/dropdown";
+import { Check, Eye, X } from "lucide-react";
 
-import type {
-  JobApplication,
+import { Button } from "@/src/shared/components/ui/button";
+import { Tooltip } from "@/src/shared/components/ui/tooltip";
+
+import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
+import {
+  canAcceptApplication,
+  canRejectApplication,
 } from "@/src/features/job-applications/types/job-application.types";
+
+const iconBtnClass =
+  "h-9 w-9 shrink-0 rounded-lg p-0 transition-colors";
+const iconClass = "h-[1.25rem] w-[1.25rem]";
 
 interface JobApplicationActionsProps {
   application: JobApplication;
-
-  onView: (
-    application: JobApplication,
-  ) => void;
-
-  onUpdateStatus: (
-    application: JobApplication,
-  ) => void;
-
-  onDelete: (
-    application: JobApplication,
-  ) => void;
-
-  onRestore: (
-    application: JobApplication,
-  ) => void;
+  disabled?: boolean;
+  onView: (application: JobApplication) => void;
+  onAccept: (application: JobApplication) => void;
+  onReject: (application: JobApplication) => void;
 }
 
 export function JobApplicationActions({
   application,
+  disabled = false,
   onView,
-  onUpdateStatus,
-  onDelete,
-  onRestore,
+  onAccept,
+  onReject,
 }: JobApplicationActionsProps) {
   return (
-    <Dropdown
-      trigger={
+    <div className="flex items-center justify-end gap-1">
+      <Tooltip content="Review application">
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
+          disabled={disabled}
+          onClick={() => onView(application)}
+          aria-label="Review application"
+          className={`${iconBtnClass} text-[#647A9B] hover:bg-slate-100 hover:text-[#102A56]`}
         >
-          Actions
+          <Eye className={iconClass} />
         </Button>
-      }
-      items={[
-        {
-          label: "View Details",
-          onClick: () =>
-            onView(application),
-        },
-        {
-          label: "Update Status",
-          onClick: () =>
-            onUpdateStatus(
-              application,
-            ),
-        },
-        ...(application.isDeleted
-          ? [
-              {
-                label: "Restore",
-                onClick: () =>
-                  onRestore(
-                    application,
-                  ),
-              },
-            ]
-          : [
-              {
-                label: "Delete",
-                onClick: () =>
-                  onDelete(
-                    application,
-                  ),
-              },
-            ]),
-      ]}
-    />
+      </Tooltip>
+
+      {canAcceptApplication(application.status) ? (
+        <Tooltip content="Accept application">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={() => onAccept(application)}
+            aria-label="Accept application"
+            className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
+          >
+            <Check className={iconClass} />
+          </Button>
+        </Tooltip>
+      ) : null}
+
+      {canRejectApplication(application.status) ? (
+        <Tooltip content="Reject application">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={() => onReject(application)}
+            aria-label="Reject application"
+            className={`${iconBtnClass} text-rose-600 hover:bg-rose-50 hover:text-rose-700`}
+          >
+            <X className={iconClass} />
+          </Button>
+        </Tooltip>
+      ) : null}
+    </div>
   );
 }

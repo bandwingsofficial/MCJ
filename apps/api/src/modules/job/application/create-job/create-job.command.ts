@@ -1,37 +1,51 @@
 import { EmploymentType } from '../../domain/enums/employment-type.enum';
+import { JobSource } from '../../domain/enums/job-source.enum';
 import { JobStatus } from '../../domain/enums/job-status.enum';
+import { JobWorkMode } from '../../domain/enums/job-work-mode.enum';
 import { WorkingDays } from '../../domain/enums/working-days.enum';
 import { InterviewProcessStep } from '../../domain/entities/job.entity';
 
+export interface CreateJobInput {
+  title: string;
+  companyName: string;
+  employmentType: EmploymentType;
+  workingDays: WorkingDays;
+  slug?: string;
+  companyLogo?: string | null;
+  companyWebsite?: string | null;
+  companyEmail?: string | null;
+  companyPhone?: string | null;
+  companyDescription?: string | null;
+  description?: string | null;
+  shortDescription?: string | null;
+  location?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  isRemote?: boolean;
+  workMode?: JobWorkMode;
+  category?: string | null;
+  department?: string | null;
+  minExperience?: number | null;
+  maxExperience?: number | null;
+  minSalary?: number | null;
+  maxSalary?: number | null;
+  salaryCurrency?: string;
+  vacancies?: number;
+  applicationDeadline?: Date | null;
+  responsibilities?: string[];
+  skills?: string[];
+  preferredSkills?: string[];
+  qualifications?: string[];
+  benefits?: string | null;
+  eligibilityTitle?: string | null;
+  interviewProcess?: InterviewProcessStep[];
+  status?: JobStatus;
+  source?: JobSource;
+  deferJobNumber?: boolean;
+  createdBy?: string;
+}
+
 export class CreateJobCommand {
-  constructor(
-    public readonly title: string,
-    public readonly companyName: string,
-    public readonly employmentType: EmploymentType,
-    public readonly workingDays: WorkingDays,
-    public readonly slug?: string,
-    public readonly companyLogo?: string | null,
-    public readonly companyWebsite?: string | null,
-    public readonly companyDescription?: string | null,
-    public readonly description?: string | null,
-    public readonly shortDescription?: string | null,
-    public readonly location?: string | null,
-    public readonly city?: string | null,
-    public readonly state?: string | null,
-    public readonly country?: string | null,
-    public readonly isRemote?: boolean,
-    public readonly minExperience?: number | null,
-    public readonly maxExperience?: number | null,
-    public readonly minSalary?: number | null,
-    public readonly maxSalary?: number | null,
-    public readonly salaryCurrency?: string,
-    public readonly vacancies?: number,
-    public readonly applicationDeadline?: Date | null,
-    public readonly responsibilities?: string[],
-    public readonly skills?: string[],
-    public readonly eligibilityTitle?: string | null,
-    public readonly interviewProcess?: InterviewProcessStep[],
-    public readonly status?: JobStatus,
-    public readonly createdBy?: string,
-  ) {}
+  constructor(public readonly input: CreateJobInput) {}
 }

@@ -1,6 +1,8 @@
 import { InterviewProcessStep } from '../../domain/entities/job.entity';
 import { EmploymentType } from '../../domain/enums/employment-type.enum';
+import { JobSource } from '../../domain/enums/job-source.enum';
 import { JobStatus } from '../../domain/enums/job-status.enum';
+import { JobWorkMode } from '../../domain/enums/job-work-mode.enum';
 import { WorkingDays } from '../../domain/enums/working-days.enum';
 import { Job } from '../../domain/entities/job.entity';
 
@@ -9,9 +11,13 @@ export class GetJobResult {
     public readonly id: string,
     public readonly title: string,
     public readonly slug: string,
+    public readonly jobNumber: string | null,
+    public readonly source: JobSource,
     public readonly companyName: string,
     public readonly companyLogo: string | null,
     public readonly companyWebsite: string | null,
+    public readonly companyEmail: string | null,
+    public readonly companyPhone: string | null,
     public readonly companyDescription: string | null,
     public readonly description: string | null,
     public readonly shortDescription: string | null,
@@ -20,8 +26,11 @@ export class GetJobResult {
     public readonly state: string | null,
     public readonly country: string | null,
     public readonly isRemote: boolean,
+    public readonly workMode: JobWorkMode,
     public readonly employmentType: EmploymentType,
     public readonly workingDays: WorkingDays,
+    public readonly category: string | null,
+    public readonly department: string | null,
     public readonly minExperience: number | null,
     public readonly maxExperience: number | null,
     public readonly minSalary: number | null,
@@ -31,14 +40,21 @@ export class GetJobResult {
     public readonly applicationDeadline: Date | null,
     public readonly responsibilities: string[],
     public readonly skills: string[],
+    public readonly preferredSkills: string[],
+    public readonly qualifications: string[],
+    public readonly benefits: string | null,
     public readonly eligibilityTitle: string | null,
     public readonly interviewProcess: InterviewProcessStep[],
     public readonly status: JobStatus,
     public readonly isActive: boolean,
+    public readonly rejectionReason: string | null,
+    public readonly reviewedAt: Date | null,
     public readonly isDeleted: boolean,
     public readonly deletedAt: Date | null,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
+    public readonly isExpired: boolean,
+    public readonly isAcceptingApplications: boolean,
   ) {}
 
   static fromEntity(job: Job): GetJobResult {
@@ -46,9 +62,13 @@ export class GetJobResult {
       job.id,
       job.title.getValue(),
       job.slug.getValue(),
+      job.jobNumber,
+      job.source,
       job.companyName.getValue(),
       job.companyLogo,
       job.companyWebsite,
+      job.companyEmail,
+      job.companyPhone,
       job.companyDescription,
       job.description,
       job.shortDescription,
@@ -57,8 +77,11 @@ export class GetJobResult {
       job.location.getState(),
       job.location.getCountry(),
       job.isRemote,
+      job.workMode,
       job.employmentType,
       job.workingDays,
+      job.category,
+      job.department,
       job.experience.getMin(),
       job.experience.getMax(),
       job.salary.getMin(),
@@ -68,14 +91,21 @@ export class GetJobResult {
       job.applicationDeadline,
       job.responsibilities,
       job.skills,
+      job.preferredSkills,
+      job.qualifications,
+      job.benefits,
       job.eligibilityTitle,
       job.interviewProcess,
       job.status,
       job.isActive,
+      job.rejectionReason,
+      job.reviewedAt,
       job.isDeleted,
       job.deletedAt,
       job.createdAt,
       job.updatedAt,
+      job.isExpired(),
+      job.isAcceptingApplications(),
     );
   }
 }

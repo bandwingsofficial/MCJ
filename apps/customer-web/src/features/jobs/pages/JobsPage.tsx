@@ -82,8 +82,7 @@ export function JobsPage() {
             experience ===
               "ALL" ||
             (() => {
-              const min =
-                job.minExperience;
+              const min = job.minExperience ?? 0;
 
               switch (
                 experience
@@ -123,8 +122,7 @@ export function JobsPage() {
             salary ===
               "ALL" ||
             (() => {
-              const minSalary =
-                job.minSalary;
+              const minSalary = job.minSalary ?? 0;
 
               switch (
                 salary

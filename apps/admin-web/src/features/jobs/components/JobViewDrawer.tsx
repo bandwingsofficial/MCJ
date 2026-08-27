@@ -1,350 +1,202 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { Badge } from "@/src/shared/components/ui/badge";
-import { Card } from "@/src/shared/components/ui/card";
-import { Drawer } from "@/src/shared/components/ui/drawer";
-import { Separator } from "@/src/shared/components/ui/separator";
+import { Modal } from "@/src/shared/components/ui/model";
 
 import { JobStatusBadge } from "@/src/features/jobs/components/JobStatusBadge";
-import { JobInfoItem } from "@/src/features/jobs/components/JobInfoItem";
-
-import type {
-  Job,
-} from "@/src/features/jobs/types/job.types";
+import { EMPLOYMENT_TYPES, WORK_MODES } from "@/src/features/jobs/constants/job.constants";
+import { getJobLifecycleStatus } from "@/src/features/jobs/hooks/useJobs";
+import type { Job } from "@/src/features/jobs/types/job.types";
+import { formatInr } from "@/src/features/jobs/utils/job-form.utils";
 
 interface JobViewDrawerProps {
   open: boolean;
-
-  job?: Job;
-
+  job?: Job | null;
+  title?: string;
   onClose: () => void;
+  footer?: ReactNode;
+}
+
+function Info({
+  label,
+  value,
+}: {
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+        {label}
+      </p>
+      <div className="mt-1 text-sm text-[#102A56]">{value || "—"}</div>
+    </div>
+  );
+}
+
+function listOrDash(values?: string[] | null) {
+  if (!values?.length) {
+    return "—";
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {values.map((item) => (
+        <Badge key={item}>{item}</Badge>
+      ))}
+    </div>
+  );
 }
 
 export function JobViewDrawer({
   open,
   job,
+  title = "Job Details",
   onClose,
+  footer,
 }: JobViewDrawerProps) {
   if (!job) {
     return null;
   }
 
+  const salary =
+    job.minSalary == null && job.maxSalary == null
+      ? "—"
+      : job.maxSalary && job.maxSalary !== job.minSalary
+        ? `${formatInr(job.minSalary)} – ${formatInr(job.maxSalary)}`
+        : formatInr(job.minSalary);
+
+  const employment =
+    EMPLOYMENT_TYPES.find((item) => item.value === job.employmentType)?.label ??
+    job.employmentType.replaceAll("_", " ");
+  const workMode =
+    WORK_MODES.find((item) => item.value === job.workMode)?.label ??
+    (job.isRemote ? "Remote" : "On-site");
+
   return (
-    <Drawer
+    <Modal
       open={open}
-      title="Job Details"
+      title={title}
       onClose={onClose}
+      contentClassName="!max-w-[800px]"
+      footer={footer}
     >
-      <div className="space-y-6 pb-8">
+      <div className="space-y-5">
+        {job.companyLogo ? (
+          <img
+            src={job.companyLogo}
+            alt=""
+            className="h-20 w-full max-w-xs rounded-xl border border-[#DCE8F5] object-cover"
+          />
+        ) : null}
 
-        <Card className="space-y-5 p-5">
-          <h2 className="text-lg font-semibold">
-            Basic Information
-          </h2>
-
-          <Separator />
-
-          <div className="grid gap-5 md:grid-cols-2">
-            <JobInfoItem
-              label="Title"
-              value={job.title}
-            />
-
-            <JobInfoItem
-              label="Company"
-              value={job.companyName}
-            />
-
-            <JobInfoItem
-              label="Slug"
-              value={job.slug}
-            />
-
-            <JobInfoItem
-              label="Employment"
-              value={job.employmentType.replaceAll(
-                "_",
-                " ",
-              )}
-            />
-
-            <JobInfoItem
-              label="Working Days"
-              value={job.workingDays.replaceAll(
-                "_",
-                " ",
-              )}
-            />
-
-            <JobInfoItem
-              label="Status"
-              value={
-                <JobStatusBadge
-                  status={job.status}
-                  isActive={job.isActive}
-                />
-              }
-            />
-
-            <JobInfoItem
-              label="Vacancies"
-              value={job.vacancies}
-            />
-
-            <JobInfoItem
-              label="Remote"
-              value={
-                job.isRemote
-                  ? "Yes"
-                  : "No"
-              }
-            />
-          </div>
-        </Card>
-
-        <Card className="space-y-5 p-5">
-          <h2 className="text-lg font-semibold">
-            Company
-          </h2>
-
-          <Separator />
-
-          <div className="grid gap-5 md:grid-cols-2">
-            <JobInfoItem
-              label="Website"
-              value={
-                job.companyWebsite ??
-                "-"
-              }
-            />
-
-            <JobInfoItem
-              label="Logo"
-              value={
-                job.companyLogo ??
-                "-"
-              }
-            />
-
-            <div className="md:col-span-2">
-              <JobInfoItem
-                label="Company Description"
-                value={
-                  job.companyDescription ??
-                  "-"
-                }
-              />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="space-y-5 p-5">
-          <h2 className="text-lg font-semibold">
-            Location
-          </h2>
-
-          <Separator />
-
-          <div className="grid gap-5 md:grid-cols-2">
-            <JobInfoItem
-              label="Country"
-              value={job.country}
-            />
-
-            <JobInfoItem
-              label="State"
-              value={job.state}
-            />
-
-            <JobInfoItem
-              label="City"
-              value={job.city}
-            />
-
-            <JobInfoItem
-              label="Location"
-              value={job.location}
-            />
-          </div>
-        </Card>
-
-        <Card className="space-y-5 p-5">
-          <h2 className="text-lg font-semibold">
-            Salary & Experience
-          </h2>
-
-          <Separator />
-
-          <div className="grid gap-5 md:grid-cols-2">
-            <JobInfoItem
-              label="Experience"
-              value={`${job.minExperience} - ${job.maxExperience} Years`}
-            />
-
-            <JobInfoItem
-              label="Salary"
-              value={`${job.salaryCurrency} ${job.minSalary.toLocaleString()} - ${job.maxSalary.toLocaleString()}`}
-            />
-
-            <JobInfoItem
-              label="Deadline"
-              value={new Date(
-                job.applicationDeadline,
-              ).toLocaleDateString()}
-            />
-
-            <JobInfoItem
-              label="Eligibility"
-              value={
-                job.eligibilityTitle
-              }
-            />
-          </div>
-        </Card>
-
-        <Card className="space-y-5 p-5">
-          <h2 className="text-lg font-semibold">
-            Description
-          </h2>
-
-          <Separator />
-
-          <JobInfoItem
-            label="Short Description"
+        <div className="grid gap-4 md:grid-cols-2">
+          <Info label="Company" value={job.companyName} />
+          <Info label="Job Title" value={job.title} />
+          <Info label="Job Number" value={job.jobNumber || "Pending approval"} />
+          <Info label="Category" value={job.category} />
+          <Info label="Job Type" value={employment} />
+          <Info label="Work Mode" value={workMode} />
+          <Info label="Location" value={job.location || job.city || "—"} />
+          <Info label="Department" value={job.department} />
+          <Info label="Salary" value={salary} />
+          <Info
+            label="Experience"
+            value={`${job.minExperience ?? 0} – ${job.maxExperience ?? 0} years`}
+          />
+          <Info label="Openings" value={job.vacancies} />
+          <Info
+            label="Expiry Date"
             value={
-              job.shortDescription ??
-              "-"
+              job.applicationDeadline
+                ? new Date(job.applicationDeadline).toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })
+                : "—"
             }
           />
-
-          <Separator />
-
-          <JobInfoItem
-            label="Description"
-            value={job.description}
+          <Info label="Company Email" value={job.companyEmail} />
+          <Info label="Company Phone" value={job.companyPhone} />
+          <Info label="Website" value={job.companyWebsite} />
+          <Info
+            label="Status"
+            value={
+              job.source === "COMPANY_ONBOARDING" &&
+              (job.status === "PENDING_APPROVAL" || job.status === "REJECTED") ? (
+                <JobStatusBadge variant="onboarding" job={job} />
+              ) : (
+                <JobStatusBadge
+                  status={getJobLifecycleStatus(job)}
+                  job={job}
+                />
+              )
+            }
           />
-        </Card>
+        </div>
 
-        <Card className="space-y-5 p-5">
-          <h2 className="text-lg font-semibold">
-            Responsibilities
-          </h2>
+        <Info label="Qualifications" value={listOrDash(job.qualifications)} />
+        <Info label="Required Skills" value={listOrDash(job.skills)} />
+        <Info label="Preferred Skills" value={listOrDash(job.preferredSkills)} />
 
-          <Separator />
-
-          <div className="flex flex-wrap gap-2">
-            {job.responsibilities.map(
-              (
-                responsibility,
-              ) => (
-                <Badge
-                  key={
-                    responsibility
-                  }
-                >
-                  {
-                    responsibility
-                  }
-                </Badge>
-              ),
-            )}
+        {job.description ? (
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+              Description
+            </p>
+            <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[#102A56]">
+              {job.description}
+            </p>
           </div>
-        </Card>
+        ) : null}
 
-        <Card className="space-y-5 p-5">
-          <h2 className="text-lg font-semibold">
-            Skills
-          </h2>
-
-          <Separator />
-
-          <div className="flex flex-wrap gap-2">
-            {job.skills.map(
-              (skill) => (
-                <Badge key={skill}>
-                  {skill}
-                </Badge>
-              ),
-            )}
+        {job.responsibilities.length > 0 ? (
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+              Responsibilities
+            </p>
+            <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-[#102A56]">
+              {job.responsibilities.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
           </div>
-        </Card>
+        ) : null}
 
-        <Card className="space-y-5 p-5">
-          <h2 className="text-lg font-semibold">
-            Interview Process
-          </h2>
-
-          <Separator />
-
-          <div className="space-y-4">
-            {job.interviewProcess.map(
-              (
-                process,
-                index,
-              ) => (
-                <Card
-                  key={index}
-                  className="p-4"
-                >
-                  <p className="font-semibold">
-                    {process.title}
-                  </p>
-
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {
-                      process.description
-                    }
-                  </p>
-                </Card>
-              ),
-            )}
+        {job.benefits ? (
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+              Benefits
+            </p>
+            <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[#102A56]">
+              {job.benefits}
+            </p>
           </div>
-        </Card>
+        ) : null}
 
-        <Card className="space-y-5 p-5">
-          <h2 className="text-lg font-semibold">
-            Audit
-          </h2>
-
-          <Separator />
-
-          <div className="grid gap-5 md:grid-cols-2">
-            <JobInfoItem
-              label="Created At"
-              value={new Date(
-                job.createdAt,
-              ).toLocaleString()}
-            />
-
-            <JobInfoItem
-              label="Updated At"
-              value={new Date(
-                job.updatedAt,
-              ).toLocaleString()}
-            />
-
-            <JobInfoItem
-              label="Deleted"
-              value={
-                job.isDeleted
-                  ? "Yes"
-                  : "No"
-              }
-            />
-
-            <JobInfoItem
-              label="Deleted At"
-              value={
-                job.deletedAt
-                  ? new Date(
-                      job.deletedAt,
-                    ).toLocaleString()
-                  : "-"
-              }
-            />
+        {job.interviewProcess?.[0]?.description ? (
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+              Interview Process
+            </p>
+            <p className="mt-1 whitespace-pre-wrap text-sm leading-6 text-[#102A56]">
+              {job.interviewProcess[0].description}
+            </p>
           </div>
-        </Card>
+        ) : null}
+
+        {job.rejectionReason ? (
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+              Rejection Reason
+            </p>
+            <p className="mt-1 text-sm text-[#102A56]">{job.rejectionReason}</p>
+          </div>
+        ) : null}
       </div>
-    </Drawer>
+    </Modal>
   );
 }

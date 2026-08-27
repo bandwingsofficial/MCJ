@@ -3,55 +3,61 @@ import { apiClient } from "@/src/core/api/axios";
 import type {
   CreateJobRequest,
   DeleteJobResponse,
+  JobListQuery,
   JobListResponse,
+  JobListResult,
   JobResponse,
   PermanentDeleteJobResponse,
   UpdateJobRequest,
 } from "@/src/features/jobs/types/job.types";
 
-class JobService {
-  async getJobs() {
-    const { data } =
-      await apiClient.get<JobListResponse>(
-        "/admin/jobs",
-      );
+function resolveJobListTotal(response: JobListResponse): number {
+  if (typeof response.meta?.total === "number") {
+    return response.meta.total;
+  }
 
-    return data;
+  return response.data?.length ?? 0;
+}
+
+class JobService {
+  async getJobs(params?: JobListQuery): Promise<JobListResult> {
+    const { data } = await apiClient.get<JobListResponse>("/admin/jobs", {
+      params: {
+        search: params?.search || undefined,
+        isActive: params?.isActive,
+        includeDeleted: params?.includeDeleted,
+        onlyDeleted: params?.onlyDeleted,
+        skip: params?.skip,
+        take: params?.take,
+        status: params?.status,
+        source: params?.source,
+        catalogOnly: params?.catalogOnly,
+      },
+    });
+
+    return {
+      items: Array.isArray(data.data) ? data.data : [],
+      total: resolveJobListTotal(data),
+    };
   }
 
   async getJob(id: string) {
-    const { data } =
-      await apiClient.get<JobResponse>(
-        `/admin/jobs/${id}`,
-      );
-
+    const { data } = await apiClient.get<JobResponse>(`/admin/jobs/${id}`);
     return data;
   }
 
-  async createJob(
-    payload: CreateJobRequest,
-    image?: File | null,
-  ) {
-    const requestPayload: CreateJobRequest =
-      {
-        ...payload,
-      };
+  async createJob(payload: CreateJobRequest, image?: File | null) {
+    const requestPayload: CreateJobRequest = { ...payload };
 
     if (image) {
-      const uploadResponse =
-        await this.uploadJobLogo(
-          image,
-        );
-
-requestPayload.companyLogo =
-  uploadResponse.data.url;
+      const uploadResponse = await this.uploadJobLogo(image);
+      requestPayload.companyLogo = uploadResponse.data.url;
     }
 
-    const { data } =
-      await apiClient.post<JobResponse>(
-        "/admin/jobs",
-        requestPayload,
-      );
+    const { data } = await apiClient.post<JobResponse>(
+      "/admin/jobs",
+      requestPayload,
+    );
 
     return data;
   }
@@ -61,116 +67,86 @@ requestPayload.companyLogo =
     payload: UpdateJobRequest,
     image?: File | null,
   ) {
-    const requestPayload: UpdateJobRequest =
-      {
-        ...payload,
-      };
+    const requestPayload: UpdateJobRequest = { ...payload };
 
     if (image) {
-      const uploadResponse =
-        await this.uploadJobLogo(
-          image,
-        );
-
-   requestPayload.companyLogo =
-  uploadResponse.data.url;
+      const uploadResponse = await this.uploadJobLogo(image);
+      requestPayload.companyLogo = uploadResponse.data.url;
     }
 
-    const { data } =
-      await apiClient.patch<JobResponse>(
-        `/admin/jobs/${id}`,
-        requestPayload,
-      );
+    const { data } = await apiClient.patch<JobResponse>(
+      `/admin/jobs/${id}`,
+      requestPayload,
+    );
 
+    return data;
+  }
+
+  async approveJob(id: string) {
+    const { data } = await apiClient.patch<JobResponse>(
+      `/admin/jobs/${id}/approve`,
+    );
+    return data;
+  }
+
+  async rejectJob(id: string, reason?: string) {
+    const { data } = await apiClient.patch<JobResponse>(
+      `/admin/jobs/${id}/reject`,
+      { reason: reason || undefined },
+    );
     return data;
   }
 
   async activateJob(id: string) {
-    const { data } =
-      await apiClient.patch<JobResponse>(
-        `/admin/jobs/${id}/activate`,
-      );
-
+    const { data } = await apiClient.patch<JobResponse>(
+      `/admin/jobs/${id}/activate`,
+    );
     return data;
   }
 
   async deactivateJob(id: string) {
-    const { data } =
-      await apiClient.patch<JobResponse>(
-        `/admin/jobs/${id}/deactivate`,
-      );
-
+    const { data } = await apiClient.patch<JobResponse>(
+      `/admin/jobs/${id}/deactivate`,
+    );
     return data;
   }
 
   async restoreJob(id: string) {
-    const { data } =
-      await apiClient.patch<JobResponse>(
-        `/admin/jobs/${id}/restore`,
-      );
-
+    const { data } = await apiClient.patch<JobResponse>(
+      `/admin/jobs/${id}/restore`,
+    );
     return data;
   }
 
   async deleteJob(id: string) {
-    const { data } =
-      await apiClient.delete<DeleteJobResponse>(
-        `/admin/jobs/${id}`,
-      );
-
+    const { data } = await apiClient.delete<DeleteJobResponse>(
+      `/admin/jobs/${id}`,
+    );
     return data;
   }
 
-  async permanentlyDeleteJob(
-    id: string,
-  ) {
-    const { data } =
-      await apiClient.delete<PermanentDeleteJobResponse>(
-        `/admin/jobs/${id}/permanent`,
-      );
-
+  async permanentlyDeleteJob(id: string) {
+    const { data } = await apiClient.delete<PermanentDeleteJobResponse>(
+      `/admin/jobs/${id}/permanent`,
+    );
     return data;
   }
 
-  async uploadJobLogo(
-    file: File,
-  ) {
-    const formData =
-      new FormData();
+  async uploadJobLogo(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", "jobs");
+    formData.append("fileName", file.name);
 
-    formData.append(
-      "file",
-      file,
-    );
-
-    formData.append(
-      "folder",
-      "jobs",
-    );
-
-    formData.append(
-      "fileName",
-      file.name,
-    );
-
-    const response =
-      await apiClient.post(
-        "/admin/uploads",
-        formData,
-        {
-          headers: {
-            "Content-Type":
-              undefined,
-          },
-          transformRequest: [
-            (data) => data,
-          ],
-        },
-      );
+    const response = await apiClient.post("/admin/uploads", formData, {
+      headers: {
+        "Content-Type": undefined,
+      },
+      transformRequest: [(data) => data],
+    });
 
     return response.data;
   }
 }
 
-export const jobService =
-  new JobService();
+export const jobService = new JobService();

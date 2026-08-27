@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { buildNextSerialNumber } from '@common/utils/serial-number';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { JobApplication } from '../../domain/entities/job-application.entity';
 import type {
@@ -77,6 +78,45 @@ export class PrismaJobApplicationRepository
     return record ? JobApplicationMapper.toDomain(record) : null;
   }
 
+  async findByJobAndEmail(
+    jobId: string,
+    email: string,
+    includeDeleted = false,
+  ): Promise<JobApplication | null> {
+    const record = await this.prisma.jobApplication.findFirst({
+      where: {
+        jobId,
+        applicantEmail: {
+          equals: email,
+          mode: 'insensitive',
+        },
+        ...(includeDeleted ? {} : { isDeleted: false }),
+      },
+    });
+
+    return record ? JobApplicationMapper.toDomain(record) : null;
+  }
+
+  async nextApplicationNumber(): Promise<string> {
+    const year = new Date().getFullYear();
+    const prefix = `APP-${year}-`;
+    const latest = await this.prisma.jobApplication.findFirst({
+      where: {
+        applicationNumber: {
+          startsWith: prefix,
+        },
+      },
+      orderBy: {
+        applicationNumber: 'desc',
+      },
+      select: {
+        applicationNumber: true,
+      },
+    });
+
+    return buildNextSerialNumber(latest?.applicationNumber, 'APP', 6);
+  }
+
   async findDetails(
     filters: JobApplicationListFilters = {},
   ): Promise<JobApplicationDetailView[]> {
@@ -93,6 +133,12 @@ export class PrismaJobApplicationRepository
     return records.map((record) =>
       JobApplicationResponseMapper.toDetail(record),
     );
+  }
+
+  async count(filters: JobApplicationListFilters = {}): Promise<number> {
+    return this.prisma.jobApplication.count({
+      where: this.buildWhere(filters),
+    });
   }
 
   async findDetailsByStudentId(
@@ -146,6 +192,24 @@ export class PrismaJobApplicationRepository
       const search = filters.search.trim();
 
       where.OR = [
+        {
+          applicantName: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          applicantEmail: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          applicationNumber: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
         {
           Student: {
             firstName: {
