@@ -5,6 +5,7 @@ import { useState } from "react";
 import { appToast } from "@/src/shared/components/ui/toast";
 
 import { branchUserService } from "@/src/features/branch-users/services/branch-user.service";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 interface UsePermanentDeleteBranchUserReturn {
   permanentDeleteBranchUser: (
@@ -36,12 +37,10 @@ export const usePermanentDeleteBranchUser =
 
           return true;
         } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : "Failed to permanently delete user";
-
-          appToast.error(message);
+          appToast.error(
+            getErrorMessage(error) ||
+              "Failed to permanently delete user",
+          );
 
           return false;
         } finally {

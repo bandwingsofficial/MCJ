@@ -10,6 +10,15 @@ import { useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import {
+  Building2,
+  Lock,
+  Mail,
+  Phone,
+  Shield,
+  User,
+} from "lucide-react";
+
 import { Input } from "@/src/shared/components/ui/input";
 
 import { PasswordInput } from "@/src/shared/components/ui/password-input";
@@ -36,8 +45,9 @@ import {
 } from "@/src/features/branch-users/schemas/branch-user.schema";
 
 import {
-  BRANCH_USER_ROLE_OPTIONS,
+  getSuperAdminRoleFormOptions,
 } from "@/src/features/branch-users/constants/branch-user.constants";
+import type { BranchUserRole } from "@/src/features/branch-users/types/branch-user.types";
 
 interface BranchOption {
   label: string;
@@ -87,6 +97,10 @@ export function BranchUserForm({
   isEdit = false,
   onSubmit,
 }: BranchUserFormProps) {
+  const roleOptions = getSuperAdminRoleFormOptions(
+    defaultValues?.role as BranchUserRole | undefined,
+  );
+
   const {
     register,
     handleSubmit,
@@ -494,7 +508,7 @@ export function BranchUserForm({
                 )
               }
               options={[
-                ...BRANCH_USER_ROLE_OPTIONS,
+                ...roleOptions,
               ]}
             />
 
@@ -543,52 +557,78 @@ export function BranchUserForm({
         <ValidatedField
           label="First Name"
           required
+          leftIcon={<User className="h-4 w-4" />}
           state={firstNameField.state}
           errorMessage={firstNameField.errorMessage}
         >
           <Input
             {...firstNameField.inputProps}
-            placeholder="First Name"
+            placeholder="Enter first name"
+            autoComplete="given-name"
+            className={validatedFieldInputClass(
+              firstNameField.state,
+              firstNameField.inputProps.className,
+              { leftIcon: true },
+            )}
           />
         </ValidatedField>
 
         <ValidatedField
           label="Last Name"
           required
+          leftIcon={<User className="h-4 w-4" />}
           state={lastNameField.state}
           errorMessage={lastNameField.errorMessage}
         >
           <Input
             {...lastNameField.inputProps}
-            placeholder="Last Name"
+            placeholder="Enter last name"
+            autoComplete="family-name"
+            className={validatedFieldInputClass(
+              lastNameField.state,
+              lastNameField.inputProps.className,
+              { leftIcon: true },
+            )}
           />
         </ValidatedField>
 
         <ValidatedField
           label="Email"
           required
+          leftIcon={<Mail className="h-4 w-4" />}
           state={emailField.state}
           errorMessage={emailField.errorMessage}
         >
           <Input
             {...emailField.inputProps}
-            placeholder="Email"
+            placeholder="Enter email address"
             type="email"
             autoComplete="email"
+            className={validatedFieldInputClass(
+              emailField.state,
+              emailField.inputProps.className,
+              { leftIcon: true },
+            )}
           />
         </ValidatedField>
 
         <ValidatedField
           label="Phone"
           required
+          leftIcon={<Phone className="h-4 w-4" />}
           state={phoneField.state}
           errorMessage={phoneField.errorMessage}
         >
           <Input
             {...phoneField.inputProps}
-            placeholder="Phone"
+            placeholder="Enter phone number"
             type="tel"
             autoComplete="tel"
+            className={validatedFieldInputClass(
+              phoneField.state,
+              phoneField.inputProps.className,
+              { leftIcon: true },
+            )}
           />
         </ValidatedField>
 
@@ -596,13 +636,19 @@ export function BranchUserForm({
           label="Password"
           required
           passwordToggle
+          leftIcon={<Lock className="h-4 w-4" />}
           state={passwordField.state}
           errorMessage={passwordField.errorMessage}
         >
           <PasswordInput
             {...passwordField.inputProps}
-            placeholder="Password"
+            placeholder="Enter password"
             autoComplete="new-password"
+            className={validatedFieldInputClass(
+              passwordField.state,
+              passwordField.inputProps.className,
+              { leftIcon: true, passwordToggle: true },
+            )}
           />
         </ValidatedField>
 
@@ -610,6 +656,7 @@ export function BranchUserForm({
           label="Confirm Password"
           required
           passwordToggle
+          leftIcon={<Lock className="h-4 w-4" />}
           state={confirmPasswordField.state}
           errorMessage={
             confirmPasswordField.errorMessage
@@ -619,26 +666,46 @@ export function BranchUserForm({
             {...confirmPasswordField.inputProps}
             placeholder="Confirm password"
             autoComplete="new-password"
+            className={validatedFieldInputClass(
+              confirmPasswordField.state,
+              confirmPasswordField.inputProps.className,
+              { leftIcon: true, passwordToggle: true },
+            )}
           />
         </ValidatedField>
 
         {fixedBranch ? (
           <div className="min-w-0">
             <Label>Branch</Label>
-            <Input
-              value={fixedBranch.label}
-              readOnly
-              disabled
-            />
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-[#8AA0BB]">
+                <Building2 className="h-4 w-4" />
+              </span>
+              <Input
+                value={fixedBranch.label}
+                readOnly
+                disabled
+                className="pl-10"
+              />
+            </div>
             <div className="mt-1 min-h-[1.25rem]" />
           </div>
         ) : (
-          <div className="min-w-0">
-            <Label required>Branch</Label>
+          <ValidatedField
+            label="Branch"
+            required
+            select
+            leftIcon={<Building2 className="h-4 w-4" />}
+            state={branchState}
+            errorMessage={errors.branchId?.message}
+          >
             <AppSelect
               value={watch("branchId") ?? ""}
+              placeholder="Select branch"
               triggerClassName={validatedFieldInputClass(
-                branchState
+                branchState,
+                undefined,
+                { leftIcon: true, select: true },
               )}
               onValueChange={(value) => {
                 setValue("branchId", value, {
@@ -650,26 +717,24 @@ export function BranchUserForm({
               }}
               options={branchOptions}
             />
-            <div className="mt-1 min-h-[1.25rem]">
-              {branchState === "invalid" &&
-              errors.branchId?.message ? (
-                <p
-                  role="alert"
-                  className="text-sm text-red-500"
-                >
-                  {errors.branchId.message}
-                </p>
-              ) : null}
-            </div>
-          </div>
+          </ValidatedField>
         )}
 
-        <div className="min-w-0">
-          <Label required>Role</Label>
+        <ValidatedField
+          label="Role"
+          required
+          select
+          leftIcon={<Shield className="h-4 w-4" />}
+          state={roleState}
+          errorMessage={errors.role?.message}
+        >
           <AppSelect
             value={watch("role") ?? ""}
+            placeholder="Select role"
             triggerClassName={validatedFieldInputClass(
-              roleState
+              roleState,
+              undefined,
+              { leftIcon: true, select: true },
             )}
             onValueChange={(value) => {
               setValue(
@@ -683,20 +748,9 @@ export function BranchUserForm({
               );
               void trigger("role");
             }}
-            options={[...BRANCH_USER_ROLE_OPTIONS]}
+            options={[...roleOptions]}
           />
-          <div className="mt-1 min-h-[1.25rem]">
-            {roleState === "invalid" &&
-            errors.role?.message ? (
-              <p
-                role="alert"
-                className="text-sm text-red-500"
-              >
-                {errors.role.message}
-              </p>
-            ) : null}
-          </div>
-        </div>
+        </ValidatedField>
       </div>
 
       <Button

@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { branchUserService } from "@/src/features/branch-users/services/branch-user.service";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import {
   BranchUserFilters,
@@ -177,12 +178,7 @@ export const useBranchUsers = (
           return;
         }
 
-        const message =
-          fetchError instanceof Error
-            ? fetchError.message
-            : "Failed to fetch users";
-
-        setError(message);
+        setError(getErrorMessage(fetchError));
       } finally {
         if (requestId === requestIdRef.current) {
           setIsInitialLoading(false);

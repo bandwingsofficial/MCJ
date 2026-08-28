@@ -41,10 +41,12 @@ export function BranchUserTable({
     <Table className="rounded-none border-0">
       <TableHeader>
         <TableRow>
+          <TableHead className="min-w-[10rem]">Name</TableHead>
           <TableHead className="min-w-[12rem]">Email</TableHead>
           <TableHead className="w-[8.5rem]">Phone</TableHead>
           <TableHead className="min-w-[9rem]">Role</TableHead>
           <TableHead className="w-[6.5rem]">Status</TableHead>
+          <TableHead className="min-w-[9rem]">Deleted</TableHead>
           <TableHead className="min-w-[9rem]">Last Login</TableHead>
           <TableHead className="w-[11.5rem] text-right">
             Actions
@@ -55,6 +57,12 @@ export function BranchUserTable({
       <TableBody>
         {branchUsers.map((branchUser) => (
           <TableRow key={branchUser.id}>
+            <TableCell className="text-[15px] font-medium text-[#102A56]">
+              {[branchUser.firstName, branchUser.lastName]
+                .filter(Boolean)
+                .join(" ") || "—"}
+            </TableCell>
+
             <TableCell className="text-[15px] font-medium text-[#102A56]">
               {branchUser.email}
             </TableCell>
@@ -72,6 +80,18 @@ export function BranchUserTable({
                 isActive={branchUser.isActive}
                 isDeleted={Boolean(branchUser.isDeleted)}
               />
+            </TableCell>
+
+            <TableCell className="text-[15px] text-[#647A9B]">
+              {branchUser.isDeleted && branchUser.updatedAt
+                ? new Date(branchUser.updatedAt).toLocaleString(
+                    undefined,
+                    {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    },
+                  )
+                : "—"}
             </TableCell>
 
             <TableCell className="text-[15px] text-[#647A9B]">

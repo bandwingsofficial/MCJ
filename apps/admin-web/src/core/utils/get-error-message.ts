@@ -19,6 +19,12 @@ const CODE_MESSAGES: Record<string, string> = {
   CATEGORY_NOT_FOUND: "Category not found.",
   BRANCH_ALREADY_EXISTS: "Branch already exists.",
   BRANCH_NOT_FOUND: "Branch not found.",
+  BRANCH_USER_NOT_FOUND: "User not found.",
+  EMAIL_ALREADY_EXISTS: "An active user already exists with this email.",
+  PHONE_ALREADY_EXISTS:
+    "An active user already exists with this phone number.",
+  ROLE_ASSIGNMENT_DENIED:
+    "You are not authorized to create or assign this role.",
 };
 
 export const getErrorMessage = (error: unknown): string => {

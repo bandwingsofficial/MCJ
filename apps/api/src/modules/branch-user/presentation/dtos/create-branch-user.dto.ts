@@ -1,6 +1,7 @@
 import { Transform } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsNotEmpty,
@@ -69,4 +70,8 @@ export class CreateBranchUserDto {
   @IsNotEmpty()
   @IsUUID()
   branchId!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  confirmRestore?: boolean;
 }

@@ -9,12 +9,14 @@ import { Request } from 'express';
 
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import { Permission } from '@modules/branch-user/domain/enums/permission.enum';
+import { resolveEffectivePermissions } from '@modules/branch-user/domain/role-permissions';
 
 // Dormant/future-ready: keep reusable permission guard out of module wiring
 // until permission-based authorization is enabled.
 interface PermissionAuthenticatedRequest
   extends Request {
   user?: {
+    role?: string;
     permissions?: Permission[];
   };
 }
@@ -47,8 +49,14 @@ export class PermissionsGuard
       .switchToHttp()
       .getRequest<PermissionAuthenticatedRequest>();
 
-    const userPermissions =
-      request.user?.permissions ?? [];
+    if (request.user?.role === 'BRANCH_MANAGER') {
+      return true;
+    }
+
+    const userPermissions = resolveEffectivePermissions(
+      request.user?.role,
+      request.user?.permissions,
+    );
 
     const allowed = permissions.every(
       (permission) =>

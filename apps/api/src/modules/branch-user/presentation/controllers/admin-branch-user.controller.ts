@@ -3,12 +3,15 @@ import {
   Controller,
   Delete,
   Get,
+  HttpStatus,
   Param,
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 
 import { JwtAuthGuard } from '../../../auth/presentation/guards/jwt-auth.guard';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
@@ -27,6 +30,7 @@ import { UpdateBranchUserStatusHandler } from '../../application/update-branch-u
 import { DeleteBranchUserHandler } from '../../application/delete-branch-user/delete-branch-user.handler';
 import { ResetBranchUserPasswordHandler } from '../../application/reset-branch-user-password/reset-branch-user-password.handler';
 import { RestoreBranchUserHandler } from '../../application/restore-branch-user/restore-branch-user.handler';
+import { PermanentDeleteBranchUserHandler } from '../../application/permanent-delete-branch-user/permanent-delete-branch-user.handler';
 
 import { CreateBranchUserCommand } from '../../application/create-branch-user/create-branch-user.command';
 import { ListBranchUsersQuery } from '../../application/list-branch-users/list-branch-users.query';
@@ -38,6 +42,14 @@ import { ResetBranchUserPasswordCommand } from '../../application/reset-branch-u
 
 import { SuperAdminGuard } from '@common/guards/super-admin.guard';
 import { RestoreBranchUserCommand } from '../../application/restore-branch-user/restore-branch-user.command';
+import { PermanentDeleteBranchUserCommand } from '../../application/permanent-delete-branch-user/permanent-delete-branch-user.command';
+import {
+  isSuperAdminCreatableRole,
+  SUPER_ADMIN_CREATABLE_ROLES,
+} from '../../domain/role-permissions';
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+import { BranchUserRole } from '../../domain/enums/branch-user-role.enum';
 
 @UseGuards(JwtAuthGuard, SuperAdminGuard)
 @Controller('admin/branch-users')
@@ -51,13 +63,17 @@ export class AdminBranchUserController {
     private readonly deleteBranchUserHandler: DeleteBranchUserHandler,
     private readonly resetBranchUserPasswordHandler: ResetBranchUserPasswordHandler,
     private readonly restoreBranchUserHandler: RestoreBranchUserHandler,
+    private readonly permanentDeleteBranchUserHandler: PermanentDeleteBranchUserHandler,
   ) {}
 
   @Post()
   async create(
     @CurrentUser() user: AuthUser,
     @Body() dto: CreateBranchUserDto,
+    @Res({ passthrough: true }) res: Response,
   ) {
+    this.assertSuperAdminMayCreateRole(dto.role);
+
     const result =
       await this.createBranchUserHandler.execute(
         new CreateBranchUserCommand(
@@ -70,11 +86,24 @@ export class AdminBranchUserController {
           dto.permissions,
           dto.branchId,
           user.sub,
+          dto.confirmRestore ?? false,
+          {
+            allowedExistingRoles: SUPER_ADMIN_CREATABLE_ROLES,
+          },
         ),
       );
 
+    if (result.restored) {
+      res.status(HttpStatus.OK);
+      return {
+        message: 'Existing deleted user restored and updated successfully.',
+        data: result,
+      };
+    }
+
+    res.status(HttpStatus.CREATED);
     return {
-      message: 'Branch user created successfully',
+      message: 'User created successfully.',
       data: result,
     };
   }
@@ -123,6 +152,13 @@ export class AdminBranchUserController {
     @Param('id') id: string,
     @Body() dto: UpdateBranchUserDto,
   ) {
+    if (dto.role) {
+      const existing = await this.getBranchUserHandler.execute(
+        new GetBranchUserQuery(id),
+      );
+      this.assertSuperAdminMayAssignRole(dto.role, existing.role);
+    }
+
     const result =
       await this.updateBranchUserHandler.execute(
         new UpdateBranchUserCommand(
@@ -208,21 +244,38 @@ export class AdminBranchUserController {
   }
 
   @Patch(':id/restore')
-async restore(
-  @Param('id') id: string,
-) {
-  const result =
-    await this.restoreBranchUserHandler.execute(
-      new RestoreBranchUserCommand(id),
-    );
+  async restore(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+  ) {
+    const result =
+      await this.restoreBranchUserHandler.execute(
+        new RestoreBranchUserCommand(id, user.sub),
+      );
 
-  return {
-    success: true,
-    message:
-      'Branch user restored successfully',
-    data: result,
-  };
-}
+    return {
+      success: true,
+      message: 'Branch user restored successfully',
+      data: result,
+    };
+  }
+
+  @Delete(':id/permanent')
+  async permanentDelete(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+  ) {
+    const result =
+      await this.permanentDeleteBranchUserHandler.execute(
+        new PermanentDeleteBranchUserCommand(id, user.sub),
+      );
+
+    return {
+      success: true,
+      message: 'User permanently deleted successfully',
+      data: result,
+    };
+  }
 
   @Delete(':id')
   async delete(
@@ -240,5 +293,36 @@ async restore(
     return {
       message: result.message,
     };
+  }
+
+  private assertSuperAdminMayCreateRole(role: BranchUserRole) {
+    if (isSuperAdminCreatableRole(role)) {
+      return;
+    }
+
+    throw new BaseException(
+      ERROR_CODES.ROLE_ASSIGNMENT_DENIED,
+      'Super Admin can only create Branch Managers in this flow. Faculty and Interviewer accounts must be created by a Branch Manager.',
+      403,
+    );
+  }
+
+  private assertSuperAdminMayAssignRole(
+    role: BranchUserRole,
+    existingRole?: BranchUserRole,
+  ) {
+    if (isSuperAdminCreatableRole(role)) {
+      return;
+    }
+
+    if (existingRole && existingRole === role) {
+      return;
+    }
+
+    throw new BaseException(
+      ERROR_CODES.ROLE_ASSIGNMENT_DENIED,
+      'Super Admin can only create Branch Managers in this flow. Faculty and Interviewer accounts must be created by a Branch Manager.',
+      403,
+    );
   }
 }

@@ -48,10 +48,10 @@ export class LoginBranchUserHandler {
         command.identifier.trim().toLowerCase();
 
       const branchUser = identifier.includes('@')
-        ? await this.branchUserRepo.findByEmail(
+        ? await this.branchUserRepo.findByEmailIncludingDeleted(
             BranchUserEmail.create(identifier),
           )
-        : await this.branchUserRepo.findByPhone(
+        : await this.branchUserRepo.findByPhoneIncludingDeleted(
             BranchUserPhone.create(identifier),
           );
 

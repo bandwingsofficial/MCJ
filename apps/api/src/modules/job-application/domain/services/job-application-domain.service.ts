@@ -104,11 +104,13 @@ export class JobApplicationDomainService {
     > = {
       [JobApplicationStatus.APPLIED]: [
         JobApplicationStatus.SHORTLISTED,
+        JobApplicationStatus.INTERVIEW,
         JobApplicationStatus.SELECTED,
         JobApplicationStatus.REJECTED,
       ],
       [JobApplicationStatus.SHORTLISTED]: [
         JobApplicationStatus.ASSESSMENT,
+        JobApplicationStatus.INTERVIEW,
         JobApplicationStatus.REJECTED,
       ],
       [JobApplicationStatus.ASSESSMENT]: [

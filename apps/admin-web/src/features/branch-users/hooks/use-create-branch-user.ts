@@ -10,6 +10,8 @@ import { branchUserService } from "@/src/features/branch-users/services/branch-u
 
 import { CreateBranchUserRequest } from "@/src/features/branch-users/types/branch-user.types";
 
+export const DELETED_ACCOUNT_RESTORABLE = "DELETED_ACCOUNT_RESTORABLE";
+
 interface UseCreateBranchUserReturn {
   createBranchUser: (
     payload: CreateBranchUserRequest
@@ -30,40 +32,42 @@ export const useCreateBranchUser =
         try {
           setIsLoading(true);
 
-          await branchUserService.createBranchUser(
-            payload
-          );
+          const response =
+            await branchUserService.createBranchUser(
+              payload
+            );
 
           appToast.success(
-            "Branch user created successfully"
+            response.message ||
+              (payload.confirmRestore
+                ? "Existing deleted user restored and updated successfully."
+                : "User created successfully.")
           );
         } catch (error) {
           let message =
             "Failed to create branch user";
+          let code: string | undefined;
 
-          if (
-            error instanceof AxiosError
-          ) {
+          if (error instanceof AxiosError) {
+            code = error.response?.data?.code;
             message =
-              error.response?.data
-                ?.message ||
-              error.response?.data
-                ?.error ||
+              error.response?.data?.message ||
+              error.response?.data?.error ||
               error.message;
-          } else if (
-            error instanceof Error
-          ) {
-            message =
-              error.message;
+          } else if (error instanceof Error) {
+            message = error.message;
           }
 
-          appToast.error(
-            message
-          );
+          if (code === DELETED_ACCOUNT_RESTORABLE) {
+            const restorable = new Error(message);
+            (restorable as Error & { code: string }).code =
+              DELETED_ACCOUNT_RESTORABLE;
+            throw restorable;
+          }
 
-          return Promise.reject(
-            new Error(message)
-          );
+          appToast.error(message);
+
+          return Promise.reject(new Error(message));
         } finally {
           setIsLoading(false);
         }

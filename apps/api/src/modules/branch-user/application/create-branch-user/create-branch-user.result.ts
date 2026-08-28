@@ -14,5 +14,6 @@ export class CreateBranchUserResult {
     public readonly isActive: boolean,
     public readonly createdBy: string | null,
     public readonly createdAt: Date,
+    public readonly restored = false,
   ) {}
 }

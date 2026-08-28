@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import {
   BRANCH_USER_ROLES,
+  SUPER_ADMIN_CREATABLE_ROLES,
 } from "@/src/features/branch-users/constants/branch-user.constants";
 
 const phoneRegex = /^[6-9]\d{9}$/;
@@ -59,7 +60,7 @@ export const createBranchUserSchema =
     password: branchUserPasswordSchema,
 
     role: z.enum(
-      BRANCH_USER_ROLES,
+      SUPER_ADMIN_CREATABLE_ROLES,
       {
         error: "Role is required",
       }

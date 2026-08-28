@@ -9,6 +9,8 @@ import { useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { Lock } from "lucide-react";
+
 import { Modal } from "@/src/shared/components/ui/model";
 
 import { Button } from "@/src/shared/components/ui/button";
@@ -122,7 +124,7 @@ export function ResetPasswordDialog({
         className: validatedFieldInputClass(
           state,
           undefined,
-          { passwordToggle: true }
+          { passwordToggle: true, leftIcon: true }
         ),
         onBlur: (
           event: FocusEvent<HTMLInputElement>
@@ -209,6 +211,7 @@ export function ResetPasswordDialog({
           label="New Password"
           required
           passwordToggle
+          leftIcon={<Lock className="h-4 w-4" />}
           state={newPasswordField.state}
           errorMessage={
             newPasswordField.errorMessage
@@ -225,6 +228,7 @@ export function ResetPasswordDialog({
           label="Confirm Password"
           required
           passwordToggle
+          leftIcon={<Lock className="h-4 w-4" />}
           state={confirmPasswordField.state}
           errorMessage={
             confirmPasswordField.errorMessage

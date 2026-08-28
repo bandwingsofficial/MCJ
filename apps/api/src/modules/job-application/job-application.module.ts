@@ -237,6 +237,9 @@ import { StudentJobApplicationController } from './presentation/controllers/stud
   exports: [
     JOB_APPLICATION_TOKENS.JOB_APPLICATION_REPOSITORY,
     JobApplicationDomainService,
+    ListJobApplicationsHandler,
+    GetJobApplicationHandler,
+    UpdateJobApplicationStatusHandler,
   ],
 })
 export class JobApplicationModule {}

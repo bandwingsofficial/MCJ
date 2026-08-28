@@ -27,6 +27,18 @@ export interface BranchUserRepository {
     phone: BranchUserPhone,
   ): Promise<BranchUser | null>;
 
+  /**
+   * Global uniqueness lookup. Includes soft-deleted rows because
+   * `email` / `phone` are unique across the whole table.
+   */
+  findByEmailIncludingDeleted(
+    email: BranchUserEmail,
+  ): Promise<BranchUser | null>;
+
+  findByPhoneIncludingDeleted(
+    phone: BranchUserPhone,
+  ): Promise<BranchUser | null>;
+
   findAll(
     filters?: BranchUserListFilters,
   ): Promise<BranchUser[]>;
@@ -50,6 +62,12 @@ export interface BranchUserRepository {
   ): Promise<boolean>;
 
   branchExists(branchId: string): Promise<boolean>;
+
+  runInTransaction<T>(
+    work: (repo: BranchUserRepository) => Promise<T>,
+  ): Promise<T>;
+
+  permanentDelete(id: string): Promise<void>;
 
   /**
    * Atomically rotate refresh hash only if the expected current hash still matches.

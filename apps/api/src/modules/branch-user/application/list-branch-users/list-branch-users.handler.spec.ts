@@ -25,6 +25,10 @@ describe('ListBranchUsersHandler', () => {
     };
 
     const branchRepo = {
+      findByIdIncludingDeleted: jest.fn().mockResolvedValue({
+        branchName: { getValue: () => 'Malleswaram' },
+        branchCode: { getValue: () => 'MAL001' },
+      }),
       findById: jest.fn().mockResolvedValue({
         branchName: { getValue: () => 'Malleswaram' },
         branchCode: { getValue: () => 'MAL001' },
@@ -65,6 +69,7 @@ describe('ListBranchUsersHandler', () => {
     };
 
     const branchRepo = {
+      findByIdIncludingDeleted: jest.fn().mockResolvedValue(null),
       findById: jest.fn().mockResolvedValue(null),
     };
 

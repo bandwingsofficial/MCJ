@@ -58,5 +58,16 @@ export const AuthGuard = ({ children }: Props) => {
     );
   }
 
+  if (user && user.role !== "ADMIN") {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-3 text-slate-600">
+          <Loader />
+          <p className="text-sm">Redirecting to login…</p>
+        </div>
+      </div>
+    );
+  }
+
   return <>{children}</>;
 };

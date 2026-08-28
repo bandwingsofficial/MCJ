@@ -27,6 +27,7 @@ import { LoginBranchUserHandler } from './application/login-branch-user/login-br
 import { RefreshBranchUserTokenHandler } from './application/refresh-branch-user-token/refresh-branch-user-token.handler';
 import { LogoutBranchUserHandler } from './application/logout-branch-user/logout-branch-user.handler';
 import { GetBranchUserMeHandler } from './application/me/get-branch-user-me.handler';
+import { PermanentDeleteBranchUserHandler } from './application/permanent-delete-branch-user/permanent-delete-branch-user.handler';
 import { RestoreBranchUserHandler } from './application/restore-branch-user/restore-branch-user.handler';
 
 import { AdminBranchUserController } from './presentation/controllers/admin-branch-user.controller';
@@ -192,17 +193,15 @@ import { BranchModule } from '../branch/branch.module';
     },
     {
       provide: RestoreBranchUserHandler,
-      useFactory: (
-        branchUserRepo: BranchUserRepository,
-        domainService: BranchUserDomainService,
-      ) =>
-        new RestoreBranchUserHandler(
-          branchUserRepo
-        ),
-      inject: [
-        BRANCH_USER_TOKENS.BRANCH_USER_REPOSITORY,
-        BranchUserDomainService,
-      ],
+      useFactory: (branchUserRepo: BranchUserRepository) =>
+        new RestoreBranchUserHandler(branchUserRepo),
+      inject: [BRANCH_USER_TOKENS.BRANCH_USER_REPOSITORY],
+    },
+    {
+      provide: PermanentDeleteBranchUserHandler,
+      useFactory: (branchUserRepo: BranchUserRepository) =>
+        new PermanentDeleteBranchUserHandler(branchUserRepo),
+      inject: [BRANCH_USER_TOKENS.BRANCH_USER_REPOSITORY],
     },
     {
       provide: LoginBranchUserHandler,
@@ -283,6 +282,15 @@ import { BranchModule } from '../branch/branch.module';
     BranchJwtAuthGuard,
     RolesGuard,
     BranchAccessGuard,
+    CreateBranchUserHandler,
+    ListBranchUsersHandler,
+    GetBranchUserHandler,
+    UpdateBranchUserHandler,
+    UpdateBranchUserStatusHandler,
+    ResetBranchUserPasswordHandler,
+    DeleteBranchUserHandler,
+    RestoreBranchUserHandler,
+    PermanentDeleteBranchUserHandler,
   ],
 })
 export class BranchUserModule {}

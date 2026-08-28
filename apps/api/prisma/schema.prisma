@@ -155,6 +155,10 @@ model Branch {
   enrollments    Enrollment[]
   students       Student[]
   trainers       Trainer[]
+  attendances    Attendance[]
+  assessments    AcademicAssessment[]
+  interviews     Interview[]
+  activityLogs   BranchActivityLog[]
 
   @@index([branchName])
   @@index([branchCode])
@@ -189,6 +193,11 @@ model BranchUser {
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
   branch                Branch         @relation(fields: [branchId], references: [id])
+  facultyBatches        BatchFaculty[]
+  recordedAttendance    Attendance[]
+  recordedAssessments   AcademicAssessment[]
+  interviews            Interview[]
+  activityLogs          BranchActivityLog[]
 
   @@index([branchId])
   @@index([branchId, isDeleted])
@@ -665,8 +674,11 @@ model Batch {
   course        Course?        @relation(fields: [courseId], references: [id])
   category      Category?      @relation(fields: [categoryId], references: [id])
   trainers      BatchTrainer[]
+  facultyAssignments BatchFaculty[]
   batchCourses  BatchCourse[]
   enrollments   Enrollment[]
+  attendances   Attendance[]
+  assessments   AcademicAssessment[]
 
   @@unique([slug, branchId])
   @@index([name])
@@ -763,6 +775,8 @@ model Student {
   payments              Payment[]
   Placement             Placement[]
   lessonProgress        LessonProgress[]
+  attendances           Attendance[]
+  assessments           AcademicAssessment[]
   branch                Branch?          @relation(fields: [branchId], references: [id])
   profileImageUpload    Upload?          @relation("StudentProfileImage", fields: [profileImageFileId], references: [id], onDelete: SetNull)
   documents             StudentDocument[]
@@ -963,6 +977,7 @@ model Job {
   updatedAt           DateTime         @updatedAt
   applications        JobApplication[]
   placements          Placement[]
+  interviews          Interview[]
 
   @@index([slug])
   @@index([jobNumber])
@@ -1002,6 +1017,7 @@ model JobApplication {
   resumeUpload         Upload?              @relation("JobApplicationResume", fields: [resumeFileId], references: [id], onDelete: SetNull)
   Student              Student?             @relation(fields: [studentId], references: [id])
   placement            Placement?
+  interviews           Interview[]
 
   @@unique([jobId, studentId])
   @@index([jobId])
@@ -1037,6 +1053,132 @@ model Placement {
   @@index([status])
   @@index([createdAt])
   @@index([studentId])
+}
+
+model BatchFaculty {
+  id           String     @id @default(uuid())
+  batchId      String
+  branchUserId String
+  assignedBy   String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  batch        Batch      @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  faculty      BranchUser @relation(fields: [branchUserId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, branchUserId])
+  @@index([batchId])
+  @@index([branchUserId])
+}
+
+model Attendance {
+  id              String           @id @default(uuid())
+  branchId        String
+  batchId         String
+  studentId       String
+  facultyId       String?
+  date            DateTime         @db.Date
+  status          AttendanceStatus
+  punchIn         DateTime?
+  punchOut        DateTime?
+  durationMinutes Int?
+  remarks         String?
+  createdBy       String?
+  updatedBy       String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  branch          Branch           @relation(fields: [branchId], references: [id])
+  batch           Batch            @relation(fields: [batchId], references: [id])
+  student         Student          @relation(fields: [studentId], references: [id])
+  faculty         BranchUser?      @relation(fields: [facultyId], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, batchId, date])
+  @@index([branchId])
+  @@index([batchId])
+  @@index([studentId])
+  @@index([facultyId])
+  @@index([date])
+  @@index([status])
+  @@index([branchId, date])
+  @@index([batchId, date])
+}
+
+model AcademicAssessment {
+  id             String         @id @default(uuid())
+  branchId       String
+  batchId        String
+  studentId      String
+  facultyId      String?
+  type           AssessmentType
+  name           String
+  date           DateTime       @db.Date
+  maxMarks       Decimal        @db.Decimal(8, 2)
+  obtainedMarks  Decimal        @db.Decimal(8, 2)
+  remarks        String?
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  branch         Branch         @relation(fields: [branchId], references: [id])
+  batch          Batch          @relation(fields: [batchId], references: [id])
+  student        Student        @relation(fields: [studentId], references: [id])
+  faculty        BranchUser?    @relation(fields: [facultyId], references: [id], onDelete: SetNull)
+
+  @@index([branchId])
+  @@index([batchId])
+  @@index([studentId])
+  @@index([facultyId])
+  @@index([type])
+  @@index([date])
+  @@index([branchId, date])
+}
+
+model Interview {
+  id               String          @id @default(uuid())
+  applicationId    String
+  jobId            String
+  interviewerId    String?
+  branchId         String
+  scheduledAt      DateTime
+  durationMinutes  Int             @default(60)
+  mode             InterviewMode
+  locationOrLink   String?
+  notes            String?
+  evaluation       String?
+  status           InterviewStatus @default(SCHEDULED)
+  createdBy        String?
+  updatedBy        String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  application      JobApplication  @relation(fields: [applicationId], references: [id])
+  job              Job             @relation(fields: [jobId], references: [id])
+  interviewer      BranchUser?     @relation(fields: [interviewerId], references: [id], onDelete: SetNull)
+  branch           Branch          @relation(fields: [branchId], references: [id])
+
+  @@index([applicationId])
+  @@index([jobId])
+  @@index([interviewerId])
+  @@index([branchId])
+  @@index([scheduledAt])
+  @@index([status])
+  @@index([interviewerId, scheduledAt])
+}
+
+model BranchActivityLog {
+  id           String      @id @default(uuid())
+  branchId     String
+  actorId      String?
+  action       String
+  resourceType String
+  resourceId   String
+  metadata     Json?
+  createdAt    DateTime    @default(now())
+  branch       Branch      @relation(fields: [branchId], references: [id])
+  actor        BranchUser? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([branchId])
+  @@index([actorId])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
 }
 
 model FinancialArticle {
@@ -1220,6 +1362,8 @@ enum BranchUserRole {
   FACULTY_COORDINATOR
   COUNSELOR
   STAFF
+  FACULTY
+  INTERVIEWER
 }
 
 enum Permission {
@@ -1244,6 +1388,16 @@ enum Permission {
   PAYMENT_UPDATE
   PAYMENT_DELETE
   REPORT_READ
+  BATCH_READ
+  ATTENDANCE_READ
+  ATTENDANCE_WRITE
+  ASSESSMENT_READ
+  ASSESSMENT_WRITE
+  JOB_APPLICATION_READ
+  JOB_APPLICATION_UPDATE
+  INTERVIEW_READ
+  INTERVIEW_WRITE
+  PLACEMENT_READ
 }
 
 enum CategoryStatus {
@@ -1505,4 +1659,32 @@ enum CommunityPostStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  LEAVE
+}
+
+enum AssessmentType {
+  TEST
+  PRESENTATION
+  ASSIGNMENT
+  PRACTICAL
+  OTHER
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum InterviewMode {
+  ONLINE
+  OFFLINE
+  PHONE
 }

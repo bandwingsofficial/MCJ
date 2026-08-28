@@ -6,7 +6,7 @@ import {
 
 import { useAuthBootstrap } from "@/src/features/auth/hooks/use-auth-bootstrap";
 
-import { Loader } from "@/src/shared/components/ui/loader";
+import { AuthLoadingScreen } from "@/src/shared/components/ui/auth-loading";
 
 interface Props {
   children: ReactNode;
@@ -20,9 +20,7 @@ export function AuthProvider({
   } = useAuthBootstrap();
 
   if (isLoading) {
-    return (
-      <Loader />
-    );
+    return <AuthLoadingScreen />;
   }
 
   return <>{children}</>;

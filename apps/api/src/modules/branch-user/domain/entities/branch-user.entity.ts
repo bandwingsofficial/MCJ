@@ -210,16 +210,15 @@ export class BranchUser {
     this.touch(updatedBy);
   }
 
-  restore(): void {
-  this.isDeleted = false;
-  this.isActive = true;
+  restore(updatedBy?: string | null): void {
+    this.isDeleted = false;
+    this.isActive = true;
+    this.touch(updatedBy);
+  }
 
-  this.touch();
-}
-
-isRestorable(): boolean {
-  return this.isDeleted;
-}
+  isRestorable(): boolean {
+    return this.isDeleted;
+  }
 
   markLoggedIn(
     refreshTokenHash: string,
@@ -249,18 +248,12 @@ isRestorable(): boolean {
   }
 
   canLogin(): boolean {
-    if (this.isDeleted) {
+    if (this.isDeleted || !this.isActive) {
       throw new BaseException(
-        ERROR_CODES.BRANCH_USER_DELETED,
-        'Branch user has been deleted',
-        403,
-      );
-    }
-
-    if (!this.isActive) {
-      throw new BaseException(
-        ERROR_CODES.BRANCH_USER_INACTIVE,
-        'Branch user account is inactive',
+        this.isDeleted
+          ? ERROR_CODES.BRANCH_USER_DELETED
+          : ERROR_CODES.BRANCH_USER_INACTIVE,
+        'This account is inactive. Please contact your Branch Manager.',
         403,
       );
     }

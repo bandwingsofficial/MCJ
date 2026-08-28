@@ -45,11 +45,11 @@ export function Modal({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
+        <Dialog.Overlay className="fixed inset-0 z-[70] bg-black/50" />
 
         <Dialog.Content
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-[#E1EBF5] bg-white shadow-[0_16px_40px_rgba(16,42,86,0.12)]",
+            "fixed left-1/2 top-1/2 z-[70] flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-[#E1EBF5] bg-white shadow-[0_16px_40px_rgba(16,42,86,0.12)]",
             contentClassName,
           )}
         >

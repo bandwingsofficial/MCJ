@@ -20,16 +20,33 @@ export class BranchUserDomainService {
     branchUser: BranchUser | null,
     field: 'email' | 'phone',
   ): void {
-    if (branchUser) {
+    if (!branchUser) {
+      return;
+    }
+
+    if (field === 'email') {
       throw new BaseException(
-        ERROR_CODES.BRANCH_USER_ALREADY_EXISTS,
-        `Branch user ${field} already exists`,
+        ERROR_CODES.EMAIL_ALREADY_EXISTS,
+        branchUser.isDeleted
+          ? 'A user with this email already exists.'
+          : 'An active user already exists with this email.',
         409,
         {
           field,
         },
       );
     }
+
+    throw new BaseException(
+      ERROR_CODES.PHONE_ALREADY_EXISTS,
+      branchUser.isDeleted
+        ? 'A user with this phone number already exists.'
+        : 'An active user already exists with this phone number.',
+      409,
+      {
+        field,
+      },
+    );
   }
 
   ensureBranchExists(

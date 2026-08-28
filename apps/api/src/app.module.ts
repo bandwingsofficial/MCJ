@@ -5,6 +5,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BatchModule } from './modules/batch/batch.module';
 import { BranchModule } from './modules/branch/branch.module';
 import { BranchUserModule } from './modules/branch-user/branch-user.module';
+import { BranchOperationsModule } from './modules/branch-operations/branch-operations.module';
 import { CategoryModule } from './modules/category/category.module';
 import { CourseModule } from './modules/course/course.module';
 import { CommunityPostCommentModule } from './modules/community-post-comment/community-post-comment.module';
@@ -35,6 +36,7 @@ import { TrainerModule } from './modules/trainer/trainer.module';
     ProfileModule,
     BranchModule,
     BranchUserModule,
+    BranchOperationsModule,
     UploadsModule,
     CategoryModule,
     CourseModule,

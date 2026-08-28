@@ -1,6 +1,8 @@
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import type {
@@ -38,17 +40,29 @@ export class PrismaBranchUserRepository
     const data =
       BranchUserMapper.toPersistence(branchUser);
 
-    await this.prisma.branchUser.upsert({
-      where: {
-        id: branchUser.id,
-      },
-      update: {
-        ...data,
-      },
-      create: {
-        ...data,
-      },
-    });
+    try {
+      const existing = await this.prisma.branchUser.findUnique({
+        where: { id: branchUser.id },
+        select: { id: true },
+      });
+
+      if (existing) {
+        const { id: _id, createdAt: _createdAt, ...updateData } = data;
+
+        await this.prisma.branchUser.update({
+          where: { id: branchUser.id },
+          data: updateData,
+        });
+        return;
+      }
+
+      await this.prisma.branchUser.create({
+        data,
+      });
+    } catch (error) {
+      this.rethrowUniqueConstraint(error);
+      throw error;
+    }
   }
 
   // =====================
@@ -101,6 +115,31 @@ export class PrismaBranchUserRepository
     return record
       ? BranchUserMapper.toDomain(record)
       : null;
+  }
+
+  async findByEmailIncludingDeleted(
+    email: BranchUserEmail,
+  ): Promise<BranchUser | null> {
+    const record = await this.prisma.branchUser.findFirst({
+      where: {
+        email: {
+          equals: email.getValue(),
+          mode: 'insensitive',
+        },
+      },
+    });
+
+    return record ? BranchUserMapper.toDomain(record) : null;
+  }
+
+  async findByPhoneIncludingDeleted(
+    phone: BranchUserPhone,
+  ): Promise<BranchUser | null> {
+    const record = await this.prisma.branchUser.findFirst({
+      where: { phone: phone.getValue() },
+    });
+
+    return record ? BranchUserMapper.toDomain(record) : null;
   }
 
   async findAll(
@@ -161,29 +200,23 @@ export class PrismaBranchUserRepository
   async existsByEmail(
     email: BranchUserEmail,
   ): Promise<boolean> {
-    const count =
-      await this.prisma.branchUser.count({
-        where: {
-          email: email.getValue(),
-          isDeleted: false,
-        },
-      });
+    const record = await this.prisma.branchUser.findUnique({
+      where: { email: email.getValue() },
+      select: { id: true },
+    });
 
-    return count > 0;
+    return Boolean(record);
   }
 
   async existsByPhone(
     phone: BranchUserPhone,
   ): Promise<boolean> {
-    const count =
-      await this.prisma.branchUser.count({
-        where: {
-          phone: phone.getValue(),
-          isDeleted: false,
-        },
-      });
+    const record = await this.prisma.branchUser.findUnique({
+      where: { phone: phone.getValue() },
+      select: { id: true },
+    });
 
-    return count > 0;
+    return Boolean(record);
   }
 
   async branchExists(
@@ -278,5 +311,78 @@ export class PrismaBranchUserRepository
     });
 
     return result.count === 1;
+  }
+
+  async runInTransaction<T>(
+    work: (repo: BranchUserRepository) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(async (tx) => {
+      const scoped = new PrismaBranchUserRepository(
+        tx as unknown as PrismaService,
+      );
+      return work(scoped);
+    });
+  }
+
+  async permanentDelete(id: string): Promise<void> {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.batchFaculty.deleteMany({
+          where: { branchUserId: id },
+        });
+        await tx.attendance.updateMany({
+          where: { facultyId: id },
+          data: { facultyId: null },
+        });
+        await tx.academicAssessment.updateMany({
+          where: { facultyId: id },
+          data: { facultyId: null },
+        });
+        await tx.interview.updateMany({
+          where: { interviewerId: id },
+          data: { interviewerId: null },
+        });
+        await tx.branchActivityLog.updateMany({
+          where: { actorId: id },
+          data: { actorId: null },
+        });
+        await tx.branchUser.delete({
+          where: { id },
+        });
+      });
+    } catch (error) {
+      this.rethrowUniqueConstraint(error);
+      throw error;
+    }
+  }
+
+  private rethrowUniqueConstraint(error: unknown): void {
+    if (
+      !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+      error.code !== 'P2002'
+    ) {
+      return;
+    }
+
+    const target = Array.isArray(error.meta?.target)
+      ? error.meta.target.join(',')
+      : String(error.meta?.target ?? '');
+    const normalized = target.toLowerCase();
+
+    if (normalized.includes('phone')) {
+      throw new BaseException(
+        ERROR_CODES.PHONE_ALREADY_EXISTS,
+        'A user with this phone number already exists.',
+        409,
+        { field: 'phone' },
+      );
+    }
+
+    throw new BaseException(
+      ERROR_CODES.EMAIL_ALREADY_EXISTS,
+      'A user with this email already exists.',
+      409,
+      { field: 'email' },
+    );
   }
 }

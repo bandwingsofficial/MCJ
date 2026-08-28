@@ -171,10 +171,7 @@ export class AppExceptionFilter implements ExceptionFilter {
       .json({
         success: false,
         code: 'INTERNAL_SERVER_ERROR',
-        message:
-          exception instanceof Error
-            ? exception.message
-            : 'Something went wrong',
+        message: 'Something went wrong',
       });
   }
 

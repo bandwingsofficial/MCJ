@@ -1,6 +1,22 @@
 @import "tailwindcss";
 
-/* Custom Scrollbar */
+:root {
+  --admin-primary: #2563eb;
+  --admin-primary-hover: #1d4ed8;
+  --admin-navy: #102a56;
+  --admin-muted: #647a9b;
+  --admin-border: #dce8f5;
+  --admin-table-border: #e1ebf5;
+  --admin-surface: #f6f9fd;
+  --admin-offwhite: #fbfdff;
+  --admin-white: #ffffff;
+}
+
+body {
+  color: var(--admin-navy);
+  background: var(--admin-white);
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -10,10 +26,121 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #374151; /* gray-700 */
+  background-color: #c7e4ff;
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #4b5563; /* gray-600 */
+  background-color: #a9c4e6;
+}
+
+/* Soft flowing pastel sidebar — white → pale blue → soft sky, never navy */
+.admin-sidebar {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #f8fbff 22%,
+      #eef7ff 48%,
+      #e4f2ff 74%,
+      #d7ecff 100%
+    );
+}
+
+.admin-sidebar-wash {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 140% 70% at 8% -8%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0) 52%),
+    radial-gradient(ellipse 90% 55% at 108% 28%, rgba(199, 228, 255, 0.72) 0%, rgba(238, 247, 255, 0) 68%),
+    radial-gradient(ellipse 95% 60% at -18% 62%, rgba(215, 236, 255, 0.85) 0%, rgba(238, 247, 255, 0) 62%),
+    radial-gradient(ellipse 120% 75% at 58% 108%, rgba(199, 228, 255, 0.8) 0%, rgba(228, 242, 255, 0.18) 46%, transparent 72%);
+}
+
+.admin-sidebar-wash::before {
+  content: "";
+  position: absolute;
+  left: -55%;
+  bottom: -6%;
+  width: 190%;
+  height: 48%;
+  background: radial-gradient(
+    ellipse at 40% 40%,
+    rgba(199, 228, 255, 0.7) 0%,
+    rgba(215, 236, 255, 0.28) 38%,
+    rgba(238, 247, 255, 0) 70%
+  );
+  filter: blur(36px);
+  transform: rotate(-12deg);
+}
+
+.admin-sidebar-wash::after {
+  content: "";
+  position: absolute;
+  right: -40%;
+  top: 36%;
+  width: 92%;
+  height: 42%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(199, 228, 255, 0.5) 0%,
+    rgba(228, 242, 255, 0.12) 48%,
+    transparent 72%
+  );
+  filter: blur(42px);
+  transform: rotate(16deg);
+}
+
+.admin-sidebar > *:not(.admin-sidebar-wash) {
+  position: relative;
+  z-index: 1;
+}
+
+@layer components {
+  .admin-shell table.min-w-full thead {
+    background-color: #f6f9fd !important;
+  }
+
+  .admin-shell table.min-w-full thead th {
+    color: #647a9b;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .admin-shell table.min-w-full tbody tr {
+    min-height: 72px;
+    background-color: #ffffff;
+  }
+
+  .admin-shell table.min-w-full tbody tr:hover {
+    background-color: #f4f9ff;
+  }
+
+  .admin-shell table.min-w-full tbody td {
+    padding-top: 1.05rem;
+    padding-bottom: 1.05rem;
+    color: #102a56;
+  }
+
+  .admin-create-btn {
+    height: 52px !important;
+    border-radius: 14px !important;
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.2) !important;
+  }
+
+  .admin-create-btn:hover {
+    background-color: #1d4ed8 !important;
+  }
+
+  .admin-shell .border-slate-200,
+  .admin-shell .border-slate-200\/80 {
+    border-color: #e1ebf5;
+  }
 }

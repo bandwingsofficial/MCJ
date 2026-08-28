@@ -16,6 +16,7 @@ interface AppSelectProps {
   placeholder?: string;
   options: SelectOption[];
   disabled?: boolean;
+  triggerClassName?: string;
   onValueChange: (value: string) => void;
 }
 
@@ -24,6 +25,7 @@ export function AppSelect({
   options,
   placeholder = "Select option",
   disabled,
+  triggerClassName,
   onValueChange,
 }: AppSelectProps) {
   return (
@@ -34,8 +36,9 @@ export function AppSelect({
     >
       <SelectPrimitive.Trigger
         className={cn(
-          "flex h-11 w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 text-sm",
-          "focus:outline-none focus:ring-2 focus:ring-[#2447A8]"
+          "flex h-11 w-full items-center justify-between rounded-xl border border-[#DCE8F5] bg-white px-4 text-sm text-[#102A56]",
+          "focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20",
+          triggerClassName,
         )}
       >
         <SelectPrimitive.Value placeholder={placeholder} />
@@ -45,7 +48,7 @@ export function AppSelect({
 
       <SelectPrimitive.Portal>
         <SelectPrimitive.Content
-          className="z-50 min-w-[200px] overflow-hidden rounded-xl border bg-white shadow-lg"
+          className="z-[80] min-w-[200px] overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-lg"
         >
           <SelectPrimitive.Viewport className="p-1">
             {options.map((option) => (

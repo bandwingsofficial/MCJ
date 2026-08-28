@@ -11,7 +11,9 @@ export type BranchUserRole =
   | "ACCOUNTANT"
   | "FACULTY_COORDINATOR"
   | "COUNSELOR"
-  | "STAFF";
+  | "STAFF"
+  | "FACULTY"
+  | "INTERVIEWER";
 
 export interface BranchUser {
   id: string;
@@ -67,6 +69,8 @@ export interface CreateBranchUserRequest {
   permissions: string[];
 
   branchId: string;
+
+  confirmRestore?: boolean;
 }
 
 export interface UpdateBranchUserRequest {

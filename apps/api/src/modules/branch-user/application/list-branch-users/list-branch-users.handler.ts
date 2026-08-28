@@ -34,7 +34,7 @@ export class ListBranchUsersHandler {
     );
 
     if (query.branchId) {
-      const branch = await this.branchRepo.findById(
+      const branch = await this.branchRepo.findByIdIncludingDeleted(
         query.branchId,
       );
 
@@ -65,7 +65,7 @@ export class ListBranchUsersHandler {
 
     const items = await Promise.all(
       branchUsers.map(async (branchUser) => {
-        const branch = await this.branchRepo.findById(
+        const branch = await this.branchRepo.findByIdIncludingDeleted(
           branchUser.branchId,
         );
 

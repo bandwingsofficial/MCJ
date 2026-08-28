@@ -47,7 +47,7 @@ export function BranchManagePage({ branchId }: Props) {
     summary,
     isLoading: summaryLoading,
     refetch: refetchSummary,
-  } = useBranchSummary(branchId);
+  } = useBranchSummary(branch?.id);
 
   const { deleteBranch, isPending: isArchiving } =
     useDeleteBranch();

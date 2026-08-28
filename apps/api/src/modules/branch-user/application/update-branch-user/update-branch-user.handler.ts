@@ -51,7 +51,7 @@ export class UpdateBranchUserHandler {
         branchUser.email.getValue()
       ) {
         this.domainService.ensureDoesNotExist(
-          await this.branchUserRepo.findByEmail(
+          await this.branchUserRepo.findByEmailIncludingDeleted(
             nextEmail,
           ),
           'email',
@@ -68,7 +68,7 @@ export class UpdateBranchUserHandler {
         branchUser.phone?.getValue()
       ) {
         this.domainService.ensureDoesNotExist(
-          await this.branchUserRepo.findByPhone(
+          await this.branchUserRepo.findByPhoneIncludingDeleted(
             nextPhone,
           ),
           'phone',

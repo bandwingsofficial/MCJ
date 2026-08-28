@@ -3,5 +3,6 @@
 export class RestoreBranchUserCommand {
   constructor(
     public readonly id: string,
+    public readonly updatedBy?: string,
   ) {}
 }

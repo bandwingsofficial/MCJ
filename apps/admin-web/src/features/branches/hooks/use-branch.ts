@@ -9,6 +9,10 @@ import {
 import { Branch } from "@/src/features/branches/types/branch.types";
 
 import { branchService } from "@/src/features/branches/services/branch.service";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
+
+const BRANCH_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface UseBranchReturn {
   branch: Branch | null;
@@ -30,7 +34,7 @@ export const useBranch = (
     useState<Branch | null>(null);
 
   const [isLoading, setIsLoading] =
-    useState(false);
+    useState(Boolean(id));
 
   const [error, setError] =
     useState<string | null>(null);
@@ -39,6 +43,13 @@ export const useBranch = (
     if (!id) {
       setBranch(null);
       setError(null);
+      setIsLoading(false);
+      return null;
+    }
+
+    if (!BRANCH_ID_PATTERN.test(id)) {
+      setBranch(null);
+      setError("This branch does not exist.");
       setIsLoading(false);
       return null;
     }
@@ -53,12 +64,7 @@ export const useBranch = (
       setBranch(response.data);
       return response.data;
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Failed to load branch";
-
-      setError(message);
+      setError(getErrorMessage(err));
       setBranch(null);
       return null;
     } finally {

@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-
 import { Check, X } from "lucide-react";
 
 import { Label } from "@/src/shared/components/ui/label";
@@ -15,6 +14,8 @@ export type FieldVisualState =
 
 interface ValidatedFieldInputClassOptions {
   passwordToggle?: boolean;
+  leftIcon?: boolean;
+  select?: boolean;
 }
 
 interface ValidatedFieldProps {
@@ -25,7 +26,10 @@ interface ValidatedFieldProps {
   successMessage?: string | null;
   checkingMessage?: string;
   passwordToggle?: boolean;
+  select?: boolean;
+  leftIcon?: ReactNode;
   className?: string;
+  htmlId?: string;
   children: ReactNode;
 }
 
@@ -35,9 +39,8 @@ export function validatedFieldInputClass(
   options?: ValidatedFieldInputClassOptions
 ) {
   return cn(
-    options?.passwordToggle
-      ? "pr-16"
-      : "pr-10",
+    options?.leftIcon && "pl-10",
+    options?.passwordToggle || options?.select ? "pr-16" : "pr-10",
     "transition-[border-color,box-shadow] duration-150",
     state === "valid" &&
       "border-emerald-400 focus:ring-emerald-500/25",
@@ -55,49 +58,53 @@ export function ValidatedField({
   successMessage,
   checkingMessage = "Checking...",
   passwordToggle = false,
+  select = false,
+  leftIcon,
   className,
+  htmlId,
   children,
 }: ValidatedFieldProps) {
-  const validationIconClass = passwordToggle
-    ? "right-9"
-    : "right-3";
+  const validationIconClass =
+    passwordToggle || select ? "right-9" : "right-3";
 
   return (
-    <div className={cn("min-w-0", className)}>
+    <div id={htmlId} className={cn("min-w-0", className)}>
       <Label required={required}>{label}</Label>
 
       <div className="relative">
+        {leftIcon ? (
+          <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-[#8AA0BB]">
+            {leftIcon}
+          </span>
+        ) : null}
+
         {children}
 
-        {state === "valid" && (
+        {state === "valid" ? (
           <Check
             aria-hidden
             className={cn(
-              "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-600",
+              "pointer-events-none absolute top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-emerald-600",
               validationIconClass
             )}
           />
-        )}
-        {state === "invalid" && (
+        ) : null}
+        {state === "invalid" ? (
           <X
             aria-hidden
             className={cn(
-              "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-red-500",
+              "pointer-events-none absolute top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-red-500",
               validationIconClass
             )}
           />
-        )}
+        ) : null}
       </div>
 
       <div className="mt-1 min-h-[1.25rem]">
         {state === "checking" ? (
-          <p className="text-xs text-slate-500">
-            {checkingMessage}
-          </p>
+          <p className="text-xs text-slate-500">{checkingMessage}</p>
         ) : state === "valid" && successMessage ? (
-          <p className="text-xs text-emerald-600">
-            {successMessage}
-          </p>
+          <p className="text-xs text-emerald-600">{successMessage}</p>
         ) : state === "invalid" && errorMessage ? (
           <p role="alert" className="text-sm text-red-500">
             {errorMessage}

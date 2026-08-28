@@ -391,8 +391,8 @@ export function BranchManageUsersPanel({
       <ConfirmDialog
         open={restoreTarget !== null}
         title="Restore User?"
-        description="Are you sure you want to restore this user?"
-        confirmLabel="Restore"
+        description="This user will become active again."
+        confirmLabel="Restore User"
         confirmVariant="primary"
         loading={isRestoring}
         onConfirm={async () => {

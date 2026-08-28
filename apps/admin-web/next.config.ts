@@ -9,6 +9,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: "/branches/:branchId/manage",
+          destination: "/branches/:branchId",
+        },
+      ],
+    };
+  },
 };
 
 export default nextConfig;

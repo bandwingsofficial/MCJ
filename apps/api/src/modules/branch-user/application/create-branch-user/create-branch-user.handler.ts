@@ -2,21 +2,24 @@ import { randomUUID } from 'crypto';
 
 import { Inject, Logger } from '@nestjs/common';
 
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+
 import { BRANCH_USER_TOKENS } from '../../branch-user.tokens';
 import { AUTH_TOKENS } from '../../../auth/auth.tokens';
 import { BranchUser } from '../../domain/entities/branch-user.entity';
 import type { BranchUserRepository } from '../../domain/repositories/branch-user.repository';
 import { BranchUserDomainService } from '../../domain/services/branch-user-domain.service';
+import { resolveCreateIdentity } from '../../domain/services/branch-user-create-identity';
 import { BranchUserEmail } from '../../domain/value-objects/branch-user-email.vo';
 import { BranchUserPhone } from '../../domain/value-objects/branch-user-phone.vo';
 import type { PasswordHasherPort } from '../../../auth/application/ports/password-hasher.port';
 import { CreateBranchUserCommand } from './create-branch-user.command';
 import { CreateBranchUserResult } from './create-branch-user.result';
+import { getDefaultPermissionsForRole } from '../../domain/role-permissions';
 
 export class CreateBranchUserHandler {
-  private readonly logger = new Logger(
-    CreateBranchUserHandler.name,
-  );
+  private readonly logger = new Logger(CreateBranchUserHandler.name);
 
   constructor(
     @Inject(BRANCH_USER_TOKENS.BRANCH_USER_REPOSITORY)
@@ -31,60 +34,119 @@ export class CreateBranchUserHandler {
   async execute(
     command: CreateBranchUserCommand,
   ): Promise<CreateBranchUserResult> {
-    this.logger.log(
-      'Create branch user request received',
-    );
+    this.logger.log('Create branch user request received');
 
     this.domainService.ensureBranchExists(
-      await this.branchUserRepo.branchExists(
-        command.branchId,
-      ),
+      await this.branchUserRepo.branchExists(command.branchId),
     );
 
-    const email =
-      BranchUserEmail.create(command.email);
+    const passwordHash = await this.passwordHasher.hash(command.password);
+    const permissions = command.permissions?.length
+      ? command.permissions
+      : getDefaultPermissionsForRole(command.role);
 
-    this.domainService.ensureDoesNotExist(
-      await this.branchUserRepo.findByEmail(email),
-      'email',
-    );
+    return this.branchUserRepo.runInTransaction(async (repo) => {
+      const email = BranchUserEmail.create(command.email);
+      const phone = command.phone
+        ? BranchUserPhone.create(command.phone)
+        : null;
 
-    if (command.phone) {
-      const phone =
-        BranchUserPhone.create(command.phone);
+      const emailMatch = await repo.findByEmailIncludingDeleted(email);
+      const phoneMatch = phone
+        ? await repo.findByPhoneIncludingDeleted(phone)
+        : null;
 
-      this.domainService.ensureDoesNotExist(
-        await this.branchUserRepo.findByPhone(
-          phone,
-        ),
-        'phone',
+      const decision = resolveCreateIdentity({
+        emailMatch,
+        phoneMatch,
+      });
+
+      if (decision.action === 'restore') {
+        this.assertRestoreAllowed(command, decision.user);
+
+        if (!command.confirmRestore) {
+          throw new BaseException(
+            ERROR_CODES.DELETED_ACCOUNT_RESTORABLE,
+            'An inactive account already exists with this email. Creating this user will restore and update that account.',
+            409,
+            { field: 'email', restorableUserId: decision.user.id },
+          );
+        }
+
+        decision.user.updateProfile({
+          firstName: command.firstName,
+          lastName: command.lastName,
+          email: command.email,
+          phone: command.phone,
+          branchId: command.restorePolicy?.requireSameBranchId
+            ? undefined
+            : command.branchId,
+          updatedBy: command.createdBy,
+        });
+        decision.user.changeRole(command.role, command.createdBy);
+        decision.user.assignPermissions(permissions, command.createdBy);
+        decision.user.changePassword(passwordHash, command.createdBy);
+        decision.user.revokeRefreshToken();
+        decision.user.restore(command.createdBy);
+
+        await repo.save(decision.user);
+
+        this.logger.log(`Branch user restored on create: ${decision.user.id}`);
+
+        return this.toResult(decision.user, true);
+      }
+
+      const branchUser = BranchUser.create({
+        id: randomUUID(),
+        firstName: command.firstName,
+        lastName: command.lastName,
+        email: command.email,
+        phone: command.phone,
+        password: passwordHash,
+        role: command.role,
+        permissions,
+        branchId: command.branchId,
+        createdBy: command.createdBy,
+      });
+
+      await repo.save(branchUser);
+
+      this.logger.log(`Branch user created: ${branchUser.id}`);
+
+      return this.toResult(branchUser, false);
+    });
+  }
+
+  private assertRestoreAllowed(
+    command: CreateBranchUserCommand,
+    existing: BranchUser,
+  ) {
+    const policy = command.restorePolicy;
+
+    if (
+      policy?.requireSameBranchId &&
+      existing.branchId !== policy.requireSameBranchId
+    ) {
+      throw new BaseException(
+        ERROR_CODES.BRANCH_ACCESS_DENIED,
+        'Branch access denied',
+        403,
       );
     }
 
-    const passwordHash =
-      await this.passwordHasher.hash(
-        command.password,
+    if (
+      policy?.allowedExistingRoles &&
+      !policy.allowedExistingRoles.includes(existing.role)
+    ) {
+      throw new BaseException(
+        ERROR_CODES.ROLE_ASSIGNMENT_DENIED,
+        'You are not authorized to restore this user.',
+        403,
       );
+    }
+  }
 
-    const branchUser = BranchUser.create({
-      id: randomUUID(),
-      firstName: command.firstName,
-      lastName: command.lastName,
-      email: command.email,
-      phone: command.phone,
-      password: passwordHash,
-      role: command.role,
-      permissions: command.permissions,
-      branchId: command.branchId,
-      createdBy: command.createdBy,
-    });
-
-    await this.branchUserRepo.save(branchUser);
-
-    this.logger.log(
-      `Branch user created: ${branchUser.id}`,
-    );
-
+  private toResult(branchUser: BranchUser, restored: boolean) {
     return new CreateBranchUserResult(
       branchUser.id,
       branchUser.firstName.getValue(),
@@ -97,6 +159,7 @@ export class CreateBranchUserHandler {
       branchUser.isActive,
       branchUser.createdBy,
       branchUser.createdAt,
+      restored,
     );
   }
 }
