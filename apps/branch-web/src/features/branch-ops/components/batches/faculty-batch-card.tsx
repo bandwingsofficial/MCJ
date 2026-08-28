@@ -4,12 +4,15 @@ import Link from "next/link";
 
 import type { BatchListItem } from "@/src/features/branch-ops/types";
 import {
+  assignedLabel,
+  courseTitle,
   formatBatchDate,
   formatBatchMode,
   formatBatchStatus,
   formatBatchTiming,
   formatWorkingDays,
   statusBadgeVariant,
+  trainerNames,
 } from "@/src/features/branch-ops/utils/batch-display";
 import { Badge } from "@/src/shared/components/ui/badge";
 
@@ -29,8 +32,7 @@ function Detail({ label, value }: { label: string; value: string }) {
 }
 
 export function FacultyBatchCard({ batch }: Props) {
-  const trainer =
-    batch.trainers?.map((item) => item.name).filter(Boolean).join(", ") || "—";
+  const trainer = trainerNames(batch.trainers);
   const available =
     batch.availableSeats == null
       ? "—"
@@ -54,8 +56,8 @@ export function FacultyBatchCard({ batch }: Props) {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <Detail label="Course" value={batch.course?.title ?? "—"} />
-        <Detail label="Trainer" value={trainer} />
+        <Detail label="Course" value={courseTitle(batch.course)} />
+        <Detail label="Trainer" value={assignedLabel(trainer)} />
         <Detail label="Start date" value={formatBatchDate(batch.startDate)} />
         <Detail label="End date" value={formatBatchDate(batch.endDate)} />
         <Detail

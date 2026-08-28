@@ -76,7 +76,7 @@ export function BatchStudentsPanel({ batchId }: Props) {
         }}
       />
 
-      <div className="overflow-hidden rounded-2xl border border-[#E1EBF5] bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-[#E1EBF5] bg-white">
         {!filtered.length ? (
           <EmptyState title="No students are enrolled in this batch." />
         ) : (

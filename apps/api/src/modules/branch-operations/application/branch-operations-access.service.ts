@@ -12,6 +12,8 @@ import {
 import type { BranchAuthUser } from '@common/decorators/current-branch-user.decorator';
 import { BranchUserRole } from '@modules/branch-user/domain/enums/branch-user-role.enum';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
+import { facultyBranchBatchWhere } from './faculty-batch-query';
+import { resolveFacultyBatchScope } from './faculty-batch-scope';
 
 const ACTIVE_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
   EnrollmentStatus.ADMITTED,
@@ -59,17 +61,50 @@ export class BranchOperationsAccessService {
 
   async getAssignedBatchIds(user: BranchAuthUser): Promise<string[]> {
     const rows = await this.prisma.batchFaculty.findMany({
-      where: { branchUserId: user.sub },
+      where: {
+        branchUserId: user.sub,
+        batch: {
+          branchId: user.branchId,
+          isDeleted: false,
+        },
+      },
       select: { batchId: true },
     });
 
     return rows.map((row) => row.batchId);
   }
 
+  async visibleBatchIds(user: BranchAuthUser): Promise<string[] | null> {
+    const assigned = this.isFaculty(user)
+      ? await this.getAssignedBatchIds(user)
+      : [];
+    const scope = resolveFacultyBatchScope(user.role, assigned);
+    return scope === 'ALL_BRANCH' ? null : scope.in;
+  }
+
+  async branchBatchWhere(
+    user: BranchAuthUser,
+  ): Promise<Prisma.BatchWhereInput> {
+    const ids = await this.visibleBatchIds(user);
+    return facultyBranchBatchWhere(user.branchId, ids);
+  }
+
+  facultyBatchFilter(
+    user: BranchAuthUser,
+    batchIds: string[],
+  ): Prisma.BatchWhereInput {
+    const where = facultyBranchBatchWhere(user.branchId);
+    const scope = resolveFacultyBatchScope(user.role, batchIds);
+    if (scope !== 'ALL_BRANCH') {
+      where.id = { in: scope.in };
+    }
+    return where;
+  }
+
   async assertBatchInBranch(batchId: string, branchId: string) {
     const batch = await this.prisma.batch.findFirst({
       where: { id: batchId, isDeleted: false },
-      select: { id: true, branchId: true, name: true },
+      select: { id: true, branchId: true, name: true, isActive: true },
     });
 
     if (!batch) {
@@ -89,27 +124,23 @@ export class BranchOperationsAccessService {
   ): Promise<void> {
     await this.assertBatchInBranch(batchId, user.branchId);
 
-    if (this.isFaculty(user)) {
-      const assigned = await this.prisma.batchFaculty.findUnique({
-        where: {
-          batchId_branchUserId: {
-            batchId,
-            branchUserId: user.sub,
-          },
-        },
-      });
+    if (this.isInterviewer(user)) {
+      throw new ForbiddenException('Role access denied');
+    }
 
-      if (!assigned) {
-        throw new ForbiddenException(
-          'Faculty is not assigned to this batch',
-        );
-      }
-
+    if (!this.isFaculty(user)) {
       return;
     }
 
-    if (this.isInterviewer(user)) {
-      throw new ForbiddenException('Role access denied');
+    const assigned = await this.getAssignedBatchIds(user);
+    const scope = resolveFacultyBatchScope(user.role, assigned);
+
+    if (scope === 'ALL_BRANCH') {
+      return;
+    }
+
+    if (!scope.in.includes(batchId)) {
+      throw new ForbiddenException('Faculty is not assigned to this batch');
     }
   }
 
@@ -135,56 +166,39 @@ export class BranchOperationsAccessService {
     studentId: string,
     batchId?: string,
   ): Promise<void> {
-    await this.assertStudentInBranch(studentId, user.branchId);
-
-    if (this.isFaculty(user)) {
-      const assignedBatchIds = await this.getAssignedBatchIds(user);
-
-      if (!assignedBatchIds.length) {
-        throw new ForbiddenException(
-          'Faculty is not assigned to this student',
-        );
-      }
-
-      const enrollment = await this.prisma.enrollment.findFirst({
-        where: {
-          studentId,
-          isDeleted: false,
-          batchId: batchId
-            ? batchId
-            : { in: assignedBatchIds },
-          status: { in: ACTIVE_ENROLLMENT_STATUSES },
-        },
-      });
-
-      if (!enrollment) {
-        throw new ForbiddenException(
-          'Faculty is not assigned to this student',
-        );
-      }
-
-      if (batchId) {
-        await this.assertFacultyCanAccessBatch(user, batchId);
-      }
-
-      return;
-    }
-
     if (this.isInterviewer(user)) {
       throw new ForbiddenException('Role access denied');
     }
-  }
 
-  facultyBatchFilter(user: BranchAuthUser, batchIds: string[]) {
-    if (this.isFaculty(user)) {
-      return {
-        branchId: user.branchId,
-        isDeleted: false,
-        id: { in: batchIds.length ? batchIds : ['__none__'] },
-      };
+    if (batchId) {
+      await this.assertFacultyCanAccessBatch(user, batchId);
+    } else if (!this.isFaculty(user)) {
+      await this.assertStudentInBranch(studentId, user.branchId);
+      return;
     }
 
-    return { branchId: user.branchId, isDeleted: false };
+    const assignedBatchIds = await this.visibleBatchIds(user);
+
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: {
+        studentId,
+        isDeleted: false,
+        status: { in: ACTIVE_ENROLLMENT_STATUSES },
+        branchId: user.branchId,
+        student: { isDeleted: false },
+        ...(batchId
+          ? { batchId }
+          : assignedBatchIds
+            ? { batchId: { in: assignedBatchIds } }
+            : {}),
+      },
+    });
+
+    if (!enrollment) {
+      throw new ForbiddenException(
+        'Faculty is not assigned to this student',
+      );
+    }
   }
 
   attendanceStatus(): typeof AttendanceStatus {

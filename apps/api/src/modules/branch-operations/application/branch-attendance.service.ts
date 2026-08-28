@@ -254,8 +254,10 @@ export class BranchAttendanceService {
     };
 
     if (this.access.isFaculty(user)) {
-      const batchIds = await this.access.getAssignedBatchIds(user);
-      where.batchId = { in: batchIds.length ? batchIds : ['__none__'] };
+      const batchIds = await this.access.visibleBatchIds(user);
+      if (batchIds) {
+        where.batchId = { in: batchIds };
+      }
     }
 
     if (query.batchId) {

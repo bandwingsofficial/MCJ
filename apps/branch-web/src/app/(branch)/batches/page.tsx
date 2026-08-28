@@ -7,11 +7,14 @@ import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { FacultyBatchCard } from "@/src/features/branch-ops/components/batches/faculty-batch-card";
 import type { BatchListItem } from "@/src/features/branch-ops/types";
 import {
+  assignedLabel,
+  courseTitle,
   formatBatchDate,
   formatBatchMode,
   formatBatchStatus,
   formatBatchTiming,
   statusBadgeVariant,
+  trainerNames,
 } from "@/src/features/branch-ops/utils/batch-display";
 import { formatRoleLabel } from "@/src/core/auth/roles";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
@@ -69,7 +72,8 @@ export default function BatchesPage() {
         batch.name,
         batch.code,
         batch.course?.title,
-        batch.trainers?.map((item) => item.name).join(" "),
+        batch.course?.name,
+        trainerNames(batch.trainers),
       ]
         .filter(Boolean)
         .join(" ")
@@ -92,7 +96,7 @@ export default function BatchesPage() {
         currentLabel="Batches"
         title="Batches"
         totalLabel="Total Batches"
-        total={items.length}
+        total={loading || error ? null : items.length}
         filters={
           <>
             <div className="w-full sm:w-[260px]">
@@ -155,9 +159,16 @@ export default function BatchesPage() {
       />
 
       {loading ? (
-        <Loader />
+        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 rounded-2xl border border-[#E1EBF5] bg-white py-16">
+          <Loader />
+          <p className="text-sm text-[#647A9B]">Loading batches...</p>
+        </div>
       ) : error ? (
-        <ErrorState description={error} onRetry={reload} />
+        <ErrorState
+          title="Unable to load batches"
+          description={error || "Unable to load batches. Please try again."}
+          onRetry={reload}
+        />
       ) : !items.length ? (
         <EmptyState
           title={
@@ -187,7 +198,7 @@ export default function BatchesPage() {
           </div>
         </>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-[#E1EBF5] bg-white">
+        <div className="overflow-x-auto rounded-2xl border border-[#E1EBF5] bg-white">
           <Table>
             <TableHeader>
               <TableRow>
@@ -214,9 +225,9 @@ export default function BatchesPage() {
                       </p>
                     </div>
                   </TableCell>
-                  <TableCell>{batch.course?.title ?? "—"}</TableCell>
+                  <TableCell>{courseTitle(batch.course)}</TableCell>
                   <TableCell>
-                    {batch.trainers?.map((item) => item.name).join(", ") || "—"}
+                    {assignedLabel(trainerNames(batch.trainers))}
                   </TableCell>
                   <TableCell>{formatBatchMode(batch.mode)}</TableCell>
                   <TableCell>{formatBatchDate(batch.startDate)}</TableCell>

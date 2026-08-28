@@ -3,6 +3,7 @@
 import { FileText, Link2, PlayCircle } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
+import { trainerNames } from "@/src/features/branch-ops/utils/batch-display";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
@@ -39,6 +40,11 @@ export function BatchCoursePanel({ batchId }: Props) {
         >
           <h2 className="text-lg font-semibold text-[#102A56]">{course.title}</h2>
           <p className="mt-0.5 font-mono text-sm text-[#647A9B]">{course.code}</p>
+          {course.category?.name ? (
+            <p className="mt-1 text-sm text-[#647A9B]">
+              Category: {course.category.name}
+            </p>
+          ) : null}
           {course.duration ? (
             <p className="mt-1 text-sm text-[#647A9B]">Duration: {course.duration}</p>
           ) : null}
@@ -59,7 +65,18 @@ export function BatchCoursePanel({ batchId }: Props) {
                 key={trainer.id}
                 className="rounded-xl border border-[#E1EBF5] bg-[#F8FBFF] p-4"
               >
-                <p className="font-medium text-[#102A56]">{trainer.name}</p>
+                <div className="flex items-start gap-3">
+                  {trainer.profileImageUrl ? (
+                    <img
+                      src={trainer.profileImageUrl}
+                      alt=""
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                  ) : null}
+                  <div className="min-w-0">
+                    <p className="font-medium text-[#102A56]">
+                      {trainerNames([trainer]) || "Not assigned"}
+                    </p>
                 {trainer.qualification ? (
                   <p className="mt-1 text-sm text-[#647A9B]">{trainer.qualification}</p>
                 ) : null}
@@ -75,6 +92,8 @@ export function BatchCoursePanel({ batchId }: Props) {
                 {trainer.bio ? (
                   <p className="mt-2 text-sm leading-6 text-[#334155]">{trainer.bio}</p>
                 ) : null}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -173,6 +192,40 @@ export function BatchCoursePanel({ batchId }: Props) {
           ))
         )}
       </section>
+
+      {data.materials.length ? (
+        <section className="rounded-2xl border border-[#E1EBF5] bg-white p-5">
+          <h2 className="text-sm font-semibold text-[#102A56]">
+            Course resources
+          </h2>
+          <ul className="mt-3 space-y-2">
+            {data.materials.map((material) => {
+              const Icon = resourceIcon(material.type);
+              return (
+                <li key={material.id}>
+                  {material.url ? (
+                    <a
+                      href={material.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 text-sm text-[#2563EB] hover:underline"
+                    >
+                      <Icon className="h-4 w-4" />
+                      {material.title}
+                      <span className="text-xs text-[#647A9B]">{material.type}</span>
+                    </a>
+                  ) : (
+                    <span className="inline-flex items-center gap-2 text-sm text-[#102A56]">
+                      <Icon className="h-4 w-4" />
+                      {material.title}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

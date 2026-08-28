@@ -2,11 +2,14 @@
 
 import type { BatchListItem } from "@/src/features/branch-ops/types";
 import {
+  assignedLabel,
+  courseTitle,
   formatBatchDate,
   formatBatchMode,
   formatBatchStatus,
   formatBatchTiming,
   formatWorkingDays,
+  trainerNames,
 } from "@/src/features/branch-ops/utils/batch-display";
 import { Card } from "@/src/shared/components/ui/card";
 
@@ -43,8 +46,7 @@ function Field({ label, value }: { label: string; value: string }) {
 }
 
 export function BatchOverviewPanel({ batch }: Props) {
-  const trainer =
-    batch.trainers?.map((item) => item.name).filter(Boolean).join(", ") || "—";
+  const trainers = batch.trainers ?? [];
   const branch = batch.branch;
   const branchLocation = [branch?.addressLine1, branch?.city, branch?.state]
     .filter(Boolean)
@@ -52,12 +54,10 @@ export function BatchOverviewPanel({ batch }: Props) {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Section title="Basic details">
+      <Section title="Batch information">
         <dl className="grid gap-4 sm:grid-cols-2">
           <Field label="Batch name" value={batch.name} />
           <Field label="Batch code" value={batch.code} />
-          <Field label="Course" value={batch.course?.title ?? "—"} />
-          <Field label="Trainer" value={trainer} />
           <Field label="Mode" value={formatBatchMode(batch.mode)} />
           <Field label="Status" value={formatBatchStatus(batch.status)} />
         </dl>
@@ -72,37 +72,85 @@ export function BatchOverviewPanel({ batch }: Props) {
             value={formatWorkingDays(batch.daysOfWeek)}
           />
           <Field
-            label="Start time"
-            value={formatBatchTiming(batch.startTime, null)}
+            label="Daily timing"
+            value={formatBatchTiming(batch.startTime, batch.endTime)}
           />
           <Field
-            label="End time"
-            value={formatBatchTiming(null, batch.endTime)}
-          />
-          <Field
-            label="Batch duration"
-            value={
-              batch.durationDays != null
-                ? `${batch.durationDays} day${batch.durationDays === 1 ? "" : "s"}`
-                : "—"
-            }
-          />
-          <Field
-            label="Total working days"
-            value={
-              batch.totalWorkingDays != null
-                ? String(batch.totalWorkingDays)
-                : "—"
-            }
+            label="Mode"
+            value={formatBatchMode(batch.mode)}
           />
         </dl>
       </Section>
 
-      <Section title="Capacity">
+      <Section title="Course summary">
+        <dl className="grid gap-4 sm:grid-cols-2">
+          <Field label="Course name" value={courseTitle(batch.course)} />
+          <Field label="Course code" value={assignedLabel(batch.course?.code)} />
+          <Field
+            label="Category"
+            value={assignedLabel(batch.course?.category?.name)}
+          />
+          <Field
+            label="Duration"
+            value={assignedLabel(batch.course?.duration)}
+          />
+        </dl>
+        {batch.course?.description ? (
+          <p className="mt-4 text-sm leading-6 text-[#334155]">
+            {batch.course.description}
+          </p>
+        ) : null}
+      </Section>
+
+      <Section title="Trainer">
+        {!trainers.length ? (
+          <p className="text-sm text-[#647A9B]">Not assigned</p>
+        ) : (
+          <div className="space-y-4">
+            {trainers.map((trainer) => (
+              <div key={trainer.id} className="flex gap-3">
+                {trainer.profileImageUrl ? (
+                  <img
+                    src={trainer.profileImageUrl}
+                    alt=""
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                ) : null}
+                <dl className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">
+                  <Field
+                    label="Trainer name"
+                    value={assignedLabel(trainerNames([trainer]))}
+                  />
+                  <Field
+                    label="Qualification"
+                    value={assignedLabel(trainer.qualification)}
+                  />
+                  <Field
+                    label="Specialization"
+                    value={assignedLabel(trainer.specialization)}
+                  />
+                  <Field
+                    label="Experience"
+                    value={
+                      trainer.experienceYears != null
+                        ? `${trainer.experienceYears} year${
+                            trainer.experienceYears === 1 ? "" : "s"
+                          }`
+                        : "Not assigned"
+                    }
+                  />
+                </dl>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <Section title="Enrollment">
         <dl className="grid gap-4 sm:grid-cols-2">
           <Field
-            label="Maximum seats"
-            value={batch.capacity == null ? "—" : String(batch.capacity)}
+            label="Total capacity"
+            value={batch.capacity == null ? "Not assigned" : String(batch.capacity)}
           />
           <Field
             label="Enrolled students"
@@ -111,7 +159,9 @@ export function BatchOverviewPanel({ batch }: Props) {
           <Field
             label="Available seats"
             value={
-              batch.availableSeats == null ? "—" : String(batch.availableSeats)
+              batch.availableSeats == null
+                ? "Not assigned"
+                : String(batch.availableSeats)
             }
           />
         </dl>
@@ -119,11 +169,17 @@ export function BatchOverviewPanel({ batch }: Props) {
 
       <Section title="Branch">
         <dl className="grid gap-4 sm:grid-cols-2">
-          <Field label="Branch name" value={branch?.branchName ?? "—"} />
-          <Field label="Branch code" value={branch?.branchCode ?? "—"} />
-          <Field label="Location" value={branchLocation || "—"} />
-          <Field label="Phone" value={branch?.phone ?? "—"} />
-          <Field label="Email" value={branch?.email ?? "—"} />
+          <Field
+            label="Branch name"
+            value={assignedLabel(branch?.branchName)}
+          />
+          <Field
+            label="Branch code"
+            value={assignedLabel(branch?.branchCode)}
+          />
+          <Field label="Location" value={assignedLabel(branchLocation)} />
+          <Field label="Phone" value={assignedLabel(branch?.phone)} />
+          <Field label="Email" value={assignedLabel(branch?.email)} />
         </dl>
       </Section>
     </div>

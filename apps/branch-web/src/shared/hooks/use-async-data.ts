@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import {
+  parseBranchOpsError,
+  userFacingApiMessage,
+} from "@/src/features/branch-ops/api/parse-api-error";
+
 export function useAsyncData<T>(
   loader: () => Promise<T>,
   deps: unknown[] = [],
@@ -16,15 +21,12 @@ export function useAsyncData<T>(
       setError(null);
       setData(await loader());
     } catch (err) {
-      const message =
-        err && typeof err === "object" && "response" in err
-          ? (
-              err as {
-                response?: { data?: { message?: string } };
-              }
-            ).response?.data?.message
-          : null;
-      setError(message ?? "Unable to load data.");
+      setError(
+        userFacingApiMessage(
+          parseBranchOpsError(err),
+          "Unable to load data. Please try again.",
+        ),
+      );
     } finally {
       setLoading(false);
     }

@@ -62,6 +62,35 @@ export function statusBadgeVariant(status?: string | null) {
   return "default" as const;
 }
 
+export function assignedLabel(value?: string | null) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : "Not assigned";
+}
+
+export function courseTitle(
+  course?: { title?: string | null; name?: string | null } | null,
+) {
+  return assignedLabel(course?.title ?? course?.name);
+}
+
+export function trainerNames(
+  trainers?: Array<{
+    name?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+  }>,
+) {
+  if (!trainers?.length) return "";
+  return trainers
+    .map(
+      (item) =>
+        item.name?.trim() ||
+        [item.firstName, item.lastName].filter(Boolean).join(" ").trim(),
+    )
+    .filter(Boolean)
+    .join(", ");
+}
+
 export function studentName(student: {
   firstName?: string | null;
   lastName?: string | null;

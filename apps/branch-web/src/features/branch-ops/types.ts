@@ -57,7 +57,15 @@ export interface BatchListItem {
   availableSeats?: number;
   totalWorkingDays?: number | null;
   durationDays?: number | null;
-  course: { id: string; title: string; code?: string } | null;
+  course: {
+    id: string;
+    title?: string;
+    name?: string;
+    code?: string;
+    description?: string | null;
+    duration?: string | null;
+    category?: { id: string; name: string } | null;
+  } | null;
   branch?: {
     id: string;
     branchName: string;
@@ -68,7 +76,19 @@ export interface BatchListItem {
     email: string | null;
     addressLine1: string | null;
   } | null;
-  trainers?: Array<{ id: string; name: string }>;
+  trainers?: Array<{
+    id: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string | null;
+    phone?: string | null;
+    bio?: string | null;
+    qualification?: string | null;
+    experienceYears?: number | null;
+    specialization?: string | null;
+    profileImageUrl?: string | null;
+  }>;
   faculty: Array<{ id: string; name: string; email: string }>;
   students?: BatchStudentItem[];
 }
@@ -94,10 +114,13 @@ export interface BatchCourseContent {
     code: string;
     description: string | null;
     duration: string | null;
+    category?: { id: string; name: string } | null;
   }>;
   trainers: Array<{
     id: string;
-    name: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
     email: string | null;
     phone: string | null;
     bio: string | null;

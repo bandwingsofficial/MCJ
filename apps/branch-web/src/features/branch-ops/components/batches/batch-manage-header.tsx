@@ -5,12 +5,15 @@ import { ChevronRight } from "lucide-react";
 
 import type { BatchListItem } from "@/src/features/branch-ops/types";
 import {
+  assignedLabel,
+  courseTitle,
   formatBatchDate,
   formatBatchMode,
   formatBatchStatus,
   formatBatchTiming,
   formatWorkingDays,
   statusBadgeVariant,
+  trainerNames,
 } from "@/src/features/branch-ops/utils/batch-display";
 import { Badge } from "@/src/shared/components/ui/badge";
 
@@ -31,8 +34,7 @@ function HeaderField({ label, value }: { label: string; value: string }) {
 }
 
 export function BatchManageHeader({ batch, parentLabel }: Props) {
-  const trainer =
-    batch.trainers?.map((item) => item.name).filter(Boolean).join(", ") || "—";
+  const trainer = trainerNames(batch.trainers);
 
   return (
     <div className="space-y-4">
@@ -65,8 +67,12 @@ export function BatchManageHeader({ batch, parentLabel }: Props) {
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <HeaderField label="Course" value={batch.course?.title ?? "—"} />
-          <HeaderField label="Trainer" value={trainer} />
+          <HeaderField label="Course" value={courseTitle(batch.course)} />
+          <HeaderField label="Trainer" value={assignedLabel(trainer)} />
+          <HeaderField
+            label="Branch"
+            value={assignedLabel(batch.branch?.branchName)}
+          />
           <HeaderField label="Start date" value={formatBatchDate(batch.startDate)} />
           <HeaderField label="End date" value={formatBatchDate(batch.endDate)} />
           <HeaderField

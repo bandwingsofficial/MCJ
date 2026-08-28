@@ -9,7 +9,7 @@ interface ListPageHeaderProps {
   currentLabel: string;
   title: string;
   totalLabel: string;
-  total: number;
+  total: number | null;
   action?: ReactNode;
   filters?: ReactNode;
 }
@@ -49,7 +49,7 @@ export function ListPageHeader({
           <span className="text-sm text-[#647A9B]">
             {totalLabel}:
             <span className="ml-1 font-semibold tabular-nums text-[#102A56]">
-              {total}
+              {total == null ? "—" : total}
             </span>
           </span>
         </div>

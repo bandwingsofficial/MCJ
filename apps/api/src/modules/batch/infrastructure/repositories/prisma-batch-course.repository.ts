@@ -123,9 +123,19 @@ export class PrismaBatchCourseRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findByBatchId(batchId: string): Promise<BatchCourseAssignmentRecord[]> {
+    return this.findByBatchIds([batchId]);
+  }
+
+  async findByBatchIds(
+    batchIds: string[],
+  ): Promise<BatchCourseAssignmentRecord[]> {
+    if (!batchIds.length) {
+      return [];
+    }
+
     const records = await this.prisma.batchCourse.findMany({
       where: {
-        batchId,
+        batchId: { in: batchIds },
         isDeleted: false,
       },
       include: assignmentInclude,

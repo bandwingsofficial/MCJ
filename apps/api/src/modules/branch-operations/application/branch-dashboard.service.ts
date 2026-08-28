@@ -38,26 +38,30 @@ export class BranchDashboardService {
   }
 
   private async getFacultyDashboard(user: BranchAuthUser) {
-    const batchIds = await this.access.getAssignedBatchIds(user);
+    const batchWhere = await this.access.branchBatchWhere(user);
     const today = startOfUtcDay(new Date());
     const tomorrow = addUtcDays(today, 1);
     const upcomingTo = addUtcDays(today, 14);
 
-    const assignedBatches = batchIds.length
-      ? await this.prisma.batch.count({
-          where: { id: { in: batchIds }, isDeleted: false },
-        })
-      : 0;
+    const visibleBatches = await this.prisma.batch.findMany({
+      where: batchWhere,
+      select: { id: true },
+    });
+    const batchIds = visibleBatches.map((batch) => batch.id);
+    const assignedBatches = batchIds.length;
+
+    const enrollmentWhere = {
+      branchId: user.branchId,
+      isDeleted: false,
+      status: {
+        in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
+      },
+      ...(batchWhere.id ? { batchId: batchWhere.id } : {}),
+    };
 
     const students = batchIds.length
       ? await this.prisma.enrollment.findMany({
-          where: {
-            batchId: { in: batchIds },
-            isDeleted: false,
-            status: {
-              in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
-            },
-          },
+          where: enrollmentWhere,
           select: { studentId: true },
           distinct: ['studentId'],
         })
@@ -65,13 +69,7 @@ export class BranchDashboardService {
 
     const expectedPairs = batchIds.length
       ? await this.prisma.enrollment.findMany({
-          where: {
-            batchId: { in: batchIds },
-            isDeleted: false,
-            status: {
-              in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
-            },
-          },
+          where: enrollmentWhere,
           select: { studentId: true, batchId: true },
         })
       : [];
@@ -79,6 +77,7 @@ export class BranchDashboardService {
     const todayAttendance = batchIds.length
       ? await this.prisma.attendance.findMany({
           where: {
+            branchId: user.branchId,
             batchId: { in: batchIds },
             date: today,
           },
@@ -96,6 +95,7 @@ export class BranchDashboardService {
     const upcomingTests = batchIds.length
       ? await this.prisma.academicAssessment.count({
           where: {
+            branchId: user.branchId,
             batchId: { in: batchIds },
             type: 'TEST',
             date: { gte: today, lt: upcomingTo },
@@ -105,7 +105,7 @@ export class BranchDashboardService {
 
     const recentAssessments = batchIds.length
       ? await this.prisma.academicAssessment.findMany({
-          where: { batchId: { in: batchIds } },
+          where: { branchId: user.branchId, batchId: { in: batchIds } },
           orderBy: { createdAt: 'desc' },
           take: 8,
           include: {
