@@ -9,10 +9,12 @@ import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { batchService } from "@/src/features/batches/services/batch.service";
-import type { Batch } from "@/src/features/batches/types/batch.types";
-import { toAssignmentCourseDisplayTitles } from "@/src/features/batches/utils/batch-course.utils";
+import type {
+  Batch,
+  BatchCourseAssignment,
+} from "@/src/features/batches/types/batch.types";
+import { BatchAssignedCoursesGrid } from "@/src/features/enrollments/components/form/BatchAssignedCoursesGrid";
 import { BranchBatchAssignDetails } from "@/src/features/branches/components/manage/branch-batch-assign-details";
-import { BranchEnrollmentCourseDetails } from "@/src/features/branches/components/manage/branch-enrollment-course-details";
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
 import { branchService } from "@/src/features/branches/services/branch.service";
 import type { Course } from "@/src/features/courses/types/course.types";
@@ -89,7 +91,9 @@ export function CreateEnrollmentForm({
   const [batchId, setBatchId] = useState(enrollment?.batch?.id ?? "");
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
-  const [courseTitles, setCourseTitles] = useState<string[]>([]);
+  const [courseAssignments, setCourseAssignments] = useState<
+    BatchCourseAssignment[]
+  >([]);
   const [categoryName, setCategoryName] = useState(
     enrollment?.category?.name ?? "—",
   );
@@ -159,6 +163,7 @@ export function CreateEnrollmentForm({
       setBatchId("");
       setSelectedBatch(null);
       setCourse(null);
+      setCourseAssignments([]);
       setStudents([]);
       setStudentId("");
       return;
@@ -191,6 +196,7 @@ export function CreateEnrollmentForm({
           setBatchId("");
           setSelectedBatch(null);
           setCourse(null);
+          setCourseAssignments([]);
           if (!isEdit) {
             setStudents([]);
             setStudentId("");
@@ -199,6 +205,7 @@ export function CreateEnrollmentForm({
           setBatchId("");
           setSelectedBatch(null);
           setCourse(null);
+          setCourseAssignments([]);
           if (!isEdit) {
             setStudents([]);
             setStudentId("");
@@ -221,7 +228,7 @@ export function CreateEnrollmentForm({
     if (!branchId || !batchId) {
       setSelectedBatch(null);
       setCourse(null);
-      setCourseTitles([]);
+      setCourseAssignments([]);
       if (!isEdit) {
         setStudents([]);
         setStudentId("");
@@ -256,10 +263,7 @@ export function CreateEnrollmentForm({
 
         const batch = batchResponse.data;
         setSelectedBatch(batch);
-
-        setCourseTitles(
-          toAssignmentCourseDisplayTitles(assignments, batch.course?.title),
-        );
+        setCourseAssignments(assignments);
 
         let nextFee = feeAmount;
         let nextDiscount = discountAmount;
@@ -352,6 +356,7 @@ export function CreateEnrollmentForm({
         appToast.error(getErrorMessage(error));
         setSelectedBatch(null);
         setCourse(null);
+        setCourseAssignments([]);
         setStudents([]);
       } finally {
         setIsLoadingContext(false);
@@ -548,16 +553,15 @@ export function CreateEnrollmentForm({
       {batchId && selectedBatch ? (
         <BranchBatchAssignDetails
           batch={selectedBatch}
-          courseTitles={courseTitles}
           categoryName={categoryName}
           isLoading={isLoadingContext}
+          hideCourseAndTrainer
         />
       ) : null}
 
       {batchId ? (
-        <BranchEnrollmentCourseDetails
-          course={course}
-          categoryName={categoryName}
+        <BatchAssignedCoursesGrid
+          assignments={courseAssignments}
           isLoading={isLoadingContext}
         />
       ) : null}

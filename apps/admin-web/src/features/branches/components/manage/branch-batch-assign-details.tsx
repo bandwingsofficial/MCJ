@@ -18,6 +18,8 @@ interface Props {
   courseTitles?: string[];
   categoryName?: string;
   isLoading?: boolean;
+  /** Hide Course(s)/Trainer(s) rows when a dedicated courses grid is shown below. */
+  hideCourseAndTrainer?: boolean;
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -34,6 +36,7 @@ export function BranchBatchAssignDetails({
   courseTitles,
   categoryName,
   isLoading = false,
+  hideCourseAndTrainer = false,
 }: Props) {
   if (isLoading) {
     return (
@@ -90,9 +93,15 @@ export function BranchBatchAssignDetails({
         <DetailRow label="Capacity" value={String(capacity)} />
         <DetailRow label="Enrolled" value={String(enrolledCount)} />
         <DetailRow label="Available Seats" value={String(availableSeats)} />
-        <DetailRow label="Course(s)" value={courseLabel} />
-        <DetailRow label="Category" value={categoryName ?? "—"} />
-        <DetailRow label="Trainer(s)" value={trainerLabel} />
+        {!hideCourseAndTrainer ? (
+          <>
+            <DetailRow label="Course(s)" value={courseLabel} />
+            <DetailRow label="Category" value={categoryName ?? "—"} />
+            <DetailRow label="Trainer(s)" value={trainerLabel} />
+          </>
+        ) : (
+          <DetailRow label="Category" value={categoryName ?? "—"} />
+        )}
         <DetailRow
           label="Total Duration"
           value={formatBatchDurationLabel(batch)}
