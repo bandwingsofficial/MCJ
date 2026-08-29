@@ -113,7 +113,12 @@ export function BranchBatchCard({
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <BatchStatusBadge status={batch.status} />
+        <BatchStatusBadge
+          status={batch.status}
+          isActive={batch.isActive}
+          startDate={batch.startDate}
+          endDate={batch.endDate}
+        />
         <BatchModeBadge mode={batch.mode} />
         <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
           {formatBatchLifecycleStatus(progress)}

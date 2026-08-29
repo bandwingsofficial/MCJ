@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 
 import type { Batch } from '@modules/batch/domain/entities/batch.entity';
 import { BatchStatus } from '@modules/batch/domain/enums/batch-status.enum';
+import { ensureBatchSelectableForAssignment } from '@modules/batch/domain/utils/batch-selection.util';
 import type { BatchRepository } from '@modules/batch/domain/repositories/batch.repository';
 import type { Enrollment as EnrollmentEntity } from '../entities/enrollment.entity';
 import type { Branch } from '@modules/branch/domain/entities/branch.entity';
@@ -26,7 +27,6 @@ import { BatchFullException } from '../errors/batch-full.exception';
 import {
   BatchBranchMismatchException,
   BatchCancelledException,
-  BatchCompletedException,
   BatchCourseMismatchException,
   BatchDeletedException,
   BatchInactiveException,
@@ -307,9 +307,7 @@ export class EnrollmentDomainService {
       throw new BatchInactiveException();
     }
 
-    if (batch.status === BatchStatus.COMPLETED) {
-      throw new BatchCompletedException();
-    }
+    ensureBatchSelectableForAssignment(batch);
 
     if (batch.status === BatchStatus.CANCELLED) {
       throw new BatchCancelledException();

@@ -66,6 +66,14 @@ export function CourseDetails({ course }: CourseDetailsProps) {
     [courseBatches],
   );
 
+  const branchFilteredBatches = useMemo(
+    () =>
+      (Array.isArray(branchBatches) ? branchBatches : []).filter(
+        (batch) => !selectedBranchId || batch.branchId === selectedBranchId,
+      ),
+    [branchBatches, selectedBranchId],
+  );
+
   const availableBranches = useMemo(() => {
     const byId = new Map<string, BatchBranch>();
 
@@ -100,11 +108,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
     }
   }, [availableBranches, selectedBranchId]);
 
-  const safeBatches = (Array.isArray(branchBatches) ? branchBatches : []).filter(
-    (batch) =>
-      isBatchSelectable(batch) &&
-      (!selectedBranchId || batch.branchId === selectedBranchId),
-  );
+  const safeBatches = branchFilteredBatches;
   const safeTrainers = Array.isArray(courseTrainers) ? courseTrainers : [];
   const safeModules = Array.isArray(course.previewModules)
     ? course.previewModules

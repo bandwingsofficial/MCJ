@@ -66,7 +66,10 @@ export function AppSelect({
                 key={option.value}
                 value={option.value}
                 disabled={option.disabled}
-                className="relative flex cursor-pointer items-center rounded-lg px-3 py-2 text-sm text-[#102A56] outline-none hover:bg-[#F4F9FF] focus:bg-[#F4F9FF] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50"
+                className={cn(
+                  "relative flex cursor-pointer items-center rounded-lg px-3 py-2 text-sm text-[#102A56] outline-none hover:bg-[#F4F9FF] focus:bg-[#F4F9FF]",
+                  "data-[disabled]:cursor-not-allowed data-[disabled]:bg-slate-100 data-[disabled]:text-slate-400 data-[disabled]:opacity-100 data-[disabled]:hover:bg-slate-100",
+                )}
               >
                 <SelectPrimitive.ItemText className="min-w-0 truncate">
                   {option.label}

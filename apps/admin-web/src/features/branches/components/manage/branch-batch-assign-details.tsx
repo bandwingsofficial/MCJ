@@ -61,7 +61,12 @@ export function BranchBatchAssignDetails({
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-sm font-semibold text-[#102A56]">{batch.name}</h3>
         <span className="font-mono text-xs text-slate-500">{batch.code}</span>
-        <BatchStatusBadge status={batch.status} />
+        <BatchStatusBadge
+          status={batch.status}
+          isActive={batch.isActive}
+          startDate={batch.startDate}
+          endDate={batch.endDate}
+        />
         <BatchModeBadge mode={batch.mode} />
         <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
           {formatBatchLifecycleStatus(progress)}

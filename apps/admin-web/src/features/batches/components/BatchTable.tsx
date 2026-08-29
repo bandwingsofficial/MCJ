@@ -12,12 +12,17 @@ import {
   isArchivedBatch,
 } from "@/src/features/batches/utils/batch-bulk.utils";
 import {
+  getBatchDisplayStatus,
+  isBatchSelectableInBulkList,
+} from "@/src/features/batches/utils/batch-select.utils";
+import {
   formatBatchDateRange,
   formatBatchTiming,
 } from "@/src/features/batches/utils/batch.helper";
 
 import { BatchStatusBadge } from "./BatchStatusBadge";
 import { BatchActions } from "./batch-actions";
+import { cn } from "@/src/shared/lib/cn";
 
 interface Props {
   batches: BatchListItem[];
@@ -63,12 +68,16 @@ export function BatchTable({
 
   const safeSelectedIds = selectedBatchIds ?? [];
   const selectionEnabled = Boolean(onSelectionChange);
+  const selectableVisibleIds = rows
+    .filter((batch) => isBatchSelectableInBulkList(batch))
+    .map((batch) => batch.id);
   const visibleIds = rows.map((batch) => batch.id);
-  const selectedVisibleCount = visibleIds.filter((id) =>
+  const selectedVisibleCount = selectableVisibleIds.filter((id) =>
     safeSelectedIds.includes(id),
   ).length;
   const allVisibleSelected =
-    visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
+    selectableVisibleIds.length > 0 &&
+    selectedVisibleCount === selectableVisibleIds.length;
   const someVisibleSelected =
     selectedVisibleCount > 0 && !allVisibleSelected;
 
@@ -109,7 +118,7 @@ export function BatchTable({
     }
 
     onSelectionChange(
-      Array.from(new Set([...safeSelectedIds, ...visibleIds])),
+      Array.from(new Set([...safeSelectedIds, ...selectableVisibleIds])),
     );
   };
 
@@ -195,7 +204,9 @@ export function BatchTable({
                   type="checkbox"
                   className="h-4 w-4 rounded border-slate-300"
                   checked={allVisibleSelected}
-                  disabled={selectionDisabled}
+                  disabled={
+                    selectionDisabled || selectableVisibleIds.length === 0
+                  }
                   onChange={(event) => {
                     toggleAllVisible(event.target.checked);
                   }}
@@ -244,6 +255,13 @@ export function BatchTable({
             rows.map((batch) => {
               const draggable = canReorderBatch(batch) && !dragDisabled;
               const isArchived = isArchivedBatch(batch);
+              const displayStatus = getBatchDisplayStatus(batch);
+              const rowSelectable = isBatchSelectableInBulkList(batch);
+              const isLifecycleBlocked =
+                displayStatus.key === "COMPLETED" ||
+                displayStatus.key === "EXPIRED" ||
+                displayStatus.key === "CANCELLED" ||
+                displayStatus.key === "ARCHIVED";
 
               return (
                 <tr
@@ -275,18 +293,24 @@ export function BatchTable({
                     setDragId(null);
                     setDropTargetId(null);
                   }}
-                  className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${
-                    dropTargetId === batch.id ? "bg-blue-50/60" : ""
-                  } ${dragId === batch.id ? "opacity-60" : ""} ${
-                    isArchived ? "bg-slate-50/40" : "bg-white"
-                  }`}
+                  className={cn(
+                    "border-b border-slate-100 transition-colors",
+                    dropTargetId === batch.id && "bg-blue-50/60",
+                    dragId === batch.id && "opacity-60",
+                    isLifecycleBlocked || isArchived
+                      ? "bg-slate-100/80 text-slate-500"
+                      : "bg-white hover:bg-slate-50",
+                  )}
                 >
                   {selectionEnabled ? (
                     <td className="w-11 px-3 py-3 align-middle">
                       <Checkbox
                         checked={safeSelectedIds.includes(batch.id)}
-                        disabled={selectionDisabled}
+                        disabled={selectionDisabled || !rowSelectable}
                         onCheckedChange={(checked) => {
+                          if (!rowSelectable) {
+                            return;
+                          }
                           toggleRow(batch.id, Boolean(checked));
                         }}
                       />
@@ -301,24 +325,53 @@ export function BatchTable({
                     )}
                   </td>
 
-                  <td className="truncate px-3 py-3 align-middle font-medium text-[#102A56]">
+                  <td
+                    className={cn(
+                      "truncate px-3 py-3 align-middle font-medium",
+                      isLifecycleBlocked ? "text-slate-500" : "text-[#102A56]",
+                    )}
+                  >
                     {batch.code}
                   </td>
 
-                  <td className="truncate px-3 py-3 align-middle font-medium text-[#102A56]">
+                  <td
+                    className={cn(
+                      "truncate px-3 py-3 align-middle font-medium",
+                      isLifecycleBlocked ? "text-slate-500" : "text-[#102A56]",
+                    )}
+                  >
                     {batch.name}
                   </td>
 
-                  <td className="truncate px-3 py-3 align-middle text-slate-700">
+                  <td
+                    className={cn(
+                      "truncate px-3 py-3 align-middle",
+                      isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
+                    )}
+                  >
                     {batch.course?.title?.trim() || "Not yet assigned"}
                   </td>
 
                   <td className="px-3 py-3 align-middle">
                     <div className="min-w-0 flex flex-col gap-0.5 leading-snug">
-                      <span className="truncate whitespace-nowrap text-sm text-[#102A56]">
+                      <span
+                        className={cn(
+                          "truncate whitespace-nowrap text-sm",
+                          isLifecycleBlocked
+                            ? "text-slate-500"
+                            : "text-[#102A56]",
+                        )}
+                      >
                         {formatBatchDateRange(batch.startDate, batch.endDate)}
                       </span>
-                      <span className="truncate whitespace-nowrap text-sm text-slate-600">
+                      <span
+                        className={cn(
+                          "truncate whitespace-nowrap text-sm",
+                          isLifecycleBlocked
+                            ? "text-slate-400"
+                            : "text-slate-600",
+                        )}
+                      >
                         {formatBatchTiming(batch.startTime, batch.endTime)}
                       </span>
                     </div>
@@ -326,8 +379,12 @@ export function BatchTable({
 
                   <td className="px-3 py-3 align-middle">
                     <BatchStatusBadge
+                      displayStatus={displayStatus}
                       isActive={batch.isActive}
+                      status={batch.status}
                       isDeleted={Boolean(batch.deletedAt || batch.isDeleted)}
+                      startDate={batch.startDate}
+                      endDate={batch.endDate}
                     />
                   </td>
 

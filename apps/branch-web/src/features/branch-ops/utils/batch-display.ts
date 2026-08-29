@@ -54,11 +54,19 @@ export function formatBatchStatus(status?: string | null) {
   return status.charAt(0) + status.slice(1).toLowerCase().replace(/_/g, " ");
 }
 
+export {
+  getBatchDisplayStatus,
+  isBatchLifecycleGreyed,
+  isBatchSelectableForAssignment,
+} from "./batch-selection.utils";
+
 export function statusBadgeVariant(status?: string | null) {
-  if (status === "ONGOING") return "success" as const;
+  if (status === "ONGOING" || status === "IN_PROGRESS") return "success" as const;
   if (status === "UPCOMING") return "info" as const;
-  if (status === "COMPLETED") return "default" as const;
-  if (status === "CANCELLED" || status === "ARCHIVED") return "warning" as const;
+  if (status === "COMPLETED" || status === "EXPIRED") return "default" as const;
+  if (status === "CANCELLED" || status === "ARCHIVED" || status === "INACTIVE") {
+    return "warning" as const;
+  }
   return "default" as const;
 }
 

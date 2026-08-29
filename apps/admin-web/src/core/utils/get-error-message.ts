@@ -35,6 +35,8 @@ const CODE_MESSAGES: Record<string, string> = {
     "You are not authorized to create or assign this role.",
   STUDENT_ALREADY_ENROLLED:
     "Student is already actively enrolled. A student can have only one active enrollment at a time.",
+  BATCH_NOT_SELECTABLE:
+    "Completed or expired batches cannot be selected.",
 };
 
 export const getErrorMessage = (error: unknown): string => {

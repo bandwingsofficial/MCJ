@@ -80,6 +80,8 @@ export function BatchManageHeader({
               status={batch.status}
               isActive={batch.isActive}
               isDeleted={isArchived}
+              startDate={batch.startDate}
+              endDate={batch.endDate}
             />
             <BatchModeBadge mode={batch.mode} />
           </div>

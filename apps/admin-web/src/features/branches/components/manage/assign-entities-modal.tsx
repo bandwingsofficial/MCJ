@@ -6,12 +6,16 @@ import { Button } from "@/src/shared/components/ui/button";
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
 import { Modal } from "@/src/shared/components/ui/model";
 import { SearchInput } from "@/src/shared/components/ui/search-input";
+import { cn } from "@/src/shared/lib/cn";
 
 export interface AssignableItem {
   id: string;
   label: string;
   meta?: string;
   imageUrl?: string | null;
+  /** When true, item is visible but cannot be selected/assigned. */
+  disabled?: boolean;
+  statusLabel?: string;
 }
 
 interface Props {
@@ -57,17 +61,29 @@ export function AssignEntitiesModal({
     return items.filter(
       (item) =>
         item.label.toLowerCase().includes(q) ||
-        (item.meta ?? "").toLowerCase().includes(q),
+        (item.meta ?? "").toLowerCase().includes(q) ||
+        (item.statusLabel ?? "").toLowerCase().includes(q),
     );
   }, [items, search]);
 
+  const selectableIds = useMemo(
+    () => new Set(items.filter((item) => !item.disabled).map((item) => item.id)),
+    [items],
+  );
+
   const toggle = (id: string) => {
+    if (!selectableIds.has(id)) {
+      return;
+    }
+
     setSelected((prev) =>
       prev.includes(id)
         ? prev.filter((value) => value !== id)
         : [...prev, id],
     );
   };
+
+  const assignableSelected = selected.filter((id) => selectableIds.has(id));
 
   return (
     <Modal
@@ -101,17 +117,30 @@ export function AssignEntitiesModal({
           ) : (
             <div className="space-y-1">
               {filtered.map((item) => {
-                const checked = selected.includes(item.id);
+                const checked = assignableSelected.includes(item.id);
+                const isDisabled = Boolean(item.disabled);
+
                 return (
                   <label
                     key={item.id}
-                    className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-50"
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-2 py-2",
+                      isDisabled
+                        ? "cursor-not-allowed bg-slate-100 text-slate-400"
+                        : "cursor-pointer hover:bg-slate-50",
+                    )}
                   >
                     <Checkbox
                       checked={checked}
+                      disabled={isDisabled || isSubmitting}
                       onCheckedChange={() => toggle(item.id)}
                     />
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+                    <div
+                      className={cn(
+                        "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-slate-50",
+                        isDisabled ? "border-slate-200 opacity-60" : "border-slate-200",
+                      )}
+                    >
                       {item.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -124,12 +153,27 @@ export function AssignEntitiesModal({
                       )}
                     </div>
                     <span className="min-w-0">
-                      <span className="block text-sm font-medium text-[#102A56]">
+                      <span
+                        className={cn(
+                          "block text-sm font-medium",
+                          isDisabled ? "text-slate-500" : "text-[#102A56]",
+                        )}
+                      >
                         {item.label}
                       </span>
                       {item.meta ? (
                         <span className="block text-xs text-slate-500">
                           {item.meta}
+                        </span>
+                      ) : null}
+                      {item.statusLabel ? (
+                        <span
+                          className={cn(
+                            "mt-0.5 block text-xs font-medium",
+                            isDisabled ? "text-slate-400" : "text-slate-500",
+                          )}
+                        >
+                          {item.statusLabel}
                         </span>
                       ) : null}
                     </span>
@@ -141,7 +185,9 @@ export function AssignEntitiesModal({
         </div>
 
         <div className="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200 pt-4">
-          <p className="text-sm text-[#647A9B]">{selected.length} selected</p>
+          <p className="text-sm text-[#647A9B]">
+            {assignableSelected.length} selected
+          </p>
           <div className="flex gap-2">
             <Button
               type="button"
@@ -159,9 +205,9 @@ export function AssignEntitiesModal({
               type="button"
               size="sm"
               loading={isSubmitting}
-              disabled={isSubmitting || selected.length === 0}
+              disabled={isSubmitting || assignableSelected.length === 0}
               onClick={async () => {
-                await onAssign(selected);
+                await onAssign(assignableSelected);
                 setSelected([]);
               }}
             >

@@ -18,6 +18,8 @@ import {
   formatBatchDays,
   formatEnrollmentTime,
   getBatchAvailableSeats,
+  getBatchSelectionBlockLabel,
+  isBatchSelectable,
 } from "@/src/features/enrollments/utils/enrollment-batch.utils";
 
 interface Props {
@@ -109,7 +111,7 @@ export function CourseBatchCards({
   const handleEnroll = (batch: Batch) => {
     const batchId = batch?.id;
 
-    if (!courseSlug || !batchId) {
+    if (!courseSlug || !batchId || !isBatchSelectable(batch)) {
       return;
     }
 
@@ -140,10 +142,17 @@ export function CourseBatchCards({
             return null;
           }
 
+          const selectable = isBatchSelectable(batch);
+          const blockLabel = getBatchSelectionBlockLabel(batch);
+
           return (
             <article
               key={batchId}
-              className="group rounded-xl border border-slate-200 bg-white p-4 transition hover:border-blue-200 hover:shadow-sm sm:p-5"
+              className={`group rounded-xl border p-4 transition sm:p-5 ${
+                selectable
+                  ? "border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm"
+                  : "cursor-not-allowed border-slate-200 bg-slate-100 opacity-80"
+              }`}
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 {/* Batch information */}
@@ -157,9 +166,18 @@ export function CourseBatchCards({
                     </Badge>
                   </div>
 
-                  <h3 className="truncate text-sm font-semibold text-slate-900 sm:text-base">
+                  <h3
+                    className={`truncate text-sm font-semibold sm:text-base ${
+                      selectable ? "text-slate-900" : "text-slate-500"
+                    }`}
+                  >
                     {batch.name || "Unnamed Batch"}
                   </h3>
+                  {blockLabel ? (
+                    <p className="mt-1 text-xs font-medium text-slate-400">
+                      {blockLabel}
+                    </p>
+                  ) : null}
 
                   <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
                     <p className="flex items-center gap-1.5 text-xs text-slate-500">
@@ -207,11 +225,16 @@ export function CourseBatchCards({
                 {/* Enroll action */}
                 <button
                   type="button"
+                  disabled={!selectable}
                   onClick={() => handleEnroll(batch)}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    selectable
+                      ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+                      : "cursor-not-allowed bg-slate-200 text-slate-400 focus:ring-slate-300"
+                  }`}
                 >
-                  Enroll
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  {blockLabel ?? "Enroll"}
+                  {selectable ? <ArrowRight className="h-3.5 w-3.5" /> : null}
                 </button>
               </div>
             </article>
@@ -233,10 +256,17 @@ export function CourseBatchCards({
           return null;
         }
 
+        const selectable = isBatchSelectable(batch);
+        const blockLabel = getBatchSelectionBlockLabel(batch);
+
         return (
           <article
             key={batchId}
-            className="rounded-xl border border-slate-200 bg-white p-5 transition hover:border-blue-200 hover:shadow-sm"
+            className={`rounded-xl border p-5 transition ${
+              selectable
+                ? "border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm"
+                : "cursor-not-allowed border-slate-200 bg-slate-100 opacity-80"
+            }`}
           >
             <div className="flex items-start justify-between gap-3">
               <h3 className="min-w-0 truncate text-base font-semibold text-slate-900">
@@ -272,11 +302,16 @@ export function CourseBatchCards({
 
             <button
               type="button"
+              disabled={!selectable}
               onClick={() => handleEnroll(batch)}
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                selectable
+                  ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+                  : "cursor-not-allowed bg-slate-200 text-slate-400 focus:ring-slate-300"
+              }`}
             >
-              Enroll
-              <ArrowRight className="h-3.5 w-3.5" />
+              {blockLabel ?? "Enroll"}
+              {selectable ? <ArrowRight className="h-3.5 w-3.5" /> : null}
             </button>
           </article>
         );

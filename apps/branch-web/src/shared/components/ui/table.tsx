@@ -40,11 +40,13 @@ export function TableBody({
 
 export function TableRow({
   children,
+  className,
 }: {
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <tr className="border-b last:border-0">
+    <tr className={cn("border-b last:border-0", className)}>
       {children}
     </tr>
   );

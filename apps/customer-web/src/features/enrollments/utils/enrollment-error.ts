@@ -30,6 +30,9 @@ const ERROR_MESSAGES: Record<string, string> = {
 
   BATCH_INACTIVE:
     "The selected batch is not open for enrollment.",
+
+  BATCH_NOT_SELECTABLE:
+    "Completed or expired batches cannot be selected.",
 };
 
 export function getEnrollmentErrorMessage(

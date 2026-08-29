@@ -14,6 +14,8 @@ import {
 import type { BranchAuthUser } from '@common/decorators/current-branch-user.decorator';
 import { BranchUserRole } from '@modules/branch-user/domain/enums/branch-user-role.enum';
 import type { BatchCourseAssignmentRecord } from '@modules/batch/application/batch-courses/batch-course.types';
+import { ensureBatchSelectableForAssignment } from '@modules/batch/domain/utils/batch-selection.util';
+import { BatchStatus } from '@modules/batch/domain/enums/batch-status.enum';
 import { PrismaBatchCourseRepository } from '@modules/batch/infrastructure/repositories/prisma-batch-course.repository';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BranchOperationsAccessService } from './branch-operations-access.service';
@@ -640,6 +642,34 @@ export class BranchBatchOpsService {
     }
 
     await this.access.assertBatchInBranch(batchId, user.branchId);
+
+    const batch = await this.prisma.batch.findFirst({
+      where: {
+        id: batchId,
+        branchId: user.branchId,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        status: true,
+        startDate: true,
+        endDate: true,
+        isActive: true,
+        isDeleted: true,
+      },
+    });
+
+    if (!batch) {
+      throw new NotFoundException('Batch not found');
+    }
+
+    ensureBatchSelectableForAssignment({
+      status: batch.status as BatchStatus,
+      startDate: batch.startDate,
+      endDate: batch.endDate,
+      isActive: batch.isActive,
+      isDeleted: batch.isDeleted,
+    });
 
     const faculty = await this.prisma.branchUser.findFirst({
       where: {

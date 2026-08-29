@@ -21,6 +21,7 @@ import {
   formatEnrollmentDate,
   formatEnrollmentTime,
   getBatchAvailableSeats,
+  getBatchSelectionBlockLabel,
   getBatchStatusLabel,
   isBatchFull,
   isBatchSelectable,
@@ -95,6 +96,7 @@ export function EnrollmentBatchSelector({
       <div className="mt-5 space-y-4">
         {batches.map((batch) => {
           const selectable = isBatchSelectable(batch);
+          const blockLabel = getBatchSelectionBlockLabel(batch);
           const full = isBatchFull(batch);
           const availableSeats = getBatchAvailableSeats(batch);
           const isSelected = selectedBatchId === batch.id;
@@ -107,19 +109,26 @@ export function EnrollmentBatchSelector({
                   ? "border-blue-500 bg-blue-50/40 ring-1 ring-blue-500"
                   : selectable
                     ? "border-slate-200 bg-white hover:border-slate-300"
-                    : "border-slate-200 bg-slate-50 opacity-80"
+                    : "cursor-not-allowed border-slate-200 bg-slate-100 opacity-80"
               }`}
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h4 className="text-base font-semibold text-slate-900">
+                    <h4
+                      className={`text-base font-semibold ${
+                        selectable ? "text-slate-900" : "text-slate-500"
+                      }`}
+                    >
                       {batch.name}
                     </h4>
                     <Badge variant="info">
                       {getBatchStatusLabel(batch.status)}
                     </Badge>
-                    {full ? (
+                    {blockLabel ? (
+                      <Badge variant="default">{blockLabel}</Badge>
+                    ) : null}
+                    {full && selectable ? (
                       <Badge variant="danger">Full</Badge>
                     ) : null}
                   </div>
@@ -178,11 +187,23 @@ export function EnrollmentBatchSelector({
                     className={`h-10 rounded-xl px-5 ${
                       isSelected
                         ? "bg-blue-600 hover:bg-blue-700"
-                        : "border-slate-200"
+                        : selectable
+                          ? "border-slate-200"
+                          : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
                     }`}
-                    onClick={() => onSelect(batch.id)}
+                    onClick={() => {
+                      if (selectable) {
+                        onSelect(batch.id);
+                      }
+                    }}
                   >
-                    {isSelected ? "Selected" : full ? "Full" : "Select"}
+                    {isSelected
+                      ? "Selected"
+                      : blockLabel
+                        ? blockLabel
+                        : full
+                          ? "Full"
+                          : "Select"}
                   </Button>
                 </div>
               </div>

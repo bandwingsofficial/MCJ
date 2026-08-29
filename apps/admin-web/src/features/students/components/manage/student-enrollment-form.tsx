@@ -24,7 +24,13 @@ import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { batchService } from "@/src/features/batches/services/batch.service";
-import type { BatchTrainer } from "@/src/features/batches/types/batch.types";
+import type { Batch, BatchTrainer } from "@/src/features/batches/types/batch.types";
+import {
+  BLOCKED_BATCH_SELECTION_MESSAGE,
+  findBatchById,
+  isBatchBlockedForSelection,
+  toBatchSelectOptions,
+} from "@/src/features/batches/utils/batch-select.utils";
 import { courseService } from "@/src/features/courses/services/course.service";
 import { formatCourseFee } from "@/src/features/courses/utils/format-course-fee.util";
 import { getCourseDefaultDiscount } from "@/src/features/courses/utils/get-course-default-discount.util";
@@ -44,7 +50,6 @@ import {
   studentEnrollmentFormSchema,
   type StudentEnrollmentFormValues,
 } from "@/src/features/students/schemas/student-enrollment.schema";
-import { uniqueSelectOptions } from "@/src/features/students/utils/student-select.utils";
 
 import {
   StudentEnrollmentBatchDetails,
@@ -55,6 +60,12 @@ interface BatchListOption {
   id: string;
   name: string;
   code: string | null;
+  status: Batch["status"];
+  startDate: string;
+  endDate: string | null;
+  isActive?: boolean;
+  isDeleted: boolean;
+  deletedAt: string | null;
 }
 
 interface Props {
@@ -73,24 +84,6 @@ interface Props {
 type FieldName = keyof StudentEnrollmentFormValues;
 
 const GRID_CLASS = "grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2";
-
-function isSelectableBatch(batch: {
-  isActive?: boolean;
-  isDeleted?: boolean;
-  status?: string;
-}): boolean {
-  return (
-    batch.isActive !== false &&
-    batch.isDeleted !== true &&
-    batch.status !== "COMPLETED" &&
-    batch.status !== "CANCELLED" &&
-    batch.status !== "ARCHIVED"
-  );
-}
-
-function formatBatchLabel(name: string, code: string | null): string {
-  return code ? `${name} (${code})` : name;
-}
 
 function formatTrainerNames(trainers: BatchTrainer[]): string {
   if (!trainers.length) {
@@ -185,10 +178,16 @@ export function StudentEnrollmentForm({
         const items = batchResponse.data?.items ?? [];
 
         setBatches(
-          items.filter(isSelectableBatch).map((batch) => ({
+          items.map((batch) => ({
             id: batch.id,
             name: batch.name,
             code: batch.code,
+            status: batch.status,
+            startDate: batch.startDate,
+            endDate: batch.endDate,
+            isActive: batch.isActive,
+            isDeleted: batch.isDeleted,
+            deletedAt: batch.deletedAt,
           })),
         );
 
@@ -243,10 +242,10 @@ export function StudentEnrollmentForm({
           return;
         }
 
-        if (!isSelectableBatch(batch)) {
+        if (isBatchBlockedForSelection(batch)) {
           setBatchDetails(null);
           setIsBatchEligible(false);
-          appToast.error("Selected batch is not available for enrollment.");
+          appToast.error(BLOCKED_BATCH_SELECTION_MESSAGE);
           return;
         }
 
@@ -331,12 +330,7 @@ export function StudentEnrollmentForm({
     };
   };
 
-  const batchOptions = uniqueSelectOptions(
-    batches.map((batch) => ({
-      label: formatBatchLabel(batch.name, batch.code),
-      value: batch.id,
-    })),
-  );
+  const batchOptions = toBatchSelectOptions(batches);
 
   const detailsToShow =
     mode === "edit" && editBatchDetails
@@ -362,6 +356,16 @@ export function StudentEnrollmentForm({
                 );
                 return;
               }
+
+              const selectedBatchRecord = findBatchById(batches, values.batchId);
+              if (
+                !selectedBatchRecord ||
+                isBatchBlockedForSelection(selectedBatchRecord)
+              ) {
+                appToast.error(BLOCKED_BATCH_SELECTION_MESSAGE);
+                return;
+              }
+
               await onSubmit(values);
             })
           : (event) => event.preventDefault()

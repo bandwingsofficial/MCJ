@@ -27,23 +27,18 @@ import { studentService } from "@/src/features/students/services/student.service
 import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.utils";
 import { parseStudentListResponse } from "@/src/features/students/utils/student-list.utils";
 import { uniqueSelectOptions } from "@/src/features/students/utils/student-select.utils";
+import {
+  BLOCKED_BATCH_SELECTION_MESSAGE,
+  findBatchById,
+  isBatchBlockedForSelection,
+  toBatchSelectOptions,
+} from "@/src/features/batches/utils/batch-select.utils";
 
 interface Props {
   open: boolean;
   branchId: string;
   onClose: () => void;
   onSuccess: () => Promise<void>;
-}
-
-function isSelectableBatch(batch: Batch): boolean {
-  return (
-    batch.isActive !== false &&
-    !batch.deletedAt &&
-    batch.isDeleted !== true &&
-    batch.status !== "COMPLETED" &&
-    batch.status !== "CANCELLED" &&
-    batch.status !== "ARCHIVED"
-  );
 }
 
 export function BranchAssignStudentModal({
@@ -107,7 +102,7 @@ export function BranchAssignStudentModal({
           page: 1,
           pageSize: 100,
         });
-        setBatches((response.data.items ?? []).filter(isSelectableBatch));
+        setBatches(response.data.items ?? []);
       } catch (error) {
         appToast.error(getErrorMessage(error));
         setBatches([]);
@@ -221,13 +216,7 @@ export function BranchAssignStudentModal({
   }, [open, batchId, branchId]);
 
   const batchOptions = useMemo(
-    () =>
-      uniqueSelectOptions(
-        batches.map((batch) => ({
-          label: batch.code ? `${batch.name} (${batch.code})` : batch.name,
-          value: batch.id,
-        })),
-      ),
+    () => toBatchSelectOptions(batches),
     [batches],
   );
 
@@ -254,6 +243,12 @@ export function BranchAssignStudentModal({
 
   const handleSubmit = async () => {
     if (!batchId || selectedStudentIds.length === 0) {
+      return;
+    }
+
+    const selectedBatchRecord = findBatchById(batches, batchId);
+    if (!selectedBatchRecord || isBatchBlockedForSelection(selectedBatchRecord)) {
+      appToast.error(BLOCKED_BATCH_SELECTION_MESSAGE);
       return;
     }
 

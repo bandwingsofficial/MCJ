@@ -117,6 +117,10 @@ export function BatchCard({
 
         <BatchStatusBadge
           status={batch.status}
+          isActive={batch.isActive}
+          isDeleted={Boolean(batch.isDeleted || batch.deletedAt)}
+          startDate={batch.startDate}
+          endDate={batch.endDate}
         />
 
         {batch.isFeatured && (

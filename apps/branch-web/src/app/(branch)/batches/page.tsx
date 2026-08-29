@@ -11,9 +11,9 @@ import {
   courseTitle,
   formatBatchDate,
   formatBatchMode,
-  formatBatchStatus,
   formatBatchTiming,
-  statusBadgeVariant,
+  getBatchDisplayStatus,
+  isBatchLifecycleGreyed,
   trainerNames,
 } from "@/src/features/branch-ops/utils/batch-display";
 import { formatRoleLabel } from "@/src/core/auth/roles";
@@ -66,7 +66,16 @@ export default function BatchesPage() {
   const items = useMemo(() => {
     const term = search.trim().toLowerCase();
     return (data ?? []).filter((batch) => {
-      if (status !== "ALL" && batch.status !== status) return false;
+      if (status !== "ALL") {
+        const display = getBatchDisplayStatus(batch);
+        if (status === "EXPIRED") {
+          if (display.key !== "EXPIRED") return false;
+        } else if (status === "COMPLETED") {
+          if (display.key !== "COMPLETED") return false;
+        } else if (batch.status !== status) {
+          return false;
+        }
+      }
       if (!term) return true;
       const haystack = [
         batch.name,
@@ -123,6 +132,7 @@ export default function BatchesPage() {
                   { label: "Upcoming", value: "UPCOMING" },
                   { label: "Ongoing", value: "ONGOING" },
                   { label: "Completed", value: "COMPLETED" },
+                  { label: "Expired", value: "EXPIRED" },
                 ]}
               />
             </div>
@@ -215,42 +225,55 @@ export default function BatchesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paged.map((batch: BatchListItem) => (
-                <TableRow key={batch.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium text-[#102A56]">{batch.name}</p>
-                      <p className="font-mono text-xs text-[#647A9B]">
-                        {batch.code}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{courseTitle(batch.course)}</TableCell>
-                  <TableCell>
-                    {assignedLabel(trainerNames(batch.trainers))}
-                  </TableCell>
-                  <TableCell>{formatBatchMode(batch.mode)}</TableCell>
-                  <TableCell>{formatBatchDate(batch.startDate)}</TableCell>
-                  <TableCell>{formatBatchDate(batch.endDate)}</TableCell>
-                  <TableCell>
-                    {formatBatchTiming(batch.startTime, batch.endTime)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={statusBadgeVariant(batch.status)}>
-                      {formatBatchStatus(batch.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{batch.enrolledStudents}</TableCell>
-                  <TableCell>
-                    <Link
-                      href={`/batches/${batch.id}`}
-                      className="text-sm font-medium text-[#2563EB] hover:underline"
-                    >
-                      Manage
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {paged.map((batch: BatchListItem) => {
+                const display = getBatchDisplayStatus(batch);
+                const greyed = isBatchLifecycleGreyed(batch);
+
+                return (
+                  <TableRow
+                    key={batch.id}
+                    className={greyed ? "bg-slate-100/80 text-slate-500" : undefined}
+                  >
+                    <TableCell>
+                      <div>
+                        <p
+                          className={cn(
+                            "font-medium",
+                            greyed ? "text-slate-500" : "text-[#102A56]",
+                          )}
+                        >
+                          {batch.name}
+                        </p>
+                        <p className="font-mono text-xs text-[#647A9B]">
+                          {batch.code}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>{courseTitle(batch.course)}</TableCell>
+                    <TableCell>
+                      {assignedLabel(trainerNames(batch.trainers))}
+                    </TableCell>
+                    <TableCell>{formatBatchMode(batch.mode)}</TableCell>
+                    <TableCell>{formatBatchDate(batch.startDate)}</TableCell>
+                    <TableCell>{formatBatchDate(batch.endDate)}</TableCell>
+                    <TableCell>
+                      {formatBatchTiming(batch.startTime, batch.endTime)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={display.variant}>{display.label}</Badge>
+                    </TableCell>
+                    <TableCell>{batch.enrolledStudents}</TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/batches/${batch.id}`}
+                        className="text-sm font-medium text-[#2563EB] hover:underline"
+                      >
+                        Manage
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
           <TablePaginationBar

@@ -40,7 +40,10 @@ import { EnrollmentSelectedBatchReview } from "@/src/features/enrollments/compon
 import { EnrollmentStudentInfo } from "@/src/features/enrollments/components/enrollment-student-info";
 import { useEnrollmentCheckout } from "@/src/features/enrollments/hooks/use-enrollment-checkout";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
-import { isBatchSelectable } from "@/src/features/enrollments/utils/enrollment-batch.utils";
+import {
+  BLOCKED_BATCH_SELECTION_MESSAGE,
+  isBatchSelectable,
+} from "@/src/features/enrollments/utils/enrollment-batch.utils";
 import { useStudentProfile } from "@/src/features/student/hooks";
 
 type EnrollmentPageView =
@@ -241,9 +244,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     }
 
     if (!selectedBatch || !isBatchSelectable(selectedBatch)) {
-      appToast.error(
-        "This batch is no longer available. Please select another batch.",
-      );
+      appToast.error(BLOCKED_BATCH_SELECTION_MESSAGE);
       return;
     }
 

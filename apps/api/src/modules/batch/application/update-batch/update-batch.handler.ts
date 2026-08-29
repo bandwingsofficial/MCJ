@@ -8,6 +8,7 @@ import { GetBatchResult } from '../get-batch/get-batch.result';
 
 import type { BranchRepository } from '@modules/branch/domain/repositories/branch.repository';
 import { BranchNotFoundException } from '@/modules/student/domain/errors/branch-not-found.exception';
+import { ensureBatchSelectableForAssignment } from '../../domain/utils/batch-selection.util';
 
 import { UpdateBatchCommand } from './update-batch.command';
 
@@ -50,6 +51,11 @@ export class UpdateBatchHandler {
         throw new BranchNotFoundException(
           command.branchId,
         );
+      }
+
+      // New branch assignment must reject completed/expired batches.
+      if (command.branchId !== batch.branchId) {
+        ensureBatchSelectableForAssignment(batch);
       }
     }
 

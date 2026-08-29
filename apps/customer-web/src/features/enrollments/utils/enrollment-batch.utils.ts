@@ -1,9 +1,42 @@
 import type { Batch, BatchStatus } from "@/src/features/batches/types/batch.types";
 
-const INACTIVE_BATCH_STATUSES: BatchStatus[] = [
-  "COMPLETED",
-  "CANCELLED",
-];
+export const BLOCKED_BATCH_SELECTION_MESSAGE =
+  "Completed or expired batches cannot be selected.";
+
+const BLOCKED_BATCH_STATUSES: BatchStatus[] = ["COMPLETED", "CANCELLED"];
+
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+export function isBatchDateExpired(
+  batch: Pick<Batch, "endDate" | "startDate">,
+  referenceDate: Date = new Date(),
+): boolean {
+  const end = batch.endDate ?? batch.startDate;
+  if (!end) {
+    return false;
+  }
+
+  const endDate = new Date(end);
+  if (Number.isNaN(endDate.getTime())) {
+    return false;
+  }
+
+  return startOfDay(referenceDate).getTime() > startOfDay(endDate).getTime();
+}
+
+export function isBatchBlockedForSelection(batch: Batch): boolean {
+  if (batch.isDeleted) {
+    return true;
+  }
+
+  if (BLOCKED_BATCH_STATUSES.includes(batch.status)) {
+    return true;
+  }
+
+  return isBatchDateExpired(batch);
+}
 
 export function getBatchAvailableSeats(batch: Batch): number {
   const capacity = Number.isFinite(batch.capacity) ? batch.capacity : 0;
@@ -19,10 +52,6 @@ export function isBatchFull(batch: Batch): boolean {
 }
 
 export function isBatchSelectable(batch: Batch): boolean {
-  if (batch.isDeleted) {
-    return false;
-  }
-
   if (!batch.branchId) {
     return false;
   }
@@ -31,11 +60,31 @@ export function isBatchSelectable(batch: Batch): boolean {
     return false;
   }
 
-  if (INACTIVE_BATCH_STATUSES.includes(batch.status)) {
+  if (isBatchBlockedForSelection(batch)) {
     return false;
   }
 
   return !isBatchFull(batch);
+}
+
+export function getBatchSelectionBlockLabel(batch: Batch): string | null {
+  if (batch.status === "COMPLETED") {
+    return "Completed";
+  }
+
+  if (isBatchDateExpired(batch)) {
+    return "Expired";
+  }
+
+  if (batch.status === "CANCELLED") {
+    return "Cancelled";
+  }
+
+  if (batch.isDeleted) {
+    return "Unavailable";
+  }
+
+  return null;
 }
 
 export function formatEnrollmentDate(value?: string | null): string {
