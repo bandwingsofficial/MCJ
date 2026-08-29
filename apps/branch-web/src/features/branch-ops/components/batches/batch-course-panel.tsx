@@ -13,6 +13,16 @@ interface Props {
   batchId: string;
 }
 
+function formatCourseHeading(
+  sessionCode: string | null | undefined,
+  title: string,
+): string {
+  const code = sessionCode?.trim();
+  const name = title.trim();
+  if (!code) return name;
+  return name ? `${code} - ${name}` : code;
+}
+
 function resourceIcon(type: string) {
   if (type === "VIDEO") return PlayCircle;
   if (type === "LINK") return Link2;
@@ -38,7 +48,9 @@ export function BatchCoursePanel({ batchId }: Props) {
           key={course.id}
           className="rounded-2xl border border-[#E1EBF5] bg-white p-5"
         >
-          <h2 className="text-lg font-semibold text-[#102A56]">{course.title}</h2>
+          <h2 className="text-lg font-semibold text-[#102A56]">
+            {formatCourseHeading(course.session?.code, course.title)}
+          </h2>
           <p className="mt-0.5 font-mono text-sm text-[#647A9B]">{course.code}</p>
           {course.category?.name ? (
             <p className="mt-1 text-sm text-[#647A9B]">

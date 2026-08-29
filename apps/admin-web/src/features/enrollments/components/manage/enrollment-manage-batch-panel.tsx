@@ -8,6 +8,7 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type { Batch } from "@/src/features/batches/types/batch.types";
+import { toAssignmentCourseDisplayTitles } from "@/src/features/batches/utils/batch-course.utils";
 import { BranchBatchAssignDetails } from "@/src/features/branches/components/manage/branch-batch-assign-details";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { formatEnrollmentCategoryName } from "@/src/features/students/utils/enrollment-display.utils";
@@ -18,6 +19,7 @@ interface Props {
 
 export function EnrollmentManageBatchPanel({ enrollment }: Props) {
   const [batch, setBatch] = useState<Batch | null>(null);
+  const [courseTitles, setCourseTitles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -30,18 +32,28 @@ export function EnrollmentManageBatchPanel({ enrollment }: Props) {
     const load = async () => {
       setIsLoading(true);
       try {
-        const response = await batchService.getBatch(batchId);
-        setBatch(response.data);
+        const [batchResponse, assignments] = await Promise.all([
+          batchService.getBatch(batchId),
+          batchService.getBatchCourses(batchId),
+        ]);
+        setBatch(batchResponse.data);
+        setCourseTitles(
+          toAssignmentCourseDisplayTitles(
+            assignments,
+            enrollment.course?.title ?? batchResponse.data.course?.title,
+          ),
+        );
       } catch (error) {
         appToast.error(getErrorMessage(error));
         setBatch(null);
+        setCourseTitles([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     void load();
-  }, [enrollment.batch?.id]);
+  }, [enrollment.batch?.id, enrollment.course?.title]);
 
   if (isLoading) {
     return <Skeleton className="h-64 w-full rounded-2xl" />;
@@ -60,9 +72,7 @@ export function EnrollmentManageBatchPanel({ enrollment }: Props) {
   return (
     <BranchBatchAssignDetails
       batch={batch}
-      courseTitles={
-        enrollment.course?.title ? [enrollment.course.title] : undefined
-      }
+      courseTitles={courseTitles.length ? courseTitles : undefined}
       categoryName={formatEnrollmentCategoryName(enrollment)}
     />
   );

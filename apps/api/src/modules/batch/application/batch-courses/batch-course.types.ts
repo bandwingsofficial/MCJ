@@ -20,6 +20,11 @@ export interface BatchCourseAssignmentRecord {
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  session: {
+    id: string;
+    number: number;
+    code: string;
+  } | null;
   course: {
     id: string;
     title: string;

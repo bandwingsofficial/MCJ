@@ -18,6 +18,7 @@ import {
 import {
   formatAssignedCoursePrice,
   formatAssignedCourseQualifications,
+  formatAssignmentSessionCourseLabel,
   formatTrainerDisplayName,
   getCourseCategoryName,
   getCourseDescription,
@@ -193,7 +194,7 @@ export function BatchManageOverviewPanel({
                   <div className="min-w-0 flex-1 space-y-2">
                     <div>
                       <h3 className="text-sm font-semibold text-[#102A56]">
-                        {course.title}
+                        {formatAssignmentSessionCourseLabel(assignment)}
                       </h3>
                       {course.code ? (
                         <p className="text-xs font-medium text-blue-600">

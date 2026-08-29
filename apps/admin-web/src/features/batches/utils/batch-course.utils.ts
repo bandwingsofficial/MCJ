@@ -6,6 +6,52 @@ import type {
 export const NO_BATCH_COURSES_LABEL = "No courses assigned yet";
 export const COURSE_TRAINER_UNASSIGNED_LABEL = "Not yet assigned";
 
+export function formatBatchSessionCode(sessionNumber: number): string {
+  if (!Number.isFinite(sessionNumber) || sessionNumber < 1) {
+    return "";
+  }
+
+  return `S${String(Math.trunc(sessionNumber)).padStart(2, "0")}`;
+}
+
+export function formatSessionCourseLabel(
+  sessionCode: string | null | undefined,
+  courseTitle: string,
+): string {
+  const title = courseTitle.trim();
+  const code = sessionCode?.trim();
+
+  if (!code) {
+    return title;
+  }
+
+  return title ? `${code} - ${title}` : code;
+}
+
+export function formatAssignmentSessionCourseLabel(
+  assignment: BatchCourseAssignment,
+): string {
+  return formatSessionCourseLabel(
+    assignment.session?.code,
+    assignment.course.title,
+  );
+}
+
+export function toAssignmentCourseDisplayTitles(
+  assignments: BatchCourseAssignment[],
+  fallbackTitle?: string | null,
+): string[] {
+  const titles = assignments
+    .map((assignment) => formatAssignmentSessionCourseLabel(assignment).trim())
+    .filter(Boolean);
+
+  if (titles.length === 0 && fallbackTitle?.trim()) {
+    return [fallbackTitle.trim()];
+  }
+
+  return titles;
+}
+
 export function getAssignmentCourseTrainers(
   assignment: BatchCourseAssignment,
 ): BatchTrainer[] {
@@ -75,7 +121,9 @@ export function formatAssignedCourseTitles(
     return NO_BATCH_COURSES_LABEL;
   }
 
-  return assignments.map((assignment) => assignment.course.title).join(", ");
+  return assignments
+    .map((assignment) => formatAssignmentSessionCourseLabel(assignment))
+    .join(", ");
 }
 
 export function formatAssignedTrainerNames(

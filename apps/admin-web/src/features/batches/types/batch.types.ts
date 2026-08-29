@@ -121,6 +121,11 @@ export interface BatchCourseAssignment {
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  session?: {
+    id: string;
+    number: number;
+    code: string;
+  } | null;
   course: BatchCourse;
   trainers?: BatchTrainer[];
   trainer?: BatchTrainer | null;

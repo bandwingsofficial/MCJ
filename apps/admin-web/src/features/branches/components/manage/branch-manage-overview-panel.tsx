@@ -27,6 +27,7 @@ import { courseService } from "@/src/features/courses/services/course.service";
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type { Batch } from "@/src/features/batches/types/batch.types";
+import { toAssignmentCourseDisplayTitles } from "@/src/features/batches/utils/batch-course.utils";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
@@ -72,19 +73,12 @@ async function loadCourseTitlesByBatch(
     batches.map(async (batch) => {
       try {
         const assignments = await batchService.getBatchCourses(batch.id);
-        const titles = assignments
-          .map((item) => item.course?.title?.trim())
-          .filter((title): title is string => Boolean(title));
+        const titles = toAssignmentCourseDisplayTitles(
+          assignments,
+          batch.course?.title,
+        );
 
-        if (titles.length > 0) {
-          return [batch.id, titles] as const;
-        }
-
-        if (batch.course?.title) {
-          return [batch.id, [batch.course.title]] as const;
-        }
-
-        return [batch.id, []] as const;
+        return [batch.id, titles] as const;
       } catch {
         return [
           batch.id,

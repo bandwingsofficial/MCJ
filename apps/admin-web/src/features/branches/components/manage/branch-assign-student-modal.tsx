@@ -12,6 +12,7 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type { Batch } from "@/src/features/batches/types/batch.types";
+import { toAssignmentCourseDisplayTitles } from "@/src/features/batches/utils/batch-course.utils";
 import { BranchBatchAssignDetails } from "@/src/features/branches/components/manage/branch-batch-assign-details";
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
 import { courseService } from "@/src/features/courses/services/course.service";
@@ -148,14 +149,9 @@ export function BranchAssignStudentModal({
         const batch = batchResponse.data;
         setSelectedBatch(batch);
 
-        const titles = assignments
-          .map((item) => item.course?.title?.trim())
-          .filter((title): title is string => Boolean(title));
-
-        if (titles.length === 0 && batch.course?.title) {
-          titles.push(batch.course.title);
-        }
-        setCourseTitles(titles);
+        setCourseTitles(
+          toAssignmentCourseDisplayTitles(assignments, batch.course?.title),
+        );
 
         let nextFee = 0;
         let nextDiscount = 0;

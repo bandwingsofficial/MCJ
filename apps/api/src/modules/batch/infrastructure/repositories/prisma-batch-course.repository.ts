@@ -5,6 +5,7 @@ import type {
   BatchCourseAssignmentRecord,
   BatchCourseTrainerRecord,
 } from '../../application/batch-courses/batch-course.types';
+import { formatBatchSessionCode } from '../../domain/utils/batch-session.util';
 
 const courseAssignmentSelect = {
   id: true,
@@ -60,6 +61,12 @@ const assignmentInclude = {
       },
     },
   },
+  session: {
+    select: {
+      id: true,
+      sessionNumber: true,
+    },
+  },
 } as const;
 
 type AssignmentQueryRecord = {
@@ -72,6 +79,10 @@ type AssignmentQueryRecord = {
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  session?: {
+    id: string;
+    sessionNumber: number;
+  } | null;
   course: {
     id: string;
     title: string;
@@ -103,6 +114,14 @@ function toAssignmentRecord(
     .map((link) => link.trainer)
     .filter((trainer): trainer is BatchCourseTrainerRecord => trainer != null);
 
+  const session = record.session
+    ? {
+        id: record.session.id,
+        number: record.session.sessionNumber,
+        code: formatBatchSessionCode(record.session.sessionNumber),
+      }
+    : null;
+
   return {
     id: record.id,
     batchId: record.batchId,
@@ -113,6 +132,7 @@ function toAssignmentRecord(
     deletedAt: record.deletedAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
+    session,
     course,
     trainers,
     trainer: trainers[0] ?? null,
@@ -139,9 +159,7 @@ export class PrismaBatchCourseRepository {
         isDeleted: false,
       },
       include: assignmentInclude,
-      orderBy: {
-        createdAt: 'asc',
-      },
+      orderBy: [{ session: { sessionNumber: 'asc' } }, { createdAt: 'asc' }],
     });
 
     return records.map((record) =>
@@ -153,39 +171,71 @@ export class PrismaBatchCourseRepository {
     batchId: string;
     courseId: string;
   }): Promise<BatchCourseAssignmentRecord> {
-    const existing = await this.prisma.batchCourse.findUnique({
-      where: {
-        batchId_courseId: {
-          batchId: params.batchId,
-          courseId: params.courseId,
-        },
-      },
-    });
-
-    if (existing && !existing.isDeleted) {
-      throw new Error('Course is already assigned to this batch');
-    }
-
-    const record = existing
-      ? await this.prisma.batchCourse.update({
-          where: { id: existing.id },
-          data: {
-            isActive: true,
-            isDeleted: false,
-            deletedAt: null,
-          },
-          include: assignmentInclude,
-        })
-      : await this.prisma.batchCourse.create({
-          data: {
-            id: randomUUID(),
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.batchCourse.findUnique({
+        where: {
+          batchId_courseId: {
             batchId: params.batchId,
             courseId: params.courseId,
           },
-          include: assignmentInclude,
-        });
+        },
+        include: {
+          session: { select: { id: true, sessionNumber: true } },
+        },
+      });
 
-    return toAssignmentRecord(record as AssignmentQueryRecord);
+      if (existing && !existing.isDeleted) {
+        throw new Error('Course is already assigned to this batch');
+      }
+
+      const assignment = existing
+        ? await tx.batchCourse.update({
+            where: { id: existing.id },
+            data: {
+              isActive: true,
+              isDeleted: false,
+              deletedAt: null,
+            },
+            include: assignmentInclude,
+          })
+        : await tx.batchCourse.create({
+            data: {
+              id: randomUUID(),
+              batchId: params.batchId,
+              courseId: params.courseId,
+            },
+            include: assignmentInclude,
+          });
+
+      const existingSession =
+        existing?.session ??
+        (assignment as AssignmentQueryRecord).session ??
+        null;
+
+      if (!existingSession) {
+        const aggregate = await tx.batchCourseSession.aggregate({
+          where: { batchId: params.batchId },
+          _max: { sessionNumber: true },
+        });
+        const nextNumber = (aggregate._max.sessionNumber ?? 0) + 1;
+
+        await tx.batchCourseSession.create({
+          data: {
+            id: randomUUID(),
+            batchId: params.batchId,
+            batchCourseId: assignment.id,
+            sessionNumber: nextNumber,
+          },
+        });
+      }
+
+      const withSession = await tx.batchCourse.findUniqueOrThrow({
+        where: { id: assignment.id },
+        include: assignmentInclude,
+      });
+
+      return toAssignmentRecord(withSession as AssignmentQueryRecord);
+    });
   }
 
   async remove(assignmentId: string, batchId: string): Promise<void> {

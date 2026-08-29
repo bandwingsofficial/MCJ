@@ -168,6 +168,7 @@ export function BatchManageCoursesPanel({
         <div className="w-full min-w-0 overflow-hidden rounded-xl border border-slate-200">
           <table className="w-full table-fixed border-collapse">
             <colgroup>
+              <col className="w-[5.5rem]" />
               <col />
               <col />
               <col />
@@ -176,6 +177,9 @@ export function BatchManageCoursesPanel({
             </colgroup>
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Session
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Course
                 </th>
@@ -197,7 +201,7 @@ export function BatchManageCoursesPanel({
               {assignmentsLoading ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-12 text-center text-sm text-[#647A9B]"
                   >
                     Loading courses...
@@ -205,7 +209,7 @@ export function BatchManageCoursesPanel({
                 </tr>
               ) : filteredAssignments.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center">
+                  <td colSpan={6} className="px-4 py-12 text-center">
                     <p className="text-sm font-medium text-[#102A56]">
                       No courses assigned yet
                     </p>
@@ -217,6 +221,9 @@ export function BatchManageCoursesPanel({
               ) : (
                 filteredAssignments.map((assignment) => (
                   <tr key={assignment.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-3 font-mono text-sm font-medium text-[#102A56]">
+                      {assignment.session?.code ?? "—"}
+                    </td>
                     <td className="truncate px-4 py-3 text-sm font-medium text-[#102A56]">
                       {assignment.course.title}
                     </td>

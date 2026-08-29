@@ -119,6 +119,10 @@ export interface BatchCourseContent {
     description: string | null;
     duration: string | null;
     category?: { id: string; name: string } | null;
+    session?: {
+      number: number;
+      code: string;
+    } | null;
   }>;
   trainers: Array<{
     id: string;

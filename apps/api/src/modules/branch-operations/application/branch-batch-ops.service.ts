@@ -306,6 +306,12 @@ export class BranchBatchOpsService {
       return course ? [course] : [];
     });
 
+    const sessionByCourseId = new Map(
+      assignments
+        .filter((item) => item.session)
+        .map((item) => [item.courseId, item.session!] as const),
+    );
+
     const trainers = this.uniqueTrainers(
       resolveAssignedTrainers<TrainerLike>(
         batch.trainers.map((item) => item.trainer),
@@ -372,6 +378,12 @@ export class BranchBatchOpsService {
           course.durationType,
         ),
         category: course.category ?? null,
+        session: sessionByCourseId.get(course.id)
+          ? {
+              number: sessionByCourseId.get(course.id)!.number,
+              code: sessionByCourseId.get(course.id)!.code,
+            }
+          : null,
       })),
       trainers,
       modules: modules.map((module) => ({

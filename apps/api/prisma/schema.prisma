@@ -676,6 +676,7 @@ model Batch {
   trainers      BatchTrainer[]
   facultyAssignments BatchFaculty[]
   batchCourses  BatchCourse[]
+  batchCourseSessions BatchCourseSession[]
   enrollments   Enrollment[]
   attendances   Attendance[]
   assessments   AcademicAssessment[]
@@ -725,12 +726,29 @@ model BatchCourse {
   batch     Batch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
   course    Course    @relation(fields: [courseId], references: [id])
   trainer   Trainer?  @relation(fields: [trainerId], references: [id])
+  session   BatchCourseSession?
 
   @@unique([batchId, courseId])
   @@index([batchId])
   @@index([courseId])
   @@index([trainerId])
   @@index([isDeleted])
+}
+
+/// Sequential session number for a course assigned to a batch (e.g. S01, S02).
+/// One session per BatchCourse; numbering is per-batch and stable after creation.
+model BatchCourseSession {
+  id            String      @id @default(uuid())
+  batchId       String
+  batchCourseId String      @unique
+  sessionNumber Int
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  batch         Batch       @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batchCourse   BatchCourse @relation(fields: [batchCourseId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, sessionNumber])
+  @@index([batchId])
 }
 
 model Student {
