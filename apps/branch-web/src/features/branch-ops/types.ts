@@ -292,6 +292,9 @@ export interface AttendanceItem {
   punchOut: string | null;
   durationMinutes: number | null;
   remarks: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  markedAt?: string | null;
   student: { id: string; name: string; studentCode: string };
   batch: { id: string; name: string; code?: string };
   branch?: { id: string; branchName: string; branchCode: string };

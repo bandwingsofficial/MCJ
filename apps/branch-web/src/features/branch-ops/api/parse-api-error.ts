@@ -93,8 +93,10 @@ export function userFacingApiMessage(
   }
 
   if (error.status && error.status >= 500) {
-    return "Something went wrong on our side. Please try again.";
+    return "Unable to complete this action right now. Please try again.";
   }
 
-  return fallback;
+  return fallback === "Something went wrong on our side. Please try again."
+    ? "Unable to complete this action right now. Please try again."
+    : fallback;
 }

@@ -566,11 +566,11 @@ export class BranchAttendanceService {
       if (group.status === AttendanceStatus.LEAVE) totals.leave = count;
     }
 
-    const counted =
-      totals.present + totals.absent + totals.late + totals.leave;
-    const attended = totals.present + totals.late;
+    const counted = totals.total;
     totals.percentage =
-      counted > 0 ? Math.round((attended / counted) * 1000) / 10 : 0;
+      counted > 0
+        ? Math.round((totals.present / counted) * 1000) / 10
+        : 0;
 
     const sessionGroups = await this.prisma.attendance.groupBy({
       by: ['batchCourseId', 'status'],
@@ -873,8 +873,8 @@ export class BranchAttendanceService {
       }
     }
 
-    const attended = totals.present + totals.late;
-    const counted = totals.present + totals.absent + totals.late + totals.leave;
+    const attended = totals.present;
+    const counted = totals.total;
     totals.percentage =
       counted > 0 ? Math.round((attended / counted) * 1000) / 10 : 0;
 
@@ -901,6 +901,9 @@ export class BranchAttendanceService {
       punchOut: row.punchOut,
       durationMinutes: row.durationMinutes,
       remarks: row.remarks,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      markedAt: row.updatedAt ?? row.createdAt,
       student: {
         id: row.student.id,
         name: [row.student.firstName, row.student.lastName]

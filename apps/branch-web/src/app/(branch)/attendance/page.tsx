@@ -1,14 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
-import {
-  AttendanceDetailModal,
-  useAttendanceDetailState,
-} from "@/src/features/branch-ops/components/attendance/attendance-detail-modal";
+import { ManageAttendanceModal } from "@/src/features/branch-ops/components/attendance/manage-attendance-modal";
 import { TakeAttendanceModal } from "@/src/features/branch-ops/components/attendance/take-attendance-modal";
 import type { AttendanceItem } from "@/src/features/branch-ops/types";
+import {
+  type AttendanceDatePreset,
+  attendanceStatusVariant,
+  formatAttendanceDisplayDate,
+  formatAttendanceMarkedAt,
+  resolveAttendanceDateRange,
+  todayLocalInput,
+} from "@/src/features/branch-ops/utils/attendance-date.utils";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
@@ -37,59 +43,30 @@ const STATUS_OPTIONS = [
   { label: "Present", value: "PRESENT" },
   { label: "Absent", value: "ABSENT" },
   { label: "Late", value: "LATE" },
-  { label: "Leave", value: "LEAVE" },
 ];
 
-const PERIOD_OPTIONS = [
-  { label: "Date range / custom", value: "CUSTOM" },
-  { label: "Daily", value: "daily" },
-  { label: "Weekly", value: "weekly" },
-  { label: "Monthly", value: "monthly" },
-  { label: "Yearly", value: "yearly" },
-];
-
-function todayInputValue() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function monthStartValue(reference = new Date()) {
-  return new Date(reference.getFullYear(), reference.getMonth(), 1)
-    .toISOString()
-    .slice(0, 10);
-}
-
-function formatDisplayDate(value: string) {
-  const raw = value?.toString().slice(0, 10);
-  const date = new Date(`${raw}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return raw;
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function statusVariant(status: string) {
-  if (status === "PRESENT") return "success" as const;
-  if (status === "ABSENT") return "danger" as const;
-  if (status === "LATE") return "warning" as const;
-  return "default" as const;
-}
+const DATE_PRESET_OPTIONS: Array<{ label: string; value: AttendanceDatePreset }> =
+  [
+    { label: "Today", value: "TODAY" },
+    { label: "Yesterday", value: "YESTERDAY" },
+    { label: "This Week", value: "THIS_WEEK" },
+    { label: "This Month", value: "THIS_MONTH" },
+    { label: "Custom", value: "CUSTOM" },
+  ];
 
 export default function AttendancePage() {
   const role = useAuthStore((state) => state.user?.role);
   const [takeOpen, setTakeOpen] = useState(false);
-  const detail = useAttendanceDetailState();
+  const [manageRecord, setManageRecord] = useState<AttendanceItem | null>(null);
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [period, setPeriod] = useState("CUSTOM");
-  const [date, setDate] = useState(todayInputValue());
-  const [from, setFrom] = useState(monthStartValue());
-  const [to, setTo] = useState(todayInputValue());
+  const [datePreset, setDatePreset] =
+    useState<AttendanceDatePreset>("TODAY");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [batchId, setBatchId] = useState("ALL");
   const [batchCourseId, setBatchCourseId] = useState("ALL");
-  const [studentId, setStudentId] = useState("ALL");
   const [status, setStatus] = useState("ALL");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -102,8 +79,12 @@ export default function AttendancePage() {
     return () => window.clearTimeout(timer);
   }, [search]);
 
+  const dateRange = useMemo(
+    () => resolveAttendanceDateRange(datePreset, from, to),
+    [datePreset, from, to],
+  );
+
   const batchesQuery = useAsyncData(() => branchOpsApi.batches(), []);
-  const studentsQuery = useAsyncData(() => branchOpsApi.students(), []);
   const sessionsQuery = useAsyncData(
     () =>
       batchId !== "ALL"
@@ -112,54 +93,40 @@ export default function AttendancePage() {
     [batchId],
   );
 
-  const reportParams = useMemo(() => {
-    const params: Record<string, string | number | undefined> = {
+  const reportParams = useMemo(
+    () => ({
       batchId: batchId === "ALL" ? undefined : batchId,
       batchCourseId: batchCourseId === "ALL" ? undefined : batchCourseId,
-      studentId: studentId === "ALL" ? undefined : studentId,
       status: status === "ALL" ? undefined : status,
       search: debouncedSearch || undefined,
+      from: dateRange.from,
+      to: dateRange.to,
       skip: (page - 1) * pageSize,
       take: pageSize,
-    };
-
-    if (period === "CUSTOM") {
-      params.from = from || undefined;
-      params.to = to || undefined;
-    } else {
-      params.period = period;
-      params.date = date || undefined;
-    }
-
-    return params;
-  }, [
-    batchId,
-    batchCourseId,
-    studentId,
-    status,
-    debouncedSearch,
-    page,
-    pageSize,
-    period,
-    from,
-    to,
-    date,
-  ]);
+    }),
+    [
+      batchId,
+      batchCourseId,
+      status,
+      debouncedSearch,
+      dateRange.from,
+      dateRange.to,
+      page,
+      pageSize,
+    ],
+  );
 
   const reportQuery = useAsyncData(
     () => branchOpsApi.attendanceReport(reportParams),
     [
       reportParams.batchId,
       reportParams.batchCourseId,
-      reportParams.studentId,
       reportParams.status,
       reportParams.search,
-      reportParams.skip,
-      reportParams.take,
-      reportParams.period,
-      reportParams.date,
       reportParams.from,
       reportParams.to,
+      reportParams.skip,
+      reportParams.take,
     ],
   );
 
@@ -167,41 +134,21 @@ export default function AttendancePage() {
   const total = reportQuery.data?.total ?? 0;
   const totals = reportQuery.data?.totals;
 
-  const openSessionDetail = (item: AttendanceItem) => {
-    const day = String(item.date).slice(0, 10);
-    const related = items.filter(
-      (row) =>
-        String(row.date).slice(0, 10) === day &&
-        row.session.batchCourseId === item.session.batchCourseId &&
-        row.batch.id === item.batch.id,
-    );
-    detail.openWith(
-      related.length ? related : [item],
-      `${formatDisplayDate(day)} · ${item.session.label}`,
-    );
+  const clearFilters = () => {
+    setSearch("");
+    setDebouncedSearch("");
+    setDatePreset("TODAY");
+    setFrom("");
+    setTo("");
+    setBatchId("ALL");
+    setBatchCourseId("ALL");
+    setStatus("ALL");
+    setPage(1);
   };
 
-  const openStudentHistory = async (item: AttendanceItem) => {
-    try {
-      const history = await branchOpsApi.attendanceReport({
-        studentId: item.student.id,
-        from,
-        to,
-        take: 200,
-      });
-      detail.openWith(
-        history.items,
-        `${item.student.name} · Attendance history`,
-      );
-    } catch {
-      detail.openWith(
-        items.filter((row) => row.student.id === item.student.id),
-        `${item.student.name} · Attendance history`,
-      );
-    }
-  };
-
-  if (batchesQuery.loading) return <Loader />;
+  if (batchesQuery.loading || (reportQuery.loading && reportQuery.data == null)) {
+    return <Loader />;
+  }
   if (batchesQuery.error) {
     return (
       <ErrorState
@@ -220,261 +167,255 @@ export default function AttendancePage() {
         totalLabel="Records"
         total={total}
         action={
-          <Button onClick={() => setTakeOpen(true)}>Take Attendance</Button>
-        }
-        filters={
-          <>
-            <div className="w-full sm:w-[240px]">
-              <SearchInput
-                value={search}
-                placeholder="Search student name/code..."
-                className="h-[46px] rounded-xl"
-                onChange={setSearch}
-              />
-            </div>
-            <div className="w-full sm:w-[170px]">
-              <AppSelect
-                value={period}
-                triggerClassName="h-[46px] rounded-xl"
-                onValueChange={(value) => {
-                  setPeriod(value);
-                  setPage(1);
-                }}
-                options={PERIOD_OPTIONS}
-              />
-            </div>
-            {period === "CUSTOM" ? (
-              <>
-                <div className="w-full sm:w-[160px]">
-                  <Input
-                    type="date"
-                    className="h-[46px] rounded-xl"
-                    value={from}
-                    onChange={(event) => {
-                      setFrom(event.target.value);
-                      setPage(1);
-                    }}
-                  />
-                </div>
-                <div className="w-full sm:w-[160px]">
-                  <Input
-                    type="date"
-                    className="h-[46px] rounded-xl"
-                    value={to}
-                    onChange={(event) => {
-                      setTo(event.target.value);
-                      setPage(1);
-                    }}
-                  />
-                </div>
-              </>
-            ) : (
-              <div className="w-full sm:w-[160px]">
-                <Input
-                  type="date"
-                  className="h-[46px] rounded-xl"
-                  value={date}
-                  onChange={(event) => {
-                    setDate(event.target.value);
-                    setPage(1);
-                  }}
-                />
-              </div>
-            )}
-            <div className="w-full sm:w-[200px]">
-              <AppSelect
-                value={batchId}
-                triggerClassName="h-[46px] rounded-xl"
-                onValueChange={(value) => {
-                  setBatchId(value);
-                  setBatchCourseId("ALL");
-                  setPage(1);
-                }}
-                options={[
-                  { label: "All Batches", value: "ALL" },
-                  ...(batchesQuery.data ?? []).map((batch) => ({
-                    label: batch.name,
-                    value: batch.id,
-                  })),
-                ]}
-              />
-            </div>
-            <div className="w-full sm:w-[240px]">
-              <AppSelect
-                value={batchCourseId}
-                triggerClassName="h-[46px] rounded-xl"
-                onValueChange={(value) => {
-                  setBatchCourseId(value);
-                  setPage(1);
-                }}
-                options={[
-                  { label: "All Sessions", value: "ALL" },
-                  ...(sessionsQuery.data ?? []).map((session) => ({
-                    label: session.label,
-                    value: session.batchCourseId,
-                  })),
-                ]}
-                disabled={batchId === "ALL"}
-              />
-            </div>
-            <div className="w-full sm:w-[220px]">
-              <AppSelect
-                value={studentId}
-                triggerClassName="h-[46px] rounded-xl"
-                onValueChange={(value) => {
-                  setStudentId(value);
-                  setPage(1);
-                }}
-                options={[
-                  { label: "All Students", value: "ALL" },
-                  ...(studentsQuery.data ?? []).map((student) => ({
-                    label: `${[student.firstName, student.lastName]
-                      .filter(Boolean)
-                      .join(" ")} (${student.studentCode})`,
-                    value: student.id,
-                  })),
-                ]}
-              />
-            </div>
-            <div className="w-full sm:w-[160px]">
-              <AppSelect
-                value={status}
-                triggerClassName="h-[46px] rounded-xl"
-                onValueChange={(value) => {
-                  setStatus(value);
-                  setPage(1);
-                }}
-                options={STATUS_OPTIONS}
-              />
-            </div>
-          </>
+          <Button onClick={() => setTakeOpen(true)}>
+            <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
+            Take Attendance
+          </Button>
         }
       />
 
+      <Card className="space-y-3 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Filters
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <SearchInput
+            value={search}
+            placeholder="Search student name/code..."
+            className="h-[46px] rounded-xl"
+            onChange={setSearch}
+          />
+          <AppSelect
+            value={batchId}
+            triggerClassName="h-[46px] rounded-xl"
+            onValueChange={(value) => {
+              setBatchId(value);
+              setBatchCourseId("ALL");
+              setPage(1);
+            }}
+            options={[
+              { label: "All Batches", value: "ALL" },
+              ...(batchesQuery.data ?? []).map((batch) => ({
+                label: `${batch.name} (${batch.code})`,
+                value: batch.id,
+              })),
+            ]}
+          />
+          <AppSelect
+            value={batchCourseId}
+            triggerClassName="h-[46px] rounded-xl"
+            onValueChange={(value) => {
+              setBatchCourseId(value);
+              setPage(1);
+            }}
+            options={[
+              { label: "All Sessions", value: "ALL" },
+              ...(sessionsQuery.data ?? []).map((session) => ({
+                label: session.label,
+                value: session.batchCourseId,
+              })),
+            ]}
+            disabled={batchId === "ALL" || sessionsQuery.loading}
+            placeholder={
+              sessionsQuery.loading ? "Loading sessions..." : "All Sessions"
+            }
+          />
+          <AppSelect
+            value={status}
+            triggerClassName="h-[46px] rounded-xl"
+            onValueChange={(value) => {
+              setStatus(value);
+              setPage(1);
+            }}
+            options={STATUS_OPTIONS}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <AppSelect
+            value={datePreset}
+            triggerClassName="h-[46px] rounded-xl"
+            onValueChange={(value) => {
+              setDatePreset(value as AttendanceDatePreset);
+              if (value !== "CUSTOM") {
+                setFrom("");
+                setTo("");
+              } else if (!from && !to) {
+                const today = todayLocalInput();
+                setFrom(today);
+                setTo(today);
+              }
+              setPage(1);
+            }}
+            options={DATE_PRESET_OPTIONS}
+          />
+          <Input
+            type="date"
+            className="h-[46px] rounded-xl"
+            value={datePreset === "CUSTOM" ? from : dateRange.from ?? ""}
+            disabled={datePreset !== "CUSTOM"}
+            onChange={(event) => {
+              setFrom(event.target.value);
+              setPage(1);
+            }}
+          />
+          <Input
+            type="date"
+            className="h-[46px] rounded-xl"
+            value={datePreset === "CUSTOM" ? to : dateRange.to ?? ""}
+            disabled={datePreset !== "CUSTOM"}
+            onChange={(event) => {
+              setTo(event.target.value);
+              setPage(1);
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="h-[46px] rounded-xl"
+            onClick={clearFilters}
+          >
+            Clear Filters
+          </Button>
+        </div>
+      </Card>
+
       {totals ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <Card className="p-4 text-sm">
-            Total {totals.total}
-          </Card>
-          <Card className="p-4 text-sm text-emerald-700">
-            Present {totals.present}
-          </Card>
-          <Card className="p-4 text-sm text-rose-700">
-            Absent {totals.absent}
-          </Card>
-          <Card className="p-4 text-sm text-amber-700">
-            Late {totals.late}
+            <p className="text-xs text-slate-500">Total</p>
+            <p className="mt-1 text-lg font-semibold text-[#102A56]">
+              {totals.total}
+            </p>
           </Card>
           <Card className="p-4 text-sm">
-            Attendance {totals.percentage}%
+            <p className="text-xs text-slate-500">Present</p>
+            <p className="mt-1 text-lg font-semibold text-emerald-700">
+              {totals.present}
+            </p>
+          </Card>
+          <Card className="p-4 text-sm">
+            <p className="text-xs text-slate-500">Absent</p>
+            <p className="mt-1 text-lg font-semibold text-rose-700">
+              {totals.absent}
+            </p>
+          </Card>
+          <Card className="p-4 text-sm">
+            <p className="text-xs text-slate-500">Late</p>
+            <p className="mt-1 text-lg font-semibold text-amber-700">
+              {totals.late}
+            </p>
+          </Card>
+          <Card className="p-4 text-sm">
+            <p className="text-xs text-slate-500">Attendance %</p>
+            <p className="mt-1 text-lg font-semibold text-[#102A56]">
+              {totals.percentage}%
+            </p>
           </Card>
         </div>
       ) : null}
 
-      {period === "monthly" || (period === "CUSTOM" && from && to) ? (
-        reportQuery.data?.bySession?.length ? (
-          <Card className="space-y-3 p-4">
-            <p className="text-sm font-semibold text-[#102A56]">
-              Session-level summary
-            </p>
-            <div className="grid gap-3 md:grid-cols-2">
-              {reportQuery.data.bySession.map((session) => (
-                <div
-                  key={session.batchCourseId}
-                  className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm"
-                >
-                  <p className="font-medium text-[#102A56]">{session.label}</p>
-                  <p className="mt-1 text-slate-600">
-                    Present {session.present} · Absent {session.absent} · Late{" "}
-                    {session.late}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </Card>
-        ) : null
-      ) : null}
+      <div className="space-y-3">
+        <p className="text-sm font-semibold text-[#102A56]">
+          Attendance Records
+        </p>
 
-      {reportQuery.loading ? (
-        <Loader />
-      ) : reportQuery.error ? (
-        <ErrorState
-          description={reportQuery.error}
-          onRetry={reportQuery.reload}
-        />
-      ) : !items.length ? (
-        <EmptyState title="No attendance records found." />
-      ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Student</TableHead>
-                <TableHead>Batch</TableHead>
-                <TableHead>Session</TableHead>
-                <TableHead>Course</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{formatDisplayDate(String(item.date))}</TableCell>
-                  <TableCell>
-                    <div>{item.student.name}</div>
-                    <div className="font-mono text-xs text-slate-400">
-                      {item.student.studentCode}
-                    </div>
-                  </TableCell>
-                  <TableCell>{item.batch.name}</TableCell>
-                  <TableCell>
-                    {item.session.sessionNumber != null
-                      ? `Session ${item.session.sessionNumber}`
-                      : item.session.label}
-                  </TableCell>
-                  <TableCell>{item.course.title}</TableCell>
-                  <TableCell>
-                    <Badge variant={statusVariant(item.status)}>
-                      {item.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openSessionDetail(item)}
-                      >
-                        Session
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void openStudentHistory(item)}
-                      >
-                        Student
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          <TablePaginationBar
-            page={page}
-            pageSize={pageSize}
-            total={total}
-            onPageChange={setPage}
-            onPageSizeChange={(size) => {
-              setPageSize(size);
-              setPage(1);
-            }}
+        {reportQuery.loading ? (
+          <Loader />
+        ) : reportQuery.error ? (
+          <ErrorState
+            description={
+              reportQuery.error || "Unable to load attendance. Please try again."
+            }
+            onRetry={reportQuery.reload}
           />
-        </>
-      )}
+        ) : !items.length ? (
+          <EmptyState
+            title={
+              datePreset === "TODAY"
+                ? "No attendance records for today"
+                : "No attendance records found"
+            }
+            description={
+              datePreset === "TODAY"
+                ? "Attendance records will appear here once attendance is marked."
+                : "Try changing your filters or date range."
+            }
+          />
+        ) : (
+          <>
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Student Code</TableHead>
+                    <TableHead>Batch</TableHead>
+                    <TableHead>Session</TableHead>
+                    <TableHead>Course</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Marked At</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        {formatAttendanceDisplayDate(String(item.date))}
+                      </TableCell>
+                      <TableCell className="font-medium text-[#102A56]">
+                        {item.student.name}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {item.student.studentCode}
+                      </TableCell>
+                      <TableCell>{item.batch.name}</TableCell>
+                      <TableCell>
+                        {item.session.sessionNumber != null
+                          ? `Session ${item.session.sessionNumber}`
+                          : item.session.label}
+                      </TableCell>
+                      <TableCell>{item.course.title}</TableCell>
+                      <TableCell>
+                        <Badge variant={attendanceStatusVariant(item.status)}>
+                          {item.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {formatAttendanceMarkedAt(
+                          item.markedAt ?? item.updatedAt ?? item.createdAt,
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setManageRecord(item)}
+                        >
+                          Manage
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <TablePaginationBar
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
+          </>
+        )}
+      </div>
 
       <TakeAttendanceModal
         open={takeOpen}
@@ -483,11 +424,11 @@ export default function AttendancePage() {
         batches={batchesQuery.data ?? []}
       />
 
-      <AttendanceDetailModal
-        open={detail.open}
-        onClose={detail.close}
-        title={detail.title}
-        items={detail.items}
+      <ManageAttendanceModal
+        open={Boolean(manageRecord)}
+        record={manageRecord}
+        onClose={() => setManageRecord(null)}
+        onSaved={() => void reportQuery.reload()}
       />
     </div>
   );

@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  parseBranchOpsError,
+  userFacingApiMessage,
+} from "@/src/features/branch-ops/api/parse-api-error";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type {
   AttendanceSessionOption,
@@ -145,18 +149,28 @@ export function TakeAttendanceModal({
   };
 
   const save = async () => {
-    if (!batchId || !batchCourseId || !date) {
-      appToast.error("Select date, batch, and session");
+    if (!date) {
+      appToast.error("Please select an attendance date.");
+      return;
+    }
+    if (!batchId) {
+      appToast.error("Please select a batch.");
+      return;
+    }
+    if (!batchCourseId) {
+      appToast.error("Please select a session.");
       return;
     }
 
     if (!students.length) {
-      appToast.error("No enrolled students in this batch");
+      appToast.error("No enrolled students found for this batch.");
       return;
     }
 
     if (summary.unmarked > 0) {
-      appToast.error("Mark attendance for every enrolled student");
+      appToast.error(
+        "Please mark attendance for all students before saving.",
+      );
       return;
     }
 
@@ -171,11 +185,21 @@ export function TakeAttendanceModal({
           status: statuses[student.id] as MarkStatus,
         })),
       });
-      appToast.success("Attendance saved");
+      appToast.success(
+        sheetQuery.data?.hasExisting
+          ? "Attendance updated successfully"
+          : "Attendance saved successfully",
+      );
       onSaved();
       onClose();
-    } catch {
-      appToast.error("Unable to save attendance");
+    } catch (error) {
+      const parsed = parseBranchOpsError(error);
+      appToast.error(
+        userFacingApiMessage(
+          parsed,
+          "Unable to save attendance. Please try again.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -244,7 +268,11 @@ export function TakeAttendanceModal({
             </label>
             <AppSelect
               value={batchCourseId || undefined}
-              placeholder="Select session"
+              placeholder={
+                sessionsQuery.loading
+                  ? "Loading sessions..."
+                  : "Select session"
+              }
               onValueChange={setBatchCourseId}
               options={(sessionsQuery.data ?? []).map((session) => ({
                 label: session.label,
@@ -252,6 +280,13 @@ export function TakeAttendanceModal({
               }))}
               disabled={!batchId || sessionsQuery.loading}
             />
+            {batchId &&
+            !sessionsQuery.loading &&
+            !(sessionsQuery.data ?? []).length ? (
+              <p className="mt-1 text-xs text-amber-700">
+                No sessions assigned to this batch.
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -299,17 +334,22 @@ export function TakeAttendanceModal({
             <p className="text-sm text-[#647A9B]">Loading enrolled students...</p>
           ) : !students.length ? (
             <p className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-[#647A9B]">
-              No enrolled students in this batch.
+              No enrolled students found for this batch.
             </p>
           ) : (
             <>
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm font-medium text-slate-700">
-                  Enrolled students
-                  {sheetQuery.data?.hasExisting
-                    ? " · Existing attendance loaded"
-                    : ""}
-                </p>
+                <div>
+                  <p className="text-sm font-medium text-slate-700">
+                    Enrolled students
+                  </p>
+                  {sheetQuery.data?.hasExisting ? (
+                    <p className="mt-0.5 text-xs font-medium text-amber-700">
+                      Attendance already marked for this session. Existing
+                      statuses are loaded for editing.
+                    </p>
+                  ) : null}
+                </div>
                 <Button
                   type="button"
                   variant="outline"
@@ -323,18 +363,24 @@ export function TakeAttendanceModal({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Student</TableHead>
                     <TableHead>Student Code</TableHead>
-                    <TableHead>Student Name</TableHead>
                     <TableHead>Attendance</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {students.map((student) => (
+                  {students.map((student, index) => (
                     <TableRow key={student.id}>
+                      <TableCell className="text-slate-500">
+                        {index + 1}
+                      </TableCell>
+                      <TableCell className="font-medium text-[#102A56]">
+                        {student.name}
+                      </TableCell>
                       <TableCell className="font-mono text-xs">
                         {student.studentCode}
                       </TableCell>
-                      <TableCell>{student.name}</TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {MARK_STATUSES.map((status) => (
