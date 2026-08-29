@@ -46,12 +46,10 @@ export class JobExpiredException extends BaseException {
 }
 
 export class JobNotPendingApprovalException extends BaseException {
-  constructor() {
-    super(
-      ERROR_CODES.VALIDATION_ERROR,
-      'This job submission is not pending approval.',
-      400,
-    );
+  constructor(
+    message = 'This job submission is not pending approval.',
+  ) {
+    super(ERROR_CODES.VALIDATION_ERROR, message, 400);
   }
 }
 

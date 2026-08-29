@@ -148,6 +148,8 @@ export class PrismaJobRepository implements JobRepository {
 
     if (filters.status) {
       where.status = filters.status;
+    } else if (filters.includeStatuses?.length) {
+      where.status = { in: filters.includeStatuses };
     } else if (filters.excludeStatuses?.length) {
       where.status = { notIn: filters.excludeStatuses };
     }

@@ -26,6 +26,7 @@ export class ListJobsHandler {
       onlyDeleted: query.onlyDeleted,
       source: query.source,
       excludeStatuses: query.excludeStatuses,
+      includeStatuses: query.includeStatuses,
       skip: query.skip,
       take: query.take,
     };
@@ -43,6 +44,7 @@ export class ListJobsHandler {
         onlyDeleted: filters.onlyDeleted,
         source: filters.source,
         excludeStatuses: filters.excludeStatuses,
+        includeStatuses: filters.includeStatuses,
       }),
     ]);
 

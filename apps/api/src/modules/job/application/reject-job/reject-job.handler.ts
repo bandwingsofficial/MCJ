@@ -22,7 +22,7 @@ export class RejectJobHandler {
     );
 
     this.domainService.ensureNotDeleted(job);
-    this.domainService.ensurePendingApproval(job);
+    this.domainService.ensureCanReject(job);
 
     job.reject(command.reason ?? null, command.reviewedBy);
     await this.jobRepo.save(job);

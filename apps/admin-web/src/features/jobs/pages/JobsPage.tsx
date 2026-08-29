@@ -322,7 +322,8 @@ export function JobsPage() {
           filters={onboarding.filters}
           setFilters={onboarding.setFilters}
           refetch={onboarding.refetch}
-          actionsDisabled={isActing}
+          onCatalogRefresh={refetch}
+          actionsDisabled={isActing || isSubmitting}
         />
       ) : tab === "applications" ? (
         <JobsApplicationsPanel

@@ -31,7 +31,6 @@ export type JobLifecycleStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED";
 export type JobOnboardingStatusFilter =
   | "ALL"
   | "PENDING"
-  | "ACCEPTED"
   | "REJECTED";
 
 export interface InterviewProcess {
@@ -203,6 +202,7 @@ export interface JobListQuery {
   status?: JobStatus;
   source?: JobSource;
   catalogOnly?: boolean;
+  onboardingQueue?: boolean;
 }
 
 export interface JobListResult {

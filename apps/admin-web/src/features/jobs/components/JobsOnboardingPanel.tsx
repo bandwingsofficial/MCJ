@@ -29,6 +29,8 @@ interface JobsOnboardingPanelProps {
   filters: JobOnboardingFilters;
   setFilters: (filters: JobOnboardingFilters) => void;
   refetch: () => Promise<void>;
+  /** Refresh Jobs catalog after accept so the job appears immediately. */
+  onCatalogRefresh?: () => Promise<void>;
   actionsDisabled?: boolean;
 }
 
@@ -64,6 +66,7 @@ export function JobsOnboardingPanel({
   filters,
   setFilters,
   refetch,
+  onCatalogRefresh,
   actionsDisabled = false,
 }: JobsOnboardingPanelProps) {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -80,15 +83,28 @@ export function JobsOnboardingPanel({
   const to = Math.min(page * pageSize, total);
 
   const pendingJob = selectedJob?.status === "PENDING_APPROVAL";
+  const rejectedJob = selectedJob?.status === "REJECTED";
+  const canAccept = pendingJob || rejectedJob;
 
-  const acceptCopy = useMemo(
-    () => ({
+  const acceptCopy = useMemo(() => {
+    if (rejectedJob) {
+      return {
+        title: "Accept this rejected submission again?",
+        description:
+          "This will activate the same job record, generate a job number if needed, and publish it to the Jobs catalog.",
+        confirmLabel: "Accept Again",
+        successVerb: "accepted again",
+      };
+    }
+
+    return {
       title: "Accept this job submission?",
       description:
-        "This will generate a job number and publish the job to the catalog.",
-    }),
-    [],
-  );
+        "This will generate a job number and publish the job to the Jobs catalog. It will leave the Onboarding queue.",
+      confirmLabel: "Accept Job",
+      successVerb: "approved",
+    };
+  }, [rejectedJob]);
 
   const openReview = (job: Job) => {
     setSelectedJob(job);
@@ -105,13 +121,13 @@ export function JobsOnboardingPanel({
       const result = await jobService.approveJob(selectedJob.id);
       appToast.success(
         result.data.jobNumber
-          ? `Job approved successfully. ${result.data.jobNumber}`
-          : "Job approved successfully.",
+          ? `Job ${acceptCopy.successVerb} successfully. ${result.data.jobNumber}`
+          : `Job ${acceptCopy.successVerb} successfully.`,
       );
       setConfirmAccept(false);
       setDetailsOpen(false);
       setSelectedJob(null);
-      await refetch();
+      await Promise.all([refetch(), onCatalogRefresh?.()]);
     } catch (err) {
       appToast.error(
         err instanceof Error ? err.message : "Unable to approve this job.",
@@ -207,6 +223,7 @@ export function JobsOnboardingPanel({
                       <tbody className="divide-y divide-slate-100">
                         {jobs.map((job) => {
                           const pending = job.status === "PENDING_APPROVAL";
+                          const rejected = job.status === "REJECTED";
 
                           return (
                           <tr
@@ -289,6 +306,20 @@ export function JobsOnboardingPanel({
                                     </Button>
                                   </>
                                 ) : null}
+                                {rejected ? (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    className="admin-create-btn"
+                                    disabled={actionsDisabled || isActing}
+                                    onClick={() => {
+                                      setSelectedJob(job);
+                                      setConfirmAccept(true);
+                                    }}
+                                  >
+                                    Accept Again
+                                  </Button>
+                                ) : null}
                               </div>
                             </td>
                           </tr>
@@ -358,16 +389,18 @@ export function JobsOnboardingPanel({
           setDetailsOpen(false);
         }}
         footer={
-          pendingJob ? (
+          canAccept ? (
             <>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isActing}
-                onClick={() => setRejectOpen(true)}
-              >
-                Reject
-              </Button>
+              {pendingJob ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isActing}
+                  onClick={() => setRejectOpen(true)}
+                >
+                  Reject
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 className="admin-create-btn"
@@ -375,7 +408,7 @@ export function JobsOnboardingPanel({
                 loading={isActing}
                 onClick={() => setConfirmAccept(true)}
               >
-                Accept Job
+                {rejectedJob ? "Accept Again" : "Accept Job"}
               </Button>
             </>
           ) : undefined
@@ -386,7 +419,7 @@ export function JobsOnboardingPanel({
         open={confirmAccept}
         title={acceptCopy.title}
         description={acceptCopy.description}
-        confirmLabel="Accept Job"
+        confirmLabel={acceptCopy.confirmLabel}
         loading={isActing}
         confirmVariant="success"
         onConfirm={() => {
@@ -433,8 +466,9 @@ export function JobsOnboardingPanel({
         }
       >
         <p className="text-sm text-[#647A9B]">
-          This submission will be kept for history and will not become a catalog
-          job.
+          This submission stays in Onboarding as Rejected. No Job Number is
+          generated and it will not appear in the Jobs catalog. You can Accept
+          Again later.
         </p>
         <label className="mt-4 block text-sm font-medium text-[#102A56]">
           Rejection reason (optional)

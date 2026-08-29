@@ -5,6 +5,7 @@ import { JobStatus } from '../enums/job-status.enum';
 export interface JobListFilters {
   status?: JobStatus;
   excludeStatuses?: JobStatus[];
+  includeStatuses?: JobStatus[];
   source?: JobSource;
   employmentType?: string;
   search?: string;

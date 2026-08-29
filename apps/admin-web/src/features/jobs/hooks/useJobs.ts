@@ -51,10 +51,6 @@ function toOnboardingStatus(
     return "PENDING_APPROVAL";
   }
 
-  if (filter === "ACCEPTED") {
-    return "ACTIVE";
-  }
-
   if (filter === "REJECTED") {
     return "REJECTED";
   }
@@ -291,6 +287,7 @@ export const useJobOnboarding = (): UseJobOnboardingReturn => {
           take: pageSize,
           source: "COMPANY_ONBOARDING",
           status: toOnboardingStatus(filters.status),
+          onboardingQueue: filters.status === "ALL" ? true : undefined,
         }),
         jobService.getJobs({
           source: "COMPANY_ONBOARDING",

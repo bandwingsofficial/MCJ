@@ -36,6 +36,7 @@ class JobService {
         status: params?.status,
         source: params?.source,
         catalogOnly: params?.catalogOnly,
+        onboardingQueue: params?.onboardingQueue,
       },
     });
 

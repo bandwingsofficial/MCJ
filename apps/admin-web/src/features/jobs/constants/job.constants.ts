@@ -87,7 +87,6 @@ export const JOB_ONBOARDING_STATUS_OPTIONS: {
 }[] = [
   { value: "ALL", label: "All Status" },
   { value: "PENDING", label: "Pending" },
-  { value: "ACCEPTED", label: "Accepted" },
   { value: "REJECTED", label: "Rejected" },
 ];
 

@@ -1,3 +1,4 @@
+import { JobStatus } from '../../domain/enums/job-status.enum';
 import type { JobRepository } from '../../domain/repositories/job.repository';
 import { JobDomainService } from '../../domain/services/job-domain.service';
 import { GetJobResult } from '../get-job/get-job.result';
@@ -9,6 +10,11 @@ export class ApproveJobCommand {
   ) {}
 }
 
+/**
+ * Accepts a company onboarding submission (PENDING or REJECTED → ACTIVE).
+ * Idempotent: if already ACTIVE with a job number, returns the existing job.
+ * Reuses an existing jobNumber when present (never creates a second Job row).
+ */
 export class ApproveJobHandler {
   constructor(
     private readonly jobRepo: JobRepository,
@@ -21,9 +27,15 @@ export class ApproveJobHandler {
     );
 
     this.domainService.ensureNotDeleted(job);
-    this.domainService.ensurePendingApproval(job);
 
-    const jobNumber = await this.jobRepo.nextJobNumber();
+    // Idempotent accept — same Job, no duplicate number.
+    if (job.status === JobStatus.ACTIVE && job.jobNumber) {
+      return GetJobResult.fromEntity(job);
+    }
+
+    this.domainService.ensureCanApprove(job);
+
+    const jobNumber = job.jobNumber ?? (await this.jobRepo.nextJobNumber());
     job.approve(jobNumber, command.reviewedBy);
     await this.jobRepo.save(job);
 

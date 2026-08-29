@@ -77,6 +77,32 @@ export class JobDomainService {
     }
   }
 
+  /**
+   * Accept / Accept Again: PENDING_APPROVAL or REJECTED only.
+   * Already-ACTIVE jobs are handled as no-ops by the approve handler.
+   */
+  ensureCanApprove(job: Job): void {
+    if (
+      job.status === JobStatus.PENDING_APPROVAL ||
+      job.status === JobStatus.REJECTED
+    ) {
+      return;
+    }
+
+    throw new JobNotPendingApprovalException(
+      'Only pending or rejected job submissions can be accepted.',
+    );
+  }
+
+  /** Reject is only allowed from PENDING_APPROVAL (not from ACTIVE). */
+  ensureCanReject(job: Job): void {
+    if (job.status !== JobStatus.PENDING_APPROVAL) {
+      throw new JobNotPendingApprovalException(
+        'Only pending job submissions can be rejected.',
+      );
+    }
+  }
+
   async resolveAvailableSlug(
     jobRepo: JobRepository,
     title: string,

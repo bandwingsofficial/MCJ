@@ -58,4 +58,11 @@ export class ListJobsQueryDto extends PaginationQueryDto {
   @IsBoolean()
   @Transform(({ value }) => toBoolean(value))
   catalogOnly?: boolean;
+
+  /** Onboarding approval queue: PENDING_APPROVAL + REJECTED only. */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => toBoolean(value))
+  onboardingQueue?: boolean;
 }

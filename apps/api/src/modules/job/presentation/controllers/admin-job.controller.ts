@@ -123,6 +123,11 @@ export class AdminJobController {
 
   @Get()
   async list(@Query() query: ListJobsQueryDto) {
+    const onboardingStatuses =
+      query.onboardingQueue && !query.status
+        ? [JobStatus.PENDING_APPROVAL, JobStatus.REJECTED]
+        : undefined;
+
     const result = await this.listJobsHandler.execute(
       new ListJobsQuery(
         query.status,
@@ -139,6 +144,7 @@ export class AdminJobController {
         query.catalogOnly
           ? [JobStatus.PENDING_APPROVAL, JobStatus.REJECTED]
           : undefined,
+        onboardingStatuses,
       ),
     );
 
