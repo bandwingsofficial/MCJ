@@ -34,6 +34,8 @@ import {
   AssignFacultyDto,
   AssessmentQueryDto,
   AttendanceQueryDto,
+  AttendanceSheetQueryDto,
+  BulkRecordAttendanceDto,
   CreateAssessmentDto,
   CreateBranchStaffDto,
   EnrollmentListQueryDto,
@@ -232,6 +234,20 @@ export class BranchOperationsController {
     };
   }
 
+  @Get('batches/:id/sessions')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ATTENDANCE_READ)
+  async batchSessions(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+  ) {
+    return {
+      success: true,
+      message: 'Batch sessions fetched successfully',
+      data: await this.attendance.listSessions(user, id),
+    };
+  }
+
   @Get('attendance')
   @Roles(...FacultyOrManager)
   @Permissions(Permission.ATTENDANCE_READ)
@@ -243,6 +259,20 @@ export class BranchOperationsController {
       success: true,
       message: 'Attendance fetched successfully',
       data: await this.attendance.list(user, query),
+    };
+  }
+
+  @Get('attendance/sheet')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ATTENDANCE_READ)
+  async attendanceSheet(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Query() query: AttendanceSheetQueryDto,
+  ) {
+    return {
+      success: true,
+      message: 'Attendance sheet fetched successfully',
+      data: await this.attendance.getSheet(user, query),
     };
   }
 
@@ -271,6 +301,20 @@ export class BranchOperationsController {
       success: true,
       message: 'Attendance saved successfully',
       data: await this.attendance.upsertAttendance(user, dto),
+    };
+  }
+
+  @Post('attendance/bulk')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ATTENDANCE_WRITE)
+  async bulkRecordAttendance(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Body() dto: BulkRecordAttendanceDto,
+  ) {
+    return {
+      success: true,
+      message: 'Attendance saved successfully',
+      data: await this.attendance.bulkUpsert(user, dto),
     };
   }
 

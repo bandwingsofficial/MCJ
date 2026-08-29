@@ -714,19 +714,20 @@ model BatchTrainer {
 }
 
 model BatchCourse {
-  id        String    @id @default(uuid())
-  batchId   String
-  courseId  String
-  trainerId String?
-  isActive  Boolean   @default(true)
-  isDeleted Boolean   @default(false)
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  batch     Batch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  course    Course    @relation(fields: [courseId], references: [id])
-  trainer   Trainer?  @relation(fields: [trainerId], references: [id])
-  session   BatchCourseSession?
+  id          String       @id @default(uuid())
+  batchId     String
+  courseId    String
+  trainerId   String?
+  isActive    Boolean      @default(true)
+  isDeleted   Boolean      @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  batch       Batch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  course      Course       @relation(fields: [courseId], references: [id])
+  trainer     Trainer?     @relation(fields: [trainerId], references: [id])
+  session     BatchCourseSession?
+  attendances Attendance[]
 
   @@unique([batchId, courseId])
   @@index([batchId])
@@ -1097,6 +1098,8 @@ model Attendance {
   id              String           @id @default(uuid())
   branchId        String
   batchId         String
+  /// BatchCourse assignment (session) this attendance belongs to.
+  batchCourseId   String
   studentId       String
   facultyId       String?
   date            DateTime         @db.Date
@@ -1111,18 +1114,22 @@ model Attendance {
   updatedAt       DateTime         @updatedAt
   branch          Branch           @relation(fields: [branchId], references: [id])
   batch           Batch            @relation(fields: [batchId], references: [id])
+  batchCourse     BatchCourse      @relation(fields: [batchCourseId], references: [id])
   student         Student          @relation(fields: [studentId], references: [id])
   faculty         BranchUser?      @relation(fields: [facultyId], references: [id], onDelete: SetNull)
 
-  @@unique([studentId, batchId, date])
+  /// One attendance status per student per batch-course session per date.
+  @@unique([studentId, batchCourseId, date])
   @@index([branchId])
   @@index([batchId])
+  @@index([batchCourseId])
   @@index([studentId])
   @@index([facultyId])
   @@index([date])
   @@index([status])
   @@index([branchId, date])
   @@index([batchId, date])
+  @@index([batchCourseId, date])
 }
 
 model AcademicAssessment {

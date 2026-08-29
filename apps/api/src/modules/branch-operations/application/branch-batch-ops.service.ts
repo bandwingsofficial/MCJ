@@ -28,6 +28,7 @@ import {
   facultyBatchStudentWhere,
   facultyBranchEnrollmentWhere,
 } from './faculty-batch-query';
+import { formatAttendanceSessionLabel } from './attendance-session.util';
 
 const VISIBLE_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
   EnrollmentStatus.ADMITTED,
@@ -467,6 +468,13 @@ export class BranchBatchOpsService {
           faculty: {
             select: { id: true, firstName: true, lastName: true },
           },
+          batchCourse: {
+            select: {
+              id: true,
+              course: { select: { id: true, title: true, code: true } },
+              session: { select: { id: true, sessionNumber: true } },
+            },
+          },
         },
       }),
       this.prisma.academicAssessment.findMany({
@@ -491,6 +499,19 @@ export class BranchBatchOpsService {
       punchOut: row.punchOut,
       durationMinutes: row.durationMinutes,
       remarks: row.remarks,
+      course: {
+        id: row.batchCourse.course.id,
+        title: row.batchCourse.course.title,
+        code: row.batchCourse.course.code,
+      },
+      session: {
+        batchCourseId: row.batchCourse.id,
+        sessionNumber: row.batchCourse.session?.sessionNumber ?? null,
+        label: formatAttendanceSessionLabel(
+          row.batchCourse.session?.sessionNumber,
+          row.batchCourse.course.title,
+        ),
+      },
       faculty: row.faculty
         ? {
             id: row.faculty.id,

@@ -3,6 +3,10 @@ import type {
   ApiSuccess,
   AssessmentItem,
   AttendanceItem,
+  AttendanceReport,
+  AttendanceSessionOption,
+  AttendanceSheet,
+  AttendanceSummary,
   BatchCourseContent,
   BatchListItem,
   BatchStudentItem,
@@ -43,32 +47,53 @@ export const branchOpsApi = {
   students: () =>
     unwrap<StudentListItem[]>(apiClient.get("/branch/students")),
 
-  attendance: (params?: Record<string, string | undefined>) =>
-    unwrap<AttendanceItem[]>(
+  attendance: (params?: Record<string, string | number | undefined>) =>
+    unwrap<{ items: AttendanceItem[]; total: number }>(
       apiClient.get("/branch/attendance", { params }),
     ),
 
-  attendanceReport: (params?: Record<string, string | undefined>) =>
-    unwrap<{
-      totals: {
-        present: number;
-        absent: number;
-        late: number;
-        leave: number;
-      };
-      items: AttendanceItem[];
-    }>(apiClient.get("/branch/attendance/report", { params })),
+  attendanceReport: (params?: Record<string, string | number | undefined>) =>
+    unwrap<AttendanceReport>(
+      apiClient.get("/branch/attendance/report", { params }),
+    ),
+
+  attendanceSheet: (params: {
+    batchId: string;
+    batchCourseId: string;
+    date: string;
+  }) =>
+    unwrap<AttendanceSheet>(
+      apiClient.get("/branch/attendance/sheet", { params }),
+    ),
+
+  batchSessions: (batchId: string) =>
+    unwrap<AttendanceSessionOption[]>(
+      apiClient.get(`/branch/batches/${batchId}/sessions`),
+    ),
 
   saveAttendance: (payload: {
     batchId: string;
+    batchCourseId: string;
     studentId: string;
     date: string;
     status: string;
     remarks?: string;
   }) => unwrap(apiClient.post("/branch/attendance", payload)),
 
+  saveAttendanceBulk: (payload: {
+    batchId: string;
+    batchCourseId: string;
+    date: string;
+    records: Array<{ studentId: string; status: string; remarks?: string }>;
+  }) =>
+    unwrap<{
+      items: AttendanceItem[];
+      summary: AttendanceSummary;
+    }>(apiClient.post("/branch/attendance/bulk", payload)),
+
   punch: (payload: {
     batchId: string;
+    batchCourseId: string;
     studentId: string;
     type: "IN" | "OUT";
     date?: string;

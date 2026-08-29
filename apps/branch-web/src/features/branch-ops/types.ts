@@ -39,6 +39,58 @@ export interface AttendanceSummary {
   leave: number;
   total: number;
   percentage: number;
+  unmarked?: number;
+}
+
+export interface AttendanceSessionOption {
+  batchCourseId: string;
+  sessionId: string | null;
+  sessionNumber: number | null;
+  sessionCode: string | null;
+  label: string;
+  course: {
+    id: string;
+    title: string;
+    code: string | null;
+  };
+}
+
+export interface AttendanceSheetStudent {
+  id: string;
+  studentCode: string;
+  firstName: string;
+  lastName: string | null;
+  name: string;
+  enrollmentId: string;
+  attendanceId: string | null;
+  status: "PRESENT" | "ABSENT" | "LATE" | "LEAVE" | null;
+  remarks: string | null;
+}
+
+export interface AttendanceSheet {
+  date: string;
+  branch: { id: string; branchName: string; branchCode: string };
+  batch: { id: string; name: string; code: string };
+  session: AttendanceSessionOption;
+  students: AttendanceSheetStudent[];
+  summary: AttendanceSummary;
+  hasExisting: boolean;
+}
+
+export interface AttendanceReport {
+  totals: AttendanceSummary;
+  bySession: Array<{
+    batchCourseId: string;
+    label: string;
+    courseTitle: string;
+    present: number;
+    absent: number;
+    late: number;
+    leave: number;
+    total: number;
+  }>;
+  items: AttendanceItem[];
+  total: number;
 }
 
 export interface BatchListItem {
@@ -194,7 +246,13 @@ export interface StudentBatchActivity {
       punchOut: string | null;
       durationMinutes: number | null;
       remarks: string | null;
-      faculty: { id: string; name: string };
+      course?: { id: string; title: string; code: string | null };
+      session?: {
+        batchCourseId: string;
+        sessionNumber: number | null;
+        label: string;
+      };
+      faculty: { id: string; name: string } | null;
     }>;
     overall: AttendanceSummary;
     weekly: AttendanceSummary;
@@ -235,8 +293,17 @@ export interface AttendanceItem {
   durationMinutes: number | null;
   remarks: string | null;
   student: { id: string; name: string; studentCode: string };
-  batch: { id: string; name: string };
-  faculty: { id: string; name: string };
+  batch: { id: string; name: string; code?: string };
+  branch?: { id: string; branchName: string; branchCode: string };
+  course: { id: string; title: string; code: string | null };
+  session: {
+    batchCourseId: string;
+    sessionId: string | null;
+    sessionNumber: number | null;
+    sessionCode: string | null;
+    label: string;
+  };
+  faculty: { id: string; name: string } | null;
 }
 
 export interface AssessmentItem {

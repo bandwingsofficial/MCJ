@@ -212,6 +212,8 @@ export function StudentActivityModal({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
+                      <TableHead>Session</TableHead>
+                      <TableHead>Course</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Punch in</TableHead>
                       <TableHead>Punch out</TableHead>
@@ -222,6 +224,13 @@ export function StudentActivityModal({
                     {data.attendance.items.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell>{formatBatchDate(item.date)}</TableCell>
+                        <TableCell>
+                          {item.session?.label ??
+                            (item.session?.sessionNumber != null
+                              ? `Session ${item.session.sessionNumber}`
+                              : "—")}
+                        </TableCell>
+                        <TableCell>{item.course?.title ?? "—"}</TableCell>
                         <TableCell>
                           <Badge variant={attendanceVariant(item.status)}>
                             {item.status}

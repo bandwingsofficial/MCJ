@@ -1,5 +1,6 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  IsArray,
   IsDateString,
   IsEmail,
   IsEnum,
@@ -15,6 +16,8 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ArrayMinSize,
+  ValidateNested,
 } from 'class-validator';
 import {
   AssessmentType,
@@ -30,6 +33,9 @@ import { BranchUserRole } from '@modules/branch-user/domain/enums/branch-user-ro
 export class RecordAttendanceDto {
   @IsUUID()
   batchId!: string;
+
+  @IsUUID()
+  batchCourseId!: string;
 
   @IsUUID()
   studentId!: string;
@@ -54,6 +60,47 @@ export class RecordAttendanceDto {
   remarks?: string;
 }
 
+export class BulkAttendanceRecordDto {
+  @IsUUID()
+  studentId!: string;
+
+  @IsEnum(AttendanceStatus)
+  status!: AttendanceStatus;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remarks?: string;
+}
+
+export class BulkRecordAttendanceDto {
+  @IsUUID()
+  batchId!: string;
+
+  @IsUUID()
+  batchCourseId!: string;
+
+  @IsDateString()
+  date!: string;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => BulkAttendanceRecordDto)
+  records!: BulkAttendanceRecordDto[];
+}
+
+export class AttendanceSheetQueryDto {
+  @IsUUID()
+  batchId!: string;
+
+  @IsUUID()
+  batchCourseId!: string;
+
+  @IsDateString()
+  date!: string;
+}
+
 export enum PunchType {
   IN = 'IN',
   OUT = 'OUT',
@@ -62,6 +109,9 @@ export enum PunchType {
 export class PunchAttendanceDto {
   @IsUUID()
   batchId!: string;
+
+  @IsUUID()
+  batchCourseId!: string;
 
   @IsUUID()
   studentId!: string;
@@ -97,6 +147,14 @@ export class AttendanceQueryDto {
 
   @IsOptional()
   @IsUUID()
+  batchCourseId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  courseId?: string;
+
+  @IsOptional()
+  @IsUUID()
   studentId?: string;
 
   @IsOptional()
@@ -106,6 +164,24 @@ export class AttendanceQueryDto {
   @IsOptional()
   @IsEnum(AttendanceStatus)
   status?: AttendanceStatus;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  skip?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  take?: number;
 }
 
 export class CreateAssessmentDto {
