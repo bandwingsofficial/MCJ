@@ -14,8 +14,9 @@ export class Phone {
     ) {
       throw new BaseException(
         ERROR_CODES.VALIDATION_ERROR,
-        'Invalid student phone',
+        'Please enter a valid phone number.',
         400,
+        { field: 'phone' },
       );
     }
 

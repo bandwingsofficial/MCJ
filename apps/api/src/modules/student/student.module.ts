@@ -7,6 +7,8 @@ import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 
 import { AuthModule } from '../auth/auth.module';
+import { AUTH_TOKENS } from '../auth/auth.tokens';
+import type { PasswordHasherPort } from '../auth/application/ports/password-hasher.port';
 import { BRANCH_TOKENS } from '../branch/branch.tokens';
 import { BranchModule } from '../branch/branch.module';
 import type { BranchRepository } from '../branch/domain/repositories/branch.repository';
@@ -87,18 +89,24 @@ import { PublicStudentController } from './presentation/controllers/public-stude
         branchRepo: BranchRepository,
         domainService: StudentDomainService,
         uploadDomainService: UploadDomainService,
+        prisma: PrismaService,
+        passwordHasher: PasswordHasherPort,
       ) =>
         new CreateStudentHandler(
           studentRepo,
           branchRepo,
           domainService,
           uploadDomainService,
+          prisma,
+          passwordHasher,
         ),
       inject: [
         STUDENT_TOKENS.STUDENT_REPOSITORY,
         BRANCH_TOKENS.BRANCH_REPOSITORY,
         StudentDomainService,
         UploadDomainService,
+        PrismaService,
+        AUTH_TOKENS.PASSWORD_HASHER,
       ],
     },
 

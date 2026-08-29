@@ -13,8 +13,9 @@ export class Email {
     ) {
       throw new BaseException(
         ERROR_CODES.VALIDATION_ERROR,
-        'Invalid student email',
+        'Please enter a valid email address.',
         400,
+        { field: 'email' },
       );
     }
 

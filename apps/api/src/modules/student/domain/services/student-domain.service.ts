@@ -9,15 +9,14 @@ import type { Student } from '../entities/student.entity';
 import type { StudentRepository } from '../repositories/student.repository';
 import { BranchNotFoundException } from '../errors/branch-not-found.exception';
 import { formatStudentCode } from '../utils/student-code.util';
+
 @Injectable()
 export class StudentDomainService {
-  async ensureExists(
-    student: Student | null,
-  ): Promise<Student> {
+  async ensureExists(student: Student | null): Promise<Student> {
     if (!student) {
       throw new BaseException(
         ERROR_CODES.STUDENT_NOT_FOUND,
-        'Student not found',
+        'Student could not be found.',
         404,
       );
     }
@@ -39,9 +38,10 @@ export class StudentDomainService {
 
     if (existing && existing.id !== excludeId) {
       throw new BaseException(
-        ERROR_CODES.STUDENT_ALREADY_EXISTS,
-        'Student email already exists',
-        400,
+        ERROR_CODES.STUDENT_EMAIL_EXISTS,
+        'A student with this email already exists. Use a different email address.',
+        409,
+        { field: 'email' },
       );
     }
   }
@@ -54,16 +54,14 @@ export class StudentDomainService {
     if (!phone) return;
 
     const normalized = phone.replace(/[\s-]/g, '').trim();
-    const existing = await studentRepo.findByPhone(
-      normalized,
-      true,
-    );
+    const existing = await studentRepo.findByPhone(normalized, true);
 
     if (existing && existing.id !== excludeId) {
       throw new BaseException(
-        ERROR_CODES.STUDENT_ALREADY_EXISTS,
-        'Student phone already exists',
-        400,
+        ERROR_CODES.STUDENT_PHONE_EXISTS,
+        'A student with this phone number already exists. Use a different phone number.',
+        409,
+        { field: 'phone' },
       );
     }
   }
@@ -80,9 +78,10 @@ export class StudentDomainService {
 
     if (existing && existing.id !== excludeId) {
       throw new BaseException(
-        ERROR_CODES.STUDENT_ALREADY_EXISTS,
-        'Student code already exists',
-        400,
+        ERROR_CODES.STUDENT_CODE_EXISTS,
+        'A student with this student code already exists. Use a different code.',
+        409,
+        { field: 'studentCode' },
       );
     }
   }
@@ -98,24 +97,19 @@ export class StudentDomainService {
     }
   }
 
-  ensureBranchAccess(
-    student: Student,
-    branchId?: string | null,
-  ): void {
+  ensureBranchAccess(student: Student, branchId?: string | null): void {
     if (!branchId || student.branchId === branchId) {
       return;
     }
 
     throw new BaseException(
       ERROR_CODES.BRANCH_ACCESS_DENIED,
-      'Branch access denied',
+      'You do not have access to this student branch.',
       403,
     );
   }
 
-  async resolveDefaultBranchId(
-    branchRepo: BranchRepository,
-  ): Promise<string> {
+  async resolveDefaultBranchId(branchRepo: BranchRepository): Promise<string> {
     const branches = await branchRepo.findAll({
       status: BranchStatus.ACTIVE,
       take: 1,
@@ -124,7 +118,7 @@ export class StudentDomainService {
     if (!branches.length) {
       throw new BaseException(
         ERROR_CODES.BRANCH_NOT_FOUND,
-        'No active branch available',
+        'No active branch is available. Create or activate a branch first.',
         404,
       );
     }
@@ -139,10 +133,7 @@ export class StudentDomainService {
       const maxNumber = await studentRepo.getMaxStudentCodeNumber();
       const studentCode = formatStudentCode(maxNumber + 1 + attempt);
 
-      const existing = await studentRepo.findByStudentCode(
-        studentCode,
-        true,
-      );
+      const existing = await studentRepo.findByStudentCode(studentCode, true);
 
       if (!existing) {
         return studentCode;
@@ -150,9 +141,10 @@ export class StudentDomainService {
     }
 
     throw new BaseException(
-      ERROR_CODES.STUDENT_ALREADY_EXISTS,
-      'Unable to generate unique student code',
-      400,
+      ERROR_CODES.STUDENT_CODE_EXISTS,
+      'Unable to generate a unique student code. Please try again.',
+      409,
+      { field: 'studentCode' },
     );
   }
 }

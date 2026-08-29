@@ -1,8 +1,13 @@
 "use client";
 
+import { useState } from "react";
+
 import { Modal } from "@/src/shared/components/ui/model";
 import { appToast } from "@/src/shared/components/ui/toast";
-import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import {
+  getErrorFieldErrors,
+  getErrorMessage,
+} from "@/src/core/utils/get-error-message";
 
 import { StudentForm } from "@/src/features/students/components/student-form";
 import { useUpdateStudent } from "@/src/features/students/hooks/useUpdateStudent";
@@ -27,6 +32,7 @@ export function UpdateStudentModal({
   onSuccess,
 }: UpdateStudentModalProps) {
   const { updateStudent, isLoading } = useUpdateStudent();
+  const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (
     values: StudentFormValues,
@@ -36,21 +42,33 @@ export function UpdateStudentModal({
       return;
     }
 
-    await updateStudent(
-      student.id,
-      toUpdateStudentRequest(values),
-      image,
-    );
-    appToast.success("Student updated successfully");
-    await onSuccess();
-    onClose();
+    setServerErrors({});
+    try {
+      await updateStudent(
+        student.id,
+        toUpdateStudentRequest(values),
+        image,
+      );
+      appToast.success("Student updated successfully");
+      await onSuccess();
+      onClose();
+    } catch (error) {
+      const fieldErrors = getErrorFieldErrors(error);
+      if (Object.keys(fieldErrors).length > 0) {
+        setServerErrors(fieldErrors);
+      }
+      appToast.error(getErrorMessage(error));
+    }
   };
 
   return (
     <Modal
       open={open}
       title="Edit Student"
-      onClose={onClose}
+      onClose={() => {
+        setServerErrors({});
+        onClose();
+      }}
       contentClassName="!flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-3xl flex-col !overflow-hidden"
     >
       {student ? (
@@ -62,14 +80,12 @@ export function UpdateStudentModal({
           isSubmitting={isLoading}
           submitLabel="Update Student"
           loadingLabel="Updating Student..."
-          onSubmit={async (values, image) => {
-            try {
-              await handleSubmit(values, image);
-            } catch (error) {
-              appToast.error(getErrorMessage(error));
-            }
+          serverErrors={serverErrors}
+          onSubmit={handleSubmit}
+          onCancel={() => {
+            setServerErrors({});
+            onClose();
           }}
-          onCancel={onClose}
         />
       ) : null}
     </Modal>

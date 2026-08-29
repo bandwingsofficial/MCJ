@@ -1,6 +1,4 @@
-import { AxiosError } from "axios";
-
-import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { toApiClientError } from "@/src/core/utils/get-error-message";
 import { apiClient } from "@/src/core/api/axios";
 
 import { studentApi } from "@/src/features/students/api/student.api";
@@ -18,13 +16,7 @@ const FORM_OPTIONS_PAGE_SIZE = 100;
 
 class StudentService {
   private handleError(error: unknown): Error {
-    if (error instanceof AxiosError) {
-      return new Error(getErrorMessage(error));
-    }
-
-    return new Error(
-      error instanceof Error ? error.message : "Unexpected error occurred",
-    );
+    return toApiClientError(error);
   }
 
   async getStudents(filters?: StudentFilters) {

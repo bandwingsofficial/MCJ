@@ -56,6 +56,8 @@ interface StudentFormProps {
   isSubmitting: boolean;
   submitLabel: string;
   loadingLabel?: string;
+  /** Server-side field errors (e.g. duplicate email). Preserves form values. */
+  serverErrors?: Record<string, string>;
   onSubmit: (values: StudentFormValues, image: File | null) => Promise<void>;
   onCancel?: () => void;
 }
@@ -105,6 +107,7 @@ export function StudentForm({
   isSubmitting,
   submitLabel,
   loadingLabel,
+  serverErrors,
   onCancel,
   onSubmit,
 }: StudentFormProps) {
@@ -130,6 +133,7 @@ export function StudentForm({
     register,
     handleSubmit,
     setValue,
+    setError,
     watch,
     reset,
     trigger,
@@ -140,6 +144,20 @@ export function StudentForm({
     reValidateMode: "onChange",
     defaultValues: mergedDefaults,
   });
+
+  useEffect(() => {
+    if (!serverErrors || Object.keys(serverErrors).length === 0) {
+      return;
+    }
+
+    for (const [field, message] of Object.entries(serverErrors)) {
+      if (!message?.trim()) continue;
+      setError(field as keyof StudentFormValues, {
+        type: "server",
+        message,
+      });
+    }
+  }, [serverErrors, setError]);
 
   const values = watch();
   const notesLength = (values.notes ?? "").length;

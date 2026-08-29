@@ -1,6 +1,8 @@
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { Student } from '../../domain/entities/student.entity';
@@ -12,12 +14,8 @@ import {
 import { StudentMapper } from '../mappers/student.mapper';
 import { parseStudentCodeNumber } from '../../domain/utils/student-code.util';
 
-export class PrismaStudentRepository
-  implements StudentRepository
-{
-  private readonly logger = new Logger(
-    PrismaStudentRepository.name,
-  );
+export class PrismaStudentRepository implements StudentRepository {
+  private readonly logger = new Logger(PrismaStudentRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -26,11 +24,63 @@ export class PrismaStudentRepository
 
     const data = StudentMapper.toPersistence(student);
 
-    await this.prisma.student.upsert({
-      where: { id: student.id },
-      update: { ...data },
-      create: { ...data },
-    });
+    try {
+      await this.prisma.student.upsert({
+        where: { id: student.id },
+        update: { ...data },
+        create: { ...data },
+      });
+    } catch (error) {
+      this.rethrowUniqueConstraint(error);
+      throw error;
+    }
+  }
+
+  private rethrowUniqueConstraint(error: unknown): void {
+    if (
+      !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+      error.code !== 'P2002'
+    ) {
+      return;
+    }
+
+    const target = Array.isArray(error.meta?.target)
+      ? error.meta.target.join(',')
+      : String(error.meta?.target ?? '');
+    const normalized = target.toLowerCase();
+
+    if (normalized.includes('phone')) {
+      throw new BaseException(
+        ERROR_CODES.STUDENT_PHONE_EXISTS,
+        'A student with this phone number already exists. Use a different phone number.',
+        409,
+        { field: 'phone' },
+      );
+    }
+
+    if (normalized.includes('studentcode') || normalized.includes('student_code')) {
+      throw new BaseException(
+        ERROR_CODES.STUDENT_CODE_EXISTS,
+        'A student with this student code already exists. Use a different code.',
+        409,
+        { field: 'studentCode' },
+      );
+    }
+
+    if (normalized.includes('userid') || normalized.includes('user_id')) {
+      throw new BaseException(
+        ERROR_CODES.STUDENT_ALREADY_EXISTS,
+        'This student account is already linked. Please try again.',
+        409,
+      );
+    }
+
+    throw new BaseException(
+      ERROR_CODES.STUDENT_EMAIL_EXISTS,
+      'A student with this email already exists. Use a different email address.',
+      409,
+      { field: 'email' },
+    );
   }
 
   async findById(
