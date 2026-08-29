@@ -28,11 +28,18 @@ describe('faculty batch query contracts', () => {
     expect(morning.batchId).toBe(MORNING);
     expect(evening.batchId).toBe(EVENING);
     expect(morning.batchId).not.toBe(evening.batchId);
-    expect(morning.branchId).toBe(MALLESWARAM);
+    expect(morning.branchId).toBeUndefined();
+    expect(morning.batch).toEqual({
+      branchId: MALLESWARAM,
+      isDeleted: false,
+    });
     expect(morning.student).toEqual({ isDeleted: false });
     expect(morning.status).toEqual({
       in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
     });
+    expect(
+      (morning.student as { branchId?: string } | undefined)?.branchId,
+    ).toBeUndefined();
   });
 
   it('does not let a Morning enrollment where match Evening 1', () => {

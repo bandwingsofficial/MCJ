@@ -29,6 +29,10 @@ import { enrollmentService } from "@/src/features/enrollments/services/enrollmen
 import type { Enrollment } from "@/src/features/enrollments/types";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
 import {
+  currentEnrollmentByStudentId,
+  formatEnrollmentLocation,
+} from "@/src/features/enrollments/utils/current-enrollment";
+import {
   formatCurrency,
   normalizeMoney,
 } from "@/src/features/enrollments/utils/format-payment";
@@ -101,7 +105,12 @@ export function CreateEnrollmentForm({
   );
 
   const [students, setStudents] = useState<
-    Array<{ id: string; label: string; meta?: string }>
+    Array<{
+      id: string;
+      label: string;
+      meta?: string;
+      enrolledElsewhere?: boolean;
+    }>
   >([]);
   const [studentId, setStudentId] = useState(enrollment?.student?.id ?? "");
 
@@ -216,13 +225,17 @@ export function CreateEnrollmentForm({
     const loadBatchContext = async () => {
       setIsLoadingContext(true);
       try {
-        const [batchResponse, assignments, enrollmentResponse, studentResponse] =
+        const [
+          batchResponse,
+          assignments,
+          currentEnrollmentResponse,
+          studentResponse,
+        ] =
           await Promise.all([
             batchService.getBatch(batchId),
             batchService.getBatchCourses(batchId),
             enrollmentService.getEnrollments({
-              branchId,
-              batchId,
+              currentOnly: true,
               skip: 0,
               take: 100,
             }),
@@ -269,17 +282,9 @@ export function CreateEnrollmentForm({
         setDiscountAmount(nextDiscount);
         setCategoryName(nextCategory);
 
-        const enrolledIds = new Set<string>();
-        const enrollmentPayload = parseEnrollmentListResponse(enrollmentResponse);
-        for (const item of enrollmentPayload.items) {
-          if (
-            !item.isDeleted &&
-            item.student?.id &&
-            item.id !== enrollment?.id
-          ) {
-            enrolledIds.add(item.student.id);
-          }
-        }
+        const currentByStudent = currentEnrollmentByStudentId(
+          parseEnrollmentListResponse(currentEnrollmentResponse).items,
+        );
 
         const studentPayload = parseStudentListResponse(studentResponse.data);
         const mappedStudents = studentPayload.items
@@ -289,19 +294,35 @@ export function CreateEnrollmentForm({
               return !isArchivedStudent(item);
             }
 
-            return (
-              item.isActive &&
-              !isArchivedStudent(item) &&
-              !enrolledIds.has(item.id)
-            );
+            return item.isActive && !isArchivedStudent(item);
           })
-          .map((item) => ({
-            id: item.id,
-            label: formatPersonName(item.firstName, item.lastName),
-            meta: [item.studentCode, item.phone, item.email]
-              .filter(Boolean)
-              .join(" · "),
-          }));
+          .map((item) => {
+            const current = currentByStudent.get(item.id);
+            const enrolledElsewhere =
+              Boolean(current) &&
+              current?.id !== enrollment?.id &&
+              current?.batch?.id !== batchId;
+            const enrolledHere =
+              Boolean(current) &&
+              current?.id !== enrollment?.id &&
+              current?.batch?.id === batchId;
+            const location = current
+              ? formatEnrollmentLocation(current)
+              : "";
+
+            return {
+              id: item.id,
+              label: formatPersonName(item.firstName, item.lastName),
+              meta: enrolledElsewhere
+                ? `Already enrolled · ${location}`
+                : enrolledHere
+                  ? `Already enrolled in this batch · ${location}`
+                  : [item.studentCode, item.phone, item.email]
+                      .filter(Boolean)
+                      .join(" · "),
+              enrolledElsewhere: enrolledElsewhere || enrolledHere,
+            };
+          });
 
         if (
           enrollment?.student &&
@@ -320,6 +341,7 @@ export function CreateEnrollmentForm({
             ]
               .filter(Boolean)
               .join(" · "),
+            enrolledElsewhere: false,
           });
         }
 
@@ -362,9 +384,14 @@ export function CreateEnrollmentForm({
             ? `${student.label} — ${student.meta}`
             : student.label,
           value: student.id,
+          disabled: student.enrolledElsewhere,
         })),
       ),
     [students],
+  );
+
+  const selectedStudentEnrollment = students.find(
+    (student) => student.id === studentId,
   );
 
   const existingPaidAmount = isEdit
@@ -379,6 +406,15 @@ export function CreateEnrollmentForm({
   const handleSubmit = async () => {
     if (!branchId || !batchId || !studentId) {
       appToast.error("Select branch, batch, and student.");
+      return;
+    }
+
+    if (!isEdit && selectedStudentEnrollment?.enrolledElsewhere) {
+      appToast.error(
+        selectedStudentEnrollment.meta
+          ? `Student is already actively enrolled. ${selectedStudentEnrollment.meta}`
+          : "Student is already actively enrolled. A student can have only one active enrollment at a time.",
+      );
       return;
     }
 
@@ -539,10 +575,21 @@ export function CreateEnrollmentForm({
               onValueChange={setStudentId}
             />
           )}
+          {!isEdit && selectedStudentEnrollment?.enrolledElsewhere ? (
+            <p className="text-sm text-amber-700">
+              Student is already actively enrolled in{" "}
+              {selectedStudentEnrollment.meta}. A student can have only one
+              active enrollment at a time. Unenroll/cancel the current
+              enrollment before creating another.
+            </p>
+          ) : null}
         </div>
       ) : null}
 
-      {!isEdit && batchId && studentId ? (
+      {!isEdit &&
+      batchId &&
+      studentId &&
+      !selectedStudentEnrollment?.enrolledElsewhere ? (
         <div className="space-y-4 rounded-xl border border-slate-200 p-4">
           <h3 className="text-sm font-semibold text-[#102A56]">Payment</h3>
 
@@ -660,7 +707,8 @@ export function CreateEnrollmentForm({
             !branchId ||
             !batchId ||
             !studentId ||
-            isLoadingContext
+            isLoadingContext ||
+            Boolean(!isEdit && selectedStudentEnrollment?.enrolledElsewhere)
           }
           onClick={() => {
             void handleSubmit();

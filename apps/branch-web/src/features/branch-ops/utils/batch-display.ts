@@ -100,6 +100,14 @@ export function studentName(student: {
   return [student.firstName, student.lastName].filter(Boolean).join(" ") || "—";
 }
 
+export function formatBatchLabel(
+  name?: string | null,
+  code?: string | null,
+) {
+  if (!name) return "—";
+  return code ? `${name} (${code})` : name;
+}
+
 export function formatDurationMinutes(value?: number | null) {
   if (value == null) return "—";
   if (value < 60) return `${value} min`;

@@ -11,6 +11,7 @@ export interface EnrollmentListFilters {
   courseId?: string;
   batchId?: string;
   status?: EnrollmentStatus;
+  currentOnly?: boolean;
   paymentStatus?: PaymentStatus;
   source?: EnrollmentSource;
   isActive?: boolean;
@@ -177,6 +178,14 @@ export interface EnrollmentRepository {
     batchId: string,
     includeDeleted?: boolean,
   ): Promise<Enrollment | null>;
+  findCurrentByStudentId(
+    studentId: string,
+    excludeId?: string,
+  ): Promise<Enrollment | null>;
+  findCurrentDetailByStudentId(
+    studentId: string,
+    excludeId?: string,
+  ): Promise<EnrollmentDetailView | null>;
   findDetailById(
     id: string,
     includeDeleted?: boolean,

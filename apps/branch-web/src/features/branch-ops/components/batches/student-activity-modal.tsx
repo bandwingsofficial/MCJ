@@ -7,6 +7,8 @@ import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type { AttendanceSummary } from "@/src/features/branch-ops/types";
 import {
   formatBatchDate,
+  formatBatchLabel,
+  formatBatchStatus,
   formatDurationMinutes,
 } from "@/src/features/branch-ops/utils/batch-display";
 import { Badge } from "@/src/shared/components/ui/badge";
@@ -118,6 +120,64 @@ export function StudentActivityModal({
         <EmptyState title="No activity found for this student in this batch." />
       ) : (
         <div className="space-y-6">
+          <section className="rounded-xl border border-[#E1EBF5] bg-[#F8FBFF] p-4">
+            <h3 className="mb-3 text-sm font-semibold text-[#102A56]">
+              Profile & enrollment
+            </h3>
+            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+                  Student code
+                </dt>
+                <dd className="mt-1 font-mono text-sm text-[#102A56]">
+                  {data.student.studentCode}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+                  Name
+                </dt>
+                <dd className="mt-1 text-sm font-medium text-[#102A56]">
+                  {data.student.name}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+                  Batch
+                </dt>
+                <dd className="mt-1 text-sm text-[#102A56]">
+                  {formatBatchLabel(data.batch.name, data.batch.code)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+                  Enrollment status
+                </dt>
+                <dd className="mt-1">
+                  <Badge variant="info">
+                    {formatBatchStatus(data.enrollmentStatus)}
+                  </Badge>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+                  Enrollment date
+                </dt>
+                <dd className="mt-1 text-sm text-[#102A56]">
+                  {formatBatchDate(data.enrollmentDate)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+                  Email
+                </dt>
+                <dd className="mt-1 text-sm text-[#102A56]">
+                  {data.student.email || "—"}
+                </dd>
+              </div>
+            </dl>
+          </section>
+
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <SummaryCard label="Overall" summary={data.attendance.overall} />
             <SummaryCard label="This week" summary={data.attendance.weekly} />

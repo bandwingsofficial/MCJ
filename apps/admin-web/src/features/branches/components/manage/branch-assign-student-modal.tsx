@@ -18,6 +18,10 @@ import { courseService } from "@/src/features/courses/services/course.service";
 import { getCourseDefaultDiscount } from "@/src/features/courses/utils/get-course-default-discount.util";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
+import {
+  currentEnrollmentByStudentId,
+  formatEnrollmentLocation,
+} from "@/src/features/enrollments/utils/current-enrollment";
 import { normalizeMoney } from "@/src/features/enrollments/utils/format-payment";
 import { studentService } from "@/src/features/students/services/student.service";
 import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.utils";
@@ -60,7 +64,12 @@ export function BranchAssignStudentModal({
   );
 
   const [students, setStudents] = useState<
-    Array<{ id: string; label: string; meta?: string }>
+    Array<{
+      id: string;
+      label: string;
+      meta?: string;
+      enrolledElsewhere?: boolean;
+    }>
   >([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [studentSearch, setStudentSearch] = useState("");
@@ -124,13 +133,12 @@ export function BranchAssignStudentModal({
       setIsLoadingBatchDetails(true);
       setIsLoadingStudents(true);
       try {
-        const [batchResponse, assignments, enrollmentResponse, studentResponse] =
+        const [batchResponse, assignments, currentEnrollmentResponse, studentResponse] =
           await Promise.all([
             batchService.getBatch(batchId),
             batchService.getBatchCourses(batchId),
             enrollmentService.getEnrollments({
-              branchId,
-              batchId,
+              currentOnly: true,
               skip: 0,
               take: 100,
             }),
@@ -174,29 +182,30 @@ export function BranchAssignStudentModal({
         setDiscountAmount(nextDiscount);
         setCategoryName(nextCategory);
 
-        const enrolledIds = new Set<string>();
-        const enrollmentPayload = parseEnrollmentListResponse(enrollmentResponse);
-        for (const enrollment of enrollmentPayload.items) {
-          if (!enrollment.isDeleted && enrollment.student?.id) {
-            enrolledIds.add(enrollment.student.id);
-          }
-        }
+        const currentByStudent = currentEnrollmentByStudentId(
+          parseEnrollmentListResponse(currentEnrollmentResponse).items,
+        );
+        const enrolledIds = new Set(currentByStudent.keys());
         setEnrolledStudentIds(enrolledIds);
 
         const studentPayload = parseStudentListResponse(studentResponse.data);
         setStudents(
           studentPayload.items
-            .filter(
-              (item) =>
-                item.isActive &&
-                !isArchivedStudent(item) &&
-                !enrolledIds.has(item.id),
-            )
-            .map((item) => ({
-              id: item.id,
-              label: formatPersonName(item.firstName, item.lastName),
-              meta: item.studentCode ?? item.email ?? undefined,
-            })),
+            .filter((item) => item.isActive && !isArchivedStudent(item))
+            .map((item) => {
+              const current = currentByStudent.get(item.id);
+              const location = current
+                ? formatEnrollmentLocation(current)
+                : "";
+              return {
+                id: item.id,
+                label: formatPersonName(item.firstName, item.lastName),
+                meta: current
+                  ? `Already enrolled · ${location}`
+                  : item.studentCode ?? item.email ?? undefined,
+                enrolledElsewhere: Boolean(current),
+              };
+            }),
         );
       } catch (error) {
         appToast.error(getErrorMessage(error));
@@ -251,6 +260,15 @@ export function BranchAssignStudentModal({
     setIsSubmitting(true);
     try {
       for (const studentId of selectedStudentIds) {
+        const selected = students.find((item) => item.id === studentId);
+        if (selected?.enrolledElsewhere) {
+          appToast.error(
+            selected.meta ??
+              "Student is already enrolled in another active batch.",
+          );
+          return;
+        }
+
         await enrollmentService.createEnrollment({
           studentId,
           batchId,
@@ -345,14 +363,24 @@ export function BranchAssignStudentModal({
                 <div className="space-y-1">
                   {filteredStudents.map((student) => {
                     const checked = selectedStudentIds.includes(student.id);
+                    const blocked = Boolean(student.enrolledElsewhere);
                     return (
                       <label
                         key={student.id}
-                        className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-2 hover:bg-slate-50"
+                        className={`flex items-center gap-3 rounded-lg px-2 py-2 ${
+                          blocked
+                            ? "cursor-not-allowed opacity-70"
+                            : "cursor-pointer hover:bg-slate-50"
+                        }`}
                       >
                         <Checkbox
                           checked={checked}
-                          onCheckedChange={() => toggleStudent(student.id)}
+                          disabled={blocked}
+                          onCheckedChange={() => {
+                            if (!blocked) {
+                              toggleStudent(student.id);
+                            }
+                          }}
                         />
                         <span className="min-w-0">
                           <span className="block text-sm font-medium text-[#102A56]">

@@ -6,6 +6,10 @@ import { Button } from "@/src/shared/components/ui/button";
 import { Dropdown } from "@/src/shared/components/ui/dropdown";
 
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
+import {
+  canUnenrollEnrollment,
+  isCurrentEnrollmentStatus,
+} from "@/src/features/enrollments/utils/current-enrollment";
 
 const iconBtnClass = "h-10 w-10 shrink-0 rounded-lg p-0";
 const iconClass = "h-[1.35rem] w-[1.35rem]";
@@ -21,6 +25,7 @@ interface Props {
   onManageDelete: (enrollment: Enrollment) => void;
   onManageRestore: (enrollment: Enrollment) => void;
   onManagePermanentDelete: (enrollment: Enrollment) => void;
+  onUnenroll?: (enrollment: Enrollment) => void;
   onActivate: (enrollment: Enrollment) => void;
   onDeactivate: (enrollment: Enrollment) => void;
 }
@@ -32,10 +37,15 @@ export function StudentEnrollmentRowActions({
   onManageDelete,
   onManageRestore,
   onManagePermanentDelete,
+  onUnenroll,
   onActivate,
   onDeactivate,
 }: Props) {
   const archived = isArchivedEnrollment(enrollment);
+  const isCurrent =
+    !archived && isCurrentEnrollmentStatus(enrollment.status);
+  const showUnenroll =
+    !archived && onUnenroll && canUnenrollEnrollment(enrollment);
 
   const manageItems = archived
     ? [
@@ -50,7 +60,18 @@ export function StudentEnrollmentRowActions({
         },
       ]
     : [
-        { label: "Edit", onClick: () => onManageEdit(enrollment) },
+        ...(isCurrent
+          ? [{ label: "Edit", onClick: () => onManageEdit(enrollment) }]
+          : []),
+        ...(showUnenroll
+          ? [
+              {
+                label: "Unenroll Student",
+                onClick: () => onUnenroll(enrollment),
+                destructive: true,
+              },
+            ]
+          : []),
         {
           label: "Delete",
           onClick: () => onManageDelete(enrollment),
@@ -58,7 +79,7 @@ export function StudentEnrollmentRowActions({
         },
       ];
 
-  if (archived) {
+  if (archived || !isCurrent) {
     return (
       <div className="flex items-center justify-end gap-1">
         <Dropdown
@@ -68,8 +89,10 @@ export function StudentEnrollmentRowActions({
               variant="ghost"
               size="sm"
               disabled={disabled}
-              title="Manage enrollment"
-              aria-label="Manage enrollment"
+              title={archived ? "Manage enrollment" : "View enrollment history"}
+              aria-label={
+                archived ? "Manage enrollment" : "View enrollment history"
+              }
               className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
             >
               <Settings2 className={iconClass} />

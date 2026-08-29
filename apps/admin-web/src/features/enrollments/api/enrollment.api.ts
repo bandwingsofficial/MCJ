@@ -78,6 +78,13 @@ export const enrollmentApi = {
     );
   },
 
+  async unenrollEnrollment(id: string, reason?: string) {
+    return apiClient.post<EnrollmentResponse>(
+      ENROLLMENT_ENDPOINTS.UNENROLL(id),
+      reason ? { reason } : {},
+    );
+  },
+
   async deleteEnrollment(id: string) {
     return apiClient.delete<DeleteEnrollmentResponse>(
       ENROLLMENT_ENDPOINTS.DELETE(id),

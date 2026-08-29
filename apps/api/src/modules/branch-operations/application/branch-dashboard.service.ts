@@ -51,12 +51,11 @@ export class BranchDashboardService {
     const assignedBatches = batchIds.length;
 
     const enrollmentWhere = {
-      branchId: user.branchId,
       isDeleted: false,
       status: {
         in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
       },
-      ...(batchWhere.id ? { batchId: batchWhere.id } : {}),
+      batch: batchWhere,
     };
 
     const students = batchIds.length

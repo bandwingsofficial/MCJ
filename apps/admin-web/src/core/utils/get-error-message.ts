@@ -5,6 +5,14 @@ interface ApiErrorResponse {
   code?: string;
   message?: string | string[];
   errors?: Record<string, string[] | string>;
+  meta?: {
+    existingEnrollment?: {
+      status?: string;
+      branch?: { branchName?: string };
+      batch?: { name?: string; code?: string };
+      course?: { title?: string };
+    };
+  };
 }
 
 const CODE_MESSAGES: Record<string, string> = {
@@ -25,6 +33,8 @@ const CODE_MESSAGES: Record<string, string> = {
     "An active user already exists with this phone number.",
   ROLE_ASSIGNMENT_DENIED:
     "You are not authorized to create or assign this role.",
+  STUDENT_ALREADY_ENROLLED:
+    "Student is already actively enrolled. A student can have only one active enrollment at a time.",
 };
 
 export const getErrorMessage = (error: unknown): string => {
@@ -47,9 +57,9 @@ export const getErrorMessage = (error: unknown): string => {
         typeof message === "string" &&
         message.trim()
       ) {
-        return message;
+        return withExistingEnrollment(message, data);
       }
-      return CODE_MESSAGES[code];
+      return withExistingEnrollment(CODE_MESSAGES[code], data);
     }
 
     // Prefer explicit backend messages for validation/conflict responses
@@ -59,7 +69,7 @@ export const getErrorMessage = (error: unknown): string => {
       typeof message === "string" &&
       message.trim()
     ) {
-      return message;
+      return withExistingEnrollment(message, data);
     }
 
     if (Array.isArray(message) && message[0]) {
@@ -79,9 +89,12 @@ export const getErrorMessage = (error: unknown): string => {
     }
 
     if (status === 409) {
-      return typeof message === "string" && message.trim()
-        ? message
-        : "This action conflicts with existing data.";
+      return withExistingEnrollment(
+        typeof message === "string" && message.trim()
+          ? message
+          : "This action conflicts with existing data.",
+        data,
+      );
     }
 
     if (status && status >= 500) {
@@ -103,6 +116,25 @@ export const getErrorMessage = (error: unknown): string => {
 
   return "Something went wrong. Please try again.";
 };
+
+function withExistingEnrollment(
+  message: string,
+  data?: ApiErrorResponse,
+): string {
+  const existing = data?.meta?.existingEnrollment;
+  if (!existing) {
+    return message;
+  }
+
+  const branch = existing.branch?.branchName?.trim();
+  const batch = existing.batch?.name?.trim();
+
+  if (branch && batch) {
+    return `Student is already actively enrolled in ${branch} - ${batch} batch. A student can have only one active enrollment at a time.`;
+  }
+
+  return message;
+}
 
 function formatValidationErrors(
   errors?: Record<string, string[] | string>,

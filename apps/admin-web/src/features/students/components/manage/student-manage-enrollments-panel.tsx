@@ -13,6 +13,11 @@ import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
+import {
+  UnenrollEnrollmentDialog,
+  type UnenrollEnrollmentTarget,
+} from "@/src/features/enrollments/components/dialogs/unenroll-enrollment-dialog";
+import { useUnenrollEnrollment } from "@/src/features/enrollments/hooks/useUnenrollEnrollment";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { useStudentEnrollments } from "@/src/features/students/hooks/useStudentEnrollments";
 import { studentService } from "@/src/features/students/services/student.service";
@@ -21,6 +26,8 @@ import type { BranchOption, Student } from "@/src/features/students/types/studen
 import { CreateStudentEnrollmentModal } from "./create-student-enrollment-modal";
 import { UpdateStudentEnrollmentModal } from "./update-student-enrollment-modal";
 import { StudentEnrollmentTable } from "./student-enrollment-table";
+import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
+import { resolveEnrollmentBranchName } from "@/src/features/students/utils/enrollment-display.utils";
 
 interface Props {
   student: Student;
@@ -54,12 +61,16 @@ export function StudentManageEnrollmentsPanel({
   const [restoreTarget, setRestoreTarget] = useState<Enrollment | null>(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] =
     useState<Enrollment | null>(null);
+  const [unenrollTarget, setUnenrollTarget] =
+    useState<UnenrollEnrollmentTarget | null>(null);
   const [statusTarget, setStatusTarget] = useState<{
     enrollment: Enrollment;
     activate: boolean;
   } | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [branches, setBranches] = useState<BranchOption[]>([]);
+  const { unenrollEnrollment, isLoading: isUnenrolling } =
+    useUnenrollEnrollment();
 
   const branchMap = useMemo(
     () =>
@@ -192,6 +203,22 @@ export function StudentManageEnrollmentsPanel({
     }
   };
 
+  const handleUnenroll = async (reason?: string) => {
+    if (!unenrollTarget) {
+      return;
+    }
+
+    try {
+      await unenrollEnrollment(unenrollTarget.enrollmentId, reason);
+      setUnenrollTarget(null);
+      await refetch();
+      await onStudentRefresh?.();
+      await onEnrollmentMutation?.();
+    } catch {
+      // Toast handled in hook.
+    }
+  };
+
   const statusDialogCopy = useMemo(() => {
     if (!statusTarget) {
       return { title: "", description: "" };
@@ -266,6 +293,20 @@ export function StudentManageEnrollmentsPanel({
               onManageDelete={setDeleteTarget}
               onManageRestore={setRestoreTarget}
               onManagePermanentDelete={setPermanentDeleteTarget}
+              onUnenroll={(enrollment) => {
+                setUnenrollTarget({
+                  enrollmentId: enrollment.id,
+                  studentName: formatPersonName(
+                    enrollment.student?.firstName,
+                    enrollment.student?.lastName,
+                  ),
+                  branchName:
+                    resolveEnrollmentBranchName(enrollment, branchMap) ||
+                    undefined,
+                  batchName: enrollment.batch?.name ?? undefined,
+                  courseTitle: enrollment.course?.title ?? undefined,
+                });
+              }}
               onActivate={(enrollment) =>
                 setStatusTarget({ enrollment, activate: true })
               }
@@ -361,6 +402,16 @@ export function StudentManageEnrollmentsPanel({
         onCancel={() => setPermanentDeleteTarget(null)}
         onConfirm={() => {
           void handlePermanentDelete();
+        }}
+      />
+
+      <UnenrollEnrollmentDialog
+        open={Boolean(unenrollTarget)}
+        target={unenrollTarget}
+        loading={isUnenrolling}
+        onClose={() => setUnenrollTarget(null)}
+        onConfirm={(reason) => {
+          void handleUnenroll(reason);
         }}
       />
     </>

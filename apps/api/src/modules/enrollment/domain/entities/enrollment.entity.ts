@@ -194,7 +194,8 @@ export class Enrollment {
     this.touch();
   }
 
-  // A seat is held while the student is admitted, active or has completed.
+  // A seat is held while the student is admitted or currently active.
+  // Historical statuses (completed, dropped, cancelled, rejected) do not occupy seats.
   occupiesSeat(): boolean {
     return Enrollment.statusOccupiesSeat(this.status);
   }
@@ -202,9 +203,25 @@ export class Enrollment {
   static statusOccupiesSeat(status: EnrollmentStatus): boolean {
     return (
       status === EnrollmentStatus.ADMITTED ||
-      status === EnrollmentStatus.ACTIVE ||
-      status === EnrollmentStatus.COMPLETED
+      status === EnrollmentStatus.ACTIVE
     );
+  }
+
+  static currentStatuses(): EnrollmentStatus[] {
+    return [
+      EnrollmentStatus.PENDING,
+      EnrollmentStatus.PENDING_APPROVAL,
+      EnrollmentStatus.ADMITTED,
+      EnrollmentStatus.ACTIVE,
+    ];
+  }
+
+  static isCurrentStatus(status: EnrollmentStatus): boolean {
+    return Enrollment.currentStatuses().includes(status);
+  }
+
+  isCurrent(): boolean {
+    return !this.isDeleted && Enrollment.isCurrentStatus(this.status);
   }
 
   private recalculateFinancials() {

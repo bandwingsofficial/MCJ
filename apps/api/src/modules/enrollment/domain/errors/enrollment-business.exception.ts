@@ -259,6 +259,16 @@ export class InvalidStatusTransitionException extends BaseException {
   }
 }
 
+export class EnrollmentHistoricalReadOnlyException extends BaseException {
+  constructor() {
+    super(
+      ERROR_CODES.ENROLLMENT_HISTORICAL_READ_ONLY,
+      'This enrollment is historical and cannot be edited. Create a new enrollment instead.',
+      400,
+    );
+  }
+}
+
 export class EnrollmentDeletedException extends BaseException {
   constructor() {
     super(

@@ -11,12 +11,18 @@ import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { branchService } from "@/src/features/branches/services/branch.service";
 import { CreateEnrollmentModal } from "@/src/features/enrollments/components/form/create-enrollment-modal";
 import { UpdateEnrollmentModal } from "@/src/features/enrollments/components/form/update-enrollment-modal";
+import {
+  UnenrollEnrollmentDialog,
+  type UnenrollEnrollmentTarget,
+} from "@/src/features/enrollments/components/dialogs/unenroll-enrollment-dialog";
 import { EnrollmentSummaryHeader } from "@/src/features/enrollments/components/table/enrollment-summary-header";
 import { EnrollmentTable } from "@/src/features/enrollments/components/table/EnrollmentTable";
 import { useEnrollment } from "@/src/features/enrollments/hooks/useEnrollment";
 import { useEnrollments } from "@/src/features/enrollments/hooks/useEnrollments";
+import { useUnenrollEnrollment } from "@/src/features/enrollments/hooks/useUnenrollEnrollment";
 import type { Enrollment } from "@/src/features/enrollments/types";
 import { enrollmentManagePath } from "@/src/features/enrollments/utils/enrollment-manage.routes";
+import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
 
 export function EnrollmentListPage() {
   const router = useRouter();
@@ -34,6 +40,10 @@ export function EnrollmentListPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedEnrollment, setSelectedEnrollment] =
     useState<Enrollment | null>(null);
+  const [unenrollTarget, setUnenrollTarget] =
+    useState<UnenrollEnrollmentTarget | null>(null);
+  const { unenrollEnrollment, isLoading: isUnenrolling } =
+    useUnenrollEnrollment();
   const [branches, setBranches] = useState<
     Array<{ id: string; branchName: string; branchCode: string }>
   >([]);
@@ -147,6 +157,19 @@ export function EnrollmentListPage() {
                 onManage={(item) => {
                   router.push(enrollmentManagePath(item.id));
                 }}
+                onUnenroll={(item) => {
+                  setUnenrollTarget({
+                    enrollmentId: item.id,
+                    studentName:
+                      formatPersonName(
+                        item.student?.firstName,
+                        item.student?.lastName,
+                      ) || item.enrollmentNumber,
+                    branchName: item.branch?.branchName ?? undefined,
+                    batchName: item.batch?.name ?? undefined,
+                    courseTitle: item.course?.title ?? undefined,
+                  });
+                }}
               />
 
               {count > 0 ? (
@@ -213,6 +236,26 @@ export function EnrollmentListPage() {
         }}
         onSuccess={() => {
           void refetch();
+        }}
+      />
+
+      <UnenrollEnrollmentDialog
+        open={Boolean(unenrollTarget)}
+        target={unenrollTarget}
+        loading={isUnenrolling}
+        onClose={() => setUnenrollTarget(null)}
+        onConfirm={async (reason) => {
+          if (!unenrollTarget) {
+            return;
+          }
+
+          try {
+            await unenrollEnrollment(unenrollTarget.enrollmentId, reason);
+            setUnenrollTarget(null);
+            void refetch();
+          } catch {
+            // Toast handled in hook.
+          }
         }}
       />
     </div>

@@ -37,6 +37,8 @@ export class UpdateEnrollmentHandler {
       command.actorBranchId,
     );
 
+    this.domainService.ensureMutable(enrollment);
+
     const previousStatus = enrollment.status;
     const previousBatchId = enrollment.batchId;
     const nextStudentId = command.studentId ?? enrollment.studentId;

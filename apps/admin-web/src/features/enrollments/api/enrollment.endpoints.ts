@@ -18,6 +18,8 @@ export const ENROLLMENT_ENDPOINTS = {
 
   REJECT: (id: string) => `/admin/enrollments/${id}/reject`,
 
+  UNENROLL: (id: string) => `/admin/enrollments/${id}/unenroll`,
+
   DELETE: (id: string) =>
     `/admin/enrollments/${id}`,
 

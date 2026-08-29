@@ -12,7 +12,10 @@ import {
 import type { BranchAuthUser } from '@common/decorators/current-branch-user.decorator';
 import { BranchUserRole } from '@modules/branch-user/domain/enums/branch-user-role.enum';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
-import { facultyBranchBatchWhere } from './faculty-batch-query';
+import {
+  facultyBranchBatchWhere,
+  facultyBranchEnrollmentWhere,
+} from './faculty-batch-query';
 import { resolveFacultyBatchScope } from './faculty-batch-scope';
 
 const ACTIVE_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
@@ -181,16 +184,12 @@ export class BranchOperationsAccessService {
 
     const enrollment = await this.prisma.enrollment.findFirst({
       where: {
-        studentId,
-        isDeleted: false,
+        ...facultyBranchEnrollmentWhere(user.branchId, {
+          studentId,
+          batchId,
+          batchIds: batchId ? undefined : assignedBatchIds,
+        }),
         status: { in: ACTIVE_ENROLLMENT_STATUSES },
-        branchId: user.branchId,
-        student: { isDeleted: false },
-        ...(batchId
-          ? { batchId }
-          : assignedBatchIds
-            ? { batchId: { in: assignedBatchIds } }
-            : {}),
       },
     });
 

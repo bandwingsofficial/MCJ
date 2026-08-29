@@ -66,7 +66,12 @@ export default function BatchManagePage({ params }: PageProps) {
           <BatchCoursePanel batchId={batchId} />
         </TabsContent>
         <TabsContent value="students">
-          <BatchStudentsPanel batchId={batchId} />
+          <BatchStudentsPanel
+            batchId={batchId}
+            onStudentsChanged={() => {
+              void reload();
+            }}
+          />
         </TabsContent>
       </Tabs>
     </div>

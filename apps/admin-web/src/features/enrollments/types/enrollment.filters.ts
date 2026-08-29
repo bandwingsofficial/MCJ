@@ -23,6 +23,8 @@ export interface EnrollmentFilters {
 
   isActive?: boolean;
 
+  currentOnly?: boolean;
+
   includeDeleted?: boolean;
 
   skip: number;

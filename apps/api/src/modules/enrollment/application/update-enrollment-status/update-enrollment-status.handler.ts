@@ -26,6 +26,8 @@ export class UpdateEnrollmentStatusHandler {
       command.actorBranchId,
     );
 
+    this.domainService.ensureMutable(enrollment);
+
     const previousStatus = enrollment.status;
 
     this.domainService.ensureValidStatusTransition(

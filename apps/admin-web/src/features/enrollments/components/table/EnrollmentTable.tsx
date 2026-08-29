@@ -12,6 +12,7 @@ interface EnrollmentTableProps {
   actionsDisabled?: boolean;
   onEdit: (enrollment: Enrollment) => void;
   onManage: (enrollment: Enrollment) => void;
+  onUnenroll?: (enrollment: Enrollment) => void;
 }
 
 export function EnrollmentTable({
@@ -20,6 +21,7 @@ export function EnrollmentTable({
   actionsDisabled = false,
   onEdit,
   onManage,
+  onUnenroll,
 }: EnrollmentTableProps) {
   return (
     <div className="overflow-x-auto">
@@ -112,6 +114,7 @@ export function EnrollmentTable({
                       disabled={actionsDisabled}
                       onEdit={onEdit}
                       onManage={onManage}
+                      onUnenroll={onUnenroll}
                     />
                   </td>
                 </tr>

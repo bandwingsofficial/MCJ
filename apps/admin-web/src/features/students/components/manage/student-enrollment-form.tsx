@@ -32,6 +32,12 @@ import {
   formatCurrency,
   normalizeMoney,
 } from "@/src/features/enrollments/utils/format-payment";
+import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
+import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
+import {
+  currentEnrollmentByStudentId,
+  formatEnrollmentLocation,
+} from "@/src/features/enrollments/utils/current-enrollment";
 import type { Student } from "@/src/features/students/types/student.types";
 import {
   DEFAULT_STUDENT_ENROLLMENT_FORM_VALUES,
@@ -116,6 +122,9 @@ export function StudentEnrollmentForm({
   const [batchDetails, setBatchDetails] =
     useState<StudentEnrollmentBatchDetailsData | null>(null);
   const [isBatchEligible, setIsBatchEligible] = useState(mode !== "create");
+  const [currentEnrollmentLabel, setCurrentEnrollmentLabel] = useState<
+    string | null
+  >(null);
 
   const mergedDefaults = useMemo(
     () => ({
@@ -158,14 +167,22 @@ export function StudentEnrollmentForm({
       try {
         setIsLoadingOptions(true);
 
-        const response = await batchService.getBatches({
-          ...(student.branchId ? { branchId: student.branchId } : {}),
-          page: 1,
-          pageSize: 100,
-          includeDeleted: false,
-        });
+        const [batchResponse, enrollmentResponse] = await Promise.all([
+          batchService.getBatches({
+            ...(student.branchId ? { branchId: student.branchId } : {}),
+            page: 1,
+            pageSize: 100,
+            includeDeleted: false,
+          }),
+          enrollmentService.getEnrollments({
+            studentId: student.id,
+            currentOnly: true,
+            skip: 0,
+            take: 10,
+          }),
+        ]);
 
-        const items = response.data?.items ?? [];
+        const items = batchResponse.data?.items ?? [];
 
         setBatches(
           items.filter(isSelectableBatch).map((batch) => ({
@@ -173,6 +190,13 @@ export function StudentEnrollmentForm({
             name: batch.name,
             code: batch.code,
           })),
+        );
+
+        const current = currentEnrollmentByStudentId(
+          parseEnrollmentListResponse(enrollmentResponse).items,
+        ).get(student.id);
+        setCurrentEnrollmentLabel(
+          current ? formatEnrollmentLocation(current) : null,
         );
       } catch (error) {
         appToast.error(getErrorMessage(error));
@@ -183,7 +207,7 @@ export function StudentEnrollmentForm({
     };
 
     void loadBatches();
-  }, [mode, student.branchId]);
+  }, [mode, student.branchId, student.id]);
 
   useEffect(() => {
     if (mode !== "create" || !batchId) {
@@ -330,11 +354,32 @@ export function StudentEnrollmentForm({
   return (
     <form
       onSubmit={
-        onSubmit ? handleSubmit(onSubmit) : (event) => event.preventDefault()
+        onSubmit
+          ? handleSubmit(async (values) => {
+              if (mode === "create" && currentEnrollmentLabel) {
+                appToast.error(
+                  `Student already enrolled. ${currentEnrollmentLabel}`,
+                );
+                return;
+              }
+              await onSubmit(values);
+            })
+          : (event) => event.preventDefault()
       }
       className="space-y-4"
       autoComplete="off"
     >
+      {mode === "create" && currentEnrollmentLabel ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-medium">Student already enrolled</p>
+          <p className="mt-1">{currentEnrollmentLabel}</p>
+          <p className="mt-1 text-amber-800">
+            Complete, cancel, or withdraw the current enrollment before creating
+            another.
+          </p>
+        </div>
+      ) : null}
+
       <div className="space-y-4">
         {mode === "edit" && editBatchDetails ? (
           <div>
@@ -442,6 +487,7 @@ export function StudentEnrollmentForm({
           disabled={
             isSubmitting ||
             isLoadingDetails ||
+            Boolean(mode === "create" && currentEnrollmentLabel) ||
             (mode === "create" && (!batchId || !isBatchEligible))
           }
         >

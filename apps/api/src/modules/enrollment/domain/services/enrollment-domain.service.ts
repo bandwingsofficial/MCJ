@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import type { Batch } from '@modules/batch/domain/entities/batch.entity';
 import { BatchStatus } from '@modules/batch/domain/enums/batch-status.enum';
 import type { BatchRepository } from '@modules/batch/domain/repositories/batch.repository';
+import type { Enrollment as EnrollmentEntity } from '../entities/enrollment.entity';
 import type { Branch } from '@modules/branch/domain/entities/branch.entity';
 import { BranchStatus } from '@modules/branch/domain/enums/branch-status.enum';
 import type { BranchRepository } from '@modules/branch/domain/repositories/branch.repository';
@@ -45,6 +46,7 @@ import {
   CourseNotFoundException,
   EnrollmentBranchAccessDeniedException,
   EnrollmentDeletedException,
+  EnrollmentHistoricalReadOnlyException,
   EnrollmentNotDeletedException,
   InvalidStatusTransitionException,
   StudentDeletedException,
@@ -95,6 +97,14 @@ export class EnrollmentDomainService {
     }
   }
 
+  ensureMutable(enrollment: Enrollment): void {
+    this.ensureNotDeleted(enrollment);
+
+    if (!enrollment.isCurrent()) {
+      throw new EnrollmentHistoricalReadOnlyException();
+    }
+  }
+
   ensureDeleted(enrollment: Enrollment): void {
     if (!enrollment.isDeleted) {
       throw new EnrollmentNotDeletedException();
@@ -120,6 +130,7 @@ export class EnrollmentDomainService {
       [EnrollmentStatus.PENDING_APPROVAL]: [
         EnrollmentStatus.ADMITTED,
         EnrollmentStatus.REJECTED,
+        EnrollmentStatus.CANCELLED,
       ],
       [EnrollmentStatus.ADMITTED]: [
         EnrollmentStatus.ACTIVE,
@@ -128,6 +139,7 @@ export class EnrollmentDomainService {
       [EnrollmentStatus.ACTIVE]: [
         EnrollmentStatus.COMPLETED,
         EnrollmentStatus.DROPPED,
+        EnrollmentStatus.CANCELLED,
       ],
       [EnrollmentStatus.COMPLETED]: [],
       [EnrollmentStatus.DROPPED]: [],
@@ -158,6 +170,25 @@ export class EnrollmentDomainService {
     throw new EnrollmentBranchAccessDeniedException();
   }
 
+  async ensureEnrollmentBatchBranchAccess(
+    enrollment: EnrollmentEntity,
+    batchRepo: BatchRepository,
+    branchId?: string | null,
+  ): Promise<void> {
+    if (!branchId) {
+      return;
+    }
+
+    const batch = await batchRepo.findById(enrollment.batchId);
+    if (!batch) {
+      throw new BatchNotFoundException();
+    }
+
+    if (batch.branchId !== branchId) {
+      throw new EnrollmentBranchAccessDeniedException();
+    }
+  }
+
   async ensureEnrollmentNumberIsAvailable(
     enrollmentRepo: EnrollmentRepository,
     enrollmentNumber: string,
@@ -183,16 +214,36 @@ export class EnrollmentDomainService {
     batchId: string,
     excludeId?: string,
   ): Promise<void> {
-    const existing =
-      await enrollmentRepo.findByStudentAndBatch(
-        studentId,
-        batchId,
-        true,
-      );
+    // Global rule: at most one current enrollment per student across all
+    // branches/batches. Historical CANCELLED/COMPLETED/DROPPED/REJECTED rows
+    // do not block a new enrollment (including re-enrolling the same batch).
+    await this.ensureNoCurrentEnrollment(enrollmentRepo, studentId, {
+      excludeId,
+      intendedBatchId: batchId,
+    });
+  }
 
-    if (existing && existing.id !== excludeId) {
-      throw new EnrollmentAlreadyExistsException();
+  async ensureNoCurrentEnrollment(
+    enrollmentRepo: EnrollmentRepository,
+    studentId: string,
+    options?: {
+      excludeId?: string;
+      intendedBatchId?: string;
+    },
+  ): Promise<void> {
+    const existing = await enrollmentRepo.findCurrentDetailByStudentId(
+      studentId,
+      options?.excludeId,
+    );
+
+    if (!existing) {
+      return;
     }
+
+    throw EnrollmentAlreadyExistsException.forCurrentEnrollment(
+      existing,
+      options?.intendedBatchId,
+    );
   }
 
   async generateUniqueEnrollmentNumber(

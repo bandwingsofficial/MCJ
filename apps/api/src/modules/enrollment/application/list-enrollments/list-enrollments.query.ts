@@ -23,5 +23,6 @@ export class ListEnrollmentsQuery {
     public readonly take?: number,
     public readonly sortBy?: string,
     public readonly sortOrder?: 'asc' | 'desc',
+    public readonly currentOnly?: boolean,
   ) {}
 }

@@ -100,5 +100,19 @@ describe('BranchOperationsAccessService', () => {
         morningId,
       ),
     ).resolves.toBeUndefined();
+
+    const where = prisma.enrollment.findFirst.mock.calls[0][0].where as {
+      branchId?: string;
+      batch?: { branchId: string; isDeleted: boolean };
+      studentId: string;
+      batchId: string;
+    };
+    expect(where.studentId).toBe('student-akshay');
+    expect(where.batchId).toBe(morningId);
+    expect(where.branchId).toBeUndefined();
+    expect(where.batch).toEqual({
+      branchId: MALLESWARAM,
+      isDeleted: false,
+    });
   });
 });

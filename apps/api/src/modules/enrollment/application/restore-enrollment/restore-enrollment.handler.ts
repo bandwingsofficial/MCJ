@@ -1,4 +1,5 @@
 import type { EnrollmentRepository } from '../../domain/repositories/enrollment.repository';
+import { Enrollment } from '../../domain/entities/enrollment.entity';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
 import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
 import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
@@ -25,6 +26,17 @@ export class RestoreEnrollmentHandler {
       enrollment,
       command.actorBranchId,
     );
+
+    if (Enrollment.isCurrentStatus(enrollment.status)) {
+      await this.domainService.ensureNoCurrentEnrollment(
+        this.enrollmentRepo,
+        enrollment.studentId,
+        {
+          excludeId: enrollment.id,
+          intendedBatchId: enrollment.batchId,
+        },
+      );
+    }
 
     // A restored enrollment may re-claim a seat; reject if the batch is full.
     await this.sideEffects.assertCapacityForTransition(

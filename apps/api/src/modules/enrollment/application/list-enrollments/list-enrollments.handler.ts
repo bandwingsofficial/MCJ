@@ -34,6 +34,7 @@ export class ListEnrollmentsHandler {
       take: query.take,
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
+      currentOnly: query.currentOnly,
     };
 
     const [items, total] = await Promise.all([

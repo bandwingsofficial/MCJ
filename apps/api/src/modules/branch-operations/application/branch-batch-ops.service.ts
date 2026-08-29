@@ -22,7 +22,10 @@ import {
   hydrateFacultyBatchRelations,
   uniqueById,
 } from './batch-relation-resolve';
-import { facultyBatchStudentWhere } from './faculty-batch-query';
+import {
+  facultyBatchStudentWhere,
+  facultyBranchEnrollmentWhere,
+} from './faculty-batch-query';
 
 const VISIBLE_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
   EnrollmentStatus.ADMITTED,
@@ -179,6 +182,9 @@ export class BranchBatchOpsService {
             status: true,
           },
         },
+        batch: { select: { id: true, name: true, code: true } },
+        branch: { select: { id: true, branchName: true, branchCode: true } },
+        course: { select: { id: true, title: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -201,7 +207,6 @@ export class BranchBatchOpsService {
         where: {
           batchId,
           studentId: { in: studentIds },
-          branchId: user.branchId,
         },
         _count: { _all: true },
       });
@@ -236,6 +241,7 @@ export class BranchBatchOpsService {
 
       return {
         id: item.student.id,
+        enrollmentId: item.id,
         firstName: item.student.firstName,
         lastName: item.student.lastName,
         email: item.student.email,
@@ -245,6 +251,9 @@ export class BranchBatchOpsService {
         enrollmentStatus: item.status,
         enrollmentDate:
           item.admissionDate ?? item.joiningDate ?? item.createdAt,
+        batch: item.batch,
+        branch: item.branch,
+        course: item.course,
         attendance: {
           ...counts,
           percentage:
@@ -408,11 +417,8 @@ export class BranchBatchOpsService {
 
     const enrollment = await this.prisma.enrollment.findFirst({
       where: {
-        batchId,
+        ...facultyBatchStudentWhere(batchId, user.branchId),
         studentId,
-        branchId: user.branchId,
-        isDeleted: false,
-        status: { in: VISIBLE_ENROLLMENT_STATUSES },
       },
       include: {
         student: {
@@ -441,7 +447,6 @@ export class BranchBatchOpsService {
         where: {
           batchId,
           studentId,
-          branchId: user.branchId,
         },
         orderBy: { date: 'desc' },
         include: {
@@ -454,7 +459,6 @@ export class BranchBatchOpsService {
         where: {
           batchId,
           studentId,
-          branchId: user.branchId,
         },
         orderBy: { date: 'desc' },
         include: {
@@ -545,11 +549,8 @@ export class BranchBatchOpsService {
 
       const enrollments = await this.prisma.enrollment.findMany({
         where: {
-          branchId: user.branchId,
-          isDeleted: false,
+          ...facultyBranchEnrollmentWhere(user.branchId, { batchIds }),
           status: { in: VISIBLE_ENROLLMENT_STATUSES },
-          student: { isDeleted: false },
-          ...(batchIds ? { batchId: { in: batchIds } } : {}),
         },
         include: {
           student: {
@@ -732,11 +733,10 @@ export class BranchBatchOpsService {
     }
 
     const where: Prisma.EnrollmentWhereInput = {
-      branchId: user.branchId,
-      isDeleted: false,
-      student: { isDeleted: false },
-      ...(assignedIds ? { batchId: { in: assignedIds } } : {}),
-      ...(query.batchId ? { batchId: query.batchId } : {}),
+      ...facultyBranchEnrollmentWhere(user.branchId, {
+        batchId: query.batchId,
+        batchIds: query.batchId ? undefined : assignedIds,
+      }),
       ...(query.courseId ? { courseId: query.courseId } : {}),
       ...(query.status ? { status: query.status } : {}),
     };

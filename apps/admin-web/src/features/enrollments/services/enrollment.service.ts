@@ -113,6 +113,16 @@ export const enrollmentService = {
     }
   },
 
+  async unenrollEnrollment(id: string, reason?: string) {
+    try {
+      const response = await enrollmentApi.unenrollEnrollment(id, reason);
+
+      return response.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
+  },
+
   async deleteEnrollment(
     id: string,
   ) {

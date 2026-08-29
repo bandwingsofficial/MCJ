@@ -852,7 +852,11 @@ model Enrollment {
   student                Student          @relation(fields: [studentId], references: [id])
   payments               Payment[]
 
-  @@unique([studentId, batchId])
+  // Current enrollment uniqueness is enforced by partial unique indexes in SQL:
+  // - Enrollment_one_current_per_student (studentId)
+  // - Enrollment_one_current_per_student_batch (studentId, batchId)
+  // Historical COMPLETED / DROPPED / CANCELLED / REJECTED / deleted rows are
+  // excluded so re-enrollment can create a new record after cancellation.
   @@index([studentId])
   @@index([branchId])
   @@index([categoryId])
@@ -864,6 +868,7 @@ model Enrollment {
   @@index([isDeleted])
   @@index([createdAt])
   @@index([branchId, status, isDeleted])
+  @@index([studentId, batchId])
 }
 
 model LessonProgress {

@@ -40,6 +40,7 @@ import { ListEnrollmentsHandler } from './application/list-enrollments/list-enro
 import { PermanentDeleteEnrollmentHandler } from './application/permanent-delete-enrollment/permanent-delete-enrollment.handler';
 import { RejectEnrollmentHandler } from './application/reject-enrollment/reject-enrollment.handler';
 import { RestoreEnrollmentHandler } from './application/restore-enrollment/restore-enrollment.handler';
+import { UnenrollEnrollmentHandler } from './application/unenroll-enrollment/unenroll-enrollment.handler';
 import { EnrollmentSideEffectsService } from './application/shared/enrollment-side-effects.service';
 import { EnrollmentPaymentRecordingService } from './application/shared/enrollment-payment-recording.service';
 import { UpdateEnrollmentHandler } from './application/update-enrollment/update-enrollment.handler';
@@ -326,6 +327,28 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
         EnrollmentDomainService,
+      ],
+    },
+
+    {
+      provide: UnenrollEnrollmentHandler,
+      useFactory: (
+        enrollmentRepo: EnrollmentRepository,
+        batchRepo: BatchRepository,
+        domainService: EnrollmentDomainService,
+        sideEffects: EnrollmentSideEffectsService,
+      ) =>
+        new UnenrollEnrollmentHandler(
+          enrollmentRepo,
+          batchRepo,
+          domainService,
+          sideEffects,
+        ),
+      inject: [
+        ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+        BATCH_TOKENS.BATCH_REPOSITORY,
+        EnrollmentDomainService,
+        EnrollmentSideEffectsService,
       ],
     },
 

@@ -77,6 +77,12 @@ export class ListEnrollmentsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => toBoolean(value))
+  currentOnly?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => toBoolean(value))
   includeDeleted?: boolean;
 
   @ApiPropertyOptional()

@@ -72,29 +72,29 @@ export class CreatePublicEnrollmentHandler {
       hierarchy.batch,
     );
 
-    const existing =
-      await this.enrollmentRepo.findByStudentAndBatch(
-        student.id,
-        command.batchId,
-        true,
-      );
+    const currentEnrollment =
+      await this.enrollmentRepo.findCurrentDetailByStudentId(student.id);
 
-    if (existing && !existing.isDeleted) {
+    if (currentEnrollment) {
       const inProgress =
-        existing.status === EnrollmentStatus.PENDING ||
-        existing.status === EnrollmentStatus.PENDING_APPROVAL;
+        currentEnrollment.status === EnrollmentStatus.PENDING ||
+        currentEnrollment.status === EnrollmentStatus.PENDING_APPROVAL;
 
-      if (inProgress) {
-        return this.domainService.ensureDetailExists(
-          await this.enrollmentRepo.findDetailById(
-            existing.id,
-            true,
-          ),
-        );
+      if (inProgress && currentEnrollment.batch.id === command.batchId) {
+        return currentEnrollment;
       }
 
-      throw new EnrollmentAlreadyExistsException();
+      throw EnrollmentAlreadyExistsException.forCurrentEnrollment(
+        currentEnrollment,
+        command.batchId,
+      );
     }
+
+    await this.domainService.ensureNotDuplicate(
+      this.enrollmentRepo,
+      student.id,
+      command.batchId,
+    );
 
     const enrollmentNumber =
       await this.domainService.generateUniqueEnrollmentNumber(

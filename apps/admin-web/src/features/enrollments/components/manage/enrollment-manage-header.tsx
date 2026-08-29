@@ -7,6 +7,7 @@ import type { Enrollment } from "@/src/features/enrollments/types/enrollment.typ
 import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/table/EnrollmentStatusBadge";
 import { PaymentStatusBadge } from "@/src/features/enrollments/components/table/PaymentStatusBadge";
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
+import { isCurrentEnrollmentStatus } from "@/src/features/enrollments/utils/current-enrollment";
 
 interface Props {
   enrollment: Enrollment;
@@ -18,6 +19,8 @@ export function EnrollmentManageHeader({ enrollment, activeSection }: Props) {
     enrollment.student?.firstName,
     enrollment.student?.lastName,
   );
+  const isHistorical =
+    enrollment.isDeleted || !isCurrentEnrollmentStatus(enrollment.status);
 
   return (
     <div className="space-y-3">
@@ -64,6 +67,12 @@ export function EnrollmentManageHeader({ enrollment, activeSection }: Props) {
             <EnrollmentStatusBadge status={enrollment.status} />
             <PaymentStatusBadge status={enrollment.paymentStatus} />
           </div>
+          {isHistorical ? (
+            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              This enrollment is historical and read-only. Create a new
+              enrollment to place the student in another batch.
+            </p>
+          ) : null}
         </div>
       </div>
     </div>

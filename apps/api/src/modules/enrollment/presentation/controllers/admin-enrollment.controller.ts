@@ -42,6 +42,8 @@ import { RejectEnrollmentCommand } from '../../application/reject-enrollment/rej
 import { RejectEnrollmentHandler } from '../../application/reject-enrollment/reject-enrollment.handler';
 import { RestoreEnrollmentCommand } from '../../application/restore-enrollment/restore-enrollment.command';
 import { RestoreEnrollmentHandler } from '../../application/restore-enrollment/restore-enrollment.handler';
+import { UnenrollEnrollmentCommand } from '../../application/unenroll-enrollment/unenroll-enrollment.command';
+import { UnenrollEnrollmentHandler } from '../../application/unenroll-enrollment/unenroll-enrollment.handler';
 import { UpdateEnrollmentCommand } from '../../application/update-enrollment/update-enrollment.command';
 import { UpdateEnrollmentHandler } from '../../application/update-enrollment/update-enrollment.handler';
 import { UpdateEnrollmentStatusCommand } from '../../application/update-enrollment-status/update-enrollment-status.command';
@@ -51,6 +53,7 @@ import { ListEnrollmentsQueryDto } from '../dtos/list-enrollments-query.dto';
 import { RejectEnrollmentDto } from '../dtos/reject-enrollment.dto';
 import { UpdateEnrollmentDto } from '../dtos/update-enrollment.dto';
 import { UpdateEnrollmentStatusDto } from '../dtos/update-enrollment-status.dto';
+import { UnenrollEnrollmentDto } from '../dtos/unenroll-enrollment.dto';
 
 type EnrollmentAdminUser = AuthUser & {
   branchId?: string;
@@ -74,6 +77,7 @@ export class AdminEnrollmentController {
     private readonly permanentDeleteEnrollmentHandler: PermanentDeleteEnrollmentHandler,
     private readonly approveEnrollmentHandler: ApproveEnrollmentHandler,
     private readonly rejectEnrollmentHandler: RejectEnrollmentHandler,
+    private readonly unenrollEnrollmentHandler: UnenrollEnrollmentHandler,
   ) {}
 
   @Post()
@@ -147,6 +151,7 @@ export class AdminEnrollmentController {
         query.take,
         query.sortBy,
         query.sortOrder,
+        query.currentOnly,
       ),
     );
 
@@ -280,6 +285,40 @@ export class AdminEnrollmentController {
     return {
       success: true,
       message: 'Enrollment rejected successfully',
+      data: result,
+    };
+  }
+
+  @Post(':id/unenroll')
+  @UseGuards(JwtOrBranchJwtAuthGuard, AdminOrBranchRoleGuard)
+  @Roles(BranchUserRole.BRANCH_MANAGER)
+  @ApiResponse({ status: 200, description: 'Enrollment unenrolled' })
+  async unenroll(
+    @Param('id') id: string,
+    @Body() dto: UnenrollEnrollmentDto,
+    @CurrentUser() user: EnrollmentAdminUser,
+  ) {
+    const result = await this.unenrollEnrollmentHandler.execute(
+      new UnenrollEnrollmentCommand(
+        id,
+        user.sub,
+        this.resolveBranchId(undefined, user),
+        dto.reason,
+      ),
+    );
+
+    const studentName = [
+      result.student.firstName,
+      result.student.lastName,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    return {
+      success: true,
+      message: studentName
+        ? `${studentName} has been unenrolled successfully.`
+        : 'Student has been unenrolled successfully.',
       data: result,
     };
   }

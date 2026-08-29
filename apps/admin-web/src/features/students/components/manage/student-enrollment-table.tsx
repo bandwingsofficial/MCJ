@@ -35,6 +35,7 @@ interface Props {
   onManageDelete: (enrollment: Enrollment) => void;
   onManageRestore: (enrollment: Enrollment) => void;
   onManagePermanentDelete: (enrollment: Enrollment) => void;
+  onUnenroll?: (enrollment: Enrollment) => void;
   onActivate: (enrollment: Enrollment) => void;
   onDeactivate: (enrollment: Enrollment) => void;
 }
@@ -48,6 +49,7 @@ export function StudentEnrollmentTable({
   onManageDelete,
   onManageRestore,
   onManagePermanentDelete,
+  onUnenroll,
   onActivate,
   onDeactivate,
 }: Props) {
@@ -114,6 +116,7 @@ export function StudentEnrollmentTable({
                 onManageDelete={onManageDelete}
                 onManageRestore={onManageRestore}
                 onManagePermanentDelete={onManagePermanentDelete}
+                onUnenroll={onUnenroll}
                 onActivate={onActivate}
                 onDeactivate={onDeactivate}
               />

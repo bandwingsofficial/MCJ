@@ -9,6 +9,7 @@ import { cn } from "@/src/shared/lib/cn";
 export interface SelectOption {
   label: string;
   value: string;
+  disabled?: boolean;
 }
 
 interface AppSelectProps {
@@ -64,7 +65,8 @@ export function AppSelect({
               <SelectPrimitive.Item
                 key={option.value}
                 value={option.value}
-                className="relative flex cursor-pointer items-center rounded-lg px-3 py-2 text-sm text-[#102A56] outline-none hover:bg-[#F4F9FF] focus:bg-[#F4F9FF]"
+                disabled={option.disabled}
+                className="relative flex cursor-pointer items-center rounded-lg px-3 py-2 text-sm text-[#102A56] outline-none hover:bg-[#F4F9FF] focus:bg-[#F4F9FF] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50"
               >
                 <SelectPrimitive.ItemText className="min-w-0 truncate">
                   {option.label}

@@ -63,6 +63,26 @@ describe("getErrorMessage", () => {
     );
   });
 
+  it("surfaces already-enrolled conflicts with current enrollment details", () => {
+    expect(
+      getErrorMessage(
+        axiosError(409, {
+          code: "STUDENT_ALREADY_ENROLLED",
+          message: "Student is already enrolled in another active batch.",
+          meta: {
+            existingEnrollment: {
+              branch: { branchName: "Malleswaram" },
+              batch: { name: "morning", code: "BCH0001" },
+              course: { title: "CA Foundation" },
+            },
+          },
+        }),
+      ),
+    ).toBe(
+      "Student is already actively enrolled in Malleswaram - morning batch. A student can have only one active enrollment at a time.",
+    );
+  });
+
   it("surfaces field validation errors when the API omits message", () => {
     expect(
       getErrorMessage(

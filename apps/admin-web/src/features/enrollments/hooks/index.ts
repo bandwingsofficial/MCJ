@@ -13,3 +13,4 @@ export * from "./usePermanentDeleteEnrollment";
 export * from "./useEnrollmentFilters";
 export * from "./useApproveEnrollment";
 export * from "./useRejectEnrollment";
+export * from "./useUnenrollEnrollment";

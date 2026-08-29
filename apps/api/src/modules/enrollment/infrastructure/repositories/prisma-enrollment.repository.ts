@@ -1,9 +1,11 @@
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { ERROR_CODES } from '@common/constants/error-codes';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { Enrollment } from '../../domain/entities/enrollment.entity';
+import { EnrollmentAlreadyExistsException } from '../../domain/errors/enrollment-already-exists.exception';
 import {
   EnrollmentDetailView,
   EnrollmentListFilters,
@@ -30,11 +32,15 @@ export class PrismaEnrollmentRepository
 
     const data = EnrollmentMapper.toPersistence(enrollment);
 
-    await this.prisma.enrollment.upsert({
-      where: { id: enrollment.id },
-      update: { ...data },
-      create: { ...data },
-    });
+    try {
+      await this.prisma.enrollment.upsert({
+        where: { id: enrollment.id },
+        update: { ...data },
+        create: { ...data },
+      });
+    } catch (error) {
+      await this.rethrowUniqueViolation(error, enrollment);
+    }
   }
 
   async findById(
@@ -79,6 +85,33 @@ export class PrismaEnrollmentRepository
     });
 
     return record ? EnrollmentMapper.toDomain(record) : null;
+  }
+
+  async findCurrentByStudentId(
+    studentId: string,
+    excludeId?: string,
+  ): Promise<Enrollment | null> {
+    const record = await this.prisma.enrollment.findFirst({
+      where: this.currentEnrollmentWhere(studentId, excludeId),
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return record ? EnrollmentMapper.toDomain(record) : null;
+  }
+
+  async findCurrentDetailByStudentId(
+    studentId: string,
+    excludeId?: string,
+  ): Promise<EnrollmentDetailView | null> {
+    const record = await this.prisma.enrollment.findFirst({
+      where: this.currentEnrollmentWhere(studentId, excludeId),
+      include: enrollmentDetailInclude,
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return record
+      ? EnrollmentResponseMapper.toDetail(record)
+      : null;
   }
 
   async findDetailById(
@@ -222,6 +255,8 @@ export class PrismaEnrollmentRepository
 
     if (filters.status !== undefined) {
       where.status = filters.status;
+    } else if (filters.currentOnly) {
+      where.status = { in: Enrollment.currentStatuses() };
     }
 
     if (filters.paymentStatus !== undefined) {
@@ -285,5 +320,54 @@ export class PrismaEnrollmentRepository
     }
 
     return where;
+  }
+
+  private currentEnrollmentWhere(
+    studentId: string,
+    excludeId?: string,
+  ): Prisma.EnrollmentWhereInput {
+    return {
+      studentId,
+      isDeleted: false,
+      status: { in: Enrollment.currentStatuses() },
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    };
+  }
+
+  private async rethrowUniqueViolation(
+    error: unknown,
+    enrollment: Enrollment,
+  ): Promise<never> {
+    if (
+      !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+      error.code !== 'P2002'
+    ) {
+      throw error;
+    }
+
+    const target = Array.isArray(error.meta?.target)
+      ? error.meta.target.join(',')
+      : String(error.meta?.target ?? '');
+
+    if (target.toLowerCase().includes('enrollmentnumber')) {
+      throw new EnrollmentAlreadyExistsException(
+        ERROR_CODES.ENROLLMENT_ALREADY_EXISTS,
+        'Enrollment number already exists',
+      );
+    }
+
+    const existing = await this.findCurrentDetailByStudentId(
+      enrollment.studentId,
+      enrollment.id,
+    );
+
+    if (existing) {
+      throw EnrollmentAlreadyExistsException.forCurrentEnrollment(
+        existing,
+        enrollment.batchId,
+      );
+    }
+
+    throw new EnrollmentAlreadyExistsException();
   }
 }

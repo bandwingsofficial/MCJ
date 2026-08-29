@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye } from "lucide-react";
+import { Eye, UserMinus } from "lucide-react";
 
 import { Card } from "@/src/shared/components/ui/card";
 import { Pagination } from "@/src/shared/components/ui/pagination";
@@ -16,9 +16,15 @@ import {
   formatBatchLabel,
   formatPersonName,
 } from "@/src/features/branches/utils/branch-display.utils";
+import {
+  UnenrollEnrollmentDialog,
+  type UnenrollEnrollmentTarget,
+} from "@/src/features/enrollments/components/dialogs/unenroll-enrollment-dialog";
 import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/table/EnrollmentStatusBadge";
+import { useUnenrollEnrollment } from "@/src/features/enrollments/hooks/useUnenrollEnrollment";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
+import { canUnenrollEnrollment } from "@/src/features/enrollments/utils/current-enrollment";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
 import { studentManagePath } from "@/src/features/students/utils/student-manage.routes";
 
@@ -42,6 +48,10 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [unenrollTarget, setUnenrollTarget] =
+    useState<UnenrollEnrollmentTarget | null>(null);
+  const { unenrollEnrollment, isLoading: isUnenrolling } =
+    useUnenrollEnrollment();
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -49,6 +59,7 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
       const response = await enrollmentService.getEnrollments({
         search,
         branchId,
+        currentOnly: true,
         skip: (page - 1) * PAGE_SIZE,
         take: PAGE_SIZE,
       });
@@ -96,7 +107,7 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
           {
             key: "actions",
             label: "Actions",
-            className: "w-[5.5rem] text-right",
+            className: "w-[7rem] text-right",
           },
         ]}
         isLoading={isLoading}
@@ -124,15 +135,33 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
               <EnrollmentStatusBadge status={enrollment.status} />
             </td>
             <td className="px-4 py-3 text-right">
-              {enrollment.student?.id ? (
-                <BranchIconAction
-                  icon={Eye}
-                  label="View student"
-                  onClick={() =>
-                    router.push(studentManagePath(enrollment.student.id))
-                  }
-                />
-              ) : null}
+              <div className="flex items-center justify-end gap-1">
+                {canUnenrollEnrollment(enrollment) ? (
+                  <BranchIconAction
+                    icon={UserMinus}
+                    label="Unenroll student"
+                    destructive
+                    onClick={() =>
+                      setUnenrollTarget({
+                        enrollmentId: enrollment.id,
+                        studentName: formatStudentName(enrollment),
+                        branchName: enrollment.branch?.branchName ?? undefined,
+                        batchName: enrollment.batch?.name ?? undefined,
+                        courseTitle: enrollment.course?.title ?? undefined,
+                      })
+                    }
+                  />
+                ) : null}
+                {enrollment.student?.id ? (
+                  <BranchIconAction
+                    icon={Eye}
+                    label="View student"
+                    onClick={() =>
+                      router.push(studentManagePath(enrollment.student.id))
+                    }
+                  />
+                ) : null}
+              </div>
             </td>
           </tr>
         ))}
@@ -147,6 +176,26 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
           />
         </div>
       ) : null}
+
+      <UnenrollEnrollmentDialog
+        open={Boolean(unenrollTarget)}
+        target={unenrollTarget}
+        loading={isUnenrolling}
+        onClose={() => setUnenrollTarget(null)}
+        onConfirm={async (reason) => {
+          if (!unenrollTarget) {
+            return;
+          }
+
+          try {
+            await unenrollEnrollment(unenrollTarget.enrollmentId, reason);
+            setUnenrollTarget(null);
+            await loadData();
+          } catch {
+            // Toast handled in hook.
+          }
+        }}
+      />
     </Card>
   );
 }

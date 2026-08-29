@@ -95,6 +95,7 @@ export interface BatchListItem {
 
 export interface BatchStudentItem {
   id: string;
+  enrollmentId: string;
   firstName: string;
   lastName: string | null;
   email: string | null;
@@ -103,6 +104,9 @@ export interface BatchStudentItem {
   status: string;
   enrollmentStatus?: string;
   enrollmentDate?: string | null;
+  batch?: { id: string; name: string; code: string } | null;
+  branch?: { id: string; branchName: string; branchCode?: string } | null;
+  course?: { id: string; title: string } | null;
   attendance?: AttendanceSummary;
 }
 
