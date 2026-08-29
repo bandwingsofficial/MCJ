@@ -10,6 +10,8 @@ import { cn } from "@/src/shared/lib/cn";
 interface ModalProps {
   open: boolean;
   title: string;
+  /** Optional subtitle under the title (sticky with header). */
+  description?: React.ReactNode;
   children: React.ReactNode;
   onClose: () => void;
   contentClassName?: string;
@@ -21,6 +23,7 @@ interface ModalProps {
 export function Modal({
   open,
   title,
+  description,
   children,
   onClose,
   contentClassName,
@@ -46,10 +49,15 @@ export function Modal({
             contentClassName,
           )}
         >
-          <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-6 py-4">
-            <Dialog.Title className="text-xl font-semibold text-[#102A56]">
-              {title}
-            </Dialog.Title>
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-6 py-4">
+            <div className="min-w-0">
+              <Dialog.Title className="text-xl font-semibold text-[#102A56]">
+                {title}
+              </Dialog.Title>
+              {description ? (
+                <div className="mt-1 text-sm text-slate-500">{description}</div>
+              ) : null}
+            </div>
 
             <button
               type="button"

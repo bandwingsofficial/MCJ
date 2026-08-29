@@ -41,12 +41,17 @@ export function TableBody({
 export function TableRow({
   children,
   className,
+  onClick,
 }: {
   children: React.ReactNode;
   className?: string;
+  onClick?: () => void;
 }) {
   return (
-    <tr className={cn("border-b last:border-0", className)}>
+    <tr
+      className={cn("border-b last:border-0", className)}
+      onClick={onClick}
+    >
       {children}
     </tr>
   );

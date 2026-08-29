@@ -18,6 +18,8 @@ type FakeAttendance = {
   remarks: string | null;
   createdBy: string | null;
   updatedBy: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 function makeUser(overrides?: Partial<{ sub: string; branchId: string; role: string }>) {
@@ -218,13 +220,68 @@ describe('BranchAttendanceService session integrity', () => {
       },
       enrollment: {
         findMany: jest.fn(async () => [
-          { studentId: studentAkshay, id: 'enr-1', student: {
-            id: studentAkshay,
-            firstName: 'Akshay',
-            lastName: 'Badiger',
-            studentCode: 'STU0001',
-          } },
+          {
+            id: 'enr-1',
+            studentId: studentAkshay,
+            status: 'ACTIVE',
+            student: {
+              id: studentAkshay,
+              firstName: 'Akshay',
+              lastName: 'Badiger',
+              studentCode: 'STU0001',
+              status: 'ACTIVE',
+            },
+          },
         ]),
+        findFirst: jest.fn(async ({ where }: any) => {
+          if (where.studentId && where.studentId !== studentAkshay) {
+            return null;
+          }
+          return {
+            id: 'enr-1',
+            studentId: studentAkshay,
+            status: 'ACTIVE',
+            student: {
+              id: studentAkshay,
+              firstName: 'Akshay',
+              lastName: 'Badiger',
+              studentCode: 'STU0001',
+              status: 'ACTIVE',
+              email: 'a@example.com',
+              phone: null,
+            },
+            batch: {
+              id: morningBatchId,
+              name: 'Morning',
+              code: 'BCH0001',
+              branch: {
+                id: branchId,
+                branchName: 'Malleswaram',
+                branchCode: 'BR001',
+              },
+            },
+          };
+        }),
+      },
+      batch: {
+        findFirst: jest.fn(async ({ where }: any) => {
+          if (where.id !== morningBatchId || where.branchId !== branchId) {
+            return null;
+          }
+          return {
+            id: morningBatchId,
+            name: 'Morning',
+            code: 'BCH0001',
+            startDate: new Date('2026-08-01T00:00:00.000Z'),
+            endDate: new Date('2026-08-31T00:00:00.000Z'),
+            daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+            branch: {
+              id: branchId,
+              branchName: 'Malleswaram',
+              branchCode: 'BR001',
+            },
+          };
+        }),
       },
       attendance: {
         findUnique: jest.fn(async ({ where }: any) => {
@@ -246,15 +303,55 @@ describe('BranchAttendanceService session integrity', () => {
               if (where.batchCourseId && row.batchCourseId !== where.batchCourseId)
                 return false;
               if (where.studentId && row.studentId !== where.studentId) return false;
-              if (where.date?.equals) {
-                // unused
-              }
-              if (where.date instanceof Date) {
-                if (row.date.getTime() !== where.date.getTime()) return false;
-              }
+              if (where.studentId?.in && !where.studentId.in.includes(row.studentId))
+                return false;
+              if (where.date?.gte && row.date < where.date.gte) return false;
+              if (where.date?.lte && row.date > where.date.lte) return false;
               return true;
             })
             .map(enrich);
+        }),
+        groupBy: jest.fn(async ({ by, where }: any) => {
+          const filtered = store.filter((row) => {
+            if (where.branchId && row.branchId !== where.branchId) return false;
+            if (where.batchId && row.batchId !== where.batchId) return false;
+            if (where.studentId && row.studentId !== where.studentId) return false;
+            return true;
+          });
+
+          if (by.join(',') === 'date,batchCourseId') {
+            const keys = new Set(
+              filtered.map(
+                (row) =>
+                  `${row.date.toISOString().slice(0, 10)}:${row.batchCourseId}`,
+              ),
+            );
+            return [...keys].map((key) => {
+              const [date, batchCourseId] = key.split(':');
+              return {
+                date: new Date(`${date}T00:00:00.000Z`),
+                batchCourseId,
+              };
+            });
+          }
+
+          if (by.join(',') === 'studentId,status') {
+            const map = new Map<string, number>();
+            for (const row of filtered) {
+              const key = `${row.studentId}:${row.status}`;
+              map.set(key, (map.get(key) ?? 0) + 1);
+            }
+            return [...map.entries()].map(([key, count]) => {
+              const [studentId, status] = key.split(':');
+              return {
+                studentId,
+                status,
+                _count: { _all: count },
+              };
+            });
+          }
+
+          return [];
         }),
         create: jest.fn(async ({ data }: any) => {
           const row: FakeAttendance = {
@@ -272,6 +369,8 @@ describe('BranchAttendanceService session integrity', () => {
             remarks: data.remarks ?? null,
             createdBy: data.createdBy ?? null,
             updatedBy: data.updatedBy ?? null,
+            createdAt: new Date('2026-08-29T10:32:00.000Z'),
+            updatedAt: new Date('2026-08-29T10:32:00.000Z'),
           };
           store.push(row);
           return enrich(row);
@@ -452,5 +551,87 @@ describe('BranchAttendanceService session integrity', () => {
     const s2 = store.find((row) => row.batchCourseId === session2Id)!;
     expect(s1.status).toBe(AttendanceStatus.LATE);
     expect(s2.status).toBe(AttendanceStatus.ABSENT);
+  });
+
+  it('computes batch analytics with conducted sessions and Present+Late ratio', async () => {
+    const mark = async (
+      batchCourseId: string,
+      date: string,
+      status: AttendanceStatus,
+    ) => {
+      await service.upsertAttendance(makeUser(), {
+        batchId: morningBatchId,
+        batchCourseId,
+        studentId: studentAkshay,
+        date,
+        status,
+      });
+    };
+
+    await mark(session1Id, '2026-08-26', AttendanceStatus.PRESENT);
+    await mark(session2Id, '2026-08-26', AttendanceStatus.PRESENT);
+    await mark(session1Id, '2026-08-27', AttendanceStatus.ABSENT);
+    await mark(session2Id, '2026-08-27', AttendanceStatus.LATE);
+
+    const analytics = await service.getBatchAttendanceAnalytics(
+      makeUser(),
+      morningBatchId,
+    );
+
+    expect(analytics.overview.sessionsConducted).toBe(4);
+    expect(analytics.overview.workingDays).toBeGreaterThan(0);
+    expect(analytics.students).toHaveLength(1);
+
+    const student = analytics.students[0];
+    expect(student.present).toBe(2);
+    expect(student.absent).toBe(1);
+    expect(student.late).toBe(1);
+    expect(student.attended).toBe(3);
+    expect(student.ratioLabel).toBe('3 / 4');
+    expect(student.percentage).toBe(75);
+  });
+
+  it('returns student detail scoped to batch with monthly breakdown', async () => {
+    await service.upsertAttendance(makeUser(), {
+      batchId: morningBatchId,
+      batchCourseId: session1Id,
+      studentId: studentAkshay,
+      date: '2026-08-29',
+      status: AttendanceStatus.PRESENT,
+    });
+    await service.upsertAttendance(makeUser(), {
+      batchId: morningBatchId,
+      batchCourseId: session2Id,
+      studentId: studentAkshay,
+      date: '2026-08-29',
+      status: AttendanceStatus.ABSENT,
+    });
+
+    const detail = await service.getStudentBatchAttendanceDetail(
+      makeUser(),
+      morningBatchId,
+      studentAkshay,
+    );
+
+    expect(detail.summary.sessionsConducted).toBe(2);
+    expect(detail.summary.present).toBe(1);
+    expect(detail.summary.absent).toBe(1);
+    expect(detail.summary.ratioLabel).toBe('1 / 2');
+    expect(detail.summary.percentage).toBe(50);
+    expect(detail.history).toHaveLength(2);
+    expect(detail.history[0].markedAt).toBeTruthy();
+    expect(detail.monthly[0]?.monthKey).toBe('2026-08');
+    expect(detail.branch.id).toBe(branchId);
+    expect(detail.batch.id).toBe(morningBatchId);
+  });
+
+  it('blocks student attendance detail when not enrolled in batch', async () => {
+    await expect(
+      service.getStudentBatchAttendanceDetail(
+        makeUser(),
+        morningBatchId,
+        studentOther,
+      ),
+    ).rejects.toBeTruthy();
   });
 });

@@ -44,6 +44,7 @@ import {
   RecordAttendanceDto,
   ResetBranchStaffPasswordDto,
   ScheduleInterviewDto,
+  StudentBatchAttendanceQueryDto,
   UpdateApplicationStatusDto,
   UpdateAssessmentDto,
   UpdateBranchStaffDto,
@@ -245,6 +246,59 @@ export class BranchOperationsController {
       success: true,
       message: 'Batch sessions fetched successfully',
       data: await this.attendance.listSessions(user, id),
+    };
+  }
+
+  @Get('batches/:id/attendance/summary')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ATTENDANCE_READ)
+  async batchAttendanceSummary(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+  ) {
+    return {
+      success: true,
+      message: 'Batch attendance summary fetched successfully',
+      data: await this.attendance.getBatchAttendanceAnalytics(user, id),
+    };
+  }
+
+  @Get('batches/:id/attendance/students')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ATTENDANCE_READ)
+  async batchAttendanceStudents(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+  ) {
+    const analytics = await this.attendance.getBatchAttendanceAnalytics(
+      user,
+      id,
+    );
+    return {
+      success: true,
+      message: 'Batch student attendance fetched successfully',
+      data: analytics.students,
+    };
+  }
+
+  @Get('batches/:id/students/:studentId/attendance')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ATTENDANCE_READ)
+  async batchStudentAttendance(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+    @Param('studentId') studentId: string,
+    @Query() query: StudentBatchAttendanceQueryDto,
+  ) {
+    return {
+      success: true,
+      message: 'Student batch attendance fetched successfully',
+      data: await this.attendance.getStudentBatchAttendanceDetail(
+        user,
+        id,
+        studentId,
+        query,
+      ),
     };
   }
 

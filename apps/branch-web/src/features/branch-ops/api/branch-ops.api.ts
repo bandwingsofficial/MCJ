@@ -7,6 +7,7 @@ import type {
   AttendanceSessionOption,
   AttendanceSheet,
   AttendanceSummary,
+  BatchAttendanceAnalytics,
   BatchCourseContent,
   BatchListItem,
   BatchStudentItem,
@@ -18,6 +19,7 @@ import type {
   PaginatedList,
   PlacementActivityItem,
   StudentBatchActivity,
+  StudentBatchAttendanceDetail,
   StudentListItem,
 } from "@/src/features/branch-ops/types";
 
@@ -69,6 +71,23 @@ export const branchOpsApi = {
   batchSessions: (batchId: string) =>
     unwrap<AttendanceSessionOption[]>(
       apiClient.get(`/branch/batches/${batchId}/sessions`),
+    ),
+
+  batchAttendanceSummary: (batchId: string) =>
+    unwrap<BatchAttendanceAnalytics>(
+      apiClient.get(`/branch/batches/${batchId}/attendance/summary`),
+    ),
+
+  studentBatchAttendance: (
+    batchId: string,
+    studentId: string,
+    params?: Record<string, string | undefined>,
+  ) =>
+    unwrap<StudentBatchAttendanceDetail>(
+      apiClient.get(
+        `/branch/batches/${batchId}/students/${studentId}/attendance`,
+        { params },
+      ),
     ),
 
   saveAttendance: (payload: {

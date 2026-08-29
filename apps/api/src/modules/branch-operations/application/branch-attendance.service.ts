@@ -26,7 +26,33 @@ import {
   formatAttendanceSessionLabel,
   toAttendanceSessionDto,
 } from './attendance-session.util';
+import {
+  applyStatusCount,
+  buildAttendanceAnalyticsStats,
+  emptyStatusCounts,
+  monthKeyFromDate,
+  monthLabelFromKey,
+  type AttendanceStatusCounts,
+} from './attendance-analytics.util';
 import { facultyBatchStudentWhere } from './faculty-batch-query';
+
+const DAY_INDEX: Record<string, number> = {
+  SUNDAY: 0,
+  MONDAY: 1,
+  TUESDAY: 2,
+  WEDNESDAY: 3,
+  THURSDAY: 4,
+  FRIDAY: 5,
+  SATURDAY: 6,
+};
+
+export interface StudentBatchAttendanceQuery {
+  from?: string;
+  to?: string;
+  batchCourseId?: string;
+  courseId?: string;
+  status?: AttendanceStatus;
+}
 
 export interface AttendanceReportQuery {
   period?: 'daily' | 'weekly' | 'monthly' | 'yearly';
@@ -567,10 +593,9 @@ export class BranchAttendanceService {
     }
 
     const counted = totals.total;
+    const attended = totals.present + totals.late;
     totals.percentage =
-      counted > 0
-        ? Math.round((totals.present / counted) * 1000) / 10
-        : 0;
+      counted > 0 ? Math.round((attended / counted) * 1000) / 10 : 0;
 
     const sessionGroups = await this.prisma.attendance.groupBy({
       by: ['batchCourseId', 'status'],
@@ -647,6 +672,466 @@ export class BranchAttendanceService {
       items,
       total,
     };
+  }
+
+  /**
+   * Batch Manage → Attendance overview + per-student analytics.
+   * Conducted sessions = distinct (date, batchCourseId) with any attendance row.
+   * Attended = Present + Late (existing domain rule).
+   */
+  async getBatchAttendanceAnalytics(user: BranchAuthUser, batchId: string) {
+    await this.access.assertFacultyCanAccessBatch(user, batchId);
+
+    const batch = await this.prisma.batch.findFirst({
+      where: { id: batchId, isDeleted: false, branchId: user.branchId },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        startDate: true,
+        endDate: true,
+        daysOfWeek: true,
+        branch: {
+          select: { id: true, branchName: true, branchCode: true },
+        },
+      },
+    });
+
+    if (!batch) {
+      throw new NotFoundException('Batch not found');
+    }
+
+    const [enrollments, conductedGroups, statusGroups, lastAttendanceRows] =
+      await Promise.all([
+        this.prisma.enrollment.findMany({
+          where: facultyBatchStudentWhere(batchId, user.branchId),
+          include: {
+            student: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                studentCode: true,
+                status: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.attendance.groupBy({
+          by: ['date', 'batchCourseId'],
+          where: {
+            batchId,
+            branchId: user.branchId,
+          },
+        }),
+        this.prisma.attendance.groupBy({
+          by: ['studentId', 'status'],
+          where: {
+            batchId,
+            branchId: user.branchId,
+          },
+          _count: { _all: true },
+        }),
+        this.prisma.attendance.findMany({
+          where: {
+            batchId,
+            branchId: user.branchId,
+          },
+          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+          select: {
+            studentId: true,
+            date: true,
+            status: true,
+          },
+        }),
+      ]);
+
+    const conductedSessions = conductedGroups.length;
+    const workingDays = this.countWorkingDays(
+      batch.startDate,
+      batch.endDate,
+      batch.daysOfWeek,
+    );
+
+    const countsByStudent = new Map<string, AttendanceStatusCounts>();
+    for (const group of statusGroups) {
+      const current =
+        countsByStudent.get(group.studentId) ?? emptyStatusCounts();
+      applyStatusCount(current, group.status, group._count._all);
+      countsByStudent.set(group.studentId, current);
+    }
+
+    const lastByStudent = new Map<
+      string,
+      { date: Date; status: AttendanceStatus }
+    >();
+    for (const row of lastAttendanceRows) {
+      if (!lastByStudent.has(row.studentId)) {
+        lastByStudent.set(row.studentId, {
+          date: row.date,
+          status: row.status,
+        });
+      }
+    }
+
+    let batchPresent = 0;
+    let batchAbsent = 0;
+    let batchLate = 0;
+    let batchLeave = 0;
+    let totalRecords = 0;
+    const percentageSamples: number[] = [];
+
+    const students = enrollments.map((enrollment) => {
+      const counts =
+        countsByStudent.get(enrollment.student.id) ?? emptyStatusCounts();
+      const stats = buildAttendanceAnalyticsStats(counts, conductedSessions);
+      batchPresent += counts.present;
+      batchAbsent += counts.absent;
+      batchLate += counts.late;
+      batchLeave += counts.leave;
+      totalRecords += counts.total;
+      if (stats.percentage != null) {
+        percentageSamples.push(stats.percentage);
+      }
+
+      const last = lastByStudent.get(enrollment.student.id);
+      const name = [enrollment.student.firstName, enrollment.student.lastName]
+        .filter(Boolean)
+        .join(' ');
+
+      return {
+        id: enrollment.student.id,
+        enrollmentId: enrollment.id,
+        name,
+        firstName: enrollment.student.firstName,
+        lastName: enrollment.student.lastName,
+        studentCode: enrollment.student.studentCode,
+        status: enrollment.student.status,
+        enrollmentStatus: enrollment.status,
+        present: stats.present,
+        absent: stats.absent,
+        late: stats.late,
+        leave: stats.leave,
+        totalRecords: stats.total,
+        attended: stats.attended,
+        conductedSessions: stats.conductedSessions,
+        ratioLabel: stats.ratioLabel,
+        percentage: stats.percentage,
+        hasAttendance: stats.hasAttendance,
+        lastAttendanceDate: last?.date ?? null,
+        lastAttendanceStatus: last?.status ?? null,
+      };
+    });
+
+    const averageAttendance =
+      percentageSamples.length > 0
+        ? Math.round(
+            (percentageSamples.reduce((sum, value) => sum + value, 0) /
+              percentageSamples.length) *
+              10,
+          ) / 10
+        : null;
+
+    return {
+      batch: {
+        id: batch.id,
+        name: batch.name,
+        code: batch.code,
+      },
+      branch: batch.branch,
+      overview: {
+        workingDays,
+        sessionsConducted: conductedSessions,
+        enrolledStudents: students.length,
+        totalAttendanceRecords: totalRecords,
+        present: batchPresent,
+        absent: batchAbsent,
+        late: batchLate,
+        leave: batchLeave,
+        averageAttendance,
+      },
+      students,
+    };
+  }
+
+  /**
+   * Batch Manage → student Manage attendance (scoped to branch + batch + student).
+   */
+  async getStudentBatchAttendanceDetail(
+    user: BranchAuthUser,
+    batchId: string,
+    studentId: string,
+    query: StudentBatchAttendanceQuery = {},
+  ) {
+    await this.access.assertFacultyCanAccessBatch(user, batchId);
+    await this.access.assertFacultyCanAccessStudent(user, studentId, batchId);
+
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: {
+        ...facultyBatchStudentWhere(batchId, user.branchId),
+        studentId,
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            studentCode: true,
+            status: true,
+            email: true,
+            phone: true,
+          },
+        },
+        batch: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            branch: {
+              select: { id: true, branchName: true, branchCode: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException('Student is not enrolled in this batch');
+    }
+
+    const dateFilter = this.buildDateFilter(query.from, query.to);
+    const sessionFilter: Prisma.AttendanceWhereInput = {
+      batchId,
+      branchId: user.branchId,
+      ...(dateFilter ? { date: dateFilter } : {}),
+      ...(query.batchCourseId ? { batchCourseId: query.batchCourseId } : {}),
+      ...(query.courseId
+        ? { batchCourse: { courseId: query.courseId, isDeleted: false } }
+        : {}),
+    };
+
+    const [conductedGroups, allStudentRows, assignments] = await Promise.all([
+      this.prisma.attendance.groupBy({
+        by: ['date', 'batchCourseId'],
+        where: sessionFilter,
+      }),
+      this.prisma.attendance.findMany({
+        where: {
+          ...sessionFilter,
+          studentId,
+        },
+        orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+        include: {
+          batchCourse: {
+            select: {
+              id: true,
+              course: { select: { id: true, title: true, code: true } },
+              session: { select: { id: true, sessionNumber: true } },
+            },
+          },
+          faculty: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+        },
+      }),
+      this.prisma.batchCourse.findMany({
+        where: {
+          batchId,
+          isDeleted: false,
+          batch: { branchId: user.branchId, isDeleted: false },
+        },
+        include: {
+          course: { select: { id: true, title: true, code: true } },
+          session: { select: { id: true, sessionNumber: true } },
+        },
+        orderBy: [
+          { session: { sessionNumber: 'asc' } },
+          { createdAt: 'asc' },
+        ],
+      }),
+    ]);
+
+    const conductedSessions = conductedGroups.length;
+    const counts = emptyStatusCounts();
+    for (const row of allStudentRows) {
+      applyStatusCount(counts, row.status);
+    }
+    const stats = buildAttendanceAnalyticsStats(counts, conductedSessions);
+
+    // Status filter applies to session history only; summary stays full scope.
+    const historyRows =
+      query.status != null
+        ? allStudentRows.filter((row) => row.status === query.status)
+        : allStudentRows;
+
+    const history = historyRows.map((row) => {
+      const courseTitle = row.batchCourse.course.title;
+      const sessionNumber = row.batchCourse.session?.sessionNumber ?? null;
+      return {
+        id: row.id,
+        date: row.date,
+        status: row.status,
+        remarks: row.remarks,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        markedAt: row.updatedAt ?? row.createdAt,
+        course: {
+          id: row.batchCourse.course.id,
+          title: courseTitle,
+          code: row.batchCourse.course.code,
+        },
+        session: {
+          batchCourseId: row.batchCourse.id,
+          sessionId: row.batchCourse.session?.id ?? null,
+          sessionNumber,
+          label: formatAttendanceSessionLabel(sessionNumber, courseTitle),
+        },
+        faculty: row.faculty
+          ? {
+              id: row.faculty.id,
+              name: [row.faculty.firstName, row.faculty.lastName]
+                .filter(Boolean)
+                .join(' '),
+            }
+          : null,
+      };
+    });
+
+    const conductedByMonth = new Map<string, Set<string>>();
+    for (const group of conductedGroups) {
+      const key = monthKeyFromDate(group.date);
+      const set = conductedByMonth.get(key) ?? new Set<string>();
+      set.add(`${group.date.toISOString().slice(0, 10)}:${group.batchCourseId}`);
+      conductedByMonth.set(key, set);
+    }
+
+    const countsByMonth = new Map<string, AttendanceStatusCounts>();
+    for (const row of allStudentRows) {
+      const key = monthKeyFromDate(row.date);
+      const current = countsByMonth.get(key) ?? emptyStatusCounts();
+      applyStatusCount(current, row.status);
+      countsByMonth.set(key, current);
+    }
+
+    const monthKeys = Array.from(
+      new Set([...conductedByMonth.keys(), ...countsByMonth.keys()]),
+    ).sort((a, b) => b.localeCompare(a));
+
+    const monthly = monthKeys.map((key) => {
+      const monthCounts = countsByMonth.get(key) ?? emptyStatusCounts();
+      const monthConducted = conductedByMonth.get(key)?.size ?? 0;
+      const monthStats = buildAttendanceAnalyticsStats(
+        monthCounts,
+        monthConducted,
+      );
+      return {
+        monthKey: key,
+        label: monthLabelFromKey(key),
+        present: monthStats.present,
+        absent: monthStats.absent,
+        late: monthStats.late,
+        leave: monthStats.leave,
+        conductedSessions: monthStats.conductedSessions,
+        attended: monthStats.attended,
+        percentage: monthStats.percentage,
+        ratioLabel: monthStats.ratioLabel,
+        hasAttendance: monthStats.hasAttendance,
+      };
+    });
+
+    const studentName = [
+      enrollment.student.firstName,
+      enrollment.student.lastName,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    return {
+      student: {
+        id: enrollment.student.id,
+        name: studentName,
+        firstName: enrollment.student.firstName,
+        lastName: enrollment.student.lastName,
+        studentCode: enrollment.student.studentCode,
+        status: enrollment.student.status,
+        email: enrollment.student.email,
+        phone: enrollment.student.phone,
+      },
+      batch: {
+        id: enrollment.batch.id,
+        name: enrollment.batch.name,
+        code: enrollment.batch.code,
+      },
+      branch: enrollment.batch.branch,
+      enrollmentId: enrollment.id,
+      enrollmentStatus: enrollment.status,
+      courses: assignments.map((row) =>
+        toAttendanceSessionDto({
+          batchCourseId: row.id,
+          sessionId: row.session?.id,
+          sessionNumber: row.session?.sessionNumber,
+          courseId: row.course.id,
+          courseTitle: row.course.title,
+          courseCode: row.course.code,
+        }),
+      ),
+      summary: {
+        sessionsConducted: stats.conductedSessions,
+        present: stats.present,
+        absent: stats.absent,
+        late: stats.late,
+        leave: stats.leave,
+        attended: stats.attended,
+        percentage: stats.percentage,
+        ratioLabel: stats.ratioLabel,
+        hasAttendance: stats.hasAttendance,
+        totalRecords: stats.total,
+      },
+      monthly,
+      history,
+    };
+  }
+
+  private buildDateFilter(
+    from?: string,
+    to?: string,
+  ): Prisma.DateTimeFilter | undefined {
+    if (!from && !to) return undefined;
+    const filter: Prisma.DateTimeFilter = {};
+    if (from) filter.gte = parseDateOnly(from);
+    if (to) filter.lte = parseDateOnly(to);
+    return filter;
+  }
+
+  private countWorkingDays(
+    start: Date,
+    end: Date | null,
+    daysOfWeek: string[],
+  ): number | null {
+    if (!end || !daysOfWeek.length) return null;
+    const allowed = new Set(
+      daysOfWeek.map((day) => DAY_INDEX[day]).filter((v) => v !== undefined),
+    );
+    if (!allowed.size) return null;
+
+    let count = 0;
+    const cursor = new Date(
+      Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()),
+    );
+    const last = new Date(
+      Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()),
+    );
+
+    while (cursor.getTime() <= last.getTime()) {
+      if (allowed.has(cursor.getUTCDay())) {
+        count += 1;
+      }
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    return count;
   }
 
   private async resolveSessionContext(

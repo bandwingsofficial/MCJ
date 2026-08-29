@@ -184,6 +184,29 @@ export class AttendanceQueryDto {
   take?: number;
 }
 
+/** Filters for Batch Manage → student attendance detail. */
+export class StudentBatchAttendanceQueryDto {
+  @IsOptional()
+  @IsDateString()
+  from?: string;
+
+  @IsOptional()
+  @IsDateString()
+  to?: string;
+
+  @IsOptional()
+  @IsUUID()
+  batchCourseId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  courseId?: string;
+
+  @IsOptional()
+  @IsEnum(AttendanceStatus)
+  status?: AttendanceStatus;
+}
+
 export class CreateAssessmentDto {
   @IsUUID()
   batchId!: string;

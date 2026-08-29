@@ -42,6 +42,106 @@ export interface AttendanceSummary {
   unmarked?: number;
 }
 
+export interface BatchAttendanceStudentRow {
+  id: string;
+  enrollmentId: string;
+  name: string;
+  firstName: string;
+  lastName: string | null;
+  studentCode: string;
+  status: string;
+  enrollmentStatus: string;
+  present: number;
+  absent: number;
+  late: number;
+  leave: number;
+  totalRecords: number;
+  attended: number;
+  conductedSessions: number;
+  ratioLabel: string | null;
+  percentage: number | null;
+  hasAttendance: boolean;
+  lastAttendanceDate: string | null;
+  lastAttendanceStatus: string | null;
+}
+
+export interface BatchAttendanceAnalytics {
+  batch: { id: string; name: string; code: string };
+  branch: { id: string; branchName: string; branchCode: string };
+  overview: {
+    workingDays: number | null;
+    sessionsConducted: number;
+    enrolledStudents: number;
+    totalAttendanceRecords: number;
+    present: number;
+    absent: number;
+    late: number;
+    leave: number;
+    averageAttendance: number | null;
+  };
+  students: BatchAttendanceStudentRow[];
+}
+
+export interface StudentBatchAttendanceDetail {
+  student: {
+    id: string;
+    name: string;
+    firstName: string;
+    lastName: string | null;
+    studentCode: string;
+    status: string;
+    email: string | null;
+    phone: string | null;
+  };
+  batch: { id: string; name: string; code: string };
+  branch: { id: string; branchName: string; branchCode: string };
+  enrollmentId: string;
+  enrollmentStatus: string;
+  courses: AttendanceSessionOption[];
+  summary: {
+    sessionsConducted: number;
+    present: number;
+    absent: number;
+    late: number;
+    leave: number;
+    attended: number;
+    percentage: number | null;
+    ratioLabel: string | null;
+    hasAttendance: boolean;
+    totalRecords: number;
+  };
+  monthly: Array<{
+    monthKey: string;
+    label: string;
+    present: number;
+    absent: number;
+    late: number;
+    leave: number;
+    conductedSessions: number;
+    attended: number;
+    percentage: number | null;
+    ratioLabel: string | null;
+    hasAttendance: boolean;
+  }>;
+  history: Array<{
+    id: string;
+    date: string;
+    status: string;
+    remarks: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+    markedAt?: string | null;
+    course: { id: string; title: string; code: string | null };
+    session: {
+      batchCourseId: string;
+      sessionId: string | null;
+      sessionNumber: number | null;
+      label: string;
+    };
+    faculty: { id: string; name: string } | null;
+  }>;
+}
+
 export interface AttendanceSessionOption {
   batchCourseId: string;
   sessionId: string | null;

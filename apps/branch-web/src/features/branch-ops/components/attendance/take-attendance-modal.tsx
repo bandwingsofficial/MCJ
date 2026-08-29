@@ -16,6 +16,7 @@ import {
   BLOCKED_BATCH_SELECTION_MESSAGE,
   isBatchSelectableForAssignment,
 } from "@/src/features/branch-ops/utils/batch-selection.utils";
+import { formatAttendanceDisplayDate } from "@/src/features/branch-ops/utils/attendance-date.utils";
 import { Button } from "@/src/shared/components/ui/button";
 import { Input } from "@/src/shared/components/ui/input";
 import { Modal } from "@/src/shared/components/ui/model";
@@ -36,17 +37,8 @@ const MARK_STATUSES = ["PRESENT", "ABSENT", "LATE"] as const;
 type MarkStatus = (typeof MARK_STATUSES)[number];
 
 function todayInputValue() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function formatDisplayDate(value: string) {
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 interface Props {
@@ -86,11 +78,7 @@ export function TakeAttendanceModal({
   const sheetQuery = useAsyncData(
     () =>
       batchId && batchCourseId && date
-        ? branchOpsApi.attendanceSheet({
-            batchId,
-            batchCourseId,
-            date,
-          })
+        ? branchOpsApi.attendanceSheet({ batchId, batchCourseId, date })
         : Promise.resolve(null),
     [batchId, batchCourseId, date],
   );
@@ -116,7 +104,7 @@ export function TakeAttendanceModal({
       next[student.id] =
         status === "PRESENT" || status === "ABSENT" || status === "LATE"
           ? status
-          : "";
+          : "PRESENT";
     }
     setStatuses(next);
   }, [sheetQuery.data]);
@@ -133,20 +121,12 @@ export function TakeAttendanceModal({
     const values = Object.values(statuses);
     return {
       total: students.length,
-      present: values.filter((value) => value === "PRESENT").length,
-      absent: values.filter((value) => value === "ABSENT").length,
-      late: values.filter((value) => value === "LATE").length,
-      unmarked: students.filter((student) => !statuses[student.id]).length,
+      present: values.filter((v) => v === "PRESENT").length,
+      absent: values.filter((v) => v === "ABSENT").length,
+      late: values.filter((v) => v === "LATE").length,
+      unmarked: students.filter((s) => !statuses[s.id]).length,
     };
   }, [statuses, students]);
-
-  const markAllPresent = () => {
-    const next: Record<string, MarkStatus | ""> = {};
-    for (const student of students) {
-      next[student.id] = "PRESENT";
-    }
-    setStatuses(next);
-  };
 
   const save = async () => {
     if (!date) {
@@ -161,16 +141,12 @@ export function TakeAttendanceModal({
       appToast.error("Please select a session.");
       return;
     }
-
     if (!students.length) {
-      appToast.error("No enrolled students found for this batch.");
+      appToast.error("No students are enrolled in this batch.");
       return;
     }
-
     if (summary.unmarked > 0) {
-      appToast.error(
-        "Please mark attendance for all students before saving.",
-      );
+      appToast.error("Please mark attendance for all students before saving.");
       return;
     }
 
@@ -193,10 +169,9 @@ export function TakeAttendanceModal({
       onSaved();
       onClose();
     } catch (error) {
-      const parsed = parseBranchOpsError(error);
       appToast.error(
         userFacingApiMessage(
-          parsed,
+          parseBranchOpsError(error),
           "Unable to save attendance. Please try again.",
         ),
       );
@@ -269,9 +244,7 @@ export function TakeAttendanceModal({
             <AppSelect
               value={batchCourseId || undefined}
               placeholder={
-                sessionsQuery.loading
-                  ? "Loading sessions..."
-                  : "Select session"
+                sessionsQuery.loading ? "Loading sessions..." : "Select session"
               }
               onValueChange={setBatchCourseId}
               options={(sessionsQuery.data ?? []).map((session) => ({
@@ -280,85 +253,46 @@ export function TakeAttendanceModal({
               }))}
               disabled={!batchId || sessionsQuery.loading}
             />
-            {batchId &&
-            !sessionsQuery.loading &&
-            !(sessionsQuery.data ?? []).length ? (
-              <p className="mt-1 text-xs text-amber-700">
-                No sessions assigned to this batch.
-              </p>
-            ) : null}
           </div>
         </div>
 
         {batchId && batchCourseId && selectedSession ? (
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-              <div>
-                <p className="text-xs text-slate-500">Date</p>
-                <p className="font-medium text-[#102A56]">
-                  {formatDisplayDate(date)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500">Branch</p>
-                <p className="font-medium text-[#102A56]">
-                  {sheetQuery.data?.branch.branchName ?? "—"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500">Batch</p>
-                <p className="font-medium text-[#102A56]">
-                  {selectedBatch
+              <Meta label="Date" value={formatAttendanceDisplayDate(date)} />
+              <Meta
+                label="Branch"
+                value={sheetQuery.data?.branch.branchName ?? "—"}
+              />
+              <Meta
+                label="Batch"
+                value={
+                  selectedBatch
                     ? `${selectedBatch.name} (${selectedBatch.code})`
-                    : sheetQuery.data?.batch.name}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500">Session</p>
-                <p className="font-medium text-[#102A56]">
-                  {selectedSession.label}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500">Course</p>
-                <p className="font-medium text-[#102A56]">
-                  {selectedSession.course.title}
-                </p>
-              </div>
+                    : (sheetQuery.data?.batch.name ?? "—")
+                }
+              />
+              <Meta label="Session" value={selectedSession.label} />
+              <Meta label="Course" value={selectedSession.course.title} />
             </div>
           </div>
         ) : null}
 
         {batchId && batchCourseId ? (
           sheetQuery.loading ? (
-            <p className="text-sm text-[#647A9B]">Loading enrolled students...</p>
+            <p className="text-sm text-slate-500">Loading enrolled students...</p>
           ) : !students.length ? (
-            <p className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-[#647A9B]">
-              No enrolled students found for this batch.
+            <p className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
+              No students are enrolled in this batch.
             </p>
           ) : (
             <>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">
-                    Enrolled students
-                  </p>
-                  {sheetQuery.data?.hasExisting ? (
-                    <p className="mt-0.5 text-xs font-medium text-amber-700">
-                      Attendance already marked for this session. Existing
-                      statuses are loaded for editing.
-                    </p>
-                  ) : null}
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={markAllPresent}
-                >
-                  Mark All Present
-                </Button>
-              </div>
+              {sheetQuery.data?.hasExisting ? (
+                <p className="text-xs font-medium text-amber-700">
+                  Attendance already marked for this session. Existing statuses
+                  are loaded for editing.
+                </p>
+              ) : null}
 
               <Table>
                 <TableHeader>
@@ -366,7 +300,7 @@ export function TakeAttendanceModal({
                     <TableHead className="w-12">#</TableHead>
                     <TableHead>Student</TableHead>
                     <TableHead>Student Code</TableHead>
-                    <TableHead>Attendance</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -414,48 +348,44 @@ export function TakeAttendanceModal({
                 </TableBody>
               </Table>
 
-              <div className="rounded-xl border border-slate-200 bg-[#F8FBFF] p-4">
-                <p className="text-sm font-semibold text-[#102A56]">
-                  Attendance Summary
-                </p>
-                <div className="mt-2 grid gap-2 sm:grid-cols-4 text-sm">
-                  <p>
+              <div className="rounded-xl border border-slate-200 bg-[#F8FBFF] p-4 text-sm">
+                <p className="font-semibold text-[#102A56]">Attendance Summary</p>
+                <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1">
+                  <span>
                     Total Students:{" "}
-                    <span className="font-semibold">{summary.total}</span>
-                  </p>
-                  <p>
+                    <strong>{summary.total}</strong>
+                  </span>
+                  <span>
                     Present:{" "}
-                    <span className="font-semibold text-emerald-700">
-                      {summary.present}
-                    </span>
-                  </p>
-                  <p>
+                    <strong className="text-emerald-700">{summary.present}</strong>
+                  </span>
+                  <span>
                     Absent:{" "}
-                    <span className="font-semibold text-rose-700">
-                      {summary.absent}
-                    </span>
-                  </p>
-                  <p>
+                    <strong className="text-rose-700">{summary.absent}</strong>
+                  </span>
+                  <span>
                     Late:{" "}
-                    <span className="font-semibold text-amber-700">
-                      {summary.late}
-                    </span>
-                  </p>
+                    <strong className="text-amber-700">{summary.late}</strong>
+                  </span>
                 </div>
-                {summary.unmarked > 0 ? (
-                  <p className="mt-2 text-xs text-amber-700">
-                    {summary.unmarked} student(s) still unmarked
-                  </p>
-                ) : null}
               </div>
             </>
           )
         ) : (
-          <p className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-[#647A9B]">
+          <p className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
             Select date, batch, and session to load enrolled students.
           </p>
         )}
       </div>
     </Modal>
+  );
+}
+
+function Meta({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="font-medium text-[#102A56]">{value}</p>
+    </div>
   );
 }

@@ -16,16 +16,7 @@ import {
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
-import { Loader } from "@/src/shared/components/ui/loader";
 import { Modal } from "@/src/shared/components/ui/model";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/src/shared/components/ui/table";
 import { cn } from "@/src/shared/lib/cn";
 import { appToast } from "@/src/shared/lib/toast";
 
@@ -56,8 +47,6 @@ export function ManageAttendanceModal({
 }: Props) {
   const [status, setStatus] = useState<MarkStatus>("PRESENT");
   const [saving, setSaving] = useState(false);
-  const [history, setHistory] = useState<AttendanceItem[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     if (!open || !record) return;
@@ -68,41 +57,6 @@ export function ManageAttendanceModal({
         ? record.status
         : "PRESENT",
     );
-  }, [open, record]);
-
-  useEffect(() => {
-    if (!open || !record) {
-      setHistory([]);
-      return;
-    }
-
-    let cancelled = false;
-    const loadHistory = async () => {
-      setHistoryLoading(true);
-      try {
-        const response = await branchOpsApi.attendanceReport({
-          studentId: record.student.id,
-          batchId: record.batch.id,
-          take: 100,
-        });
-        if (!cancelled) {
-          setHistory(response.items ?? []);
-        }
-      } catch {
-        if (!cancelled) {
-          setHistory([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setHistoryLoading(false);
-        }
-      }
-    };
-
-    void loadHistory();
-    return () => {
-      cancelled = true;
-    };
   }, [open, record]);
 
   const canSave = useMemo(() => {
@@ -141,7 +95,7 @@ export function ManageAttendanceModal({
       open={open}
       onClose={onClose}
       title="Attendance Details"
-      contentClassName="max-w-3xl"
+      contentClassName="max-w-xl"
       footer={
         <>
           <Button variant="outline" onClick={onClose} disabled={saving}>
@@ -161,7 +115,7 @@ export function ManageAttendanceModal({
             <div className="grid gap-3 sm:grid-cols-2">
               <Detail
                 label="Student"
-                value={`${record.student.name} · ${record.student.studentCode}`}
+                value={`${record.student.name} (${record.student.studentCode})`}
               />
               <Detail
                 label="Branch"
@@ -193,8 +147,13 @@ export function ManageAttendanceModal({
 
           <div>
             <p className="mb-2 text-sm font-medium text-slate-700">
-              Change status
+              Change Status
             </p>
+            <div className="mb-2">
+              <Badge variant={attendanceStatusVariant(record.status)}>
+                {record.status}
+              </Badge>
+            </div>
             <div className="flex flex-wrap gap-2">
               {MARK_STATUSES.map((option) => (
                 <button
@@ -216,53 +175,6 @@ export function ManageAttendanceModal({
                 </button>
               ))}
             </div>
-          </div>
-
-          <div>
-            <p className="mb-2 text-sm font-semibold text-[#102A56]">
-              Student Attendance History
-            </p>
-            <p className="mb-3 text-xs text-slate-500">
-              Records for {record.student.name} in {record.batch.name}
-            </p>
-            {historyLoading ? (
-              <Loader />
-            ) : !history.length ? (
-              <EmptyState title="No attendance history for this batch." />
-            ) : (
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Session</TableHead>
-                      <TableHead>Course</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {history.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          {formatAttendanceDisplayDate(String(item.date))}
-                        </TableCell>
-                        <TableCell>
-                          {item.session.sessionNumber != null
-                            ? `Session ${item.session.sessionNumber}`
-                            : item.session.label}
-                        </TableCell>
-                        <TableCell>{item.course.title}</TableCell>
-                        <TableCell>
-                          <Badge variant={attendanceStatusVariant(item.status)}>
-                            {item.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
           </div>
         </div>
       )}

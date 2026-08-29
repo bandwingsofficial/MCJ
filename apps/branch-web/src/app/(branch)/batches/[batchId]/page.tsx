@@ -3,6 +3,7 @@
 import { use } from "react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
+import { BatchAttendancePanel } from "@/src/features/branch-ops/components/batches/batch-attendance-panel";
 import { BatchCoursePanel } from "@/src/features/branch-ops/components/batches/batch-course-panel";
 import { BatchManageHeader } from "@/src/features/branch-ops/components/batches/batch-manage-header";
 import { BatchOverviewPanel } from "@/src/features/branch-ops/components/batches/batch-overview-panel";
@@ -57,6 +58,9 @@ export default function BatchManagePage({ params }: PageProps) {
           <TabsTrigger value="students" className={TAB_CLASS}>
             Enrolled Students
           </TabsTrigger>
+          <TabsTrigger value="attendance" className={TAB_CLASS}>
+            Attendance
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -72,6 +76,9 @@ export default function BatchManagePage({ params }: PageProps) {
               void reload();
             }}
           />
+        </TabsContent>
+        <TabsContent value="attendance">
+          <BatchAttendancePanel batchId={batchId} />
         </TabsContent>
       </Tabs>
     </div>
