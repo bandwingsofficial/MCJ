@@ -411,6 +411,7 @@ export interface AttendanceItem {
 
 export interface AssessmentItem {
   id: string;
+  assessmentGroupId: string | null;
   type: string;
   name: string;
   date: string;
@@ -419,8 +420,80 @@ export interface AssessmentItem {
   percentage: number;
   remarks: string | null;
   student: { id: string; name: string; studentCode: string };
-  batch: { id: string; name: string };
-  faculty: { id: string; name: string };
+  batch: { id: string; name: string; code?: string };
+  course: { id: string; title: string; code: string | null } | null;
+  session: {
+    batchCourseId: string;
+    sessionId: string | null;
+    sessionNumber: number | null;
+    sessionCode: string | null;
+    label: string;
+  } | null;
+  faculty: { id: string; name: string } | null;
+}
+
+export interface AssessmentReport {
+  items: AssessmentItem[];
+  total: number;
+}
+
+export interface AssessmentSheetStudent {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  studentCode: string;
+  name: string;
+}
+
+export interface AssessmentSheet {
+  branch: { id: string; branchName: string; branchCode: string };
+  batch: { id: string; name: string; code: string };
+  session: {
+    batchCourseId: string;
+    sessionId: string | null;
+    sessionNumber: number | null;
+    sessionCode: string | null;
+    label: string;
+    course: { id: string; title: string; code: string | null };
+  };
+  students: AssessmentSheetStudent[];
+  totalStudents: number;
+}
+
+export interface AssessmentGroupDetail {
+  assessmentGroupId: string;
+  type: string;
+  name: string;
+  date: string;
+  maxMarks: number;
+  batch: { id: string; name: string; code: string };
+  session: AssessmentSheet["session"] | null;
+  course: { id: string; title: string; code: string | null } | null;
+  faculty: { id: string; name: string } | null;
+  marks: Array<{
+    id: string;
+    student: { id: string; name: string; studentCode: string };
+    obtainedMarks: number;
+    remarks: string | null;
+  }>;
+  summary: {
+    totalAssessments: number;
+    marksEntered: number;
+    averageMarks: number;
+    averagePercentage: number;
+    highestMarks: number;
+    lowestMarks: number;
+  };
+}
+
+export interface BatchAssessmentAnalytics {
+  batch: { id: string; name: string; code: string };
+  students: Array<{
+    student: { id: string; name: string; studentCode: string };
+    totalAssessments: number;
+    byType: Record<string, number | null>;
+    averagePercentage: number | null;
+  }>;
 }
 
 export interface JobApplicationItem {

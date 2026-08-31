@@ -1,12 +1,16 @@
 import { apiClient } from "@/src/core/api/axios";
 import type {
   ApiSuccess,
+  AssessmentGroupDetail,
   AssessmentItem,
+  AssessmentReport,
+  AssessmentSheet,
   AttendanceItem,
   AttendanceReport,
   AttendanceSessionOption,
   AttendanceSheet,
   AttendanceSummary,
+  BatchAssessmentAnalytics,
   BatchAttendanceAnalytics,
   BatchCourseContent,
   BatchListItem,
@@ -118,13 +122,34 @@ export const branchOpsApi = {
     date?: string;
   }) => unwrap(apiClient.post("/branch/attendance/punch", payload)),
 
-  assessments: (params?: Record<string, string | undefined>) =>
+  assessments: (params?: Record<string, string | number | undefined>) =>
     unwrap<AssessmentItem[]>(
       apiClient.get("/branch/assessments", { params }),
     ),
 
+  assessmentReport: (params?: Record<string, string | number | undefined>) =>
+    unwrap<AssessmentReport>(
+      apiClient.get("/branch/assessments/report", { params }),
+    ),
+
+  assessmentSheet: (params: { batchId: string; batchCourseId: string }) =>
+    unwrap<AssessmentSheet>(
+      apiClient.get("/branch/assessments/sheet", { params }),
+    ),
+
+  assessmentGroup: (groupId: string) =>
+    unwrap<AssessmentGroupDetail>(
+      apiClient.get(`/branch/assessments/groups/${groupId}`),
+    ),
+
+  batchAssessmentSummary: (batchId: string) =>
+    unwrap<BatchAssessmentAnalytics>(
+      apiClient.get(`/branch/batches/${batchId}/assessments/summary`),
+    ),
+
   createAssessment: (payload: {
     batchId: string;
+    batchCourseId?: string;
     studentId: string;
     type: string;
     name: string;
@@ -133,6 +158,52 @@ export const branchOpsApi = {
     obtainedMarks: number;
     remarks?: string;
   }) => unwrap<AssessmentItem>(apiClient.post("/branch/assessments", payload)),
+
+  createAssessmentBulk: (payload: {
+    batchId: string;
+    batchCourseId: string;
+    type: string;
+    name: string;
+    date: string;
+    maxMarks: number;
+    records: Array<{
+      studentId: string;
+      obtainedMarks: number;
+      remarks?: string;
+    }>;
+  }) =>
+    unwrap<AssessmentGroupDetail>(
+      apiClient.post("/branch/assessments/bulk", payload),
+    ),
+
+  updateAssessment: (
+    id: string,
+    payload: {
+      name?: string;
+      date?: string;
+      maxMarks?: number;
+      obtainedMarks?: number;
+      remarks?: string;
+      type?: string;
+    },
+  ) =>
+    unwrap<AssessmentItem>(apiClient.patch(`/branch/assessments/${id}`, payload)),
+
+  updateAssessmentGroup: (
+    groupId: string,
+    payload: {
+      name?: string;
+      maxMarks?: number;
+      records?: Array<{
+        studentId: string;
+        obtainedMarks: number;
+        remarks?: string;
+      }>;
+    },
+  ) =>
+    unwrap<AssessmentGroupDetail>(
+      apiClient.patch(`/branch/assessments/groups/${groupId}`, payload),
+    ),
 
   jobApplications: (params?: Record<string, string | undefined>) =>
     unwrap<{ items: JobApplicationItem[]; total: number }>(

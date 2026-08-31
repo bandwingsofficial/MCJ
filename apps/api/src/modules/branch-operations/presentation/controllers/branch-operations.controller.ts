@@ -33,9 +33,12 @@ import { BranchStaffService } from '../../application/branch-staff.service';
 import {
   AssignFacultyDto,
   AssessmentQueryDto,
+  AssessmentSheetQueryDto,
   AttendanceQueryDto,
   AttendanceSheetQueryDto,
+  BulkCreateAssessmentDto,
   BulkRecordAttendanceDto,
+  BulkUpdateAssessmentGroupDto,
   CreateAssessmentDto,
   CreateBranchStaffDto,
   EnrollmentListQueryDto,
@@ -386,6 +389,48 @@ export class BranchOperationsController {
     };
   }
 
+  @Get('assessments/report')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ASSESSMENT_READ)
+  async assessmentReport(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Query() query: AssessmentQueryDto,
+  ) {
+    return {
+      success: true,
+      message: 'Assessment report fetched successfully',
+      data: await this.assessments.report(user, query),
+    };
+  }
+
+  @Get('assessments/sheet')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ASSESSMENT_READ)
+  async assessmentSheet(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Query() query: AssessmentSheetQueryDto,
+  ) {
+    return {
+      success: true,
+      message: 'Assessment sheet fetched successfully',
+      data: await this.assessments.getSheet(user, query),
+    };
+  }
+
+  @Get('assessments/groups/:groupId')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ASSESSMENT_READ)
+  async getAssessmentGroup(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('groupId') groupId: string,
+  ) {
+    return {
+      success: true,
+      message: 'Assessment group fetched successfully',
+      data: await this.assessments.getGroup(user, groupId),
+    };
+  }
+
   @Get('assessments')
   @Roles(...FacultyOrManager)
   @Permissions(Permission.ASSESSMENT_READ)
@@ -397,6 +442,20 @@ export class BranchOperationsController {
       success: true,
       message: 'Assessments fetched successfully',
       data: await this.assessments.list(user, query),
+    };
+  }
+
+  @Post('assessments/bulk')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ASSESSMENT_WRITE)
+  async bulkCreateAssessment(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Body() dto: BulkCreateAssessmentDto,
+  ) {
+    return {
+      success: true,
+      message: 'Assessment saved successfully',
+      data: await this.assessments.bulkCreate(user, dto),
     };
   }
 
@@ -414,6 +473,21 @@ export class BranchOperationsController {
     };
   }
 
+  @Patch('assessments/groups/:groupId')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ASSESSMENT_WRITE)
+  async updateAssessmentGroup(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('groupId') groupId: string,
+    @Body() dto: BulkUpdateAssessmentGroupDto,
+  ) {
+    return {
+      success: true,
+      message: 'Assessment updated successfully',
+      data: await this.assessments.bulkUpdateGroup(user, groupId, dto),
+    };
+  }
+
   @Patch('assessments/:id')
   @Roles(...FacultyOrManager)
   @Permissions(Permission.ASSESSMENT_WRITE)
@@ -426,6 +500,20 @@ export class BranchOperationsController {
       success: true,
       message: 'Assessment updated successfully',
       data: await this.assessments.update(user, id, dto),
+    };
+  }
+
+  @Get('batches/:id/assessments/summary')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ASSESSMENT_READ)
+  async batchAssessmentSummary(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+  ) {
+    return {
+      success: true,
+      message: 'Batch assessment summary fetched successfully',
+      data: await this.assessments.getBatchAnalytics(user, id),
     };
   }
 

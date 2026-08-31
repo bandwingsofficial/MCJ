@@ -211,6 +211,10 @@ export class CreateAssessmentDto {
   @IsUUID()
   batchId!: string;
 
+  @IsOptional()
+  @IsUUID()
+  batchCourseId?: string;
+
   @IsUUID()
   studentId!: string;
 
@@ -282,6 +286,10 @@ export class AssessmentQueryDto {
 
   @IsOptional()
   @IsUUID()
+  batchCourseId?: string;
+
+  @IsOptional()
+  @IsUUID()
   studentId?: string;
 
   @IsOptional()
@@ -299,6 +307,99 @@ export class AssessmentQueryDto {
   @IsOptional()
   @IsDateString()
   to?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  skip?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  take?: number;
+}
+
+class AssessmentMarkEntryDto {
+  @IsUUID()
+  studentId!: string;
+
+  @IsNumber()
+  @Min(0)
+  obtainedMarks!: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  remarks?: string;
+}
+
+export class BulkCreateAssessmentDto {
+  @IsUUID()
+  batchId!: string;
+
+  @IsUUID()
+  batchCourseId!: string;
+
+  @IsEnum(AssessmentType)
+  type!: AssessmentType;
+
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  name!: string;
+
+  @IsDateString()
+  date!: string;
+
+  @IsNumber()
+  @Min(0.01)
+  maxMarks!: number;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => AssessmentMarkEntryDto)
+  records!: AssessmentMarkEntryDto[];
+}
+
+export class BulkUpdateAssessmentGroupDto {
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @MaxLength(120)
+  name?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0.01)
+  maxMarks?: number;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AssessmentMarkEntryDto)
+  records?: AssessmentMarkEntryDto[];
+}
+
+export class AssessmentSheetQueryDto {
+  @IsUUID()
+  batchId!: string;
+
+  @IsUUID()
+  batchCourseId!: string;
 }
 
 export class ScheduleInterviewDto {

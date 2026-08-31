@@ -728,6 +728,7 @@ model BatchCourse {
   trainer     Trainer?     @relation(fields: [trainerId], references: [id])
   session     BatchCourseSession?
   attendances Attendance[]
+  assessments AcademicAssessment[]
 
   @@unique([batchId, courseId])
   @@index([batchId])
@@ -1133,33 +1134,42 @@ model Attendance {
 }
 
 model AcademicAssessment {
-  id             String         @id @default(uuid())
-  branchId       String
-  batchId        String
-  studentId      String
-  facultyId      String?
-  type           AssessmentType
-  name           String
-  date           DateTime       @db.Date
-  maxMarks       Decimal        @db.Decimal(8, 2)
-  obtainedMarks  Decimal        @db.Decimal(8, 2)
-  remarks        String?
-  createdBy      String?
-  updatedBy      String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  branch         Branch         @relation(fields: [branchId], references: [id])
-  batch          Batch          @relation(fields: [batchId], references: [id])
-  student        Student        @relation(fields: [studentId], references: [id])
-  faculty        BranchUser?    @relation(fields: [facultyId], references: [id], onDelete: SetNull)
+  id                String         @id @default(uuid())
+  branchId          String
+  batchId           String
+  /// BatchCourse assignment (session) this assessment belongs to.
+  batchCourseId     String?
+  /// Groups student mark rows created together for one assessment event.
+  assessmentGroupId String?
+  studentId         String
+  facultyId         String?
+  type              AssessmentType
+  name              String
+  date              DateTime       @db.Date
+  maxMarks          Decimal        @db.Decimal(8, 2)
+  obtainedMarks     Decimal        @db.Decimal(8, 2)
+  remarks           String?
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  branch            Branch         @relation(fields: [branchId], references: [id])
+  batch             Batch          @relation(fields: [batchId], references: [id])
+  batchCourse       BatchCourse?   @relation(fields: [batchCourseId], references: [id])
+  student           Student        @relation(fields: [studentId], references: [id])
+  faculty           BranchUser?    @relation(fields: [facultyId], references: [id], onDelete: SetNull)
 
+  @@unique([assessmentGroupId, studentId])
   @@index([branchId])
   @@index([batchId])
+  @@index([batchCourseId])
+  @@index([assessmentGroupId])
   @@index([studentId])
   @@index([facultyId])
   @@index([type])
   @@index([date])
   @@index([branchId, date])
+  @@index([batchCourseId, date])
 }
 
 model Interview {
