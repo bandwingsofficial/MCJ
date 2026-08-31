@@ -5,14 +5,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
-import type {
-  AttendanceSheet,
-  StudentBatchAttendanceDetail,
-} from "@/src/features/branch-ops/types";
+import type { StudentBatchAttendanceDetail } from "@/src/features/branch-ops/types";
 import {
   attendanceStatusVariant,
   formatAttendanceDisplayDate,
-  formatAttendanceMarkedAt,
 } from "@/src/features/branch-ops/utils/attendance-date.utils";
 import { formatRoleLabel } from "@/src/core/auth/roles";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
@@ -21,6 +17,7 @@ import { Card } from "@/src/shared/components/ui/card";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
+import { TablePaginationBar } from "@/src/shared/components/ui/table-pagination";
 import {
   Table,
   TableBody,
@@ -29,7 +26,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/shared/components/ui/table";
-import { cn } from "@/src/shared/lib/cn";
 
 interface Props {
   batchId: string;
@@ -52,11 +48,12 @@ export function AttendanceDetailsPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<StudentBatchAttendanceDetail | null>(null);
-  const [sheet, setSheet] = useState<AttendanceSheet | null>(null);
 
   const [monthFilter, setMonthFilter] = useState("");
   const [sessionFilter, setSessionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -67,22 +64,6 @@ export function AttendanceDetailsPage({
         studentId,
       );
       setData(result);
-
-      const focus =
-        (recordId && result.history.find((row) => row.id === recordId)) ||
-        result.history[0] ||
-        null;
-
-      if (focus) {
-        const sheetData = await branchOpsApi.attendanceSheet({
-          batchId,
-          batchCourseId: focus.session.batchCourseId,
-          date: String(focus.date).slice(0, 10),
-        });
-        setSheet(sheetData);
-      } else {
-        setSheet(null);
-      }
     } catch (err: unknown) {
       const message =
         err && typeof err === "object" && "response" in err
@@ -91,11 +72,10 @@ export function AttendanceDetailsPage({
           : null;
       setError(message ?? "Unable to load attendance details.");
       setData(null);
-      setSheet(null);
     } finally {
       setLoading(false);
     }
-  }, [batchId, studentId, recordId]);
+  }, [batchId, studentId]);
 
   useEffect(() => {
     void load();
@@ -126,21 +106,40 @@ export function AttendanceDetailsPage({
     });
   }, [data?.history, monthFilter, sessionFilter, statusFilter]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [monthFilter, sessionFilter, statusFilter]);
+
+  const pagedHistory = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredHistory.slice(start, start + pageSize);
+  }, [filteredHistory, page, pageSize]);
+
   const monthOptions = useMemo(() => {
     const map = new Map<string, string>();
     for (const month of data?.monthly ?? []) {
       map.set(month.monthKey, month.label);
     }
+    for (const row of data?.history ?? []) {
+      const key = monthKeyFromIso(String(row.date));
+      if (!map.has(key)) {
+        const [year, month] = key.split("-").map(Number);
+        const label = new Date(
+          Date.UTC(year, (month || 1) - 1, 1),
+        ).toLocaleDateString("en-GB", {
+          month: "long",
+          year: "numeric",
+          timeZone: "UTC",
+        });
+        map.set(key, label);
+      }
+    }
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [data?.monthly]);
+  }, [data?.monthly, data?.history]);
 
   if (loading && !data) return <Loader />;
   if (error && !data) return <ErrorState description={error} onRetry={load} />;
   if (!data) return <EmptyState title="No attendance recorded yet." />;
-
-  const summary = data.summary;
-  const notStarted =
-    !summary.hasAttendance || summary.sessionsConducted === 0;
 
   return (
     <div className="space-y-5">
@@ -167,154 +166,44 @@ export function AttendanceDetailsPage({
           Attendance Details
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          View-only tracking for this student in the selected batch.
+          View-only attendance history for this student in the selected batch.
         </p>
       </div>
 
       <Card className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
+        <Field
+          label="Student"
+          value={`${data.student.name} (${data.student.studentCode})`}
+        />
         <Field label="Branch" value={data.branch.branchName} />
         <Field
           label="Batch"
           value={`${data.batch.name} (${data.batch.code})`}
         />
-        <Field
-          label="Student"
-          value={`${data.student.name} (${data.student.studentCode})`}
-        />
         {focusRecord ? (
           <>
             <Field label="Session" value={focusRecord.session.label} />
             <Field label="Course" value={focusRecord.course.title} />
-            <Field
-              label="Attendance Date"
-              value={formatAttendanceDisplayDate(String(focusRecord.date))}
-            />
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-[#647A9B]">
+                Current Status
+              </p>
+              <div className="mt-1">
+                <Badge variant={attendanceStatusVariant(focusRecord.status)}>
+                  {focusRecord.status}
+                </Badge>
+              </div>
+            </div>
           </>
         ) : null}
       </Card>
-
-      {sheet ? (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Session Attendance ·{" "}
-            {formatAttendanceDisplayDate(String(sheet.date))}
-          </h2>
-          <p className="text-sm text-slate-600">{sheet.session.label}</p>
-          <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-            <span>
-              Total: <strong>{sheet.summary.total}</strong>
-            </span>
-            <span>
-              Present:{" "}
-              <strong className="text-emerald-700">{sheet.summary.present}</strong>
-            </span>
-            <span>
-              Absent:{" "}
-              <strong className="text-rose-700">{sheet.summary.absent}</strong>
-            </span>
-            <span>
-              Late:{" "}
-              <strong className="text-amber-700">{sheet.summary.late}</strong>
-            </span>
-            <span>
-              Attendance: <strong>{sheet.summary.percentage}%</strong>
-            </span>
-          </div>
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Student Code</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sheet.students.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="font-medium text-[#102A56]">
-                      {student.name}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {student.studentCode}
-                    </TableCell>
-                    <TableCell>
-                      {student.status ? (
-                        <Badge
-                          variant={attendanceStatusVariant(student.status)}
-                        >
-                          {student.status}
-                        </Badge>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </section>
-      ) : null}
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Student Attendance Overview
-        </h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <Stat label="Total Sessions" value={String(summary.sessionsConducted)} />
-          <Stat label="Present" value={String(summary.present)} />
-          <Stat label="Absent" value={String(summary.absent)} />
-          <Stat label="Late" value={String(summary.late)} />
-          <Stat
-            label="Attendance %"
-            value={
-              notStarted || summary.percentage == null
-                ? "Not Started"
-                : `${summary.percentage}%`
-            }
-            emphasize
-          />
-        </div>
-        <p className="text-sm text-slate-600">
-          {notStarted || !summary.ratioLabel
-            ? "Not Started"
-            : `${summary.ratioLabel} Sessions Attended`}
-        </p>
-      </section>
-
-      {data.monthly.length ? (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Monthly Attendance
-          </h2>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {data.monthly.map((month) => (
-              <Card key={month.monthKey} className="p-3">
-                <p className="text-sm font-semibold text-slate-900">
-                  {month.label}
-                </p>
-                <p className="mt-2 text-sm text-slate-600">
-                  Present {month.present} · Absent {month.absent} · Late{" "}
-                  {month.late} · Conducted {month.conductedSessions}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-[#2563EB]">
-                  {month.percentage == null
-                    ? "Not Started"
-                    : `${month.percentage}%`}
-                  {month.ratioLabel ? ` · ${month.ratioLabel}` : ""}
-                </p>
-              </Card>
-            ))}
-          </div>
-        </section>
-      ) : null}
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
           Student Attendance History
         </h2>
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
+
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <FilterSelect
             value={monthFilter}
             onChange={setMonthFilter}
@@ -340,6 +229,18 @@ export function AttendanceDetailsPage({
               { value: "LATE", label: "Late" },
             ]}
           />
+          <button
+            type="button"
+            onClick={() => {
+              setMonthFilter("");
+              setSessionFilter("");
+              setStatusFilter("");
+              setPage(1);
+            }}
+            className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Clear Filters
+          </button>
         </div>
 
         {!data.history.length ? (
@@ -347,41 +248,50 @@ export function AttendanceDetailsPage({
         ) : !filteredHistory.length ? (
           <EmptyState title="No attendance matches these filters." />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Session</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Marked At</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredHistory.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="whitespace-nowrap">
-                      {formatAttendanceDisplayDate(String(item.date))}
-                    </TableCell>
-                    <TableCell className="max-w-[14rem] truncate font-medium">
-                      {item.session.label}
-                    </TableCell>
-                    <TableCell>{item.course.title}</TableCell>
-                    <TableCell>
-                      <Badge variant={attendanceStatusVariant(item.status)}>
-                        {item.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {formatAttendanceMarkedAt(
-                        item.markedAt ?? item.updatedAt ?? item.createdAt,
-                      )}
-                    </TableCell>
+          <div className="overflow-hidden rounded-xl border border-slate-200">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Session</TableHead>
+                    <TableHead>Course</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {pagedHistory.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="whitespace-nowrap">
+                        {formatAttendanceDisplayDate(String(item.date))}
+                      </TableCell>
+                      <TableCell className="max-w-[14rem] truncate font-medium">
+                        {item.session.label}
+                      </TableCell>
+                      <TableCell className="max-w-[12rem] truncate">
+                        {item.course.title}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={attendanceStatusVariant(item.status)}>
+                          {item.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <TablePaginationBar
+              page={page}
+              pageSize={pageSize}
+              total={filteredHistory.length}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => {
+                setPageSize(size);
+                setPage(1);
+              }}
+            />
           </div>
         )}
       </section>
@@ -398,34 +308,10 @@ function Field({ label, value }: { label: string; value: string }) {
       <p className="text-[11px] font-medium uppercase tracking-wide text-[#647A9B]">
         {label}
       </p>
-      <p className="mt-0.5 text-sm font-medium text-[#102A56]">{value}</p>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  emphasize,
-}: {
-  label: string;
-  value: string;
-  emphasize?: boolean;
-}) {
-  return (
-    <Card className="p-3">
-      <p className="text-[11px] uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-      <p
-        className={cn(
-          "mt-1 text-lg font-semibold tabular-nums",
-          emphasize ? "text-[#2563EB]" : "text-slate-900",
-        )}
-      >
+      <p className="mt-0.5 truncate text-sm font-medium text-[#102A56]">
         {value}
       </p>
-    </Card>
+    </div>
   );
 }
 

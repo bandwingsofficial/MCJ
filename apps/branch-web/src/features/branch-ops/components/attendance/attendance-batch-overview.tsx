@@ -20,7 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/shared/components/ui/table";
-import { Card } from "@/src/shared/components/ui/card";
 
 interface Props {
   batches: BatchListItem[];
@@ -109,35 +108,6 @@ export function AttendanceBatchOverview({
             <p className="mt-1 text-sm text-slate-500">
               {data.batch.name} · {data.batch.code}
             </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Card className="p-4">
-              <p className="text-xs text-slate-500">Total Students</p>
-              <p className="mt-1 text-lg font-semibold text-[#102A56]">
-                {data.overview.enrolledStudents}
-              </p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-xs text-slate-500">Sessions Conducted</p>
-              <p className="mt-1 text-lg font-semibold text-[#102A56]">
-                {data.overview.sessionsConducted}
-              </p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-xs text-slate-500">Average Attendance</p>
-              <p className="mt-1 text-lg font-semibold text-[#102A56]">
-                {data.overview.averageAttendance == null
-                  ? "Not Started"
-                  : `${data.overview.averageAttendance}%`}
-              </p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-xs text-slate-500">Records</p>
-              <p className="mt-1 text-lg font-semibold text-[#102A56]">
-                {data.overview.totalAttendanceRecords}
-              </p>
-            </Card>
           </div>
 
           {!data.students.length ? (
