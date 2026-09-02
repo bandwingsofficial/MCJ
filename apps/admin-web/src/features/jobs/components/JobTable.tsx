@@ -18,6 +18,7 @@ interface JobTableProps {
   selectedJobIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
   actionsDisabled?: boolean;
+  selectionDisabled?: boolean;
   onView: (job: Job) => void;
   onEdit: (job: Job) => void;
   onCopyLink: (job: Job) => void;
@@ -67,6 +68,7 @@ export function JobTable({
   selectedJobIds = [],
   onSelectionChange,
   actionsDisabled = false,
+  selectionDisabled = false,
   onView,
   onEdit,
   onCopyLink,
@@ -93,7 +95,7 @@ export function JobTable({
   }, [someVisibleSelected]);
 
   const toggleRow = (jobId: string, checked: boolean) => {
-    if (!onSelectionChange) {
+    if (!onSelectionChange || selectionDisabled) {
       return;
     }
 
@@ -105,7 +107,7 @@ export function JobTable({
   };
 
   const toggleAllVisible = (checked: boolean) => {
-    if (!onSelectionChange) {
+    if (!onSelectionChange || selectionDisabled) {
       return;
     }
 
@@ -139,6 +141,7 @@ export function JobTable({
                 type="checkbox"
                 className="h-4 w-4 rounded border-slate-300"
                 checked={allVisibleSelected}
+                disabled={selectionDisabled}
                 onChange={(event) => toggleAllVisible(event.target.checked)}
                 aria-label="Select all jobs on this page"
               />
@@ -185,6 +188,7 @@ export function JobTable({
                 <td className={cn("px-3 py-3", expiredRowCellClass(expired))}>
                   <Checkbox
                     checked={selectedJobIds.includes(job.id)}
+                    disabled={selectionDisabled}
                     onCheckedChange={(checked) => toggleRow(job.id, checked)}
                   />
                 </td>

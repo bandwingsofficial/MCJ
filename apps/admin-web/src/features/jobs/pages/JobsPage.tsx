@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Card } from "@/src/shared/components/ui/card";
@@ -10,6 +10,10 @@ import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { appToast } from "@/src/shared/components/ui/toast";
 
 import { JobDialog } from "@/src/features/jobs/components/JobDialog";
+import {
+  JobBulkActionsToolbar,
+  type BulkJobAction,
+} from "@/src/features/jobs/components/job-bulk-actions-toolbar";
 import { JobSummaryHeader } from "@/src/features/jobs/components/job-summary-header";
 import type { JobsModuleTab } from "@/src/features/jobs/components/job-summary-header";
 import { JobTable } from "@/src/features/jobs/components/JobTable";
@@ -17,6 +21,7 @@ import { JobViewDrawer } from "@/src/features/jobs/components/JobViewDrawer";
 import { JobsApplicationsPanel } from "@/src/features/jobs/components/JobsApplicationsPanel";
 import { JobsOnboardingPanel } from "@/src/features/jobs/components/JobsOnboardingPanel";
 import { DEFAULT_JOB_PAGE_SIZE } from "@/src/features/jobs/constants/job.constants";
+import { useBulkJobActions } from "@/src/features/jobs/hooks/use-bulk-job-actions";
 import { useJobOnboarding, useJobs } from "@/src/features/jobs/hooks/useJobs";
 import { jobService } from "@/src/features/jobs/services/job.service";
 import type {
@@ -24,6 +29,14 @@ import type {
   Job,
 } from "@/src/features/jobs/types/job.types";
 import { getCompanyOnboardingUrl, getJobApplicationUrl } from "@/src/features/jobs/utils/job-form.utils";
+import {
+  formatBulkResultToast,
+  getEligibleActivateIds,
+  getEligibleArchiveIds,
+  getEligibleDeactivateIds,
+  getEligiblePermanentDeleteIds,
+  getEligibleRestoreIds,
+} from "@/src/features/jobs/utils/job-bulk.utils";
 import { useJobApplications } from "@/src/features/job-applications/hooks/useJobApplications";
 import type { OnboardingStatusFilter } from "@/src/features/job-applications/types/job-application.types";
 
@@ -62,6 +75,8 @@ export function JobsPage() {
   const applications = useJobApplications();
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkConfirmAction, setBulkConfirmAction] =
+    useState<BulkJobAction | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job>();
   const [viewJob, setViewJob] = useState<Job>();
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
@@ -72,6 +87,18 @@ export function JobsPage() {
   );
   const [isActing, setIsActing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    bulkActivateJobs,
+    bulkDeactivateJobs,
+    bulkArchiveJobs,
+    bulkRestoreJobs,
+    bulkPermanentDeleteJobs,
+    isPending: isBulkPending,
+  } = useBulkJobActions();
+
+  const bulkActionLoading = isBulkPending;
+  const actionLoading = isActing || isSubmitting || bulkActionLoading;
 
   const page = filters.page ?? 1;
   const pageSize = filters.pageSize ?? DEFAULT_JOB_PAGE_SIZE;
@@ -125,6 +152,174 @@ export function JobsPage() {
         return { title: "", description: "" };
     }
   }, [confirmAction]);
+
+  const eligibleBulkIds = useMemo(() => {
+    if (!bulkConfirmAction) {
+      return [];
+    }
+
+    switch (bulkConfirmAction) {
+      case "activate":
+        return getEligibleActivateIds(jobs, selectedIds);
+      case "deactivate":
+        return getEligibleDeactivateIds(jobs, selectedIds);
+      case "archive":
+        return getEligibleArchiveIds(jobs, selectedIds);
+      case "restore":
+        return getEligibleRestoreIds(jobs, selectedIds);
+      case "permanent-delete":
+        return getEligiblePermanentDeleteIds(jobs, selectedIds);
+      default:
+        return [];
+    }
+  }, [bulkConfirmAction, jobs, selectedIds]);
+
+  const bulkDialogCopy = useMemo(() => {
+    const count = eligibleBulkIds.length;
+
+    switch (bulkConfirmAction) {
+      case "activate":
+        return {
+          title: "Activate selected jobs?",
+          description: `Activate ${count} selected job${count === 1 ? "" : "s"}?`,
+          confirmLabel: "Activate",
+          loadingLabel: "Activating...",
+          confirmVariant: "success" as const,
+        };
+      case "deactivate":
+        return {
+          title: "Deactivate selected jobs?",
+          description: `Deactivate ${count} selected job${count === 1 ? "" : "s"}? They will be hidden from public listings.`,
+          confirmLabel: "Deactivate",
+          loadingLabel: "Deactivating...",
+          confirmVariant: "primary" as const,
+        };
+      case "archive":
+        return {
+          title: "Archive selected jobs?",
+          description: `Archive ${count} selected job${count === 1 ? "" : "s"}? They can be restored later.`,
+          confirmLabel: "Archive",
+          loadingLabel: "Archiving...",
+          confirmVariant: "danger" as const,
+        };
+      case "restore":
+        return {
+          title: "Restore selected jobs?",
+          description: `Restore ${count} archived job${count === 1 ? "" : "s"}?`,
+          confirmLabel: "Restore",
+          loadingLabel: "Restoring...",
+          confirmVariant: "success" as const,
+        };
+      case "permanent-delete":
+        return {
+          title: "Permanently delete selected jobs?",
+          description: `You are about to permanently delete ${count} job${count === 1 ? "" : "s"}. This action cannot be undone.`,
+          confirmLabel: "Permanently Delete",
+          loadingLabel: "Deleting...",
+          confirmVariant: "danger" as const,
+        };
+      default:
+        return {
+          title: "",
+          description: "",
+          confirmLabel: "Confirm",
+          loadingLabel: "Processing...",
+          confirmVariant: "primary" as const,
+        };
+    }
+  }, [bulkConfirmAction, eligibleBulkIds.length]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [filters.page, filters.pageSize, filters.status, filters.search]);
+
+  const handleBulkConfirm = async () => {
+    if (!bulkConfirmAction || eligibleBulkIds.length === 0) {
+      setBulkConfirmAction(null);
+      return;
+    }
+
+    let result = null;
+
+    switch (bulkConfirmAction) {
+      case "activate":
+        result = await bulkActivateJobs(eligibleBulkIds);
+        if (result) {
+          if (result.failedCount === 0) {
+            appToast.success(
+              formatBulkResultToast(result, "job(s) activated successfully"),
+            );
+          } else {
+            appToast.error(
+              formatBulkResultToast(result, "job(s) activated successfully"),
+            );
+          }
+        }
+        break;
+      case "deactivate":
+        result = await bulkDeactivateJobs(eligibleBulkIds);
+        if (result) {
+          if (result.failedCount === 0) {
+            appToast.success(
+              formatBulkResultToast(result, "job(s) deactivated successfully"),
+            );
+          } else {
+            appToast.error(
+              formatBulkResultToast(result, "job(s) deactivated successfully"),
+            );
+          }
+        }
+        break;
+      case "archive":
+        result = await bulkArchiveJobs(eligibleBulkIds);
+        if (result) {
+          if (result.failedCount === 0) {
+            appToast.success(
+              formatBulkResultToast(result, "job(s) archived successfully"),
+            );
+          } else {
+            appToast.error(
+              formatBulkResultToast(result, "job(s) archived successfully"),
+            );
+          }
+        }
+        break;
+      case "restore":
+        result = await bulkRestoreJobs(eligibleBulkIds);
+        if (result) {
+          if (result.failedCount === 0) {
+            appToast.success(
+              formatBulkResultToast(result, "job(s) restored successfully"),
+            );
+          } else {
+            appToast.error(
+              formatBulkResultToast(result, "job(s) restored successfully"),
+            );
+          }
+        }
+        break;
+      case "permanent-delete":
+        result = await bulkPermanentDeleteJobs(eligibleBulkIds);
+        if (result) {
+          if (result.failedCount === 0) {
+            appToast.success(
+              formatBulkResultToast(result, "job(s) permanently deleted"),
+            );
+          } else {
+            appToast.error(
+              formatBulkResultToast(result, "job(s) permanently deleted"),
+            );
+          }
+        }
+        break;
+    }
+
+    if (result) {
+      setSelectedIds([]);
+      setBulkConfirmAction(null);
+      await refetch();
+    }
+  };
 
   const setTab = (nextTab: JobsModuleTab) => {
     if (nextTab === "onboarding") {
@@ -237,7 +432,7 @@ export function JobsPage() {
         pendingOnboardingCount={onboarding.pendingCount}
         pendingApplicationCount={applications.pendingCount}
         isLoading={headerLoading}
-        createDisabled={isActing || isSubmitting}
+        createDisabled={actionLoading}
         onCreate={() => {
           setDialogMode("create");
           setEditingJob(undefined);
@@ -346,6 +541,15 @@ export function JobsPage() {
               </div>
             ) : (
               <>
+                <div className="px-4 pt-4 empty:hidden">
+                  <JobBulkActionsToolbar
+                    jobs={jobs}
+                    selectedJobIds={selectedIds}
+                    disabled={actionLoading || isFetching}
+                    onAction={setBulkConfirmAction}
+                  />
+                </div>
+
                 {error ? (
                   <div className="border-b border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-700">
                     {error}{" "}
@@ -369,7 +573,8 @@ export function JobsPage() {
                     jobs={jobs}
                     selectedJobIds={selectedIds}
                     onSelectionChange={setSelectedIds}
-                    actionsDisabled={isActing || isFetching || isSubmitting}
+                    actionsDisabled={actionLoading || isFetching}
+                    selectionDisabled={actionLoading || isFetching}
                     onView={setViewJob}
                     onEdit={(job) => {
                       setDialogMode("edit");
@@ -413,7 +618,7 @@ export function JobsPage() {
                           <select
                             className="h-9 rounded-xl border border-[#DCE8F5] bg-white px-2 text-[15px] text-[#102A56]"
                             value={pageSize}
-                            disabled={isActing}
+                            disabled={actionLoading}
                             onChange={(event) =>
                               setFilters({
                                 ...filters,
@@ -491,6 +696,24 @@ export function JobsPage() {
           }
           setConfirmAction(null);
           setSelectedJob(undefined);
+        }}
+      />
+
+      <ConfirmDialog
+        open={bulkConfirmAction !== null}
+        title={bulkDialogCopy.title}
+        description={bulkDialogCopy.description}
+        confirmLabel={bulkDialogCopy.confirmLabel}
+        loadingLabel={bulkDialogCopy.loadingLabel}
+        confirmVariant={bulkDialogCopy.confirmVariant}
+        loading={bulkActionLoading}
+        onCancel={() => {
+          if (!bulkActionLoading) {
+            setBulkConfirmAction(null);
+          }
+        }}
+        onConfirm={() => {
+          void handleBulkConfirm();
         }}
       />
     </div>

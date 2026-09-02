@@ -1,6 +1,8 @@
 import { apiClient } from "@/src/core/api/axios";
 
 import type {
+  BulkJobItemResult,
+  BulkJobOperationResult,
   CompanyJobSubmitResponse,
   CompanyJobSubmitResult,
   CreateJobRequest,
@@ -160,6 +162,62 @@ class JobService {
       `/admin/jobs/${id}/permanent`,
     );
     return data;
+  }
+
+  private async runBulkJobOperation(
+    jobIds: string[],
+    operation: (id: string) => Promise<unknown>,
+  ): Promise<BulkJobOperationResult> {
+    const results = await Promise.all(
+      jobIds.map(async (jobId): Promise<BulkJobItemResult> => {
+        try {
+          await operation(jobId);
+          return { jobId, success: true, message: "OK" };
+        } catch (error) {
+          return {
+            jobId,
+            success: false,
+            message:
+              error instanceof Error ? error.message : "Operation failed",
+          };
+        }
+      }),
+    );
+
+    const failures = results.filter((item) => !item.success);
+
+    return {
+      requestedCount: jobIds.length,
+      processedCount: results.length,
+      successCount: results.length - failures.length,
+      failedCount: failures.length,
+      results,
+      failures,
+    };
+  }
+
+  async bulkActivateJobs(jobIds: string[]): Promise<BulkJobOperationResult> {
+    return this.runBulkJobOperation(jobIds, (id) => this.activateJob(id));
+  }
+
+  async bulkDeactivateJobs(jobIds: string[]): Promise<BulkJobOperationResult> {
+    return this.runBulkJobOperation(jobIds, (id) => this.deactivateJob(id));
+  }
+
+  async bulkArchiveJobs(jobIds: string[]): Promise<BulkJobOperationResult> {
+    return this.runBulkJobOperation(jobIds, (id) => this.deleteJob(id));
+  }
+
+  async bulkRestoreJobs(jobIds: string[]): Promise<BulkJobOperationResult> {
+    return this.runBulkJobOperation(jobIds, (id) => this.restoreJob(id));
+  }
+
+  async bulkPermanentDeleteJobs(
+    jobIds: string[],
+  ): Promise<BulkJobOperationResult> {
+    return this.runBulkJobOperation(jobIds, (id) =>
+      this.permanentlyDeleteJob(id),
+    );
   }
 
   async submitCompanyJob(

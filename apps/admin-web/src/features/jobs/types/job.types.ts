@@ -246,3 +246,18 @@ export interface CompanyJobSubmitResult {
 }
 
 export type CompanyJobSubmitResponse = ApiResponse<CompanyJobSubmitResult>;
+
+export interface BulkJobItemResult {
+  jobId: string;
+  success: boolean;
+  message: string;
+}
+
+export interface BulkJobOperationResult {
+  requestedCount: number;
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  results: BulkJobItemResult[];
+  failures: BulkJobItemResult[];
+}
