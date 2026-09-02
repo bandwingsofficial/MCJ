@@ -5,11 +5,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
+import { AttendanceCalendarView } from "@/src/features/branch-ops/components/attendance/attendance-calendar-view";
+import { AttendanceSummaryPanel } from "@/src/features/branch-ops/components/attendance/attendance-summary-panel";
 import type { StudentBatchAttendanceDetail } from "@/src/features/branch-ops/types";
 import {
   attendanceStatusVariant,
   formatAttendanceDisplayDate,
 } from "@/src/features/branch-ops/utils/attendance-date.utils";
+import {
+  initialCalendarMonth,
+  monthRangeFromKey,
+} from "@/src/features/branch-ops/utils/attendance-calendar.utils";
 import { formatRoleLabel } from "@/src/core/auth/roles";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { Badge } from "@/src/shared/components/ui/badge";
@@ -33,10 +39,6 @@ interface Props {
   recordId?: string | null;
 }
 
-function monthKeyFromIso(date: string): string {
-  return String(date).slice(0, 7);
-}
-
 /** View-only attendance details / tracking page. */
 export function AttendanceDetailsPage({
   batchId,
@@ -46,24 +48,48 @@ export function AttendanceDetailsPage({
   const role = useAuthStore((state) => state.user?.role);
 
   const [loading, setLoading] = useState(true);
+  const [calendarLoading, setCalendarLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<StudentBatchAttendanceDetail | null>(null);
+  const [tableData, setTableData] = useState<StudentBatchAttendanceDetail | null>(
+    null,
+  );
+  const [calendarData, setCalendarData] =
+    useState<StudentBatchAttendanceDetail | null>(null);
 
-  const [monthFilter, setMonthFilter] = useState("");
   const [sessionFilter, setSessionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [calendarMonth, setCalendarMonth] = useState(initialCalendarMonth);
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const load = useCallback(async () => {
+  const tableQueryParams = useMemo(() => {
+    const params: Record<string, string | undefined> = {};
+    if (sessionFilter) params.batchCourseId = sessionFilter;
+    if (statusFilter) params.status = statusFilter;
+    return params;
+  }, [sessionFilter, statusFilter]);
+
+  const calendarQueryParams = useMemo(() => {
+    const range = monthRangeFromKey(calendarMonth);
+    return {
+      from: range.from,
+      to: range.to,
+      ...(sessionFilter ? { batchCourseId: sessionFilter } : {}),
+      ...(statusFilter ? { status: statusFilter } : {}),
+    };
+  }, [calendarMonth, sessionFilter, statusFilter]);
+
+  const loadTable = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const result = await branchOpsApi.studentBatchAttendance(
         batchId,
         studentId,
+        tableQueryParams,
       );
-      setData(result);
+      setTableData(result);
     } catch (err: unknown) {
       const message =
         err && typeof err === "object" && "response" in err
@@ -71,15 +97,43 @@ export function AttendanceDetailsPage({
               ?.data?.message
           : null;
       setError(message ?? "Unable to load attendance details.");
-      setData(null);
+      setTableData(null);
     } finally {
       setLoading(false);
     }
-  }, [batchId, studentId]);
+  }, [batchId, studentId, tableQueryParams]);
+
+  const loadCalendar = useCallback(async () => {
+    setCalendarLoading(true);
+    try {
+      const result = await branchOpsApi.studentBatchAttendance(
+        batchId,
+        studentId,
+        calendarQueryParams,
+      );
+      setCalendarData(result);
+    } catch {
+      setCalendarData(null);
+    } finally {
+      setCalendarLoading(false);
+    }
+  }, [batchId, studentId, calendarQueryParams]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void loadTable();
+  }, [loadTable]);
+
+  useEffect(() => {
+    void loadCalendar();
+  }, [loadCalendar]);
+
+  useEffect(() => {
+    setPage(1);
+    setSelectedDateKey(null);
+  }, [sessionFilter, statusFilter]);
+
+  const data = tableData;
+  const calendarViewData = calendarData ?? tableData;
 
   const focusRecord = useMemo(() => {
     if (!data?.history.length) return null;
@@ -90,55 +144,17 @@ export function AttendanceDetailsPage({
     );
   }, [data?.history, recordId]);
 
-  const filteredHistory = useMemo(() => {
-    const rows = data?.history ?? [];
-    return rows.filter((row) => {
-      if (monthFilter && monthKeyFromIso(String(row.date)) !== monthFilter) {
-        return false;
-      }
-      if (sessionFilter && row.session.batchCourseId !== sessionFilter) {
-        return false;
-      }
-      if (statusFilter && row.status !== statusFilter) {
-        return false;
-      }
-      return true;
-    });
-  }, [data?.history, monthFilter, sessionFilter, statusFilter]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [monthFilter, sessionFilter, statusFilter]);
+  const history = data?.history ?? [];
 
   const pagedHistory = useMemo(() => {
     const start = (page - 1) * pageSize;
-    return filteredHistory.slice(start, start + pageSize);
-  }, [filteredHistory, page, pageSize]);
-
-  const monthOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const month of data?.monthly ?? []) {
-      map.set(month.monthKey, month.label);
-    }
-    for (const row of data?.history ?? []) {
-      const key = monthKeyFromIso(String(row.date));
-      if (!map.has(key)) {
-        const [year, month] = key.split("-").map(Number);
-        const label = new Date(
-          Date.UTC(year, (month || 1) - 1, 1),
-        ).toLocaleDateString("en-GB", {
-          month: "long",
-          year: "numeric",
-          timeZone: "UTC",
-        });
-        map.set(key, label);
-      }
-    }
-    return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [data?.monthly, data?.history]);
+    return history.slice(start, start + pageSize);
+  }, [history, page, pageSize]);
 
   if (loading && !data) return <Loader />;
-  if (error && !data) return <ErrorState description={error} onRetry={load} />;
+  if (error && !data) {
+    return <ErrorState description={error} onRetry={loadTable} />;
+  }
   if (!data) return <EmptyState title="No attendance recorded yet." />;
 
   return (
@@ -175,6 +191,7 @@ export function AttendanceDetailsPage({
           label="Student"
           value={`${data.student.name} (${data.student.studentCode})`}
         />
+        <Field label="Student Code" value={data.student.studentCode} />
         <Field label="Branch" value={data.branch.branchName} />
         <Field
           label="Batch"
@@ -203,13 +220,7 @@ export function AttendanceDetailsPage({
           Student Attendance History
         </h2>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <FilterSelect
-            value={monthFilter}
-            onChange={setMonthFilter}
-            emptyLabel="All Months"
-            options={monthOptions.map(([value, label]) => ({ value, label }))}
-          />
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           <FilterSelect
             value={sessionFilter}
             onChange={setSessionFilter}
@@ -232,10 +243,10 @@ export function AttendanceDetailsPage({
           <button
             type="button"
             onClick={() => {
-              setMonthFilter("");
               setSessionFilter("");
               setStatusFilter("");
               setPage(1);
+              setSelectedDateKey(null);
             }}
             className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
@@ -243,10 +254,52 @@ export function AttendanceDetailsPage({
           </button>
         </div>
 
-        {!data.history.length ? (
-          <EmptyState title="No attendance recorded yet." />
-        ) : !filteredHistory.length ? (
-          <EmptyState title="No attendance matches these filters." />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_240px]">
+          <Card className="p-4">
+            {calendarViewData ? (
+              <AttendanceCalendarView
+                data={calendarViewData}
+                monthKey={calendarMonth}
+                loading={calendarLoading}
+                onMonthChange={(monthKey) => {
+                  setCalendarMonth(monthKey);
+                  setSelectedDateKey(null);
+                }}
+                selectedDateKey={selectedDateKey}
+                onSelectDate={setSelectedDateKey}
+              />
+            ) : (
+              <Loader />
+            )}
+          </Card>
+          <AttendanceSummaryPanel
+            summary={
+              calendarViewData?.summary ?? {
+                workingDays: null,
+                attendanceDates: 0,
+                sessionsConducted: 0,
+                present: 0,
+                absent: 0,
+                late: 0,
+                leave: 0,
+                attended: 0,
+                percentage: null,
+                ratioLabel: null,
+                hasAttendance: false,
+                totalRecords: 0,
+              }
+            }
+          />
+        </div>
+
+        {!history.length ? (
+          <EmptyState
+            title={
+              sessionFilter || statusFilter
+                ? "No attendance matches these filters."
+                : "No attendance recorded yet."
+            }
+          />
         ) : (
           <div className="overflow-hidden rounded-xl border border-slate-200">
             <div className="overflow-x-auto">
@@ -285,7 +338,7 @@ export function AttendanceDetailsPage({
             <TablePaginationBar
               page={page}
               pageSize={pageSize}
-              total={filteredHistory.length}
+              total={history.length}
               onPageChange={setPage}
               onPageSizeChange={(size) => {
                 setPageSize(size);

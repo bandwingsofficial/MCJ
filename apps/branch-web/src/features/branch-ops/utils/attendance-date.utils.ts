@@ -17,7 +17,8 @@ export type AttendanceDatePreset =
   | "YESTERDAY"
   | "THIS_WEEK"
   | "THIS_MONTH"
-  | "CUSTOM";
+  | "CUSTOM"
+  | "ALL_TIME";
 
 export function resolveAttendanceDateRange(
   preset: AttendanceDatePreset,
@@ -26,6 +27,10 @@ export function resolveAttendanceDateRange(
 ): { from?: string; to?: string } {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (preset === "ALL_TIME") {
+    return {};
+  }
 
   if (preset === "TODAY") {
     const value = toLocalDateInput(today);

@@ -93,12 +93,21 @@ export interface StudentBatchAttendanceDetail {
     email: string | null;
     phone: string | null;
   };
-  batch: { id: string; name: string; code: string };
+  batch: {
+    id: string;
+    name: string;
+    code: string;
+    startDate: string;
+    endDate: string | null;
+    daysOfWeek: string[];
+  };
   branch: { id: string; branchName: string; branchCode: string };
   enrollmentId: string;
   enrollmentStatus: string;
   courses: AttendanceSessionOption[];
   summary: {
+    workingDays: number | null;
+    attendanceDates: number;
     sessionsConducted: number;
     present: number;
     absent: number;

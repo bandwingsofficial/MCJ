@@ -61,10 +61,16 @@ const DATE_PRESET_OPTIONS: Array<{
   { label: "This Week", value: "THIS_WEEK" },
   { label: "This Month", value: "THIS_MONTH" },
   { label: "Custom", value: "CUSTOM" },
+  { label: "All Time", value: "ALL_TIME" },
 ];
 
 const TAB_CLASS =
   "rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
+
+/** Shared filter control sizing — matches Faculty portal selects/inputs. */
+const FILTER_H = "h-[46px]";
+const FILTER_RADIUS = "rounded-xl";
+const FILTER_TRIGGER = `${FILTER_H} ${FILTER_RADIUS} w-full min-w-0 text-sm [&>span]:line-clamp-1 [&>span]:text-left`;
 
 type Filters = {
   search: string;
@@ -189,7 +195,7 @@ export function AttendanceModulePage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <ListPageHeader
         parentLabel={formatRoleLabel(role) || "Branch"}
         currentLabel="Attendance"
@@ -204,115 +210,144 @@ export function AttendanceModulePage() {
         }
       />
 
-      <Card className="space-y-3 overflow-hidden p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <Card className="overflow-hidden p-5">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
           Filters
         </p>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <SearchInput
-            value={filters.search}
-            placeholder="Search student name/code..."
-            className="h-[46px] rounded-xl"
-            onChange={(value) =>
-              setFilters((prev) => ({ ...prev, search: value }))
-            }
-          />
-          <AppSelect
-            value={filters.batchId}
-            triggerClassName="h-[46px] rounded-xl"
-            onValueChange={(value) =>
-              updateFilters({ batchId: value, batchCourseId: "ALL" })
-            }
-            options={[
-              { label: "All Batches", value: "ALL" },
-              ...(batchesQuery.data ?? []).map((batch) => ({
-                label: `${batch.name} (${batch.code})`,
-                value: batch.id,
-              })),
-            ]}
-          />
-          <AppSelect
-            value={filters.batchCourseId}
-            triggerClassName="h-[46px] rounded-xl"
-            onValueChange={(value) => updateFilters({ batchCourseId: value })}
-            options={[
-              { label: "All Sessions", value: "ALL" },
-              ...(sessionsQuery.data ?? []).map((session) => ({
-                label: session.label,
-                value: session.batchCourseId,
-              })),
-            ]}
-            disabled={filters.batchId === "ALL" || sessionsQuery.loading}
-            placeholder={
-              filters.batchId === "ALL"
-                ? "Select a batch first"
-                : sessionsQuery.loading
-                  ? "Loading sessions..."
-                  : "All Sessions"
-            }
-          />
-          <AppSelect
-            value={filters.status}
-            triggerClassName="h-[46px] rounded-xl"
-            onValueChange={(value) => updateFilters({ status: value })}
-            options={STATUS_OPTIONS}
-          />
+
+        {/* Row 1: Search, Batch, Session, Status — 4 equal columns */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-center">
+          <div className="min-w-0">
+            <SearchInput
+              value={filters.search}
+              placeholder="Search student name/code..."
+              className={`${FILTER_H} ${FILTER_RADIUS} text-sm`}
+              onChange={(value) =>
+                setFilters((prev) => ({ ...prev, search: value }))
+              }
+            />
+          </div>
+
+          <div className="min-w-0">
+            <AppSelect
+              value={filters.batchId}
+              triggerClassName={FILTER_TRIGGER}
+              onValueChange={(value) =>
+                updateFilters({ batchId: value, batchCourseId: "ALL" })
+              }
+              options={[
+                { label: "All Batches", value: "ALL" },
+                ...(batchesQuery.data ?? []).map((batch) => ({
+                  label: `${batch.name} (${batch.code})`,
+                  value: batch.id,
+                })),
+              ]}
+            />
+          </div>
+
+          <div className="min-w-0">
+            <AppSelect
+              value={filters.batchCourseId}
+              triggerClassName={FILTER_TRIGGER}
+              onValueChange={(value) => updateFilters({ batchCourseId: value })}
+              options={[
+                { label: "All Sessions", value: "ALL" },
+                ...(sessionsQuery.data ?? []).map((session) => ({
+                  label: session.label,
+                  value: session.batchCourseId,
+                })),
+              ]}
+              disabled={filters.batchId === "ALL" || sessionsQuery.loading}
+              placeholder={
+                filters.batchId === "ALL"
+                  ? "All Sessions"
+                  : sessionsQuery.loading
+                    ? "Loading..."
+                    : "All Sessions"
+              }
+            />
+          </div>
+
+          <div className="min-w-0">
+            <AppSelect
+              value={filters.status}
+              triggerClassName={FILTER_TRIGGER}
+              onValueChange={(value) => updateFilters({ status: value })}
+              options={STATUS_OPTIONS}
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <AppSelect
-            value={filters.datePreset}
-            triggerClassName="h-[46px] rounded-xl"
-            onValueChange={(value) => {
-              const preset = value as AttendanceDatePreset;
-              if (preset !== "CUSTOM") {
+        {/* Row 2: Date preset, From, To, Clear — 4 equal columns */}
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-center">
+          <div className="min-w-0">
+            <AppSelect
+              value={filters.datePreset}
+              triggerClassName={FILTER_TRIGGER}
+              onValueChange={(value) => {
+                const preset = value as AttendanceDatePreset;
+                if (preset === "CUSTOM") {
+                  const today = todayLocalInput();
+                  updateFilters({
+                    datePreset: preset,
+                    from: filters.from || today,
+                    to: filters.to || today,
+                  });
+                  return;
+                }
                 updateFilters({ datePreset: preset, from: "", to: "" });
-                return;
+              }}
+              options={DATE_PRESET_OPTIONS}
+            />
+          </div>
+
+          <div className="min-w-0">
+            <Input
+              type="date"
+              aria-label="From date"
+              disabled={filters.datePreset !== "CUSTOM"}
+              className={`${FILTER_H} ${FILTER_RADIUS} w-full text-sm disabled:cursor-default disabled:bg-slate-50 disabled:text-slate-400`}
+              value={
+                filters.datePreset === "CUSTOM"
+                  ? filters.from
+                  : (dateRange.from ?? "")
               }
-              const today = todayLocalInput();
-              updateFilters({
-                datePreset: preset,
-                from: filters.from || today,
-                to: filters.to || today,
-              });
-            }}
-            options={DATE_PRESET_OPTIONS}
-          />
-          <Input
-            type="date"
-            className="h-[46px] rounded-xl"
-            value={
-              filters.datePreset === "CUSTOM"
-                ? filters.from
-                : (dateRange.from ?? "")
-            }
-            disabled={filters.datePreset !== "CUSTOM"}
-            onChange={(event) => updateFilters({ from: event.target.value })}
-          />
-          <Input
-            type="date"
-            className="h-[46px] rounded-xl"
-            value={
-              filters.datePreset === "CUSTOM"
-                ? filters.to
-                : (dateRange.to ?? "")
-            }
-            disabled={filters.datePreset !== "CUSTOM"}
-            onChange={(event) => updateFilters({ to: event.target.value })}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="h-[46px] rounded-xl"
-            onClick={clearFilters}
-          >
-            Clear Filters
-          </Button>
+              onChange={(event) =>
+                updateFilters({ from: event.target.value })
+              }
+            />
+          </div>
+
+          <div className="min-w-0">
+            <Input
+              type="date"
+              aria-label="To date"
+              disabled={filters.datePreset !== "CUSTOM"}
+              className={`${FILTER_H} ${FILTER_RADIUS} w-full text-sm disabled:cursor-default disabled:bg-slate-50 disabled:text-slate-400`}
+              value={
+                filters.datePreset === "CUSTOM"
+                  ? filters.to
+                  : (dateRange.to ?? "")
+              }
+              onChange={(event) => updateFilters({ to: event.target.value })}
+            />
+          </div>
+
+          <div className="min-w-0">
+            <Button
+              type="button"
+              variant="outline"
+              className={`${FILTER_H} ${FILTER_RADIUS} w-full px-3 text-sm`}
+              onClick={clearFilters}
+            >
+              Clear Filters
+            </Button>
+          </div>
         </div>
       </Card>
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
+      <Tabs value={tab} onValueChange={setTab} className="gap-3">
+        <TabsList className="mb-2 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
           <TabsTrigger value="records" className={TAB_CLASS}>
             Records
           </TabsTrigger>

@@ -889,6 +889,9 @@ export class BranchAttendanceService {
             id: true,
             name: true,
             code: true,
+            startDate: true,
+            endDate: true,
+            daysOfWeek: true,
             branch: {
               select: { id: true, branchName: true, branchCode: true },
             },
@@ -954,17 +957,32 @@ export class BranchAttendanceService {
     ]);
 
     const conductedSessions = conductedGroups.length;
-    const counts = emptyStatusCounts();
-    for (const row of allStudentRows) {
-      applyStatusCount(counts, row.status);
-    }
-    const stats = buildAttendanceAnalyticsStats(counts, conductedSessions);
-
-    // Status filter applies to session history only; summary stays full scope.
     const historyRows =
       query.status != null
         ? allStudentRows.filter((row) => row.status === query.status)
         : allStudentRows;
+
+    const counts = emptyStatusCounts();
+    for (const row of historyRows) {
+      applyStatusCount(counts, row.status);
+    }
+    const stats = buildAttendanceAnalyticsStats(counts, conductedSessions);
+
+    const attendanceDateKeys = new Set(
+      historyRows.map((row) => row.date.toISOString().slice(0, 10)),
+    );
+
+    const workingDaysRangeStart =
+      (dateFilter?.gte as Date | undefined) ?? enrollment.batch.startDate;
+    const workingDaysRangeEnd =
+      (dateFilter?.lte as Date | undefined) ??
+      enrollment.batch.endDate ??
+      new Date();
+    const workingDays = this.countWorkingDays(
+      workingDaysRangeStart,
+      workingDaysRangeEnd,
+      enrollment.batch.daysOfWeek ?? [],
+    );
 
     const history = historyRows.map((row) => {
       const courseTitle = row.batchCourse.course.title;
@@ -1008,7 +1026,7 @@ export class BranchAttendanceService {
     }
 
     const countsByMonth = new Map<string, AttendanceStatusCounts>();
-    for (const row of allStudentRows) {
+    for (const row of historyRows) {
       const key = monthKeyFromDate(row.date);
       const current = countsByMonth.get(key) ?? emptyStatusCounts();
       applyStatusCount(current, row.status);
@@ -1063,6 +1081,9 @@ export class BranchAttendanceService {
         id: enrollment.batch.id,
         name: enrollment.batch.name,
         code: enrollment.batch.code,
+        startDate: enrollment.batch.startDate,
+        endDate: enrollment.batch.endDate,
+        daysOfWeek: enrollment.batch.daysOfWeek,
       },
       branch: enrollment.batch.branch,
       enrollmentId: enrollment.id,
@@ -1078,6 +1099,8 @@ export class BranchAttendanceService {
         }),
       ),
       summary: {
+        workingDays,
+        attendanceDates: attendanceDateKeys.size,
         sessionsConducted: stats.conductedSessions,
         present: stats.present,
         absent: stats.absent,
