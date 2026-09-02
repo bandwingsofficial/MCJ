@@ -10,6 +10,11 @@ import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/cours
 import { formatCourseLevel } from "@/src/features/branches/utils/branch-display.utils";
 import { formatCourseQualifications } from "@/src/features/courses/utils/course-display.utils";
 import { getCoursePricing } from "@/src/features/courses/utils/course-pricing.util";
+import {
+  formatCourseRatingCountLabel,
+  formatCourseRatingValue,
+  hasCourseRating,
+} from "@/src/features/courses/utils/course-rating.utils";
 import { formatCurrency } from "@/src/features/enrollments/utils/format-payment";
 
 interface Props {
@@ -67,6 +72,11 @@ export function CourseOverviewInformation({ course }: Props) {
           {qualificationsLabel}
         </InfoField>
         <InfoField label="Course Fee">{courseFeeLabel}</InfoField>
+        <InfoField label="Rating">
+          {hasCourseRating(course.totalReviews)
+            ? `★ ${formatCourseRatingValue(course.averageRating)} · ${formatCourseRatingCountLabel(course.totalReviews)}`
+            : "No ratings yet"}
+        </InfoField>
         <InfoField label="Status">
           <CourseStatusBadge
             status={course.status}

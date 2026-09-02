@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateBy, ValidationOptions } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { CourseLevel } from '../../domain/enums/course-level.enum';
@@ -16,6 +16,32 @@ const toNumber = (value: unknown) =>
   value !== undefined && value !== null && value !== ''
     ? Number(value)
     : undefined;
+
+function hasAtMostTwoDecimalPlaces(value: unknown): boolean {
+  if (value === undefined || value === null) {
+    return true;
+  }
+
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return false;
+  }
+
+  return Math.round(value * 100) === value * 100;
+}
+
+function MaxTwoDecimalPlaces(validationOptions?: ValidationOptions) {
+  return ValidateBy(
+    {
+      name: 'maxTwoDecimalPlaces',
+      validator: {
+        validate: hasAtMostTwoDecimalPlaces,
+        defaultMessage: () =>
+          'Rating must have at most 2 decimal places',
+      },
+    },
+    validationOptions,
+  );
+}
 
 export class CreateCourseDto {
   @ApiProperty()
@@ -177,6 +203,7 @@ export class CreateCourseDto {
   @IsNumber()
   @Min(0)
   @Max(5)
+  @MaxTwoDecimalPlaces()
   @Transform(({ value }) => toNumber(value))
   averageRating?: number;
 

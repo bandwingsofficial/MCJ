@@ -114,6 +114,8 @@ export function CourseFormModal({
         level: values.level,
         minimumQualifications: values.minimumQualifications,
         language: values.language,
+        averageRating: Number(values.averageRating ?? 0),
+        totalReviews: Number(values.totalReviews ?? 0),
         displayOrder: isEditMode ? values.displayOrder : undefined,
         slug: values.slug?.trim() || undefined,
         metaTitle: values.metaTitle?.trim() || undefined,
@@ -179,6 +181,8 @@ export function CourseFormModal({
                 minimumQualifications:
                   course.minimumQualifications ?? [],
                 language: course.language,
+                averageRating: course.averageRating,
+                totalReviews: course.totalReviews,
                 displayOrder: course.displayOrder,
                 slug: course.slug ?? "",
                 metaTitle: course.metaTitle ?? "",

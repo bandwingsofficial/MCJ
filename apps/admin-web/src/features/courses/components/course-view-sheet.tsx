@@ -13,6 +13,11 @@ import { formatCourseFee } from "@/src/features/courses/utils/format-course-fee.
 import { formatCurrency } from "@/src/features/enrollments/utils/format-payment";
 
 import { CourseStatusBadge } from "./course-status-badge";
+import {
+  formatCourseRatingCountLabel,
+  formatCourseRatingValue,
+  hasCourseRating,
+} from "@/src/features/courses/utils/course-rating.utils";
 
 interface Props {
   open: boolean;
@@ -100,6 +105,18 @@ export function CourseViewSheet({
                 {
                   course.language
                 }
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm text-muted-foreground">
+                Rating
+              </p>
+
+              <p className="font-medium">
+                {hasCourseRating(course.totalReviews)
+                  ? `★ ${formatCourseRatingValue(course.averageRating)} · ${formatCourseRatingCountLabel(course.totalReviews)}`
+                  : "No ratings yet"}
               </p>
             </div>
           </div>

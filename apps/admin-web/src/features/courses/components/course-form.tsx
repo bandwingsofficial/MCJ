@@ -10,6 +10,7 @@ import {
   FolderOpen,
   GraduationCap,
   IndianRupee,
+  Star,
   type LucideIcon,
 } from "lucide-react";
 
@@ -88,6 +89,8 @@ const defaultFormValues: CreateCourseFormValues = {
   level: "BEGINNER",
   minimumQualifications: [],
   language: "English",
+  averageRating: 0,
+  totalReviews: 0,
   displayOrder: 0,
   slug: "",
   metaTitle: "",
@@ -186,6 +189,8 @@ export function CourseForm({
   const minimumQualificationsValue = watch("minimumQualifications");
   const levelValue = watch("level");
   const languageValue = watch("language");
+  const averageRatingValue = watch("averageRating");
+  const totalReviewsValue = watch("totalReviews");
   const isFreeValue = watch("isFree");
   const originalPriceValue = watch("originalPrice");
   const discountPercentValue = watch("discountPercent");
@@ -407,6 +412,20 @@ export function CourseForm({
     Boolean(touchedFields.language || showValidation),
     errors.language?.message,
     languageValue,
+    { required: true },
+  );
+
+  const averageRatingState = getSyncFieldState(
+    Boolean(touchedFields.averageRating || showValidation),
+    errors.averageRating?.message,
+    averageRatingValue != null ? String(averageRatingValue) : "",
+    { required: true },
+  );
+
+  const totalReviewsState = getSyncFieldState(
+    Boolean(touchedFields.totalReviews || showValidation),
+    errors.totalReviews?.message,
+    totalReviewsValue != null ? String(totalReviewsValue) : "",
     { required: true },
   );
 
@@ -715,6 +734,54 @@ export function CourseForm({
               placeholder="Select language"
               className={inputClass(languageState)}
               {...register("language")}
+            />
+          </ValidatedField>
+        </div>
+      </div>
+
+      <div className={GRID_CLASS}>
+        <div className={`${CELL_CLASS} md:col-span-2`}>
+          <h3 className="text-sm font-semibold text-[#102A56]">
+            Course Rating
+          </h3>
+        </div>
+
+        <div className={CELL_CLASS}>
+          <ValidatedField
+            label="Rating"
+            state={averageRatingState}
+            errorMessage={errors.averageRating?.message}
+          >
+            <Input
+              type="number"
+              min={0}
+              max={5}
+              step={0.01}
+              placeholder="e.g. 4.5"
+              className={iconInputClass(averageRatingState)}
+              {...register("averageRating", {
+                valueAsNumber: true,
+              })}
+            />
+            <FieldIcon icon={Star} />
+          </ValidatedField>
+        </div>
+
+        <div className={CELL_CLASS}>
+          <ValidatedField
+            label="Rating Count"
+            state={totalReviewsState}
+            errorMessage={errors.totalReviews?.message}
+          >
+            <Input
+              type="number"
+              min={0}
+              step={1}
+              placeholder="e.g. 146"
+              className={inputClass(totalReviewsState)}
+              {...register("totalReviews", {
+                valueAsNumber: true,
+              })}
             />
           </ValidatedField>
         </div>

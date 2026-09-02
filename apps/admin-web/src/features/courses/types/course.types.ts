@@ -316,6 +316,10 @@ export interface CreateCourseRequest {
 
   language?: string;
 
+  averageRating?: number;
+
+  totalReviews?: number;
+
   displayOrder?: number;
 
   slug?: string;
@@ -364,6 +368,10 @@ export interface UpdateCourseRequest {
   minimumQualifications?: CourseQualification[];
 
   language?: string;
+
+  averageRating?: number;
+
+  totalReviews?: number;
 
   displayOrder?: number;
 

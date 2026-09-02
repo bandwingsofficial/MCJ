@@ -21,6 +21,7 @@ import { CourseAvailableBranches } from "@/src/features/courses/components/cours
 import { CourseBatchCards } from "@/src/features/courses/components/course-batch-cards";
 import { CourseCurriculumAccordion } from "@/src/features/courses/components/course-curriculum-accordion";
 import { CourseDetailPricingCard } from "@/src/features/courses/components/course-detail-pricing-card";
+import { CourseRatingMeta } from "@/src/features/courses/components/course-rating-meta";
 import { useCourseSummary } from "@/src/features/courses/hooks/use-course";
 import type {
   Course,
@@ -242,6 +243,15 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                     {heroDescription}
                   </p>
                 ) : null}
+
+                <div className="mt-2">
+                  <CourseRatingMeta
+                    rating={course.averageRating}
+                    totalReviews={course.totalReviews}
+                    className="inline-flex items-center gap-1.5 text-sm text-slate-600"
+                    emptyClassName="text-sm text-slate-400"
+                  />
+                </div>
 
                 <p className="mt-2 text-sm font-semibold text-blue-600">
                   {course.code}

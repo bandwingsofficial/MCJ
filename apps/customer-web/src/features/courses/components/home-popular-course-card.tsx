@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
 
+import { CourseRatingMeta } from "@/src/features/courses/components/course-rating-meta";
 import type { Course } from "@/src/features/courses/types/course.types";
 import { formatCoursePrice } from "@/src/features/courses/utils/course-display.utils";
 
@@ -192,8 +193,9 @@ export function HomePopularCourseCard({
             "Build practical skills with expert-led training."}
         </p>
 
-        {/* Category */}
-        <div className="mt-3 flex items-center">
+        {/* Category + Rating */}
+        <div className="mt-3 flex min-w-0 items-center gap-3">
+          {/* Category */}
           <div
             className="
               flex min-w-0
@@ -209,6 +211,14 @@ export function HomePopularCourseCard({
             <span className="truncate text-[10px] font-medium text-slate-600">
               {course.categoryName || "General"}
             </span>
+          </div>
+
+          {/* Rating */}
+          <div className="min-w-0 shrink">
+            <CourseRatingMeta
+              rating={course.averageRating}
+              totalReviews={course.totalReviews}
+            />
           </div>
         </div>
 

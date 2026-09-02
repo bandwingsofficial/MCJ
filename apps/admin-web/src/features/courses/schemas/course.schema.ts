@@ -93,6 +93,28 @@ const courseFields = {
     .trim()
     .min(2, "Language is required"),
 
+  averageRating: z
+    .number({
+      error: "Rating is required",
+    })
+    .min(0, "Rating must be between 0 and 5.")
+    .max(5, "Rating must be between 0 and 5.")
+    .refine(
+      (value) => Math.round(value * 100) === value * 100,
+      {
+        message: "Rating must have at most 2 decimal places.",
+      },
+    )
+    .default(0),
+
+  totalReviews: z
+    .number({
+      error: "Rating count is required",
+    })
+    .int("Rating count must be a whole number.")
+    .min(0, "Rating count cannot be negative.")
+    .default(0),
+
   slug: z
     .string()
     .trim()
