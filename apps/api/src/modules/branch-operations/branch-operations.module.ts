@@ -7,6 +7,7 @@ import { JobApplicationModule } from '../job-application/job-application.module'
 
 import { BranchOperationsAccessService } from './application/branch-operations-access.service';
 import { BranchDashboardService } from './application/branch-dashboard.service';
+import { FacultyDashboardService } from './application/faculty-dashboard.service';
 import { BranchBatchOpsService } from './application/branch-batch-ops.service';
 import { BranchAttendanceService } from './application/branch-attendance.service';
 import { BranchAssessmentService } from './application/branch-assessment.service';
@@ -21,6 +22,7 @@ import { BranchOperationsController } from './presentation/controllers/branch-op
     PermissionsGuard,
     BranchOperationsAccessService,
     BranchDashboardService,
+    FacultyDashboardService,
     BranchBatchOpsService,
     BranchAttendanceService,
     BranchAssessmentService,

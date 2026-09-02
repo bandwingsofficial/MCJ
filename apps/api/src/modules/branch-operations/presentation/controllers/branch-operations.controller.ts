@@ -28,6 +28,7 @@ import { BranchAssessmentService } from '../../application/branch-assessment.ser
 import { BranchAttendanceService } from '../../application/branch-attendance.service';
 import { BranchBatchOpsService } from '../../application/branch-batch-ops.service';
 import { BranchDashboardService } from '../../application/branch-dashboard.service';
+import { FacultyDashboardService } from '../../application/faculty-dashboard.service';
 import { BranchInterviewService } from '../../application/branch-interview.service';
 import { BranchStaffService } from '../../application/branch-staff.service';
 import {
@@ -42,6 +43,7 @@ import {
   CreateAssessmentDto,
   CreateBranchStaffDto,
   EnrollmentListQueryDto,
+  FacultyDashboardQueryDto,
   ListBranchStaffQueryDto,
   PunchAttendanceDto,
   RecordAttendanceDto,
@@ -76,6 +78,7 @@ const InterviewOrManager = [
 export class BranchOperationsController {
   constructor(
     private readonly dashboard: BranchDashboardService,
+    private readonly facultyDashboard: FacultyDashboardService,
     private readonly batches: BranchBatchOpsService,
     private readonly attendance: BranchAttendanceService,
     private readonly assessments: BranchAssessmentService,
@@ -94,7 +97,24 @@ export class BranchOperationsController {
     BranchUserRole.FACULTY_COORDINATOR,
     BranchUserRole.COUNSELOR,
   )
-  async dashboardView(@CurrentBranchUser() user: BranchAuthUser) {
+  async dashboardView(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Query() query: FacultyDashboardQueryDto,
+  ) {
+    if (user.role === BranchUserRole.FACULTY) {
+      return {
+        success: true,
+        message: 'Dashboard fetched successfully',
+        data: await this.facultyDashboard.getDashboard(user, {
+          from: query.from,
+          to: query.to,
+          batchId: query.batchId,
+          batchCourseId: query.batchCourseId,
+          assessmentType: query.assessmentType,
+        }),
+      };
+    }
+
     return {
       success: true,
       message: 'Dashboard fetched successfully',

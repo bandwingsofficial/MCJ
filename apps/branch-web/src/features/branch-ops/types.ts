@@ -6,6 +6,23 @@ export interface ApiSuccess<T> {
 
 export interface DashboardData {
   role: string;
+  lastUpdated?: string;
+  filters?: {
+    from: string | null;
+    to: string | null;
+    batchId: string | null;
+    batchCourseId: string | null;
+    assessmentType: string | null;
+  };
+  summary?: FacultyDashboardSummary;
+  attendanceTrend?: FacultyAttendanceTrendPoint[];
+  attendanceSummary?: FacultyAttendanceSummary;
+  batchOverview?: FacultyBatchOverviewItem[];
+  assessmentPerformance?: FacultyAssessmentPerformance;
+  upcomingSessions?: FacultyUpcomingSession[];
+  recentActivity?: FacultyActivityItem[];
+  studentsRequiringAttention?: FacultyStudentAttentionItem[];
+  assessmentTypes?: string[];
   assignedBatches?: number;
   students?: number;
   todaysAttendance?: number;
@@ -30,6 +47,118 @@ export interface DashboardData {
   rejectedCandidates?: number;
   batches?: number;
   placements?: number;
+}
+
+export interface FacultyDashboardSummary {
+  assignedBatches: number;
+  activeStudents: number;
+  todaysAttendance: number;
+  todaysAttendanceMarked?: number;
+  todaysAttendanceExpected?: number;
+  todaysAttendanceMarkedPercent?: number;
+  pendingAttendance: number;
+  upcomingAssessments: number;
+  recentAssessmentsCount: number;
+}
+
+export interface FacultyAttendanceTrendPoint {
+  date: string;
+  label: string;
+  present: number;
+  absent: number;
+  late: number;
+}
+
+export interface FacultyAttendanceSummary {
+  present: number;
+  absent: number;
+  late: number;
+  leave: number;
+  total: number;
+  percentage: number;
+}
+
+export interface FacultyBatchOverviewItem {
+  id: string;
+  name: string;
+  code: string;
+  courseTitle: string;
+  activeStudents: number;
+  sessionsConducted: number;
+  attendancePercentage: number | null;
+  pendingAttendance: number;
+  upcomingSession: string | null;
+}
+
+export interface FacultyAssessmentPerformance {
+  averagePercentage: number;
+  studentsAssessed: number;
+  marksEntered: number;
+  upcoming: Array<{
+    id: string;
+    name: string;
+    type: string;
+    date: string;
+    batchId: string;
+    batchName: string;
+    sessionLabel: string | null;
+    courseTitle: string | null;
+  }>;
+  recent: Array<{
+    id: string;
+    name: string;
+    type: string;
+    date: string;
+    obtainedMarks: number;
+    maxMarks: number;
+    studentName: string;
+    batchName: string;
+  }>;
+  byType: Array<{
+    type: string;
+    count: number;
+    averagePercentage: number | null;
+  }>;
+  byBatchType?: Array<{
+    type: string;
+    batchId: string;
+    batchName: string;
+    averagePercentage: number | null;
+    studentCount: number;
+  }>;
+}
+
+export interface FacultyUpcomingSession {
+  date: string;
+  startTime: string;
+  endTime: string;
+  batchId: string;
+  batchName: string;
+  batchCode: string;
+  courseTitle: string;
+  sessionLabel: string;
+  batchCourseId: string;
+  attendanceStatus: "COMPLETE" | "PARTIAL" | "PENDING";
+}
+
+export interface FacultyActivityItem {
+  id: string;
+  type: string;
+  title: string;
+  subtitle: string | null;
+  status: string | null;
+  occurredAt: string;
+}
+
+export interface FacultyStudentAttentionItem {
+  studentId: string;
+  studentName: string;
+  studentCode: string;
+  batchId: string;
+  batchName: string;
+  reason: string;
+  attendancePercentage: number | null;
+  absentCount: number;
 }
 
 export interface AttendanceSummary {

@@ -623,6 +623,28 @@ export class StudentFeesQueryDto {
   take?: number = 10;
 }
 
+export class FacultyDashboardQueryDto {
+  @IsOptional()
+  @IsDateString()
+  from?: string;
+
+  @IsOptional()
+  @IsDateString()
+  to?: string;
+
+  @IsOptional()
+  @IsUUID()
+  batchId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  batchCourseId?: string;
+
+  @IsOptional()
+  @IsEnum(AssessmentType)
+  assessmentType?: AssessmentType;
+}
+
 export class UpdateBranchStaffDto {
   @IsOptional()
   @Transform(({ value }) =>

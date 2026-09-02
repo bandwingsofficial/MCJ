@@ -1,0 +1,1 @@
+export { FacultyDashboard } from "./FacultyDashboard";

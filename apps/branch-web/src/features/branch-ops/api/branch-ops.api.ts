@@ -33,8 +33,8 @@ const unwrap = <T>(promise: Promise<{ data: ApiSuccess<T> }>) =>
   promise.then((response) => response.data.data);
 
 export const branchOpsApi = {
-  dashboard: () =>
-    unwrap<DashboardData>(apiClient.get("/branch/dashboard")),
+  dashboard: (params?: Record<string, string | undefined>) =>
+    unwrap<DashboardData>(apiClient.get("/branch/dashboard", { params })),
 
   batches: () => unwrap<BatchListItem[]>(apiClient.get("/branch/batches")),
 
