@@ -81,7 +81,11 @@ export function userFacingApiMessage(
   }
 
   if (error.status === 400 || error.status === 422) {
-    return error.message || "Please check the details and try again.";
+    const message = error.message ?? "";
+    if (/^(take|skip) must/i.test(message)) {
+      return fallback;
+    }
+    return message || "Please check the details and try again.";
   }
 
   if (error.status === 409) {

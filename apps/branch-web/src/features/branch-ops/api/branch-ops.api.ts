@@ -24,6 +24,8 @@ import type {
   PlacementActivityItem,
   StudentBatchActivity,
   StudentBatchAttendanceDetail,
+  StudentDetail,
+  StudentFeesData,
   StudentListItem,
 } from "@/src/features/branch-ops/types";
 
@@ -52,6 +54,17 @@ export const branchOpsApi = {
 
   students: () =>
     unwrap<StudentListItem[]>(apiClient.get("/branch/students")),
+
+  student: (id: string) =>
+    unwrap<StudentDetail>(apiClient.get(`/branch/students/${id}`)),
+
+  studentFees: (
+    studentId: string,
+    params?: Record<string, string | number | undefined>,
+  ) =>
+    unwrap<StudentFeesData>(
+      apiClient.get(`/branch/students/${studentId}/fees`, { params }),
+    ),
 
   attendance: (params?: Record<string, string | number | undefined>) =>
     unwrap<{ items: AttendanceItem[]; total: number }>(

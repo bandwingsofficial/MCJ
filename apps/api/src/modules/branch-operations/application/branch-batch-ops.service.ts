@@ -655,6 +655,15 @@ export class BranchBatchOpsService {
         studentCode: true,
         status: true,
         branchId: true,
+        profileImageUrl: true,
+        admissionDate: true,
+        branch: {
+          select: {
+            id: true,
+            branchName: true,
+            branchCode: true,
+          },
+        },
       },
     });
 
@@ -775,6 +784,7 @@ export class BranchBatchOpsService {
     user: BranchAuthUser,
     query: {
       search?: string;
+      studentId?: string;
       batchId?: string;
       courseId?: string;
       status?: EnrollmentStatus;
@@ -795,11 +805,16 @@ export class BranchBatchOpsService {
       await this.access.assertFacultyCanAccessBatch(user, query.batchId);
     }
 
+    if (query.studentId) {
+      await this.access.assertFacultyCanAccessStudent(user, query.studentId);
+    }
+
     const where: Prisma.EnrollmentWhereInput = {
       ...facultyBranchEnrollmentWhere(user.branchId, {
         batchId: query.batchId,
         batchIds: query.batchId ? undefined : assignedIds,
       }),
+      ...(query.studentId ? { studentId: query.studentId } : {}),
       ...(query.courseId ? { courseId: query.courseId } : {}),
       ...(query.status ? { status: query.status } : {}),
     };
@@ -853,6 +868,184 @@ export class BranchBatchOpsService {
       count,
       skip,
       take,
+    };
+  }
+
+  async getStudentFees(
+    user: BranchAuthUser,
+    studentId: string,
+    query: {
+      enrollmentId?: string;
+      skip?: number;
+      take?: number;
+    },
+  ) {
+    if (this.access.isInterviewer(user)) {
+      throw new ForbiddenException('Role access denied');
+    }
+
+    await this.access.assertFacultyCanAccessStudent(user, studentId);
+
+    const assignedIds = await this.access.visibleBatchIds(user);
+    const enrollmentWhere = facultyBranchEnrollmentWhere(user.branchId, {
+      studentId,
+      batchIds: assignedIds,
+    });
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: enrollmentWhere,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        enrollmentNumber: true,
+        status: true,
+        feeAmount: true,
+        discountAmount: true,
+        finalAmount: true,
+        paidAmount: true,
+        dueAmount: true,
+        paymentStatus: true,
+        batch: { select: { id: true, name: true, code: true } },
+        course: { select: { id: true, title: true } },
+      },
+    });
+
+    const mappedEnrollments = enrollments.map((row) => ({
+      id: row.id,
+      enrollmentNumber: row.enrollmentNumber,
+      status: row.status,
+      feeAmount: Number(row.feeAmount),
+      discountAmount: Number(row.discountAmount),
+      finalAmount: Number(row.finalAmount),
+      paidAmount: Number(row.paidAmount),
+      dueAmount: Number(row.dueAmount),
+      paymentStatus: row.paymentStatus,
+      batch: row.batch,
+      course: row.course,
+    }));
+
+    let selectedEnrollmentId = query.enrollmentId ?? null;
+    if (selectedEnrollmentId) {
+      const match = mappedEnrollments.some(
+        (row) => row.id === selectedEnrollmentId,
+      );
+      if (!match) {
+        throw new NotFoundException('Enrollment not found for this student');
+      }
+    } else {
+      const active = mappedEnrollments.find((row) =>
+        (
+          [
+            EnrollmentStatus.ACTIVE,
+            EnrollmentStatus.ADMITTED,
+          ] as EnrollmentStatus[]
+        ).includes(row.status as EnrollmentStatus),
+      );
+      selectedEnrollmentId = active?.id ?? mappedEnrollments[0]?.id ?? null;
+    }
+
+    const skip = query.skip ?? 0;
+    const take = Math.min(query.take ?? 10, 100);
+
+    let summary: {
+      enrollmentId: string;
+      enrollmentNumber: string;
+      totalCourseFee: number;
+      amountPaid: number;
+      balanceDue: number;
+      paymentStatus: string;
+      batch: { id: string; name: string; code: string };
+      course: { id: string; title: string };
+    } | null = null;
+
+    let payments: {
+      items: Array<{
+        id: string;
+        paymentNumber: string;
+        amount: number;
+        currency: string;
+        paymentMethod: string;
+        paymentStatus: string;
+        transactionId: string | null;
+        remarks: string | null;
+        paidAt: Date | null;
+        createdAt: Date;
+      }>;
+      total: number;
+      skip: number;
+      take: number;
+    } = { items: [], total: 0, skip, take };
+
+    if (selectedEnrollmentId) {
+      const selected = mappedEnrollments.find(
+        (row) => row.id === selectedEnrollmentId,
+      );
+
+      if (selected) {
+        summary = {
+          enrollmentId: selected.id,
+          enrollmentNumber: selected.enrollmentNumber,
+          totalCourseFee: selected.finalAmount || selected.feeAmount,
+          amountPaid: selected.paidAmount,
+          balanceDue: selected.dueAmount,
+          paymentStatus: selected.paymentStatus,
+          batch: selected.batch,
+          course: selected.course,
+        };
+
+        const paymentWhere = {
+          studentId,
+          enrollmentId: selectedEnrollmentId,
+          isDeleted: false,
+        };
+
+        const [rows, count] = await Promise.all([
+          this.prisma.payment.findMany({
+            where: paymentWhere,
+            orderBy: { createdAt: 'desc' },
+            skip,
+            take,
+            select: {
+              id: true,
+              paymentNumber: true,
+              amount: true,
+              currency: true,
+              paymentMethod: true,
+              paymentStatus: true,
+              transactionId: true,
+              remarks: true,
+              paidAt: true,
+              createdAt: true,
+            },
+          }),
+          this.prisma.payment.count({ where: paymentWhere }),
+        ]);
+
+        payments = {
+          items: rows.map((row) => ({
+            id: row.id,
+            paymentNumber: row.paymentNumber,
+            amount: Number(row.amount),
+            currency: row.currency,
+            paymentMethod: row.paymentMethod,
+            paymentStatus: row.paymentStatus,
+            transactionId: row.transactionId,
+            remarks: row.remarks,
+            paidAt: row.paidAt,
+            createdAt: row.createdAt,
+          })),
+          total: count,
+          skip,
+          take,
+        };
+      }
+    }
+
+    return {
+      enrollments: mappedEnrollments,
+      selectedEnrollmentId,
+      summary,
+      payments,
     };
   }
 

@@ -48,6 +48,7 @@ import {
   ResetBranchStaffPasswordDto,
   ScheduleInterviewDto,
   StudentBatchAttendanceQueryDto,
+  StudentFeesQueryDto,
   UpdateApplicationStatusDto,
   UpdateAssessmentDto,
   UpdateBranchStaffDto,
@@ -221,6 +222,21 @@ export class BranchOperationsController {
       success: true,
       message: 'Students fetched successfully',
       data: await this.batches.listStudents(user),
+    };
+  }
+
+  @Get('students/:id/fees')
+  @Roles(...BranchOpsReadRoles)
+  @Permissions(Permission.STUDENT_READ)
+  async studentFees(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+    @Query() query: StudentFeesQueryDto,
+  ) {
+    return {
+      success: true,
+      message: 'Student fees fetched successfully',
+      data: await this.batches.getStudentFees(user, id, query),
     };
   }
 

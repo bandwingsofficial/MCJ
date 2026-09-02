@@ -393,6 +393,24 @@ export interface StudentListItem {
   batchName?: string;
 }
 
+export interface StudentDetail {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  studentCode: string;
+  status: string;
+  branchId: string | null;
+  profileImageUrl: string | null;
+  admissionDate: string | null;
+  branch: {
+    id: string;
+    branchName: string;
+    branchCode: string;
+  } | null;
+}
+
 export interface AttendanceItem {
   id: string;
   date: string;
@@ -583,4 +601,54 @@ export interface PaginatedList<T> {
   count: number;
   skip?: number;
   take?: number;
+}
+
+export interface StudentFeeEnrollment {
+  id: string;
+  enrollmentNumber: string;
+  status: string;
+  feeAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  paidAmount: number;
+  dueAmount: number;
+  paymentStatus: string;
+  batch: { id: string; name: string; code: string };
+  course: { id: string; title: string };
+}
+
+export interface StudentFeeSummary {
+  enrollmentId: string;
+  enrollmentNumber: string;
+  totalCourseFee: number;
+  amountPaid: number;
+  balanceDue: number;
+  paymentStatus: string;
+  batch: { id: string; name: string; code: string };
+  course: { id: string; title: string };
+}
+
+export interface StudentFeePayment {
+  id: string;
+  paymentNumber: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  transactionId: string | null;
+  remarks: string | null;
+  paidAt: string | null;
+  createdAt: string;
+}
+
+export interface StudentFeesData {
+  enrollments: StudentFeeEnrollment[];
+  selectedEnrollmentId: string | null;
+  summary: StudentFeeSummary | null;
+  payments: {
+    items: StudentFeePayment[];
+    total: number;
+    skip: number;
+    take: number;
+  };
 }

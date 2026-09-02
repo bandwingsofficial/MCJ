@@ -580,11 +580,34 @@ export class EnrollmentListQueryDto {
 
   @IsOptional()
   @IsUUID()
+  studentId?: string;
+
+  @IsOptional()
+  @IsUUID()
   courseId?: string;
 
   @IsOptional()
   @IsEnum(EnrollmentStatus)
   status?: EnrollmentStatus;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  skip?: number = 0;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  take?: number = 10;
+}
+
+export class StudentFeesQueryDto {
+  @IsOptional()
+  @IsUUID()
+  enrollmentId?: string;
 
   @IsOptional()
   @Type(() => Number)
