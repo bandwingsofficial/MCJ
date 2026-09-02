@@ -1,3 +1,5 @@
+import { isJobExpiredByDeadline } from "@/src/features/jobs/utils/job-expiry.utils";
+
 export type EmploymentType =
   | "FULL_TIME"
   | "PART_TIME"
@@ -95,11 +97,7 @@ export function isJobExpired(
     return job.isExpired;
   }
 
-  if (!job.applicationDeadline) {
-    return false;
-  }
-
-  return new Date(job.applicationDeadline) < new Date();
+  return isJobExpiredByDeadline(job.applicationDeadline);
 }
 
 export function isJobAcceptingApplications(

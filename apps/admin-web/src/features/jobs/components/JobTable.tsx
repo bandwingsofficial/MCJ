@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
+import { cn } from "@/src/shared/lib/cn";
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
@@ -9,7 +10,7 @@ import { EMPLOYMENT_TYPES } from "@/src/features/jobs/constants/job.constants";
 import { JobActions } from "@/src/features/jobs/components/JobActions";
 import { JobStatusBadge } from "@/src/features/jobs/components/JobStatusBadge";
 import { getJobLifecycleStatus } from "@/src/features/jobs/hooks/useJobs";
-import type { Job } from "@/src/features/jobs/types/job.types";
+import { isJobExpired, type Job } from "@/src/features/jobs/types/job.types";
 import { formatInr } from "@/src/features/jobs/utils/job-form.utils";
 
 interface JobTableProps {
@@ -44,6 +45,21 @@ function salaryLabel(job: Job) {
   }
 
   return `${formatInr(job.minSalary)} – ${formatInr(job.maxSalary)}`;
+}
+
+/** Cell backgrounds must be set on <td>; <tr> bg alone does not paint full width with border-collapse. */
+function expiredRowCellClass(expired: boolean) {
+  return expired
+    ? "bg-[#F1F4F8] text-slate-500 group-hover:bg-[#E8EDF3]"
+    : "bg-white text-slate-700 group-hover:bg-[#F8FBFF]";
+}
+
+function expiredRowTitleCellClass(expired: boolean) {
+  return cn(
+    expiredRowCellClass(expired),
+    "text-sm font-medium",
+    expired ? "text-slate-500" : "text-[#102A56]",
+  );
 }
 
 export function JobTable({
@@ -157,64 +173,102 @@ export function JobTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {jobs.map((job) => (
-            <tr
-              key={job.id}
-              className="h-14 bg-white transition-colors hover:bg-[#F8FBFF]"
-            >
-              <td className="px-3 py-3">
-                <Checkbox
-                  checked={selectedJobIds.includes(job.id)}
-                  onCheckedChange={(checked) => toggleRow(job.id, checked)}
-                />
-              </td>
-              <td className="px-3 py-3 text-sm font-medium text-[#102A56]">
-                {job.title}
-              </td>
-              <td className="px-3 py-3 text-sm text-[#102A56]">
-                {job.companyName}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-sm tabular-nums text-[#647A9B]">
-                {job.jobNumber || "—"}
-              </td>
-              <td className="px-3 py-3 text-sm text-[#102A56]">
-                {job.location || job.city || "—"}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-sm text-[#102A56]">
-                {employmentLabel(job.employmentType)}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-sm tabular-nums text-[#102A56]">
-                {salaryLabel(job)}
-              </td>
-              <td className="px-3 py-3">
-                <JobStatusBadge
-                  status={getJobLifecycleStatus(job)}
-                  job={job}
-                />
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-sm text-[#647A9B]">
-                {new Date(job.createdAt).toLocaleDateString("en-IN", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </td>
-              <td className="px-2 py-2">
-                <JobActions
-                  job={job}
-                  disabled={actionsDisabled}
-                  onView={onView}
-                  onEdit={onEdit}
-                  onCopyLink={onCopyLink}
-                  onOpenLink={onOpenLink}
-                  onActivate={onActivate}
-                  onDeactivate={onDeactivate}
-                  onArchive={onArchive}
-                  onRestore={onRestore}
-                />
-              </td>
-            </tr>
-          ))}
+          {jobs.map((job) => {
+            const expired = isJobExpired(job);
+
+            return (
+              <tr
+                key={job.id}
+                data-expired={expired || undefined}
+                className="group h-14 transition-colors"
+              >
+                <td className={cn("px-3 py-3", expiredRowCellClass(expired))}>
+                  <Checkbox
+                    checked={selectedJobIds.includes(job.id)}
+                    onCheckedChange={(checked) => toggleRow(job.id, checked)}
+                  />
+                </td>
+                <td className={cn("px-3 py-3", expiredRowTitleCellClass(expired))}>
+                  {job.title}
+                </td>
+                <td
+                  className={cn(
+                    "px-3 py-3 text-sm",
+                    expiredRowCellClass(expired),
+                  )}
+                >
+                  {job.companyName}
+                </td>
+                <td
+                  className={cn(
+                    "whitespace-nowrap px-3 py-3 text-sm tabular-nums",
+                    expiredRowCellClass(expired),
+                  )}
+                >
+                  {job.jobNumber || "—"}
+                </td>
+                <td
+                  className={cn("px-3 py-3 text-sm", expiredRowCellClass(expired))}
+                >
+                  {job.location || job.city || "—"}
+                </td>
+                <td
+                  className={cn(
+                    "whitespace-nowrap px-3 py-3 text-sm",
+                    expiredRowCellClass(expired),
+                  )}
+                >
+                  {employmentLabel(job.employmentType)}
+                </td>
+                <td
+                  className={cn(
+                    "whitespace-nowrap px-3 py-3 text-sm tabular-nums",
+                    expiredRowCellClass(expired),
+                  )}
+                >
+                  {salaryLabel(job)}
+                </td>
+                <td className={cn("px-3 py-3", expiredRowCellClass(expired))}>
+                  <JobStatusBadge
+                    status={getJobLifecycleStatus(job)}
+                    job={job}
+                  />
+                </td>
+                <td
+                  className={cn(
+                    "whitespace-nowrap px-3 py-3 text-sm",
+                    expiredRowCellClass(expired),
+                  )}
+                >
+                  {new Date(job.createdAt).toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </td>
+                <td
+                  className={cn(
+                    "px-2 py-2",
+                    expiredRowCellClass(expired),
+                    expired && "opacity-90",
+                  )}
+                >
+                  <JobActions
+                    job={job}
+                    disabled={actionsDisabled}
+                    onView={onView}
+                    onEdit={onEdit}
+                    onCopyLink={onCopyLink}
+                    onOpenLink={onOpenLink}
+                    onActivate={onActivate}
+                    onDeactivate={onDeactivate}
+                    onArchive={onArchive}
+                    onRestore={onRestore}
+                  />
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

@@ -9,6 +9,7 @@ import { JobTitle } from '../value-objects/job-title.vo';
 import { Location } from '../value-objects/location.vo';
 import { SalaryRange } from '../value-objects/salary-range.vo';
 import { Slug } from '../value-objects/slug.vo';
+import { isJobExpiredByDeadline } from '../utils/job-expiry.util';
 
 export interface InterviewProcessStep {
   title: string;
@@ -344,9 +345,7 @@ export class Job {
   }
 
   isExpired(): boolean {
-    return Boolean(
-      this.applicationDeadline && this.applicationDeadline < new Date(),
-    );
+    return isJobExpiredByDeadline(this.applicationDeadline);
   }
 
   isPubliclyVisible(): boolean {

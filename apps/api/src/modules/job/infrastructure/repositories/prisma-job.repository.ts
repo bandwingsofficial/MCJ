@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { startOfLocalDay } from '../../domain/utils/job-expiry.util';
+
 import { buildNextSerialNumber } from '@common/utils/serial-number';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { Job } from '../../domain/entities/job.entity';
@@ -141,7 +143,7 @@ export class PrismaJobRepository implements JobRepository {
       and.push({
         OR: [
           { applicationDeadline: null },
-          { applicationDeadline: { gte: new Date() } },
+          { applicationDeadline: { gte: startOfLocalDay(new Date()) } },
         ],
       });
     }

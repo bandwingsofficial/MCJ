@@ -726,7 +726,7 @@ export function JobForm({
           <FieldIcon icon={Calendar} />
           <Input
             type="date"
-            min={tomorrowDateInputValue()}
+            min={initialData ? undefined : tomorrowDateInputValue()}
             disabled={isSubmitting}
             className={inputClass(fieldState("applicationDeadline"), "pl-10")}
             {...register("applicationDeadline")}
