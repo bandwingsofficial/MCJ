@@ -1,17 +1,14 @@
 "use client";
 
+import Image from "next/image";
+import { ArrowRight, BookOpen, ImageOff } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Clock3, ImageOff } from "lucide-react";
 
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
 
 import type { Course } from "@/src/features/courses/types/course.types";
-import {
-  formatCoursePrice,
-  formatDuration,
-} from "@/src/features/courses/utils/course-display.utils";
-import { getCourseDetailPath, getCourseBatchesSectionPath } from "@/src/features/courses/utils/course-route.utils";
+import { formatCoursePrice } from "@/src/features/courses/utils/course-display.utils";
 
 interface HomePopularCourseCardProps {
   course: Course;
@@ -30,81 +27,257 @@ function getCourseDescription(course: Course): string | null {
   return description || null;
 }
 
-export function HomePopularCourseCard({ course }: HomePopularCourseCardProps) {
+export function HomePopularCourseCard({
+  course,
+}: HomePopularCourseCardProps) {
   const router = useRouter();
   const description = getCourseDescription(course);
 
+  const handleEnroll = () => {
+    router.push(`/courses/${encodeURIComponent(course.slug)}`);
+  };
+
   return (
-    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition-colors hover:border-slate-300">
-      <div className="relative aspect-video w-full shrink-0 overflow-hidden bg-slate-100">
+    <article
+      className="
+        group flex h-full min-w-0 flex-col
+        overflow-hidden
+        rounded-xl
+        border border-slate-200
+        bg-white
+        shadow-[0_2px_10px_rgba(15,32,68,0.04)]
+        transition-all duration-300 ease-out
+        hover:-translate-y-1
+        hover:border-slate-300
+        hover:shadow-[0_14px_30px_rgba(15,32,68,0.10)]
+      "
+    >
+      {/* Image */}
+      <div className="relative h-[175px] w-full shrink-0 overflow-hidden bg-slate-100">
         {course.thumbnailUrl ? (
-          <img
-            src={course.thumbnailUrl}
-            alt={course.title}
-            className="block h-full w-full object-cover"
-          />
+          <>
+            <Image
+              fill
+              src={course.thumbnailUrl}
+              alt={course.title}
+              sizes="
+                (max-width: 640px) 100vw,
+                (max-width: 1024px) 50vw,
+                25vw
+              "
+              className="
+                object-cover
+                transition-transform
+                duration-500
+                ease-out
+                group-hover:scale-[1.06]
+              "
+            />
+
+            <div
+              className="
+                pointer-events-none
+                absolute inset-0
+                bg-gradient-to-t
+                from-[#0f2044]/65
+                via-[#0f2044]/10
+                to-transparent
+              "
+              aria-hidden="true"
+            />
+
+            <div
+              className="
+                pointer-events-none
+                absolute inset-x-0 bottom-0
+                h-16
+                bg-gradient-to-t
+                from-black/20
+                to-transparent
+              "
+              aria-hidden="true"
+            />
+          </>
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-slate-400">
-            <ImageOff className="h-5 w-5 stroke-[1.5]" />
-            <span className="text-[10px] font-medium">No Preview Available</span>
+          <div
+            className="
+              flex h-full w-full
+              flex-col items-center justify-center
+              gap-2
+              bg-slate-50
+              text-slate-400
+            "
+          >
+            <ImageOff className="h-7 w-7 stroke-[1.4]" />
+
+            <span className="text-[10px] font-medium">
+              No Preview Available
+            </span>
           </div>
         )}
+
+        {/* Level */}
+        <Badge
+          variant="default"
+          className="
+            absolute left-3 top-3
+            rounded-full
+            border border-white/30
+            bg-white/95
+            px-2.5 py-1
+            text-[9px]
+            font-semibold
+            uppercase
+            tracking-[0.08em]
+            text-[#0f2044]
+            shadow-sm
+            backdrop-blur-sm
+          "
+        >
+          {course.level}
+        </Badge>
+
+        {/* Popular */}
+        <div
+          className="
+            absolute right-3 top-3
+            inline-flex items-center gap-1.5
+            rounded-full
+            bg-[#d4a84b]
+            px-2.5 py-1
+            text-[9px]
+            font-bold
+            uppercase
+            tracking-[0.08em]
+            text-white
+            shadow-[0_4px_12px_rgba(15,32,68,0.18)]
+          "
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-white" />
+          Popular
+        </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col p-3">
-        <div className="mb-1.5 flex flex-wrap items-center gap-1">
-          <Badge
-            variant="default"
-            className="rounded-sm px-1.5 py-0 text-[10px] font-semibold uppercase tracking-wide"
-          >
-            {course.level}
-          </Badge>
-        </div>
-
-        <p className="text-[11px] font-medium leading-tight text-blue-600">
-          {course.code}
-        </p>
-
-        <h3 className="mt-0.5 line-clamp-2 text-[13px] font-semibold leading-snug text-slate-900">
+      {/* Content */}
+      <div className="flex min-h-0 flex-1 flex-col p-4">
+        {/* Course Title */}
+        <h3
+          className="
+            line-clamp-2
+            text-[18px]
+            font-bold
+            leading-snug
+            tracking-[-0.015em]
+            text-[#0f2044]
+            transition-colors
+            duration-200
+            group-hover:text-[#b8922a]
+          "
+        >
           {course.title}
         </h3>
 
-        {description ? (
-          <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-500">
-            {description}
-          </p>
-        ) : null}
+        {/* Description */}
+        <p
+          className="
+            mt-1.5
+            line-clamp-2
+            min-h-[34px]
+            text-[11px]
+            leading-relaxed
+            text-slate-500
+          "
+        >
+          {description ||
+            "Build practical skills with expert-led training."}
+        </p>
 
-        <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] text-slate-500">
-          <span className="inline-flex min-w-0 items-center gap-1">
-            <BookOpen className="h-3 w-3 shrink-0" />
-            <span className="truncate">{course.categoryName || "—"}</span>
-          </span>
-          <span className="inline-flex shrink-0 items-center gap-1">
-            <Clock3 className="h-3 w-3" />
-            {formatDuration(course.duration, course.durationType)}
-          </span>
+        {/* Category */}
+        <div className="mt-3 flex items-center">
+          <div
+            className="
+              flex min-w-0
+              items-center gap-1.5
+              rounded-md
+              bg-slate-50
+              px-2
+              py-1.5
+            "
+          >
+            <BookOpen className="h-3 w-3 shrink-0 text-[#b8922a]" />
+
+            <span className="truncate text-[10px] font-medium text-slate-600">
+              {course.categoryName || "General"}
+            </span>
+          </div>
         </div>
 
-        <div className="mt-auto flex items-center justify-between gap-1.5 border-t border-slate-100 pt-2">
-          <p className="shrink-0 text-[13px] font-bold leading-none text-slate-900">
-            {formatHomeCoursePrice(course)}
-          </p>
+        {/* Footer */}
+        <div className="mt-auto pt-4">
+          <div className="mb-3 h-px bg-slate-100" />
 
-          <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              className="whitespace-nowrap text-[10px] font-medium text-blue-600 hover:text-blue-700"
-              onClick={() => router.push(getCourseDetailPath(course))}
-            >
-              Details
-            </button>
+          <div className="flex items-end justify-between gap-3">
+            {/* Price */}
+            <div className="min-w-0">
+              <p
+                className="
+                  text-[9px]
+                  font-medium
+                  uppercase
+                  tracking-[0.12em]
+                  text-slate-400
+                "
+              >
+                Course Fee
+              </p>
+
+              <p
+                className="
+                  mt-1
+                  truncate
+                  text-[17px]
+                  font-bold
+                  leading-none
+                  tracking-tight
+                  text-[#0f2044]
+                "
+              >
+                {formatHomeCoursePrice(course)}
+              </p>
+            </div>
+
+            {/* Enroll */}
             <Button
+              type="button"
               size="sm"
-              className="h-7 shrink-0 rounded-md bg-blue-600 px-2.5 text-[10px] font-medium text-white shadow-none hover:bg-blue-700"
-              onClick={() => router.push(getCourseBatchesSectionPath(course))}
+              className="
+                h-8
+                shrink-0
+                rounded-lg
+                bg-[#0f2044]
+                px-3.5
+                text-[10px]
+                font-semibold
+                text-white
+                shadow-none
+                transition-all
+                duration-200
+                hover:bg-[#18345f]
+                hover:shadow-[0_5px_14px_rgba(15,32,68,0.18)]
+              "
+              onClick={handleEnroll}
             >
               Enroll Now
+
+              <ArrowRight
+                className="
+                  ml-1
+                  h-3 w-3
+                  transition-transform
+                  duration-200
+                  group-hover:translate-x-0.5
+                "
+              />
             </Button>
           </div>
         </div>
