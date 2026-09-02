@@ -21,8 +21,6 @@ import type {
   JobLifecycleStatus,
   JobOnboardingStatusFilter,
 } from "@/src/features/jobs/types/job.types";
-import { ONBOARDING_STATUS_OPTIONS } from "@/src/features/job-applications/constants/job-application.constants";
-import type { OnboardingStatusFilter } from "@/src/features/job-applications/types/job-application.types";
 
 export type JobsModuleTab = "jobs" | "onboarding" | "applications";
 
@@ -42,8 +40,6 @@ interface JobSummaryHeaderProps {
   onJobStatusChange: (status: JobLifecycleStatus | undefined) => void;
   onboardingStatus: JobOnboardingStatusFilter;
   onOnboardingStatusChange: (status: JobOnboardingStatusFilter) => void;
-  applicationStatus: OnboardingStatusFilter;
-  onApplicationStatusChange: (status: OnboardingStatusFilter) => void;
 }
 
 export function JobSummaryHeader({
@@ -62,8 +58,6 @@ export function JobSummaryHeader({
   onJobStatusChange,
   onboardingStatus,
   onOnboardingStatusChange,
-  applicationStatus,
-  onApplicationStatusChange,
 }: JobSummaryHeaderProps) {
   const isJobs = tab === "jobs";
   const isOnboarding = tab === "onboarding";
@@ -194,11 +188,13 @@ export function JobSummaryHeader({
           {isLoading ? (
             <>
               <Skeleton className="h-[46px] w-full rounded-xl sm:w-[380px]" />
-              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[170px]" />
+              {!isJobs && isOnboarding ? (
+                <Skeleton className="h-[46px] w-full rounded-xl sm:w-[170px]" />
+              ) : null}
             </>
           ) : (
             <>
-              <div className="w-full sm:w-[380px]">
+              <div className={`w-full ${isJobs || isOnboarding ? "sm:w-[380px]" : "sm:max-w-xl"}`}>
                 <SearchInput
                   value={search}
                   placeholder={searchPlaceholder}
@@ -206,8 +202,8 @@ export function JobSummaryHeader({
                   onChange={onSearchChange}
                 />
               </div>
-              <div className="w-full sm:w-[170px]">
-                {isJobs ? (
+              {isJobs ? (
+                <div className="w-full sm:w-[170px]">
                   <AppSelect
                     value={jobStatus ?? "ALL"}
                     triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
@@ -220,7 +216,9 @@ export function JobSummaryHeader({
                     }
                     options={JOB_LIFECYCLE_STATUS_OPTIONS}
                   />
-                ) : isOnboarding ? (
+                </div>
+              ) : isOnboarding ? (
+                <div className="w-full sm:w-[170px]">
                   <AppSelect
                     value={onboardingStatus}
                     triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
@@ -231,17 +229,8 @@ export function JobSummaryHeader({
                     }
                     options={[...JOB_ONBOARDING_STATUS_OPTIONS]}
                   />
-                ) : (
-                  <AppSelect
-                    value={applicationStatus}
-                    triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
-                    onValueChange={(value) =>
-                      onApplicationStatusChange(value as OnboardingStatusFilter)
-                    }
-                    options={[...ONBOARDING_STATUS_OPTIONS]}
-                  />
-                )}
-              </div>
+                </div>
+              ) : null}
             </>
           )}
         </div>

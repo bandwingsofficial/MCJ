@@ -126,7 +126,7 @@ export class JobApplicationDomainService {
         JobApplicationStatus.REJECTED,
       ],
       [JobApplicationStatus.PLACED]: [],
-      [JobApplicationStatus.REJECTED]: [],
+      [JobApplicationStatus.REJECTED]: [JobApplicationStatus.SELECTED],
     };
 
     if (!allowedTransitions[from].includes(to)) {

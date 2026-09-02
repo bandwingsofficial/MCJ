@@ -2,12 +2,6 @@ import { z } from "zod";
 
 const phonePattern = /^[6-9]\d{9}$/;
 const optionalText = z.string().trim().optional().or(z.literal(""));
-const optionalUrl = z
-  .string()
-  .trim()
-  .url("Enter a valid URL.")
-  .optional()
-  .or(z.literal(""));
 
 export const publicJobApplicationSchema = z.object({
   applicantName: z
@@ -43,10 +37,6 @@ export const publicJobApplicationSchema = z.object({
   skills: z.array(z.string().trim().min(1)).min(1, "Skills are required."),
   noticePeriod: optionalText,
   expectedSalary: z.number().min(0, "Expected salary cannot be negative.").optional(),
-  coverLetter: optionalText,
-  portfolioUrl: optionalUrl,
-  linkedinUrl: optionalUrl,
-  additionalInformation: optionalText,
 });
 
 export type PublicJobApplicationFormValues = z.infer<
@@ -95,15 +85,6 @@ export function buildApplicationRemarks(
   }
   if (values.noticePeriod?.trim()) {
     lines.push(`Notice Period: ${values.noticePeriod.trim()}`);
-  }
-  if (values.portfolioUrl?.trim()) {
-    lines.push(`Portfolio: ${values.portfolioUrl.trim()}`);
-  }
-  if (values.linkedinUrl?.trim()) {
-    lines.push(`LinkedIn: ${values.linkedinUrl.trim()}`);
-  }
-  if (values.additionalInformation?.trim()) {
-    lines.push(values.additionalInformation.trim());
   }
 
   return lines.length ? lines.join("\n") : undefined;

@@ -38,7 +38,6 @@ import {
   getEligibleRestoreIds,
 } from "@/src/features/jobs/utils/job-bulk.utils";
 import { useJobApplications } from "@/src/features/job-applications/hooks/useJobApplications";
-import type { OnboardingStatusFilter } from "@/src/features/job-applications/types/job-application.types";
 
 type ConfirmAction = "activate" | "deactivate" | "archive" | "restore";
 
@@ -469,10 +468,6 @@ export function JobsPage() {
         onOnboardingStatusChange={(status) =>
           onboarding.setFilters({ ...onboarding.filters, status })
         }
-        applicationStatus={applications.filters.status}
-        onApplicationStatusChange={(status: OnboardingStatusFilter) =>
-          applications.setFilters({ ...applications.filters, status })
-        }
       />
 
       {tab === "jobs" && onboarding.pendingCount > 0 ? (
@@ -524,6 +519,7 @@ export function JobsPage() {
         <JobsApplicationsPanel
           applications={applications.jobApplications}
           total={applications.total}
+          statusCounts={applications.statusCounts}
           isInitialLoading={applications.isInitialLoading}
           isFetching={applications.isFetching}
           error={applications.error}

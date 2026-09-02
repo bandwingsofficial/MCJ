@@ -19,11 +19,18 @@ export interface JobApplicationFilters {
   pageSize: number;
 }
 
+export interface ApplicationStatusCounts {
+  pending: number;
+  approved: number;
+  rejected: number;
+}
+
 interface UseJobApplicationsReturn {
   jobApplications: JobApplication[];
   total: number;
   catalogTotal: number;
   pendingCount: number;
+  statusCounts: ApplicationStatusCounts;
   isInitialLoading: boolean;
   isFetching: boolean;
   isLoading: boolean;
@@ -39,13 +46,17 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
   );
   const [total, setTotal] = useState(0);
   const [catalogTotal, setCatalogTotal] = useState(0);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [statusCounts, setStatusCounts] = useState<ApplicationStatusCounts>({
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  });
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFiltersState] = useState<JobApplicationFilters>({
     search: "",
-    status: "ALL",
+    status: "PENDING",
     page: 1,
     pageSize: DEFAULT_APPLICATION_PAGE_SIZE,
   });
@@ -104,7 +115,8 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
 
       const page = filters.page ?? 1;
       const pageSize = filters.pageSize ?? DEFAULT_APPLICATION_PAGE_SIZE;
-      const [response, pending] = await Promise.all([
+
+      const [response, pending, approved, rejected] = await Promise.all([
         jobApplicationService.getJobApplications({
           search: debouncedSearch || undefined,
           status: toJobApplicationStatus(filters.status),
@@ -112,7 +124,20 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
           take: pageSize,
         }),
         jobApplicationService.getJobApplications({
+          search: debouncedSearch || undefined,
           status: "APPLIED",
+          skip: 0,
+          take: 1,
+        }),
+        jobApplicationService.getJobApplications({
+          search: debouncedSearch || undefined,
+          status: "SELECTED",
+          skip: 0,
+          take: 1,
+        }),
+        jobApplicationService.getJobApplications({
+          search: debouncedSearch || undefined,
+          status: "REJECTED",
           skip: 0,
           take: 1,
         }),
@@ -124,11 +149,12 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
 
       setJobApplications(response.items);
       setTotal(response.total);
-      setPendingCount(pending.total);
-
-      if (!debouncedSearch && filters.status === "ALL") {
-        setCatalogTotal(response.total);
-      }
+      setStatusCounts({
+        pending: pending.total,
+        approved: approved.total,
+        rejected: rejected.total,
+      });
+      setCatalogTotal(pending.total + approved.total + rejected.total);
 
       setError(null);
       hasLoadedRef.current = true;
@@ -158,7 +184,8 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
     jobApplications,
     total,
     catalogTotal,
-    pendingCount,
+    pendingCount: statusCounts.pending,
+    statusCounts,
     isInitialLoading,
     isFetching,
     isLoading: isInitialLoading,

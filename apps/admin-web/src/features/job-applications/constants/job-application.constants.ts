@@ -52,14 +52,13 @@ export const JOB_APPLICATION_STATUS_FLOW: Record<
 
   PLACED: [],
 
-  REJECTED: [],
+  REJECTED: ["SELECTED"],
 };
 
-export const DEFAULT_APPLICATION_PAGE_SIZE = 20;
-
-export const ONBOARDING_STATUS_OPTIONS = [
-  { value: "ALL", label: "All Status" },
+export const APPLICATION_STATUS_TABS = [
   { value: "PENDING", label: "Pending" },
-  { value: "ACCEPTED", label: "Accepted" },
+  { value: "ACCEPTED", label: "Approved" },
   { value: "REJECTED", label: "Rejected" },
 ] as const;
+
+export const DEFAULT_APPLICATION_PAGE_SIZE = 20;

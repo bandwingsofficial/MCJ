@@ -205,6 +205,12 @@ export class PrismaJobApplicationRepository
           },
         },
         {
+          applicantPhone: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
           applicationNumber: {
             contains: search,
             mode: 'insensitive',
@@ -245,6 +251,14 @@ export class PrismaJobApplicationRepository
         {
           job: {
             title: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
+          job: {
+            jobNumber: {
               contains: search,
               mode: 'insensitive',
             },

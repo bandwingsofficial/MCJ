@@ -74,6 +74,21 @@ class JobApplicationService {
 
     return data;
   }
+
+  async getResumeUpload(uploadId: string) {
+    const { data } = await apiClient.get<{
+      success: boolean;
+      data: {
+        id: string;
+        url: string;
+        originalName: string;
+        mimeType: string;
+        size: number;
+      };
+    }>(`/admin/uploads/${uploadId}`);
+
+    return data.data;
+  }
 }
 
 export const jobApplicationService = new JobApplicationService();

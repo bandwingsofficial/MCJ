@@ -7,7 +7,7 @@ import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
 import {
-  canAcceptApplication,
+  canApproveApplication,
   canRejectApplication,
 } from "@/src/features/job-applications/types/job-application.types";
 
@@ -19,7 +19,7 @@ interface JobApplicationActionsProps {
   application: JobApplication;
   disabled?: boolean;
   onView: (application: JobApplication) => void;
-  onAccept: (application: JobApplication) => void;
+  onApprove: (application: JobApplication) => void;
   onReject: (application: JobApplication) => void;
 }
 
@@ -27,32 +27,32 @@ export function JobApplicationActions({
   application,
   disabled = false,
   onView,
-  onAccept,
+  onApprove,
   onReject,
 }: JobApplicationActionsProps) {
   return (
     <div className="flex items-center justify-end gap-1">
-      <Tooltip content="Review application">
+      <Tooltip content="View">
         <Button
           variant="ghost"
           size="sm"
           disabled={disabled}
           onClick={() => onView(application)}
-          aria-label="Review application"
+          aria-label="View application"
           className={`${iconBtnClass} text-[#647A9B] hover:bg-slate-100 hover:text-[#102A56]`}
         >
           <Eye className={iconClass} />
         </Button>
       </Tooltip>
 
-      {canAcceptApplication(application.status) ? (
-        <Tooltip content="Accept application">
+      {canApproveApplication(application.status) ? (
+        <Tooltip content="Approve">
           <Button
             variant="ghost"
             size="sm"
             disabled={disabled}
-            onClick={() => onAccept(application)}
-            aria-label="Accept application"
+            onClick={() => onApprove(application)}
+            aria-label="Approve application"
             className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
           >
             <Check className={iconClass} />
@@ -61,7 +61,7 @@ export function JobApplicationActions({
       ) : null}
 
       {canRejectApplication(application.status) ? (
-        <Tooltip content="Reject application">
+        <Tooltip content="Reject">
           <Button
             variant="ghost"
             size="sm"

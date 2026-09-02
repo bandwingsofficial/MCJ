@@ -18,7 +18,7 @@ export default function PublicCareersLayout({
       </div>
 
       <header className="relative z-10 border-b border-[#DCE8F5] bg-white/85 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-4xl items-center gap-3 px-4 py-4">
+        <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-4">
           <span className="relative h-10 w-10 shrink-0">
             <Image
               src="/Logo/MCJ_logo.png"

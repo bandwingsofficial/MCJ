@@ -36,6 +36,14 @@ export interface JobApplicationUser {
   profile: JobApplicationUserProfile | null;
 }
 
+export interface JobApplicationResume {
+  id: string;
+  url: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+}
+
 export interface JobApplication {
   id: string;
   jobId: string;
@@ -126,11 +134,7 @@ export function getApplicantPhone(application: JobApplication): string {
   );
 }
 
-export type OnboardingStatusFilter =
-  | "ALL"
-  | "PENDING"
-  | "ACCEPTED"
-  | "REJECTED";
+export type OnboardingStatusFilter = "PENDING" | "ACCEPTED" | "REJECTED";
 
 export function toJobApplicationStatus(
   filter: OnboardingStatusFilter,
@@ -160,7 +164,7 @@ export function getOnboardingStatusLabel(status: JobApplicationStatus): string {
   }
 
   if (status === "SELECTED" || status === "PLACED") {
-    return "Accepted";
+    return "Approved";
   }
 
   return status
@@ -169,10 +173,23 @@ export function getOnboardingStatusLabel(status: JobApplicationStatus): string {
     .replace(/^\w/, (char) => char.toUpperCase());
 }
 
-export function canAcceptApplication(status: JobApplicationStatus): boolean {
-  return status === "APPLIED" || status === "INTERVIEW";
+export function canApproveApplication(status: JobApplicationStatus): boolean {
+  return status === "APPLIED" || status === "REJECTED";
 }
 
 export function canRejectApplication(status: JobApplicationStatus): boolean {
-  return status !== "REJECTED" && status !== "PLACED";
+  return (
+    status !== "REJECTED" &&
+    status !== "PLACED" &&
+    (status === "APPLIED" ||
+      status === "SELECTED" ||
+      status === "SHORTLISTED" ||
+      status === "ASSESSMENT" ||
+      status === "INTERVIEW")
+  );
+}
+
+/** @deprecated Use canApproveApplication */
+export function canAcceptApplication(status: JobApplicationStatus): boolean {
+  return canApproveApplication(status);
 }

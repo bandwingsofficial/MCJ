@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function Page() {
-  redirect("/jobs?tab=onboarding");
+  redirect("/jobs?tab=applications");
 }

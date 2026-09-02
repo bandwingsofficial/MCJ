@@ -19,8 +19,10 @@ interface JobApplicationTableProps {
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
   actionsDisabled?: boolean;
+  emptyTitle?: string;
+  emptyDescription?: string;
   onView: (application: JobApplication) => void;
-  onAccept: (application: JobApplication) => void;
+  onApprove: (application: JobApplication) => void;
   onReject: (application: JobApplication) => void;
 }
 
@@ -29,8 +31,10 @@ export function JobApplicationTable({
   selectedIds = [],
   onSelectionChange,
   actionsDisabled = false,
+  emptyTitle = "No Applications Found",
+  emptyDescription = "Applications submitted from public job links will appear here.",
   onView,
-  onAccept,
+  onApprove,
   onReject,
 }: JobApplicationTableProps) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
@@ -76,10 +80,7 @@ export function JobApplicationTable({
 
   if (applications.length === 0) {
     return (
-      <EmptyState
-        title="No Applications Found"
-        description="Applications submitted from public job links will appear here."
-      />
+      <EmptyState title={emptyTitle} description={emptyDescription} />
     );
   }
 
@@ -98,16 +99,13 @@ export function JobApplicationTable({
                 aria-label="Select all applications on this page"
               />
             </th>
-            <th className="whitespace-nowrap px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Application No.
-            </th>
-            <th className="min-w-[140px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="min-w-[160px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Candidate
             </th>
-            <th className="min-w-[140px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="min-w-[160px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Job
             </th>
-            <th className="min-w-[140px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="min-w-[120px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Company
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -145,14 +143,23 @@ export function JobApplicationTable({
                   }
                 />
               </td>
-              <td className="whitespace-nowrap px-3 py-3 text-sm tabular-nums text-[#102A56]">
-                {application.applicationNumber || "—"}
+              <td className="px-3 py-3">
+                <p className="text-sm font-medium text-[#102A56]">
+                  {getApplicantName(application)}
+                </p>
+                <p className="truncate text-xs text-[#647A9B]">
+                  {getApplicantEmail(application)}
+                </p>
               </td>
-              <td className="px-3 py-3 text-sm font-medium text-[#102A56]">
-                {getApplicantName(application)}
-              </td>
-              <td className="px-3 py-3 text-sm text-[#102A56]">
-                {application.job?.title ?? "—"}
+              <td className="px-3 py-3">
+                <p className="text-sm text-[#102A56]">
+                  {application.job?.title ?? "—"}
+                </p>
+                {application.job?.jobNumber ? (
+                  <p className="text-xs text-[#647A9B]">
+                    {application.job.jobNumber}
+                  </p>
+                ) : null}
               </td>
               <td className="px-3 py-3 text-sm text-[#102A56]">
                 {application.job?.companyName ?? "—"}
@@ -181,7 +188,7 @@ export function JobApplicationTable({
                   application={application}
                   disabled={actionsDisabled}
                   onView={onView}
-                  onAccept={onAccept}
+                  onApprove={onApprove}
                   onReject={onReject}
                 />
               </td>

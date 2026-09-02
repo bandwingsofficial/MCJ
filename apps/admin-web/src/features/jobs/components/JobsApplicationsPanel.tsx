@@ -8,15 +8,24 @@ import { Pagination } from "@/src/shared/components/ui/pagination";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { appToast } from "@/src/shared/components/ui/toast";
 
+import { ApplicationStatusTabs } from "@/src/features/job-applications/components/ApplicationStatusTabs";
 import { JobApplicationDetailsDialog } from "@/src/features/job-applications/components/JobApplicationDetailsDialog";
 import { JobApplicationTable } from "@/src/features/job-applications/components/JobApplicationTable";
-import type { JobApplicationFilters } from "@/src/features/job-applications/hooks/useJobApplications";
+import type {
+  ApplicationStatusCounts,
+  JobApplicationFilters,
+} from "@/src/features/job-applications/hooks/useJobApplications";
 import { jobApplicationService } from "@/src/features/job-applications/services/job-application.service";
-import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
+import type {
+  JobApplication,
+  OnboardingStatusFilter,
+} from "@/src/features/job-applications/types/job-application.types";
+import { getEmptyApplicationsMessage } from "@/src/features/job-applications/utils/job-application-display.utils";
 
 interface JobsApplicationsPanelProps {
   applications: JobApplication[];
   total: number;
+  statusCounts: ApplicationStatusCounts;
   isInitialLoading: boolean;
   isFetching: boolean;
   error: string | null;
@@ -29,6 +38,7 @@ interface JobsApplicationsPanelProps {
 export function JobsApplicationsPanel({
   applications,
   total,
+  statusCounts,
   isInitialLoading,
   isFetching,
   error,
@@ -42,7 +52,7 @@ export function JobsApplicationsPanel({
     useState<JobApplication | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<
-    "accept" | "reject" | null
+    "approve" | "reject" | null
   >(null);
   const [isActing, setIsActing] = useState(false);
 
@@ -52,13 +62,15 @@ export function JobsApplicationsPanel({
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
 
+  const emptyState = getEmptyApplicationsMessage(filters.status);
+
   const confirmCopy = useMemo(() => {
-    if (confirmAction === "accept") {
+    if (confirmAction === "approve") {
       return {
-        title: "Accept Application?",
+        title: "Approve Application?",
         description:
-          "Are you sure you want to accept this candidate application?",
-        confirmLabel: "Accept",
+          "Are you sure you want to approve this candidate application?",
+        confirmLabel: "Approve",
       };
     }
 
@@ -75,9 +87,9 @@ export function JobsApplicationsPanel({
     setDetailsOpen(true);
   };
 
-  const requestAccept = (application: JobApplication) => {
+  const requestApprove = (application: JobApplication) => {
     setSelectedApplication(application);
-    setConfirmAction("accept");
+    setConfirmAction("approve");
   };
 
   const requestReject = (application: JobApplication) => {
@@ -93,20 +105,32 @@ export function JobsApplicationsPanel({
     try {
       setIsActing(true);
       await jobApplicationService.updateStatus(selectedApplication.id, {
-        status: confirmAction === "accept" ? "SELECTED" : "REJECTED",
+        status: confirmAction === "approve" ? "SELECTED" : "REJECTED",
       });
       appToast.success(
-        confirmAction === "accept"
-          ? "Application accepted."
+        confirmAction === "approve"
+          ? "Application approved."
           : "Application rejected.",
       );
       setConfirmAction(null);
       setDetailsOpen(false);
       setSelectedApplication(null);
+
+      setFilters({
+        ...filters,
+        status:
+          confirmAction === "approve"
+            ? ("ACCEPTED" as OnboardingStatusFilter)
+            : ("REJECTED" as OnboardingStatusFilter),
+        page: 1,
+      });
+
       await refetch();
     } catch (err) {
       appToast.error(
-        err instanceof Error ? err.message : "Unable to update application.",
+        err instanceof Error
+          ? err.message
+          : "Unable to update application. Please try again.",
       );
     } finally {
       setIsActing(false);
@@ -115,7 +139,20 @@ export function JobsApplicationsPanel({
 
   return (
     <>
-      <div className="mt-5">
+      <div className="mt-5 space-y-3">
+        <ApplicationStatusTabs
+          activeStatus={filters.status}
+          counts={statusCounts}
+          disabled={isActing || isFetching || actionsDisabled}
+          onChange={(status) =>
+            setFilters({
+              ...filters,
+              status,
+              page: 1,
+            })
+          }
+        />
+
         <Card className="overflow-hidden p-0">
           {isInitialLoading ? (
             <div className="p-4">
@@ -147,8 +184,10 @@ export function JobsApplicationsPanel({
                   selectedIds={selectedIds}
                   onSelectionChange={setSelectedIds}
                   actionsDisabled={actionsDisabled || isActing || isFetching}
+                  emptyTitle={emptyState.title}
+                  emptyDescription={emptyState.description}
                   onView={openReview}
-                  onAccept={requestAccept}
+                  onApprove={requestApprove}
                   onReject={requestReject}
                 />
               </div>
@@ -210,7 +249,7 @@ export function JobsApplicationsPanel({
           }
           setDetailsOpen(false);
         }}
-        onAccept={requestAccept}
+        onApprove={requestApprove}
         onReject={requestReject}
       />
 
@@ -220,7 +259,10 @@ export function JobsApplicationsPanel({
         description={confirmCopy.description}
         confirmLabel={confirmCopy.confirmLabel}
         loading={isActing}
-        confirmVariant={confirmAction === "accept" ? "success" : "danger"}
+        loadingLabel={
+          confirmAction === "approve" ? "Approving..." : "Rejecting..."
+        }
+        confirmVariant={confirmAction === "approve" ? "success" : "danger"}
         onConfirm={() => {
           void runStatusChange();
         }}
