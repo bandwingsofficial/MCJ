@@ -47,5 +47,6 @@ export class CreateCourseCommand {
     public readonly images: CourseImageInput[] = [],
     public readonly materials: CourseMaterialInput[] = [],
     public readonly createdBy?: string,
+    public readonly trainerIds: string[] = [],
   ) {}
 }

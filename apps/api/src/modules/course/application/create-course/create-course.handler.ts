@@ -1,3 +1,5 @@
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
 import { randomUUID } from 'crypto';
 import { Logger } from '@nestjs/common';
 import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
@@ -15,6 +17,7 @@ import {
   GetCourseResult,
   CourseBranchResult,
   CourseCategoryResult,
+  CourseTrainerResult,
 } from '../get-course/get-course.result';
 
 import { CreateCourseCommand } from './create-course.command';
@@ -183,6 +186,38 @@ export class CreateCourseHandler {
 
     await this.courseRepo.save(course);
 
+    const trainerIds = command.trainerIds ?? [];
+    const trainersAssignable = await this.courseRepo.areNewTrainersActive(
+      course.id,
+      trainerIds,
+    );
+
+    if (!trainersAssignable) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Only active trainers can be assigned to a course',
+        400,
+      );
+    }
+
+    await this.courseRepo.syncTrainers(course.id, trainerIds);
+    const trainers = (
+      await this.courseRepo.findTrainersByCourseId(course.id)
+    ).map(
+      (trainer) =>
+        new CourseTrainerResult(
+          trainer.id,
+          trainer.firstName,
+          trainer.lastName,
+          trainer.employeeCode,
+          trainer.qualification,
+          trainer.specialization,
+          trainer.status,
+          trainer.profileImageUrl,
+          trainer.email,
+        ),
+    );
+
     const branchEntities = await Promise.all(
       course.branchIds.map(async (branchId) => {
         const branch = await this.branchRepo.findById(branchId);
@@ -219,6 +254,7 @@ export class CreateCourseHandler {
     return GetCourseResult.fromEntity(course, branches, {
       category,
       categoryName: category?.name ?? null,
+      trainers,
     });
   }
 }

@@ -28,6 +28,20 @@ export class CourseCategoryResult {
   ) {}
 }
 
+export class CourseTrainerResult {
+  constructor(
+    public readonly id: string,
+    public readonly firstName: string,
+    public readonly lastName: string | null,
+    public readonly employeeCode: string | null,
+    public readonly qualification: string | null,
+    public readonly specialization: string | null,
+    public readonly status: string,
+    public readonly profileImageUrl: string | null,
+    public readonly email: string | null,
+  ) {}
+}
+
 export class CourseMaterialResult {
   constructor(
     public readonly id: string,
@@ -160,6 +174,7 @@ export class GetCourseResult {
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
     public readonly categoryName?: string | null,
+    public readonly trainers: CourseTrainerResult[] = [],
   ) {}
 
   static fromEntity(
@@ -176,6 +191,7 @@ export class GetCourseResult {
       publicView?: boolean;
       categoryName?: string | null;
       category?: CourseCategoryResult | null;
+      trainers?: CourseTrainerResult[];
     } = {},
   ): GetCourseResult {
     const publicView = options.publicView ?? false;
@@ -264,6 +280,7 @@ export class GetCourseResult {
       course.createdAt,
       course.updatedAt,
       options.categoryName,
+      options.trainers ?? [],
     );
   }
 }

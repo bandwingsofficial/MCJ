@@ -228,6 +228,20 @@ export class CreateCourseDto {
 @IsUUID('4', { each: true })
 branchIds?: string[];
 
+@ApiPropertyOptional({
+  type: [String],
+  description: 'Active trainer IDs to link to this course',
+})
+@IsOptional()
+@Transform(({ value }) =>
+  typeof value === 'string'
+    ? JSON.parse(value)
+    : value,
+)
+@IsArray()
+@IsUUID('4', { each: true })
+trainerIds?: string[];
+
   @ApiPropertyOptional({ enum: CourseStatus })
   @IsOptional()
   @IsEnum(CourseStatus)

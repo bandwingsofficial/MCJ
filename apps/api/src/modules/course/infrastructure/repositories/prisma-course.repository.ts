@@ -364,6 +364,90 @@ if (course.branchIds.length) {
     };
   }
 
+  async findTrainersByCourseId(courseId: string) {
+    const links = await this.prisma.trainerCourse.findMany({
+      where: { courseId },
+      include: {
+        trainer: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    return links
+      .filter((link) => link.trainer && !link.trainer.isDeleted)
+      .map((link) => ({
+        id: link.trainer.id,
+        firstName: link.trainer.firstName,
+        lastName: link.trainer.lastName,
+        employeeCode: link.trainer.employeeCode,
+        qualification: link.trainer.qualification,
+        specialization: link.trainer.specialization,
+        status: link.trainer.status,
+        profileImageUrl: link.trainer.profileImageUrl,
+        email: link.trainer.email,
+      }));
+  }
+
+  async syncTrainers(courseId: string, trainerIds: string[]): Promise<void> {
+    const uniqueIds = Array.from(
+      new Set(trainerIds.map((id) => id.trim()).filter(Boolean)),
+    );
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.trainerCourse.deleteMany({
+        where: { courseId },
+      });
+
+      if (!uniqueIds.length) {
+        return;
+      }
+
+      await tx.trainerCourse.createMany({
+        data: uniqueIds.map((trainerId) => ({
+          trainerId,
+          courseId,
+        })),
+        skipDuplicates: true,
+      });
+    });
+  }
+
+  async areNewTrainersActive(
+    courseId: string,
+    trainerIds: string[],
+  ): Promise<boolean> {
+    const uniqueIds = Array.from(
+      new Set(trainerIds.map((id) => id.trim()).filter(Boolean)),
+    );
+
+    if (!uniqueIds.length) {
+      return true;
+    }
+
+    const existing = await this.prisma.trainerCourse.findMany({
+      where: { courseId },
+      select: { trainerId: true },
+    });
+    const existingIds = new Set(existing.map((row) => row.trainerId));
+    const newIds = uniqueIds.filter((id) => !existingIds.has(id));
+
+    if (!newIds.length) {
+      return true;
+    }
+
+    const count = await this.prisma.trainer.count({
+      where: {
+        id: { in: newIds },
+        isDeleted: false,
+        status: 'ACTIVE',
+      },
+    });
+
+    return count === newIds.length;
+  }
+
   async deletePermanent(id: string): Promise<void> {
     await this.prisma.course.delete({
       where: { id },

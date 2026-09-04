@@ -117,6 +117,7 @@ export class AdminCourseController {
         this.mapImageUploadIds(dto.imageUploadIds),
         this.mapMaterialUploads(dto.materialUploadIds),
         user?.sub,
+        dto.trainerIds ?? [],
       ),
     );
 
@@ -299,6 +300,7 @@ export class AdminCourseController {
           ? this.mapMaterialUploads(dto.materialUploadIds)
           : undefined,
         user?.sub,
+        dto.trainerIds,
       ),
     );
 

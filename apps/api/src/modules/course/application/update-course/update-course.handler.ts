@@ -2,6 +2,9 @@ import { randomUUID } from 'crypto';
 import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
 import { UploadDomainService } from '@modules/uploads/domain/services/upload-domain.service';
 
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+
 import { CourseImage } from '../../domain/entities/course-image.entity';
 import { CourseMaterial } from '../../domain/entities/course-material.entity';
 import type { CourseRepository } from '../../domain/repositories/course.repository';
@@ -11,6 +14,7 @@ import {
   GetCourseResult,
   CourseBranchResult,
   CourseCategoryResult,
+  CourseTrainerResult,
 } from '../get-course/get-course.result';
 
 import { UpdateCourseCommand } from './update-course.command';
@@ -283,9 +287,44 @@ export class UpdateCourseHandler {
         )
       : null;
 
+    if (command.trainerIds !== undefined) {
+      const trainersAssignable = await this.courseRepo.areNewTrainersActive(
+        course.id,
+        command.trainerIds,
+      );
+
+      if (!trainersAssignable) {
+        throw new BaseException(
+          ERROR_CODES.VALIDATION_ERROR,
+          'Only active trainers can be assigned to a course',
+          400,
+        );
+      }
+
+      await this.courseRepo.syncTrainers(course.id, command.trainerIds);
+    }
+
+    const trainers = (
+      await this.courseRepo.findTrainersByCourseId(course.id)
+    ).map(
+      (trainer) =>
+        new CourseTrainerResult(
+          trainer.id,
+          trainer.firstName,
+          trainer.lastName,
+          trainer.employeeCode,
+          trainer.qualification,
+          trainer.specialization,
+          trainer.status,
+          trainer.profileImageUrl,
+          trainer.email,
+        ),
+    );
+
     return GetCourseResult.fromEntity(course, branches, {
       category,
       categoryName: category?.name ?? null,
+      trainers,
     });
   }
 

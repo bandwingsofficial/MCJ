@@ -32,8 +32,8 @@ import {
 import { categoryService } from "@/src/features/categories/services/category.service";
 import { useCourse } from "@/src/features/courses/hooks/use-course";
 import { useCourseTrainers } from "@/src/features/courses/hooks/use-course-trainers";
+import type { CourseTrainer } from "@/src/features/courses/types/course.types";
 import { TrainerStatusBadge } from "@/src/features/trainers/components/trainer-status-badge";
-import type { TrainerDetails } from "@/src/features/trainers/types/trainer.types";
 import { getTrainerDisplayStatus } from "@/src/features/trainers/utils/trainer-display.utils";
 
 interface Props {
@@ -114,12 +114,12 @@ function formatDurationType(batch: Batch): string {
 }
 
 function formatTrainerName(
-  trainer: Pick<TrainerDetails, "firstName" | "lastName">,
+  trainer: Pick<CourseTrainer, "firstName" | "lastName">,
 ) {
   return [trainer.firstName, trainer.lastName].filter(Boolean).join(" ") || "—";
 }
 
-function TrainerCard({ trainer }: { trainer: TrainerDetails }) {
+function TrainerCard({ trainer }: { trainer: CourseTrainer }) {
   const name = formatTrainerName(trainer);
 
   return (
@@ -158,7 +158,11 @@ function TrainerCard({ trainer }: { trainer: TrainerDetails }) {
           <OverviewField
             label="Status"
             value={
-              <TrainerStatusBadge status={getTrainerDisplayStatus(trainer)} />
+              <TrainerStatusBadge
+                status={getTrainerDisplayStatus({
+                  status: trainer.status as "ACTIVE" | "INACTIVE" | "ARCHIVED",
+                })}
+              />
             }
           />
         </div>
@@ -178,9 +182,30 @@ export function BatchManageOverviewPanel({
 
   const courseId = batch.courseId?.trim() || batch.course?.id || "";
   const { course, isLoading: courseLoading } = useCourse(courseId);
-  const { trainers, isLoading: trainersLoading } = useCourseTrainers(
-    courseId || undefined,
-  );
+  const courseHasTrainers = course?.trainers !== undefined;
+  const { trainers: fallbackTrainers, isLoading: fallbackTrainersLoading } =
+    useCourseTrainers(courseHasTrainers ? undefined : courseId || undefined);
+
+  const trainers: CourseTrainer[] = useMemo(() => {
+    if (course?.trainers) {
+      return course.trainers;
+    }
+
+    return fallbackTrainers.map((trainer) => ({
+      id: trainer.id,
+      firstName: trainer.firstName,
+      lastName: trainer.lastName,
+      employeeCode: trainer.employeeCode,
+      qualification: trainer.qualification,
+      specialization: trainer.specialization,
+      status: trainer.status,
+      profileImageUrl: trainer.profileImageUrl,
+      email: trainer.email,
+    }));
+  }, [course?.trainers, fallbackTrainers]);
+
+  const trainersLoading =
+    courseLoading || (!courseHasTrainers && fallbackTrainersLoading);
 
   const [categorySlug, setCategorySlug] = useState<string | null>(null);
   const [categoryLoading, setCategoryLoading] = useState(false);

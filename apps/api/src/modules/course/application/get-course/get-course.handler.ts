@@ -14,6 +14,7 @@ import {
   GetCourseResult,
   CourseBranchResult,
   CourseCategoryResult,
+  CourseTrainerResult,
 } from './get-course.result';
 
 import { BranchRepository } from '@/modules/branch/domain/repositories/branch.repository';
@@ -101,6 +102,23 @@ export class GetCourseHandler {
         )
       : null;
 
+    const trainers = (
+      await this.courseRepo.findTrainersByCourseId(course.id)
+    ).map(
+      (trainer) =>
+        new CourseTrainerResult(
+          trainer.id,
+          trainer.firstName,
+          trainer.lastName,
+          trainer.employeeCode,
+          trainer.qualification,
+          trainer.specialization,
+          trainer.status,
+          trainer.profileImageUrl,
+          trainer.email,
+        ),
+    );
+
     return GetCourseResult.fromEntity(course, branches, {
       modules,
       previewModules,
@@ -112,6 +130,7 @@ export class GetCourseHandler {
       publicView: !query.includeProtectedContent,
       category,
       categoryName: category?.name ?? null,
+      trainers,
     });
   }
 

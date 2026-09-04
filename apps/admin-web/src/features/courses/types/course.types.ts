@@ -169,6 +169,18 @@ export interface CourseModuleTree {
   lessons: CourseLessonTree[];
 }
 
+export interface CourseTrainer {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  employeeCode: string | null;
+  qualification: string | null;
+  specialization: string | null;
+  status: string;
+  profileImageUrl: string | null;
+  email: string | null;
+}
+
 export interface CourseDetails
   extends Course {
   createdBy: string;
@@ -184,6 +196,8 @@ export interface CourseDetails
   categoryName?: string | null;
 
   minimumQualifications?: CourseQualification[];
+
+  trainers?: CourseTrainer[];
 
   modules?: CourseModuleTree[];
 
@@ -309,6 +323,8 @@ export interface CreateCourseRequest {
 
   branchIds?: string[];
 
+  trainerIds?: string[];
+
   status?: CourseStatus;
 
   materialsMeta?: string;
@@ -351,6 +367,8 @@ export interface UpdateCourseRequest {
   categoryId?: string;
 
   branchIds?: string[];
+
+  trainerIds?: string[];
 
   status?: CourseStatus;
 

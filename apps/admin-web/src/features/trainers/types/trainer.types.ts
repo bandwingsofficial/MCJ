@@ -159,6 +159,9 @@ export interface TrainerListResponse {
 
   count: number;
 
+  /** Present on some API list payloads instead of `count`. */
+  total?: number;
+
   meta?: {
     total: number;
     skip: number;

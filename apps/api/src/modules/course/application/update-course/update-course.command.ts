@@ -39,5 +39,6 @@ export class UpdateCourseCommand {
     public readonly images?: CourseImageInput[],
     public readonly materials?: CourseMaterialInput[],
     public readonly updatedBy?: string,
+    public readonly trainerIds?: string[],
   ) {}
 }

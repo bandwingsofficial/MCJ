@@ -107,6 +107,7 @@ export function CourseFormModal({
         metaTitle: values.metaTitle?.trim() || undefined,
         metaDescription: values.metaDescription?.trim() || undefined,
         metaKeywords: values.metaKeywords?.trim() || undefined,
+        trainerIds: values.trainerIds ?? [],
         thumbnailFileId:
           removeImage && isEditMode ? undefined : thumbnailFileId,
       };
@@ -142,6 +143,7 @@ export function CourseFormModal({
         courseCode={isEditMode ? course?.code : suggestedCode}
         isEdit={isEditMode}
         categoryOptions={categoryOptions}
+        linkedTrainers={course?.trainers}
         isLoading={isLoading}
         isUploadingImage={isUploadingImage || isSuggestingCode}
         submitLabel={isEditMode ? "Update Course" : "Create Course"}
@@ -169,6 +171,9 @@ export function CourseFormModal({
                 metaTitle: course.metaTitle ?? "",
                 metaDescription: course.metaDescription ?? "",
                 metaKeywords: course.metaKeywords ?? "",
+                trainerIds: (course.trainers ?? []).map(
+                  (trainer) => trainer.id,
+                ),
                 thumbnailUrl: course.thumbnailUrl,
                 status: course.status,
               }

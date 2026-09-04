@@ -24,6 +24,18 @@ export interface CourseManagementCounts {
   quizzes: number;
 }
 
+export interface CourseTrainerSummary {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  employeeCode: string | null;
+  qualification: string | null;
+  specialization: string | null;
+  status: string;
+  profileImageUrl: string | null;
+  email: string | null;
+}
+
 export interface CourseRepository {
   save(course: Course): Promise<void>;
   findById(
@@ -56,5 +68,11 @@ export interface CourseRepository {
   getManagementCounts(
     courseId: string,
   ): Promise<CourseManagementCounts>;
+  findTrainersByCourseId(courseId: string): Promise<CourseTrainerSummary[]>;
+  syncTrainers(courseId: string, trainerIds: string[]): Promise<void>;
+  areNewTrainersActive(
+    courseId: string,
+    trainerIds: string[],
+  ): Promise<boolean>;
   deletePermanent(id: string): Promise<void>;
 }

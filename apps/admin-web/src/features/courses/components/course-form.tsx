@@ -44,10 +44,26 @@ import {
 } from "@/src/features/courses/utils/course-meta.utils";
 import { CourseMetaField } from "@/src/features/courses/components/course-meta-field";
 import { QualificationMultiSelect } from "@/src/features/courses/components/qualification-multi-select";
+import {
+  TrainerMultiSelect,
+  type CourseTrainerOption,
+} from "@/src/features/courses/components/trainer-multi-select";
+import type { CourseTrainer } from "@/src/features/courses/types/course.types";
+import { trainerService } from "@/src/features/trainers/services/trainer.service";
+import { appToast } from "@/src/shared/components/ui/toast";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 interface SelectOption {
   label: string;
   value: string;
+}
+
+function formatTrainerOptionLabel(
+  trainer: Pick<CourseTrainer, "firstName" | "lastName" | "employeeCode" | "id">,
+): string {
+  const name = [trainer.firstName, trainer.lastName].filter(Boolean).join(" ");
+  const code = trainer.employeeCode?.trim();
+  return code ? `${name} (${code})` : name || trainer.id;
 }
 
 interface Props {
@@ -56,6 +72,8 @@ interface Props {
     thumbnailUrl?: string | null;
     status?: string;
   };
+  /** Already-linked trainers (edit mode) for chip labels, including inactive. */
+  linkedTrainers?: CourseTrainer[];
   categoryOptions: SelectOption[];
   isEdit?: boolean;
   isLoading?: boolean;
@@ -79,6 +97,7 @@ const defaultFormValues: CreateCourseFormValues = {
   categoryId: "",
   level: "BEGINNER",
   minimumQualifications: [],
+  trainerIds: [],
   language: "English",
   averageRating: 0,
   totalReviews: 0,
@@ -94,6 +113,7 @@ const GRID_CLASS =
 const CELL_CLASS = "min-w-0 w-full";
 const SECTION_CLASS = "rounded-xl border border-slate-200 bg-white p-4 space-y-4";
 const SECTION_TITLE_CLASS = "text-base font-semibold text-[#102A56]";
+const EMPTY_LINKED_TRAINERS: CourseTrainer[] = [];
 
 function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
   return (
@@ -124,6 +144,7 @@ function iconInputClass(
 export function CourseForm({
   courseCode,
   defaultValues,
+  linkedTrainers = EMPTY_LINKED_TRAINERS,
   categoryOptions,
   isEdit = false,
   isLoading = false,
@@ -141,6 +162,10 @@ export function CourseForm({
   const [imageTouched, setImageTouched] = useState(false);
   const [editValidationReady, setEditValidationReady] = useState(false);
   const [metaAutoVersion, setMetaAutoVersion] = useState(0);
+  const [trainerOptions, setTrainerOptions] = useState<CourseTrainerOption[]>(
+    [],
+  );
+  const [trainersLoading, setTrainersLoading] = useState(false);
 
   const metaAutoRef = useRef<Record<MetaFieldKey, boolean>>({
     metaTitle: true,
@@ -175,6 +200,7 @@ export function CourseForm({
   const descriptionValue = watch("description");
   const categoryIdValue = watch("categoryId");
   const minimumQualificationsValue = watch("minimumQualifications");
+  const trainerIdsValue = watch("trainerIds");
   const levelValue = watch("level");
   const languageValue = watch("language");
   const averageRatingValue = watch("averageRating");
@@ -276,6 +302,82 @@ export function CourseForm({
       setMetaAutoVersion((version) => version + 1);
     }
   }, [defaultValues, isEdit, reset, syncMetaAutoFlags]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTrainers = async () => {
+      try {
+        setTrainersLoading(true);
+        const active = await trainerService.getActiveTrainersForAssignment();
+        if (cancelled) {
+          return;
+        }
+
+        const activeOptions: CourseTrainerOption[] = active.map((trainer) => ({
+          id: trainer.id,
+          label: formatTrainerOptionLabel(trainer),
+        }));
+
+        const linkedOptions: CourseTrainerOption[] = linkedTrainers.map(
+          (trainer) => ({
+            id: trainer.id,
+            label: formatTrainerOptionLabel(trainer),
+            inactive: trainer.status !== "ACTIVE",
+          }),
+        );
+
+        const selectedIds = defaultValues?.trainerIds ?? [];
+        const selectedFallback = selectedIds
+          .filter(
+            (id) =>
+              !activeOptions.some((option) => option.id === id) &&
+              !linkedOptions.some((option) => option.id === id),
+          )
+          .map((id) => ({
+            id,
+            label: id,
+            inactive: true,
+          }));
+
+        const merged = new Map<string, CourseTrainerOption>();
+        for (const option of activeOptions) {
+          merged.set(option.id, option);
+        }
+        for (const option of [...linkedOptions, ...selectedFallback]) {
+          if (!merged.has(option.id)) {
+            merged.set(option.id, option);
+          }
+        }
+
+        setTrainerOptions(Array.from(merged.values()));
+      } catch (error) {
+        if (!cancelled) {
+          setTrainerOptions(
+            linkedTrainers.map((trainer) => ({
+              id: trainer.id,
+              label: formatTrainerOptionLabel(trainer),
+              inactive: trainer.status !== "ACTIVE",
+            })),
+          );
+          appToast.error(getErrorMessage(error));
+        }
+      } finally {
+        if (!cancelled) {
+          setTrainersLoading(false);
+        }
+      }
+    };
+
+    void loadTrainers();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    defaultValues?.trainerIds?.join(","),
+    linkedTrainers,
+  ]);
 
   useEffect(() => {
     const generated = generateCourseMeta(getMetaSource());
@@ -384,6 +486,12 @@ export function CourseForm({
     minimumQualificationsValue?.length ? "selected" : "",
   );
 
+  const trainersState = getSyncFieldState(
+    Boolean(touchedFields.trainerIds || showValidation),
+    errors.trainerIds?.message,
+    trainerIdsValue?.length ? "selected" : "",
+  );
+
   const levelState = getSyncFieldState(
     Boolean(touchedFields.level || showValidation),
     errors.level?.message,
@@ -455,6 +563,7 @@ export function CourseForm({
       "description",
       "categoryId",
       "minimumQualifications",
+      "trainerIds",
       "level",
       "language",
       "metaTitle",
@@ -636,7 +745,7 @@ export function CourseForm({
         <h3 className={SECTION_TITLE_CLASS}>Course Requirements</h3>
 
         <div className={GRID_CLASS}>
-          <div className={`${CELL_CLASS} md:col-span-2`}>
+          <div className={CELL_CLASS}>
             <ValidatedField
               label="Minimum Qualification Required"
               state={qualificationsState}
@@ -653,6 +762,31 @@ export function CourseForm({
                       qualificationsState === "checking"
                         ? "neutral"
                         : qualificationsState
+                    }
+                    collisionBoundaryRef={dropdownBoundaryRef}
+                  />
+                )}
+              />
+            </ValidatedField>
+          </div>
+
+          <div className={CELL_CLASS}>
+            <ValidatedField
+              label="Trainer"
+              state={trainersState}
+              errorMessage={errors.trainerIds?.message}
+            >
+              <Controller
+                control={control}
+                name="trainerIds"
+                render={({ field }) => (
+                  <TrainerMultiSelect
+                    value={field.value ?? []}
+                    options={trainerOptions}
+                    loading={trainersLoading}
+                    onChange={field.onChange}
+                    state={
+                      trainersState === "checking" ? "neutral" : trainersState
                     }
                     collisionBoundaryRef={dropdownBoundaryRef}
                   />

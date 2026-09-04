@@ -31,13 +31,15 @@ function normalizeListResponse(
     };
   }
 
+  const items = data.items ?? [];
+
   return {
-    items: data.items ?? [],
+    items,
     count:
       data.meta?.total ??
       data.count ??
-      data.items?.length ??
-      0,
+      data.total ??
+      items.length,
     meta: data.meta,
   };
 }
@@ -207,7 +209,9 @@ class TrainerService {
     try {
       const trainers = await this.listAllTrainers({ status: "ACTIVE" });
       return trainers.filter(
-        (trainer) => trainer.status === "ACTIVE" && !trainer.isDeleted,
+        (trainer) =>
+          String(trainer.status).toUpperCase() === "ACTIVE" &&
+          !trainer.isDeleted,
       );
     } catch (error) {
       throw this.handleError(error);

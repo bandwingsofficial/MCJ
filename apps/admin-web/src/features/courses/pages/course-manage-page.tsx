@@ -34,7 +34,6 @@ const TAB_LABELS: Record<TabKey, string> = {
   modules: "Modules",
   batches: "Batches",
   faq: "FAQ",
-  trainers: "Assign Trainer",
 };
 
 export function CourseManagePage({ courseId }: Props) {
