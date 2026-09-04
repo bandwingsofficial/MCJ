@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
 import { CategoryNotFoundException } from '@modules/course/domain/errors/category-not-found.exception';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
+import { CourseStatus } from '@modules/course/domain/enums/course-status.enum';
 import type { TrainerRepository } from '@modules/trainer/domain/repositories/trainer.repository';
 import { TrainerStatus } from '@modules/trainer/domain/enums/trainer-status.enum';
 
@@ -77,6 +78,41 @@ export class BatchDomainService {
 
     if (!course) {
       throw new CourseNotFoundException(courseId);
+    }
+  }
+
+  /**
+   * Course must exist, not be deleted, and be ACTIVE.
+   * Exception: when keeping the batch's current courseId and that course is
+   * inactive, allow the same inactive course (do not force reassignment).
+   */
+  async ensureActiveCourse(
+    courseRepo: CourseRepository,
+    courseId: string,
+    options?: {
+      currentCourseId?: string | null;
+    },
+  ): Promise<void> {
+    const course = await courseRepo.findById(courseId);
+
+    if (!course || course.isDeleted) {
+      throw new CourseNotFoundException(courseId);
+    }
+
+    const keepingCurrentInactive =
+      options?.currentCourseId != null &&
+      options.currentCourseId === courseId &&
+      course.status !== CourseStatus.ACTIVE;
+
+    if (
+      course.status !== CourseStatus.ACTIVE &&
+      !keepingCurrentInactive
+    ) {
+      throw new BaseException(
+        ERROR_CODES.COURSE_INACTIVE,
+        'Only an active course can be assigned to a batch',
+        400,
+      );
     }
   }
 

@@ -13,6 +13,7 @@ import type {
 } from "@/src/features/courses/types/course.types";
 import { COURSE_MANAGE_DEFAULT_TAB } from "@/src/features/courses/utils/course-manage.routes";
 
+import { CourseManageBatchesPanel } from "./course-manage-batches-panel";
 import { CourseManageFaqPanel } from "./course-manage-faq-panel";
 import { CourseManageModulesPanel } from "./course-manage-modules-panel";
 import { CourseManageOverviewPanel } from "./course-manage-overview-panel";
@@ -30,11 +31,17 @@ interface Props {
   onMutationSuccess?: () => Promise<void>;
 }
 
-export type TabKey = "overview" | "modules" | "faq" | "trainers";
+export type TabKey =
+  | "overview"
+  | "modules"
+  | "batches"
+  | "faq"
+  | "trainers";
 
 const TAB_ITEMS: readonly [TabKey, string][] = [
   ["overview", "Overview"],
   ["modules", "Modules"],
+  ["batches", "Batches"],
   ["faq", "FAQ"],
   ["trainers", "Assign Trainer"],
 ];
@@ -89,6 +96,10 @@ export function CourseManageWorkspace({
           onRefresh={onSummaryRefresh}
           onMutationSuccess={onMutationSuccess}
         />
+      </TabsContent>
+
+      <TabsContent value="batches">
+        <CourseManageBatchesPanel courseId={courseId} />
       </TabsContent>
 
       <TabsContent value="faq">

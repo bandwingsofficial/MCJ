@@ -244,4 +244,41 @@ export class PrismaBatchCourseRepository {
       },
     });
   }
+
+  /**
+   * Ensure exactly one active BatchCourse for (batchId, courseId),
+   * soft-removing any other non-deleted assignments for the batch.
+   */
+  async syncPrimaryCourse(params: {
+    batchId: string;
+    courseId: string;
+  }): Promise<void> {
+    const existing = await this.findByBatchId(params.batchId);
+    const primary = existing.find(
+      (assignment) => assignment.courseId === params.courseId,
+    );
+
+    if (!primary) {
+      try {
+        await this.assign(params);
+      } catch (error) {
+        if (
+          !(
+            error instanceof Error &&
+            error.message.includes('already assigned')
+          )
+        ) {
+          throw error;
+        }
+      }
+    }
+
+    const others = existing.filter(
+      (assignment) => assignment.courseId !== params.courseId,
+    );
+
+    for (const other of others) {
+      await this.remove(other.id, params.batchId);
+    }
+  }
 }

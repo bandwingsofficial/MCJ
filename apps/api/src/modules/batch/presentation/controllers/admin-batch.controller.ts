@@ -128,6 +128,8 @@ export class AdminBatchController {
         dto.discountedPrice,
         dto.currency,
         dto.isFree,
+        dto.durationValue,
+        dto.durationType,
       ),
     );
 
@@ -365,6 +367,8 @@ export class AdminBatchController {
         dto.discountedPrice,
         dto.currency,
         dto.isFree,
+        dto.durationValue,
+        dto.durationType,
       ),
     );
 

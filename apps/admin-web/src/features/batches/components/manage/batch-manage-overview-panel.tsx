@@ -20,7 +20,6 @@ import {
   formatAssignedCourseQualifications,
   formatAssignmentSessionCourseLabel,
   formatTrainerDisplayName,
-  getCourseCategoryName,
   getCourseDescription,
   getUniqueAssignedCourses,
   getUniqueBatchTrainers,
@@ -106,6 +105,18 @@ export function BatchManageOverviewPanel({
     [assignments],
   );
 
+  const primaryCourse = batch.course ?? null;
+
+  const secondaryAssignments = useMemo(() => {
+    if (!primaryCourse) {
+      return assignedCourses;
+    }
+
+    return assignedCourses.filter(
+      (assignment) => assignment.courseId !== primaryCourse.id,
+    );
+  }, [assignedCourses, primaryCourse]);
+
   const assignedTrainers = useMemo(
     () => getUniqueBatchTrainers(batch, assignments),
     [assignments, batch],
@@ -124,6 +135,78 @@ export function BatchManageOverviewPanel({
     progress.totalWorkingDays !== null
       ? `${progress.totalWorkingDays} working day${progress.totalWorkingDays === 1 ? "" : "s"}`
       : "—";
+
+  const renderCourseCard = (
+    course: NonNullable<Batch["course"]>,
+    options?: { sessionLabel?: string; key?: string },
+  ) => {
+    const categoryName =
+      course.category?.name?.trim() ||
+      batch.category?.name?.trim() ||
+      "—";
+    const description = getCourseDescription(course);
+    const title = options?.sessionLabel ?? course.title;
+
+    return (
+      <article
+        key={options?.key ?? course.id}
+        className="flex min-w-0 flex-col gap-3 rounded-xl border border-slate-200 p-3 sm:flex-row"
+      >
+        <div className="relative h-20 w-full shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:h-20 sm:w-28">
+          {course.thumbnailUrl ? (
+            <Image
+              src={course.thumbnailUrl}
+              alt={course.title}
+              fill
+              className="object-cover"
+              sizes="112px"
+            />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-slate-400">
+              <ImageOff className="h-5 w-5" />
+              <span className="text-[10px] font-medium">No image</span>
+            </div>
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1 space-y-2">
+          <div>
+            <h3 className="text-sm font-semibold text-[#102A56]">{title}</h3>
+            {course.code ? (
+              <p className="text-xs font-medium text-blue-600">{course.code}</p>
+            ) : null}
+          </div>
+
+          {description ? (
+            <p className="text-sm leading-relaxed text-slate-600">
+              {description}
+            </p>
+          ) : null}
+
+          <dl className="grid min-w-0 gap-2 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-xs text-slate-500">Category</dt>
+              <dd className="font-medium text-[#102A56]">{categoryName}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-slate-500">
+                Minimum Qualification Required
+              </dt>
+              <dd className="font-medium text-[#102A56]">
+                {formatAssignedCourseQualifications(course)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-slate-500">Final Price</dt>
+              <dd className="font-medium text-[#102A56]">
+                {formatAssignedCoursePrice(batch)}
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </article>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -158,83 +241,34 @@ export function BatchManageOverviewPanel({
       </SectionCard>
 
       <SectionCard title="Course Information">
-        {assignmentsLoading ? (
+        {assignmentsLoading && !primaryCourse ? (
           <p className="text-sm text-[#647A9B]">Loading assigned courses…</p>
-        ) : assignedCourses.length === 0 ? (
-          <EmptySectionMessage message="No courses yet" />
+        ) : !primaryCourse && assignedCourses.length === 0 ? (
+          <EmptySectionMessage message="No course assigned — edit this batch to select a course" />
         ) : (
           <div className="space-y-3">
-            {assignedCourses.map((assignment) => {
-              const course = assignment.course;
-              const categoryName = getCourseCategoryName(assignment);
-              const description = getCourseDescription(course);
+            {primaryCourse
+              ? renderCourseCard(primaryCourse)
+              : assignedCourses.map((assignment) =>
+                  renderCourseCard(assignment.course, {
+                    key: assignment.id,
+                    sessionLabel: formatAssignmentSessionCourseLabel(assignment),
+                  }),
+                )}
 
-              return (
-                <article
-                  key={assignment.id}
-                  className="flex min-w-0 flex-col gap-3 rounded-xl border border-slate-200 p-3 sm:flex-row"
-                >
-                  <div className="relative h-20 w-full shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:h-20 sm:w-28">
-                    {course.thumbnailUrl ? (
-                      <Image
-                        src={course.thumbnailUrl}
-                        alt={course.title}
-                        fill
-                        className="object-cover"
-                        sizes="112px"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-slate-400">
-                        <ImageOff className="h-5 w-5" />
-                        <span className="text-[10px] font-medium">No image</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <div>
-                      <h3 className="text-sm font-semibold text-[#102A56]">
-                        {formatAssignmentSessionCourseLabel(assignment)}
-                      </h3>
-                      {course.code ? (
-                        <p className="text-xs font-medium text-blue-600">
-                          {course.code}
-                        </p>
-                      ) : null}
-                    </div>
-
-                    {description ? (
-                      <p className="text-sm leading-relaxed text-slate-600">
-                        {description}
-                      </p>
-                    ) : null}
-
-                    <dl className="grid min-w-0 gap-2 text-sm sm:grid-cols-2">
-                      <div>
-                        <dt className="text-xs text-slate-500">Category</dt>
-                        <dd className="font-medium text-[#102A56]">
-                          {categoryName || "—"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs text-slate-500">
-                          Minimum Qualification Required
-                        </dt>
-                        <dd className="font-medium text-[#102A56]">
-                          {formatAssignedCourseQualifications(course)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-xs text-slate-500">Final Price</dt>
-                        <dd className="font-medium text-[#102A56]">
-                          {formatAssignedCoursePrice(batch)}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-                </article>
-              );
-            })}
+            {primaryCourse && secondaryAssignments.length > 0 ? (
+              <div className="space-y-2 pt-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Additional sessions
+                </p>
+                {secondaryAssignments.map((assignment) =>
+                  renderCourseCard(assignment.course, {
+                    key: assignment.id,
+                    sessionLabel: formatAssignmentSessionCourseLabel(assignment),
+                  }),
+                )}
+              </div>
+            ) : null}
           </div>
         )}
       </SectionCard>

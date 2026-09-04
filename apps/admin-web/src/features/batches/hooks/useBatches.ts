@@ -10,7 +10,7 @@ import type {
 } from "@/src/features/batches/types/batch.types";
 import { parseBatchListResponse } from "@/src/features/batches/utils/batch-list.utils";
 
-const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 400;
 
 interface UseBatchesReturn {
@@ -42,6 +42,7 @@ export const useBatches = (options?: {
   const [filters, setFiltersState] = useState<BatchFilters>({
     search: "",
     courseId: undefined,
+    mode: undefined,
     status: undefined,
     page: 1,
     pageSize: defaultPageSize,
@@ -57,6 +58,7 @@ export const useBatches = (options?: {
       const filterChanged =
         next.search !== prev.search ||
         next.courseId !== prev.courseId ||
+        next.mode !== prev.mode ||
         next.status !== prev.status ||
         next.pageSize !== prev.pageSize;
 
@@ -140,6 +142,7 @@ export const useBatches = (options?: {
   }, [
     debouncedSearch,
     filters.courseId,
+    filters.mode,
     filters.status,
     filters.page,
     filters.pageSize,

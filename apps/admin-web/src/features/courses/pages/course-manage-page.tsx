@@ -32,6 +32,7 @@ interface Props {
 const TAB_LABELS: Record<TabKey, string> = {
   overview: "Overview",
   modules: "Modules",
+  batches: "Batches",
   faq: "FAQ",
   trainers: "Assign Trainer",
 };

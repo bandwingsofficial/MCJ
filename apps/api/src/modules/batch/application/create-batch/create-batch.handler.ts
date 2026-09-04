@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Logger } from '@nestjs/common';
+import { DurationType } from '@modules/course/domain/enums/duration-type.enum';
 import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 import type { TrainerRepository } from '@modules/trainer/domain/repositories/trainer.repository';
@@ -13,6 +14,7 @@ import { InvalidBatchPricingException } from '../../domain/errors/invalid-batch-
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
 import { normalizeBatchPricingInput } from '../../domain/value-objects/batch-pricing.vo';
+import { PrismaBatchCourseRepository } from '../../infrastructure/repositories/prisma-batch-course.repository';
 import { GetBatchResult } from '../get-batch/get-batch.result';
 
 import { CreateBatchCommand } from './create-batch.command';
@@ -26,6 +28,7 @@ export class CreateBatchHandler {
     private readonly categoryRepo: CategoryRepository,
     private readonly trainerRepo: TrainerRepository,
     private readonly branchRepo: BranchRepository,
+    private readonly batchCourseRepo: PrismaBatchCourseRepository,
     private readonly domainService: BatchDomainService,
   ) {}
 
@@ -39,12 +42,10 @@ export class CreateBatchHandler {
       );
     }
 
-    if (command.courseId) {
-      await this.domainService.ensureCourseExists(
-        this.courseRepo,
-        command.courseId,
-      );
-    }
+    await this.domainService.ensureActiveCourse(
+      this.courseRepo,
+      command.courseId,
+    );
 
     if (command.branchId) {
       const branch = await this.branchRepo.findById(
@@ -138,7 +139,7 @@ export class CreateBatchHandler {
       code,
       slug,
       description: command.description,
-      courseId: command.courseId ?? null,
+      courseId: command.courseId,
       categoryId: command.categoryId ?? null,
       branchId: command.branchId,
       startDate: command.startDate,
@@ -154,6 +155,8 @@ export class CreateBatchHandler {
       discountedPrice: normalizedPricing.discountedPrice,
       currency: normalizedPricing.currency,
       isFree: normalizedPricing.isFree,
+      durationValue: command.durationValue ?? null,
+      durationType: (command.durationType as DurationType | undefined) ?? null,
       classroom: command.classroom,
       meetingLink: command.meetingLink,
       isFeatured: command.isFeatured,
@@ -171,6 +174,11 @@ export class CreateBatchHandler {
     });
 
     await this.batchRepo.save(batch);
+
+    await this.batchCourseRepo.syncPrimaryCourse({
+      batchId: batch.id,
+      courseId: command.courseId,
+    });
 
     const savedBatch =
       await this.domainService.ensureExists(

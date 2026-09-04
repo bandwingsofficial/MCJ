@@ -9,6 +9,7 @@ export const batchMapper = {
     return {
       name: batch.name,
       code: batch.code,
+      courseId: batch.courseId ?? "",
       description: batch.description ?? "",
       startDate,
       endDate,
@@ -24,6 +25,8 @@ export const batchMapper = {
       discountAmount: pricing.discountAmount,
       currency: pricing.currency,
       isFree: pricing.isFree,
+      durationValue: batch.durationValue ?? 1,
+      durationType: batch.durationType ?? "MONTHS",
     };
   },
 };

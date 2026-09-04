@@ -19,6 +19,7 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
+import { DurationType } from '@modules/course/domain/enums/duration-type.enum';
 import { BatchStatus } from '../../domain/enums/batch-status.enum';
 import { DayOfWeek } from '../../domain/enums/day-of-week.enum';
 
@@ -94,10 +95,9 @@ export class CreateBatchDto {
   @Transform(({ value }) => trimOrUndefined(value))
   description?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsUUID()
-  courseId?: string;
+  courseId!: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -190,6 +190,16 @@ export class CreateBatchDto {
   @IsBoolean()
   @Transform(({ value }) => toBoolean(value))
   isFree?: boolean;
+
+  @ApiProperty({ example: 2 })
+  @IsInt()
+  @Min(1)
+  @Transform(({ value }) => toNumber(value))
+  durationValue!: number;
+
+  @ApiProperty({ enum: DurationType, example: DurationType.MONTHS })
+  @IsEnum(DurationType)
+  durationType!: DurationType;
 
   @ApiPropertyOptional()
   @IsOptional()

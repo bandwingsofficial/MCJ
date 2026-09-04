@@ -652,6 +652,8 @@ model Batch {
   capacity      Int
   enrolledCount Int            @default(0)
   mode          CourseMode     @default(OFFLINE)
+  durationValue    Int?
+  durationType     DurationType?
   originalPrice    Decimal          @default(0) @db.Decimal(12, 2)
   discountAmount   Decimal          @default(0) @db.Decimal(12, 2)
   discountedPrice  Decimal          @default(0) @db.Decimal(12, 2)
@@ -1468,6 +1470,7 @@ enum CourseStatus {
 }
 
 enum DurationType {
+  HOURS
   DAYS
   WEEKS
   MONTHS

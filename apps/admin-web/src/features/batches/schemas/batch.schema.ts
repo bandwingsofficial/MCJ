@@ -18,6 +18,14 @@ const dayOfWeekEnum = z.enum([
   "SUNDAY",
 ]);
 
+const durationTypeEnum = z.enum([
+  "HOURS",
+  "DAYS",
+  "WEEKS",
+  "MONTHS",
+  "YEARS",
+]);
+
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 function parseTimeToMinutes(time: string): number {
@@ -38,6 +46,11 @@ export const batchSchema = z
       .trim()
       .min(2, "Batch code is required")
       .max(30, "Batch code cannot exceed 30 characters"),
+
+    courseId: z
+      .string()
+      .min(1, "Please select a course.")
+      .uuid("Please select a course."),
 
     description: z.string().optional().or(z.literal("")),
 
@@ -64,6 +77,15 @@ export const batchSchema = z
     enrolledCount: z.number().min(0).default(0),
 
     mode: z.enum(["ONLINE", "OFFLINE", "RECORDED"]),
+
+    durationValue: z
+      .number({
+        error: "Duration is required",
+      })
+      .int("Duration must be a whole number")
+      .positive("Duration must be a positive number"),
+
+    durationType: durationTypeEnum,
 
     isFeatured: z.boolean(),
 

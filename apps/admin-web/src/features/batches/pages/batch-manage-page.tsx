@@ -110,7 +110,7 @@ export function BatchManagePage({ batchId }: Props) {
           onTabChange={(tab) => {
             const labels: Record<string, string> = {
               overview: "Overview",
-              courses: "Courses",
+              courses: "Course",
             };
             setActiveSection(labels[tab]);
           }}

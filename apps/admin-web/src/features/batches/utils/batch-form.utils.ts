@@ -30,6 +30,7 @@ export function toCreateBatchRequest(
   return {
     name: values.name.trim(),
     code: values.code.trim().toUpperCase(),
+    courseId: values.courseId,
     description: values.description?.trim() || undefined,
     startDate: values.startDate,
     endDate: values.endDate,
@@ -45,6 +46,8 @@ export function toCreateBatchRequest(
     discountedPrice: pricing.discountedPrice,
     currency: pricing.currency,
     isFree: pricing.isFree,
+    durationValue: Number(values.durationValue),
+    durationType: values.durationType,
   };
 }
 

@@ -15,6 +15,8 @@ export class BatchCourseResult {
   constructor(
     public readonly id: string,
     public readonly title: string,
+    public readonly code: string | null = null,
+    public readonly category: { id: string; name: string } | null = null,
   ) {}
 }
 
@@ -54,6 +56,8 @@ export class GetBatchResult {
     public readonly capacity: number,
     public readonly enrolledCount: number,
     public readonly mode: CourseMode,
+    public readonly durationValue: number | null,
+    public readonly durationType: string | null,
     public readonly originalPrice: number,
     public readonly discountAmount: number,
     public readonly discountedPrice: number,
@@ -86,7 +90,12 @@ export class GetBatchResult {
       batch.description,
 
       batch.course
-        ? new BatchCourseResult(batch.course.id, batch.course.title)
+        ? new BatchCourseResult(
+            batch.course.id,
+            batch.course.title,
+            batch.course.code ?? null,
+            batch.course.category ?? null,
+          )
         : null,
 
       batch.branch
@@ -112,6 +121,8 @@ export class GetBatchResult {
       batch.capacity.getValue(),
       batch.enrolledCount,
       batch.mode,
+      batch.durationValue,
+      batch.durationType,
       pricing.originalPrice,
       pricing.discountAmount,
       pricing.discountedPrice,

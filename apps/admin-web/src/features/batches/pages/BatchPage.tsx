@@ -80,7 +80,7 @@ export function BatchPage() {
   const [isBulkLoading, setIsBulkLoading] = useState(false);
   const [courses, setCourses] = useState<CourseOption[]>([]);
 
-  const pageSize = filters.pageSize ?? 20;
+  const pageSize = filters.pageSize ?? 50;
   const page = filters.page ?? 1;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -93,6 +93,7 @@ export function BatchPage() {
   const hasActiveFilters = Boolean(
     (filters.search ?? "").trim() ||
       filters.courseId ||
+      filters.mode ||
       filters.status !== undefined,
   );
 
@@ -127,6 +128,7 @@ export function BatchPage() {
     filters.status,
     filters.search,
     filters.courseId,
+    filters.mode,
   ]);
 
   useEffect(() => {

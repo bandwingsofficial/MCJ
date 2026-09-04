@@ -3,7 +3,7 @@
 import { SearchInput } from "@/src/shared/components/ui/search-input";
 import { AppSelect } from "@/src/shared/components/ui/select";
 
-import { BATCH_MODES } from "@/src/features/batches/constants/batch.constants";
+import { FILTER_BATCH_MODES } from "@/src/features/batches/constants/batch.constants";
 import type {
   BatchFilters,
   BatchMode,
@@ -38,7 +38,7 @@ export function BranchBatchFiltersBar({
 
   const modeOptions = uniqueSelectOptions([
     { label: "All Modes", value: BATCH_SELECT_ALL },
-    ...BATCH_MODES,
+    ...FILTER_BATCH_MODES,
   ]);
 
   const categoryOptions = uniqueSelectOptions([

@@ -15,6 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   BookOpen,
   CalendarDays,
+  GraduationCap,
   Hash,
   IndianRupee,
   Tag,
@@ -39,6 +40,7 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { cn } from "@/src/shared/lib/cn";
 
 import {
+  BATCH_DURATION_TYPES,
   BATCH_MODES,
   DAYS_OF_WEEK,
 } from "@/src/features/batches/constants/batch.constants";
@@ -47,6 +49,10 @@ import {
   type BatchFormValues,
 } from "@/src/features/batches/schemas/batch.schema";
 import { batchService } from "@/src/features/batches/services/batch.service";
+import type {
+  BatchDurationType,
+  CourseOption,
+} from "@/src/features/batches/types/batch.types";
 import {
   countWords,
   DESCRIPTION_WORD_LIMIT,
@@ -62,6 +68,8 @@ import { uniqueSelectOptions } from "@/src/features/batches/utils/batch-select.u
 interface BatchFormProps {
   isEdit?: boolean;
   defaultValues?: Partial<BatchFormValues>;
+  /** Ensures the batch's current course appears in options even if inactive. */
+  initialCourse?: CourseOption | null;
   isSubmitting: boolean;
   submitLabel: string;
   loadingLabel?: string;
@@ -69,9 +77,18 @@ interface BatchFormProps {
   onCancel?: () => void;
 }
 
+function formatCourseOptionLabel(course: {
+  title: string;
+  code?: string | null;
+}): string {
+  const code = course.code?.trim();
+  return code ? `${course.title} (${code})` : course.title;
+}
+
 const EMPTY_DEFAULTS: BatchFormValues = {
   name: "",
   code: "",
+  courseId: "",
   description: "",
   startDate: new Date().toISOString().split("T")[0]!,
   endDate: new Date().toISOString().split("T")[0]!,
@@ -81,6 +98,8 @@ const EMPTY_DEFAULTS: BatchFormValues = {
   capacity: 1,
   enrolledCount: 0,
   mode: "ONLINE",
+  durationValue: 1,
+  durationType: "MONTHS",
   isFeatured: false,
   originalPrice: 0,
   discountPercent: 0,
@@ -159,6 +178,7 @@ function IconField({
 export function BatchForm({
   isEdit = false,
   defaultValues,
+  initialCourse = null,
   isSubmitting,
   submitLabel,
   loadingLabel,
@@ -167,6 +187,8 @@ export function BatchForm({
 }: BatchFormProps) {
   const suggestRequestIdRef = useRef(0);
   const [isSuggestingCode, setIsSuggestingCode] = useState(false);
+  const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
 
   const mergedDefaults = useMemo(
     () => ({
@@ -175,6 +197,52 @@ export function BatchForm({
     }),
     [defaultValues],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadCourses = async () => {
+      setCoursesLoading(true);
+      try {
+        const items = await batchService.getCourses();
+        if (!cancelled) {
+          setCourses(items);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          appToast.error(getErrorMessage(error));
+        }
+      } finally {
+        if (!cancelled) {
+          setCoursesLoading(false);
+        }
+      }
+    };
+
+    void loadCourses();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const courseSelectOptions = useMemo(() => {
+    const merged = [...courses];
+
+    if (
+      initialCourse?.id &&
+      !merged.some((course) => course.id === initialCourse.id)
+    ) {
+      merged.unshift(initialCourse);
+    }
+
+    return uniqueSelectOptions(
+      merged.map((course) => ({
+        label: formatCourseOptionLabel(course),
+        value: course.id,
+      })),
+    );
+  }, [courses, initialCourse]);
 
   const {
     register,
@@ -455,6 +523,32 @@ export function BatchForm({
         </IconField>
 
         <IconField
+          label="Course"
+          required
+          icon={GraduationCap}
+          state={getFieldState("courseId")}
+          errorMessage={errors.courseId?.message}
+        >
+          <FieldIcon icon={GraduationCap} />
+          <AppSelect
+            value={values.courseId || undefined}
+            onValueChange={(value) =>
+              setValue("courseId", value, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true,
+              })
+            }
+            placeholder={
+              coursesLoading ? "Loading courses..." : "Select a course"
+            }
+            disabled={coursesLoading}
+            options={courseSelectOptions}
+            triggerClassName={selectTriggerClass(getFieldState("courseId"))}
+          />
+        </IconField>
+
+        <IconField
           label="Batch Type"
           required
           icon={BookOpen}
@@ -476,7 +570,7 @@ export function BatchForm({
         </IconField>
 
         <div className="md:col-span-2">
-          <p className="text-sm font-medium text-[#102A56]">Duration</p>
+          <p className="text-sm font-medium text-[#102A56]">Dates</p>
         </div>
 
         <ValidatedField
@@ -505,27 +599,69 @@ export function BatchForm({
           />
         </ValidatedField>
 
-        <div className="md:col-span-2">
-          <IconField
-            label="Total Working Days"
-            icon={CalendarDays}
-            state={
-              datesAreValid && totalWorkingDays !== null ? "valid" : "neutral"
-            }
-          >
-            <FieldIcon icon={CalendarDays} />
+        <ValidatedField
+          label="Duration"
+          required
+          state={getFieldState("durationValue")}
+          errorMessage={
+            errors.durationValue?.message ?? errors.durationType?.message
+          }
+        >
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-2">
             <Input
-              readOnly
-              tabIndex={-1}
-              value={totalWorkingDaysLabel}
-              placeholder="Auto-calculated"
-              className={iconInputClass(
-                datesAreValid && totalWorkingDays !== null ? "valid" : "neutral",
-                "cursor-not-allowed bg-slate-50",
+              type="number"
+              min={1}
+              step={1}
+              inputMode="numeric"
+              placeholder="2"
+              autoComplete="off"
+              {...register("durationValue", {
+                valueAsNumber: true,
+                onChange: () => {
+                  void trigger("durationValue");
+                },
+                onBlur: () => {
+                  void trigger("durationValue");
+                },
+              })}
+              className={plainInputClass(getFieldState("durationValue"))}
+            />
+            <AppSelect
+              value={values.durationType}
+              onValueChange={(value) => {
+                setValue("durationType", value as BatchDurationType, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+                void trigger("durationValue");
+              }}
+              options={uniqueSelectOptions(BATCH_DURATION_TYPES)}
+              triggerClassName={selectTriggerClass(
+                getFieldState("durationType"),
               )}
             />
-          </IconField>
-        </div>
+          </div>
+        </ValidatedField>
+
+        <IconField
+          label="Total Working Days"
+          icon={CalendarDays}
+          state={
+            datesAreValid && totalWorkingDays !== null ? "valid" : "neutral"
+          }
+        >
+          <FieldIcon icon={CalendarDays} />
+          <Input
+            readOnly
+            tabIndex={-1}
+            value={totalWorkingDaysLabel}
+            placeholder="Auto-calculated"
+            className={iconInputClass(
+              datesAreValid && totalWorkingDays !== null ? "valid" : "neutral",
+              "cursor-not-allowed bg-slate-50",
+            )}
+          />
+        </IconField>
 
         <div className="md:col-span-2">
           <p className="text-sm font-medium text-[#102A56]">Schedule</p>

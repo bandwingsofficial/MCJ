@@ -9,8 +9,10 @@ import { SearchInput } from "@/src/shared/components/ui/search-input";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
+import { FILTER_BATCH_MODES } from "@/src/features/batches/constants/batch.constants";
 import type {
   BatchFilters,
+  BatchMode,
   CourseOption,
 } from "@/src/features/batches/types/batch.types";
 import {
@@ -57,6 +59,15 @@ export function BatchSummaryHeader({
         })),
       ]),
     [courses],
+  );
+
+  const modeOptions = useMemo(
+    () =>
+      uniqueSelectOptions([
+        { label: "All Learning Modes", value: BATCH_SELECT_ALL },
+        ...FILTER_BATCH_MODES,
+      ]),
+    [],
   );
 
   const statusOptions = useMemo(
@@ -133,26 +144,16 @@ export function BatchSummaryHeader({
           )}
         </div>
 
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto lg:shrink-0 lg:justify-end">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:max-w-none lg:shrink-0 lg:justify-end">
           {isLoading ? (
             <>
-              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[340px]" />
-              <Skeleton className="h-[52px] w-full rounded-[14px] sm:w-[190px]" />
+              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[190px]" />
+              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[180px]" />
               <Skeleton className="h-[46px] w-full rounded-xl sm:w-[160px]" />
+              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[240px]" />
             </>
           ) : (
             <>
-              <div className="w-full sm:w-[340px]">
-                <SearchInput
-                  value={searchValue}
-                  placeholder="Search batches..."
-                  className="h-[46px] rounded-xl !py-2 pl-9 text-[15px]"
-                  onChange={(value) =>
-                    onFiltersChange({ ...filters, search: value })
-                  }
-                />
-              </div>
-
               <div className="w-full sm:w-[190px]">
                 <AppSelect
                   value={filters.courseId ?? BATCH_SELECT_ALL}
@@ -165,6 +166,23 @@ export function BatchSummaryHeader({
                     })
                   }
                   options={courseOptions}
+                />
+              </div>
+
+              <div className="w-full sm:w-[200px]">
+                <AppSelect
+                  value={filters.mode ?? BATCH_SELECT_ALL}
+                  triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
+                  onValueChange={(value) =>
+                    onFiltersChange({
+                      ...filters,
+                      mode:
+                        value === BATCH_SELECT_ALL
+                          ? undefined
+                          : (value as BatchMode),
+                    })
+                  }
+                  options={modeOptions}
                 />
               </div>
 
@@ -183,6 +201,17 @@ export function BatchSummaryHeader({
                     )
                   }
                   options={statusOptions}
+                />
+              </div>
+
+              <div className="w-full sm:min-w-[220px] sm:flex-1 lg:w-[240px] lg:flex-none">
+                <SearchInput
+                  value={searchValue}
+                  placeholder="Search batches..."
+                  className="h-[46px] rounded-xl !py-2 pl-9 text-[15px]"
+                  onChange={(value) =>
+                    onFiltersChange({ ...filters, search: value })
+                  }
                 />
               </div>
             </>

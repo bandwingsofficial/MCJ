@@ -2,6 +2,13 @@
 
 export type BatchMode = "ONLINE" | "OFFLINE" | "RECORDED";
 
+export type BatchDurationType =
+  | "HOURS"
+  | "DAYS"
+  | "WEEKS"
+  | "MONTHS"
+  | "YEARS";
+
 export type BatchStatus =
   | "UPCOMING"
   | "ONGOING"
@@ -84,6 +91,8 @@ export interface Batch {
   capacity: number;
   enrolledCount: number;
   mode: BatchMode;
+  durationValue?: number | null;
+  durationType?: BatchDurationType | null;
   classroom: string | null;
   meetingLink: string | null;
   isFeatured: boolean;
@@ -151,7 +160,7 @@ export interface CreateBatchRequest {
   name: string;
   code?: string;
   description?: string;
-  courseId?: string;
+  courseId: string;
   branchId?: string | null;
   startDate: string;
   endDate: string;
@@ -170,6 +179,8 @@ export interface CreateBatchRequest {
   discountedPrice?: number;
   currency?: string;
   isFree?: boolean;
+  durationValue: number;
+  durationType: BatchDurationType;
 }
 
 export interface UpdateBatchRequest extends Partial<CreateBatchRequest> {

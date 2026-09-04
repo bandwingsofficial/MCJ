@@ -1,5 +1,6 @@
 import { Slug } from '@common/value-objects/slug.vo';
 import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
+import { DurationType } from '@modules/course/domain/enums/duration-type.enum';
 import { Price } from '@modules/course/domain/value-objects/price.vo';
 import { BatchStatus } from '../enums/batch-status.enum';
 import { DayOfWeek } from '../enums/day-of-week.enum';
@@ -23,6 +24,8 @@ export class Batch {
     public course: {
       id: string;
       title: string;
+      code?: string | null;
+      category?: { id: string; name: string } | null;
     } | null,
 
     public branch: {
@@ -46,6 +49,8 @@ export class Batch {
     public capacity: Capacity,
     public enrolledCount: number,
     public mode: CourseMode,
+    public durationValue: number | null,
+    public durationType: DurationType | null,
     public originalPrice: Price,
     public discountAmount: Price,
     public discountedPrice: Price,
@@ -100,6 +105,8 @@ export class Batch {
       Capacity.create(params.capacity),
       params.enrolledCount ?? 0,
       params.mode ?? CourseMode.OFFLINE,
+      params.durationValue ?? null,
+      params.durationType ?? null,
       Price.create(pricing.originalPrice),
       Price.create(pricing.discountAmount),
       Price.create(pricing.discountedPrice),
@@ -145,6 +152,8 @@ export class Batch {
       Capacity.create(params.capacity),
       params.enrolledCount,
       params.mode,
+      params.durationValue,
+      params.durationType,
       Price.create(params.originalPrice),
       Price.create(params.discountAmount),
       Price.create(params.discountedPrice),
@@ -214,6 +223,12 @@ export class Batch {
     if (params.enrolledCount !== undefined)
       this.enrolledCount = params.enrolledCount;
     if (params.mode !== undefined) this.mode = params.mode;
+    if (params.durationValue !== undefined) {
+      this.durationValue = params.durationValue;
+    }
+    if (params.durationType !== undefined) {
+      this.durationType = params.durationType;
+    }
 
     const pricingFieldsTouched =
       params.originalPrice !== undefined ||
@@ -317,6 +332,8 @@ export interface BatchCreateParams {
   course?: {
     id: string;
     title: string;
+    code?: string | null;
+    category?: { id: string; name: string } | null;
   } | null;
 
   branch?: {
@@ -340,6 +357,8 @@ export interface BatchCreateParams {
   capacity: number;
   enrolledCount?: number;
   mode?: CourseMode;
+  durationValue?: number | null;
+  durationType?: DurationType | null;
   originalPrice?: number;
   discountAmount?: number;
   discountedPrice?: number;
@@ -378,6 +397,8 @@ export interface BatchReconstituteParams
   course: {
     id: string;
     title: string;
+    code?: string | null;
+    category?: { id: string; name: string } | null;
   } | null;
 
   branch: {

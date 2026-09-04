@@ -53,6 +53,22 @@ export function UpdateBatchModal({
           key={batch.id}
           isEdit
           defaultValues={batchMapper.toForm(batch)}
+          initialCourse={
+            batch.course
+              ? {
+                  id: batch.course.id,
+                  title: batch.course.title,
+                  code: batch.course.code,
+                  category: batch.course.category,
+                }
+              : batch.courseId
+                ? {
+                    id: batch.courseId,
+                    title: "Current course",
+                    code: null,
+                  }
+                : null
+          }
           isSubmitting={isLoading}
           submitLabel="Update Batch"
           loadingLabel="Updating Batch..."

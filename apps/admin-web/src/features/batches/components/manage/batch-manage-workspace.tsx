@@ -35,24 +35,12 @@ interface Props {
 export type TabKey = "overview" | "courses";
 
 export function BatchManageWorkspace({
-  batchId,
   batch,
   assignments,
   assignmentsLoading = false,
-  onAssignmentsChange,
-  onSummaryRefresh,
-  onBatchUpdated,
-  onAssignmentsRefresh,
   onTabChange,
 }: Props) {
   const [tab, setTab] = useState<TabKey>("overview");
-  const isArchived = Boolean(batch.deletedAt || batch.isDeleted);
-
-  const handleUpdated = async () => {
-    await onBatchUpdated();
-    await onSummaryRefresh();
-    await onAssignmentsRefresh();
-  };
 
   return (
     <Tabs
@@ -67,7 +55,7 @@ export function BatchManageWorkspace({
         {(
           [
             ["overview", "Overview"],
-            ["courses", "Courses"],
+            ["courses", "Course"],
           ] as const
         ).map(([value, label]) => (
           <TabsTrigger
@@ -89,14 +77,7 @@ export function BatchManageWorkspace({
       </TabsContent>
 
       <TabsContent value="courses">
-        <BatchManageCoursesPanel
-          batchId={batchId}
-          disabled={isArchived}
-          assignments={assignments}
-          assignmentsLoading={assignmentsLoading}
-          onAssignmentsChange={onAssignmentsChange}
-          onUpdated={handleUpdated}
-        />
+        <BatchManageCoursesPanel batch={batch} />
       </TabsContent>
     </Tabs>
   );

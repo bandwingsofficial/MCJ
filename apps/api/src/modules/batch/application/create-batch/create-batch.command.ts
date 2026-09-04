@@ -6,7 +6,7 @@ export class CreateBatchCommand {
   constructor(
     public readonly name: string,
     public readonly categoryId: string | null | undefined,
-    public readonly courseId: string | undefined,
+    public readonly courseId: string,
     public readonly startDate: Date,
     public readonly daysOfWeek: DayOfWeek[],
     public readonly capacity: number,
@@ -31,5 +31,7 @@ export class CreateBatchCommand {
     public readonly discountedPrice?: number,
     public readonly currency?: string,
     public readonly isFree?: boolean,
+    public readonly durationValue?: number,
+    public readonly durationType?: string,
   ) {}
 }

@@ -5,6 +5,7 @@ import {
 } from '@prisma/client';
 
 import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
+import { DurationType } from '@modules/course/domain/enums/duration-type.enum';
 import { BatchTrainer } from '../../domain/entities/batch-trainer.entity';
 import { Batch } from '../../domain/entities/batch.entity';
 import { BatchStatus } from '../../domain/enums/batch-status.enum';
@@ -16,7 +17,12 @@ export type BatchWithRelations = PrismaBatch & {
   course: {
     id: string;
     title: string;
+    code: string;
     slug: string;
+    category?: {
+      id: string;
+      name: string;
+    } | null;
   } | null;
 
   branch: {
@@ -44,7 +50,12 @@ export type BatchWithRelations = PrismaBatch & {
     course: {
       id: string;
       title: string;
+      code: string;
       slug: string;
+      category?: {
+        id: string;
+        name: string;
+      } | null;
     };
   }[];
 };
@@ -59,13 +70,21 @@ export class BatchMapper {
     description: record.description,
 
     course: (() => {
+      // Prefer Batch.courseId FK as the primary course relation.
       const assignedCourse =
-        record.batchCourses?.[0]?.course ?? record.course;
+        record.course ?? record.batchCourses?.[0]?.course;
 
       return assignedCourse
         ? {
             id: assignedCourse.id,
             title: assignedCourse.title,
+            code: assignedCourse.code,
+            category: assignedCourse.category
+              ? {
+                  id: assignedCourse.category.id,
+                  name: assignedCourse.category.name,
+                }
+              : null,
           }
         : null;
     })(),
@@ -97,6 +116,8 @@ export class BatchMapper {
     capacity: record.capacity,
     enrolledCount: record.enrolledCount,
     mode: record.mode as CourseMode,
+    durationValue: record.durationValue,
+    durationType: record.durationType as DurationType | null,
     originalPrice: Number(record.originalPrice),
     discountAmount: Number(record.discountAmount),
     discountedPrice: Number(record.discountedPrice),
@@ -164,6 +185,8 @@ export class BatchMapper {
       capacity: batch.capacity.getValue(),
       enrolledCount: batch.enrolledCount,
       mode: batch.mode,
+      durationValue: batch.durationValue,
+      durationType: batch.durationType,
       originalPrice: batch.originalPrice.getValue(),
       discountAmount: batch.discountAmount.getValue(),
       discountedPrice: batch.discountedPrice.getValue(),

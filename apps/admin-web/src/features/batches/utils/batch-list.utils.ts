@@ -188,6 +188,8 @@ export function getBatchEmptyMessage(filters: BatchFilters): string {
 
       filters.courseId ||
 
+      filters.mode ||
+
       filters.status !== undefined,
 
   );

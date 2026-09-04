@@ -30,5 +30,7 @@ export class UpdateBatchCommand {
     public readonly discountedPrice?: number,
     public readonly currency?: string,
     public readonly isFree?: boolean,
+    public readonly durationValue?: number | null,
+    public readonly durationType?: string | null,
   ) {}
 }

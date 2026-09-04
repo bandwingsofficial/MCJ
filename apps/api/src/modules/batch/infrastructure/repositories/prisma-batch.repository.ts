@@ -306,7 +306,14 @@ export class PrismaBatchRepository implements BatchRepository {
         select: {
           id: true,
           title: true,
+          code: true,
           slug: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       },
 
@@ -322,7 +329,14 @@ export class PrismaBatchRepository implements BatchRepository {
             select: {
               id: true,
               title: true,
+              code: true,
               slug: true,
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
             },
           },
         },

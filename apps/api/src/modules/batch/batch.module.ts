@@ -75,6 +75,13 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
     },
 
     {
+      provide: PrismaBatchCourseRepository,
+      useFactory: (prisma: PrismaService) =>
+        new PrismaBatchCourseRepository(prisma),
+      inject: [PrismaService],
+    },
+
+    {
       provide: CreateBatchHandler,
       useFactory: (
         batchRepo: BatchRepository,
@@ -82,6 +89,7 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
         categoryRepo: CategoryRepository,
         trainerRepo: TrainerRepository,
         branchRepo: BranchRepository,
+        batchCourseRepo: PrismaBatchCourseRepository,
         domainService: BatchDomainService,
       ) =>
         new CreateBatchHandler(
@@ -90,6 +98,7 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
           categoryRepo,
           trainerRepo,
           branchRepo,
+          batchCourseRepo,
           domainService,
         ),
       inject: [
@@ -98,6 +107,7 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
         CATEGORY_TOKENS.CATEGORY_REPOSITORY,
         TRAINER_TOKENS.TRAINER_REPOSITORY,
         BRANCH_TOKENS.BRANCH_REPOSITORY,
+        PrismaBatchCourseRepository,
         BatchDomainService,
       ],
     },
@@ -109,6 +119,7 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
         courseRepo: CourseRepository,
         categoryRepo: CategoryRepository,
         branchRepo: BranchRepository,
+        batchCourseRepo: PrismaBatchCourseRepository,
         domainService: BatchDomainService,
       ) =>
         new UpdateBatchHandler(
@@ -116,6 +127,7 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
           courseRepo,
           categoryRepo,
           branchRepo,
+          batchCourseRepo,
           domainService,
         ),
       inject: [
@@ -123,6 +135,7 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
         COURSE_TOKENS.COURSE_REPOSITORY,
         CATEGORY_TOKENS.CATEGORY_REPOSITORY,
         BRANCH_TOKENS.BRANCH_REPOSITORY,
+        PrismaBatchCourseRepository,
         BatchDomainService,
       ],
     },
@@ -225,13 +238,6 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
         BATCH_TOKENS.BATCH_REPOSITORY,
         BatchDomainService,
       ],
-    },
-
-    {
-      provide: PrismaBatchCourseRepository,
-      useFactory: (prisma: PrismaService) =>
-        new PrismaBatchCourseRepository(prisma),
-      inject: [PrismaService],
     },
 
     {

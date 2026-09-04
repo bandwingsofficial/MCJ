@@ -98,3 +98,4 @@ export function formatTotalWorkingDaysLabel(count: number | null): string {
 
   return `${count} Working Day${count === 1 ? "" : "s"}`;
 }
+

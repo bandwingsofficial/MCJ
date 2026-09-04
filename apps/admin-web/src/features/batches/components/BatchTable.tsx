@@ -21,6 +21,7 @@ import {
 } from "@/src/features/batches/utils/batch.helper";
 
 import { BatchStatusBadge } from "./BatchStatusBadge";
+import { BatchModeBadge } from "./BatchModeBadge";
 import { BatchActions } from "./batch-actions";
 import { cn } from "@/src/shared/lib/cn";
 
@@ -188,11 +189,11 @@ export function BatchTable({
         <colgroup>
           {selectionEnabled ? <col className="w-11" /> : null}
           <col className="w-10" />
-          <col className="w-[11%]" />
+          <col className="w-[16%]" />
+          <col className="w-[16%]" />
           <col className="w-[14%]" />
-          <col className="w-[14%]" />
-          <col className="w-[26%]" />
-          <col className="w-[9%]" />
+          <col className="w-[24%]" />
+          <col className="w-[10%]" />
           <col className="w-[9rem]" />
         </colgroup>
         <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
@@ -219,13 +220,13 @@ export function BatchTable({
               <span className="sr-only">Reorder</span>
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Batch Code
-            </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Batch Name
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Course
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Batch Type
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Schedule
@@ -331,15 +332,6 @@ export function BatchTable({
                       isLifecycleBlocked ? "text-slate-500" : "text-[#102A56]",
                     )}
                   >
-                    {batch.code}
-                  </td>
-
-                  <td
-                    className={cn(
-                      "truncate px-3 py-3 align-middle font-medium",
-                      isLifecycleBlocked ? "text-slate-500" : "text-[#102A56]",
-                    )}
-                  >
                     {batch.name}
                   </td>
 
@@ -350,6 +342,10 @@ export function BatchTable({
                     )}
                   >
                     {batch.course?.title?.trim() || "Not yet assigned"}
+                  </td>
+
+                  <td className="px-3 py-3 align-middle">
+                    <BatchModeBadge mode={batch.mode} />
                   </td>
 
                   <td className="px-3 py-3 align-middle">

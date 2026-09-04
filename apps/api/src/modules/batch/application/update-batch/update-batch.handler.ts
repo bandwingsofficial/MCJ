@@ -1,11 +1,13 @@
 import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
+import { DurationType } from '@modules/course/domain/enums/duration-type.enum';
 
 import { Slug } from '@common/value-objects/slug.vo';
 import { InvalidBatchPricingException } from '../../domain/errors/invalid-batch-pricing.exception';
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
 import { normalizeBatchPricingInput } from '../../domain/value-objects/batch-pricing.vo';
+import { PrismaBatchCourseRepository } from '../../infrastructure/repositories/prisma-batch-course.repository';
 import { GetBatchResult } from '../get-batch/get-batch.result';
 
 import type { BranchRepository } from '@modules/branch/domain/repositories/branch.repository';
@@ -20,6 +22,7 @@ export class UpdateBatchHandler {
     private readonly courseRepo: CourseRepository,
     private readonly categoryRepo: CategoryRepository,
     private readonly branchRepo: BranchRepository,
+    private readonly batchCourseRepo: PrismaBatchCourseRepository,
     private readonly domainService: BatchDomainService,
   ) {}
 
@@ -38,9 +41,10 @@ export class UpdateBatchHandler {
     }
 
     if (command.courseId) {
-      await this.domainService.ensureCourseExists(
+      await this.domainService.ensureActiveCourse(
         this.courseRepo,
         command.courseId,
+        { currentCourseId: batch.courseId },
       );
     }
 
@@ -186,6 +190,11 @@ export class UpdateBatchHandler {
         normalizedPricing?.discountedPrice ?? command.discountedPrice,
       currency: normalizedPricing?.currency ?? command.currency,
       isFree: normalizedPricing?.isFree ?? command.isFree,
+      durationValue: command.durationValue,
+      durationType:
+        command.durationType === undefined
+          ? undefined
+          : ((command.durationType as DurationType | null) ?? null),
       classroom: command.classroom,
       meetingLink: command.meetingLink,
       isFeatured: command.isFeatured,
@@ -194,6 +203,13 @@ export class UpdateBatchHandler {
     });
 
     await this.batchRepo.save(batch);
+
+    if (batch.courseId) {
+      await this.batchCourseRepo.syncPrimaryCourse({
+        batchId: batch.id,
+        courseId: batch.courseId,
+      });
+    }
 
     const updatedBatch =
       await this.domainService.ensureExists(
