@@ -27,7 +27,10 @@ import { courseService } from "@/src/features/courses/services/course.service";
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type { Batch } from "@/src/features/batches/types/batch.types";
-import { toAssignmentCourseDisplayTitles } from "@/src/features/batches/utils/batch-course.utils";
+import {
+  loadBranchBatchRelationMeta,
+  type BranchBatchRelationMeta,
+} from "@/src/features/branches/utils/branch-batch-relation.utils";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
@@ -66,31 +69,6 @@ function OverviewField({
   );
 }
 
-async function loadCourseTitlesByBatch(
-  batches: Batch[],
-): Promise<Record<string, string[]>> {
-  const entries = await Promise.all(
-    batches.map(async (batch) => {
-      try {
-        const assignments = await batchService.getBatchCourses(batch.id);
-        const titles = toAssignmentCourseDisplayTitles(
-          assignments,
-          batch.course?.title,
-        );
-
-        return [batch.id, titles] as const;
-      } catch {
-        return [
-          batch.id,
-          batch.course?.title ? [batch.course.title] : [],
-        ] as const;
-      }
-    }),
-  );
-
-  return Object.fromEntries(entries);
-}
-
 async function loadCourseTrainers(
   courses: CourseListItem[],
 ): Promise<OverviewCourse[]> {
@@ -126,8 +104,8 @@ export function BranchManageOverviewPanel({
   const [categories, setCategories] = useState<CategoryListItem[]>([]);
   const [courses, setCourses] = useState<OverviewCourse[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [courseTitlesByBatchId, setCourseTitlesByBatchId] = useState<
-    Record<string, string[]>
+  const [batchRelationMeta, setBatchRelationMeta] = useState<
+    Record<string, BranchBatchRelationMeta>
   >({});
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [courseCountByCategory, setCourseCountByCategory] = useState<
@@ -188,7 +166,7 @@ export function BranchManageOverviewPanel({
       setCourses(await loadCourseTrainers(courseItems));
       setBatches(batchItems);
       setEnrollments(enrollmentItems);
-      setCourseTitlesByBatchId(await loadCourseTitlesByBatch(batchItems));
+      setBatchRelationMeta(await loadBranchBatchRelationMeta(batchItems));
 
       const categoryCounts: Record<string, number> = {};
       for (const course of allCoursesResponse.data.items ?? []) {
@@ -204,7 +182,7 @@ export function BranchManageOverviewPanel({
       setCourses([]);
       setBatches([]);
       setEnrollments([]);
-      setCourseTitlesByBatchId({});
+      setBatchRelationMeta({});
       setCourseCountByCategory({});
     } finally {
       setPreviewLoading(false);
@@ -274,14 +252,22 @@ export function BranchManageOverviewPanel({
           columnsClassName="grid grid-cols-1 gap-4 xl:grid-cols-2"
           skeletonCount={2}
         >
-          {batches.map((batch) => (
-            <BranchBatchCard
-              key={batch.id}
-              batch={batch}
-              courseTitles={courseTitlesByBatchId[batch.id]}
-              compact
-            />
-          ))}
+          {batches.map((batch) => {
+            const meta = batchRelationMeta[batch.id];
+
+            return (
+              <BranchBatchCard
+                key={batch.id}
+                batch={batch}
+                courseTitles={
+                  meta?.courseTitle ? [meta.courseTitle] : undefined
+                }
+                categoryLabel={meta?.categoryLabel}
+                trainerLabel={meta?.trainerLabel}
+                compact
+              />
+            );
+          })}
         </BranchManageCardGrid>
       </Card>
 

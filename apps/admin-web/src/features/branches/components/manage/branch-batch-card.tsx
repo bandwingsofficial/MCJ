@@ -4,17 +4,19 @@ import { Eye, Link2Off } from "lucide-react";
 
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
 import { COURSE_TRAINER_UNASSIGNED_LABEL } from "@/src/features/batches/utils/batch-course.utils";
-import { formatTrainerNames } from "@/src/features/branches/utils/branch-display.utils";
+import {
+  formatBatchConfiguredDuration,
+  formatBatchDurationTypeLabel,
+} from "@/src/features/branches/utils/branch-batch-relation.utils";
+import { formatCoursePrice } from "@/src/features/branches/utils/branch-display.utils";
 import { BatchModeBadge } from "@/src/features/batches/components/BatchModeBadge";
 import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
 import type { Batch } from "@/src/features/batches/types/batch.types";
 import {
   calculateBatchProgress,
   formatBatchDaysLabel,
-  formatBatchDurationLabel,
-  formatBatchLifecycleStatus,
+  formatBatchOverviewDate,
   formatBatchOverviewTiming,
-  formatProgressDayLabel,
 } from "@/src/features/batches/utils/batch-progress.utils";
 
 interface Props {
@@ -55,17 +57,23 @@ export function BranchBatchCard({
   const enrolledCount = batch.enrolledCount ?? 0;
   const capacity = batch.capacity ?? 0;
   const availableSeats = Math.max(0, capacity - enrolledCount);
+
   const courses =
     courseTitles?.filter(Boolean) ??
     (batch.course?.title ? [batch.course.title] : []);
   const courseLabel =
-    courses.length > 0 ? courses.join(", ") : "No course assigned";
+    courses.length > 0
+      ? courses.join(", ")
+      : batch.course?.title?.trim() || "No course assigned";
+
   const resolvedCategory =
-    categoryLabel?.trim() || batch.category?.name?.trim() || "";
+    categoryLabel?.trim() ||
+    batch.course?.category?.name?.trim() ||
+    batch.category?.name?.trim() ||
+    "—";
+
   const resolvedTrainer =
-    trainerLabel?.trim() ||
-    (batch.trainers?.length ? formatTrainerNames(batch.trainers) : "") ||
-    COURSE_TRAINER_UNASSIGNED_LABEL;
+    trainerLabel?.trim() || COURSE_TRAINER_UNASSIGNED_LABEL;
 
   return (
     <article
@@ -103,7 +111,8 @@ export function BranchBatchCard({
       </div>
 
       <p className="mt-3 text-sm text-slate-700">
-        {progress.calendarDurationLabel}
+        {formatBatchOverviewDate(batch.startDate)} –{" "}
+        {formatBatchOverviewDate(batch.endDate)}
       </p>
       <p className="mt-1 text-sm text-slate-600">
         {formatBatchDaysLabel(batch.daysOfWeek)}
@@ -116,13 +125,9 @@ export function BranchBatchCard({
         <BatchStatusBadge
           status={batch.status}
           isActive={batch.isActive}
-          startDate={batch.startDate}
-          endDate={batch.endDate}
+          isDeleted={Boolean(batch.isDeleted || batch.deletedAt)}
         />
         <BatchModeBadge mode={batch.mode} />
-        <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-          {formatBatchLifecycleStatus(progress)}
-        </span>
       </div>
 
       <div
@@ -133,12 +138,28 @@ export function BranchBatchCard({
         }
       >
         <BatchDetailRow label="Course" value={courseLabel} />
-        {!compact && resolvedCategory ? (
-          <BatchDetailRow label="Category" value={resolvedCategory} />
-        ) : null}
-        {!compact ? (
-          <BatchDetailRow label="Trainer" value={resolvedTrainer} />
-        ) : null}
+        <BatchDetailRow label="Category" value={resolvedCategory} />
+        <BatchDetailRow label="Trainer" value={resolvedTrainer} />
+        <BatchDetailRow
+          label="Duration"
+          value={formatBatchConfiguredDuration(batch)}
+        />
+        <BatchDetailRow
+          label="Duration Type"
+          value={formatBatchDurationTypeLabel(batch.durationType)}
+        />
+        <BatchDetailRow
+          label="Total Working Days"
+          value={
+            progress.totalWorkingDays !== null
+              ? `${progress.totalWorkingDays}`
+              : "—"
+          }
+        />
+        <BatchDetailRow
+          label="Pricing"
+          value={formatCoursePrice(batch)}
+        />
         <BatchDetailRow
           label="Students"
           value={`${enrolledCount} / ${capacity}`}
@@ -147,22 +168,6 @@ export function BranchBatchCard({
           label="Available Seats"
           value={String(availableSeats)}
         />
-        {!compact ? (
-          <>
-            <BatchDetailRow
-              label="Total Duration"
-              value={formatBatchDurationLabel(batch)}
-            />
-            <BatchDetailRow
-              label="Days Remaining"
-              value={
-                progress.isExpired
-                  ? "Expired"
-                  : formatProgressDayLabel(progress.daysRemaining, "day")
-              }
-            />
-          </>
-        ) : null}
       </div>
     </article>
   );
