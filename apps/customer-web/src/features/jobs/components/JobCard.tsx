@@ -43,11 +43,11 @@ export function JobCard({ job }: JobCardProps) {
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             {job.jobNumber ? (
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#2563EB]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#2563D9]">
                 {job.jobNumber}
               </p>
             ) : null}
-            <h3 className="line-clamp-2 text-xl font-bold tracking-tight text-slate-900 transition-colors duration-200 group-hover:text-blue-600">
+            <h3 className="line-clamp-2 text-xl font-bold tracking-tight text-slate-900 transition-colors duration-200 group-hover:text-[#2563D9]">
               {job.title}
             </h3>
             <p className="text-sm font-medium text-slate-500">
@@ -108,7 +108,7 @@ export function JobCard({ job }: JobCardProps) {
           View Job
         </Button>
         <Button
-          className="rounded-xl bg-blue-600 font-medium text-white hover:bg-blue-700"
+          className="rounded-xl bg-gradient-to-r from-[#2563D9] to-[#1746A2] font-medium text-white hover:from-[#1E58C7] hover:to-[#123D94]"
           disabled={!accepting}
           onClick={() => router.push(`/jobs/${job.slug}/apply`)}
         >

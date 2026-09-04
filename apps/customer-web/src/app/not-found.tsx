@@ -48,7 +48,7 @@ export default function NotFound() {
 
             <Link
               href="/"
-              className="px-6 py-3 bg-[#0f2044] text-white rounded-md text-sm font-medium hover:bg-[#1a3460] transition"
+              className="px-6 py-3 bg-gradient-to-r from-[#2563D9] to-[#1746A2] text-white rounded-md text-sm font-medium hover:from-[#1E58C7] hover:to-[#123D94] transition"
             >
               Go to Home
             </Link>

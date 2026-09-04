@@ -116,17 +116,6 @@ export class CourseModuleTreeResult {
   ) {}
 }
 
-export class CoursePricingResult {
-  constructor(
-    public readonly originalPrice: number,
-    public readonly discountAmount: number,
-    public readonly discountPercent: number,
-    public readonly discountedPrice: number,
-    public readonly currency: string,
-    public readonly isFree: boolean,
-  ) {}
-}
-
 export class GetCourseResult {
   constructor(
     public readonly id: string,
@@ -138,7 +127,6 @@ export class GetCourseResult {
     public readonly description: string | null,
     public readonly thumbnailFileId: string | null,
     public readonly thumbnailUrl: string | null,
-    public readonly pricing: CoursePricingResult,
     public readonly duration: number | null,
     public readonly durationType: DurationType | null,
     public readonly level: CourseLevel,
@@ -226,8 +214,6 @@ export class GetCourseResult {
           )
         : null);
 
-    const pricing = course.getPricing();
-
     return new GetCourseResult(
       course.id,
       course.code,
@@ -238,14 +224,6 @@ export class GetCourseResult {
       course.description,
       course.thumbnailFileId,
       course.thumbnailUrl,
-      new CoursePricingResult(
-        pricing.originalPrice,
-        pricing.discountAmount,
-        pricing.discountPercent,
-        pricing.discountedPrice,
-        pricing.currency,
-        pricing.isFree,
-      ),
       course.duration.getValue(),
       course.durationType,
       course.level,

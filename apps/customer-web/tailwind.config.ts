@@ -3,9 +3,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#0F172A",   // dark blue
-        secondary: "#2563EB", // blue
-        accent: "#F59E0B",    // orange
+        primary: "#0F2044",   // navy headings / structure
+        secondary: "#2563D9", // brand blue
+        accent: "#F5A623",    // gold / orange accent
         muted: "#6B7280",
       },
       container: {

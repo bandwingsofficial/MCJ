@@ -21,7 +21,7 @@ export interface ButtonProps
 
 const variantClasses = {
   primary:
-    "bg-[#2447A8] text-white hover:bg-[#1E3A8A]",
+    "bg-gradient-to-r from-[#2563D9] to-[#1746A2] text-white shadow-sm hover:from-[#1E58C7] hover:to-[#123D94] hover:shadow-md",
 
   secondary:
     "bg-[#F29A2E] text-white hover:bg-[#E28718]",
@@ -58,8 +58,8 @@ export function Button({
       aria-busy={loading}
       disabled={loading || disabled}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-colors",
-        "focus:outline-none focus:ring-2 focus:ring-[#2447A8]",
+        "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all",
+        "focus:outline-none focus:ring-2 focus:ring-[#2563D9]/40",
         "disabled:pointer-events-none disabled:opacity-50",
         variantClasses[variant],
         sizeClasses[size],

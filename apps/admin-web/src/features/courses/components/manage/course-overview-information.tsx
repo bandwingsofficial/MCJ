@@ -1,7 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
-
 import { Card } from "@/src/shared/components/ui/card";
 
 import { CourseStatusBadge } from "@/src/features/courses/components/course-status-badge";
@@ -9,13 +7,11 @@ import type { CourseDetails } from "@/src/features/courses/types/course.types";
 import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
 import { formatCourseLevel } from "@/src/features/branches/utils/branch-display.utils";
 import { formatCourseQualifications } from "@/src/features/courses/utils/course-display.utils";
-import { getCoursePricing } from "@/src/features/courses/utils/course-pricing.util";
 import {
   formatCourseRatingCountLabel,
   formatCourseRatingValue,
   hasCourseRating,
 } from "@/src/features/courses/utils/course-rating.utils";
-import { formatCurrency } from "@/src/features/enrollments/utils/format-payment";
 
 interface Props {
   course: CourseDetails;
@@ -38,17 +34,12 @@ function InfoField({
 
 export function CourseOverviewInformation({ course }: Props) {
   const categoryName = getCourseCategoryDisplayName(course);
-  const pricing = useMemo(() => getCoursePricing(course), [course]);
 
   const description =
     course.description?.trim() ||
     course.shortDescription?.trim() ||
     course.tagline?.trim() ||
     null;
-
-  const courseFeeLabel = pricing.isFree
-    ? "Free"
-    : formatCurrency(pricing.discountedPrice);
 
   const qualificationsLabel = formatCourseQualifications(
     course.minimumQualifications,
@@ -71,7 +62,6 @@ export function CourseOverviewInformation({ course }: Props) {
         <InfoField label="Minimum Qualification">
           {qualificationsLabel}
         </InfoField>
-        <InfoField label="Course Fee">{courseFeeLabel}</InfoField>
         <InfoField label="Rating">
           {hasCourseRating(course.totalReviews)
             ? `★ ${formatCourseRatingValue(course.averageRating)} · ${formatCourseRatingCountLabel(course.totalReviews)}`
@@ -84,11 +74,6 @@ export function CourseOverviewInformation({ course }: Props) {
             isDeleted={course.isDeleted}
           />
         </InfoField>
-        {!pricing.isFree ? (
-          <InfoField label="Discount">
-            {formatCurrency(pricing.discountAmount)}
-          </InfoField>
-        ) : null}
       </dl>
 
       {description ? (

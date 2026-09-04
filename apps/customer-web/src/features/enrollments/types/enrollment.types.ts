@@ -62,14 +62,6 @@ export interface CourseSummary {
   status: string;
   averageRating: number;
   totalReviews: number;
-  pricing: {
-    originalPrice: number;
-    discountAmount: number;
-    discountPercent: number;
-    discountedPrice: number;
-    currency: string;
-    isFree: boolean;
-  };
 }
 
 export interface TrainerSummary {
@@ -102,6 +94,20 @@ export interface BatchSummary {
   isFeatured: boolean;
   isActive: boolean;
   trainers: TrainerSummary[];
+  pricing?: {
+    originalPrice: number;
+    discountAmount: number;
+    discountPercent?: number;
+    discountedPrice: number;
+    currency: string;
+    isFree: boolean;
+  } | null;
+  originalPrice?: number;
+  discountAmount?: number;
+  discountPercent?: number;
+  discountedPrice?: number;
+  currency?: string;
+  isFree?: boolean;
 }
 
 export interface Enrollment {

@@ -34,10 +34,6 @@ export interface BatchCourseAssignmentRecord {
     description: string | null;
     thumbnailUrl: string | null;
     minimumQualifications: string[];
-    isFree: boolean;
-    currency: string;
-    discountedPrice: unknown;
-    originalPrice: unknown;
     category: {
       id: string;
       name: string;

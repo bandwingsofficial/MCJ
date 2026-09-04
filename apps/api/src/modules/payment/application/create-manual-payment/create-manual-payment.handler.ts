@@ -58,7 +58,7 @@ export class CreateManualPaymentHandler {
     }
 
     const currency =
-      command.currency || enrollment.course.pricing.currency || 'INR';
+      command.currency || enrollment.batch.pricing.currency || 'INR';
 
     const paymentNumber =
       await this.domainService.generateUniquePaymentNumber(

@@ -17,7 +17,7 @@ export const Input = React.forwardRef<
         "bg-white px-4 py-2 text-sm",
         "placeholder:text-slate-400",
         "focus:outline-none",
-        "focus:ring-2 focus:ring-[#2447A8]",
+        "focus:ring-2 focus:ring-[#2563D9]/40",
         "disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}

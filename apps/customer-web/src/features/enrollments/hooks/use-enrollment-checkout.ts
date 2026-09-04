@@ -63,8 +63,13 @@ export function useEnrollmentCheckout(): UseEnrollmentCheckoutReturn {
         return null;
       }
 
+      const isFree =
+        input.isFree ||
+        enrollment.finalAmount <= 0 ||
+        enrollment.dueAmount <= 0;
+
       const requiresPayment =
-        !input.isFree &&
+        !isFree &&
         enrollment.dueAmount > 0 &&
         enrollment.paymentStatus !== "PAID";
 

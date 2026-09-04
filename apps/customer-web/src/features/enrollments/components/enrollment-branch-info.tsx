@@ -23,7 +23,7 @@ export function EnrollmentBranchInfo({
 
       <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/40 p-4">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#2563D9] shadow-sm">
             <MapPin className="h-4 w-4" />
           </div>
 

@@ -2,6 +2,10 @@ import type {
   BatchCourseAssignment,
   BatchTrainer,
 } from "@/src/features/batches/types/batch.types";
+import {
+  formatBatchPrice,
+  type BatchPricingSource,
+} from "@/src/features/batches/utils/batch-pricing.util";
 
 export const NO_BATCH_COURSES_LABEL = "No courses assigned yet";
 export const COURSE_TRAINER_UNASSIGNED_LABEL = "Not yet assigned";
@@ -203,19 +207,9 @@ export function getCourseDescription(
 }
 
 export function formatAssignedCoursePrice(
-  course: BatchCourseAssignment["course"],
+  source: BatchPricingSource,
 ): string {
-  if (course.isFree) {
-    return "Free";
-  }
-
-  const amount = Number(course.discountedPrice ?? course.originalPrice ?? 0);
-
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: course.currency ?? "INR",
-    maximumFractionDigits: 2,
-  }).format(Number.isFinite(amount) ? amount : 0);
+  return formatBatchPrice(source);
 }
 
 export function formatAssignedCourseQualifications(

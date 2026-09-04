@@ -3,12 +3,12 @@
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
 import type { Batch } from "@/src/features/batches/types/batch.types";
-import type { Course } from "@/src/features/courses/types/course.types";
 import {
   formatCurrency,
-  getCoursePricing,
-  hasCourseDiscount,
-} from "@/src/features/courses/utils/course-display.utils";
+  getBatchPricing,
+  hasBatchDiscount,
+} from "@/src/features/batches/utils/batch-pricing.utils";
+import type { Course } from "@/src/features/courses/types/course.types";
 import {
   formatBatchBranchName,
   formatBatchSummaryLabel,
@@ -54,8 +54,8 @@ export function EnrollmentOrderSummary({
   isBatchLoading = false,
   hasBatchId = false,
 }: EnrollmentOrderSummaryProps) {
-  const pricing = getCoursePricing(course);
-  const showDiscount = hasCourseDiscount(course);
+  const pricing = getBatchPricing(selectedBatch);
+  const showDiscount = hasBatchDiscount(selectedBatch);
   const discountPercent =
     pricing.discountPercent > 0
       ? Math.round(pricing.discountPercent)
@@ -107,7 +107,16 @@ export function EnrollmentOrderSummary({
 
       <div className="my-5 border-t border-slate-200" />
 
-      {pricing.isFree ? (
+      {isBatchLoading ? (
+        <div className="space-y-3">
+          <SummaryValueSkeleton />
+          <SummaryValueSkeleton />
+        </div>
+      ) : !selectedBatch ? (
+        <p className="text-sm text-slate-500">
+          Select a batch to view fees.
+        </p>
+      ) : pricing.isFree ? (
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-slate-700">Total</span>
           <span className="text-2xl font-bold text-emerald-600">FREE</span>

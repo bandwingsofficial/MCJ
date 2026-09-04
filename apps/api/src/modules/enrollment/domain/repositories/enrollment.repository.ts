@@ -56,7 +56,7 @@ export interface EnrollmentCategoryView {
   slug: string;
 }
 
-export interface CoursePricingView {
+export interface BatchPricingView {
   originalPrice: number;
   discountAmount: number;
   discountPercent: number;
@@ -79,7 +79,6 @@ export interface EnrollmentCourseView {
   status: string;
   averageRating: number;
   totalReviews: number;
-  pricing: CoursePricingView;
 }
 
 export interface EnrollmentTrainerView {
@@ -111,6 +110,7 @@ export interface EnrollmentBatchView {
   status: string;
   isFeatured: boolean;
   isActive: boolean;
+  pricing: BatchPricingView;
   trainers: EnrollmentTrainerView[];
 }
 

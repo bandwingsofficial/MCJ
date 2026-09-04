@@ -25,5 +25,10 @@ export class UpdateBatchCommand {
     public readonly isFeatured?: boolean,
     public readonly status?: BatchStatus,
     public readonly updatedBy?: string,
+    public readonly originalPrice?: number,
+    public readonly discountAmount?: number,
+    public readonly discountedPrice?: number,
+    public readonly currency?: string,
+    public readonly isFree?: boolean,
   ) {}
 }

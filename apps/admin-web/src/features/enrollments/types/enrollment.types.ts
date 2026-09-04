@@ -46,14 +46,6 @@ export interface CourseInfo {
   status: string;
   averageRating: number;
   totalReviews: number;
-  pricing?: {
-    originalPrice: number;
-    discountAmount: number;
-    discountPercent: number;
-    discountedPrice: number;
-    currency: string;
-    isFree: boolean;
-  };
 }
 
 export interface TrainerInfo {
@@ -85,6 +77,20 @@ export interface BatchInfo {
   status: string;
   isFeatured: boolean;
   isActive: boolean;
+  originalPrice?: number;
+  discountAmount?: number;
+  discountPercent?: number;
+  discountedPrice?: number;
+  currency?: string;
+  isFree?: boolean;
+  pricing?: {
+    originalPrice: number;
+    discountAmount: number;
+    discountPercent: number;
+    discountedPrice: number;
+    currency: string;
+    isFree: boolean;
+  } | null;
   trainers: TrainerInfo[];
 }
 

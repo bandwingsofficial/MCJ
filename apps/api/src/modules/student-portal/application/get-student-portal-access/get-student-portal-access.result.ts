@@ -28,14 +28,6 @@ export interface StudentPortalCourseView {
   id: string;
   title: string;
   slug: string;
-  pricing: {
-    originalPrice: number;
-    discountAmount: number;
-    discountPercent: number;
-    discountedPrice: number;
-    currency: string;
-    isFree: boolean;
-  };
 }
 
 export interface StudentPortalBatchView {
@@ -49,6 +41,14 @@ export interface StudentPortalBatchView {
   mode: string;
   classroom: string | null;
   meetingLink: string | null;
+  pricing: {
+    originalPrice: number;
+    discountAmount: number;
+    discountPercent: number;
+    discountedPrice: number;
+    currency: string;
+    isFree: boolean;
+  };
 }
 
 export interface StudentPortalTrainerView {

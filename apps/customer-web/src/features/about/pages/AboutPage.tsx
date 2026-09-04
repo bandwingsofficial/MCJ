@@ -33,7 +33,7 @@ export function AboutPage() {
               </p>
 
               <div className="mt-8 flex gap-4">
-                <Button className="bg-[#0f2044] hover:bg-[#1b2d5a]">
+                <Button>
                   Explore Courses
                 </Button>
                 <Button

@@ -42,7 +42,7 @@ export default function Error({ error, reset }: Props) {
 
             <button
               onClick={() => reset()}
-              className="px-5 py-2.5 bg-[#0f2044] text-white rounded-md text-sm hover:bg-[#1a3460] transition"
+              className="px-5 py-2.5 bg-gradient-to-r from-[#2563D9] to-[#1746A2] text-white rounded-md text-sm hover:from-[#1E58C7] hover:to-[#123D94] transition"
             >
               Try Again
             </button>

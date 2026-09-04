@@ -4,8 +4,6 @@ import type {
   LessonResponseDto,
 } from "@/src/features/student-course/types/api.types";
 
-import { normalizeCoursePricing } from "@/src/features/courses/utils/course-pricing.utils";
-
 import {
   CourseDurationType,
   CourseLevel,
@@ -32,7 +30,6 @@ export class CourseMapper {
       shortDescription: dto.shortDescription,
       description: dto.description,
       thumbnailUrl: dto.thumbnailUrl,
-      pricing: normalizeCoursePricing(dto.pricing),
       duration: dto.duration,
       durationType: this.toDurationType(dto.durationType),
       level: this.toCourseLevel(dto.level),

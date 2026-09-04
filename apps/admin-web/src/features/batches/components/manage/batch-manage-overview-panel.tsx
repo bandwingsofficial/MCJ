@@ -227,7 +227,7 @@ export function BatchManageOverviewPanel({
                       <div>
                         <dt className="text-xs text-slate-500">Final Price</dt>
                         <dd className="font-medium text-[#102A56]">
-                          {formatAssignedCoursePrice(course)}
+                          {formatAssignedCoursePrice(batch)}
                         </dd>
                       </div>
                     </dl>

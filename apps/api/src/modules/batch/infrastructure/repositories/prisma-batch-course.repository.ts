@@ -16,10 +16,6 @@ const courseAssignmentSelect = {
   description: true,
   thumbnailUrl: true,
   minimumQualifications: true,
-  isFree: true,
-  currency: true,
-  discountedPrice: true,
-  originalPrice: true,
   category: {
     select: {
       id: true,
@@ -92,10 +88,6 @@ type AssignmentQueryRecord = {
     description: string | null;
     thumbnailUrl: string | null;
     minimumQualifications: string[];
-    isFree: boolean;
-    currency: string;
-    discountedPrice: unknown;
-    originalPrice: unknown;
     category: {
       id: string;
       name: string;

@@ -1,12 +1,12 @@
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
 
-export class InvalidCoursePricingException extends BaseException {
+export class InvalidBatchPricingException extends BaseException {
   constructor(
-    message = 'Invalid course pricing',
+    message = 'Invalid batch pricing',
   ) {
     super(
-      ERROR_CODES.INVALID_COURSE_PRICING,
+      ERROR_CODES.INVALID_BATCH_PRICING,
       message,
       400,
     );

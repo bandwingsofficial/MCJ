@@ -32,8 +32,11 @@ import {
   toBatchSelectOptions,
 } from "@/src/features/batches/utils/batch-select.utils";
 import { courseService } from "@/src/features/courses/services/course.service";
-import { formatCourseFee } from "@/src/features/courses/utils/format-course-fee.util";
-import { getCourseDefaultDiscount } from "@/src/features/courses/utils/get-course-default-discount.util";
+import {
+  formatBatchOriginalPrice,
+  getBatchDefaultDiscount,
+  getBatchPricing,
+} from "@/src/features/batches/utils/batch-pricing.util";
 import {
   formatCurrency,
   normalizeMoney,
@@ -267,9 +270,10 @@ export function StudentEnrollmentForm({
         }
 
         setIsBatchEligible(true);
+        const batchPricing = getBatchPricing(batch);
         setBatchDetails({
           courseTitle: course.title ?? batch.course?.title ?? "—",
-          courseFee: formatCourseFee(course),
+          courseFee: formatBatchOriginalPrice(batch),
           branchName: batch.branch?.branchName ?? "—",
           categoryName:
             course.category?.name ?? course.categoryName ?? "—",
@@ -278,11 +282,11 @@ export function StudentEnrollmentForm({
           endDate: batch.endDate,
         });
 
-        setValue("feeAmount", normalizeMoney(course.pricing.originalPrice), {
+        setValue("feeAmount", batchPricing.originalPrice, {
           shouldDirty: false,
           shouldValidate: true,
         });
-        setValue("discountAmount", getCourseDefaultDiscount(course), {
+        setValue("discountAmount", getBatchDefaultDiscount(batch), {
           shouldDirty: false,
           shouldValidate: true,
         });

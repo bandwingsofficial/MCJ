@@ -73,7 +73,7 @@ export function CourseAvailableBranches({
               <button
                 type="button"
                 onClick={() => onSelect(branch.id)}
-                className="inline-flex shrink-0 items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="inline-flex shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-5 py-2.5 text-xs font-semibold text-white transition hover:from-[#1E58C7] hover:to-[#123D94] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 {selected ? "Selected" : "Select"}
               </button>

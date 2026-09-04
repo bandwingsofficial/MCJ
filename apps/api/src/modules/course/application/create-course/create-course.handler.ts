@@ -22,9 +22,6 @@ import { CreateCourseCommand } from './create-course.command';
 import { BranchRepository } from '@/modules/branch/domain/repositories/branch.repository';
 import { BranchNotFoundException } from '@/modules/branch/domain/errors/branch-not-found.exception';
 
-import { InvalidCoursePricingException } from '../../domain/errors/invalid-course-pricing.exception';
-import { normalizeCoursePricingInput } from '../../domain/value-objects/course-pricing.vo';
-
 const COURSE_UPLOAD_FOLDER = 'courses';
 const COURSE_THUMBNAIL_FILE_NAME = 'thumbnail';
 
@@ -53,34 +50,6 @@ export class CreateCourseHandler {
           throw new BranchNotFoundException(branchId);
         }
       }
-    }
-
-    const normalizedPricing = normalizeCoursePricingInput({
-      originalPrice: command.originalPrice,
-      discountAmount: command.discountAmount,
-      discountedPrice: command.discountedPrice,
-      currency: command.currency,
-      isFree: command.isFree,
-    });
-
-    if (
-      normalizedPricing.isFree &&
-      (normalizedPricing.originalPrice > 0 ||
-        normalizedPricing.discountAmount > 0 ||
-        normalizedPricing.discountedPrice > 0)
-    ) {
-      throw new InvalidCoursePricingException(
-        'Free courses cannot have pricing values',
-      );
-    }
-
-    if (
-      !normalizedPricing.isFree &&
-      normalizedPricing.discountedPrice > normalizedPricing.originalPrice
-    ) {
-      throw new InvalidCoursePricingException(
-        'Discounted price cannot be greater than original price',
-      );
     }
 
     const slug = command.slug
@@ -186,11 +155,6 @@ export class CreateCourseHandler {
       description: command.description,
       thumbnailFileId,
       thumbnailUrl,
-      originalPrice: normalizedPricing.originalPrice,
-      discountAmount: normalizedPricing.discountAmount,
-      discountedPrice: normalizedPricing.discountedPrice,
-      currency: normalizedPricing.currency,
-      isFree: normalizedPricing.isFree,
       duration: command.duration,
       durationType: command.durationType,
       level: command.level,

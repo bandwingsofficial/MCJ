@@ -19,7 +19,10 @@ import { formatPersonName } from "@/src/features/branches/utils/branch-display.u
 import { branchService } from "@/src/features/branches/services/branch.service";
 import type { Course } from "@/src/features/courses/types/course.types";
 import { courseService } from "@/src/features/courses/services/course.service";
-import { getCourseDefaultDiscount } from "@/src/features/courses/utils/get-course-default-discount.util";
+import {
+  getBatchDefaultDiscount,
+  getBatchPricing,
+} from "@/src/features/batches/utils/batch-pricing.util";
 import {
   ENROLLMENT_PAYMENT_METHODS,
   paymentReferenceLabel,
@@ -275,8 +278,9 @@ export function CreateEnrollmentForm({
           const courseResponse = await courseService.getCourse(courseId);
           nextCourse = courseResponse.data;
           if (!isEdit || enrollment?.batch?.id !== batchId) {
-            nextFee = normalizeMoney(nextCourse.pricing?.originalPrice);
-            nextDiscount = getCourseDefaultDiscount(nextCourse);
+            const batchPricing = getBatchPricing(batch);
+            nextFee = batchPricing.originalPrice;
+            nextDiscount = getBatchDefaultDiscount(batch);
           }
           nextCategory = nextCourse.category?.name ?? "—";
         } else if (assignments[0]?.course?.category?.name) {

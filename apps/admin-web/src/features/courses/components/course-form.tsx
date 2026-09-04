@@ -9,7 +9,6 @@ import {
   FileText,
   FolderOpen,
   GraduationCap,
-  IndianRupee,
   Star,
   type LucideIcon,
 } from "lucide-react";
@@ -27,9 +26,7 @@ import {
 import { truncateToMaxWords } from "@/src/shared/utils/word-count";
 import { cn } from "@/src/shared/lib/cn";
 
-import {
-  COURSE_LEVELS,
-} from "@/src/features/courses/constants/course.constants";
+import { COURSE_LEVELS } from "@/src/features/courses/constants/course.constants";
 import {
   createCourseSchema,
   CreateCourseFormValues,
@@ -47,7 +44,6 @@ import {
 } from "@/src/features/courses/utils/course-meta.utils";
 import { CourseMetaField } from "@/src/features/courses/components/course-meta-field";
 import { QualificationMultiSelect } from "@/src/features/courses/components/qualification-multi-select";
-import { buildCoursePricingInput } from "@/src/features/courses/utils/course-pricing.util";
 
 interface SelectOption {
   label: string;
@@ -81,11 +77,6 @@ const defaultFormValues: CreateCourseFormValues = {
   shortDescription: "",
   description: "",
   categoryId: "",
-  originalPrice: 0,
-  discountPercent: 0,
-  discountAmount: 0,
-  currency: "INR",
-  isFree: false,
   level: "BEGINNER",
   minimumQualifications: [],
   language: "English",
@@ -98,14 +89,11 @@ const defaultFormValues: CreateCourseFormValues = {
   metaKeywords: "",
 };
 
-const PRICING_TYPE_OPTIONS = [
-  { label: "Paid", value: "PAID" },
-  { label: "Free", value: "FREE" },
-];
-
 const GRID_CLASS =
-  "grid w-full min-w-0 grid-cols-1 gap-x-4 gap-y-5 md:grid-cols-2";
+  "grid w-full min-w-0 grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-2";
 const CELL_CLASS = "min-w-0 w-full";
+const SECTION_CLASS = "rounded-xl border border-slate-200 bg-white p-4 space-y-4";
+const SECTION_TITLE_CLASS = "text-base font-semibold text-[#102A56]";
 
 function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
   return (
@@ -191,17 +179,12 @@ export function CourseForm({
   const languageValue = watch("language");
   const averageRatingValue = watch("averageRating");
   const totalReviewsValue = watch("totalReviews");
-  const isFreeValue = watch("isFree");
-  const originalPriceValue = watch("originalPrice");
-  const discountPercentValue = watch("discountPercent");
-  const discountAmountValue = watch("discountAmount");
   const metaTitleValue = watch("metaTitle");
   const metaDescriptionValue = watch("metaDescription");
   const metaKeywordsValue = watch("metaKeywords");
   const slugValue = watch("slug");
 
   const showValidation = Boolean(isSubmitted || editValidationReady);
-  const pricesDisabled = Boolean(isFreeValue);
 
   const getMetaSource = useCallback((): CourseMetaSource => {
     const categoryName = categoryOptions.find(
@@ -429,42 +412,6 @@ export function CourseForm({
     { required: true },
   );
 
-  const pricingTypeState = getSyncFieldState(
-    Boolean(touchedFields.isFree || showValidation),
-    errors.isFree?.message,
-    isFreeValue != null ? (isFreeValue ? "FREE" : "PAID") : "",
-    { required: true },
-  );
-
-  const originalPriceState = getSyncFieldState(
-    Boolean(touchedFields.originalPrice || showValidation),
-    errors.originalPrice?.message,
-    originalPriceValue != null ? String(originalPriceValue) : "",
-    { required: !pricesDisabled },
-  );
-
-  const discountPercentState = getSyncFieldState(
-    Boolean(touchedFields.discountPercent || showValidation),
-    errors.discountPercent?.message,
-    discountPercentValue != null ? String(discountPercentValue) : "",
-    { required: !pricesDisabled },
-  );
-
-  const discountAmountState = getSyncFieldState(
-    Boolean(touchedFields.discountAmount || showValidation),
-    errors.discountAmount?.message,
-    discountAmountValue != null ? String(discountAmountValue) : "",
-    { required: !pricesDisabled },
-  );
-
-  const computedPricing = buildCoursePricingInput({
-    originalPrice: Number(originalPriceValue) || 0,
-    discountAmount: Number(discountAmountValue) || 0,
-    discountPercent: Number(discountPercentValue) || 0,
-    currency: watch("currency"),
-    isFree: Boolean(isFreeValue),
-  });
-
   const metaTitleState = getSyncFieldState(
     Boolean(touchedFields.metaTitle || showValidation),
     errors.metaTitle?.message,
@@ -510,10 +457,6 @@ export function CourseForm({
       "minimumQualifications",
       "level",
       "language",
-      "isFree",
-      "originalPrice",
-      "discountPercent",
-      "discountAmount",
       "metaTitle",
       "metaDescription",
       "slug",
@@ -549,30 +492,6 @@ export function CourseForm({
     setRemoveImage(false);
   };
 
-  const handlePricingTypeChange = (value: string) => {
-    const isFree = value === "FREE";
-    setValue("isFree", isFree, {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: true,
-    });
-
-    if (isFree) {
-      setValue("originalPrice", 0, {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
-      setValue("discountPercent", 0, {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
-      setValue("discountAmount", 0, {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
-    }
-  };
-
   const metaTitleRegister = register("metaTitle");
   const metaDescriptionRegister = register("metaDescription");
   const metaKeywordsRegister = register("metaKeywords");
@@ -581,7 +500,7 @@ export function CourseForm({
   return (
     <form
       ref={formRef}
-      className="min-w-0 w-full space-y-5"
+      className="min-w-0 w-full space-y-4"
       onSubmit={handleSubmit(
         async (data) => {
           await onSubmit(data, selectedImage, removeImage);
@@ -591,575 +510,436 @@ export function CourseForm({
         },
       )}
     >
-      <div className={GRID_CLASS}>
-        <div className={CELL_CLASS}>
-          <ValidatedField label="Course Code" state={codeState}>
-            <Input
-              id="course-code"
-              value={courseCode ?? "Generating..."}
-              readOnly
-              disabled
-              placeholder="CR0001"
-              className={inputClass(codeState)}
-            />
-          </ValidatedField>
-        </div>
-
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Title"
-            required
-            state={titleState}
-            errorMessage={errors.title?.message}
-          >
-            <Input
-              id="course-title"
-              placeholder="Course title"
-              className={iconInputClass(titleState)}
-              {...register("title")}
-            />
-            <FieldIcon icon={BookOpen} />
-          </ValidatedField>
-        </div>
-      </div>
-
-      <div className={GRID_CLASS}>
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Tagline"
-            state={taglineState}
-            errorMessage={errors.tagline?.message}
-          >
-            <Input
-              id="course-tagline"
-              placeholder="Course tagline"
-              className={inputClass(taglineState)}
-              {...register("tagline")}
-            />
-          </ValidatedField>
-        </div>
-
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Category"
-            required
-            state={categoryState}
-            errorMessage={errors.categoryId?.message}
-          >
-            <Controller
-              control={control}
-              name="categoryId"
-              render={({ field }) => (
-                <>
-                  <AppSelect
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    placeholder="Select Category"
-                    options={categoryOptions}
-                    triggerClassName={iconInputClass(categoryState)}
-                  />
-                  <FieldIcon icon={FolderOpen} />
-                </>
-              )}
-            />
-          </ValidatedField>
-        </div>
-      </div>
-
-      <div className={GRID_CLASS}>
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Level"
-            required
-            state={levelState}
-            errorMessage={errors.level?.message}
-          >
-            <Controller
-              control={control}
-              name="level"
-              render={({ field }) => (
-                <>
-                  <AppSelect
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    placeholder="Select difficulty level"
-                    options={COURSE_LEVELS.map((level) => ({
-                      label: formatLevelLabel(level),
-                      value: level,
-                    }))}
-                    triggerClassName={iconInputClass(levelState)}
-                  />
-                  <FieldIcon icon={GraduationCap} />
-                </>
-              )}
-            />
-          </ValidatedField>
-        </div>
-      </div>
-
-      <div className={GRID_CLASS}>
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Minimum Qualification Required"
-            state={qualificationsState}
-            errorMessage={errors.minimumQualifications?.message}
-          >
-            <Controller
-              control={control}
-              name="minimumQualifications"
-              render={({ field }) => (
-                <QualificationMultiSelect
-                  value={field.value ?? []}
-                  onChange={field.onChange}
-                  state={
-                    qualificationsState === "checking"
-                      ? "neutral"
-                      : qualificationsState
-                  }
-                  collisionBoundaryRef={dropdownBoundaryRef}
-                />
-              )}
-            />
-          </ValidatedField>
-        </div>
-
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Language"
-            required
-            state={languageState}
-            errorMessage={errors.language?.message}
-          >
-            <Input
-              placeholder="Select language"
-              className={inputClass(languageState)}
-              {...register("language")}
-            />
-          </ValidatedField>
-        </div>
-      </div>
-
-      <div className={GRID_CLASS}>
-        <div className={`${CELL_CLASS} md:col-span-2`}>
-          <h3 className="text-sm font-semibold text-[#102A56]">
-            Course Rating
-          </h3>
-        </div>
-
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Rating"
-            state={averageRatingState}
-            errorMessage={errors.averageRating?.message}
-          >
-            <Input
-              type="number"
-              min={0}
-              max={5}
-              step={0.01}
-              placeholder="e.g. 4.5"
-              className={iconInputClass(averageRatingState)}
-              {...register("averageRating", {
-                valueAsNumber: true,
-              })}
-            />
-            <FieldIcon icon={Star} />
-          </ValidatedField>
-        </div>
-
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Rating Count"
-            state={totalReviewsState}
-            errorMessage={errors.totalReviews?.message}
-          >
-            <Input
-              type="number"
-              min={0}
-              step={1}
-              placeholder="e.g. 146"
-              className={inputClass(totalReviewsState)}
-              {...register("totalReviews", {
-                valueAsNumber: true,
-              })}
-            />
-          </ValidatedField>
-        </div>
-      </div>
-
-      <div className={GRID_CLASS}>
-        <div className={`${CELL_CLASS} md:col-span-2`}>
-          <h3 className="text-sm font-semibold text-[#102A56]">Pricing</h3>
-        </div>
-
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Pricing Type"
-            required
-            state={pricingTypeState}
-            errorMessage={errors.isFree?.message}
-          >
-            <Controller
-              control={control}
-              name="isFree"
-              render={({ field }) => (
-                <AppSelect
-                  value={field.value ? "FREE" : "PAID"}
-                  onValueChange={handlePricingTypeChange}
-                  placeholder="Select pricing type"
-                  options={PRICING_TYPE_OPTIONS}
-                  triggerClassName={inputClass(pricingTypeState)}
-                />
-              )}
-            />
-          </ValidatedField>
-        </div>
-
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Original Price"
-            required={!pricesDisabled}
-            state={originalPriceState}
-            errorMessage={errors.originalPrice?.message}
-          >
-            <>
-              {!pricesDisabled ? (
-                <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-[#647A9B]">
-                  ₹
-                </span>
-              ) : null}
-              <Input
-                type="number"
-                min={0}
-                step="0.01"
-                disabled={pricesDisabled}
-                placeholder={pricesDisabled ? "Free course" : "Enter original price"}
-                className={iconInputClass(
-                  originalPriceState,
-                  pricesDisabled ? "" : "pl-7",
-                )}
-                {...register("originalPrice", {
-                  valueAsNumber: true,
-                  onChange: (event) => {
-                    const nextOriginal = Number(event.target.value) || 0;
-                    const percent = Number(discountPercentValue) || 0;
-                    const nextAmount = Math.round((nextOriginal * percent) / 100 * 100) / 100;
-                    setValue("discountAmount", nextAmount, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    });
-                  },
-                })}
-              />
-              {!pricesDisabled ? <FieldIcon icon={IndianRupee} /> : null}
-            </>
-          </ValidatedField>
-        </div>
-      </div>
-
-      <div className={GRID_CLASS}>
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Discount %"
-            required={!pricesDisabled}
-            state={discountPercentState}
-            errorMessage={errors.discountPercent?.message}
-          >
-            <Input
-              type="number"
-              min={0}
-              max={100}
-              step="0.01"
-              disabled={pricesDisabled}
-              placeholder={pricesDisabled ? "Free course" : "Enter discount percent"}
-              className={inputClass(discountPercentState)}
-              {...register("discountPercent", {
-                valueAsNumber: true,
-                onChange: (event) => {
-                  const percent = Number(event.target.value) || 0;
-                  const original = Number(originalPriceValue) || 0;
-                  const nextAmount = Math.round((original * percent) / 100 * 100) / 100;
-                  setValue("discountAmount", nextAmount, {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  });
-                },
-              })}
-            />
-          </ValidatedField>
-        </div>
-
-        <div className={CELL_CLASS}>
-          <ValidatedField
-            label="Discount Amount"
-            required={!pricesDisabled}
-            state={discountAmountState}
-            errorMessage={errors.discountAmount?.message}
-          >
-            <>
-              {!pricesDisabled ? (
-                <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-[#647A9B]">
-                  ₹
-                </span>
-              ) : null}
-              <Input
-                type="number"
-                min={0}
-                step="0.01"
-                disabled={pricesDisabled}
-                placeholder={
-                  pricesDisabled ? "Free course" : "Enter discount amount"
-                }
-                className={cn(
-                  inputClass(discountAmountState),
-                  pricesDisabled ? "" : "pl-7",
-                )}
-                {...register("discountAmount", {
-                  valueAsNumber: true,
-                  onChange: (event) => {
-                    const amount = Number(event.target.value) || 0;
-                    const original = Number(originalPriceValue) || 0;
-                    const nextPercent =
-                      original > 0
-                        ? Math.round((amount / original) * 10000) / 100
-                        : 0;
-                    setValue("discountPercent", nextPercent, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    });
-                  },
-                })}
-              />
-            </>
-          </ValidatedField>
-        </div>
-
-        <div className={CELL_CLASS}>
-          <ValidatedField label="Final Price" state="neutral">
-            <Input
-              value={
-                pricesDisabled
-                  ? "Free"
-                  : `₹${computedPricing.discountedPrice.toLocaleString("en-IN", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}`
-              }
-              readOnly
-              disabled
-              className={inputClass("neutral")}
-            />
-          </ValidatedField>
-        </div>
-
-        {isEdit && defaultValues?.status ? (
-          <div className={CELL_CLASS}>
-            <ValidatedField label="Status" state="neutral">
-              <Input
-                value={defaultValues.status}
-                readOnly
-                disabled
-                className={inputClass("neutral")}
-              />
-            </ValidatedField>
-          </div>
-        ) : (
-          <div className="hidden min-w-0 md:block" aria-hidden />
-        )}
-
-        <input type="hidden" {...register("currency")} />
-      </div>
-
-      <ValidatedField
-        label="Short Description"
-        state={shortDescriptionState}
-        errorMessage={errors.shortDescription?.message}
-      >
-        <>
-          <Textarea
-            id="course-short-description"
-            rows={3}
-            placeholder="Write a short description of the course..."
-            className={cn(inputClass(shortDescriptionState), "min-h-[5.5rem] w-full resize-y pr-10")}
-            value={shortDescriptionValue ?? ""}
-            onChange={(event) => {
-              const next = truncateToMaxWords(
-                event.target.value,
-                COURSE_WORD_LIMITS.shortDescription,
-              );
-              setValue("shortDescription", next, {
-                shouldDirty: true,
-                shouldTouch: true,
-                shouldValidate: true,
-              });
-            }}
-            onBlur={register("shortDescription").onBlur}
-          />
-          <FileText
-            className="pointer-events-none absolute right-3 top-3 z-[1] h-4 w-4 text-slate-400"
-            aria-hidden="true"
-          />
-        </>
-        <WordCount
-          value={shortDescriptionValue ?? ""}
-          maxWords={COURSE_WORD_LIMITS.shortDescription}
-        />
-      </ValidatedField>
-
-      <ValidatedField
-        label="Description"
-        state={descriptionState}
-        errorMessage={errors.description?.message}
-      >
-        <>
-          <Textarea
-            id="course-description"
-            rows={4}
-            placeholder="Describe the course, learning outcomes, and what students will learn..."
-            className={cn(inputClass(descriptionState), "min-h-[6.5rem] w-full resize-y pr-10")}
-            value={descriptionValue ?? ""}
-            onChange={(event) => {
-              const next = truncateToMaxWords(
-                event.target.value,
-                COURSE_WORD_LIMITS.description,
-              );
-              setValue("description", next, {
-                shouldDirty: true,
-                shouldTouch: true,
-                shouldValidate: true,
-              });
-            }}
-            onBlur={register("description").onBlur}
-          />
-          <FileText
-            className="pointer-events-none absolute right-3 top-3 z-[1] h-4 w-4 text-slate-400"
-            aria-hidden="true"
-          />
-        </>
-        <WordCount
-          value={descriptionValue ?? ""}
-          maxWords={COURSE_WORD_LIMITS.description}
-        />
-      </ValidatedField>
-
-      <ValidatedField
-        label="Course Image"
-        state={imageState}
-        errorMessage={imageError ?? undefined}
-      >
-        <ImageUploadField
-          previewUrl={
-            removeImage ? null : (defaultValues?.thumbnailUrl ?? null)
-          }
-          file={selectedImage}
-          disabled={isLoading}
-          isUploading={isUploadingImage}
-          error={imageError}
-          state={imageState}
-          onFileSelect={handleImageSelect}
-          onRemove={() => {
-            setImageTouched(true);
-            setSelectedImage(null);
-            setRemoveImage(true);
-            setImageError(null);
-          }}
-          validateFile={validateCourseImageFile}
-        />
-      </ValidatedField>
-
-      <div className="space-y-4 border-t border-slate-200 pt-4">
-        <h3 className="text-sm font-semibold text-[#102A56]">
-          SEO / Meta Information
-        </h3>
-
-        <CourseMetaField
-          label="Meta Title"
-          state={metaTitleState}
-          errorMessage={errors.metaTitle?.message}
-          showReset={!isMetaAuto("metaTitle")}
-          onReset={() => resetMetaField("metaTitle")}
-        >
-          <Input
-            placeholder="Enter meta title"
-            className={inputClass(metaTitleState)}
-            name={metaTitleRegister.name}
-            ref={metaTitleRegister.ref}
-            onBlur={metaTitleRegister.onBlur}
-            onChange={(event) => {
-              markMetaManual("metaTitle");
-              void metaTitleRegister.onChange(event);
-            }}
-          />
-        </CourseMetaField>
-
-        <CourseMetaField
-          label="Meta Description"
-          state={metaDescriptionState}
-          errorMessage={errors.metaDescription?.message}
-          showReset={!isMetaAuto("metaDescription")}
-          onReset={() => resetMetaField("metaDescription")}
-          multiline
-        >
-          <Textarea
-            rows={3}
-            placeholder="Enter meta description"
-            className={inputClass(metaDescriptionState)}
-            name={metaDescriptionRegister.name}
-            ref={metaDescriptionRegister.ref}
-            onBlur={metaDescriptionRegister.onBlur}
-            onChange={(event) => {
-              markMetaManual("metaDescription");
-              void metaDescriptionRegister.onChange(event);
-            }}
-          />
-        </CourseMetaField>
+      <section className={SECTION_CLASS}>
+        <h3 className={SECTION_TITLE_CLASS}>Basic Information</h3>
 
         <div className={GRID_CLASS}>
           <div className={CELL_CLASS}>
-            <CourseMetaField
-              label="Slug"
-              state={slugState}
-              errorMessage={errors.slug?.message}
-              showReset={!isMetaAuto("slug")}
-              onReset={() => resetMetaField("slug")}
-            >
+            <ValidatedField label="Course Code" state={codeState}>
               <Input
-                placeholder="course-slug"
-                className={inputClass(slugState)}
-                name={slugRegister.name}
-                ref={slugRegister.ref}
-                onBlur={slugRegister.onBlur}
-                onChange={(event) => {
-                  markMetaManual("slug");
-                  void slugRegister.onChange(event);
-                }}
+                id="course-code"
+                value={courseCode ?? "Generating..."}
+                readOnly
+                disabled
+                placeholder="CR0001"
+                className={inputClass(codeState)}
               />
-            </CourseMetaField>
+            </ValidatedField>
           </div>
 
           <div className={CELL_CLASS}>
-            <CourseMetaField
-              label="Meta Keywords"
-              state={metaKeywordsState}
-              errorMessage={errors.metaKeywords?.message}
-              showReset={!isMetaAuto("metaKeywords")}
-              onReset={() => resetMetaField("metaKeywords")}
+            <ValidatedField
+              label="Title"
+              required
+              state={titleState}
+              errorMessage={errors.title?.message}
             >
               <Input
-                placeholder="Enter keywords separated by commas"
-                className={inputClass(metaKeywordsState)}
-                name={metaKeywordsRegister.name}
-                ref={metaKeywordsRegister.ref}
-                onBlur={metaKeywordsRegister.onBlur}
-                onChange={(event) => {
-                  markMetaManual("metaKeywords");
-                  void metaKeywordsRegister.onChange(event);
-                }}
+                id="course-title"
+                placeholder="Course title"
+                className={iconInputClass(titleState)}
+                {...register("title")}
               />
-            </CourseMetaField>
+              <FieldIcon icon={BookOpen} />
+            </ValidatedField>
+          </div>
+
+          <div className={CELL_CLASS}>
+            <ValidatedField
+              label="Tagline"
+              state={taglineState}
+              errorMessage={errors.tagline?.message}
+            >
+              <Input
+                id="course-tagline"
+                placeholder="Course tagline"
+                className={inputClass(taglineState)}
+                {...register("tagline")}
+              />
+            </ValidatedField>
+          </div>
+
+          <div className={CELL_CLASS}>
+            <ValidatedField
+              label="Category"
+              required
+              state={categoryState}
+              errorMessage={errors.categoryId?.message}
+            >
+              <Controller
+                control={control}
+                name="categoryId"
+                render={({ field }) => (
+                  <>
+                    <AppSelect
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Select Category"
+                      options={categoryOptions}
+                      triggerClassName={iconInputClass(categoryState)}
+                    />
+                    <FieldIcon icon={FolderOpen} />
+                  </>
+                )}
+              />
+            </ValidatedField>
+          </div>
+
+          <div className={CELL_CLASS}>
+            <ValidatedField
+              label="Level"
+              required
+              state={levelState}
+              errorMessage={errors.level?.message}
+            >
+              <Controller
+                control={control}
+                name="level"
+                render={({ field }) => (
+                  <>
+                    <AppSelect
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Select difficulty level"
+                      options={COURSE_LEVELS.map((level) => ({
+                        label: formatLevelLabel(level),
+                        value: level,
+                      }))}
+                      triggerClassName={iconInputClass(levelState)}
+                    />
+                    <FieldIcon icon={GraduationCap} />
+                  </>
+                )}
+              />
+            </ValidatedField>
+          </div>
+
+          <div className={CELL_CLASS}>
+            <ValidatedField
+              label="Language"
+              required
+              state={languageState}
+              errorMessage={errors.language?.message}
+            >
+              <Input
+                id="course-language"
+                placeholder="Select language"
+                className={inputClass(languageState)}
+                {...register("language")}
+              />
+            </ValidatedField>
           </div>
         </div>
-      </div>
+      </section>
+
+      <section className={SECTION_CLASS}>
+        <h3 className={SECTION_TITLE_CLASS}>Course Requirements</h3>
+
+        <div className={GRID_CLASS}>
+          <div className={`${CELL_CLASS} md:col-span-2`}>
+            <ValidatedField
+              label="Minimum Qualification Required"
+              state={qualificationsState}
+              errorMessage={errors.minimumQualifications?.message}
+            >
+              <Controller
+                control={control}
+                name="minimumQualifications"
+                render={({ field }) => (
+                  <QualificationMultiSelect
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    state={
+                      qualificationsState === "checking"
+                        ? "neutral"
+                        : qualificationsState
+                    }
+                    collisionBoundaryRef={dropdownBoundaryRef}
+                  />
+                )}
+              />
+            </ValidatedField>
+          </div>
+        </div>
+      </section>
+
+      <section className={SECTION_CLASS}>
+        <h3 className={SECTION_TITLE_CLASS}>Course Content</h3>
+
+        <div className="space-y-4">
+          <ValidatedField
+            label="Short Description"
+            state={shortDescriptionState}
+            errorMessage={errors.shortDescription?.message}
+          >
+            <>
+              <Textarea
+                id="course-short-description"
+                rows={3}
+                placeholder="Write a short description of the course..."
+                className={cn(
+                  inputClass(shortDescriptionState),
+                  "min-h-[5.5rem] w-full resize-y pr-10",
+                )}
+                value={shortDescriptionValue ?? ""}
+                onChange={(event) => {
+                  const next = truncateToMaxWords(
+                    event.target.value,
+                    COURSE_WORD_LIMITS.shortDescription,
+                  );
+                  setValue("shortDescription", next, {
+                    shouldDirty: true,
+                    shouldTouch: true,
+                    shouldValidate: true,
+                  });
+                }}
+                onBlur={register("shortDescription").onBlur}
+              />
+              <FileText
+                className="pointer-events-none absolute right-3 top-3 z-[1] h-4 w-4 text-slate-400"
+                aria-hidden="true"
+              />
+            </>
+            <WordCount
+              value={shortDescriptionValue ?? ""}
+              maxWords={COURSE_WORD_LIMITS.shortDescription}
+            />
+          </ValidatedField>
+
+          <ValidatedField
+            label="Description"
+            state={descriptionState}
+            errorMessage={errors.description?.message}
+          >
+            <>
+              <Textarea
+                id="course-description"
+                rows={4}
+                placeholder="Describe the course, learning outcomes, and what students will learn..."
+                className={cn(
+                  inputClass(descriptionState),
+                  "min-h-[6.5rem] w-full resize-y pr-10",
+                )}
+                value={descriptionValue ?? ""}
+                onChange={(event) => {
+                  const next = truncateToMaxWords(
+                    event.target.value,
+                    COURSE_WORD_LIMITS.description,
+                  );
+                  setValue("description", next, {
+                    shouldDirty: true,
+                    shouldTouch: true,
+                    shouldValidate: true,
+                  });
+                }}
+                onBlur={register("description").onBlur}
+              />
+              <FileText
+                className="pointer-events-none absolute right-3 top-3 z-[1] h-4 w-4 text-slate-400"
+                aria-hidden="true"
+              />
+            </>
+            <WordCount
+              value={descriptionValue ?? ""}
+              maxWords={COURSE_WORD_LIMITS.description}
+            />
+          </ValidatedField>
+        </div>
+      </section>
+
+      <section className={SECTION_CLASS}>
+        <h3 className={SECTION_TITLE_CLASS}>Course Rating</h3>
+
+        <div className={GRID_CLASS}>
+          <div className={CELL_CLASS}>
+            <ValidatedField
+              label="Rating"
+              state={averageRatingState}
+              errorMessage={errors.averageRating?.message}
+            >
+              <Input
+                type="number"
+                min={0}
+                max={5}
+                step={0.01}
+                placeholder="e.g. 4.5"
+                className={iconInputClass(averageRatingState)}
+                {...register("averageRating", {
+                  valueAsNumber: true,
+                })}
+              />
+              <FieldIcon icon={Star} />
+            </ValidatedField>
+          </div>
+
+          <div className={CELL_CLASS}>
+            <ValidatedField
+              label="Rating Count"
+              state={totalReviewsState}
+              errorMessage={errors.totalReviews?.message}
+            >
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                placeholder="e.g. 146"
+                className={inputClass(totalReviewsState)}
+                {...register("totalReviews", {
+                  valueAsNumber: true,
+                })}
+              />
+            </ValidatedField>
+          </div>
+        </div>
+      </section>
+
+      <section className={SECTION_CLASS}>
+        <h3 className={SECTION_TITLE_CLASS}>Course Image</h3>
+
+        <ValidatedField
+          label="Course Image"
+          state={imageState}
+          errorMessage={imageError ?? undefined}
+        >
+          <ImageUploadField
+            previewUrl={
+              removeImage ? null : (defaultValues?.thumbnailUrl ?? null)
+            }
+            file={selectedImage}
+            disabled={isLoading}
+            isUploading={isUploadingImage}
+            error={imageError}
+            state={imageState}
+            onFileSelect={handleImageSelect}
+            onRemove={() => {
+              setImageTouched(true);
+              setSelectedImage(null);
+              setRemoveImage(true);
+              setImageError(null);
+            }}
+            validateFile={validateCourseImageFile}
+          />
+        </ValidatedField>
+      </section>
+
+      {isEdit && defaultValues?.status ? (
+        <section className={SECTION_CLASS}>
+          <h3 className={SECTION_TITLE_CLASS}>Course Status</h3>
+
+          <div className={GRID_CLASS}>
+            <div className={CELL_CLASS}>
+              <ValidatedField label="Status" state="neutral">
+                <Input
+                  value={defaultValues.status}
+                  readOnly
+                  disabled
+                  className={inputClass("neutral")}
+                />
+              </ValidatedField>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      <section className={SECTION_CLASS}>
+        <h3 className={SECTION_TITLE_CLASS}>SEO / Meta Information</h3>
+
+        <div className="space-y-4">
+          <div className={GRID_CLASS}>
+            <div className={CELL_CLASS}>
+              <CourseMetaField
+                label="Meta Title"
+                state={metaTitleState}
+                errorMessage={errors.metaTitle?.message}
+                showReset={!isMetaAuto("metaTitle")}
+                onReset={() => resetMetaField("metaTitle")}
+              >
+                <Input
+                  placeholder="Enter meta title"
+                  className={inputClass(metaTitleState)}
+                  name={metaTitleRegister.name}
+                  ref={metaTitleRegister.ref}
+                  onBlur={metaTitleRegister.onBlur}
+                  onChange={(event) => {
+                    markMetaManual("metaTitle");
+                    void metaTitleRegister.onChange(event);
+                  }}
+                />
+              </CourseMetaField>
+            </div>
+
+            <div className={CELL_CLASS}>
+              <CourseMetaField
+                label="Slug"
+                state={slugState}
+                errorMessage={errors.slug?.message}
+                showReset={!isMetaAuto("slug")}
+                onReset={() => resetMetaField("slug")}
+              >
+                <Input
+                  placeholder="course-slug"
+                  className={inputClass(slugState)}
+                  name={slugRegister.name}
+                  ref={slugRegister.ref}
+                  onBlur={slugRegister.onBlur}
+                  onChange={(event) => {
+                    markMetaManual("slug");
+                    void slugRegister.onChange(event);
+                  }}
+                />
+              </CourseMetaField>
+            </div>
+          </div>
+
+          <div className={GRID_CLASS}>
+            <div className={CELL_CLASS}>
+              <CourseMetaField
+                label="Meta Description"
+                state={metaDescriptionState}
+                errorMessage={errors.metaDescription?.message}
+                showReset={!isMetaAuto("metaDescription")}
+                onReset={() => resetMetaField("metaDescription")}
+                multiline
+              >
+                <Textarea
+                  rows={3}
+                  placeholder="Enter meta description"
+                  className={inputClass(metaDescriptionState)}
+                  name={metaDescriptionRegister.name}
+                  ref={metaDescriptionRegister.ref}
+                  onBlur={metaDescriptionRegister.onBlur}
+                  onChange={(event) => {
+                    markMetaManual("metaDescription");
+                    void metaDescriptionRegister.onChange(event);
+                  }}
+                />
+              </CourseMetaField>
+            </div>
+
+            <div className={CELL_CLASS}>
+              <CourseMetaField
+                label="Meta Keywords"
+                state={metaKeywordsState}
+                errorMessage={errors.metaKeywords?.message}
+                showReset={!isMetaAuto("metaKeywords")}
+                onReset={() => resetMetaField("metaKeywords")}
+              >
+                <Input
+                  placeholder="Enter keywords separated by commas"
+                  className={inputClass(metaKeywordsState)}
+                  name={metaKeywordsRegister.name}
+                  ref={metaKeywordsRegister.ref}
+                  onBlur={metaKeywordsRegister.onBlur}
+                  onChange={(event) => {
+                    markMetaManual("metaKeywords");
+                    void metaKeywordsRegister.onChange(event);
+                  }}
+                />
+              </CourseMetaField>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">
         {onCancel ? (

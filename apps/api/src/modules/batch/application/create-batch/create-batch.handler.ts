@@ -1,7 +1,6 @@
 import { randomUUID } from 'crypto';
 import { Logger } from '@nestjs/common';
 import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
-import { CategoryNotFoundException } from '@modules/course/domain/errors/category-not-found.exception';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 import type { TrainerRepository } from '@modules/trainer/domain/repositories/trainer.repository';
 import type { BranchRepository } from '@modules/branch/domain/repositories/branch.repository';
@@ -10,8 +9,10 @@ import { BranchNotFoundException } from '@modules/student/domain/errors/branch-n
 import { Slug } from '@common/value-objects/slug.vo';
 import { BatchTrainer } from '../../domain/entities/batch-trainer.entity';
 import { Batch } from '../../domain/entities/batch.entity';
+import { InvalidBatchPricingException } from '../../domain/errors/invalid-batch-pricing.exception';
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
+import { normalizeBatchPricingInput } from '../../domain/value-objects/batch-pricing.vo';
 import { GetBatchResult } from '../get-batch/get-batch.result';
 
 import { CreateBatchCommand } from './create-batch.command';
@@ -68,6 +69,34 @@ export class CreateBatchHandler {
       );
     }
 
+    const normalizedPricing = normalizeBatchPricingInput({
+      originalPrice: command.originalPrice,
+      discountAmount: command.discountAmount,
+      discountedPrice: command.discountedPrice,
+      currency: command.currency,
+      isFree: command.isFree,
+    });
+
+    if (
+      normalizedPricing.isFree &&
+      (normalizedPricing.originalPrice > 0 ||
+        normalizedPricing.discountAmount > 0 ||
+        normalizedPricing.discountedPrice > 0)
+    ) {
+      throw new InvalidBatchPricingException(
+        'Free batches cannot have pricing values',
+      );
+    }
+
+    if (
+      !normalizedPricing.isFree &&
+      normalizedPricing.discountedPrice > normalizedPricing.originalPrice
+    ) {
+      throw new InvalidBatchPricingException(
+        'Discounted price cannot be greater than original price',
+      );
+    }
+
     const slug = command.slug
       ? Slug.create(command.slug).getValue()
       : Slug.fromName(command.name).getValue();
@@ -120,6 +149,11 @@ export class CreateBatchHandler {
       capacity: command.capacity,
       enrolledCount: command.enrolledCount,
       mode: command.mode,
+      originalPrice: normalizedPricing.originalPrice,
+      discountAmount: normalizedPricing.discountAmount,
+      discountedPrice: normalizedPricing.discountedPrice,
+      currency: normalizedPricing.currency,
+      isFree: normalizedPricing.isFree,
       classroom: command.classroom,
       meetingLink: command.meetingLink,
       isFeatured: command.isFeatured,

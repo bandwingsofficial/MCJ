@@ -35,7 +35,7 @@ export function AppSelect({
       <SelectPrimitive.Trigger
         className={cn(
           "flex h-11 w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 text-sm",
-          "focus:outline-none focus:ring-2 focus:ring-[#2447A8]"
+          "focus:outline-none focus:ring-2 focus:ring-[#2563D9]/40"
         )}
       >
         <SelectPrimitive.Value placeholder={placeholder} />

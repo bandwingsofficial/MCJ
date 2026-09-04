@@ -26,5 +26,10 @@ export class CreateBatchCommand {
     public readonly isActive?: boolean,
     public readonly trainerIds: string[] = [],
     public readonly createdBy?: string,
+    public readonly originalPrice?: number,
+    public readonly discountAmount?: number,
+    public readonly discountedPrice?: number,
+    public readonly currency?: string,
+    public readonly isFree?: boolean,
   ) {}
 }

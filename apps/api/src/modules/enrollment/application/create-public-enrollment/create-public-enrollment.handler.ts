@@ -101,10 +101,10 @@ export class CreatePublicEnrollmentHandler {
         this.enrollmentRepo,
       );
 
-    // Pricing is always derived from the Course — the public client never sends
-    // any financial values. This snapshot stays fixed even if the course price
+    // Pricing is always derived from the Batch — the public client never sends
+    // any financial values. This snapshot stays fixed even if the batch price
     // changes later.
-    const pricing = hierarchy.course.getPricing();
+    const pricing = hierarchy.batch.getPricing();
     const isComplimentary =
       pricing.isFree || pricing.discountedPrice <= 0;
 

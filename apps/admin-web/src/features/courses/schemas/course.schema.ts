@@ -59,29 +59,6 @@ const courseFields = {
     .min(1, "Please select a category.")
     .uuid("Please select a category."),
 
-  originalPrice: z
-    .number({
-      error: "Original price is required",
-    })
-    .min(0, "Original price cannot be negative"),
-
-  discountPercent: z
-    .number({
-      error: "Discount percent is required",
-    })
-    .min(0, "Discount percent cannot be negative")
-    .max(100, "Discount percent cannot exceed 100"),
-
-  discountAmount: z
-    .number({
-      error: "Discount amount is required",
-    })
-    .min(0, "Discount amount cannot be negative"),
-
-  currency: z.string().default("INR"),
-
-  isFree: z.boolean().default(false),
-
   level: z.enum(COURSE_LEVELS).default("BEGINNER"),
 
   minimumQualifications: z
@@ -156,39 +133,7 @@ const courseFields = {
 
 const courseBaseSchema = z.object(courseFields);
 
-export const createCourseSchema = courseBaseSchema.superRefine(
-  (data, context) => {
-    if (
-      !data.isFree &&
-      (data.originalPrice == null || data.originalPrice <= 0)
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["originalPrice"],
-        message: "Original price is required for paid courses",
-      });
-    }
-
-    if (data.discountAmount > data.originalPrice) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["discountAmount"],
-        message: "Discount amount cannot be greater than original price",
-      });
-    }
-
-    if (
-      data.isFree &&
-      (data.originalPrice > 0 || data.discountAmount > 0)
-    ) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["isFree"],
-        message: "Free courses cannot have pricing values",
-      });
-    }
-  },
-);
+export const createCourseSchema = courseBaseSchema;
 
 export const updateCourseSchema = courseBaseSchema.partial();
 

@@ -3,10 +3,10 @@ import type {
   CourseLevel,
 } from "@/src/features/courses/types/course.types";
 import {
-  formatCoursePrice as formatFinalCoursePrice,
-  getCoursePricing,
-  type CoursePricingSource,
-} from "@/src/features/courses/utils/course-pricing.util";
+  formatBatchOriginalPrice,
+  formatBatchPrice,
+  type BatchPricingSource,
+} from "@/src/features/batches/utils/batch-pricing.util";
 
 export function formatCourseDuration(
   duration?: number | null,
@@ -30,26 +30,14 @@ export function formatCourseLevel(level?: CourseLevel | null): string {
   return level.charAt(0) + level.slice(1).toLowerCase();
 }
 
-export function formatCoursePrice(
-  course: CoursePricingSource,
-): string {
-  return formatFinalCoursePrice(course);
+/** Formats batch final price (preferred over course pricing). */
+export function formatCoursePrice(source: BatchPricingSource): string {
+  return formatBatchPrice(source);
 }
 
-export function formatCourseOriginalPrice(
-  course: CoursePricingSource,
-): string {
-  const pricing = getCoursePricing(course);
-
-  if (pricing.isFree) {
-    return "Free";
-  }
-
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: pricing.currency,
-    maximumFractionDigits: 2,
-  }).format(pricing.originalPrice);
+/** Formats batch original price. */
+export function formatCourseOriginalPrice(source: BatchPricingSource): string {
+  return formatBatchOriginalPrice(source);
 }
 
 export function formatTrainerNames(

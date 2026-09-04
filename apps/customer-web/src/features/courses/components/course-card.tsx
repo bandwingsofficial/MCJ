@@ -17,10 +17,7 @@ import {
   getCourseDetailPath,
   getCourseBatchesSectionPath,
 } from "@/src/features/courses/utils/course-route.utils";
-import {
-  formatCoursePrice,
-  formatDuration,
-} from "@/src/features/courses/utils/course-display.utils";
+import { formatDuration } from "@/src/features/courses/utils/course-display.utils";
 
 interface CourseCardProps {
   course: Course;
@@ -56,8 +53,6 @@ export function CourseCard({
     course.duration,
     course.durationType,
   );
-
-  const price = formatCoursePrice(course);
 
   return (
     <Card
@@ -169,7 +164,7 @@ export function CourseCard({
 
         {/* Course code */}
         {course.code && (
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-blue-600">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[#2563D9]">
             {course.code}
           </p>
         )}
@@ -184,7 +179,7 @@ export function CourseCard({
             tracking-tight
             text-slate-900
             transition-colors
-            group-hover:text-blue-600
+            group-hover:text-[#2563D9]
           "
         >
           {safeText(course.title, "Untitled Course")}
@@ -218,16 +213,15 @@ export function CourseCard({
         <div className="mt-auto pt-4">
           <div className="border-t border-slate-100 pt-3.5">
             <div className="flex items-end justify-between gap-3">
-              {/* Price */}
               <div className="min-w-0">
-                <p className="text-lg font-bold leading-none text-slate-900">
-                  {price}
-                </p>
-
-                {batchCount !== undefined && batchCount > 0 && (
-                  <p className="mt-1.5 text-[11px] text-slate-500">
+                {batchCount !== undefined && batchCount > 0 ? (
+                  <p className="text-[11px] text-slate-500">
                     {batchCount} upcoming{" "}
                     {batchCount === 1 ? "batch" : "batches"}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-slate-500">
+                    View batches for fees
                   </p>
                 )}
               </div>
@@ -248,7 +242,7 @@ export function CourseCard({
                     text-slate-600
                     transition
                     hover:bg-blue-50
-                    hover:text-blue-600
+                    hover:text-[#2563D9]
                   "
                 >
                   Details
@@ -261,14 +255,14 @@ export function CourseCard({
                   className="
                     h-9
                     rounded-lg
-                    bg-blue-600
+                    bg-gradient-to-r from-[#2563D9] to-[#1746A2]
                     px-3.5
                     text-xs
                     font-semibold
                     text-white
                     shadow-sm
                     transition
-                    hover:bg-blue-700
+                    hover:from-[#1E58C7] hover:to-[#123D94]
                   "
                 >
                   Enroll

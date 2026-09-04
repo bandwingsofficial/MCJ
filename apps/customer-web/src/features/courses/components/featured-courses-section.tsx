@@ -45,7 +45,7 @@ export function FeaturedCoursesSection() {
         ====================================================== */}
         <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-blue-600">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#2563D9]">
               Learn & Grow
             </p>
 

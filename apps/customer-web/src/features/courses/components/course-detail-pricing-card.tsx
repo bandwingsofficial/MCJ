@@ -10,13 +10,6 @@ import type {
   CourseSummary,
 } from "@/src/features/courses/types/course.types";
 
-import {
-  formatCurrency,
-  formatDetailCoursePrice,
-  getCoursePricing,
-  getDiscountPercent,
-} from "@/src/features/courses/utils/course-display.utils";
-
 import { getCourseBatchesSectionPath } from "@/src/features/courses/utils/course-route.utils";
 
 interface CourseDetailPricingCardProps {
@@ -30,7 +23,6 @@ interface CourseDetailPricingCardProps {
 
 export function CourseDetailPricingCard({
   course,
-  summary,
   batchCount,
   sticky = true,
   variant = "default",
@@ -38,16 +30,7 @@ export function CourseDetailPricingCard({
 }: CourseDetailPricingCardProps) {
   const router = useRouter();
 
-  const pricing = getCoursePricing(course);
-  const discountPercent = getDiscountPercent(course) ?? 0;
-
   const isEnrolled = Boolean(course.isEnrolled);
-  const isFree = pricing.isFree;
-
-  const showOriginalPrice =
-    !isFree &&
-    pricing.originalPrice > pricing.discountedPrice;
-
   const hasBatches = batchCount > 0;
 
   const handlePrimaryAction = () => {
@@ -64,18 +47,8 @@ export function CourseDetailPricingCard({
     router.push(getCourseBatchesSectionPath(course));
   };
 
-  const buttonLabel = isEnrolled
-    ? "Continue Learning"
-    : isFree
-      ? "Start Learning"
-      : "Enroll Now";
+  const buttonLabel = isEnrolled ? "Continue Learning" : "Enroll Now";
 
-  /*
-   * CTA VARIANT
-   *
-   * Used when the parent page only needs the primary
-   * enrollment button.
-   */
   if (variant === "cta") {
     return (
       <Button
@@ -84,17 +57,10 @@ export function CourseDetailPricingCard({
         className="
           h-12
           rounded-xl
-          bg-blue-600
           px-6
           text-sm
           font-semibold
-          text-white
           shadow-sm
-          transition
-          hover:bg-blue-700
-          focus-visible:ring-2
-          focus-visible:ring-blue-500
-          focus-visible:ring-offset-2
         "
       >
         {buttonLabel}
@@ -116,55 +82,15 @@ export function CourseDetailPricingCard({
           shadow-sm
         "
       >
-        {/* =====================================================
-            PRICE SECTION
-        ====================================================== */}
         <div className="p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-            Course Fee
+            Enrollment
           </p>
 
-          {/* Free course */}
-          {isFree ? (
-            <div className="mt-3">
-              <p className="text-3xl font-bold tracking-tight text-slate-900">
-                Free
-              </p>
+          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+            Select a branch and batch to view fees and continue enrollment.
+          </p>
 
-              <p className="mt-1 text-xs text-emerald-600">
-                No payment required
-              </p>
-            </div>
-          ) : (
-            <div className="mt-3">
-              <div className="flex flex-wrap items-end gap-2">
-                <p className="text-3xl font-bold tracking-tight text-slate-900">
-                  {formatDetailCoursePrice(course)}
-                </p>
-
-                {showOriginalPrice && (
-                  <p className="pb-1 text-sm text-slate-400 line-through">
-                    {formatCurrency(
-                      pricing.originalPrice,
-                      pricing.currency,
-                    )}
-                  </p>
-                )}
-              </div>
-
-              {discountPercent > 0 && (
-                <div className="mt-2 inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1">
-                  <span className="text-xs font-semibold text-emerald-700">
-                    {discountPercent}% OFF
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ===================================================
-              PRIMARY ACTION
-          ==================================================== */}
           <Button
             type="button"
             onClick={handlePrimaryAction}
@@ -173,16 +99,9 @@ export function CourseDetailPricingCard({
               h-12
               w-full
               rounded-xl
-              bg-blue-600
               text-sm
               font-semibold
-              text-white
               shadow-sm
-              transition
-              hover:bg-blue-700
-              focus-visible:ring-2
-              focus-visible:ring-blue-500
-              focus-visible:ring-offset-2
             "
           >
             {buttonLabel}
@@ -190,9 +109,6 @@ export function CourseDetailPricingCard({
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
 
-          {/* ===================================================
-              BATCH AVAILABILITY
-          ==================================================== */}
           {hasBatches ? (
             <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-slate-500">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
@@ -209,9 +125,6 @@ export function CourseDetailPricingCard({
           )}
         </div>
 
-        {/* =====================================================
-            SMALL TRUST / INFORMATION AREA
-        ====================================================== */}
         {(hasBatches || isEnrolled) && (
           <div className="border-t border-slate-100 bg-slate-50/50 px-6 py-4">
             {isEnrolled ? (

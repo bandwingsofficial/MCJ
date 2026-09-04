@@ -10,7 +10,7 @@ import { enrollmentService } from "@/src/features/enrollments/services/enrollmen
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import type { Student } from "@/src/features/students/types/student.types";
 import type { StudentEnrollmentFormValues } from "@/src/features/students/schemas/student-enrollment.schema";
-import { formatCourseFee } from "@/src/features/courses/utils/format-course-fee.util";
+import { formatBatchOriginalPrice } from "@/src/features/batches/utils/batch-pricing.util";
 import { normalizeMoney } from "@/src/features/enrollments/utils/format-payment";
 import { StudentEnrollmentForm } from "@/src/features/students/components/manage/student-enrollment-form";
 
@@ -95,9 +95,13 @@ export function UpdateStudentEnrollmentModal({
           editBatchDetails={{
             batchLabel: formatBatchLabel(enrollment),
             courseTitle: enrollment.course?.title ?? "—",
-            courseFee: formatCourseFee({
-              pricing: enrollment.course?.pricing,
-            }),
+            courseFee: enrollment.batch
+              ? formatBatchOriginalPrice(enrollment.batch)
+              : formatBatchOriginalPrice({
+                  originalPrice: enrollment.feeAmount,
+                  discountAmount: enrollment.discountAmount,
+                  isFree: false,
+                }),
             branchName: derivedBranchName,
             categoryName: enrollment.category?.name ?? "—",
             trainerNames: formatTrainerNames(enrollment),

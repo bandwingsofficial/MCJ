@@ -314,11 +314,6 @@ model Course {
   description      String?
   thumbnailFileId  String?
   thumbnailUrl     String?
-  originalPrice    Decimal          @default(0) @db.Decimal(12, 2)
-  discountAmount   Decimal          @default(0) @db.Decimal(12, 2)
-  discountedPrice  Decimal          @default(0) @db.Decimal(12, 2)
-  currency         String           @default("INR")
-  isFree           Boolean          @default(false)
   duration         Int?
   durationType     DurationType?
   level                  CourseLevel            @default(BEGINNER)
@@ -657,6 +652,11 @@ model Batch {
   capacity      Int
   enrolledCount Int            @default(0)
   mode          CourseMode     @default(OFFLINE)
+  originalPrice    Decimal          @default(0) @db.Decimal(12, 2)
+  discountAmount   Decimal          @default(0) @db.Decimal(12, 2)
+  discountedPrice  Decimal          @default(0) @db.Decimal(12, 2)
+  currency         String           @default("INR")
+  isFree           Boolean          @default(false)
   classroom     String?
   meetingLink   String?
   isFeatured    Boolean        @default(false)

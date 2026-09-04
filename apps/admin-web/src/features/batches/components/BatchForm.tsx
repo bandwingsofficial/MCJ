@@ -16,6 +16,7 @@ import {
   BookOpen,
   CalendarDays,
   Hash,
+  IndianRupee,
   Tag,
   Users,
   type LucideIcon,
@@ -50,6 +51,7 @@ import {
   countWords,
   DESCRIPTION_WORD_LIMIT,
 } from "@/src/features/batches/utils/batch-form.utils";
+import { buildBatchPricingInput } from "@/src/features/batches/utils/batch-pricing.util";
 import {
   calculateTotalWorkingDays,
   formatTotalWorkingDaysLabel,
@@ -80,7 +82,17 @@ const EMPTY_DEFAULTS: BatchFormValues = {
   enrolledCount: 0,
   mode: "ONLINE",
   isFeatured: false,
+  originalPrice: 0,
+  discountPercent: 0,
+  discountAmount: 0,
+  currency: "INR",
+  isFree: false,
 };
+
+const PRICING_TYPE_OPTIONS = [
+  { label: "Paid", value: "PAID" },
+  { label: "Free", value: "FREE" },
+];
 
 const GRID_CLASS = "grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2";
 
@@ -182,6 +194,14 @@ export function BatchForm({
   const values = watch();
   const selectedDays = values.daysOfWeek ?? [];
   const descriptionWords = countWords(values.description ?? "");
+  const pricesDisabled = Boolean(values.isFree);
+  const computedPricing = buildBatchPricingInput({
+    originalPrice: Number(values.originalPrice) || 0,
+    discountAmount: Number(values.discountAmount) || 0,
+    discountPercent: Number(values.discountPercent) || 0,
+    currency: values.currency,
+    isFree: Boolean(values.isFree),
+  });
 
   const totalWorkingDays = useMemo(
     () =>
@@ -348,6 +368,29 @@ export function BatchForm({
       shouldValidate: true,
       shouldDirty: true,
     });
+  };
+
+  const handlePricingTypeChange = (value: string) => {
+    const isFree = value === "FREE";
+    setValue("isFree", isFree, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+
+    if (isFree) {
+      setValue("originalPrice", 0, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setValue("discountPercent", 0, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setValue("discountAmount", 0, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    }
   };
 
   const registerField = (name: SyncFieldName) => {
@@ -579,6 +622,166 @@ export function BatchForm({
             />
           </IconField>
         ) : null}
+
+        <div className="md:col-span-2">
+          <p className="text-sm font-medium text-[#102A56]">Pricing</p>
+        </div>
+
+        <ValidatedField
+          label="Pricing Type"
+          required
+          state={getFieldState("isFree")}
+          errorMessage={errors.isFree?.message}
+        >
+          <AppSelect
+            value={values.isFree ? "FREE" : "PAID"}
+            onValueChange={handlePricingTypeChange}
+            placeholder="Select pricing type"
+            options={PRICING_TYPE_OPTIONS}
+            triggerClassName={plainInputClass(getFieldState("isFree"))}
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Original Price"
+          required={!pricesDisabled}
+          state={getFieldState("originalPrice")}
+          errorMessage={errors.originalPrice?.message}
+        >
+          <div className="relative">
+            {!pricesDisabled ? (
+              <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-[#647A9B]">
+                ₹
+              </span>
+            ) : null}
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              disabled={pricesDisabled}
+              placeholder={
+                pricesDisabled ? "Free batch" : "Enter original price"
+              }
+              autoComplete="off"
+              className={plainInputClass(
+                getFieldState("originalPrice"),
+                pricesDisabled ? "" : "pl-7",
+              )}
+              {...register("originalPrice", {
+                valueAsNumber: true,
+                onChange: (event) => {
+                  const nextOriginal = Number(event.target.value) || 0;
+                  const percent = Number(values.discountPercent) || 0;
+                  const nextAmount =
+                    Math.round(((nextOriginal * percent) / 100) * 100) / 100;
+                  setValue("discountAmount", nextAmount, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  void trigger("originalPrice");
+                },
+              })}
+            />
+            {!pricesDisabled ? <FieldIcon icon={IndianRupee} /> : null}
+          </div>
+        </ValidatedField>
+
+        <ValidatedField
+          label="Discount %"
+          required={!pricesDisabled}
+          state={getFieldState("discountPercent")}
+          errorMessage={errors.discountPercent?.message}
+        >
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            step="0.01"
+            disabled={pricesDisabled}
+            placeholder={
+              pricesDisabled ? "Free batch" : "Enter discount percent"
+            }
+            autoComplete="off"
+            className={plainInputClass(getFieldState("discountPercent"))}
+            {...register("discountPercent", {
+              valueAsNumber: true,
+              onChange: (event) => {
+                const percent = Number(event.target.value) || 0;
+                const original = Number(values.originalPrice) || 0;
+                const nextAmount =
+                  Math.round(((original * percent) / 100) * 100) / 100;
+                setValue("discountAmount", nextAmount, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+                void trigger("discountPercent");
+              },
+            })}
+          />
+        </ValidatedField>
+
+        <ValidatedField
+          label="Discount Amount"
+          required={!pricesDisabled}
+          state={getFieldState("discountAmount")}
+          errorMessage={errors.discountAmount?.message}
+        >
+          <div className="relative">
+            {!pricesDisabled ? (
+              <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-[#647A9B]">
+                ₹
+              </span>
+            ) : null}
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              disabled={pricesDisabled}
+              placeholder={
+                pricesDisabled ? "Free batch" : "Enter discount amount"
+              }
+              autoComplete="off"
+              className={plainInputClass(
+                getFieldState("discountAmount"),
+                pricesDisabled ? "" : "pl-7",
+              )}
+              {...register("discountAmount", {
+                valueAsNumber: true,
+                onChange: (event) => {
+                  const amount = Number(event.target.value) || 0;
+                  const original = Number(values.originalPrice) || 0;
+                  const nextPercent =
+                    original > 0
+                      ? Math.round((amount / original) * 10000) / 100
+                      : 0;
+                  setValue("discountPercent", nextPercent, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  void trigger("discountAmount");
+                },
+              })}
+            />
+          </div>
+        </ValidatedField>
+
+        <ValidatedField label="Final Price" state="neutral">
+          <Input
+            value={
+              pricesDisabled
+                ? "Free"
+                : `₹${computedPricing.discountedPrice.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}`
+            }
+            readOnly
+            disabled
+            className={plainInputClass("neutral")}
+          />
+        </ValidatedField>
+
+        <input type="hidden" {...register("currency")} />
 
         <div className="md:col-span-2">
           <ValidatedField

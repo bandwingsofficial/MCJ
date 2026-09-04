@@ -49,11 +49,11 @@ export function ResumeUploadField({
         tabIndex={disabled ? -1 : 0}
         aria-label="Upload resume"
         className={cn(
-          "cursor-pointer rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/30",
+          "cursor-pointer rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563D9]/30",
           error
             ? "border-red-300 bg-red-50/30"
             : isDragging
-              ? "border-[#2563EB] bg-blue-50/40"
+              ? "border-[#2563D9] bg-blue-50/40"
               : file
                 ? "border-emerald-400 bg-emerald-50/20"
                 : "border-slate-300 bg-slate-50/50",

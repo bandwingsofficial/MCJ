@@ -21,7 +21,7 @@ export function CTASection() {
             {/* LEFT CONTENT */}
             <div className="text-center md:text-left">
 
-              <p className="text-sm font-semibold text-blue-600 tracking-wider uppercase mb-4">
+              <p className="text-sm font-semibold text-[#2563D9] tracking-wider uppercase mb-4">
                 Learn. Practice. Succeed.
               </p>
 
@@ -33,7 +33,7 @@ export function CTASection() {
               <div className="mt-8 flex flex-col sm:flex-row items-center md:items-start gap-4">
 
                 <Link href="/courses">
-                  <Button className="px-4 py-3 text-lg rounded-xl bg-blue-600 hover:bg-blue-700 transition-all shadow-lg">
+                  <Button className="px-4 py-3 text-lg rounded-xl shadow-lg">
                     Explore Courses 📚
                   </Button>
                 </Link>

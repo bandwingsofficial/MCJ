@@ -38,7 +38,7 @@ export function BatchCard({ batch, onView }: BatchCardProps) {
         </div>
 
         <div className="rounded-lg bg-blue-50/50 border border-blue-100 px-3 py-2 text-xs">
-  <span className="text-blue-600 block text-[10px] uppercase tracking-wider font-bold mb-0.5">
+  <span className="text-[#2563D9] block text-[10px] uppercase tracking-wider font-bold mb-0.5">
     Course Mapping
   </span>
   <span className="font-semibold text-blue-900">{batch.course.title}</span>
@@ -61,7 +61,7 @@ export function BatchCard({ batch, onView }: BatchCardProps) {
             <Video className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <div>
               <span className="block text-[10px] text-muted-foreground uppercase font-medium">Mode</span>
-              <span className="font-semibold text-blue-600 dark:text-blue-400 capitalize">{batch.mode.toLowerCase()}</span>
+              <span className="font-semibold text-[#2563D9] dark:text-blue-400 capitalize">{batch.mode.toLowerCase()}</span>
             </div>
           </div>
 
@@ -96,7 +96,7 @@ export function BatchCard({ batch, onView }: BatchCardProps) {
 
       {/* Primary Action Target */}
       <Button
-        className="mt-5 w-full h-9 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition-colors"
+        className="mt-5 w-full h-9 text-xs font-semibold bg-gradient-to-r from-[#2563D9] to-[#1746A2] hover:from-[#1E58C7] hover:to-[#123D94] text-white rounded-lg shadow-sm transition-colors"
         onClick={() => onView(batch.id)}
       >
         View Details

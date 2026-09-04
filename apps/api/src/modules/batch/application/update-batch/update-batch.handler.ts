@@ -2,8 +2,10 @@ import type { CategoryRepository } from '@modules/category/domain/repositories/c
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 
 import { Slug } from '@common/value-objects/slug.vo';
+import { InvalidBatchPricingException } from '../../domain/errors/invalid-batch-pricing.exception';
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
+import { normalizeBatchPricingInput } from '../../domain/value-objects/batch-pricing.vo';
 import { GetBatchResult } from '../get-batch/get-batch.result';
 
 import type { BranchRepository } from '@modules/branch/domain/repositories/branch.repository';
@@ -56,6 +58,50 @@ export class UpdateBatchHandler {
       // New branch assignment must reject completed/expired batches.
       if (command.branchId !== batch.branchId) {
         ensureBatchSelectableForAssignment(batch);
+      }
+    }
+
+    const pricingFieldsTouched =
+      command.originalPrice !== undefined ||
+      command.discountAmount !== undefined ||
+      command.discountedPrice !== undefined ||
+      command.currency !== undefined ||
+      command.isFree !== undefined;
+
+    let normalizedPricing:
+      | ReturnType<typeof normalizeBatchPricingInput>
+      | undefined;
+
+    if (pricingFieldsTouched) {
+      normalizedPricing = normalizeBatchPricingInput({
+        originalPrice:
+          command.originalPrice ?? batch.originalPrice.getValue(),
+        discountAmount:
+          command.discountAmount ?? batch.discountAmount.getValue(),
+        discountedPrice:
+          command.discountedPrice ?? batch.discountedPrice.getValue(),
+        currency: command.currency ?? batch.currency,
+        isFree: command.isFree ?? batch.isFree,
+      });
+
+      if (
+        normalizedPricing.isFree &&
+        (normalizedPricing.originalPrice > 0 ||
+          normalizedPricing.discountAmount > 0 ||
+          normalizedPricing.discountedPrice > 0)
+      ) {
+        throw new InvalidBatchPricingException(
+          'Free batches cannot have pricing values',
+        );
+      }
+
+      if (
+        !normalizedPricing.isFree &&
+        normalizedPricing.discountedPrice > normalizedPricing.originalPrice
+      ) {
+        throw new InvalidBatchPricingException(
+          'Discounted price cannot be greater than original price',
+        );
       }
     }
 
@@ -133,6 +179,13 @@ export class UpdateBatchHandler {
       capacity: command.capacity,
       enrolledCount: command.enrolledCount,
       mode: command.mode,
+      originalPrice: normalizedPricing?.originalPrice ?? command.originalPrice,
+      discountAmount:
+        normalizedPricing?.discountAmount ?? command.discountAmount,
+      discountedPrice:
+        normalizedPricing?.discountedPrice ?? command.discountedPrice,
+      currency: normalizedPricing?.currency ?? command.currency,
+      isFree: normalizedPricing?.isFree ?? command.isFree,
       classroom: command.classroom,
       meetingLink: command.meetingLink,
       isFeatured: command.isFeatured,

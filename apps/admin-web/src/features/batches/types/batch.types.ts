@@ -20,6 +20,15 @@ export type DayOfWeek =
   | "SATURDAY"
   | "SUNDAY";
 
+export interface BatchPricing {
+  originalPrice: number;
+  discountAmount: number;
+  discountPercent: number;
+  discountedPrice: number;
+  currency: string;
+  isFree: boolean;
+}
+
 export interface BatchCourse {
   id: string;
   title: string;
@@ -29,10 +38,6 @@ export interface BatchCourse {
   description?: string | null;
   thumbnailUrl?: string | null;
   minimumQualifications?: string[];
-  isFree?: boolean;
-  currency?: string;
-  discountedPrice?: number | string;
-  originalPrice?: number | string;
   category?: BatchCategory | null;
 }
 
@@ -85,6 +90,13 @@ export interface Batch {
   isActive?: boolean;
   status: BatchStatus;
   displayOrder?: number | null;
+  originalPrice?: number;
+  discountAmount?: number;
+  discountPercent?: number;
+  discountedPrice?: number;
+  currency?: string;
+  isFree?: boolean;
+  pricing?: BatchPricing | null;
   trainers: BatchTrainer[];
   createdBy: string | null;
   updatedBy: string | null;
@@ -153,6 +165,11 @@ export interface CreateBatchRequest {
   meetingLink?: string;
   isFeatured?: boolean;
   status?: BatchStatus;
+  originalPrice?: number;
+  discountAmount?: number;
+  discountedPrice?: number;
+  currency?: string;
+  isFree?: boolean;
 }
 
 export interface UpdateBatchRequest extends Partial<CreateBatchRequest> {

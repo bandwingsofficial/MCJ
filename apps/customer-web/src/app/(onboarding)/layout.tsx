@@ -33,7 +33,7 @@ export default function OnboardingLayout({
               <span className="block text-sm font-bold tracking-tight text-[#102A56]">
                 MCJ Institute
               </span>
-              <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2563EB]">
+              <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2563D9]">
                 Careers
               </span>
             </span>

@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 
-import { buildCoursePricing } from '@modules/course/domain/value-objects/course-pricing.vo';
+import { buildBatchPricing } from '@modules/batch/domain/value-objects/batch-pricing.vo';
 
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
@@ -135,14 +135,6 @@ export class EnrollmentResponseMapper {
   private static toCourse(
     course: EnrollmentWithRelations['course'],
   ): EnrollmentCourseView {
-    const pricing = buildCoursePricing({
-      originalPrice: toNumber(course.originalPrice),
-      discountAmount: toNumber(course.discountAmount),
-      discountedPrice: toNumber(course.discountedPrice),
-      currency: course.currency,
-      isFree: course.isFree,
-    });
-
     return {
       id: course.id,
       title: course.title,
@@ -157,13 +149,20 @@ export class EnrollmentResponseMapper {
       status: course.status,
       averageRating: course.averageRating,
       totalReviews: course.totalReviews,
-      pricing,
     };
   }
 
   private static toBatch(
     batch: EnrollmentWithRelations['batch'],
   ): EnrollmentBatchView {
+    const pricing = buildBatchPricing({
+      originalPrice: toNumber(batch.originalPrice),
+      discountAmount: toNumber(batch.discountAmount),
+      discountedPrice: toNumber(batch.discountedPrice),
+      currency: batch.currency,
+      isFree: batch.isFree,
+    });
+
     return {
       id: batch.id,
       name: batch.name,
@@ -183,6 +182,7 @@ export class EnrollmentResponseMapper {
       status: batch.status,
       isFeatured: batch.isFeatured,
       isActive: batch.isActive,
+      pricing,
       trainers: batch.trainers.map((bt) => this.toTrainer(bt.trainer)),
     };
   }

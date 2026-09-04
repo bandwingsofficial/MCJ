@@ -1,5 +1,3 @@
-import type { CoursePricing } from "@/src/features/courses/types/course.types";
-
 import type {
   CourseModule,
 } from "@/src/features/student-course/types/module.types";
@@ -87,8 +85,6 @@ export interface StudentCourse {
    * Course thumbnail.
    */
   thumbnailUrl: string | null;
-
-  pricing: CoursePricing;
 
   /**
    * Course duration value.

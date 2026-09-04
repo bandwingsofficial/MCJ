@@ -9,14 +9,9 @@ import { Button } from "@/src/shared/components/ui/button";
 
 import { CourseRatingMeta } from "@/src/features/courses/components/course-rating-meta";
 import type { Course } from "@/src/features/courses/types/course.types";
-import { formatCoursePrice } from "@/src/features/courses/utils/course-display.utils";
 
 interface HomePopularCourseCardProps {
   course: Course;
-}
-
-function formatHomeCoursePrice(course: Course): string {
-  return formatCoursePrice(course);
 }
 
 function getCourseDescription(course: Course): string | null {
@@ -226,37 +221,7 @@ export function HomePopularCourseCard({
         <div className="mt-auto pt-4">
           <div className="mb-3 h-px bg-slate-100" />
 
-          <div className="flex items-end justify-between gap-3">
-            {/* Price */}
-            <div className="min-w-0">
-              <p
-                className="
-                  text-[9px]
-                  font-medium
-                  uppercase
-                  tracking-[0.12em]
-                  text-slate-400
-                "
-              >
-                Course Fee
-              </p>
-
-              <p
-                className="
-                  mt-1
-                  truncate
-                  text-[17px]
-                  font-bold
-                  leading-none
-                  tracking-tight
-                  text-[#0f2044]
-                "
-              >
-                {formatHomeCoursePrice(course)}
-              </p>
-            </div>
-
-            {/* Enroll */}
+          <div className="flex items-end justify-end gap-3">
             <Button
               type="button"
               size="sm"
@@ -264,7 +229,7 @@ export function HomePopularCourseCard({
                 h-8
                 shrink-0
                 rounded-lg
-                bg-[#0f2044]
+                bg-gradient-to-r from-[#2563D9] to-[#1746A2]
                 px-3.5
                 text-[10px]
                 font-semibold
@@ -272,8 +237,9 @@ export function HomePopularCourseCard({
                 shadow-none
                 transition-all
                 duration-200
-                hover:bg-[#18345f]
-                hover:shadow-[0_5px_14px_rgba(15,32,68,0.18)]
+                hover:from-[#1E58C7]
+                hover:to-[#123D94]
+                hover:shadow-[0_5px_14px_rgba(37,99,217,0.25)]
               "
               onClick={handleEnroll}
             >

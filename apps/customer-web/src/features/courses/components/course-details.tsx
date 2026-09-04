@@ -179,17 +179,17 @@ export function CourseDetails({ course }: CourseDetailsProps) {
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-2.5 sm:px-6 lg:px-8">
           <nav className="flex flex-wrap items-center gap-1 text-sm text-slate-500">
-            <Link href="/" className="transition-colors hover:text-blue-600">
+            <Link href="/" className="transition-colors hover:text-[#2563D9]">
               Home
             </Link>
             <ChevronRight className="h-3.5 w-3.5" />
-            <Link href="/courses" className="transition-colors hover:text-blue-600">
+            <Link href="/courses" className="transition-colors hover:text-[#2563D9]">
               Courses
             </Link>
             <ChevronRight className="h-3.5 w-3.5" />
             <Link
               href={`/courses?category=${course.categoryId}`}
-              className="transition-colors hover:text-blue-600"
+              className="transition-colors hover:text-[#2563D9]"
             >
               {course.categoryName || "Category"}
             </Link>
@@ -199,7 +199,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
         </div>
       </div>
 
-      {/* Hero: left = image + info, right = pricing */}
+      {/* Hero: left = image + info, right = enroll CTA */}
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-4 pt-5 pb-6 sm:px-6 lg:px-8 lg:pt-6">
           <div className="grid gap-6 lg:grid-cols-[7fr_3fr] lg:items-start lg:gap-8">
@@ -253,7 +253,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                   />
                 </div>
 
-                <p className="mt-2 text-sm font-semibold text-blue-600">
+                <p className="mt-2 text-sm font-semibold text-[#2563D9]">
                   {course.code}
                 </p>
 
@@ -300,13 +300,13 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                         onClick={() => setActiveTab(tab.id)}
                         className={`relative shrink-0 py-3.5 text-sm font-medium transition-colors ${
                           active
-                            ? "text-blue-600"
+                            ? "text-[#2563D9]"
                             : "text-slate-600 hover:text-slate-900"
                         }`}
                       >
                         {tab.label}
                         {active ? (
-                          <span className="absolute inset-x-0 bottom-0 h-0.5 bg-blue-600" />
+                          <span className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-[#2563D9] to-[#1746A2]" />
                         ) : null}
                       </button>
                     );
@@ -371,7 +371,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                       key={item}
                       className="flex items-center gap-2.5 text-sm text-slate-700"
                     >
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-600" />
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563D9]" />
                       <span>{item}</span>
                     </div>
                   ))
@@ -396,7 +396,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                     <button
                       type="button"
                       onClick={() => void refetchTrainers()}
-                      className="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                      className="mt-2 text-sm font-semibold text-[#2563D9] hover:text-[#1746A2]"
                     >
                       Retry
                     </button>
@@ -489,7 +489,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
             <Button
               type="button"
               onClick={handleEnroll}
-              className="h-11 min-w-[160px] shrink-0 rounded-lg bg-blue-600 px-7 text-sm font-semibold text-white hover:bg-blue-700"
+              className="h-11 min-w-[160px] shrink-0 rounded-lg bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-7 text-sm font-semibold text-white hover:from-[#1E58C7] hover:to-[#123D94]"
             >
               {course.isEnrolled ? "Continue Learning" : "Enroll Now"}
               <ArrowRight className="ml-2 h-4 w-4" />
@@ -576,7 +576,7 @@ function CurriculumOverviewContent({
               key={module.id}
               className="rounded-lg border border-slate-200 bg-slate-50/50 p-4"
             >
-              <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#2563D9]">
                 Module {index + 1}
               </p>
               <h3 className="mt-0.5 text-sm font-semibold text-slate-900">
@@ -644,7 +644,7 @@ function InstructorContent({
         <button
           type="button"
           onClick={onRetry}
-          className="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
+          className="mt-2 text-sm font-semibold text-[#2563D9] hover:text-[#1746A2]"
         >
           Retry
         </button>
@@ -684,14 +684,14 @@ function TrainerTabCard({ trainer }: { trainer: Trainer }) {
             className="h-14 w-14 rounded-full object-cover"
           />
         ) : (
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-50 text-base font-bold text-blue-600">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-50 text-base font-bold text-[#2563D9]">
             {trainer.firstName?.charAt(0) ?? "T"}
           </div>
         )}
         <div className="min-w-0">
           <h3 className="text-base font-bold text-slate-950">{fullName}</h3>
           {(trainer.specialization ?? trainer.trainerType) ? (
-            <p className="mt-1 text-sm text-blue-600">
+            <p className="mt-1 text-sm text-[#2563D9]">
               {trainer.specialization ?? trainer.trainerType}
             </p>
           ) : null}

@@ -27,7 +27,10 @@ import {
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
 import type { Course } from "@/src/features/courses/types/course.types";
 import { courseService } from "@/src/features/courses/services/course.service";
-import { getCourseDefaultDiscount } from "@/src/features/courses/utils/get-course-default-discount.util";
+import {
+  getBatchDefaultDiscount,
+  getBatchPricing,
+} from "@/src/features/batches/utils/batch-pricing.util";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
 import {
@@ -200,8 +203,9 @@ export function BranchCreateEnrollmentModal({
         if (courseId) {
           const courseResponse = await courseService.getCourse(courseId);
           nextCourse = courseResponse.data;
-          nextFee = normalizeMoney(nextCourse.pricing?.originalPrice);
-          nextDiscount = getCourseDefaultDiscount(nextCourse);
+          const batchPricing = getBatchPricing(batch);
+          nextFee = batchPricing.originalPrice;
+          nextDiscount = getBatchDefaultDiscount(batch);
           nextCategory =
             nextCourse.category?.name ?? "—";
         } else if (assignments[0]?.course?.category?.name) {
@@ -396,6 +400,7 @@ export function BranchCreateEnrollmentModal({
         {batchId ? (
           <BranchEnrollmentCourseDetails
             course={course}
+            pricingSource={selectedBatch}
             categoryName={categoryName}
             isLoading={isLoadingContext}
           />

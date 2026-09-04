@@ -36,15 +36,6 @@ export interface CourseBranchResponseDto {
   branchCode: string;
 }
 
-export interface CoursePricingDto {
-  originalPrice: number;
-  discountAmount: number;
-  discountPercent: number;
-  discountedPrice: number;
-  currency: string;
-  isFree: boolean;
-}
-
 export interface StudentCourseResponseDto {
   id: string;
   code?: string;
@@ -55,7 +46,6 @@ export interface StudentCourseResponseDto {
   description: string | null;
   thumbnailFileId: string | null;
   thumbnailUrl: string | null;
-  pricing: CoursePricingDto;
   duration: number;
   durationType: string;
   level: string;

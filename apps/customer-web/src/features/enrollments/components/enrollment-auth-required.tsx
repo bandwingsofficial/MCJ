@@ -28,7 +28,7 @@ export function EnrollmentAuthRequired({
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <Link
             href={loginHref}
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700"
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-5 text-sm font-semibold text-white hover:from-[#1E58C7] hover:to-[#123D94]"
           >
             <LogIn className="mr-2 h-4 w-4" />
             Sign In
@@ -48,7 +48,7 @@ export function EnrollmentAuthRequired({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-[#2563D9]">
         <LogIn className="h-6 w-6" />
       </div>
 
@@ -63,7 +63,7 @@ export function EnrollmentAuthRequired({
       <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
         <Link
           href={loginHref}
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white hover:bg-blue-700"
+          className="inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-6 text-sm font-semibold text-white hover:from-[#1E58C7] hover:to-[#123D94]"
         >
           <LogIn className="mr-2 h-4 w-4" />
           Sign In

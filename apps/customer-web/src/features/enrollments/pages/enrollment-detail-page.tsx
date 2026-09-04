@@ -222,21 +222,21 @@ export function EnrollmentDetailPage({
             </p>
             <div className="mt-4 space-y-3 text-sm text-slate-700">
               <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-blue-600" />
+                <Mail className="h-4 w-4 text-[#2563D9]" />
                 <a
                   href="mailto:support@mcjinstitute.com"
-                  className="hover:text-blue-600"
+                  className="hover:text-[#2563D9]"
                 >
                   support@mcjinstitute.com
                 </a>
               </div>
               <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-blue-600" />
+                <Phone className="h-4 w-4 text-[#2563D9]" />
                 <span>We respond within 24 hours</span>
               </div>
               <Link
                 href="/contact"
-                className="inline-flex text-sm font-semibold text-blue-600 hover:underline"
+                className="inline-flex text-sm font-semibold text-[#2563D9] hover:underline"
               >
                 Visit Contact Page
               </Link>

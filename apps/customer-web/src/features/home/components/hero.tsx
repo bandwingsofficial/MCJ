@@ -169,7 +169,7 @@ export function HeroSection() {
             <button
               type="button"
               onClick={() => router.push("/courses")}
-              className="group relative overflow-hidden rounded-md bg-[#0f2044] px-6 py-2.5 text-[13px] font-medium tracking-[0.01em] text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1a3460] hover:shadow-md"
+              className="group relative overflow-hidden rounded-md bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-6 py-2.5 text-[13px] font-medium tracking-[0.01em] text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:from-[#1E58C7] hover:to-[#123D94] hover:shadow-md"
             >
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-[#d4a84b]/15 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
 
@@ -217,7 +217,7 @@ export function HeroSection() {
                   }
                 `}
               >
-                <div className="font-[var(--font-playfair)] text-[21px] font-normal leading-none text-[#0f2044]">
+                <div className="font-[var(--font-playfair)] text-[21px] font-semibold leading-none text-[#0f2044]">
                   {stat.value}
                 </div>
 
@@ -233,14 +233,14 @@ export function HeroSection() {
             RIGHT CARD
         ======================================================= */}
 
-        <div
+   <div
   className={`relative flex items-center justify-center transition-all delay-150 duration-[600ms] ease-out max-lg:hidden ${
     visible ? "translate-x-0 opacity-100" : "translate-x-5 opacity-0"
   }`}
 >
   {/* Admissions badge */}
 
-  <div className="absolute -right-2 -top-3 z-20 flex items-center gap-2 rounded-xl border border-[#e8e0cf] bg-white px-3.5 py-2.5 shadow-[0_4px_18px_rgba(15,32,68,0.09)] xl:-right-4">
+  <div className="absolute -right-2 -top-3 z-20 flex items-center gap-2 rounded-xl border border-[#dbe7fb] bg-white px-3.5 py-2.5 shadow-[0_4px_18px_rgba(37,99,217,0.10)] xl:-right-4">
     <span className="relative flex h-2 w-2">
       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-40" />
       <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
@@ -253,15 +253,15 @@ export function HeroSection() {
 
   {/* Main Card */}
 
-  <div className="relative mt-0 w-full max-w-[465px] overflow-hidden rounded-[16px] border border-[#e8e0cf] bg-white p-6 shadow-[0_2px_26px_rgba(15,32,68,0.06),0_1px_4px_rgba(15,32,68,0.04)]">
+  <div className="relative mt-0 w-full max-w-[465px] overflow-hidden rounded-[16px] border border-[#dbe7fb] bg-white p-6 shadow-[0_2px_26px_rgba(37,99,217,0.08),0_1px_4px_rgba(15,32,68,0.04)]">
     {/* Top gradient */}
 
-    <div className="absolute left-0 right-0 top-0 h-[3px] bg-gradient-to-r from-[#b8922a] to-[#1a3460]" />
+    <div className="absolute left-0 right-0 top-0 h-[3px] bg-gradient-to-r from-[#F5A623] via-[#2563D9] to-[#1746A2]" />
 
     {/* Institute header */}
 
     <div className="mb-4 flex items-center gap-3.5">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-[#0f2044] font-[var(--font-playfair)] text-[18px] font-normal tracking-[-0.5px] text-[#d4a84b]">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#2563D9] to-[#1746A2] font-[var(--font-playfair)] text-[18px] font-normal tracking-[-0.5px] text-[#F5A623] shadow-[0_5px_14px_rgba(37,99,217,0.20)]">
         MCJ
       </div>
 
@@ -282,11 +282,11 @@ export function HeroSection() {
       {courses.map((course) => (
         <div
           key={course.name}
-          className="group flex items-center gap-3 rounded-[10px] border border-[#e8e0cf] bg-[#fdf8ef] px-4 py-3 transition-colors duration-200 hover:border-[#d4a84b]"
+          className="group flex items-center gap-3 rounded-[10px] border border-[#dbe7fb] bg-[#f8fbff] px-4 py-3 transition-all duration-200 hover:border-[#9bbcf2] hover:bg-[#f3f7ff] hover:shadow-[0_4px_14px_rgba(37,99,217,0.07)]"
         >
           {/* Icon */}
 
-          <div className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-lg bg-[#0f2044]">
+          <div className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#2563D9] to-[#1746A2] shadow-[0_4px_10px_rgba(37,99,217,0.16)]">
             <svg
               width="16"
               height="16"
@@ -300,7 +300,7 @@ export function HeroSection() {
                 width="6"
                 height="6"
                 rx="1.5"
-                fill="#d4a84b"
+                fill="#F5A623"
               />
 
               <rect
@@ -309,7 +309,7 @@ export function HeroSection() {
                 width="6"
                 height="6"
                 rx="1.5"
-                fill="rgba(212,168,75,0.5)"
+                fill="rgba(245,166,35,0.5)"
               />
 
               <rect
@@ -318,7 +318,7 @@ export function HeroSection() {
                 width="6"
                 height="6"
                 rx="1.5"
-                fill="rgba(212,168,75,0.5)"
+                fill="rgba(245,166,35,0.5)"
               />
 
               <rect
@@ -327,7 +327,7 @@ export function HeroSection() {
                 width="6"
                 height="6"
                 rx="1.5"
-                fill="#d4a84b"
+                fill="#F5A623"
               />
             </svg>
           </div>
@@ -346,7 +346,7 @@ export function HeroSection() {
 
           {/* Tag */}
 
-          <div className="shrink-0 rounded-full border border-[#e2cc99] bg-[#f5edd8] px-2.5 py-1 text-[8px] font-normal text-[#b8922a]">
+          <div className="shrink-0 rounded-full border border-[#f3d49b] bg-[#fff7e8] px-2.5 py-1 text-[8px] font-normal text-[#c47d00]">
             {course.tag}
           </div>
         </div>
@@ -355,8 +355,8 @@ export function HeroSection() {
 
     {/* Placement */}
 
-    <div className="mt-3 flex items-center gap-3 rounded-[10px] bg-[#0f2044] px-4 py-3">
-      <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-[#d4a84b]/20">
+    <div className="mt-3 flex items-center gap-3 rounded-[10px] bg-gradient-to-r from-[#1746A2] via-[#2563D9] to-[#3678E5] px-4 py-3 shadow-[0_6px_18px_rgba(37,99,217,0.16)]">
+      <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg bg-[#F5A623]/20">
         <svg
           width="17"
           height="17"
@@ -366,17 +366,17 @@ export function HeroSection() {
         >
           <path
             d="M9 2L11 7H16L12 10.5L13.5 16L9 13L4.5 16L6 10.5L2 7H7L9 2Z"
-            fill="#d4a84b"
+            fill="#F5A623"
           />
         </svg>
       </div>
 
       <div className="min-w-0">
-        <div className="text-[12px] font-normal text-[#d4a84b]">
+        <div className="text-[12px] font-normal text-[#F5A623]">
           100% Placement Guarantee
         </div>
 
-        <div className="mt-0.5 text-[9px] font-light text-white/55">
+        <div className="mt-0.5 text-[9px] font-light text-white/75">
           5000+ alumni placed across India
         </div>
       </div>

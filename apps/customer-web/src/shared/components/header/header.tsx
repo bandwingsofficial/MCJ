@@ -73,7 +73,7 @@ export function Header() {
               className="relative z-10 drop-shadow-sm"
             />
           </div>
-          <span className="text-xl font-bold tracking-tight text-gray-900 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text transition-all duration-300 group-hover:from-orange-500 group-hover:to-blue-600">
+          <span className="text-xl font-bold tracking-tight text-gray-900 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text transition-all duration-300 group-hover:from-[#F5A623] group-hover:to-[#2563D9]">
             MCJ Academy
           </span>
         </Link>
@@ -92,8 +92,8 @@ export function Header() {
                 }
                 className={`group relative flex items-center h-full text-[15px] font-medium tracking-wide transition-all duration-200 outline-none ${
                   isActive
-                    ? "text-blue-600 font-semibold"
-                    : "text-gray-600 hover:text-orange-500"
+                    ? "text-[#2563D9] font-semibold"
+                    : "text-gray-600 hover:text-[#2563D9]"
                 }`}
               >
                 <span className="relative transition-transform duration-200 group-hover:-translate-y-0.5">
@@ -101,7 +101,7 @@ export function Header() {
                 </span>
 
                 {isActive && (
-                  <span className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-blue-600 to-orange-500 rounded-t-full shadow-[0_-2px_10px_rgba(37,99,235,0.4)]" />
+                  <span className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-[#2563D9] to-[#1746A2] rounded-t-full shadow-[0_-2px_10px_rgba(37,99,217,0.35)]" />
                 )}
 
                 {!isActive && (
@@ -116,9 +116,8 @@ export function Header() {
           {!user && (
             <button
               onClick={() => router.push("/login")}
-              className="relative overflow-hidden px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-orange-500/20 active:scale-95 group"
+              className="relative overflow-hidden px-5 py-2.5 bg-gradient-to-r from-[#2563D9] to-[#1746A2] text-white rounded-xl text-sm font-semibold transition-all duration-300 shadow-sm hover:from-[#1E58C7] hover:to-[#123D94] hover:shadow-lg hover:shadow-[#2563D9]/20 active:scale-95"
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-orange-500 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <span className="relative z-10">Login</span>
             </button>
           )}
@@ -139,7 +138,7 @@ export function Header() {
                 onMouseLeave={() => setOpen(false)}
               >
                 <button className="flex items-center gap-1.5 p-1.5 rounded-full border border-gray-200 bg-white transition-all duration-300 hover:border-blue-300 hover:shadow-md hover:shadow-blue-100 group">
-                  <div className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-50 text-blue-600 font-semibold text-sm transition-all duration-300 group-hover:bg-gradient-to-br group-hover:from-orange-500 group-hover:to-blue-600 group-hover:text-white group-hover:scale-105">
+                  <div className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-50 text-[#2563D9] font-semibold text-sm transition-all duration-300 group-hover:bg-gradient-to-br group-hover:from-[#F5A623] group-hover:to-[#2563D9] group-hover:text-white group-hover:scale-105">
                     <User className="w-4 h-4" />
                   </div>
                   <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 group-hover:text-blue-500 ${open ? 'rotate-180' : ''}`} />

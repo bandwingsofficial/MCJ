@@ -203,7 +203,7 @@ export function CourseCurriculumAccordion({
                   bg-blue-50
                   text-xs
                   font-bold
-                  text-blue-600
+                  text-[#2563D9]
                 "
               >
                 {String(moduleIndex + 1).padStart(2, "0")}
@@ -211,7 +211,7 @@ export function CourseCurriculumAccordion({
 
               {/* Module title */}
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-blue-600">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#2563D9]">
                   Module {moduleIndex + 1}
                 </p>
 

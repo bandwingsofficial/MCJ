@@ -1,14 +1,6 @@
 // src/features/courses/utils/course-display.utils.ts
 
-export {
-  formatCoursePrice,
-  formatCurrency,
-  formatDetailCoursePrice,
-  getCoursePricing,
-  getDiscountPercent,
-  hasCourseDiscount,
-  type CoursePricing,
-} from "@/src/features/courses/utils/course-pricing.utils";
+export { formatCurrency } from "@/src/features/batches/utils/batch-pricing.utils";
 
 export function formatDuration(
   duration: number | null,

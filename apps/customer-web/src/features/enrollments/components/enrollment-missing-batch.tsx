@@ -15,7 +15,7 @@ export function EnrollmentMissingBatch({
 }: EnrollmentMissingBatchProps) {
   return (
     <section className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 p-8 text-center">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#2563D9] shadow-sm">
         <CalendarDays className="h-5 w-5" />
       </div>
 
@@ -30,7 +30,7 @@ export function EnrollmentMissingBatch({
 
       <Link
         href={getCourseBatchesSectionPath(course)}
-        className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white hover:bg-blue-700"
+        className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-6 text-sm font-semibold text-white hover:from-[#1E58C7] hover:to-[#123D94]"
       >
         View Available Branches
       </Link>

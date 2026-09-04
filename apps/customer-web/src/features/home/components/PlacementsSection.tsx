@@ -55,7 +55,7 @@ export function PlacementsSection() {
         {/* LEFT SLIDER BUTTON */}
         <button
           onClick={() => scrollPlacements(-1)}
-          className="absolute left-2 md:left-2 top-1/2 -translate-y-1/2 w-11 h-11 border-none rounded-full bg-[#0f2344] text-white cursor-pointer z-20 flex items-center justify-center transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.15)] opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-[#d4a84b] hover:scale-110 active:scale-95 hidden sm:flex"
+          className="absolute left-2 md:left-2 top-1/2 -translate-y-1/2 w-11 h-11 border-none rounded-full bg-gradient-to-r from-[#2563D9] to-[#1746A2] text-white cursor-pointer z-20 flex items-center justify-center transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.15)] opacity-0 group-hover:opacity-100 focus:opacity-100 hover:from-[#1E58C7] hover:to-[#123D94] hover:scale-110 active:scale-95 hidden sm:flex"
           aria-label="Previous placed students"
         >
           <ChevronLeft size={20} />
@@ -89,7 +89,7 @@ export function PlacementsSection() {
         {/* RIGHT SLIDER BUTTON */}
         <button
           onClick={() => scrollPlacements(1)}
-          className="absolute right-2 md:right-2 top-1/2 -translate-y-1/2 w-11 h-11 border-none rounded-full bg-[#0f2344] text-white cursor-pointer z-20 flex items-center justify-center transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.15)] opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-[#d4a84b] hover:scale-110 active:scale-95 hidden sm:flex"
+          className="absolute right-2 md:right-2 top-1/2 -translate-y-1/2 w-11 h-11 border-none rounded-full bg-gradient-to-r from-[#2563D9] to-[#1746A2] text-white cursor-pointer z-20 flex items-center justify-center transition-all duration-300 shadow-[0_4px_14px_rgba(0,0,0,0.15)] opacity-0 group-hover:opacity-100 focus:opacity-100 hover:from-[#1E58C7] hover:to-[#123D94] hover:scale-110 active:scale-95 hidden sm:flex"
           aria-label="Next placed students"
         >
           <ChevronRight size={20} />

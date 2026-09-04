@@ -18,6 +18,15 @@ export type DayOfWeek =
   | "SATURDAY"
   | "SUNDAY";
 
+export interface BatchPricing {
+  originalPrice: number;
+  discountAmount: number;
+  discountPercent?: number;
+  discountedPrice: number;
+  currency: string;
+  isFree: boolean;
+}
+
 export interface BatchCourse {
   id: string;
 
@@ -80,6 +89,15 @@ export interface Batch {
   classroom: string | null;
 
   meetingLink: string | null;
+
+  /** Batch-level fee. Prefer nested `pricing`; flat fields supported for API compatibility. */
+  pricing?: BatchPricing | null;
+  originalPrice?: number;
+  discountAmount?: number;
+  discountPercent?: number;
+  discountedPrice?: number;
+  currency?: string;
+  isFree?: boolean;
 
   isFeatured: boolean;
 

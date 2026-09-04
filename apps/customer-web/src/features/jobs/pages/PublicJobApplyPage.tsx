@@ -195,7 +195,7 @@ export function PublicJobApplyPage({ slug }: PublicJobApplyPageProps) {
     <div className="px-4 py-8 sm:py-10">
       <div className="mx-auto w-full max-w-3xl space-y-5">
         <section className="rounded-2xl border border-[#DCE8F5] bg-white p-5 shadow-[0_8px_24px_rgba(16,42,86,0.06)] sm:p-6">
-          <p className="text-sm font-medium text-[#2563EB]">
+          <p className="text-sm font-medium text-[#2563D9]">
             {job.companyName || "MCJ Institute"}
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#102A56] sm:text-3xl">
@@ -426,7 +426,7 @@ export function PublicJobApplyPage({ slug }: PublicJobApplyPageProps) {
             <div className="flex justify-end">
               <Button
                 type="submit"
-                className="h-[46px] bg-[#2563EB] px-6 hover:bg-[#1E3A8A]"
+                className="h-[46px] bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-6 hover:from-[#1E58C7] hover:to-[#123D94]"
                 loading={isSubmitting}
                 disabled={isSubmitting}
               >
@@ -484,7 +484,7 @@ export function PublicJobApplySuccess({
             <p className="text-xs uppercase tracking-wide text-[#647A9B]">
               Application Number
             </p>
-            <p className="mt-1 font-mono text-xl font-semibold text-[#2563EB]">
+            <p className="mt-1 font-mono text-xl font-semibold text-[#2563D9]">
               {applicationNumber}
             </p>
           </div>

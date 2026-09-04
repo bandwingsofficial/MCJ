@@ -1,6 +1,6 @@
-import { Price } from './price.vo';
+import { Price } from '@modules/course/domain/value-objects/price.vo';
 
-export interface CoursePricingSnapshot {
+export interface BatchPricingSnapshot {
   originalPrice: number;
   discountAmount: number;
   discountPercent: number;
@@ -17,13 +17,13 @@ function roundPercent(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-export function buildCoursePricing(params: {
+export function buildBatchPricing(params: {
   originalPrice: number;
   discountAmount: number;
   discountedPrice: number;
   currency?: string;
   isFree?: boolean;
-}): CoursePricingSnapshot {
+}): BatchPricingSnapshot {
   const currency = params.currency?.trim() || 'INR';
 
   if (params.isFree) {
@@ -94,7 +94,7 @@ export function buildCoursePricing(params: {
   };
 }
 
-export function normalizeCoursePricingInput(params: {
+export function normalizeBatchPricingInput(params: {
   originalPrice?: number | null;
   discountAmount?: number | null;
   discountedPrice?: number | null;
@@ -127,7 +127,7 @@ export function normalizeCoursePricingInput(params: {
       ? Price.create(params.discountedPrice).getValue()
       : Math.max(0, originalPrice - discountAmount);
 
-  const pricing = buildCoursePricing({
+  const pricing = buildBatchPricing({
     originalPrice,
     discountAmount,
     discountedPrice,

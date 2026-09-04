@@ -13,8 +13,11 @@ import { Badge } from "@/src/shared/components/ui/badge";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
 import type { Batch } from "@/src/features/batches/types/batch.types";
+import {
+  formatBatchPrice,
+} from "@/src/features/batches/utils/batch-pricing.utils";
 import type { Course } from "@/src/features/courses/types/course.types";
-import { formatCourseMode, formatCurrency, getCoursePricing } from "@/src/features/courses/utils/course-display.utils";
+import { formatCourseMode } from "@/src/features/courses/utils/course-display.utils";
 import { getCourseBatchesSectionPath } from "@/src/features/courses/utils/course-route.utils";
 import {
   formatBatchDays,
@@ -86,7 +89,7 @@ export function EnrollmentSelectedBatchReview({
         </div>
         <Link
           href={getCourseBatchesSectionPath(course)}
-          className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+          className="text-sm font-semibold text-[#2563D9] hover:text-[#1746A2] hover:underline"
         >
           Change batch
         </Link>
@@ -178,10 +181,7 @@ export function EnrollmentSelectedBatchReview({
           <DetailRow
             icon={Monitor}
             label="Fee"
-            value={(() => {
-              const pricing = getCoursePricing(course);
-              return formatCurrency(pricing.discountedPrice, pricing.currency);
-            })()}
+            value={formatBatchPrice(batch)}
           />
         </div>
       </div>

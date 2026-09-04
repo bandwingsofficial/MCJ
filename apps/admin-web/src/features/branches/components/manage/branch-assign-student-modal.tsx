@@ -16,14 +16,16 @@ import { toAssignmentCourseDisplayTitles } from "@/src/features/batches/utils/ba
 import { BranchBatchAssignDetails } from "@/src/features/branches/components/manage/branch-batch-assign-details";
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
 import { courseService } from "@/src/features/courses/services/course.service";
-import { getCourseDefaultDiscount } from "@/src/features/courses/utils/get-course-default-discount.util";
+import {
+  getBatchDefaultDiscount,
+  getBatchPricing,
+} from "@/src/features/batches/utils/batch-pricing.util";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
 import {
   currentEnrollmentByStudentId,
   formatEnrollmentLocation,
 } from "@/src/features/enrollments/utils/current-enrollment";
-import { normalizeMoney } from "@/src/features/enrollments/utils/format-payment";
 import { studentService } from "@/src/features/students/services/student.service";
 import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.utils";
 import { parseStudentListResponse } from "@/src/features/students/utils/student-list.utils";
@@ -161,8 +163,9 @@ export function BranchAssignStudentModal({
         if (courseId) {
           const courseResponse = await courseService.getCourse(courseId);
           const course = courseResponse.data;
-          nextFee = normalizeMoney(course.pricing?.originalPrice);
-          nextDiscount = getCourseDefaultDiscount(course);
+          const batchPricing = getBatchPricing(batch);
+          nextFee = batchPricing.originalPrice;
+          nextDiscount = getBatchDefaultDiscount(batch);
           nextCategory =
             course.category?.name ?? course.categoryName ?? "—";
         } else if (assignments[0]?.course?.category?.name) {

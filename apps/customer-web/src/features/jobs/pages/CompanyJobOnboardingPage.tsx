@@ -178,7 +178,7 @@ export function CompanyJobOnboardingPage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
       <section className="mb-6 text-center">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#2563EB]">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#2563D9]">
           Company Job Onboarding
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#102A56]">
@@ -197,7 +197,7 @@ export function CompanyJobOnboardingPage() {
           void submit(event);
         }}
       >
-        <h2 className="border-b border-[#E8F1FF] pb-1.5 text-xs font-semibold uppercase tracking-wide text-[#2563EB]">
+        <h2 className="border-b border-[#E8F1FF] pb-1.5 text-xs font-semibold uppercase tracking-wide text-[#2563D9]">
           Company Information
         </h2>
         <div className={GRID}>
@@ -254,7 +254,7 @@ export function CompanyJobOnboardingPage() {
           </ValidatedField>
         </div>
 
-        <h2 className="border-b border-[#E8F1FF] pb-1.5 text-xs font-semibold uppercase tracking-wide text-[#2563EB]">
+        <h2 className="border-b border-[#E8F1FF] pb-1.5 text-xs font-semibold uppercase tracking-wide text-[#2563D9]">
           Job Information
         </h2>
         <div className={GRID}>
@@ -365,7 +365,7 @@ export function CompanyJobOnboardingPage() {
           </ValidatedField>
         </div>
 
-        <h2 className="border-b border-[#E8F1FF] pb-1.5 text-xs font-semibold uppercase tracking-wide text-[#2563EB]">
+        <h2 className="border-b border-[#E8F1FF] pb-1.5 text-xs font-semibold uppercase tracking-wide text-[#2563D9]">
           Compensation
         </h2>
         <div className={GRID}>
@@ -419,7 +419,7 @@ export function CompanyJobOnboardingPage() {
           </ValidatedField>
         </div>
 
-        <h2 className="border-b border-[#E8F1FF] pb-1.5 text-xs font-semibold uppercase tracking-wide text-[#2563EB]">
+        <h2 className="border-b border-[#E8F1FF] pb-1.5 text-xs font-semibold uppercase tracking-wide text-[#2563D9]">
           Qualification & Experience
         </h2>
         <div className={GRID}>
@@ -492,7 +492,7 @@ export function CompanyJobOnboardingPage() {
                       className={cn(
                         "flex items-center gap-2 rounded-xl border px-3 py-2 text-sm",
                         checked
-                          ? "border-[#2563EB] bg-[#E8F1FF] text-[#1E3A8A]"
+                          ? "border-[#2563D9] bg-[#E8F1FF] text-[#1E3A8A]"
                           : "border-[#DCE8F5] bg-white text-[#102A56]",
                       )}
                     >

@@ -21,7 +21,7 @@ export function LessonLockedPage() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/student/my-learning"
-            className="inline-flex items-center justify-center rounded-md bg-[#2447A8] px-4 py-2 text-sm font-medium text-white hover:bg-[#1E3A8A]"
+            className="inline-flex items-center justify-center rounded-md bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-4 py-2 text-sm font-medium text-white hover:from-[#1E58C7] hover:to-[#123D94]"
           >
             Go to My Learning
           </Link>

@@ -123,6 +123,11 @@ export class AdminBatchController {
         undefined,
         dto.trainerIds ?? [],
         user?.sub,
+        dto.originalPrice,
+        dto.discountAmount,
+        dto.discountedPrice,
+        dto.currency,
+        dto.isFree,
       ),
     );
 
@@ -355,6 +360,11 @@ export class AdminBatchController {
         dto.isFeatured,
         dto.status,
         user?.sub,
+        dto.originalPrice,
+        dto.discountAmount,
+        dto.discountedPrice,
+        dto.currency,
+        dto.isFree,
       ),
     );
 

@@ -136,7 +136,7 @@ export default function FaqPage() {
 
           <a
             href="/contact"
-            className="inline-block bg-[#0f2044] text-white px-6 py-3 rounded-md hover:bg-[#1a3460] transition"
+            className="inline-block bg-gradient-to-r from-[#2563D9] to-[#1746A2] text-white px-6 py-3 rounded-md hover:from-[#1E58C7] hover:to-[#123D94] transition"
           >
             Contact Us
           </a>

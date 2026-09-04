@@ -1,6 +1,6 @@
 import { normalizeMoney } from "@/src/features/enrollments/utils/format-payment";
 
-export interface CoursePricing {
+export interface BatchPricing {
   originalPrice: number;
   discountAmount: number;
   discountPercent: number;
@@ -9,19 +9,37 @@ export interface CoursePricing {
   isFree: boolean;
 }
 
-export interface CoursePricingSource {
-  pricing?: Partial<CoursePricing> | null;
+export interface BatchPricingSource {
+  pricing?: Partial<BatchPricing> | null;
+  originalPrice?: number | string | null;
+  discountAmount?: number | string | null;
+  discountPercent?: number | string | null;
+  discountedPrice?: number | string | null;
+  currency?: string | null;
+  isFree?: boolean | null;
 }
 
-export function getCoursePricing(
-  course: CoursePricingSource,
-): CoursePricing {
-  return normalizeCoursePricing(course.pricing);
+export function getBatchPricing(source: BatchPricingSource): BatchPricing {
+  if (source.pricing) {
+    return normalizeBatchPricing(source.pricing);
+  }
+
+  return normalizeBatchPricing({
+    originalPrice: source.originalPrice != null ? Number(source.originalPrice) : undefined,
+    discountAmount:
+      source.discountAmount != null ? Number(source.discountAmount) : undefined,
+    discountPercent:
+      source.discountPercent != null ? Number(source.discountPercent) : undefined,
+    discountedPrice:
+      source.discountedPrice != null ? Number(source.discountedPrice) : undefined,
+    currency: source.currency ?? undefined,
+    isFree: source.isFree ?? undefined,
+  });
 }
 
-export function normalizeCoursePricing(
-  pricing?: Partial<CoursePricing> | null,
-): CoursePricing {
+export function normalizeBatchPricing(
+  pricing?: Partial<BatchPricing> | null,
+): BatchPricing {
   if (!pricing) {
     return {
       originalPrice: 0,
@@ -36,8 +54,7 @@ export function normalizeCoursePricing(
   const originalPrice = normalizeMoney(pricing.originalPrice);
   const discountAmount = normalizeMoney(pricing.discountAmount);
   const discountedPrice = normalizeMoney(
-    pricing.discountedPrice ??
-      Math.max(0, originalPrice - discountAmount),
+    pricing.discountedPrice ?? Math.max(0, originalPrice - discountAmount),
   );
   const currency = pricing.currency?.trim() || "INR";
   const isFree = Boolean(pricing.isFree);
@@ -54,10 +71,7 @@ export function normalizeCoursePricing(
   }
 
   const safeOriginal = Math.max(0, originalPrice);
-  const safeDiscount = Math.max(
-    0,
-    Math.min(discountAmount, safeOriginal),
-  );
+  const safeDiscount = Math.max(0, Math.min(discountAmount, safeOriginal));
   const safeDiscounted = Math.max(
     0,
     Math.min(
@@ -80,14 +94,13 @@ export function normalizeCoursePricing(
     originalPrice: safeOriginal,
     discountAmount: resolvedDiscount,
     discountPercent,
-    discountedPrice:
-      resolvedDiscount > 0 ? safeDiscounted : safeOriginal,
+    discountedPrice: resolvedDiscount > 0 ? safeDiscounted : safeOriginal,
     currency,
     isFree: false,
   };
 }
 
-export function buildCoursePricingInput(params: {
+export function buildBatchPricingInput(params: {
   originalPrice: number;
   discountAmount?: number;
   discountPercent?: number;
@@ -95,7 +108,7 @@ export function buildCoursePricingInput(params: {
   currency?: string;
   isFree?: boolean;
 }): Pick<
-  CoursePricing,
+  BatchPricing,
   | "originalPrice"
   | "discountAmount"
   | "discountedPrice"
@@ -139,7 +152,7 @@ export function buildCoursePricingInput(params: {
     discountAmount = normalizeMoney(originalPrice - discountedPrice);
   }
 
-  const normalized = normalizeCoursePricing({
+  const normalized = normalizeBatchPricing({
     originalPrice,
     discountAmount,
     discountedPrice,
@@ -156,8 +169,8 @@ export function buildCoursePricingInput(params: {
   };
 }
 
-export function formatCoursePrice(course: CoursePricingSource): string {
-  const pricing = getCoursePricing(course);
+export function formatBatchPrice(source: BatchPricingSource): string {
+  const pricing = getBatchPricing(source);
 
   if (pricing.isFree) {
     return "Free";
@@ -170,22 +183,20 @@ export function formatCoursePrice(course: CoursePricingSource): string {
   }).format(pricing.discountedPrice);
 }
 
-/** @deprecated Use getCoursePricing(course).discountAmount */
-export interface CoursePricingBreakdown {
-  feeAmount: number;
-  discountAmount: number;
-  finalAmount: number;
+export function formatBatchOriginalPrice(source: BatchPricingSource): string {
+  const pricing = getBatchPricing(source);
+
+  if (pricing.isFree) {
+    return "Free";
+  }
+
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: pricing.currency,
+    maximumFractionDigits: 2,
+  }).format(pricing.originalPrice);
 }
 
-/** @deprecated Use getCoursePricing */
-export function getLegacyCoursePricingBreakdown(
-  course: CoursePricingSource,
-): CoursePricingBreakdown {
-  const pricing = getCoursePricing(course);
-
-  return {
-    feeAmount: pricing.originalPrice,
-    discountAmount: pricing.discountAmount,
-    finalAmount: pricing.discountedPrice,
-  };
+export function getBatchDefaultDiscount(source: BatchPricingSource): number {
+  return getBatchPricing(source).discountAmount;
 }

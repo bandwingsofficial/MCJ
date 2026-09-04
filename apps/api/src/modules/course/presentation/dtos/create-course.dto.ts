@@ -124,42 +124,6 @@ export class CreateCourseDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Transform(({ value }) => toNumber(value))
-  originalPrice?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Transform(({ value }) => toNumber(value))
-  discountAmount?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Transform(({ value }) => toNumber(value))
-  discountedPrice?: number;
-
-  @ApiPropertyOptional({ default: 'INR' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(10)
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toUpperCase() : value,
-  )
-  currency?: string;
-
-  @ApiPropertyOptional({ default: false })
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => toBoolean(value))
-  isFree?: boolean;
-
-  @ApiPropertyOptional()
-  @IsOptional()
   @IsInt()
   @Min(1)
   @Transform(({ value }) => toNumber(value))

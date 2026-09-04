@@ -66,6 +66,29 @@ export const batchSchema = z
     mode: z.enum(["ONLINE", "OFFLINE", "RECORDED"]),
 
     isFeatured: z.boolean(),
+
+    originalPrice: z
+      .number({
+        error: "Original price is required",
+      })
+      .min(0, "Original price cannot be negative"),
+
+    discountPercent: z
+      .number({
+        error: "Discount percent is required",
+      })
+      .min(0, "Discount percent cannot be negative")
+      .max(100, "Discount percent cannot exceed 100"),
+
+    discountAmount: z
+      .number({
+        error: "Discount amount is required",
+      })
+      .min(0, "Discount amount cannot be negative"),
+
+    currency: z.string().default("INR"),
+
+    isFree: z.boolean().default(false),
   })
   .superRefine((data, ctx) => {
     if (
@@ -98,6 +121,36 @@ export const batchSchema = z
         code: z.ZodIssueCode.custom,
         message: `Description cannot exceed ${DESCRIPTION_WORD_LIMIT} words`,
         path: ["description"],
+      });
+    }
+
+    if (
+      !data.isFree &&
+      (data.originalPrice == null || data.originalPrice <= 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["originalPrice"],
+        message: "Original price is required for paid batches",
+      });
+    }
+
+    if (data.discountAmount > data.originalPrice) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["discountAmount"],
+        message: "Discount amount cannot be greater than original price",
+      });
+    }
+
+    if (
+      data.isFree &&
+      (data.originalPrice > 0 || data.discountAmount > 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["isFree"],
+        message: "Free batches cannot have pricing values",
       });
     }
   });

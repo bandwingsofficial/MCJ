@@ -44,7 +44,7 @@ export function EnrollmentCourseSummary({
         </div>
 
         <div className="p-5 sm:p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-blue-600">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#2563D9]">
             {course.categoryName || "Course"}
           </p>
 

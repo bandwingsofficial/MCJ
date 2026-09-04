@@ -73,7 +73,6 @@ export class StudentPortalResponseMapper {
       id: course.id,
       title: course.title,
       slug: course.slug,
-      pricing: course.pricing,
     };
   }
 
@@ -91,6 +90,7 @@ export class StudentPortalResponseMapper {
       mode: batch.mode,
       classroom: batch.classroom,
       meetingLink: batch.meetingLink,
+      pricing: batch.pricing,
     };
   }
 

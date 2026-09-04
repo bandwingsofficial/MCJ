@@ -1,7 +1,5 @@
 // src/features/courses/mappers/course.mapper.ts
 
-import { normalizeCoursePricing } from "@/src/features/courses/utils/course-pricing.utils";
-
 import type {
   Course,
   CourseDto,
@@ -35,7 +33,6 @@ export function mapCourseDtoToCourse(dto: CourseDto): Course {
     shortDescription: dto.shortDescription,
     description: dto.description,
     thumbnailUrl: dto.thumbnailUrl,
-    pricing: normalizeCoursePricing(dto.pricing),
     duration: dto.duration,
     durationType: dto.durationType,
     level: dto.level,

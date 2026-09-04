@@ -1,11 +1,14 @@
 "use client";
 
 import type { Course } from "@/src/features/courses/types/course.types";
-import { formatCourseFinalFee } from "@/src/features/courses/utils/format-course-fee.util";
+import type { BatchPricingSource } from "@/src/features/batches/utils/batch-pricing.util";
+import { formatBatchPrice } from "@/src/features/batches/utils/batch-pricing.util";
 import { formatCourseQualifications } from "@/src/features/courses/utils/course-display.utils";
 
 interface Props {
   course: Course | null;
+  pricingSource?: BatchPricingSource | null;
+  finalPriceLabel?: string;
   categoryName?: string;
   isLoading?: boolean;
 }
@@ -21,6 +24,8 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 export function BranchEnrollmentCourseDetails({
   course,
+  pricingSource,
+  finalPriceLabel,
   categoryName,
   isLoading = false,
 }: Props) {
@@ -40,6 +45,10 @@ export function BranchEnrollmentCourseDetails({
     course.minimumQualifications ?? [],
   );
 
+  const priceLabel =
+    finalPriceLabel ??
+    (pricingSource ? formatBatchPrice(pricingSource) : "—");
+
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex flex-wrap items-start gap-4">
@@ -58,7 +67,7 @@ export function BranchEnrollmentCourseDetails({
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <DetailRow label="Category" value={categoryName ?? course.category?.name ?? "—"} />
-        <DetailRow label="Final Price" value={formatCourseFinalFee(course)} />
+        <DetailRow label="Final Price" value={priceLabel} />
         <DetailRow
           label="Minimum Qualification"
           value={qualifications || "—"}

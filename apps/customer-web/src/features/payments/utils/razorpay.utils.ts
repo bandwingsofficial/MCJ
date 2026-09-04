@@ -143,7 +143,7 @@ export async function openRazorpayCheckout(
 
           theme: {
             color:
-              "#2563EB",
+              "#2563D9",
           },
         });
 

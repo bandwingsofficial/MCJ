@@ -229,7 +229,7 @@ export function CourseBatchCards({
                   onClick={() => handleEnroll(batch)}
                   className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                     selectable
-                      ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+                      ? "bg-gradient-to-r from-[#2563D9] to-[#1746A2] text-white hover:from-[#1E58C7] hover:to-[#123D94] focus:ring-blue-500"
                       : "cursor-not-allowed bg-slate-200 text-slate-400 focus:ring-slate-300"
                   }`}
                 >
@@ -306,7 +306,7 @@ export function CourseBatchCards({
               onClick={() => handleEnroll(batch)}
               className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                 selectable
-                  ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+                  ? "bg-gradient-to-r from-[#2563D9] to-[#1746A2] text-white hover:from-[#1E58C7] hover:to-[#123D94] focus:ring-blue-500"
                   : "cursor-not-allowed bg-slate-200 text-slate-400 focus:ring-slate-300"
               }`}
             >

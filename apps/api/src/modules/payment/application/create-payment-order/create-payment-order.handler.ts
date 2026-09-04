@@ -89,7 +89,7 @@ export class CreatePaymentOrderHandler {
       );
     }
 
-    const currency = enrollment.course.pricing.currency || 'INR';
+    const currency = enrollment.batch.pricing.currency || 'INR';
 
     const order = await this.gateway.createOrder({
       amount: dueAmount,

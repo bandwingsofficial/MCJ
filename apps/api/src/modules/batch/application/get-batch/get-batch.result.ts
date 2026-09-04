@@ -54,6 +54,12 @@ export class GetBatchResult {
     public readonly capacity: number,
     public readonly enrolledCount: number,
     public readonly mode: CourseMode,
+    public readonly originalPrice: number,
+    public readonly discountAmount: number,
+    public readonly discountedPrice: number,
+    public readonly discountPercent: number,
+    public readonly currency: string,
+    public readonly isFree: boolean,
     public readonly classroom: string | null,
     public readonly meetingLink: string | null,
     public readonly isFeatured: boolean,
@@ -70,6 +76,8 @@ export class GetBatchResult {
   ) {}
 
   static fromEntity(batch: Batch): GetBatchResult {
+    const pricing = batch.getPricing();
+
     return new GetBatchResult(
       batch.id,
       batch.name.getValue(),
@@ -104,6 +112,12 @@ export class GetBatchResult {
       batch.capacity.getValue(),
       batch.enrolledCount,
       batch.mode,
+      pricing.originalPrice,
+      pricing.discountAmount,
+      pricing.discountedPrice,
+      pricing.discountPercent,
+      pricing.currency,
+      pricing.isFree,
       batch.classroom.getValue(),
       batch.meetingLink,
       batch.isFeatured,

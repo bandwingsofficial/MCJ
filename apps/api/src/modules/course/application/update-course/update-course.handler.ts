@@ -16,8 +16,6 @@ import {
 import { UpdateCourseCommand } from './update-course.command';
 import { BranchRepository } from '@/modules/branch/domain/repositories/branch.repository';
 import { BranchNotFoundException } from '@/modules/branch/domain/errors/branch-not-found.exception';
-import { InvalidCoursePricingException } from '../../domain/errors/invalid-course-pricing.exception';
-import { normalizeCoursePricingInput } from '../../domain/value-objects/course-pricing.vo';
 
 const COURSE_UPLOAD_FOLDER = 'courses';
 const COURSE_THUMBNAIL_FILE_NAME = 'thumbnail';
@@ -49,50 +47,6 @@ export class UpdateCourseHandler {
         if (!branch) {
           throw new BranchNotFoundException(branchId);
         }
-      }
-    }
-
-    const pricingFieldsTouched =
-      command.originalPrice !== undefined ||
-      command.discountAmount !== undefined ||
-      command.discountedPrice !== undefined ||
-      command.currency !== undefined ||
-      command.isFree !== undefined;
-
-    let normalizedPricing:
-      | ReturnType<typeof normalizeCoursePricingInput>
-      | undefined;
-
-    if (pricingFieldsTouched) {
-      normalizedPricing = normalizeCoursePricingInput({
-        originalPrice:
-          command.originalPrice ?? course.originalPrice.getValue(),
-        discountAmount:
-          command.discountAmount ?? course.discountAmount.getValue(),
-        discountedPrice:
-          command.discountedPrice ?? course.discountedPrice.getValue(),
-        currency: command.currency ?? course.currency,
-        isFree: command.isFree ?? course.isFree,
-      });
-
-      if (
-        normalizedPricing.isFree &&
-        (normalizedPricing.originalPrice > 0 ||
-          normalizedPricing.discountAmount > 0 ||
-          normalizedPricing.discountedPrice > 0)
-      ) {
-        throw new InvalidCoursePricingException(
-          'Free courses cannot have pricing values',
-        );
-      }
-
-      if (
-        !normalizedPricing.isFree &&
-        normalizedPricing.discountedPrice > normalizedPricing.originalPrice
-      ) {
-        throw new InvalidCoursePricingException(
-          'Discounted price cannot be greater than original price',
-        );
       }
     }
 
@@ -263,13 +217,6 @@ export class UpdateCourseHandler {
       description: command.description,
       thumbnailFileId: nextThumbnailFileId,
       thumbnailUrl: nextThumbnailUrl,
-      originalPrice: normalizedPricing?.originalPrice ?? command.originalPrice,
-      discountAmount:
-        normalizedPricing?.discountAmount ?? command.discountAmount,
-      discountedPrice:
-        normalizedPricing?.discountedPrice ?? command.discountedPrice,
-      currency: normalizedPricing?.currency ?? command.currency,
-      isFree: normalizedPricing?.isFree ?? command.isFree,
       duration: command.duration,
       durationType: command.durationType,
       level: command.level,

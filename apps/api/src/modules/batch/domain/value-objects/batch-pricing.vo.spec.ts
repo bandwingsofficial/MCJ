@@ -1,11 +1,11 @@
 import {
-  buildCoursePricing,
+  buildBatchPricing,
   migrateLegacyDiscountFields,
-} from './course-pricing.vo';
+} from './batch-pricing.vo';
 
-describe('buildCoursePricing', () => {
+describe('buildBatchPricing', () => {
   it('calculates 92% off for 13000 -> 1000', () => {
-    const pricing = buildCoursePricing({
+    const pricing = buildBatchPricing({
       originalPrice: 13000,
       discountAmount: 12000,
       discountedPrice: 1000,
@@ -19,7 +19,7 @@ describe('buildCoursePricing', () => {
   });
 
   it('calculates 20% off for 10000 -> 8000', () => {
-    const pricing = buildCoursePricing({
+    const pricing = buildBatchPricing({
       originalPrice: 10000,
       discountAmount: 2000,
       discountedPrice: 8000,
@@ -33,7 +33,7 @@ describe('buildCoursePricing', () => {
   });
 
   it('calculates 50% off for 5000 -> 2500', () => {
-    const pricing = buildCoursePricing({
+    const pricing = buildBatchPricing({
       originalPrice: 5000,
       discountAmount: 2500,
       discountedPrice: 2500,
@@ -47,7 +47,7 @@ describe('buildCoursePricing', () => {
   });
 
   it('returns zero discount when prices are equal', () => {
-    const pricing = buildCoursePricing({
+    const pricing = buildBatchPricing({
       originalPrice: 1000,
       discountAmount: 0,
       discountedPrice: 1000,
@@ -61,7 +61,7 @@ describe('buildCoursePricing', () => {
   });
 
   it('returns free pricing snapshot', () => {
-    const pricing = buildCoursePricing({
+    const pricing = buildBatchPricing({
       originalPrice: 13000,
       discountAmount: 12000,
       discountedPrice: 1000,

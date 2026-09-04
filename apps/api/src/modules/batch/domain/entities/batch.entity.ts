@@ -1,9 +1,14 @@
 import { Slug } from '@common/value-objects/slug.vo';
 import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
+import { Price } from '@modules/course/domain/value-objects/price.vo';
 import { BatchStatus } from '../enums/batch-status.enum';
 import { DayOfWeek } from '../enums/day-of-week.enum';
 import { BatchCode } from '../value-objects/batch-code.vo';
 import { BatchName } from '../value-objects/batch-name.vo';
+import {
+  buildBatchPricing,
+  type BatchPricingSnapshot,
+} from '../value-objects/batch-pricing.vo';
 import { Capacity } from '../value-objects/capacity.vo';
 import { Classroom } from '../value-objects/classroom.vo';
 import { BatchTrainer } from './batch-trainer.entity';
@@ -16,20 +21,20 @@ export class Batch {
     public slug: Slug,
     public description: string | null,
     public course: {
-  id: string;
-  title: string;
-} | null,
+      id: string;
+      title: string;
+    } | null,
 
-public branch: {
-  id: string;
-  branchName: string;
-  branchCode: string;
-} | null,
+    public branch: {
+      id: string;
+      branchName: string;
+      branchCode: string;
+    } | null,
 
-public category: {
-  id: string;
-  name: string;
-} | null,
+    public category: {
+      id: string;
+      name: string;
+    } | null,
     public courseId: string | null,
     public categoryId: string | null,
     public branchId: string | null,
@@ -41,6 +46,11 @@ public category: {
     public capacity: Capacity,
     public enrolledCount: number,
     public mode: CourseMode,
+    public originalPrice: Price,
+    public discountAmount: Price,
+    public discountedPrice: Price,
+    public currency: string,
+    public isFree: boolean,
     public classroom: Classroom,
     public meetingLink: string | null,
     public isFeatured: boolean,
@@ -57,88 +67,106 @@ public category: {
     public updatedAt: Date,
   ) {}
 
- static create(params: BatchCreateParams): Batch {
-  return new Batch(
-    params.id,
-    BatchName.create(params.name),
-    BatchCode.create(params.code),
-    params.slug
-      ? Slug.create(params.slug)
-      : Slug.fromName(params.name),
-    params.description ?? null,
+  static create(params: BatchCreateParams): Batch {
+    const pricing = buildBatchPricing({
+      originalPrice: params.originalPrice ?? 0,
+      discountAmount: params.discountAmount ?? 0,
+      discountedPrice: params.discountedPrice ?? 0,
+      currency: params.currency,
+      isFree: params.isFree,
+    });
 
-    params.course ?? null,
-    params.branch ?? null,
-    params.category ?? null,
+    return new Batch(
+      params.id,
+      BatchName.create(params.name),
+      BatchCode.create(params.code),
+      params.slug
+        ? Slug.create(params.slug)
+        : Slug.fromName(params.name),
+      params.description ?? null,
 
-    params.courseId ?? null,
-    params.categoryId ?? null,
-    params.branchId ?? null,
-    params.startDate,
-    params.endDate ?? null,
-    params.startTime,
-    params.endTime,
-    params.daysOfWeek,
-    Capacity.create(params.capacity),
-    params.enrolledCount ?? 0,
-    params.mode ?? CourseMode.OFFLINE,
-    Classroom.create(params.classroom),
-    params.meetingLink ?? null,
-    params.isFeatured ?? false,
-    params.isActive ?? true,
-    params.displayOrder ?? null,
-    params.status ?? BatchStatus.UPCOMING,
-    params.trainers ?? [],
-    params.createdBy ?? null,
-    null,
-    false,
-    null,
-    null,
-    new Date(),
-    new Date(),
-  );
-}
-  static reconstitute(
-  params: BatchReconstituteParams,
-): Batch {
-  return new Batch(
-    params.id,
-    BatchName.create(params.name),
-    BatchCode.create(params.code),
-    Slug.create(params.slug),
-    params.description,
+      params.course ?? null,
+      params.branch ?? null,
+      params.category ?? null,
 
-    params.course,
-    params.branch,
-    params.category,
+      params.courseId ?? null,
+      params.categoryId ?? null,
+      params.branchId ?? null,
+      params.startDate,
+      params.endDate ?? null,
+      params.startTime,
+      params.endTime,
+      params.daysOfWeek,
+      Capacity.create(params.capacity),
+      params.enrolledCount ?? 0,
+      params.mode ?? CourseMode.OFFLINE,
+      Price.create(pricing.originalPrice),
+      Price.create(pricing.discountAmount),
+      Price.create(pricing.discountedPrice),
+      pricing.currency,
+      pricing.isFree,
+      Classroom.create(params.classroom),
+      params.meetingLink ?? null,
+      params.isFeatured ?? false,
+      params.isActive ?? true,
+      params.displayOrder ?? null,
+      params.status ?? BatchStatus.UPCOMING,
+      params.trainers ?? [],
+      params.createdBy ?? null,
+      null,
+      false,
+      null,
+      null,
+      new Date(),
+      new Date(),
+    );
+  }
 
-    params.courseId,
-    params.categoryId,
-    params.branchId,
-    params.startDate,
-    params.endDate,
-    params.startTime,
-    params.endTime,
-    params.daysOfWeek,
-    Capacity.create(params.capacity),
-    params.enrolledCount,
-    params.mode,
-    Classroom.create(params.classroom),
-    params.meetingLink,
-    params.isFeatured,
-    params.isActive,
-    params.displayOrder,
-    params.status,
-    params.trainers,
-    params.createdBy,
-    params.updatedBy,
-    params.isDeleted,
-    params.deletedAt,
-    params.deletedBy,
-    params.createdAt,
-    params.updatedAt,
-  );
-}
+  static reconstitute(params: BatchReconstituteParams): Batch {
+    return new Batch(
+      params.id,
+      BatchName.create(params.name),
+      BatchCode.create(params.code),
+      Slug.create(params.slug),
+      params.description,
+
+      params.course,
+      params.branch,
+      params.category,
+
+      params.courseId,
+      params.categoryId,
+      params.branchId,
+      params.startDate,
+      params.endDate,
+      params.startTime,
+      params.endTime,
+      params.daysOfWeek,
+      Capacity.create(params.capacity),
+      params.enrolledCount,
+      params.mode,
+      Price.create(params.originalPrice),
+      Price.create(params.discountAmount),
+      Price.create(params.discountedPrice),
+      params.currency,
+      params.isFree,
+      Classroom.create(params.classroom),
+      params.meetingLink,
+      params.isFeatured,
+      params.isActive,
+      params.displayOrder,
+      params.status,
+      params.trainers,
+      params.createdBy,
+      params.updatedBy,
+      params.isDeleted,
+      params.deletedAt,
+      params.deletedBy,
+      params.createdAt,
+      params.updatedAt,
+    );
+  }
+
   update(params: BatchUpdateParams) {
     if (params.name !== undefined) {
       this.name = BatchName.create(params.name);
@@ -149,42 +177,78 @@ public category: {
       this.slug = Slug.create(params.slug);
     }
     if (params.code !== undefined) this.code = BatchCode.create(params.code);
-   if (params.description !== undefined) {
-  this.description = params.description;
-}
+    if (params.description !== undefined) {
+      this.description = params.description;
+    }
 
-if (params.course !== undefined) {
-  this.course = params.course;
-}
+    if (params.course !== undefined) {
+      this.course = params.course;
+    }
 
-if (params.branch !== undefined) {
-  this.branch = params.branch;
-}
+    if (params.branch !== undefined) {
+      this.branch = params.branch;
+    }
 
-if (params.category !== undefined) {
-  this.category = params.category;
-}
+    if (params.category !== undefined) {
+      this.category = params.category;
+    }
 
-if (params.courseId !== undefined) {
-  this.courseId = params.courseId;
-}
+    if (params.courseId !== undefined) {
+      this.courseId = params.courseId;
+    }
 
-if (params.categoryId !== undefined) {
-  this.categoryId = params.categoryId;
-}
+    if (params.categoryId !== undefined) {
+      this.categoryId = params.categoryId;
+    }
 
-if (params.branchId !== undefined) {
-  this.branchId = params.branchId;
-}
+    if (params.branchId !== undefined) {
+      this.branchId = params.branchId;
+    }
     if (params.startDate !== undefined) this.startDate = params.startDate;
     if (params.endDate !== undefined) this.endDate = params.endDate;
     if (params.startTime !== undefined) this.startTime = params.startTime;
     if (params.endTime !== undefined) this.endTime = params.endTime;
     if (params.daysOfWeek !== undefined) this.daysOfWeek = params.daysOfWeek;
-    if (params.capacity !== undefined) this.capacity = Capacity.create(params.capacity);
-    if (params.enrolledCount !== undefined) this.enrolledCount = params.enrolledCount;
+    if (params.capacity !== undefined)
+      this.capacity = Capacity.create(params.capacity);
+    if (params.enrolledCount !== undefined)
+      this.enrolledCount = params.enrolledCount;
     if (params.mode !== undefined) this.mode = params.mode;
-    if (params.classroom !== undefined) this.classroom = Classroom.create(params.classroom);
+
+    const pricingFieldsTouched =
+      params.originalPrice !== undefined ||
+      params.discountAmount !== undefined ||
+      params.discountedPrice !== undefined ||
+      params.currency !== undefined ||
+      params.isFree !== undefined;
+
+    if (pricingFieldsTouched) {
+      const pricing = buildBatchPricing({
+        originalPrice:
+          params.originalPrice !== undefined
+            ? params.originalPrice
+            : this.originalPrice.getValue(),
+        discountAmount:
+          params.discountAmount !== undefined
+            ? params.discountAmount
+            : this.discountAmount.getValue(),
+        discountedPrice:
+          params.discountedPrice !== undefined
+            ? params.discountedPrice
+            : this.discountedPrice.getValue(),
+        currency: params.currency ?? this.currency,
+        isFree: params.isFree ?? this.isFree,
+      });
+
+      this.originalPrice = Price.create(pricing.originalPrice);
+      this.discountAmount = Price.create(pricing.discountAmount);
+      this.discountedPrice = Price.create(pricing.discountedPrice);
+      this.currency = pricing.currency;
+      this.isFree = pricing.isFree;
+    }
+
+    if (params.classroom !== undefined)
+      this.classroom = Classroom.create(params.classroom);
     if (params.meetingLink !== undefined) this.meetingLink = params.meetingLink;
     if (params.isFeatured !== undefined) this.isFeatured = params.isFeatured;
     if (params.status !== undefined) this.status = params.status;
@@ -229,6 +293,16 @@ if (params.branchId !== undefined) {
     this.touch();
   }
 
+  getPricing(): BatchPricingSnapshot {
+    return buildBatchPricing({
+      originalPrice: this.originalPrice.getValue(),
+      discountAmount: this.discountAmount.getValue(),
+      discountedPrice: this.discountedPrice.getValue(),
+      currency: this.currency,
+      isFree: this.isFree,
+    });
+  }
+
   private touch() {
     this.updatedAt = new Date();
   }
@@ -241,20 +315,20 @@ export interface BatchCreateParams {
   slug?: string;
   description?: string | null;
   course?: {
-  id: string;
-  title: string;
-} | null;
+    id: string;
+    title: string;
+  } | null;
 
-branch?: {
-  id: string;
-  branchName: string;
-  branchCode: string;
-} | null;
+  branch?: {
+    id: string;
+    branchName: string;
+    branchCode: string;
+  } | null;
 
-category?: {
-  id: string;
-  name: string;
-} | null;
+  category?: {
+    id: string;
+    name: string;
+  } | null;
   courseId?: string | null;
   categoryId?: string | null;
   branchId?: string | null;
@@ -266,6 +340,11 @@ category?: {
   capacity: number;
   enrolledCount?: number;
   mode?: CourseMode;
+  originalPrice?: number;
+  discountAmount?: number;
+  discountedPrice?: number;
+  currency?: string;
+  isFree?: boolean;
   classroom?: string | null;
   meetingLink?: string | null;
   isFeatured?: boolean;
