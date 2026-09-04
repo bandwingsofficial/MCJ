@@ -46,11 +46,11 @@ export const batchApi = {
     return response.data;
   },
 
-  async suggestBatchCode(startTime: string, endTime: string) {
+  async suggestBatchCode(startDate: string) {
     const response = await apiClient.get<
       ApiSuccessResponse<SuggestBatchCodeResponse>
     >("/admin/batches/suggest-code", {
-      params: { startTime, endTime },
+      params: { startDate },
     });
 
     return response.data;

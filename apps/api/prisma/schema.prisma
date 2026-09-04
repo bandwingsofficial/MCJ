@@ -1557,6 +1557,7 @@ enum TrainerType {
 enum BatchStatus {
   UPCOMING
   ONGOING
+  EXPIRED
   COMPLETED
   CANCELLED
   ARCHIVED

@@ -1,9 +1,7 @@
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
 import {
-  buildBatchCodePrefix,
   formatBatchCode,
   getMonthAbbreviation,
-  getTimeCodeFromTimes,
 } from '../../domain/utils/batch-code.util';
 
 import { SuggestBatchCodeQuery } from './suggest-batch-code.query';
@@ -15,19 +13,9 @@ export class SuggestBatchCodeHandler {
   async execute(
     query: SuggestBatchCodeQuery,
   ): Promise<SuggestBatchCodeResult> {
-    const month = getMonthAbbreviation(new Date());
-    const timeCode = getTimeCodeFromTimes(
-      query.startTime,
-      query.endTime,
-    );
-    const prefix = buildBatchCodePrefix(month, timeCode);
-    const maxSequence =
-      await this.batchRepo.getMaxBatchCodeSequence(prefix);
-    const batchCode = formatBatchCode(
-      month,
-      timeCode,
-      maxSequence + 1,
-    );
+    const month = getMonthAbbreviation(query.startDate);
+    const maxSequence = await this.batchRepo.getMaxBatchCodeSequence();
+    const batchCode = formatBatchCode(month, maxSequence + 1);
 
     return new SuggestBatchCodeResult(batchCode);
   }

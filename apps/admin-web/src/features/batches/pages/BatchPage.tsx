@@ -19,6 +19,7 @@ import { useRestoreBatch } from "@/src/features/batches/hooks/useRestoreBatch";
 import { batchService } from "@/src/features/batches/services/batch.service";
 
 import { BatchSummaryHeader } from "@/src/features/batches/components/batch-summary-header";
+import { BatchLifecycleTabs } from "@/src/features/batches/components/batch-lifecycle-tabs";
 import { BatchTable } from "@/src/features/batches/components/BatchTable";
 import {
   BatchBulkActionsToolbar,
@@ -29,6 +30,7 @@ import { UpdateBatchModal } from "@/src/features/batches/components/update-batch
 import { PermanentDeleteBatchDialog } from "@/src/features/batches/components/permanent-delete-batch-dialog";
 
 import type {
+  BatchLifecycleStatus,
   BatchListItem,
   CourseOption,
 } from "@/src/features/batches/types/batch.types";
@@ -94,7 +96,8 @@ export function BatchPage() {
     (filters.search ?? "").trim() ||
       filters.courseId ||
       filters.mode ||
-      filters.status !== undefined,
+      filters.status !== undefined ||
+      filters.batchStatus !== undefined,
   );
 
   const actionLoading =
@@ -129,6 +132,7 @@ export function BatchPage() {
     filters.search,
     filters.courseId,
     filters.mode,
+    filters.batchStatus,
   ]);
 
   useEffect(() => {
@@ -308,6 +312,14 @@ export function BatchPage() {
       />
 
       <div className="mt-5 space-y-3">
+        <BatchLifecycleTabs
+          value={filters.batchStatus ?? "ONGOING"}
+          disabled={actionLoading || isFetching}
+          onChange={(batchStatus: BatchLifecycleStatus) =>
+            setFilters({ ...filters, batchStatus, page: 1 })
+          }
+        />
+
         <Card className="min-w-0 overflow-hidden p-0">
           <BatchBulkActionsToolbar
             batches={batches}

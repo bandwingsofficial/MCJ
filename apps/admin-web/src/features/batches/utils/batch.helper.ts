@@ -48,6 +48,9 @@ export const formatBatchStatus = (
     case "ONGOING":
       return "Ongoing";
 
+    case "EXPIRED":
+      return "Expired";
+
     case "COMPLETED":
       return "Completed";
 

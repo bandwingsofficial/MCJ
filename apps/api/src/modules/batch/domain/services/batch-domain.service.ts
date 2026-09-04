@@ -12,10 +12,8 @@ import { BaseException } from '@common/exceptions/base.exception';
 import type { Batch } from '../entities/batch.entity';
 import type { BatchRepository } from '../repositories/batch.repository';
 import {
-  buildBatchCodePrefix,
   formatBatchCode,
   getMonthAbbreviation,
-  getTimeCodeFromTimes,
   parseTimeToMinutes,
 } from '../utils/batch-code.util';
 import { CourseNotFoundException } from '../errors/course-not-found.exception';
@@ -171,21 +169,13 @@ export class BatchDomainService {
 
   async generateUniqueBatchCode(
     batchRepo: BatchRepository,
-    startTime: string,
-    endTime: string,
-    referenceDate: Date = new Date(),
+    startDate: Date = new Date(),
   ): Promise<string> {
-    const month = getMonthAbbreviation(referenceDate);
-    const timeCode = getTimeCodeFromTimes(startTime, endTime);
-    const prefix = buildBatchCodePrefix(month, timeCode);
-    const maxSequence = await batchRepo.getMaxBatchCodeSequence(prefix);
+    const month = getMonthAbbreviation(startDate);
+    const maxSequence = await batchRepo.getMaxBatchCodeSequence();
 
     for (let offset = 1; offset <= 50; offset++) {
-      const candidate = formatBatchCode(
-        month,
-        timeCode,
-        maxSequence + offset,
-      );
+      const candidate = formatBatchCode(month, maxSequence + offset);
       const existing = await batchRepo.findByCode(candidate, true);
 
       if (!existing) {

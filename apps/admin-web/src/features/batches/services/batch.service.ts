@@ -65,9 +65,9 @@ class BatchService {
     }
   }
 
-  async suggestBatchCode(startTime: string, endTime: string) {
+  async suggestBatchCode(startDate: string) {
     try {
-      return await batchApi.suggestBatchCode(startTime, endTime);
+      return await batchApi.suggestBatchCode(startDate);
     } catch (error) {
       throw this.handleError(error);
     }

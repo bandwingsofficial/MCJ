@@ -12,11 +12,15 @@ export type BatchDurationType =
 export type BatchStatus =
   | "UPCOMING"
   | "ONGOING"
+  | "EXPIRED"
   | "COMPLETED"
   | "CANCELLED"
   | "ARCHIVED";
 
 export type BatchFilterStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED";
+
+/** Lifecycle status used by Batch list tabs (from API-calculated status). */
+export type BatchLifecycleStatus = "UPCOMING" | "ONGOING" | "EXPIRED";
 
 export type DayOfWeek =
   | "MONDAY"
@@ -125,6 +129,8 @@ export interface BatchFilters {
   trainerId?: string;
   mode?: BatchMode;
   status?: BatchFilterStatus;
+  /** Lifecycle filter for list tabs: Ongoing / Upcoming / Expired. */
+  batchStatus?: BatchLifecycleStatus;
   isActive?: boolean;
   isDeleted?: boolean;
   includeDeleted?: boolean;

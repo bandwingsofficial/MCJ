@@ -130,21 +130,8 @@ export class UpdateBatchHandler {
       daysOfWeek: command.daysOfWeek ?? batch.daysOfWeek,
     });
 
-    const timesChanged =
-      (command.startTime !== undefined &&
-        command.startTime !== batch.startTime) ||
-      (command.endTime !== undefined &&
-        command.endTime !== batch.endTime);
-
-    let nextCode = command.code?.trim().toUpperCase() ?? batchCodeValue;
-
-    if (timesChanged) {
-      nextCode = await this.domainService.generateUniqueBatchCode(
-        this.batchRepo,
-        nextStartTime,
-        nextEndTime,
-      );
-    }
+    // Keep existing batch code on edit — never regenerate from schedule changes.
+    const nextCode = command.code?.trim().toUpperCase() ?? batchCodeValue;
 
     if (nextCode !== batchCodeValue) {
       await this.domainService.ensureCodeIsAvailable(

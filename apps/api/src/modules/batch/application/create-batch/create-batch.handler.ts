@@ -102,14 +102,10 @@ export class CreateBatchHandler {
       ? Slug.create(command.slug).getValue()
       : Slug.fromName(command.name).getValue();
 
-    const code =
-      command.code?.trim()
-        ? command.code.trim().toUpperCase()
-        : await this.domainService.generateUniqueBatchCode(
-            this.batchRepo,
-            command.startTime!,
-            command.endTime!,
-          );
+    const code = await this.domainService.generateUniqueBatchCode(
+      this.batchRepo,
+      command.startDate!,
+    );
 
     await this.domainService.ensureCodeIsAvailable(
       this.batchRepo,

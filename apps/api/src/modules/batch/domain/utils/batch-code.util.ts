@@ -1,5 +1,8 @@
 export const BATCH_CODE_ROOT = 'MCJ';
 
+/** Prefix used to find all new-format codes: MCJ-MMM-XXX */
+export const BATCH_CODE_SCAN_PREFIX = 'MCJ-';
+
 const MONTH_ABBREVIATIONS = [
   'JAN',
   'FEB',
@@ -15,15 +18,21 @@ const MONTH_ABBREVIATIONS = [
   'DEC',
 ] as const;
 
-export type BatchTimeCode = 'M1' | 'A1' | 'E1' | 'D1';
+/** New format: MCJ-AUG-001 (sequence may grow beyond 3 digits). */
+const BATCH_CODE_PATTERN = /^MCJ-([A-Z]{3})-(\d{3,})$/;
 
-const BATCH_CODE_PATTERN = /^MCJ([A-Z]{3})(M1|A1|E1|D1)(\d{3})$/;
+/** @deprecated Legacy MCJ{MMM}{M1|A1|E1|D1}{XXX} codes — kept for parsing old records. */
+const LEGACY_TIME_BATCH_CODE_PATTERN = /^MCJ([A-Z]{3})(M1|A1|E1|D1)(\d{3})$/;
 
 /** @deprecated Legacy BCH#### codes — kept for parsing old records. */
 const LEGACY_BATCH_CODE_PATTERN = /^BCH(\d{4})$/;
 
+/**
+ * Month abbreviation from the batch start date (UTC).
+ * Matches the project's existing UTC date conventions.
+ */
 export function getMonthAbbreviation(date: Date = new Date()): string {
-  return MONTH_ABBREVIATIONS[date.getMonth()];
+  return MONTH_ABBREVIATIONS[date.getUTCMonth()];
 }
 
 export function parseTimeToMinutes(time: string): number {
@@ -43,69 +52,32 @@ export function parseTimeToMinutes(time: string): number {
   return hours * 60 + minutes;
 }
 
-export function getTimeCodeFromTimes(
-  startTime: string,
-  _endTime: string,
-): BatchTimeCode {
-  const start = parseTimeToMinutes(startTime);
-
-  // Morning: 10:00 AM to 12:00 PM
-  if (start >= 600 && start < 720) {
-    return 'M1';
-  }
-
-  // Afternoon: 12:00 PM to before evening (5 PM)
-  if (start >= 720 && start < 1020) {
-    return 'A1';
-  }
-
-  // Evening: 5 PM to 10 PM
-  if (start >= 1020 && start < 1320) {
-    return 'E1';
-  }
-
-  return 'D1';
+export function buildBatchCodePrefix(month: string): string {
+  return `${BATCH_CODE_ROOT}-${month.toUpperCase()}-`;
 }
 
-export function buildBatchCodePrefix(
-  month: string,
-  timeCode: BatchTimeCode,
-): string {
-  return `${BATCH_CODE_ROOT}${month}${timeCode}`;
+export function formatBatchCode(month: string, sequence: number): string {
+  return `${buildBatchCodePrefix(month)}${String(sequence).padStart(3, '0')}`;
 }
 
-export function formatBatchCode(
-  month: string,
-  timeCode: BatchTimeCode,
-  sequence: number,
-): string {
-  return `${buildBatchCodePrefix(month, timeCode)}${String(sequence).padStart(3, '0')}`;
-}
+/**
+ * Extract the sequence from a new-format code (MCJ-MMM-XXX).
+ * Returns null for legacy / non-matching codes.
+ */
+export function parseBatchCodeSequence(code: string): number | null {
+  const match = code.trim().toUpperCase().match(BATCH_CODE_PATTERN);
 
-export function parseBatchCodeSequence(
-  code: string,
-  prefix: string,
-): number | null {
-  const normalized = code.trim().toUpperCase();
-
-  if (!normalized.startsWith(prefix)) {
+  if (!match) {
     return null;
   }
 
-  const suffix = normalized.slice(prefix.length);
-
-  if (!/^\d{3}$/.test(suffix)) {
-    return null;
-  }
-
-  const value = Number(suffix);
+  const value = Number(match[2]);
 
   return Number.isNaN(value) ? null : value;
 }
 
 export function parseBatchCode(code: string): {
   month: string;
-  timeCode: BatchTimeCode;
   sequence: number;
 } | null {
   const match = code.trim().toUpperCase().match(BATCH_CODE_PATTERN);
@@ -116,8 +88,7 @@ export function parseBatchCode(code: string): {
 
   return {
     month: match[1],
-    timeCode: match[2] as BatchTimeCode,
-    sequence: Number(match[3]),
+    sequence: Number(match[2]),
   };
 }
 
@@ -132,4 +103,9 @@ export function parseLegacyBatchCodeNumber(code: string): number | null {
   const value = Number(match[1]);
 
   return Number.isNaN(value) ? null : value;
+}
+
+/** @deprecated Detect old time-slot batch codes. */
+export function isLegacyTimeBatchCode(code: string): boolean {
+  return LEGACY_TIME_BATCH_CODE_PATTERN.test(code.trim().toUpperCase());
 }

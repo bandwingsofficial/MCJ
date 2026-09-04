@@ -169,12 +169,12 @@ export class AdminBatchController {
   }
 
   @Get('suggest-code')
-  async suggestCode(
-    @Query('startTime') startTime: string,
-    @Query('endTime') endTime: string,
-  ) {
+  async suggestCode(@Query('startDate') startDate?: string) {
+    const parsed = startDate ? new Date(startDate) : new Date();
+    const referenceDate = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+
     const result = await this.suggestBatchCodeHandler.execute(
-      new SuggestBatchCodeQuery(startTime, endTime),
+      new SuggestBatchCodeQuery(referenceDate),
     );
 
     return {

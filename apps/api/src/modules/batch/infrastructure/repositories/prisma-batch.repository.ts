@@ -2,13 +2,21 @@ import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
-import { parseBatchCodeSequence } from '../../domain/utils/batch-code.util';
+import {
+  BATCH_CODE_SCAN_PREFIX,
+  parseBatchCodeSequence,
+} from '../../domain/utils/batch-code.util';
 
 import { Batch } from '../../domain/entities/batch.entity';
+import { BatchStatus } from '../../domain/enums/batch-status.enum';
 import {
   BatchListFilters,
   BatchRepository,
 } from '../../domain/repositories/batch.repository';
+import {
+  calculateBatchLifecycleStatus,
+  isBatchLifecycleStatus,
+} from '../../domain/utils/batch-lifecycle-status.util';
 import { BatchMapper } from '../mappers/batch.mapper';
 
 export class PrismaBatchRepository implements BatchRepository {
@@ -99,6 +107,10 @@ export class PrismaBatchRepository implements BatchRepository {
   async findAll(
     filters: BatchListFilters = {},
   ): Promise<Batch[]> {
+    if (isBatchLifecycleStatus(filters.status)) {
+      return this.findAllByLifecycleStatus(filters);
+    }
+
     const records = await this.prisma.batch.findMany({
       where: this.buildWhere(filters),
       include: this.includeRelations(),
@@ -115,8 +127,67 @@ export class PrismaBatchRepository implements BatchRepository {
   }
 
   async count(filters: BatchListFilters = {}): Promise<number> {
+    if (isBatchLifecycleStatus(filters.status)) {
+      const matched = await this.findLifecycleMatchedRecords(filters);
+      return matched.length;
+    }
+
     return this.prisma.batch.count({
       where: this.buildWhere(filters),
+    });
+  }
+
+  private async findAllByLifecycleStatus(
+    filters: BatchListFilters,
+  ): Promise<Batch[]> {
+    const matched = await this.findLifecycleMatchedRecords(filters);
+    const skip = filters.skip ?? 0;
+    const take = filters.take;
+
+    const page =
+      take === undefined
+        ? matched.slice(skip)
+        : matched.slice(skip, skip + take);
+
+    return page.map(BatchMapper.toDomain);
+  }
+
+  private async findLifecycleMatchedRecords(
+    filters: BatchListFilters,
+  ) {
+    const lifecycleStatus = filters.status as BatchStatus;
+    const where = this.buildWhere({
+      ...filters,
+      status: undefined,
+    });
+
+    // Lifecycle tabs only include date-driven batches (not cancelled/archived).
+    where.status = {
+      notIn: [BatchStatus.CANCELLED, BatchStatus.ARCHIVED],
+    };
+
+    const records = await this.prisma.batch.findMany({
+      where,
+      include: this.includeRelations(),
+      orderBy: [
+        { displayOrder: { sort: 'asc', nulls: 'last' } },
+        { startDate: 'asc' },
+        { createdAt: 'desc' },
+      ] as Prisma.BatchOrderByWithRelationInput[],
+    });
+
+    const now = new Date();
+
+    return records.filter((record) => {
+      const calculated = calculateBatchLifecycleStatus({
+        startDate: record.startDate,
+        startTime: record.startTime,
+        endDate: record.endDate,
+        endTime: record.endTime,
+        now,
+      });
+
+      return calculated === lifecycleStatus;
     });
   }
 
@@ -138,11 +209,11 @@ export class PrismaBatchRepository implements BatchRepository {
     return maxOrder ?? 0;
   }
 
-  async getMaxBatchCodeSequence(prefix: string): Promise<number> {
+  async getMaxBatchCodeSequence(): Promise<number> {
     const records = await this.prisma.batch.findMany({
       where: {
         code: {
-          startsWith: prefix,
+          startsWith: BATCH_CODE_SCAN_PREFIX,
         },
       },
       select: {
@@ -153,7 +224,7 @@ export class PrismaBatchRepository implements BatchRepository {
     let max = 0;
 
     for (const record of records) {
-      const value = parseBatchCodeSequence(record.code, prefix);
+      const value = parseBatchCodeSequence(record.code);
 
       if (value !== null && value > max) {
         max = value;
@@ -391,7 +462,9 @@ export class PrismaBatchRepository implements BatchRepository {
       where.isActive = true;
     } else if (filters.isActive !== undefined) {
       where.isActive = filters.isActive;
-    } else if (filters.status) {
+    }
+
+    if (filters.status) {
       where.status = filters.status;
     }
 

@@ -305,18 +305,13 @@ export function BatchForm({
   }, [mergedDefaults, reset]);
 
   useEffect(() => {
-    const startTime = values.startTime?.trim();
-    const endTime = values.endTime?.trim();
-
-    if (!startTime || !endTime) {
+    if (isEdit) {
       return;
     }
 
-    if (
-      isEdit &&
-      startTime === mergedDefaults.startTime &&
-      endTime === mergedDefaults.endTime
-    ) {
+    const startDate = values.startDate?.trim();
+
+    if (!startDate) {
       return;
     }
 
@@ -325,10 +320,7 @@ export function BatchForm({
     const suggestCode = async () => {
       try {
         setIsSuggestingCode(true);
-        const response = await batchService.suggestBatchCode(
-          startTime,
-          endTime,
-        );
+        const response = await batchService.suggestBatchCode(startDate);
 
         if (requestId !== suggestRequestIdRef.current) {
           return;
@@ -336,7 +328,7 @@ export function BatchForm({
 
         setValue("code", response.data.batchCode, {
           shouldValidate: true,
-          shouldDirty: !isEdit,
+          shouldDirty: true,
         });
       } catch (error) {
         if (requestId === suggestRequestIdRef.current) {
@@ -350,14 +342,7 @@ export function BatchForm({
     };
 
     void suggestCode();
-  }, [
-    isEdit,
-    mergedDefaults.endTime,
-    mergedDefaults.startTime,
-    setValue,
-    values.endTime,
-    values.startTime,
-  ]);
+  }, [isEdit, setValue, values.startDate]);
 
   const getFieldState = (
     name: SyncFieldName,
@@ -512,7 +497,7 @@ export function BatchForm({
           <FieldIcon icon={Hash} />
           <Input
             readOnly
-            placeholder="MCJAUGM1001"
+            placeholder="MCJ-AUG-001"
             autoComplete="off"
             className={iconInputClass(
               getFieldState("code", { forceValid: true }),

@@ -2,6 +2,7 @@ import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
 import { Batch } from '../../domain/entities/batch.entity';
 import { BatchStatus } from '../../domain/enums/batch-status.enum';
 import { DayOfWeek } from '../../domain/enums/day-of-week.enum';
+import { resolveBatchApiStatus } from '../../domain/utils/batch-lifecycle-status.util';
 
 export class BatchTrainerResult {
   constructor(
@@ -81,6 +82,14 @@ export class GetBatchResult {
 
   static fromEntity(batch: Batch): GetBatchResult {
     const pricing = batch.getPricing();
+    const status = resolveBatchApiStatus({
+      storedStatus: batch.status,
+      isDeleted: batch.isDeleted,
+      startDate: batch.startDate,
+      startTime: batch.startTime,
+      endDate: batch.endDate,
+      endTime: batch.endTime,
+    });
 
     return new GetBatchResult(
       batch.id,
@@ -134,7 +143,7 @@ export class GetBatchResult {
       batch.isFeatured,
       batch.isActive,
       batch.displayOrder,
-      batch.status,
+      status,
       batch.trainers.map(
         (trainer) =>
           new BatchTrainerResult(

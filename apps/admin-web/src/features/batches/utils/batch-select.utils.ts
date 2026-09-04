@@ -1,7 +1,6 @@
 import type { SelectOption } from "@/src/shared/components/ui/select";
 
 import type { Batch } from "@/src/features/batches/types/batch.types";
-import { calculateBatchProgress } from "@/src/features/batches/utils/batch-progress.utils";
 
 export const BLOCKED_BATCH_SELECTION_MESSAGE =
   "Completed or expired batches cannot be selected.";
@@ -24,7 +23,6 @@ type BatchLike = Pick<
 
 export function getBatchSelectionBlockReason(
   batch: BatchLike,
-  referenceDate: Date = new Date(),
 ): BatchSelectionBlockReason {
   if (batch.isDeleted || batch.deletedAt) {
     return "ARCHIVED";
@@ -46,51 +44,31 @@ export function getBatchSelectionBlockReason(
     return "COMPLETED";
   }
 
-  const progress = calculateBatchProgress(
-    {
-      startDate: batch.startDate,
-      endDate: batch.endDate,
-      daysOfWeek: [],
-      startTime: "09:00",
-      endTime: "17:00",
-    },
-    referenceDate,
-  );
-
-  if (progress.isExpired) {
+  if (batch.status === "EXPIRED") {
     return "EXPIRED";
   }
 
   return null;
 }
 
-export function isBatchBlockedForSelection(
-  batch: BatchLike,
-  referenceDate: Date = new Date(),
-): boolean {
-  return getBatchSelectionBlockReason(batch, referenceDate) !== null;
+export function isBatchBlockedForSelection(batch: BatchLike): boolean {
+  return getBatchSelectionBlockReason(batch) !== null;
 }
 
-export function isBatchSelectableForAssignment(
-  batch: BatchLike,
-  referenceDate: Date = new Date(),
-): boolean {
-  return !isBatchBlockedForSelection(batch, referenceDate);
+export function isBatchSelectableForAssignment(batch: BatchLike): boolean {
+  return !isBatchBlockedForSelection(batch);
 }
 
 /**
  * Row checkboxes on list tables: block completed/expired/cancelled/status-archived
  * from bulk selection, but keep soft-deleted (restore) and inactive (activate) selectable.
  */
-export function isBatchSelectableInBulkList(
-  batch: BatchLike,
-  referenceDate: Date = new Date(),
-): boolean {
+export function isBatchSelectableInBulkList(batch: BatchLike): boolean {
   if (batch.isDeleted || batch.deletedAt) {
     return true;
   }
 
-  const reason = getBatchSelectionBlockReason(batch, referenceDate);
+  const reason = getBatchSelectionBlockReason(batch);
   if (reason === "INACTIVE") {
     return true;
   }
@@ -105,6 +83,7 @@ export type BatchDisplayStatusKey =
   | "ARCHIVED"
   | "INACTIVE"
   | "UPCOMING"
+  | "ONGOING"
   | "IN_PROGRESS"
   | "ACTIVE";
 
@@ -115,13 +94,10 @@ export interface BatchDisplayStatus {
 }
 
 /**
- * Display status for tables/cards. Prefer lifecycle + calendar over bare "Active".
- * Aligns with {@link getBatchSelectionBlockReason} for completed/expired.
+ * Display status for tables/cards. Uses API-calculated lifecycle status
+ * (UPCOMING / ONGOING / EXPIRED) — no frontend date recalculation.
  */
-export function getBatchDisplayStatus(
-  batch: BatchLike,
-  referenceDate: Date = new Date(),
-): BatchDisplayStatus {
+export function getBatchDisplayStatus(batch: BatchLike): BatchDisplayStatus {
   if (batch.isDeleted || batch.deletedAt) {
     return { key: "ARCHIVED", label: "Archived", variant: "danger" };
   }
@@ -138,18 +114,7 @@ export function getBatchDisplayStatus(
     return { key: "COMPLETED", label: "Completed", variant: "default" };
   }
 
-  const progress = calculateBatchProgress(
-    {
-      startDate: batch.startDate,
-      endDate: batch.endDate,
-      daysOfWeek: [],
-      startTime: "09:00",
-      endTime: "17:00",
-    },
-    referenceDate,
-  );
-
-  if (progress.isExpired) {
+  if (batch.status === "EXPIRED") {
     return { key: "EXPIRED", label: "Expired", variant: "default" };
   }
 
@@ -157,12 +122,12 @@ export function getBatchDisplayStatus(
     return { key: "INACTIVE", label: "Inactive", variant: "danger" };
   }
 
-  if (batch.status === "UPCOMING" || progress.isNotStarted) {
+  if (batch.status === "UPCOMING") {
     return { key: "UPCOMING", label: "Upcoming", variant: "info" };
   }
 
   if (batch.status === "ONGOING") {
-    return { key: "IN_PROGRESS", label: "In Progress", variant: "success" };
+    return { key: "ONGOING", label: "Ongoing", variant: "success" };
   }
 
   return { key: "ACTIVE", label: "Active", variant: "success" };
@@ -201,9 +166,8 @@ export function formatBatchSelectLabel(
 
 export function toBatchSelectOption(
   batch: BatchLike & { id: string; name: string },
-  referenceDate: Date = new Date(),
 ): SelectOption {
-  const reason = getBatchSelectionBlockReason(batch, referenceDate);
+  const reason = getBatchSelectionBlockReason(batch);
 
   return {
     value: batch.id,
@@ -214,11 +178,8 @@ export function toBatchSelectOption(
 
 export function toBatchSelectOptions(
   batches: Array<BatchLike & { id: string; name: string }>,
-  referenceDate: Date = new Date(),
 ): SelectOption[] {
-  return uniqueSelectOptions(
-    batches.map((batch) => toBatchSelectOption(batch, referenceDate)),
-  );
+  return uniqueSelectOptions(batches.map((batch) => toBatchSelectOption(batch)));
 }
 
 export const BATCH_SELECT_ALL = "ALL";

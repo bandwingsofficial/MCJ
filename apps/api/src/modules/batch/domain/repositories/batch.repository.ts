@@ -48,7 +48,7 @@ export interface BatchRepository {
   findAll(filters?: BatchListFilters): Promise<Batch[]>;
   count(filters?: BatchListFilters): Promise<number>;
   getMaxDisplayOrder(): Promise<number>;
-  getMaxBatchCodeSequence(prefix: string): Promise<number>;
+  getMaxBatchCodeSequence(): Promise<number>;
   closeDisplayOrderGap(deletedDisplayOrder: number): Promise<void>;
   moveDisplayOrder(
     batchId: string,
