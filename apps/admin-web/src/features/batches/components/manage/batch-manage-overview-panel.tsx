@@ -1,14 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import { ImageOff, UserRound } from "lucide-react";
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { UserRound } from "lucide-react";
 
 import { Card } from "@/src/shared/components/ui/card";
+import { Loader } from "@/src/shared/components/ui/loader";
 
+import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
+import { BATCH_DURATION_TYPES } from "@/src/features/batches/constants/batch.constants";
 import type {
   Batch,
-  BatchCourseAssignment,
+  BatchSummary,
 } from "@/src/features/batches/types/batch.types";
 import {
   formatBatchMode,
@@ -16,31 +19,27 @@ import {
   formatBatchTime,
 } from "@/src/features/batches/utils/batch.helper";
 import {
-  formatAssignedCoursePrice,
-  formatAssignedCourseQualifications,
-  formatAssignmentSessionCourseLabel,
-  formatTrainerDisplayName,
-  getCourseDescription,
-  getUniqueAssignedCourses,
-  getUniqueBatchTrainers,
-  formatDaysRemainingOrExpiredStatus,
-} from "@/src/features/batches/utils/batch-course.utils";
+  formatBatchOriginalPrice,
+  formatBatchPrice,
+  getBatchPricing,
+} from "@/src/features/batches/utils/batch-pricing.util";
 import {
   calculateBatchProgress,
   formatBatchDaysLabel,
-  formatBatchDurationLabel,
-  formatBatchLifecycleStatus,
   formatBatchOverviewDate,
   formatBatchOverviewTiming,
 } from "@/src/features/batches/utils/batch-progress.utils";
-import type { TrainerStatus } from "@/src/features/trainers/types/trainer.types";
+import { categoryService } from "@/src/features/categories/services/category.service";
+import { useCourse } from "@/src/features/courses/hooks/use-course";
+import { useCourseTrainers } from "@/src/features/courses/hooks/use-course-trainers";
 import { TrainerStatusBadge } from "@/src/features/trainers/components/trainer-status-badge";
+import type { TrainerDetails } from "@/src/features/trainers/types/trainer.types";
 import { getTrainerDisplayStatus } from "@/src/features/trainers/utils/trainer-display.utils";
 
 interface Props {
   batch: Batch;
-  assignments: BatchCourseAssignment[];
-  assignmentsLoading?: boolean;
+  summary: BatchSummary | null;
+  summaryLoading?: boolean;
 }
 
 function SectionCard({
@@ -77,160 +76,209 @@ function OverviewField({
   );
 }
 
-function resolveTrainerStatus(status?: string): TrainerStatus {
-  if (status === "ACTIVE" || status === "ARCHIVED" || status === "INACTIVE") {
-    return status;
-  }
-
-  return "INACTIVE";
-}
-
-function EmptySectionMessage({ message }: { message: string }) {
+function EmptyMessage({ message }: { message: string }) {
   return (
-    <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-[#647A9B]">
+    <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-[#647A9B]">
       {message}
     </p>
   );
 }
 
+function formatConfiguredDuration(batch: Batch): string {
+  if (
+    batch.durationValue == null ||
+    !batch.durationType ||
+    Number(batch.durationValue) <= 0
+  ) {
+    return "—";
+  }
+
+  const typeLabel =
+    BATCH_DURATION_TYPES.find((item) => item.value === batch.durationType)
+      ?.label ?? batch.durationType;
+  const value = Number(batch.durationValue);
+  const singular = typeLabel.replace(/s$/i, "");
+
+  return `${value} ${value === 1 ? singular : typeLabel.toLowerCase()}`;
+}
+
+function formatDurationType(batch: Batch): string {
+  if (!batch.durationType) {
+    return "—";
+  }
+
+  return (
+    BATCH_DURATION_TYPES.find((item) => item.value === batch.durationType)
+      ?.label ?? batch.durationType
+  );
+}
+
+function formatTrainerName(
+  trainer: Pick<TrainerDetails, "firstName" | "lastName">,
+) {
+  return [trainer.firstName, trainer.lastName].filter(Boolean).join(" ") || "—";
+}
+
+function TrainerCard({ trainer }: { trainer: TrainerDetails }) {
+  const name = formatTrainerName(trainer);
+
+  return (
+    <article className="flex min-w-0 flex-col gap-3 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-start">
+      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-slate-100">
+        {trainer.profileImageUrl ? (
+          <Image
+            src={trainer.profileImageUrl}
+            alt={name}
+            fill
+            className="object-cover"
+            sizes="64px"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-slate-400">
+            <UserRound className="h-6 w-6" />
+          </div>
+        )}
+      </div>
+
+      <dl className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">
+        <OverviewField label="Trainer Name" value={name} />
+        <OverviewField
+          label="Trainer Code"
+          value={trainer.employeeCode?.trim() || "—"}
+        />
+        <OverviewField
+          label="Qualification"
+          value={trainer.qualification?.trim() || "—"}
+        />
+        <OverviewField
+          label="Specialization"
+          value={trainer.specialization?.trim() || "—"}
+        />
+        <div className="sm:col-span-2">
+          <OverviewField
+            label="Status"
+            value={
+              <TrainerStatusBadge status={getTrainerDisplayStatus(trainer)} />
+            }
+          />
+        </div>
+      </dl>
+    </article>
+  );
+}
+
 export function BatchManageOverviewPanel({
   batch,
-  assignments,
-  assignmentsLoading = false,
+  summary,
+  summaryLoading = false,
 }: Props) {
   const progress = useMemo(() => calculateBatchProgress(batch), [batch]);
+  const pricing = useMemo(() => getBatchPricing(batch), [batch]);
+  const isArchived = Boolean(batch.deletedAt || batch.isDeleted);
 
-  const assignedCourses = useMemo(
-    () => getUniqueAssignedCourses(assignments),
-    [assignments],
+  const courseId = batch.courseId?.trim() || batch.course?.id || "";
+  const { course, isLoading: courseLoading } = useCourse(courseId);
+  const { trainers, isLoading: trainersLoading } = useCourseTrainers(
+    courseId || undefined,
   );
 
-  const primaryCourse = batch.course ?? null;
+  const [categorySlug, setCategorySlug] = useState<string | null>(null);
+  const [categoryLoading, setCategoryLoading] = useState(false);
 
-  const secondaryAssignments = useMemo(() => {
-    if (!primaryCourse) {
-      return assignedCourses;
+  const categoryId = course?.categoryId || course?.category?.id || null;
+  const categoryName =
+    course?.category?.name?.trim() ||
+    course?.categoryName?.trim() ||
+    batch.course?.category?.name?.trim() ||
+    batch.category?.name?.trim() ||
+    "";
+
+  useEffect(() => {
+    if (!categoryId) {
+      setCategorySlug(null);
+      return;
     }
 
-    return assignedCourses.filter(
-      (assignment) => assignment.courseId !== primaryCourse.id,
-    );
-  }, [assignedCourses, primaryCourse]);
+    let cancelled = false;
 
-  const assignedTrainers = useMemo(
-    () => getUniqueBatchTrainers(batch, assignments),
-    [assignments, batch],
-  );
+    const loadCategory = async () => {
+      try {
+        setCategoryLoading(true);
+        const response = await categoryService.getCategory(categoryId);
+        if (!cancelled) {
+          setCategorySlug(response.data.slug?.trim() || null);
+        }
+      } catch {
+        if (!cancelled) {
+          setCategorySlug(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setCategoryLoading(false);
+        }
+      }
+    };
 
-  const daysRemainingLabel = formatDaysRemainingOrExpiredStatus(
-    progress.isExpired,
-    progress.isNotStarted,
-    progress.daysRemaining,
-    progress.daysUntilStart,
-  );
+    void loadCategory();
 
-  const lifecycleStatus = formatBatchLifecycleStatus(progress);
-  const durationLabel = formatBatchDurationLabel(batch);
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryId]);
+
   const workingDaysLabel =
     progress.totalWorkingDays !== null
       ? `${progress.totalWorkingDays} working day${progress.totalWorkingDays === 1 ? "" : "s"}`
       : "—";
 
-  const renderCourseCard = (
-    course: NonNullable<Batch["course"]>,
-    options?: { sessionLabel?: string; key?: string },
-  ) => {
-    const categoryName =
-      course.category?.name?.trim() ||
-      batch.category?.name?.trim() ||
-      "—";
-    const description = getCourseDescription(course);
-    const title = options?.sessionLabel ?? course.title;
+  const enrolledLabel =
+    summary != null
+      ? `${summary.enrolledCount} / ${summary.capacity}`
+      : `${batch.enrolledCount} / ${batch.capacity}`;
 
-    return (
-      <article
-        key={options?.key ?? course.id}
-        className="flex min-w-0 flex-col gap-3 rounded-xl border border-slate-200 p-3 sm:flex-row"
-      >
-        <div className="relative h-20 w-full shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:h-20 sm:w-28">
-          {course.thumbnailUrl ? (
-            <Image
-              src={course.thumbnailUrl}
-              alt={course.title}
-              fill
-              className="object-cover"
-              sizes="112px"
-            />
-          ) : (
-            <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-slate-400">
-              <ImageOff className="h-5 w-5" />
-              <span className="text-[10px] font-medium">No image</span>
-            </div>
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1 space-y-2">
-          <div>
-            <h3 className="text-sm font-semibold text-[#102A56]">{title}</h3>
-            {course.code ? (
-              <p className="text-xs font-medium text-blue-600">{course.code}</p>
-            ) : null}
-          </div>
-
-          {description ? (
-            <p className="text-sm leading-relaxed text-slate-600">
-              {description}
-            </p>
-          ) : null}
-
-          <dl className="grid min-w-0 gap-2 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-xs text-slate-500">Category</dt>
-              <dd className="font-medium text-[#102A56]">{categoryName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-slate-500">
-                Minimum Qualification Required
-              </dt>
-              <dd className="font-medium text-[#102A56]">
-                {formatAssignedCourseQualifications(course)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-slate-500">Final Price</dt>
-              <dd className="font-medium text-[#102A56]">
-                {formatAssignedCoursePrice(batch)}
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </article>
-    );
-  };
+  const courseTitle =
+    course?.title?.trim() || batch.course?.title?.trim() || "";
+  const courseCode =
+    course?.code?.trim() || batch.course?.code?.trim() || "";
+  const courseDescription =
+    course?.shortDescription?.trim() ||
+    course?.description?.trim() ||
+    batch.course?.shortDescription?.trim() ||
+    batch.course?.description?.trim() ||
+    "";
 
   return (
     <div className="space-y-4">
-      <SectionCard title="Batch Information">
-        <dl className="grid min-w-0 gap-4 sm:grid-cols-2">
+      <SectionCard title="Batch Details">
+        <dl className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <OverviewField label="Batch Name" value={batch.name} />
           <OverviewField label="Batch Code" value={batch.code} />
-          <OverviewField label="Batch Type" value={formatBatchMode(batch.mode)} />
-          <OverviewField label="Capacity" value={batch.capacity} />
           <OverviewField
-            label="Start Date"
-            value={formatBatchOverviewDate(batch.startDate)}
+            label="Course"
+            value={batch.course?.title?.trim() || "No course assigned"}
           />
           <OverviewField
-            label="End Date"
-            value={formatBatchOverviewDate(batch.endDate)}
+            label="Batch Type"
+            value={formatBatchMode(batch.mode)}
           />
           <OverviewField
-            label="Current Status"
+            label="Status"
+            value={
+              <BatchStatusBadge
+                status={batch.status}
+                isActive={batch.isActive}
+                isDeleted={isArchived}
+              />
+            }
+          />
+          <OverviewField
+            label="Operational State"
             value={formatBatchOperationalStatus(batch)}
           />
-          <OverviewField label="Duration" value={durationLabel} />
+          <OverviewField label="Capacity" value={batch.capacity} />
+          <OverviewField label="Enrollment" value={enrolledLabel} />
           {batch.description?.trim() ? (
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-3">
               <OverviewField
                 label="Description"
                 value={batch.description.trim()}
@@ -240,128 +288,8 @@ export function BatchManageOverviewPanel({
         </dl>
       </SectionCard>
 
-      <SectionCard title="Course Information">
-        {assignmentsLoading && !primaryCourse ? (
-          <p className="text-sm text-[#647A9B]">Loading assigned courses…</p>
-        ) : !primaryCourse && assignedCourses.length === 0 ? (
-          <EmptySectionMessage message="No course assigned — edit this batch to select a course" />
-        ) : (
-          <div className="space-y-3">
-            {primaryCourse
-              ? renderCourseCard(primaryCourse)
-              : assignedCourses.map((assignment) =>
-                  renderCourseCard(assignment.course, {
-                    key: assignment.id,
-                    sessionLabel: formatAssignmentSessionCourseLabel(assignment),
-                  }),
-                )}
-
-            {primaryCourse && secondaryAssignments.length > 0 ? (
-              <div className="space-y-2 pt-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Additional sessions
-                </p>
-                {secondaryAssignments.map((assignment) =>
-                  renderCourseCard(assignment.course, {
-                    key: assignment.id,
-                    sessionLabel: formatAssignmentSessionCourseLabel(assignment),
-                  }),
-                )}
-              </div>
-            ) : null}
-          </div>
-        )}
-      </SectionCard>
-
-      <SectionCard title="Trainer Information">
-        {assignmentsLoading ? (
-          <p className="text-sm text-[#647A9B]">Loading assigned trainers…</p>
-        ) : assignedTrainers.length === 0 ? (
-          <EmptySectionMessage message="No trainers yet" />
-        ) : (
-          <div className="space-y-3">
-            {assignedTrainers.map((trainer) => {
-              const name = formatTrainerDisplayName(trainer) || "—";
-
-              return (
-                <article
-                  key={trainer.id}
-                  className="flex min-w-0 flex-col gap-3 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-center"
-                >
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-slate-100">
-                    {trainer.profileImageUrl ? (
-                      <Image
-                        src={trainer.profileImageUrl}
-                        alt={name}
-                        fill
-                        className="object-cover"
-                        sizes="64px"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-slate-400">
-                        <UserRound className="h-6 w-6" />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-sm font-semibold text-[#102A56]">
-                        {name}
-                      </h3>
-                      <TrainerStatusBadge
-                        status={getTrainerDisplayStatus({
-                          status: resolveTrainerStatus(trainer.status),
-                          deletedAt: null,
-                          isDeleted: false,
-                        })}
-                      />
-                    </div>
-
-                    <dl className="grid min-w-0 gap-1 text-sm sm:grid-cols-2">
-                      {trainer.employeeCode ? (
-                        <div>
-                          <dt className="text-xs text-slate-500">Employee Code</dt>
-                          <dd className="font-medium text-[#102A56]">
-                            {trainer.employeeCode}
-                          </dd>
-                        </div>
-                      ) : null}
-                      {trainer.specialization?.trim() ? (
-                        <div>
-                          <dt className="text-xs text-slate-500">Specialization</dt>
-                          <dd className="font-medium text-[#102A56]">
-                            {trainer.specialization}
-                          </dd>
-                        </div>
-                      ) : null}
-                      {trainer.qualification?.trim() ? (
-                        <div>
-                          <dt className="text-xs text-slate-500">Qualification</dt>
-                          <dd className="font-medium text-[#102A56]">
-                            {trainer.qualification}
-                          </dd>
-                        </div>
-                      ) : null}
-                      {trainer.email?.trim() ? (
-                        <div className="sm:col-span-2">
-                          <dt className="text-xs text-slate-500">Email</dt>
-                          <dd className="break-all font-medium text-[#102A56]">
-                            {trainer.email}
-                          </dd>
-                        </div>
-                      ) : null}
-                    </dl>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </SectionCard>
-
-      <SectionCard title="Schedule Information">
-        <dl className="grid min-w-0 gap-4 sm:grid-cols-2">
+      <SectionCard title="Schedule">
+        <dl className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <OverviewField
             label="Start Date"
             value={formatBatchOverviewDate(batch.startDate)}
@@ -371,29 +299,176 @@ export function BatchManageOverviewPanel({
             value={formatBatchOverviewDate(batch.endDate)}
           />
           <OverviewField
-            label="Selected Batch Days"
-            value={formatBatchDaysLabel(batch.daysOfWeek)}
-          />
-          <OverviewField
-            label="Daily Start Time"
+            label="Start Time"
             value={formatBatchTime(batch.startTime)}
           />
           <OverviewField
-            label="Daily End Time"
+            label="End Time"
             value={formatBatchTime(batch.endTime)}
           />
           <OverviewField
             label="Daily Timing"
             value={formatBatchOverviewTiming(batch.startTime, batch.endTime)}
           />
-          <OverviewField label="Total Duration" value={durationLabel} />
-          <OverviewField label="Working Days" value={workingDaysLabel} />
-          <OverviewField label="Batch Progress" value={lifecycleStatus} />
           <OverviewField
-            label="Days Remaining / Expired Status"
-            value={daysRemainingLabel}
+            label="Duration"
+            value={formatConfiguredDuration(batch)}
+          />
+          <OverviewField
+            label="Duration Type"
+            value={formatDurationType(batch)}
+          />
+          <OverviewField
+            label="Total Working Days"
+            value={workingDaysLabel}
+          />
+          <OverviewField
+            label="Batch Days"
+            value={formatBatchDaysLabel(batch.daysOfWeek)}
           />
         </dl>
+      </SectionCard>
+
+      <SectionCard title="Other Details">
+        <dl className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <OverviewField
+            label="Featured"
+            value={batch.isFeatured ? "Yes" : "No"}
+          />
+          <OverviewField
+            label="Category"
+            value={
+              batch.category?.name?.trim() ||
+              batch.course?.category?.name?.trim() ||
+              "—"
+            }
+          />
+          <OverviewField
+            label="Final Price"
+            value={formatBatchPrice(batch)}
+          />
+          <OverviewField
+            label="Original Price"
+            value={formatBatchOriginalPrice(batch)}
+          />
+          <OverviewField
+            label="Discount"
+            value={
+              pricing.isFree
+                ? "—"
+                : new Intl.NumberFormat("en-IN", {
+                    style: "currency",
+                    currency: pricing.currency,
+                    maximumFractionDigits: 2,
+                  }).format(pricing.discountAmount)
+            }
+          />
+          <OverviewField label="Currency" value={pricing.currency} />
+        </dl>
+
+        <div className="mt-6 border-t border-slate-200 pt-4">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Batch Statistics
+          </h3>
+          {summaryLoading && !summary ? (
+            <p className="text-sm text-[#647A9B]">Loading statistics…</p>
+          ) : summary ? (
+            <dl className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <OverviewField
+                label="Students"
+                value={summary.studentsCount}
+              />
+              <OverviewField
+                label="Trainers"
+                value={summary.trainerCount}
+              />
+              <OverviewField
+                label="Enrolled"
+                value={`${summary.enrolledCount} / ${summary.capacity}`}
+              />
+              <OverviewField
+                label="Attendance Present"
+                value={summary.attendancePresent}
+              />
+              <OverviewField
+                label="Attendance Absent"
+                value={summary.attendanceAbsent}
+              />
+            </dl>
+          ) : (
+            <p className="text-sm text-[#647A9B]">
+              Statistics are unavailable for this batch.
+            </p>
+          )}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Course Details">
+        {!courseId ? (
+          <EmptyMessage message="No course assigned" />
+        ) : courseLoading && !course && !batch.course ? (
+          <div className="py-6">
+            <Loader />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <dl className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <OverviewField
+                label="Course Name"
+                value={courseTitle || "—"}
+              />
+              <OverviewField
+                label="Course Code"
+                value={courseCode || "—"}
+              />
+              <div className="sm:col-span-2 lg:col-span-3">
+                <OverviewField
+                  label="Description"
+                  value={courseDescription || "—"}
+                />
+              </div>
+            </dl>
+
+            <div className="border-t border-slate-200 pt-4">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Category Details
+              </h3>
+              {!categoryName && !categoryId ? (
+                <EmptyMessage message="No category available" />
+              ) : (
+                <dl className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <OverviewField
+                    label="Category Name"
+                    value={categoryName || "—"}
+                  />
+                  <OverviewField
+                    label="Category Code"
+                    value={categoryLoading ? "…" : categorySlug || "—"}
+                  />
+                </dl>
+              )}
+            </div>
+
+            <div className="border-t border-slate-200 pt-4">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Trainer Details
+              </h3>
+              {trainersLoading ? (
+                <div className="py-4">
+                  <Loader />
+                </div>
+              ) : trainers.length === 0 ? (
+                <EmptyMessage message="Not yet assigned" />
+              ) : (
+                <div className="space-y-3">
+                  {trainers.map((trainer) => (
+                    <TrainerCard key={trainer.id} trainer={trainer} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </SectionCard>
     </div>
   );

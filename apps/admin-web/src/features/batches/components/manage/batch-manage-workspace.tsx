@@ -11,7 +11,6 @@ import {
 
 import type {
   Batch,
-  BatchCourseAssignment,
   BatchSummary,
 } from "@/src/features/batches/types/batch.types";
 
@@ -19,25 +18,23 @@ import { BatchManageCoursesPanel } from "./batch-manage-courses-panel";
 import { BatchManageOverviewPanel } from "./batch-manage-overview-panel";
 
 interface Props {
-  batchId: string;
   batch: Batch;
   summary: BatchSummary | null;
   summaryLoading?: boolean;
-  assignments: BatchCourseAssignment[];
-  assignmentsLoading?: boolean;
-  onAssignmentsChange: (assignments: BatchCourseAssignment[]) => void;
-  onSummaryRefresh: () => Promise<void>;
-  onBatchUpdated: () => Promise<void>;
-  onAssignmentsRefresh: () => Promise<void>;
   onTabChange?: (tab: TabKey) => void;
 }
 
-export type TabKey = "overview" | "courses";
+export type TabKey = "overview" | "course";
+
+const TABS: { value: TabKey; label: string }[] = [
+  { value: "overview", label: "Overview" },
+  { value: "course", label: "Course" },
+];
 
 export function BatchManageWorkspace({
   batch,
-  assignments,
-  assignmentsLoading = false,
+  summary,
+  summaryLoading = false,
   onTabChange,
 }: Props) {
   const [tab, setTab] = useState<TabKey>("overview");
@@ -52,12 +49,7 @@ export function BatchManageWorkspace({
       }}
     >
       <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
-        {(
-          [
-            ["overview", "Overview"],
-            ["courses", "Course"],
-          ] as const
-        ).map(([value, label]) => (
+        {TABS.map(({ value, label }) => (
           <TabsTrigger
             key={value}
             value={value}
@@ -71,12 +63,12 @@ export function BatchManageWorkspace({
       <TabsContent value="overview" className="space-y-3">
         <BatchManageOverviewPanel
           batch={batch}
-          assignments={assignments}
-          assignmentsLoading={assignmentsLoading}
+          summary={summary}
+          summaryLoading={summaryLoading}
         />
       </TabsContent>
 
-      <TabsContent value="courses">
+      <TabsContent value="course">
         <BatchManageCoursesPanel batch={batch} />
       </TabsContent>
     </Tabs>

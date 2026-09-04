@@ -5,24 +5,12 @@ import { RotateCcw, Trash2 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 
-import type {
-  Batch,
-  BatchCourseAssignment,
-} from "@/src/features/batches/types/batch.types";
+import type { Batch } from "@/src/features/batches/types/batch.types";
 import { BatchModeBadge } from "@/src/features/batches/components/BatchModeBadge";
 import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
-import {
-  formatBatchCategoriesFromAssignments,
-} from "@/src/features/batches/utils/batch-course.utils";
-import {
-  formatBatchDateRange,
-  formatBatchTiming,
-} from "@/src/features/batches/utils/batch.helper";
 
 interface Props {
   batch: Batch;
-  assignments: BatchCourseAssignment[];
-  assignmentsLoading?: boolean;
   activeSection?: string;
   onArchive: () => void;
   onRestore: () => void;
@@ -32,8 +20,6 @@ interface Props {
 
 export function BatchManageHeader({
   batch,
-  assignments,
-  assignmentsLoading = false,
   activeSection,
   onArchive,
   onRestore,
@@ -41,10 +27,7 @@ export function BatchManageHeader({
   actionsDisabled = false,
 }: Props) {
   const isArchived = Boolean(batch.deletedAt || batch.isDeleted);
-  const categoriesLabel = assignmentsLoading
-    ? "…"
-    : formatBatchCategoriesFromAssignments(assignments);
-  const meta = [batch.code, categoriesLabel].join(" · ");
+  const courseName = batch.course?.title?.trim() || "No course assigned";
 
   return (
     <div className="space-y-3">
@@ -74,23 +57,15 @@ export function BatchManageHeader({
           <h1 className="truncate text-xl font-semibold tracking-tight text-[#102A56] sm:text-2xl">
             {batch.name}
           </h1>
-          <p className="mt-1 text-sm text-[#647A9B]">{meta}</p>
+          <p className="mt-1 text-sm text-[#647A9B]">{courseName}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <BatchStatusBadge
               status={batch.status}
               isActive={batch.isActive}
               isDeleted={isArchived}
-              startDate={batch.startDate}
-              endDate={batch.endDate}
             />
             <BatchModeBadge mode={batch.mode} />
           </div>
-          <p className="mt-2 text-xs text-slate-500">
-            {formatBatchDateRange(batch.startDate, batch.endDate)}
-          </p>
-          <p className="text-xs text-slate-500">
-            {formatBatchTiming(batch.startTime, batch.endTime)}
-          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

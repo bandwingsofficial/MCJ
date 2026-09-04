@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -9,7 +9,6 @@ import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { useBatch } from "@/src/features/batches/hooks/useBatch";
-import { useBatchCourseAssignments } from "@/src/features/batches/hooks/useBatchCourseAssignments";
 import { useBatchSummary } from "@/src/features/batches/hooks/useBatchSummary";
 import { useDeleteBatch } from "@/src/features/batches/hooks/useDeleteBatch";
 import { useRestoreBatch } from "@/src/features/batches/hooks/useRestoreBatch";
@@ -18,12 +17,19 @@ import { batchService } from "@/src/features/batches/services/batch.service";
 import { BatchDeleteDialog } from "@/src/features/batches/components/BatchDeleteDialog";
 import { PermanentDeleteBatchDialog } from "@/src/features/batches/components/permanent-delete-batch-dialog";
 import { BatchManageHeader } from "@/src/features/batches/components/manage/batch-manage-header";
-import { BatchManageWorkspace } from "@/src/features/batches/components/manage/batch-manage-workspace";
-import type { BatchCourseAssignment } from "@/src/features/batches/types/batch.types";
+import {
+  BatchManageWorkspace,
+  type TabKey,
+} from "@/src/features/batches/components/manage/batch-manage-workspace";
 
 interface Props {
   batchId: string;
 }
+
+const TAB_LABELS: Record<TabKey, string> = {
+  overview: "Overview",
+  course: "Course",
+};
 
 export function BatchManagePage({ batchId }: Props) {
   const router = useRouter();
@@ -31,20 +37,7 @@ export function BatchManagePage({ batchId }: Props) {
   const {
     summary,
     isLoading: summaryLoading,
-    refetch: refetchSummary,
   } = useBatchSummary(batchId);
-  const {
-    assignments: fetchedAssignments,
-    isLoading: assignmentsLoading,
-    refetch: refetchAssignments,
-  } = useBatchCourseAssignments(batchId);
-  const [assignments, setAssignments] = useState<BatchCourseAssignment[]>([]);
-
-  useEffect(() => {
-    setAssignments(
-      fetchedAssignments.filter((item) => item.batchId === batchId),
-    );
-  }, [batchId, fetchedAssignments]);
 
   const { deleteBatch, isLoading: isArchiving } = useDeleteBatch();
   const { restoreBatch, isLoading: isRestoring } = useRestoreBatch();
@@ -76,46 +69,33 @@ export function BatchManagePage({ batchId }: Props) {
   return (
     <>
       <div className="min-h-full min-w-0">
-      <BatchManageHeader
-        batch={batch}
-        assignments={assignments}
-        assignmentsLoading={assignmentsLoading}
-        activeSection={activeSection}
-        onArchive={() => setIsArchiveOpen(true)}
-        onRestore={async () => {
-          try {
-            await restoreBatch(batch.id);
-            appToast.success("Batch restored successfully");
-            await refetch();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          }
-        }}
-        onPermanentDelete={() => setIsPermanentDeleteOpen(true)}
-        actionsDisabled={actionsDisabled}
-      />
-
-      <div className="mt-4">
-        <BatchManageWorkspace
-          batchId={batchId}
+        <BatchManageHeader
           batch={batch}
-          summary={summary}
-          summaryLoading={summaryLoading}
-          assignments={assignments}
-          assignmentsLoading={assignmentsLoading}
-          onAssignmentsChange={setAssignments}
-          onSummaryRefresh={refetchSummary}
-          onBatchUpdated={refetch}
-          onAssignmentsRefresh={refetchAssignments}
-          onTabChange={(tab) => {
-            const labels: Record<string, string> = {
-              overview: "Overview",
-              courses: "Course",
-            };
-            setActiveSection(labels[tab]);
+          activeSection={activeSection}
+          onArchive={() => setIsArchiveOpen(true)}
+          onRestore={async () => {
+            try {
+              await restoreBatch(batch.id);
+              appToast.success("Batch restored successfully");
+              await refetch();
+            } catch (err) {
+              appToast.error(getErrorMessage(err));
+            }
           }}
+          onPermanentDelete={() => setIsPermanentDeleteOpen(true)}
+          actionsDisabled={actionsDisabled}
         />
-      </div>
+
+        <div className="mt-4">
+          <BatchManageWorkspace
+            batch={batch}
+            summary={summary}
+            summaryLoading={summaryLoading}
+            onTabChange={(tab) => {
+              setActiveSection(TAB_LABELS[tab]);
+            }}
+          />
+        </div>
       </div>
 
       <BatchDeleteDialog
