@@ -60,8 +60,9 @@ export function isBatchSelectableForAssignment(batch: BatchLike): boolean {
 }
 
 /**
- * Row checkboxes on list tables: block completed/expired/cancelled/status-archived
- * from bulk selection, but keep soft-deleted (restore) and inactive (activate) selectable.
+ * Row checkboxes on list tables: allow lifecycle batches (including Expired)
+ * to be selected for Archive / Activate / Deactivate. Soft-deleted rows stay
+ * selectable for Restore / Permanent Delete. Block cancelled / completed.
  */
 export function isBatchSelectableInBulkList(batch: BatchLike): boolean {
   if (batch.isDeleted || batch.deletedAt) {
@@ -69,11 +70,12 @@ export function isBatchSelectableInBulkList(batch: BatchLike): boolean {
   }
 
   const reason = getBatchSelectionBlockReason(batch);
-  if (reason === "INACTIVE") {
+
+  if (reason === "INACTIVE" || reason === "EXPIRED" || reason === null) {
     return true;
   }
 
-  return reason === null;
+  return false;
 }
 
 export type BatchDisplayStatusKey =
@@ -96,18 +98,11 @@ export interface BatchDisplayStatus {
 /**
  * Display status for tables/cards. Uses API-calculated lifecycle status
  * (UPCOMING / ONGOING / EXPIRED) — no frontend date recalculation.
+ * Soft-delete (archive) is separate and does not replace lifecycle status.
  */
 export function getBatchDisplayStatus(batch: BatchLike): BatchDisplayStatus {
-  if (batch.isDeleted || batch.deletedAt) {
-    return { key: "ARCHIVED", label: "Archived", variant: "danger" };
-  }
-
   if (batch.status === "CANCELLED") {
     return { key: "CANCELLED", label: "Cancelled", variant: "danger" };
-  }
-
-  if (batch.status === "ARCHIVED") {
-    return { key: "ARCHIVED", label: "Archived", variant: "danger" };
   }
 
   if (batch.status === "COMPLETED") {
@@ -118,16 +113,22 @@ export function getBatchDisplayStatus(batch: BatchLike): BatchDisplayStatus {
     return { key: "EXPIRED", label: "Expired", variant: "default" };
   }
 
-  if (batch.isActive === false) {
-    return { key: "INACTIVE", label: "Inactive", variant: "danger" };
-  }
-
   if (batch.status === "UPCOMING") {
     return { key: "UPCOMING", label: "Upcoming", variant: "info" };
   }
 
   if (batch.status === "ONGOING") {
     return { key: "ONGOING", label: "Ongoing", variant: "success" };
+  }
+
+  // Soft-deleted rows may still carry a legacy stored ARCHIVED enum;
+  // prefer inactive / active fallbacks only when lifecycle is unknown.
+  if (batch.isDeleted || batch.deletedAt || batch.status === "ARCHIVED") {
+    return { key: "ARCHIVED", label: "Archived", variant: "danger" };
+  }
+
+  if (batch.isActive === false) {
+    return { key: "INACTIVE", label: "Inactive", variant: "danger" };
   }
 
   return { key: "ACTIVE", label: "Active", variant: "success" };

@@ -44,7 +44,8 @@ export const useBatches = (options?: {
     courseId: undefined,
     mode: undefined,
     status: undefined,
-    batchStatus: "ONGOING",
+    batchStatus: "UPCOMING",
+    isDeleted: undefined,
     page: 1,
     pageSize: defaultPageSize,
   });
@@ -62,6 +63,7 @@ export const useBatches = (options?: {
         next.mode !== prev.mode ||
         next.status !== prev.status ||
         next.batchStatus !== prev.batchStatus ||
+        next.isDeleted !== prev.isDeleted ||
         next.pageSize !== prev.pageSize;
 
       return {
@@ -147,6 +149,7 @@ export const useBatches = (options?: {
     filters.mode,
     filters.status,
     filters.batchStatus,
+    filters.isDeleted,
     filters.page,
     filters.pageSize,
   ]);

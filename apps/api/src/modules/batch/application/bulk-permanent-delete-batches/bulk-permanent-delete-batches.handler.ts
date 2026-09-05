@@ -61,11 +61,21 @@ export class BulkPermanentDeleteBatchesHandler {
           });
 
           this.logger.log(`Batch permanently deleted: ${batch.id}`);
-        } catch {
+        } catch (error) {
+          const message =
+            error instanceof Error && error.message.trim()
+              ? error.message
+              : 'Unable to permanently delete batch';
+
+          this.logger.error(
+            `Failed to permanently delete batch ${batch.id}: ${message}`,
+            error instanceof Error ? error.stack : undefined,
+          );
+
           itemResults.push({
             batchId: batch.id,
             success: false,
-            message: 'Unable to permanently delete batch',
+            message,
           });
         }
       }

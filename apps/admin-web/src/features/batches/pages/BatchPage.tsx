@@ -35,12 +35,12 @@ import type {
   CourseOption,
 } from "@/src/features/batches/types/batch.types";
 import {
-  formatBulkResultToast,
   getEligibleActivateIds,
   getEligibleDeactivateIds,
   getEligibleDeleteIds,
   getEligiblePermanentDeleteIds,
   getEligibleRestoreIds,
+  notifyBulkBatchResult,
 } from "@/src/features/batches/utils/batch-bulk.utils";
 import { getBatchEmptyMessage } from "@/src/features/batches/utils/batch-list.utils";
 
@@ -92,12 +92,13 @@ export function BatchPage() {
     [filters],
   );
 
+  const isArchivedOnlyView = filters.isDeleted === true;
+
   const hasActiveFilters = Boolean(
     (filters.search ?? "").trim() ||
       filters.courseId ||
       filters.mode ||
-      filters.status !== undefined ||
-      filters.batchStatus !== undefined,
+      filters.isDeleted !== undefined,
   );
 
   const actionLoading =
@@ -133,6 +134,7 @@ export function BatchPage() {
     filters.courseId,
     filters.mode,
     filters.batchStatus,
+    filters.isDeleted,
   ]);
 
   useEffect(() => {
@@ -193,52 +195,51 @@ export function BatchPage() {
       switch (bulkConfirmAction) {
         case "activate":
           result = await batchService.bulkActivate(eligibleBulkIds);
-          appToast.success(
-            formatBulkResultToast(
-              result.data,
-              "batch(es) activated successfully",
-            ),
+          notifyBulkBatchResult(
+            result.data,
+            "batch(es) activated successfully",
+            appToast,
           );
           break;
         case "deactivate":
           result = await batchService.bulkDeactivate(eligibleBulkIds);
-          appToast.success(
-            formatBulkResultToast(
-              result.data,
-              "batch(es) deactivated successfully",
-            ),
+          notifyBulkBatchResult(
+            result.data,
+            "batch(es) deactivated successfully",
+            appToast,
           );
           break;
         case "delete":
           result = await batchService.bulkDelete(eligibleBulkIds);
-          appToast.success(
-            formatBulkResultToast(
-              result.data,
-              "batch(es) archived successfully",
-            ),
+          notifyBulkBatchResult(
+            result.data,
+            "batch(es) archived successfully",
+            appToast,
           );
           break;
         case "restore":
           result = await batchService.bulkRestore(eligibleBulkIds);
-          appToast.success(
-            formatBulkResultToast(
-              result.data,
-              "batch(es) restored successfully",
-            ),
+          notifyBulkBatchResult(
+            result.data,
+            "batch(es) restored successfully",
+            appToast,
           );
           break;
         case "permanent-delete":
           result = await batchService.bulkPermanentDelete(eligibleBulkIds);
-          appToast.success(
-            formatBulkResultToast(
-              result.data,
-              "batch(es) permanently deleted",
-            ),
+          notifyBulkBatchResult(
+            result.data,
+            "batch(es) permanently deleted",
+            appToast,
           );
           break;
       }
 
-      setSelectedBatchIds([]);
+      // Keep selection on total failure so the user can retry.
+      const summary = result?.data;
+      if (!summary || summary.failedCount === 0 || summary.successCount > 0) {
+        setSelectedBatchIds([]);
+      }
       setBulkConfirmAction(null);
       await refetch();
     } catch (err) {
@@ -278,8 +279,8 @@ export function BatchPage() {
         };
       case "permanent-delete":
         return {
-          title: "Permanently delete selected batches?",
-          description: `You are about to permanently delete ${count} batch${count === 1 ? "" : "es"}. This action cannot be undone.`,
+          title: "Are you sure you want to permanently delete these batches?",
+          description: `This action cannot be undone. The selected batch${count === 1 ? "" : "es"} and associated data will be permanently removed.`,
           confirmLabel: "Permanently Delete",
         };
       default:
@@ -313,7 +314,7 @@ export function BatchPage() {
 
       <div className="mt-5 space-y-3">
         <BatchLifecycleTabs
-          value={filters.batchStatus ?? "ONGOING"}
+          value={filters.batchStatus ?? "UPCOMING"}
           disabled={actionLoading || isFetching}
           onChange={(batchStatus: BatchLifecycleStatus) =>
             setFilters({ ...filters, batchStatus, page: 1 })
@@ -325,6 +326,7 @@ export function BatchPage() {
             batches={batches}
             selectedBatchIds={selectedBatchIds}
             disabled={actionLoading || isFetching}
+            archivedView={isArchivedOnlyView}
             onAction={setBulkConfirmAction}
           />
 

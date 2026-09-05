@@ -107,4 +107,32 @@ describe('resolveBatchApiStatus', () => {
       }),
     ).toBe(BatchStatus.ONGOING);
   });
+
+  it('keeps lifecycle status when soft-deleted (archive is separate)', () => {
+    expect(
+      resolveBatchApiStatus({
+        storedStatus: BatchStatus.ONGOING,
+        isDeleted: true,
+        startDate: new Date(Date.UTC(2026, 8, 4)),
+        startTime: '10:00',
+        endDate: new Date(Date.UTC(2026, 9, 5)),
+        endTime: '16:00',
+        now: new Date(Date.UTC(2026, 8, 20)),
+      }),
+    ).toBe(BatchStatus.ONGOING);
+  });
+
+  it('calculates lifecycle for legacy stored ARCHIVED status', () => {
+    expect(
+      resolveBatchApiStatus({
+        storedStatus: BatchStatus.ARCHIVED,
+        isDeleted: true,
+        startDate: new Date(Date.UTC(2026, 8, 4)),
+        startTime: '10:00',
+        endDate: new Date(Date.UTC(2026, 9, 5)),
+        endTime: '16:00',
+        now: new Date(Date.UTC(2026, 7, 1)),
+      }),
+    ).toBe(BatchStatus.UPCOMING);
+  });
 });

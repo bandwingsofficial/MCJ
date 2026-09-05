@@ -27,8 +27,22 @@ import type {
   ReorderBatchRequest,
   UpdateBatchRequest,
 } from "@/src/features/batches/types/batch.types";
+import { unwrapBulkBatchOperationResult } from "@/src/features/batches/utils/batch-bulk.utils";
 
 const FORM_OPTIONS_PAGE_SIZE = 100;
+
+type BulkBatchApiResponse = {
+  success: boolean;
+  message: string;
+  data: BulkBatchOperationResult | { summary?: BulkBatchOperationResult };
+};
+
+function normalizeBulkResponse(response: BulkBatchApiResponse) {
+  return {
+    ...response,
+    data: unwrapBulkBatchOperationResult(response.data),
+  };
+}
 
 class BatchService {
   private handleError(error: unknown): Error {
@@ -147,7 +161,7 @@ class BatchService {
 
   async bulkActivate(batchIds: string[]) {
     try {
-      return await batchApi.bulkActivate(batchIds);
+      return normalizeBulkResponse(await batchApi.bulkActivate(batchIds));
     } catch (error) {
       throw this.handleError(error);
     }
@@ -155,7 +169,7 @@ class BatchService {
 
   async bulkDeactivate(batchIds: string[]) {
     try {
-      return await batchApi.bulkDeactivate(batchIds);
+      return normalizeBulkResponse(await batchApi.bulkDeactivate(batchIds));
     } catch (error) {
       throw this.handleError(error);
     }
@@ -163,7 +177,7 @@ class BatchService {
 
   async bulkDelete(batchIds: string[]) {
     try {
-      return await batchApi.bulkDelete(batchIds);
+      return normalizeBulkResponse(await batchApi.bulkDelete(batchIds));
     } catch (error) {
       throw this.handleError(error);
     }
@@ -171,7 +185,7 @@ class BatchService {
 
   async bulkRestore(batchIds: string[]) {
     try {
-      return await batchApi.bulkRestore(batchIds);
+      return normalizeBulkResponse(await batchApi.bulkRestore(batchIds));
     } catch (error) {
       throw this.handleError(error);
     }
@@ -179,7 +193,9 @@ class BatchService {
 
   async bulkPermanentDelete(batchIds: string[]) {
     try {
-      return await batchApi.bulkPermanentDelete(batchIds);
+      return normalizeBulkResponse(
+        await batchApi.bulkPermanentDelete(batchIds),
+      );
     } catch (error) {
       throw this.handleError(error);
     }

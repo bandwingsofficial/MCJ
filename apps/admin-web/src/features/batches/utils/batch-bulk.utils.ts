@@ -68,20 +68,93 @@ export function getEligiblePermanentDeleteIds(
   return getEligibleRestoreIds(batches, selectedIds);
 }
 
-export function formatBulkResultToast(
-  result: BulkBatchOperationResult,
-  successLabel: string,
-): string {
-  if (result.failedCount === 0) {
-    return `${result.successCount} ${successLabel}`;
+/**
+ * Bulk batch API handlers return `{ summary: BulkBatchOperationSummary }`
+ * (activate/deactivate also include `isActive`). Normalize to the flat
+ * summary shape the admin UI expects.
+ */
+export function unwrapBulkBatchOperationResult(
+  data:
+    | BulkBatchOperationResult
+    | { summary?: BulkBatchOperationResult }
+    | null
+    | undefined,
+): BulkBatchOperationResult {
+  if (data && typeof data === "object" && "summary" in data && data.summary) {
+    return data.summary;
   }
 
-  const failurePreview = result.failures
+  if (
+    data &&
+    typeof data === "object" &&
+    "successCount" in data &&
+    "failedCount" in data
+  ) {
+    return {
+      requestedCount: data.requestedCount ?? 0,
+      processedCount: data.processedCount ?? 0,
+      successCount: data.successCount ?? 0,
+      failedCount: data.failedCount ?? 0,
+      results: data.results ?? [],
+      failures: data.failures ?? [],
+    };
+  }
+
+  return {
+    requestedCount: 0,
+    processedCount: 0,
+    successCount: 0,
+    failedCount: 0,
+    results: [],
+    failures: [],
+  };
+}
+
+export function formatBulkResultToast(
+  result: BulkBatchOperationResult | null | undefined,
+  successLabel: string,
+): string {
+  const summary = unwrapBulkBatchOperationResult(result);
+  const successCount = summary.successCount;
+  const failedCount = summary.failedCount;
+  const failures = summary.failures;
+
+  if (failedCount === 0) {
+    return `${successCount} ${successLabel}`;
+  }
+
+  const failurePreview = failures
     .slice(0, 2)
     .map((item) => item.message)
     .join(" ");
 
-  return `${result.successCount} ${successLabel}. ${result.failedCount} failed.${failurePreview ? ` ${failurePreview}` : ""}`;
+  return `${successCount} ${successLabel}. ${failedCount} failed.${failurePreview ? ` ${failurePreview}` : ""}`;
+}
+
+/** Pick success / warning / error toast based on bulk operation counts. */
+export function notifyBulkBatchResult(
+  result: BulkBatchOperationResult | null | undefined,
+  successLabel: string,
+  notify: {
+    success: (message: string) => void;
+    error: (message: string) => void;
+    warning: (message: string) => void;
+  },
+): void {
+  const summary = unwrapBulkBatchOperationResult(result);
+  const message = formatBulkResultToast(summary, successLabel);
+
+  if (summary.failedCount === 0) {
+    notify.success(message);
+    return;
+  }
+
+  if (summary.successCount === 0) {
+    notify.error(message);
+    return;
+  }
+
+  notify.warning(message);
 }
 
 export function formatTrainerNames(batch: BatchListItem): string {

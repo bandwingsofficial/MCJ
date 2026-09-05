@@ -4,6 +4,7 @@ import { DurationType } from '@modules/course/domain/enums/duration-type.enum';
 import { Price } from '@modules/course/domain/value-objects/price.vo';
 import { BatchStatus } from '../enums/batch-status.enum';
 import { DayOfWeek } from '../enums/day-of-week.enum';
+import { calculateBatchLifecycleStatus } from '../utils/batch-lifecycle-status.util';
 import { BatchCode } from '../value-objects/batch-code.vo';
 import { BatchName } from '../value-objects/batch-name.vo';
 import {
@@ -292,7 +293,13 @@ export class Batch {
 
   softDelete(deletedBy?: string | null) {
     this.isDeleted = true;
-    this.status = BatchStatus.ARCHIVED;
+    // Archive is a separate flag — keep the date-driven lifecycle status.
+    this.status = calculateBatchLifecycleStatus({
+      startDate: this.startDate,
+      startTime: this.startTime,
+      endDate: this.endDate,
+      endTime: this.endTime,
+    });
     this.displayOrder = null;
     this.deletedAt = new Date();
     this.deletedBy = deletedBy ?? null;
@@ -303,7 +310,13 @@ export class Batch {
     this.isDeleted = false;
     this.deletedAt = null;
     this.deletedBy = null;
-    this.status = BatchStatus.UPCOMING;
+    // Clear archive only; lifecycle comes from Start/End date+time.
+    this.status = calculateBatchLifecycleStatus({
+      startDate: this.startDate,
+      startTime: this.startTime,
+      endDate: this.endDate,
+      endTime: this.endTime,
+    });
     this.updatedBy = updatedBy ?? this.updatedBy;
     this.touch();
   }

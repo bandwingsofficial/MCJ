@@ -22,6 +22,8 @@ interface Props {
   batches: BatchListItem[];
   selectedBatchIds: string[];
   disabled?: boolean;
+  /** When true, only Restore / Permanent Delete are shown. */
+  archivedView?: boolean;
   onAction: (action: BulkBatchAction) => void;
 }
 
@@ -29,6 +31,7 @@ export function BatchBulkActionsToolbar({
   batches,
   selectedBatchIds = [],
   disabled = false,
+  archivedView = false,
   onAction,
 }: Props) {
   const selectedCount = selectedBatchIds.length;
@@ -56,35 +59,39 @@ export function BatchBulkActionsToolbar({
       </p>
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-8"
-          disabled={disabled || activateCount === 0}
-          onClick={() => onAction("activate")}
-        >
-          Activate
-        </Button>
+        {!archivedView ? (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-8"
+              disabled={disabled || activateCount === 0}
+              onClick={() => onAction("activate")}
+            >
+              Activate
+            </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="h-8"
-          disabled={disabled || deactivateCount === 0}
-          onClick={() => onAction("deactivate")}
-        >
-          Deactivate
-        </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-8"
+              disabled={disabled || deactivateCount === 0}
+              onClick={() => onAction("deactivate")}
+            >
+              Deactivate
+            </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="h-8"
-          disabled={disabled || deleteCount === 0}
-          onClick={() => onAction("delete")}
-        >
-          Delete
-        </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-8"
+              disabled={disabled || deleteCount === 0}
+              onClick={() => onAction("delete")}
+            >
+              Archive
+            </Button>
+          </>
+        ) : null}
 
         <Button
           type="button"

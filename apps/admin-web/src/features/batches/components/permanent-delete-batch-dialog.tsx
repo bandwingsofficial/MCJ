@@ -20,8 +20,8 @@ export function PermanentDeleteBatchDialog({
   return (
     <ConfirmDialog
       open={open}
-      title="Permanently delete batch?"
-      description={`This action cannot be undone.${
+      title="Are you sure you want to permanently delete this batch?"
+      description={`This action cannot be undone. The batch and its associated data will be permanently removed.${
         batchName ? ` (${batchName})` : ""
       }`}
       confirmLabel="Permanently Delete"

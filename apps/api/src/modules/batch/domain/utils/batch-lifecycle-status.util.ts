@@ -70,7 +70,9 @@ export function isBatchLifecycleStatus(
 
 /**
  * Resolve the status exposed by the API:
- * - CANCELLED / ARCHIVED (and soft-deleted) keep their stored status
+ * - CANCELLED keeps its stored status
+ * - Soft-delete / archive is a separate flag (`isDeleted`) and must NOT
+ *   replace the date-driven lifecycle status (UPCOMING / ONGOING / EXPIRED)
  * - otherwise use date+time lifecycle calculation
  */
 export function resolveBatchApiStatus(params: {
@@ -82,16 +84,11 @@ export function resolveBatchApiStatus(params: {
   endTime: string;
   now?: Date;
 }): BatchStatus {
-  if (params.isDeleted) {
-    return BatchStatus.ARCHIVED;
+  if (params.storedStatus === BatchStatus.CANCELLED) {
+    return BatchStatus.CANCELLED;
   }
 
-  if (
-    params.storedStatus === BatchStatus.CANCELLED ||
-    params.storedStatus === BatchStatus.ARCHIVED
-  ) {
-    return params.storedStatus;
-  }
-
+  // Archive is orthogonal to lifecycle. Even soft-deleted / legacy
+  // status=ARCHIVED rows expose the calculated Upcoming/Ongoing/Expired value.
   return calculateBatchLifecycleStatus(params);
 }

@@ -1,16 +1,24 @@
-import type {
+﻿import type {
   BatchFilters,
   BatchListItem,
   BatchListResponse,
 } from "@/src/features/batches/types/batch.types";
 import { BATCH_SELECT_ALL } from "@/src/features/batches/utils/batch-select.utils";
 
-export type BatchStatusFilterValue = "ACTIVE" | "INACTIVE" | "ARCHIVED";
+/** Operational Active / Inactive filter (isActive). */
+export type BatchStatusFilterValue = "ACTIVE" | "INACTIVE";
+
+/** Archive filter in the batches list filter row. */
+export type BatchArchiveFilterValue = "ACTIVE" | "ARCHIVED";
 
 export function getBatchStatusFilterValue(
   filters: Pick<BatchFilters, "status">,
 ): BatchStatusFilterValue | typeof BATCH_SELECT_ALL {
-  return filters.status ?? BATCH_SELECT_ALL;
+  if (filters.status === "ACTIVE" || filters.status === "INACTIVE") {
+    return filters.status;
+  }
+
+  return BATCH_SELECT_ALL;
 }
 
 export function applyBatchStatusFilter(
@@ -22,7 +30,7 @@ export function applyBatchStatusFilter(
       ...filters,
       status: undefined,
       isActive: undefined,
-      isDeleted: undefined,
+      page: 1,
     };
   }
 
@@ -30,7 +38,40 @@ export function applyBatchStatusFilter(
     ...filters,
     status: value,
     isActive: undefined,
-    isDeleted: undefined,
+    page: 1,
+  };
+}
+
+export function getBatchArchiveFilterValue(
+  filters: Pick<BatchFilters, "isDeleted">,
+): BatchArchiveFilterValue | typeof BATCH_SELECT_ALL {
+  if (filters.isDeleted === true) {
+    return "ARCHIVED";
+  }
+
+  if (filters.isDeleted === false) {
+    return "ACTIVE";
+  }
+
+  return BATCH_SELECT_ALL;
+}
+
+export function applyBatchArchiveFilter(
+  filters: BatchFilters,
+  value: BatchArchiveFilterValue | typeof BATCH_SELECT_ALL,
+): BatchFilters {
+  if (value === BATCH_SELECT_ALL) {
+    return {
+      ...filters,
+      isDeleted: undefined,
+      page: 1,
+    };
+  }
+
+  return {
+    ...filters,
+    isDeleted: value === "ARCHIVED",
+    page: 1,
   };
 }
 
@@ -46,25 +87,24 @@ export function buildBatchListQueryParams(filters?: BatchFilters) {
     categoryId: filters?.categoryId || undefined,
     branchId: filters?.branchId || undefined,
     mode: filters?.mode || undefined,
-    // Lifecycle tab filter → API-calculated BatchStatus (ONGOING / UPCOMING / EXPIRED)
     status: filters?.batchStatus || undefined,
     skip,
     take: pageSize,
-    includeDeleted: filters?.includeDeleted === false ? false : true,
+    includeDeleted: true,
   };
 
-  if (filters?.isDeleted !== undefined) {
-    params.isDeleted = filters.isDeleted;
-  } else if (status === "ACTIVE" || status === "INACTIVE") {
-    params.isDeleted = false;
-  } else if (status === "ARCHIVED") {
+  if (filters?.isDeleted === true) {
     params.isDeleted = true;
+  } else if (filters?.isDeleted === false) {
+    params.isDeleted = false;
   }
 
   if (status === "ACTIVE") {
     params.isActive = true;
   } else if (status === "INACTIVE") {
     params.isActive = false;
+  } else if (filters?.isActive !== undefined) {
+    params.isActive = filters.isActive;
   }
 
   return params;
@@ -92,7 +132,31 @@ export function parseBatchListResponse(data: unknown): BatchListResponse {
 }
 
 export function getBatchEmptyMessage(filters: BatchFilters): string {
-  switch (filters.batchStatus) {
+  const lifecycle = filters.batchStatus;
+  const archive = getBatchArchiveFilterValue(filters);
+
+  const lifecycleLabel =
+    lifecycle === "UPCOMING"
+      ? "upcoming"
+      : lifecycle === "ONGOING"
+        ? "ongoing"
+        : lifecycle === "EXPIRED"
+          ? "expired"
+          : null;
+
+  if (archive === "ARCHIVED") {
+    return lifecycleLabel
+      ? `No archived ${lifecycleLabel} batches.`
+      : "No archived batches.";
+  }
+
+  if (archive === "ACTIVE") {
+    return lifecycleLabel
+      ? `No active ${lifecycleLabel} batches.`
+      : "No active batches.";
+  }
+
+  switch (lifecycle) {
     case "UPCOMING":
       return "No upcoming batches.";
     case "ONGOING":
@@ -107,7 +171,8 @@ export function getBatchEmptyMessage(filters: BatchFilters): string {
     (filters.search ?? "").trim() ||
       filters.courseId ||
       filters.mode ||
-      filters.status !== undefined,
+      filters.status !== undefined ||
+      filters.isDeleted !== undefined,
   );
 
   if (hasActiveFilters) {

@@ -161,9 +161,11 @@ export class PrismaBatchRepository implements BatchRepository {
       status: undefined,
     });
 
-    // Lifecycle tabs only include date-driven batches (not cancelled/archived).
+    // Cancelled batches are never shown in lifecycle tabs.
+    // Soft-deleted (archived) rows may still match by date calculation when
+    // filters.isDeleted === true. Do not treat Archive as a BatchStatus.
     where.status = {
-      notIn: [BatchStatus.CANCELLED, BatchStatus.ARCHIVED],
+      not: BatchStatus.CANCELLED,
     };
 
     const records = await this.prisma.batch.findMany({
@@ -366,8 +368,27 @@ export class PrismaBatchRepository implements BatchRepository {
   }
 
   async deletePermanent(id: string): Promise<void> {
-    await this.prisma.batch.delete({
-      where: { id },
+    await this.prisma.$transaction(async (tx) => {
+      const enrollments = await tx.enrollment.findMany({
+        where: { batchId: id },
+        select: { id: true },
+      });
+      const enrollmentIds = enrollments.map((row) => row.id);
+
+      // Payments reference Enrollment without Cascade — remove first.
+      if (enrollmentIds.length > 0) {
+        await tx.payment.deleteMany({
+          where: { enrollmentId: { in: enrollmentIds } },
+        });
+      }
+
+      // Enrollment / Attendance / Assessment reference Batch without Cascade.
+      await tx.enrollment.deleteMany({ where: { batchId: id } });
+      await tx.attendance.deleteMany({ where: { batchId: id } });
+      await tx.academicAssessment.deleteMany({ where: { batchId: id } });
+
+      // Remaining BatchTrainer / BatchCourse / sessions / faculty cascade.
+      await tx.batch.delete({ where: { id } });
     });
   }
 

@@ -16,9 +16,9 @@ import type {
   CourseOption,
 } from "@/src/features/batches/types/batch.types";
 import {
-  applyBatchStatusFilter,
-  getBatchStatusFilterValue,
-  type BatchStatusFilterValue,
+  applyBatchArchiveFilter,
+  getBatchArchiveFilterValue,
+  type BatchArchiveFilterValue,
 } from "@/src/features/batches/utils/batch-list.utils";
 import {
   BATCH_SELECT_ALL,
@@ -45,7 +45,7 @@ export function BatchSummaryHeader({
   onFiltersChange,
 }: BatchSummaryHeaderProps) {
   const searchValue = filters.search ?? "";
-  const statusFilterValue = getBatchStatusFilterValue(filters);
+  const archiveFilterValue = getBatchArchiveFilterValue(filters);
 
   const courseOptions = useMemo(
     () =>
@@ -70,13 +70,12 @@ export function BatchSummaryHeader({
     [],
   );
 
-  const statusOptions = useMemo(
+  const archiveOptions = useMemo(
     () =>
       uniqueSelectOptions([
-        { label: "All Status", value: BATCH_SELECT_ALL },
-        { label: "Active", value: "ACTIVE" },
-        { label: "Inactive", value: "INACTIVE" },
-        { label: "Archived", value: "ARCHIVED" },
+        { label: "Archive: All", value: BATCH_SELECT_ALL },
+        { label: "Archive: Active", value: "ACTIVE" },
+        { label: "Archive: Archived", value: "ARCHIVED" },
       ]),
     [],
   );
@@ -149,7 +148,7 @@ export function BatchSummaryHeader({
             <>
               <Skeleton className="h-[46px] w-full rounded-xl sm:w-[190px]" />
               <Skeleton className="h-[46px] w-full rounded-xl sm:w-[180px]" />
-              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[160px]" />
+              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[180px]" />
               <Skeleton className="h-[46px] w-full rounded-xl sm:w-[240px]" />
             </>
           ) : (
@@ -186,21 +185,21 @@ export function BatchSummaryHeader({
                 />
               </div>
 
-              <div className="w-full sm:w-[160px]">
+              <div className="w-full sm:w-[180px]">
                 <AppSelect
-                  value={statusFilterValue}
+                  value={archiveFilterValue}
                   triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
                   onValueChange={(value) =>
                     onFiltersChange(
-                      applyBatchStatusFilter(
+                      applyBatchArchiveFilter(
                         filters,
                         value as
-                          | BatchStatusFilterValue
+                          | BatchArchiveFilterValue
                           | typeof BATCH_SELECT_ALL,
                       ),
                     )
                   }
-                  options={statusOptions}
+                  options={archiveOptions}
                 />
               </div>
 
