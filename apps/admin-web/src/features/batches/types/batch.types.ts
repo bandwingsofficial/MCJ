@@ -121,10 +121,10 @@ export interface CreateBatchWithTimingsRequest {
   startDate: string;
   endDate: string;
   templateIds: string[];
+  durationValue: number;
+  durationType: BatchDurationType;
   name?: string;
   capacity?: number;
-  durationValue?: number;
-  durationType?: BatchDurationType;
   originalPrice?: number;
   discountAmount?: number;
   discountedPrice?: number;
@@ -265,6 +265,7 @@ export interface CreateBatchRequest {
 
 export interface UpdateBatchRequest extends Partial<CreateBatchRequest> {
   branchId?: string | null;
+  templateIds?: string[];
 }
 
 export interface AssignBatchTrainersRequest {

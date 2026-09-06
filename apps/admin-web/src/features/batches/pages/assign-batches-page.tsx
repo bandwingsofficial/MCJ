@@ -150,6 +150,8 @@ export function AssignBatchesPage() {
         startDate,
         endDate,
         templateIds: selectedIds,
+        durationValue: 1,
+        durationType: "MONTHS",
         originalPrice: priceNumber,
         discountedPrice: offerNumber,
         discountAmount,

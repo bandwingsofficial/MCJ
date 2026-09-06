@@ -134,10 +134,20 @@ export class CreateBatchWithTimingsHandler {
     const name =
       command.name?.trim() || `${course.title.getValue()} Batch`;
 
-    const durationValue =
-      command.durationValue ?? course.duration.getValue() ?? 1;
-    const durationType =
-      command.durationType ?? course.durationType ?? DurationType.MONTHS;
+    if (
+      !command.durationValue ||
+      command.durationValue < 1 ||
+      !command.durationType
+    ) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Duration value and duration type are required',
+        400,
+      );
+    }
+
+    const durationValue = command.durationValue;
+    const durationType = command.durationType as DurationType;
 
     const originalPrice = command.originalPrice ?? 0;
     const discountedPrice = command.discountedPrice ?? originalPrice;

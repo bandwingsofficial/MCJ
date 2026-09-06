@@ -56,18 +56,16 @@ export class CreateBatchWithTimingsDto {
   @Transform(({ value }) => toNumber(value))
   capacity?: number;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty({ example: 2 })
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Transform(({ value }) => toNumber(value))
-  durationValue?: number;
+  durationValue!: number;
 
-  @ApiPropertyOptional({ enum: DurationType })
-  @IsOptional()
+  @ApiProperty({ enum: DurationType, example: DurationType.MONTHS })
   @IsEnum(DurationType)
-  durationType?: DurationType;
+  durationType!: DurationType;
 
   @ApiPropertyOptional({ example: 22000 })
   @IsOptional()

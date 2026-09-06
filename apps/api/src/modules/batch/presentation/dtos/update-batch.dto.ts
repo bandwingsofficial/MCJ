@@ -1,5 +1,12 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsOptional, IsUUID, ValidateIf } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsArray,
+  IsOptional,
+  IsUUID,
+  ValidateIf,
+} from 'class-validator';
 
 import { CreateBatchDto } from './create-batch.dto';
 
@@ -11,4 +18,12 @@ export class UpdateBatchDto extends PartialType(
   @ValidateIf((_, value) => value !== null)
   @IsUUID()
   branchId?: string | null;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  templateIds?: string[];
 }

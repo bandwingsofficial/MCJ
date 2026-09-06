@@ -149,6 +149,8 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
         branchRepo: BranchRepository,
         batchCourseRepo: PrismaBatchCourseRepository,
         domainService: BatchDomainService,
+        templateRepo: BatchTemplateRepository,
+        prisma: PrismaService,
       ) =>
         new UpdateBatchHandler(
           batchRepo,
@@ -157,6 +159,8 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
           branchRepo,
           batchCourseRepo,
           domainService,
+          templateRepo,
+          prisma,
         ),
       inject: [
         BATCH_TOKENS.BATCH_REPOSITORY,
@@ -165,6 +169,8 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
         BRANCH_TOKENS.BRANCH_REPOSITORY,
         PrismaBatchCourseRepository,
         BatchDomainService,
+        BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY,
+        PrismaService,
       ],
     },
 

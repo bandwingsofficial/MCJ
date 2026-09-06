@@ -159,10 +159,10 @@ export class AdminBatchController {
         new Date(dto.startDate),
         new Date(dto.endDate),
         dto.templateIds,
-        dto.name,
-        dto.capacity,
         dto.durationValue,
         dto.durationType,
+        dto.name,
+        dto.capacity,
         user?.sub,
         dto.originalPrice,
         dto.discountAmount,
@@ -408,6 +408,7 @@ export class AdminBatchController {
         dto.isFree,
         dto.durationValue,
         dto.durationType,
+        dto.templateIds,
       ),
     );
 

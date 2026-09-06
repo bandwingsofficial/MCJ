@@ -115,6 +115,8 @@ export function CreateBatchesFromTemplatesForm({
         startDate,
         endDate,
         templateIds: selectedIds,
+        durationValue: 1,
+        durationType: "MONTHS",
       });
 
       appToast.success(response.message || "Batch created successfully");

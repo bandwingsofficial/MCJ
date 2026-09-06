@@ -33,6 +33,18 @@ function parseTimeToMinutes(time: string): number {
   return hours * 60 + minutes;
 }
 
+const durationValueSchema = z
+  .number({
+    error: "Duration is required",
+  })
+  .int("Duration must be a whole number")
+  .positive("Duration must be a positive number");
+
+export const batchDurationSchema = z.object({
+  durationValue: durationValueSchema,
+  durationType: durationTypeEnum,
+});
+
 export const batchSchema = z
   .object({
     name: z
@@ -78,12 +90,7 @@ export const batchSchema = z
 
     mode: z.enum(["ONLINE", "OFFLINE", "RECORDED"]),
 
-    durationValue: z
-      .number({
-        error: "Duration is required",
-      })
-      .int("Duration must be a whole number")
-      .positive("Duration must be a positive number"),
+    durationValue: durationValueSchema,
 
     durationType: durationTypeEnum,
 
@@ -178,3 +185,11 @@ export const batchSchema = z
   });
 
 export type BatchFormValues = z.infer<typeof batchSchema>;
+
+export const DEFAULT_BATCH_DURATION: Pick<
+  BatchFormValues,
+  "durationValue" | "durationType"
+> = {
+  durationValue: 1,
+  durationType: "MONTHS",
+};

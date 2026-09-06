@@ -39,28 +39,30 @@ import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { cn } from "@/src/shared/lib/cn";
 
+import { BatchDurationField } from "@/src/features/batches/components/batch-duration-field";
 import {
-  BATCH_DURATION_TYPES,
   BATCH_MODES,
   DAYS_OF_WEEK,
 } from "@/src/features/batches/constants/batch.constants";
 import {
   batchSchema,
+  DEFAULT_BATCH_DURATION,
   type BatchFormValues,
 } from "@/src/features/batches/schemas/batch.schema";
 import { batchService } from "@/src/features/batches/services/batch.service";
-import type {
-  BatchDurationType,
-  CourseOption,
-} from "@/src/features/batches/types/batch.types";
+import type { CourseOption } from "@/src/features/batches/types/batch.types";
 import {
   countWords,
   DESCRIPTION_WORD_LIMIT,
 } from "@/src/features/batches/utils/batch-form.utils";
 import { buildBatchPricingInput } from "@/src/features/batches/utils/batch-pricing.util";
 import {
+  getBatchDurationErrorMessage,
+  getBatchDurationFieldStates,
+  parseBatchDuration,
+} from "@/src/features/batches/utils/batch-duration.utils";
+import {
   calculateTotalWorkingDays,
-  deriveEndDate,
   formatTotalWorkingDaysLabel,
   isEndDateBeforeStartDate,
 } from "@/src/features/batches/utils/batch-schedule.utils";
@@ -99,8 +101,7 @@ const EMPTY_DEFAULTS: BatchFormValues = {
   capacity: 1,
   enrolledCount: 0,
   mode: "ONLINE",
-  durationValue: 1,
-  durationType: "MONTHS",
+  ...DEFAULT_BATCH_DURATION,
   isFeatured: false,
   originalPrice: 0,
   discountPercent: 0,
@@ -187,7 +188,6 @@ export function BatchForm({
   onSubmit,
 }: BatchFormProps) {
   const suggestRequestIdRef = useRef(0);
-  const endDateEditedRef = useRef(isEdit);
   const [isSuggestingCode, setIsSuggestingCode] = useState(false);
   const [courses, setCourses] = useState<CourseOption[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
@@ -306,36 +306,6 @@ export function BatchForm({
     reset(mergedDefaults);
   }, [mergedDefaults, reset]);
 
-  // On create, keep End Date in step with Start Date + Duration until the
-  // admin sets an end date of their own.
-  useEffect(() => {
-    if (isEdit || endDateEditedRef.current) {
-      return;
-    }
-
-    const derived = deriveEndDate(
-      values.startDate ?? "",
-      values.durationValue,
-      values.durationType,
-    );
-
-    if (!derived || derived === values.endDate) {
-      return;
-    }
-
-    setValue("endDate", derived, {
-      shouldValidate: true,
-      shouldDirty: true,
-    });
-  }, [
-    isEdit,
-    setValue,
-    values.durationType,
-    values.durationValue,
-    values.endDate,
-    values.startDate,
-  ]);
-
   useEffect(() => {
     if (isEdit) {
       return;
@@ -427,6 +397,39 @@ export function BatchForm({
     return "valid";
   };
 
+  const durationValidation = useMemo(
+    () =>
+      parseBatchDuration({
+        durationValue: values.durationValue,
+        durationType: values.durationType,
+      }),
+    [values.durationType, values.durationValue],
+  );
+
+  const durationErrorMessage =
+    errors.durationValue?.message ??
+    errors.durationType?.message ??
+    getBatchDurationErrorMessage(durationValidation);
+
+  const durationTouched =
+    Boolean(touchedFields.durationValue) ||
+    Boolean(touchedFields.durationType) ||
+    Boolean(dirtyFields.durationValue) ||
+    Boolean(dirtyFields.durationType) ||
+    isSubmitted;
+
+  const editDurationStates = getBatchDurationFieldStates(
+    isEdit || durationTouched,
+    isEdit || durationTouched ? durationErrorMessage : null,
+  );
+
+  const durationValueState = isEdit
+    ? editDurationStates.valueState
+    : getFieldState("durationValue");
+  const durationTypeState = isEdit
+    ? editDurationStates.typeState
+    : getFieldState("durationType");
+
   const registerPlainField = (name: SyncFieldName) => {
     const registration = register(name);
 
@@ -494,8 +497,6 @@ export function BatchForm({
       },
     };
   };
-
-  const endDateRegistration = registerPlainField("endDate");
 
   const handleFormSubmit = handleSubmit(async (formValues) => {
     await onSubmit(formValues);
@@ -614,77 +615,59 @@ export function BatchForm({
           <Input
             type="date"
             autoComplete="off"
-            {...endDateRegistration}
-            onChange={(event) => {
-              endDateEditedRef.current = true;
-              endDateRegistration.onChange(event);
-            }}
+            {...registerPlainField("endDate")}
           />
         </ValidatedField>
 
-        <ValidatedField
-          label="Duration"
-          required
-          state={getFieldState("durationValue")}
-          errorMessage={
-            errors.durationValue?.message ?? errors.durationType?.message
-          }
-        >
-          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-2">
+        <BatchDurationField
+          durationValue={values.durationValue}
+          durationType={values.durationType}
+          onDurationValueChange={(value) => {
+            setValue("durationValue", value, {
+              shouldValidate: true,
+              shouldDirty: true,
+            });
+            void trigger("durationValue");
+          }}
+          onDurationTypeChange={(value) => {
+            setValue("durationType", value, {
+              shouldValidate: true,
+              shouldDirty: true,
+            });
+            void trigger("durationValue");
+            void trigger("durationType");
+          }}
+          onDurationValueBlur={() => {
+            void trigger("durationValue");
+            void trigger("durationType");
+          }}
+          valueState={durationValueState}
+          typeState={durationTypeState}
+          errorMessage={durationErrorMessage}
+          idPrefix={isEdit ? "edit" : undefined}
+        />
+
+        {!isEdit ? (
+          <IconField
+            label="Total Working Days"
+            icon={CalendarDays}
+            state={
+              datesAreValid && totalWorkingDays !== null ? "valid" : "neutral"
+            }
+          >
+            <FieldIcon icon={CalendarDays} />
             <Input
-              type="number"
-              min={1}
-              step={1}
-              inputMode="numeric"
-              placeholder="2"
-              autoComplete="off"
-              {...register("durationValue", {
-                valueAsNumber: true,
-                onChange: () => {
-                  void trigger("durationValue");
-                },
-                onBlur: () => {
-                  void trigger("durationValue");
-                },
-              })}
-              className={plainInputClass(getFieldState("durationValue"))}
-            />
-            <AppSelect
-              value={values.durationType}
-              onValueChange={(value) => {
-                setValue("durationType", value as BatchDurationType, {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                });
-                void trigger("durationValue");
-              }}
-              options={uniqueSelectOptions(BATCH_DURATION_TYPES)}
-              triggerClassName={selectTriggerClass(
-                getFieldState("durationType"),
+              readOnly
+              tabIndex={-1}
+              value={totalWorkingDaysLabel}
+              placeholder="Auto-calculated"
+              className={iconInputClass(
+                datesAreValid && totalWorkingDays !== null ? "valid" : "neutral",
+                "cursor-not-allowed bg-slate-50",
               )}
             />
-          </div>
-        </ValidatedField>
-
-        <IconField
-          label="Total Working Days"
-          icon={CalendarDays}
-          state={
-            datesAreValid && totalWorkingDays !== null ? "valid" : "neutral"
-          }
-        >
-          <FieldIcon icon={CalendarDays} />
-          <Input
-            readOnly
-            tabIndex={-1}
-            value={totalWorkingDaysLabel}
-            placeholder="Auto-calculated"
-            className={iconInputClass(
-              datesAreValid && totalWorkingDays !== null ? "valid" : "neutral",
-              "cursor-not-allowed bg-slate-50",
-            )}
-          />
-        </IconField>
+          </IconField>
+        ) : null}
 
         <div className="md:col-span-2">
           <p className="text-sm font-medium text-[#102A56]">Schedule</p>

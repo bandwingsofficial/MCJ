@@ -1,7 +1,4 @@
-import type {
-  BatchDurationType,
-  DayOfWeek,
-} from "@/src/features/batches/types/batch.types";
+import type { DayOfWeek } from "@/src/features/batches/types/batch.types";
 
 const DAY_OF_WEEK_INDEX: Record<DayOfWeek, number> = {
   SUNDAY: 0,
@@ -62,61 +59,6 @@ export function isEndDateBeforeStartDate(
   }
 
   return end.getTime() < start.getTime();
-}
-
-function toDateInputValue(date: Date): string {
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-
-  return `${date.getFullYear()}-${month}-${day}`;
-}
-
-/** Adds months without rolling over, so 31 Jan + 1 month lands on 28/29 Feb. */
-function addMonths(date: Date, months: number): Date {
-  const day = date.getDate();
-  const shifted = new Date(date.getFullYear(), date.getMonth() + months, 1);
-  const lastDayOfMonth = new Date(
-    shifted.getFullYear(),
-    shifted.getMonth() + 1,
-    0,
-  ).getDate();
-
-  shifted.setDate(Math.min(day, lastDayOfMonth));
-
-  return shifted;
-}
-
-/**
- * End date implied by the start date plus the configured duration, e.g.
- * 10 Sep 2026 + 2 Months = 10 Nov 2026. Hour-based durations have no day
- * equivalent, so they return null and leave the end date to the admin.
- */
-export function deriveEndDate(
-  startDate: string,
-  durationValue: number | null | undefined,
-  durationType: BatchDurationType | null | undefined,
-): string | null {
-  const start = parseLocalDate(startDate);
-  const value = Number(durationValue);
-
-  if (!start || !durationType || !Number.isFinite(value) || value <= 0) {
-    return null;
-  }
-
-  switch (durationType) {
-    case "DAYS":
-      start.setDate(start.getDate() + value);
-      return toDateInputValue(start);
-    case "WEEKS":
-      start.setDate(start.getDate() + value * 7);
-      return toDateInputValue(start);
-    case "MONTHS":
-      return toDateInputValue(addMonths(start, value));
-    case "YEARS":
-      return toDateInputValue(addMonths(start, value * 12));
-    default:
-      return null;
-  }
 }
 
 export function calculateTotalWorkingDays(

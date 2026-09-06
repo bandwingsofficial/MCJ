@@ -32,5 +32,6 @@ export class UpdateBatchCommand {
     public readonly isFree?: boolean,
     public readonly durationValue?: number | null,
     public readonly durationType?: string | null,
+    public readonly templateIds?: string[],
   ) {}
 }

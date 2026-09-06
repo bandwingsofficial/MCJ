@@ -1,4 +1,5 @@
 import { getBatchPricing } from "@/src/features/batches/utils/batch-pricing.util";
+import { DEFAULT_BATCH_DURATION } from "@/src/features/batches/schemas/batch.schema";
 
 export const batchMapper = {
   toForm(batch: import("@/src/features/batches/types/batch.types").Batch) {
@@ -25,8 +26,10 @@ export const batchMapper = {
       discountAmount: pricing.discountAmount,
       currency: pricing.currency,
       isFree: pricing.isFree,
-      durationValue: batch.durationValue ?? 1,
-      durationType: batch.durationType ?? "MONTHS",
+      durationValue:
+        batch.durationValue ?? DEFAULT_BATCH_DURATION.durationValue,
+      durationType:
+        batch.durationType ?? DEFAULT_BATCH_DURATION.durationType,
     };
   },
 };

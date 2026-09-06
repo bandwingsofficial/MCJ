@@ -5,10 +5,10 @@ export class CreateBatchWithTimingsCommand {
     public readonly endDate: Date,
     /** Batch timing masters (templates) to copy into this batch as children. */
     public readonly templateIds: string[],
+    public readonly durationValue: number,
+    public readonly durationType: string,
     public readonly name?: string,
     public readonly capacity?: number,
-    public readonly durationValue?: number,
-    public readonly durationType?: string,
     public readonly createdBy?: string,
     public readonly originalPrice?: number,
     public readonly discountAmount?: number,

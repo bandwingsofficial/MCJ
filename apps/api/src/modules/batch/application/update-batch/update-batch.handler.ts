@@ -14,7 +14,10 @@ import type { BranchRepository } from '@modules/branch/domain/repositories/branc
 import { BranchNotFoundException } from '@/modules/student/domain/errors/branch-not-found.exception';
 import { ensureBatchSelectableForAssignment } from '../../domain/utils/batch-selection.util';
 
+import { syncBatchTimings } from '../batch-timings/sync-batch-timings.util';
 import { UpdateBatchCommand } from './update-batch.command';
+import type { BatchTemplateRepository } from '../../domain/repositories/batch-template.repository';
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 export class UpdateBatchHandler {
   constructor(
@@ -24,6 +27,8 @@ export class UpdateBatchHandler {
     private readonly branchRepo: BranchRepository,
     private readonly batchCourseRepo: PrismaBatchCourseRepository,
     private readonly domainService: BatchDomainService,
+    private readonly templateRepo: BatchTemplateRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(
@@ -181,6 +186,21 @@ export class UpdateBatchHandler {
       await this.batchCourseRepo.syncPrimaryCourse({
         batchId: batch.id,
         courseId: batch.courseId,
+      });
+    }
+
+    if (command.templateIds !== undefined) {
+      await syncBatchTimings(this.prisma, this.templateRepo, {
+        batchId: batch.id,
+        templateIds: command.templateIds,
+        startDate: command.startDate ?? batch.startDate,
+        endDate:
+          command.endDate ??
+          batch.endDate ??
+          command.startDate ??
+          batch.startDate,
+        capacity: command.capacity ?? batch.capacity.getValue(),
+        updatedBy: command.updatedBy,
       });
     }
 
