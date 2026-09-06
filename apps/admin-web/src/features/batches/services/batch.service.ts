@@ -24,6 +24,7 @@ import type {
   CategoryOption,
   BranchOption,
   CreateBatchRequest,
+  CreateBatchWithTimingsRequest,
   ReorderBatchRequest,
   UpdateBatchRequest,
 } from "@/src/features/batches/types/batch.types";
@@ -90,6 +91,32 @@ class BatchService {
   async createBatch(payload: CreateBatchRequest) {
     try {
       return await batchApi.createBatch(payload);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async createBatchWithTimings(payload: CreateBatchWithTimingsRequest) {
+    try {
+      return await batchApi.createBatchWithTimings(payload);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getBatchTimings(batchId: string) {
+    try {
+      const response = await batchApi.getBatchTimings(batchId);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getBatchTiming(batchId: string, timingId: string) {
+    try {
+      const response = await batchApi.getBatchTiming(batchId, timingId);
+      return response.data;
     } catch (error) {
       throw this.handleError(error);
     }

@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -21,6 +22,8 @@ import type { AuthUser } from '@common/decorators/current-user.decorator';
 import { SuperAdminGuard } from '@common/guards/super-admin.guard';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 
+import { CreateBatchWithTimingsCommand } from '../../application/batch-timings/create-batch-with-timings.command';
+import { CreateBatchWithTimingsHandler } from '../../application/batch-timings/create-batch-with-timings.handler';
 import { AssignBatchCourseHandler } from '../../application/batch-courses/assign-batch-course.handler';
 import { ListBatchCoursesHandler } from '../../application/batch-courses/list-batch-courses.handler';
 import { RemoveBatchCourseHandler } from '../../application/batch-courses/remove-batch-course.handler';
@@ -61,6 +64,7 @@ import { AssignBatchTrainersDto } from '../dtos/assign-batch-trainers.dto';
 import { BulkBatchIdsDto } from '../dtos/bulk-batch-ids.dto';
 import { BulkUpdateBatchStatusDto } from '../dtos/bulk-update-batch-status.dto';
 import { CreateBatchDto } from '../dtos/create-batch.dto';
+import { CreateBatchWithTimingsDto } from '../dtos/create-batch-with-timings.dto';
 import { ListBatchesQueryDto } from '../dtos/list-batches-query.dto';
 import { ReorderBatchesDto } from '../dtos/reorder-batches.dto';
 import { UpdateBatchDto } from '../dtos/update-batch.dto';
@@ -72,6 +76,7 @@ import { UpdateBatchDto } from '../dtos/update-batch.dto';
 export class AdminBatchController {
   constructor(
     private readonly createBatchHandler: CreateBatchHandler,
+    private readonly createBatchWithTimingsHandler: CreateBatchWithTimingsHandler,
     private readonly updateBatchHandler: UpdateBatchHandler,
     private readonly listBatchesHandler: ListBatchesHandler,
     private readonly getBatchHandler: GetBatchHandler,
@@ -136,6 +141,40 @@ export class AdminBatchController {
     return {
       success: true,
       message: 'Batch created successfully',
+      data: result,
+    };
+  }
+
+  /** Creates a single batch that owns every selected timing as a child. */
+  @Post('with-timings')
+  @ApiBody({ type: CreateBatchWithTimingsDto })
+  @ApiResponse({ status: 201, description: 'Batch created with timings' })
+  async createWithTimings(
+    @Body() dto: CreateBatchWithTimingsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.createBatchWithTimingsHandler.execute(
+      new CreateBatchWithTimingsCommand(
+        dto.courseId,
+        new Date(dto.startDate),
+        new Date(dto.endDate),
+        dto.templateIds,
+        dto.name,
+        dto.capacity,
+        dto.durationValue,
+        dto.durationType,
+        user?.sub,
+        dto.originalPrice,
+        dto.discountAmount,
+        dto.discountedPrice,
+        dto.currency,
+        dto.isFree,
+      ),
+    );
+
+    return {
+      success: true,
+      message: `Batch created with ${result.timingsCount} batch timing(s)`,
       data: result,
     };
   }
@@ -454,6 +493,52 @@ export class AdminBatchController {
       success: true,
       message: 'Batch deactivated successfully',
       data: result,
+    };
+  }
+
+  /** Child timings of this batch. Always scoped by the parent batchId. */
+  @Get(':id/timings')
+  async listTimings(@Param('id') id: string) {
+    const batch = await this.getBatchHandler.execute(
+      new GetBatchQuery(id, true),
+    );
+
+    return {
+      success: true,
+      message: 'Batch timings fetched successfully',
+      data: {
+        batchId: batch.id,
+        batchName: batch.name,
+        batchCode: batch.code,
+        course: batch.course,
+        items: batch.timings,
+        count: batch.timingsCount,
+      },
+    };
+  }
+
+  @Get(':id/timings/:timingId')
+  async getTiming(
+    @Param('id') id: string,
+    @Param('timingId') timingId: string,
+  ) {
+    const batch = await this.getBatchHandler.execute(
+      new GetBatchQuery(id, true),
+    );
+
+    const timing = batch.timings.find((item) => item.id === timingId);
+
+    if (!timing) {
+      throw new NotFoundException('Batch timing not found for this batch');
+    }
+
+    return {
+      success: true,
+      message: 'Batch timing fetched successfully',
+      data: {
+        timing,
+        batch,
+      },
     };
   }
 

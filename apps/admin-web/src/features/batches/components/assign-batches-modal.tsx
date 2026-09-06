@@ -368,7 +368,8 @@ export function AssignBatchesModal({ open, onClose, onSuccess }: Props) {
 
     setSubmitting(true);
     try {
-      const response = await batchTemplateService.createBatchesFromTemplates({
+      // One batch is created; every selected timing becomes a child of it.
+      const response = await batchService.createBatchWithTimings({
         courseId,
         name: batchName.trim(),
         startDate,
@@ -381,32 +382,11 @@ export function AssignBatchesModal({ open, onClose, onSuccess }: Props) {
         isFree: originalPriceNumber === 0,
       });
 
-      const { createdCount, failedCount, results } = response.data;
-
-      if (failedCount === 0) {
-        appToast.success(
-          response.message ||
-            `${createdCount} batch(es) assigned successfully`,
-        );
-        await onSuccess();
-        onClose();
-        return;
-      }
-
-      const failedNames = results
-        .filter((item) => !item.success)
-        .map((item) => `${item.templateName}: ${item.error ?? "failed"}`)
-        .join("; ");
-
-      if (createdCount > 0) {
-        appToast.warning(
-          `${createdCount} created, ${failedCount} failed. ${failedNames}`,
-        );
-        await onSuccess();
-        onClose();
-      } else {
-        appToast.error(failedNames || response.message);
-      }
+      appToast.success(
+        response.message || "Batch created successfully",
+      );
+      await onSuccess();
+      onClose();
     } catch (error) {
       appToast.error(getErrorMessage(error));
     } finally {

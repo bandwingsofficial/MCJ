@@ -15,10 +15,11 @@ import {
   getBatchDisplayStatus,
   isBatchSelectableInBulkList,
 } from "@/src/features/batches/utils/batch-select.utils";
+import { formatBatchDateRange } from "@/src/features/batches/utils/batch.helper";
 import {
-  formatBatchDateRange,
-  formatBatchTiming,
-} from "@/src/features/batches/utils/batch.helper";
+  formatBatchTimingNames,
+  formatBatchTimingsSummary,
+} from "@/src/features/batches/utils/batch-timing.utils";
 
 import { BatchStatusBadge } from "./BatchStatusBadge";
 import { BatchModeBadge } from "./BatchModeBadge";
@@ -36,7 +37,6 @@ interface Props {
   onActivate: (batch: BatchListItem) => void;
   onDeactivate: (batch: BatchListItem) => void;
   onEdit: (batch: BatchListItem) => void;
-  onArchive: (batch: BatchListItem) => void;
   onRestore: (batch: BatchListItem) => void;
   onPermanentDelete: (batch: BatchListItem) => void;
   onReorder: (payload: {
@@ -56,7 +56,6 @@ export function BatchTable({
   onActivate,
   onDeactivate,
   onEdit,
-  onArchive,
   onRestore,
   onPermanentDelete,
   onReorder,
@@ -346,8 +345,11 @@ export function BatchTable({
                       <span className="truncate">
                         {formatBatchDateRange(batch.startDate, batch.endDate)}
                       </span>
-                      <span className="truncate">
-                        {formatBatchTiming(batch.startTime, batch.endTime)}
+                      <span
+                        className="truncate"
+                        title={formatBatchTimingNames(batch) || undefined}
+                      >
+                        {formatBatchTimingsSummary(batch)}
                       </span>
                     </div>
                   </td>
@@ -370,7 +372,6 @@ export function BatchTable({
                       onActivate={onActivate}
                       onDeactivate={onDeactivate}
                       onEdit={onEdit}
-                      onArchive={onArchive}
                       onRestore={onRestore}
                       onPermanentDelete={onPermanentDelete}
                     />

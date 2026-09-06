@@ -5,8 +5,6 @@ import type {
   BatchTemplate,
   BulkBatchTemplateResult,
   CreateBatchTemplateRequest,
-  CreateBatchesFromTemplatesRequest,
-  CreateBatchesFromTemplatesResult,
   UpdateBatchTemplateRequest,
 } from "@/src/features/batch-templates/types/batch-template.types";
 
@@ -164,15 +162,6 @@ class BatchTemplateService {
     const response = await apiClient.post<
       ApiSuccessResponse<BulkBatchTemplateResult>
     >(`${this.basePath}/bulk/permanent-delete`, { ids });
-    return response.data;
-  }
-
-  async createBatchesFromTemplates(
-    payload: CreateBatchesFromTemplatesRequest,
-  ): Promise<ApiSuccessResponse<CreateBatchesFromTemplatesResult>> {
-    const response = await apiClient.post<
-      ApiSuccessResponse<CreateBatchesFromTemplatesResult>
-    >(`${this.basePath}/create-batches`, payload);
     return response.data;
   }
 }

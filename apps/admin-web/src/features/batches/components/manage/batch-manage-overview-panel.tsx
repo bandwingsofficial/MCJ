@@ -8,11 +8,14 @@ import { Card } from "@/src/shared/components/ui/card";
 import { Loader } from "@/src/shared/components/ui/loader";
 
 import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
-import { BATCH_DURATION_TYPES } from "@/src/features/batches/constants/batch.constants";
 import type {
   Batch,
   BatchSummary,
 } from "@/src/features/batches/types/batch.types";
+import {
+  formatBatchDuration,
+  formatBatchDurationType,
+} from "@/src/features/batches/utils/batch-duration.utils";
 import {
   formatBatchMode,
   formatBatchOperationalStatus,
@@ -29,6 +32,7 @@ import {
   formatBatchOverviewDate,
   formatBatchOverviewTiming,
 } from "@/src/features/batches/utils/batch-progress.utils";
+import { getBatchTimingsCount } from "@/src/features/batches/utils/batch-timing.utils";
 import { categoryService } from "@/src/features/categories/services/category.service";
 import { useCourse } from "@/src/features/courses/hooks/use-course";
 import { useCourseTrainers } from "@/src/features/courses/hooks/use-course-trainers";
@@ -81,35 +85,6 @@ function EmptyMessage({ message }: { message: string }) {
     <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-[#647A9B]">
       {message}
     </p>
-  );
-}
-
-function formatConfiguredDuration(batch: Batch): string {
-  if (
-    batch.durationValue == null ||
-    !batch.durationType ||
-    Number(batch.durationValue) <= 0
-  ) {
-    return "—";
-  }
-
-  const typeLabel =
-    BATCH_DURATION_TYPES.find((item) => item.value === batch.durationType)
-      ?.label ?? batch.durationType;
-  const value = Number(batch.durationValue);
-  const singular = typeLabel.replace(/s$/i, "");
-
-  return `${value} ${value === 1 ? singular : typeLabel.toLowerCase()}`;
-}
-
-function formatDurationType(batch: Batch): string {
-  if (!batch.durationType) {
-    return "—";
-  }
-
-  return (
-    BATCH_DURATION_TYPES.find((item) => item.value === batch.durationType)
-      ?.label ?? batch.durationType
   );
 }
 
@@ -179,6 +154,7 @@ export function BatchManageOverviewPanel({
   const progress = useMemo(() => calculateBatchProgress(batch), [batch]);
   const pricing = useMemo(() => getBatchPricing(batch), [batch]);
   const isArchived = Boolean(batch.deletedAt || batch.isDeleted);
+  const timingsCount = getBatchTimingsCount(batch);
 
   const courseId = batch.courseId?.trim() || batch.course?.id || "";
   const { course, isLoading: courseLoading } = useCourse(courseId);
@@ -283,8 +259,16 @@ export function BatchManageOverviewPanel({
             value={batch.course?.title?.trim() || "No course assigned"}
           />
           <OverviewField
-            label="Batch Type"
+            label="Learning Mode"
             value={formatBatchMode(batch.mode)}
+          />
+          <OverviewField
+            label="Batch Timings"
+            value={
+              timingsCount === 0
+                ? "No timings"
+                : `${timingsCount} timing${timingsCount === 1 ? "" : "s"}`
+            }
           />
           <OverviewField
             label="Status"
@@ -337,11 +321,11 @@ export function BatchManageOverviewPanel({
           />
           <OverviewField
             label="Duration"
-            value={formatConfiguredDuration(batch)}
+            value={formatBatchDuration(batch)}
           />
           <OverviewField
             label="Duration Type"
-            value={formatDurationType(batch)}
+            value={formatBatchDurationType(batch)}
           />
           <OverviewField
             label="Total Working Days"

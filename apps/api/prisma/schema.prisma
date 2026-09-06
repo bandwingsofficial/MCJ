@@ -684,6 +684,7 @@ model Batch {
   assessments   AcademicAssessment[]
   batchTemplateId String?
   batchTemplate   BatchTemplate? @relation(fields: [batchTemplateId], references: [id], onDelete: SetNull)
+  timings         BatchTiming[]
 
   @@unique([slug, branchId])
   @@index([name])
@@ -724,12 +725,49 @@ model BatchTemplate {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   batches        Batch[]
+  batchTimings   BatchTiming[]
 
   @@index([name])
   @@index([isActive])
   @@index([isDeleted])
   @@index([displayOrder])
   @@index([createdAt])
+}
+
+/// A scheduled timing belonging to one parent Batch.
+/// Created from a BatchTemplate (the reusable timing master) but owns its own
+/// schedule so master edits never rewrite a running batch.
+model BatchTiming {
+  id              String        @id @default(uuid())
+  batchId         String
+  batchTemplateId String?
+  name            String
+  mode            CourseMode    @default(OFFLINE)
+  daysOfWeek      DayOfWeek[]   @default([])
+  startDate       DateTime
+  endDate         DateTime?
+  startTime       String
+  endTime         String
+  capacity        Int           @default(0)
+  enrolledCount   Int           @default(0)
+  status          BatchStatus   @default(UPCOMING)
+  isActive        Boolean       @default(true)
+  displayOrder    Int?
+  createdBy       String?
+  updatedBy       String?
+  isDeleted       Boolean       @default(false)
+  deletedAt       DateTime?
+  deletedBy       String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  batch    Batch          @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  template BatchTemplate? @relation(fields: [batchTemplateId], references: [id], onDelete: SetNull)
+
+  @@index([batchId])
+  @@index([batchTemplateId])
+  @@index([isDeleted])
+  @@index([displayOrder])
 }
 
 model BatchTrainer {

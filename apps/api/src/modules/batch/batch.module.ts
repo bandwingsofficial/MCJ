@@ -36,7 +36,7 @@ import {
   BulkSetBatchTemplateActiveHandler,
 } from './application/batch-templates/bulk-batch-template.handlers';
 import { CreateBatchTemplateHandler } from './application/batch-templates/create-batch-template.handler';
-import { CreateBatchesFromTemplatesHandler } from './application/batch-templates/create-batches-from-templates.handler';
+import { CreateBatchWithTimingsHandler } from './application/batch-timings/create-batch-with-timings.handler';
 import { GetBatchTemplateHandler } from './application/batch-templates/get-batch-template.handler';
 import { ListBatchTemplatesHandler } from './application/batch-templates/list-batch-templates.handler';
 import { SetBatchTemplateActiveHandler } from './application/batch-templates/set-batch-template-active.handler';
@@ -468,22 +468,25 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
     },
 
     {
-      provide: CreateBatchesFromTemplatesHandler,
+      provide: CreateBatchWithTimingsHandler,
       useFactory: (
         templateRepo: BatchTemplateRepository,
         courseRepo: CourseRepository,
+        batchRepo: BatchRepository,
         createBatchHandler: CreateBatchHandler,
         prisma: PrismaService,
       ) =>
-        new CreateBatchesFromTemplatesHandler(
+        new CreateBatchWithTimingsHandler(
           templateRepo,
           courseRepo,
+          batchRepo,
           createBatchHandler,
           prisma,
         ),
       inject: [
         BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY,
         COURSE_TOKENS.COURSE_REPOSITORY,
+        BATCH_TOKENS.BATCH_REPOSITORY,
         CreateBatchHandler,
         PrismaService,
       ],

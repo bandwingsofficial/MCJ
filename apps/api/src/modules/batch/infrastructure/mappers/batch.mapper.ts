@@ -58,6 +58,39 @@ export type BatchWithRelations = PrismaBatch & {
       } | null;
     };
   }[];
+
+  batchTemplate?: {
+    id: string;
+    name: string;
+    mode: string;
+    daysOfWeek: string[];
+    startTime: string | null;
+    endTime: string | null;
+    hasFixedTime: boolean;
+    isActive: boolean;
+    isDeleted: boolean;
+  } | null;
+
+  timings?: {
+    id: string;
+    batchId: string;
+    batchTemplateId: string | null;
+    name: string;
+    mode: string;
+    daysOfWeek: string[];
+    startDate: Date;
+    endDate: Date | null;
+    startTime: string;
+    endTime: string;
+    capacity: number;
+    enrolledCount: number;
+    status: string;
+    isActive: boolean;
+    displayOrder: number | null;
+    isDeleted: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
 };
 
 export class BatchMapper {
@@ -107,6 +140,42 @@ export class BatchMapper {
     courseId: record.courseId,
     categoryId: record.categoryId,
     branchId: record.branchId,
+    batchTemplateId: record.batchTemplateId ?? null,
+
+    batchTemplate: record.batchTemplate
+      ? {
+          id: record.batchTemplate.id,
+          name: record.batchTemplate.name,
+          mode: record.batchTemplate.mode as CourseMode,
+          daysOfWeek: record.batchTemplate.daysOfWeek as DayOfWeek[],
+          startTime: record.batchTemplate.startTime,
+          endTime: record.batchTemplate.endTime,
+          hasFixedTime: record.batchTemplate.hasFixedTime,
+          isActive: record.batchTemplate.isActive,
+          isDeleted: record.batchTemplate.isDeleted,
+        }
+      : null,
+
+    timings: (record.timings ?? []).map((timing) => ({
+      id: timing.id,
+      batchId: timing.batchId,
+      batchTemplateId: timing.batchTemplateId,
+      name: timing.name,
+      mode: timing.mode as CourseMode,
+      daysOfWeek: timing.daysOfWeek as DayOfWeek[],
+      startDate: timing.startDate,
+      endDate: timing.endDate,
+      startTime: timing.startTime,
+      endTime: timing.endTime,
+      capacity: timing.capacity,
+      enrolledCount: timing.enrolledCount,
+      status: timing.status as BatchStatus,
+      isActive: timing.isActive,
+      displayOrder: timing.displayOrder,
+      isDeleted: timing.isDeleted,
+      createdAt: timing.createdAt,
+      updatedAt: timing.updatedAt,
+    })),
 
     startDate: record.startDate,
     endDate: record.endDate,
@@ -177,6 +246,7 @@ export class BatchMapper {
       courseId: batch.courseId,
       categoryId: batch.categoryId,
       branchId: batch.branchId,
+      batchTemplateId: batch.batchTemplateId,
       startDate: batch.startDate,
       endDate: batch.endDate,
       startTime: batch.startTime,

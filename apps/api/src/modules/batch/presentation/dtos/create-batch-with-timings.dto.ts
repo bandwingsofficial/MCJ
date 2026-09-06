@@ -25,7 +25,10 @@ const toNumber = (value: unknown) =>
 const toBoolean = (value: unknown) =>
   value === true || value === 'true';
 
-export class CreateBatchesFromTemplatesDto {
+/**
+ * Creates ONE batch. Every id in `templateIds` becomes a child timing of it.
+ */
+export class CreateBatchWithTimingsDto {
   @ApiProperty()
   @IsUUID()
   courseId!: string;
@@ -101,7 +104,7 @@ export class CreateBatchesFromTemplatesDto {
   @Transform(({ value }) => toBoolean(value))
   isFree?: boolean;
 
-  @ApiPropertyOptional({ example: 'Morning Batch' })
+  @ApiPropertyOptional({ example: 'August Batch' })
   @IsOptional()
   @IsString()
   @Transform(({ value }) =>

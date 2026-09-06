@@ -145,7 +145,7 @@ export function AssignBatchesPage() {
 
     setSubmitting(true);
     try {
-      const response = await batchTemplateService.createBatchesFromTemplates({
+      const response = await batchService.createBatchWithTimings({
         courseId,
         startDate,
         endDate,
@@ -157,30 +157,8 @@ export function AssignBatchesPage() {
         isFree: priceNumber === 0,
       });
 
-      const { createdCount, failedCount, results } = response.data;
-
-      if (failedCount === 0) {
-        appToast.success(
-          response.message ||
-            `${createdCount} batch(es) assigned successfully`,
-        );
-        router.push("/batches");
-        return;
-      }
-
-      const failedNames = results
-        .filter((item) => !item.success)
-        .map((item) => `${item.templateName}: ${item.error ?? "failed"}`)
-        .join("; ");
-
-      if (createdCount > 0) {
-        appToast.warning(
-          `${createdCount} created, ${failedCount} failed. ${failedNames}`,
-        );
-        router.push("/batches");
-      } else {
-        appToast.error(failedNames || response.message);
-      }
+      appToast.success(response.message || "Batch created successfully");
+      router.push("/batches");
     } catch (error) {
       appToast.error(getErrorMessage(error));
     } finally {

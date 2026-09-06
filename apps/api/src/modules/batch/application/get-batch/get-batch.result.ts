@@ -1,5 +1,8 @@
 import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
-import { Batch } from '../../domain/entities/batch.entity';
+import {
+  Batch,
+  type BatchTimingRef,
+} from '../../domain/entities/batch.entity';
 import { BatchStatus } from '../../domain/enums/batch-status.enum';
 import { DayOfWeek } from '../../domain/enums/day-of-week.enum';
 import { resolveBatchApiStatus } from '../../domain/utils/batch-lifecycle-status.util';
@@ -36,6 +39,78 @@ export class BatchCategoryResult {
   ) {}
 }
 
+/** Batch timing master (template) this batch was created from. */
+export class BatchTemplateRefResult {
+  constructor(
+    public readonly id: string,
+    public readonly name: string,
+    public readonly mode: CourseMode,
+    public readonly daysOfWeek: DayOfWeek[],
+    public readonly startTime: string | null,
+    public readonly endTime: string | null,
+    public readonly hasFixedTime: boolean,
+    public readonly isActive: boolean,
+    public readonly isDeleted: boolean,
+  ) {}
+}
+
+/** A child timing owned by this batch (batchId is the parent). */
+export class BatchTimingResult {
+  constructor(
+    public readonly id: string,
+    public readonly batchId: string,
+    public readonly batchTemplateId: string | null,
+    public readonly name: string,
+    public readonly mode: CourseMode,
+    public readonly daysOfWeek: DayOfWeek[],
+    public readonly startDate: Date,
+    public readonly endDate: Date | null,
+    public readonly startTime: string,
+    public readonly endTime: string,
+    public readonly capacity: number,
+    public readonly enrolledCount: number,
+    public readonly studentsCount: number,
+    public readonly status: BatchStatus,
+    public readonly isActive: boolean,
+    public readonly displayOrder: number | null,
+    public readonly isDeleted: boolean,
+    public readonly createdAt: Date,
+    public readonly updatedAt: Date,
+  ) {}
+
+  static fromRef(timing: BatchTimingRef): BatchTimingResult {
+    return new BatchTimingResult(
+      timing.id,
+      timing.batchId,
+      timing.batchTemplateId,
+      timing.name,
+      timing.mode,
+      timing.daysOfWeek,
+      timing.startDate,
+      timing.endDate,
+      timing.startTime,
+      timing.endTime,
+      timing.capacity,
+      timing.enrolledCount,
+      // Student assignment is not implemented yet; always zero for now.
+      0,
+      resolveBatchApiStatus({
+        storedStatus: timing.status,
+        isDeleted: timing.isDeleted,
+        startDate: timing.startDate,
+        startTime: timing.startTime,
+        endDate: timing.endDate,
+        endTime: timing.endTime,
+      }),
+      timing.isActive,
+      timing.displayOrder,
+      timing.isDeleted,
+      timing.createdAt,
+      timing.updatedAt,
+    );
+  }
+}
+
 export class GetBatchResult {
   constructor(
     public readonly id: string,
@@ -49,6 +124,10 @@ export class GetBatchResult {
     public readonly courseId: string | null,
     public readonly categoryId: string | null,
     public readonly branchId: string | null,
+    public readonly batchTemplateId: string | null,
+    public readonly batchTemplate: BatchTemplateRefResult | null,
+    public readonly timings: BatchTimingResult[],
+    public readonly timingsCount: number,
     public readonly startDate: Date,
     public readonly endDate: Date | null,
     public readonly startTime: string,
@@ -90,6 +169,7 @@ export class GetBatchResult {
       endDate: batch.endDate,
       endTime: batch.endTime,
     });
+    const timings = (batch.timings ?? []).map(BatchTimingResult.fromRef);
 
     return new GetBatchResult(
       batch.id,
@@ -122,6 +202,25 @@ export class GetBatchResult {
       batch.courseId,
       batch.categoryId,
       batch.branchId,
+      batch.batchTemplateId,
+
+      batch.batchTemplate
+        ? new BatchTemplateRefResult(
+            batch.batchTemplate.id,
+            batch.batchTemplate.name,
+            batch.batchTemplate.mode,
+            batch.batchTemplate.daysOfWeek,
+            batch.batchTemplate.startTime,
+            batch.batchTemplate.endTime,
+            batch.batchTemplate.hasFixedTime,
+            batch.batchTemplate.isActive,
+            batch.batchTemplate.isDeleted,
+          )
+        : null,
+
+      timings,
+      timings.length,
+
       batch.startDate,
       batch.endDate,
       batch.startTime,

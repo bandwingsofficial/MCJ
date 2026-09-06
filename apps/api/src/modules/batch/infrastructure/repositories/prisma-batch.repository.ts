@@ -463,6 +463,28 @@ export class PrismaBatchRepository implements BatchRepository {
           },
         },
       },
+
+      batchTemplate: {
+        select: {
+          id: true,
+          name: true,
+          mode: true,
+          daysOfWeek: true,
+          startTime: true,
+          endTime: true,
+          hasFixedTime: true,
+          isActive: true,
+          isDeleted: true,
+        },
+      },
+
+      timings: {
+        where: { isDeleted: false },
+        orderBy: [
+          { displayOrder: { sort: 'asc' as const, nulls: 'last' as const } },
+          { startTime: 'asc' as const },
+        ],
+      },
     };
   }
 

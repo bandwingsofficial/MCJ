@@ -1,280 +1,123 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useState, type ReactNode } from "react";
-import { UserRound } from "lucide-react";
+import { Pencil } from "lucide-react";
 
-import { Card } from "@/src/shared/components/ui/card";
-import { Loader } from "@/src/shared/components/ui/loader";
-
+import { Button } from "@/src/shared/components/ui/button";
 import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
 import type { Batch } from "@/src/features/batches/types/batch.types";
+import {
+  formatBatchDuration,
+  formatBatchDurationType,
+} from "@/src/features/batches/utils/batch-duration.utils";
+import { getBatchPricing } from "@/src/features/batches/utils/batch-pricing.util";
+import { formatBatchOverviewDate } from "@/src/features/batches/utils/batch-progress.utils";
 import { formatBatchMode } from "@/src/features/batches/utils/batch.helper";
-import { categoryService } from "@/src/features/categories/services/category.service";
-import { useCourse } from "@/src/features/courses/hooks/use-course";
-import { useCourseTrainers } from "@/src/features/courses/hooks/use-course-trainers";
-import { TrainerStatusBadge } from "@/src/features/trainers/components/trainer-status-badge";
-import type { TrainerDetails } from "@/src/features/trainers/types/trainer.types";
-import { getTrainerDisplayStatus } from "@/src/features/trainers/utils/trainer-display.utils";
+
+import {
+  BatchManageField,
+  BatchManageSection,
+} from "./batch-manage-section";
 
 interface Props {
   batch: Batch;
+  onEdit: () => void;
+  editDisabled?: boolean;
 }
 
-function SectionCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <Card className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
-      <div className="border-b border-slate-200 px-4 py-3">
-        <h2 className="text-sm font-semibold text-[#102A56]">{title}</h2>
-      </div>
-      <div className="p-4">{children}</div>
-    </Card>
-  );
-}
-
-function DetailField({
-  label,
-  value,
-}: {
-  label: string;
-  value: ReactNode;
-}) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-xs text-slate-500">{label}</dt>
-      <dd className="mt-0.5 break-words text-sm font-medium text-[#102A56]">
-        {value}
-      </dd>
-    </div>
-  );
-}
-
-function EmptyMessage({ message }: { message: string }) {
-  return (
-    <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-[#647A9B]">
-      {message}
-    </p>
-  );
-}
-
-function formatTrainerName(
-  trainer: Pick<TrainerDetails, "firstName" | "lastName">,
-) {
-  return [trainer.firstName, trainer.lastName].filter(Boolean).join(" ") || "—";
-}
-
-function TrainerCard({ trainer }: { trainer: TrainerDetails }) {
-  const name = formatTrainerName(trainer);
-
-  return (
-    <article className="flex min-w-0 flex-col gap-3 rounded-xl border border-slate-200 p-3 sm:flex-row sm:items-start">
-      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-slate-100">
-        {trainer.profileImageUrl ? (
-          <Image
-            src={trainer.profileImageUrl}
-            alt={name}
-            fill
-            className="object-cover"
-            sizes="64px"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-slate-400">
-            <UserRound className="h-6 w-6" />
-          </div>
-        )}
-      </div>
-
-      <dl className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">
-        <DetailField label="Trainer Name" value={name} />
-        <DetailField
-          label="Trainer Code"
-          value={trainer.employeeCode?.trim() || "—"}
-        />
-        <DetailField
-          label="Qualification"
-          value={trainer.qualification?.trim() || "—"}
-        />
-        <DetailField
-          label="Specialization"
-          value={trainer.specialization?.trim() || "—"}
-        />
-        <div className="sm:col-span-2">
-          <DetailField
-            label="Status"
-            value={
-              <TrainerStatusBadge status={getTrainerDisplayStatus(trainer)} />
-            }
-          />
-        </div>
-      </dl>
-    </article>
-  );
-}
-
-export function BatchManageDetailsPanel({ batch }: Props) {
-  const courseId = batch.courseId?.trim() || batch.course?.id || "";
-  const { course, isLoading: courseLoading } = useCourse(courseId);
-  const {
-    trainers,
-    isLoading: trainersLoading,
-  } = useCourseTrainers(courseId || undefined);
-
-  const [categorySlug, setCategorySlug] = useState<string | null>(null);
-  const [categoryLoading, setCategoryLoading] = useState(false);
-
-  const categoryId = course?.categoryId || course?.category?.id || null;
-  const categoryName =
-    course?.category?.name?.trim() ||
-    course?.categoryName?.trim() ||
-    batch.course?.category?.name?.trim() ||
-    batch.category?.name?.trim() ||
-    "";
-
-  useEffect(() => {
-    if (!categoryId) {
-      setCategorySlug(null);
-      return;
-    }
-
-    let cancelled = false;
-
-    const loadCategory = async () => {
-      try {
-        setCategoryLoading(true);
-        const response = await categoryService.getCategory(categoryId);
-        if (!cancelled) {
-          setCategorySlug(response.data.slug?.trim() || null);
-        }
-      } catch {
-        if (!cancelled) {
-          setCategorySlug(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setCategoryLoading(false);
-        }
-      }
-    };
-
-    void loadCategory();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [categoryId]);
-
+export function BatchManageDetailsPanel({
+  batch,
+  onEdit,
+  editDisabled = false,
+}: Props) {
   const isArchived = Boolean(batch.deletedAt || batch.isDeleted);
-  const courseTitle =
-    course?.title?.trim() || batch.course?.title?.trim() || "";
-  const courseCode =
-    course?.code?.trim() || batch.course?.code?.trim() || "";
-  const courseDescription =
-    course?.shortDescription?.trim() ||
-    course?.description?.trim() ||
-    batch.course?.shortDescription?.trim() ||
-    batch.course?.description?.trim() ||
-    "";
+  const pricing = getBatchPricing(batch);
 
   return (
-    <div className="space-y-4">
-      <SectionCard title="Batch Details">
-        <dl className="grid min-w-0 gap-4 sm:grid-cols-2">
-          <DetailField label="Batch Name" value={batch.name} />
-          <DetailField label="Batch Number" value={batch.code} />
-          <DetailField
-            label="Batch Type"
-            value={formatBatchMode(batch.mode)}
-          />
-          <DetailField
-            label="Status"
-            value={
-              <BatchStatusBadge
-                status={batch.status}
-                isActive={batch.isActive}
-                isDeleted={isArchived}
-              />
-            }
-          />
-        </dl>
-      </SectionCard>
-
-      <SectionCard title="Course Details">
-        {!courseId ? (
-          <EmptyMessage message="No course assigned" />
-        ) : courseLoading && !course && !batch.course ? (
-          <div className="py-6">
-            <Loader />
-          </div>
-        ) : (
-          <dl className="grid min-w-0 gap-4 sm:grid-cols-2">
-            <DetailField
-              label="Course Name"
-              value={courseTitle || "—"}
+    <BatchManageSection
+      title="Batch Details"
+      description="Batch number is generated by the system and cannot be edited."
+      action={
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={editDisabled || isArchived}
+          onClick={onEdit}
+          className="h-9"
+        >
+          <Pencil className="mr-1.5 h-4 w-4 shrink-0" />
+          Edit Batch
+        </Button>
+      }
+    >
+      <dl className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <BatchManageField label="Batch Name" value={batch.name} />
+        <BatchManageField label="Batch Number" value={batch.code} />
+        <BatchManageField
+          label="Course"
+          value={batch.course?.title?.trim() || "No course assigned"}
+        />
+        <BatchManageField
+          label="Learning Mode"
+          value={formatBatchMode(batch.mode)}
+        />
+        <BatchManageField
+          label="Duration"
+          value={formatBatchDuration(batch)}
+        />
+        <BatchManageField
+          label="Duration Type"
+          value={formatBatchDurationType(batch)}
+        />
+        <BatchManageField
+          label="Start Date"
+          value={formatBatchOverviewDate(batch.startDate)}
+        />
+        <BatchManageField
+          label="End Date"
+          value={formatBatchOverviewDate(batch.endDate)}
+        />
+        <BatchManageField
+          label="Status"
+          value={
+            <BatchStatusBadge
+              status={batch.status}
+              isActive={batch.isActive}
+              isDeleted={isArchived}
+              startDate={batch.startDate}
+              endDate={batch.endDate}
             />
-            <DetailField
-              label="Course Code"
-              value={courseCode || "—"}
-            />
-            <div className="sm:col-span-2">
-              <DetailField
-                label="Description"
-                value={courseDescription || "—"}
-              />
-            </div>
-          </dl>
-        )}
-      </SectionCard>
-
-      <SectionCard title="Category Details">
-        {!courseId ? (
-          <EmptyMessage message="No course assigned" />
-        ) : courseLoading && !categoryName ? (
-          <div className="py-6">
-            <Loader />
-          </div>
-        ) : !categoryName && !categoryId ? (
-          <EmptyMessage message="No category available" />
-        ) : (
-          <dl className="grid min-w-0 gap-4 sm:grid-cols-2">
-            <DetailField
-              label="Category Name"
-              value={categoryName || "—"}
-            />
-            <DetailField
-              label="Category Code"
-              value={
-                categoryLoading
-                  ? "…"
-                  : categorySlug || "—"
-              }
-            />
-          </dl>
-        )}
-      </SectionCard>
-
-      <SectionCard title="Trainer Details">
-        {!courseId ? (
-          <EmptyMessage message="Not yet assigned" />
-        ) : trainersLoading ? (
-          <div className="py-6">
-            <Loader />
-          </div>
-        ) : trainers.length === 0 ? (
-          <EmptyMessage message="Not yet assigned" />
-        ) : (
-          <div className="space-y-3">
-            {trainers.map((trainer) => (
-              <TrainerCard key={trainer.id} trainer={trainer} />
-            ))}
-          </div>
-        )}
-      </SectionCard>
-    </div>
+          }
+        />
+        <BatchManageField
+          label="Original Price"
+          value={formatMoney(pricing.originalPrice, pricing.currency)}
+        />
+        <BatchManageField
+          label="Discount Amount"
+          value={formatMoney(pricing.discountAmount, pricing.currency)}
+        />
+        <BatchManageField
+          label="Discount Percentage"
+          value={`${pricing.discountPercent}%`}
+        />
+        <BatchManageField
+          label="Final Amount"
+          value={
+            pricing.isFree
+              ? "Free"
+              : formatMoney(pricing.discountedPrice, pricing.currency)
+          }
+        />
+      </dl>
+    </BatchManageSection>
   );
+}
+
+function formatMoney(value: number, currency: string): string {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(value);
 }

@@ -110,38 +110,15 @@ export function CreateBatchesFromTemplatesForm({
 
     setIsSubmitting(true);
     try {
-      const response =
-        await batchTemplateService.createBatchesFromTemplates({
-          courseId,
-          startDate,
-          endDate,
-          templateIds: selectedIds,
-        });
+      const response = await batchService.createBatchWithTimings({
+        courseId,
+        startDate,
+        endDate,
+        templateIds: selectedIds,
+      });
 
-      const { createdCount, failedCount, results } = response.data;
-
-      if (failedCount === 0) {
-        appToast.success(
-          response.message ||
-            `${createdCount} batch(es) created successfully`,
-        );
-        await onSuccess();
-        return;
-      }
-
-      const failedNames = results
-        .filter((item) => !item.success)
-        .map((item) => `${item.templateName}: ${item.error ?? "failed"}`)
-        .join("; ");
-
-      if (createdCount > 0) {
-        appToast.warning(
-          `${createdCount} created, ${failedCount} failed. ${failedNames}`,
-        );
-        await onSuccess();
-      } else {
-        appToast.error(failedNames || response.message);
-      }
+      appToast.success(response.message || "Batch created successfully");
+      await onSuccess();
     } catch (error) {
       appToast.error(getErrorMessage(error));
     } finally {
@@ -240,7 +217,7 @@ export function CreateBatchesFromTemplatesForm({
             void handleSubmit();
           }}
         >
-          Create Selected Batches
+          Create Batch
         </Button>
       </div>
     </div>

@@ -39,9 +39,7 @@ export function BatchManageHeader({
           Batches
         </Link>
         <span aria-hidden>›</span>
-        <span className="font-medium text-slate-700">
-          {batch.name} ({batch.code})
-        </span>
+        <span className="font-medium text-slate-700">{batch.name}</span>
         <span aria-hidden>›</span>
         <span className="text-[#102A56]">Management</span>
         {activeSection ? (
@@ -57,7 +55,9 @@ export function BatchManageHeader({
           <h1 className="truncate text-xl font-semibold tracking-tight text-[#102A56] sm:text-2xl">
             {batch.name}
           </h1>
-          <p className="mt-1 text-sm text-[#647A9B]">{courseName}</p>
+          <p className="mt-1 text-sm text-[#647A9B]">
+            {batch.code} · {courseName}
+          </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <BatchStatusBadge
               status={batch.status}

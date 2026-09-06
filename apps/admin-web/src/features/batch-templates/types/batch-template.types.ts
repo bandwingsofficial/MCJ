@@ -28,33 +28,6 @@ export type CreateBatchTemplateRequest = {
 
 export type UpdateBatchTemplateRequest = Partial<CreateBatchTemplateRequest>;
 
-export type CreateBatchesFromTemplatesRequest = {
-  courseId: string;
-  startDate: string;
-  endDate: string;
-  templateIds: string[];
-  name?: string;
-  capacity?: number;
-  durationValue?: number;
-  durationType?: string;
-  originalPrice?: number;
-  discountAmount?: number;
-  discountedPrice?: number;
-  currency?: string;
-  isFree?: boolean;
-};
-
-export type CreateBatchesFromTemplatesResult = {
-  createdCount: number;
-  failedCount: number;
-  results: Array<{
-    templateId: string;
-    templateName: string;
-    success: boolean;
-    error?: string;
-  }>;
-};
-
 export type BulkBatchTemplateResult = {
   requested: number;
   succeeded: number;

@@ -60,6 +60,7 @@ import {
 import { buildBatchPricingInput } from "@/src/features/batches/utils/batch-pricing.util";
 import {
   calculateTotalWorkingDays,
+  deriveEndDate,
   formatTotalWorkingDaysLabel,
   isEndDateBeforeStartDate,
 } from "@/src/features/batches/utils/batch-schedule.utils";
@@ -186,6 +187,7 @@ export function BatchForm({
   onSubmit,
 }: BatchFormProps) {
   const suggestRequestIdRef = useRef(0);
+  const endDateEditedRef = useRef(isEdit);
   const [isSuggestingCode, setIsSuggestingCode] = useState(false);
   const [courses, setCourses] = useState<CourseOption[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
@@ -303,6 +305,36 @@ export function BatchForm({
   useEffect(() => {
     reset(mergedDefaults);
   }, [mergedDefaults, reset]);
+
+  // On create, keep End Date in step with Start Date + Duration until the
+  // admin sets an end date of their own.
+  useEffect(() => {
+    if (isEdit || endDateEditedRef.current) {
+      return;
+    }
+
+    const derived = deriveEndDate(
+      values.startDate ?? "",
+      values.durationValue,
+      values.durationType,
+    );
+
+    if (!derived || derived === values.endDate) {
+      return;
+    }
+
+    setValue("endDate", derived, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  }, [
+    isEdit,
+    setValue,
+    values.durationType,
+    values.durationValue,
+    values.endDate,
+    values.startDate,
+  ]);
 
   useEffect(() => {
     if (isEdit) {
@@ -463,6 +495,8 @@ export function BatchForm({
     };
   };
 
+  const endDateRegistration = registerPlainField("endDate");
+
   const handleFormSubmit = handleSubmit(async (formValues) => {
     await onSubmit(formValues);
   });
@@ -580,7 +614,11 @@ export function BatchForm({
           <Input
             type="date"
             autoComplete="off"
-            {...registerPlainField("endDate")}
+            {...endDateRegistration}
+            onChange={(event) => {
+              endDateEditedRef.current = true;
+              endDateRegistration.onChange(event);
+            }}
           />
         </ValidatedField>
 

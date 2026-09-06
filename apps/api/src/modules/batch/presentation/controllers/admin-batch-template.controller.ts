@@ -34,8 +34,6 @@ import {
 } from '../../application/batch-templates/bulk-batch-template.handlers';
 import { CreateBatchTemplateCommand } from '../../application/batch-templates/create-batch-template.command';
 import { CreateBatchTemplateHandler } from '../../application/batch-templates/create-batch-template.handler';
-import { CreateBatchesFromTemplatesCommand } from '../../application/batch-templates/create-batches-from-templates.command';
-import { CreateBatchesFromTemplatesHandler } from '../../application/batch-templates/create-batches-from-templates.handler';
 import { GetBatchTemplateHandler } from '../../application/batch-templates/get-batch-template.handler';
 import { ListBatchTemplatesHandler } from '../../application/batch-templates/list-batch-templates.handler';
 import { SetBatchTemplateActiveHandler } from '../../application/batch-templates/set-batch-template-active.handler';
@@ -43,7 +41,6 @@ import { UpdateBatchTemplateCommand } from '../../application/batch-templates/up
 import { UpdateBatchTemplateHandler } from '../../application/batch-templates/update-batch-template.handler';
 
 import { CreateBatchTemplateDto } from '../dtos/create-batch-template.dto';
-import { CreateBatchesFromTemplatesDto } from '../dtos/create-batches-from-templates.dto';
 import {
   BulkBatchTemplateIdsDto,
   ListBatchTemplatesQueryDto,
@@ -68,7 +65,6 @@ export class AdminBatchTemplateController {
     private readonly bulkArchiveHandler: BulkArchiveBatchTemplatesHandler,
     private readonly bulkRestoreHandler: BulkRestoreBatchTemplatesHandler,
     private readonly bulkPermanentDeleteHandler: BulkPermanentDeleteBatchTemplatesHandler,
-    private readonly createFromTemplatesHandler: CreateBatchesFromTemplatesHandler,
   ) {}
 
   @Get()
@@ -118,44 +114,6 @@ export class AdminBatchTemplateController {
     return {
       success: true,
       message: 'Batch timing created successfully',
-      data,
-    };
-  }
-
-  @Post('create-batches')
-  async createBatches(
-    @Body() dto: CreateBatchesFromTemplatesDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    const data = await this.createFromTemplatesHandler.execute(
-      new CreateBatchesFromTemplatesCommand(
-        dto.courseId,
-        new Date(dto.startDate),
-        new Date(dto.endDate),
-        dto.templateIds,
-        dto.capacity,
-        dto.durationValue,
-        dto.durationType,
-        user?.sub,
-        dto.originalPrice,
-        dto.discountAmount,
-        dto.discountedPrice,
-        dto.currency,
-        dto.isFree,
-        dto.name,
-      ),
-    );
-
-    const message =
-      data.failedCount === 0
-        ? `${data.createdCount} batch(es) created successfully`
-        : data.createdCount === 0
-          ? `Failed to create batches from templates`
-          : `${data.createdCount} created, ${data.failedCount} failed`;
-
-    return {
-      success: data.failedCount === 0,
-      message,
       data,
     };
   }

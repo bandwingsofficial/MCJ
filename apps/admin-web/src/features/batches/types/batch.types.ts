@@ -63,6 +63,75 @@ export interface BatchBranch {
   branchCode: string;
 }
 
+/** Batch timing master (template) a batch timing was created from. */
+export interface BatchTemplateRef {
+  id: string;
+  name: string;
+  mode: BatchMode;
+  daysOfWeek: DayOfWeek[];
+  startTime: string | null;
+  endTime: string | null;
+  hasFixedTime: boolean;
+  isActive: boolean;
+  isDeleted: boolean;
+}
+
+/**
+ * A child timing of a batch. One batch has many of these; `batchId` is always
+ * the parent batch, so timings can never leak across batches.
+ */
+export interface BatchTiming {
+  id: string;
+  batchId: string;
+  batchTemplateId: string | null;
+  name: string;
+  mode: BatchMode;
+  daysOfWeek: DayOfWeek[];
+  startDate: string;
+  endDate: string | null;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  enrolledCount: number;
+  studentsCount: number;
+  status: BatchStatus;
+  isActive: boolean;
+  displayOrder: number | null;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BatchTimingListResponse {
+  batchId: string;
+  batchName: string;
+  batchCode: string;
+  course?: BatchCourse | null;
+  items: BatchTiming[];
+  count: number;
+}
+
+export interface BatchTimingDetailResponse {
+  timing: BatchTiming;
+  batch: Batch;
+}
+
+export interface CreateBatchWithTimingsRequest {
+  courseId: string;
+  startDate: string;
+  endDate: string;
+  templateIds: string[];
+  name?: string;
+  capacity?: number;
+  durationValue?: number;
+  durationType?: BatchDurationType;
+  originalPrice?: number;
+  discountAmount?: number;
+  discountedPrice?: number;
+  currency?: string;
+  isFree?: boolean;
+}
+
 export interface BatchTrainer {
   id: string;
   firstName: string;
@@ -84,9 +153,14 @@ export interface Batch {
   courseId: string | null;
   categoryId: string | null;
   branchId: string | null;
+  batchTemplateId?: string | null;
   course?: BatchCourse | null;
   category?: BatchCategory | null;
   branch?: BatchBranch | null;
+  batchTemplate?: BatchTemplateRef | null;
+  /** Child timings owned by this batch. */
+  timings?: BatchTiming[];
+  timingsCount?: number;
   startDate: string;
   endDate: string | null;
   startTime: string;

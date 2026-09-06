@@ -42,6 +42,9 @@ export class Batch {
     public courseId: string | null,
     public categoryId: string | null,
     public branchId: string | null,
+    public batchTemplateId: string | null,
+    public batchTemplate: BatchTemplateRef | null,
+    public timings: BatchTimingRef[],
     public startDate: Date,
     public endDate: Date | null,
     public startTime: string,
@@ -98,6 +101,9 @@ export class Batch {
       params.courseId ?? null,
       params.categoryId ?? null,
       params.branchId ?? null,
+      params.batchTemplateId ?? null,
+      params.batchTemplate ?? null,
+      params.timings ?? [],
       params.startDate,
       params.endDate ?? null,
       params.startTime,
@@ -145,6 +151,9 @@ export class Batch {
       params.courseId,
       params.categoryId,
       params.branchId,
+      params.batchTemplateId,
+      params.batchTemplate,
+      params.timings ?? [],
       params.startDate,
       params.endDate,
       params.startTime,
@@ -213,6 +222,10 @@ export class Batch {
 
     if (params.branchId !== undefined) {
       this.branchId = params.branchId;
+    }
+
+    if (params.batchTemplateId !== undefined) {
+      this.batchTemplateId = params.batchTemplateId;
     }
     if (params.startDate !== undefined) this.startDate = params.startDate;
     if (params.endDate !== undefined) this.endDate = params.endDate;
@@ -336,6 +349,41 @@ export class Batch {
   }
 }
 
+/** Snapshot of the batch timing (template) this batch was created from. */
+export interface BatchTemplateRef {
+  id: string;
+  name: string;
+  mode: CourseMode;
+  daysOfWeek: DayOfWeek[];
+  startTime: string | null;
+  endTime: string | null;
+  hasFixedTime: boolean;
+  isActive: boolean;
+  isDeleted: boolean;
+}
+
+/** A child timing owned by this batch. One batch has many of these. */
+export interface BatchTimingRef {
+  id: string;
+  batchId: string;
+  batchTemplateId: string | null;
+  name: string;
+  mode: CourseMode;
+  daysOfWeek: DayOfWeek[];
+  startDate: Date;
+  endDate: Date | null;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  enrolledCount: number;
+  status: BatchStatus;
+  isActive: boolean;
+  displayOrder: number | null;
+  isDeleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface BatchCreateParams {
   id: string;
   name: string;
@@ -362,6 +410,9 @@ export interface BatchCreateParams {
   courseId?: string | null;
   categoryId?: string | null;
   branchId?: string | null;
+  batchTemplateId?: string | null;
+  batchTemplate?: BatchTemplateRef | null;
+  timings?: BatchTimingRef[];
   startDate: Date;
   endDate?: Date | null;
   startTime: string;
@@ -402,10 +453,14 @@ export interface BatchReconstituteParams
       | 'endDate'
       | 'classroom'
       | 'meetingLink'
+      | 'batchTemplateId'
+      | 'batchTemplate'
     >
   > {
   slug: string;
   description: string | null;
+  batchTemplateId: string | null;
+  batchTemplate: BatchTemplateRef | null;
 
   course: {
     id: string;

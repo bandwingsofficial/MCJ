@@ -13,7 +13,6 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { useBatches } from "@/src/features/batches/hooks/useBatches";
 import { useActivateBatch } from "@/src/features/batches/hooks/useActivateBatch";
 import { useDeactivateBatch } from "@/src/features/batches/hooks/useDeactivateBatch";
-import { useDeleteBatch } from "@/src/features/batches/hooks/useDeleteBatch";
 import { useRestoreBatch } from "@/src/features/batches/hooks/useRestoreBatch";
 import { batchService } from "@/src/features/batches/services/batch.service";
 
@@ -58,24 +57,24 @@ export function BatchPage() {
 
   const { activateBatch, isLoading: isActivating } = useActivateBatch();
   const { deactivateBatch, isLoading: isDeactivating } = useDeactivateBatch();
-  const { deleteBatch, isLoading: isArchiving } = useDeleteBatch();
   const { restoreBatch, isLoading: isRestoring } = useRestoreBatch();
+  const [isPermanentDeleting, setIsPermanentDeleting] = useState(false);
 
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<BatchListItem | null>(null);
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
-  const [archiveTarget, setArchiveTarget] = useState<BatchListItem | null>(null);
-  const [restoreTarget, setRestoreTarget] = useState<BatchListItem | null>(null);
-  const [permanentDeleteTarget, setPermanentDeleteTarget] =
-    useState<BatchListItem | null>(null);
-  const [isPermanentDeleting, setIsPermanentDeleting] = useState(false);
   const [bulkConfirmAction, setBulkConfirmAction] =
     useState<BulkBatchAction | null>(null);
   const [statusTarget, setStatusTarget] = useState<{
     batch: BatchListItem;
     action: "activate" | "deactivate";
   } | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<BatchListItem | null>(
+    null,
+  );
+  const [permanentDeleteTarget, setPermanentDeleteTarget] =
+    useState<BatchListItem | null>(null);
   const [isReordering, setIsReordering] = useState(false);
   const [isBulkLoading, setIsBulkLoading] = useState(false);
   const [courses, setCourses] = useState<CourseOption[]>([]);
@@ -102,11 +101,10 @@ export function BatchPage() {
   const actionLoading =
     isActivating ||
     isDeactivating ||
-    isArchiving ||
     isRestoring ||
+    isPermanentDeleting ||
     isReordering ||
-    isBulkLoading ||
-    isPermanentDeleting;
+    isBulkLoading;
 
   const reorderDisabled =
     hasActiveFilters ||
@@ -371,7 +369,6 @@ export function BatchPage() {
                     setSelectedBatch(batch);
                     setIsEditOpen(true);
                   }}
-                  onArchive={setArchiveTarget}
                   onRestore={setRestoreTarget}
                   onPermanentDelete={setPermanentDeleteTarget}
                   onReorder={handleReorder}
@@ -443,85 +440,6 @@ export function BatchPage() {
       />
 
       <ConfirmDialog
-        open={Boolean(archiveTarget)}
-        title="Archive batch?"
-        description={
-          archiveTarget
-            ? `Archive "${archiveTarget.name}"? It can be restored later.`
-            : ""
-        }
-        confirmLabel="Archive"
-        confirmVariant="danger"
-        loading={isArchiving}
-        onCancel={() => setArchiveTarget(null)}
-        onConfirm={async () => {
-          if (!archiveTarget) {
-            return;
-          }
-
-          try {
-            await deleteBatch(archiveTarget.id);
-            appToast.success("Batch archived successfully");
-            setArchiveTarget(null);
-            await refetch();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          }
-        }}
-      />
-
-      <ConfirmDialog
-        open={Boolean(restoreTarget)}
-        title="Restore batch?"
-        description={
-          restoreTarget
-            ? `Restore "${restoreTarget.name}" from archive?`
-            : ""
-        }
-        confirmLabel="Restore"
-        loading={isRestoring}
-        onCancel={() => setRestoreTarget(null)}
-        onConfirm={async () => {
-          if (!restoreTarget) {
-            return;
-          }
-
-          try {
-            await restoreBatch(restoreTarget.id);
-            appToast.success("Batch restored successfully");
-            setRestoreTarget(null);
-            await refetch();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          }
-        }}
-      />
-
-      <PermanentDeleteBatchDialog
-        open={Boolean(permanentDeleteTarget)}
-        batchName={permanentDeleteTarget?.name ?? ""}
-        isLoading={isPermanentDeleting}
-        onCancel={() => setPermanentDeleteTarget(null)}
-        onConfirm={async () => {
-          if (!permanentDeleteTarget) {
-            return;
-          }
-
-          try {
-            setIsPermanentDeleting(true);
-            await batchService.permanentlyDeleteBatch(permanentDeleteTarget.id);
-            appToast.success("Batch permanently deleted");
-            setPermanentDeleteTarget(null);
-            await refetch();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          } finally {
-            setIsPermanentDeleting(false);
-          }
-        }}
-      />
-
-      <ConfirmDialog
         open={Boolean(statusTarget)}
         title={
           statusTarget?.action === "activate"
@@ -556,6 +474,60 @@ export function BatchPage() {
             await refetch();
           } catch (err) {
             appToast.error(getErrorMessage(err));
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(restoreTarget)}
+        title="Restore batch?"
+        description={
+          restoreTarget
+            ? `Restore "${restoreTarget.name}"? Its course and batch timings stay linked.`
+            : ""
+        }
+        confirmLabel="Restore"
+        loadingLabel="Restoring..."
+        loading={isRestoring}
+        onCancel={() => setRestoreTarget(null)}
+        onConfirm={async () => {
+          if (!restoreTarget) {
+            return;
+          }
+
+          try {
+            await restoreBatch(restoreTarget.id);
+            appToast.success("Batch restored successfully");
+            setRestoreTarget(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
+        }}
+      />
+
+      <PermanentDeleteBatchDialog
+        open={Boolean(permanentDeleteTarget)}
+        batchName={permanentDeleteTarget?.name}
+        isLoading={isPermanentDeleting}
+        onCancel={() => setPermanentDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!permanentDeleteTarget) {
+            return;
+          }
+
+          try {
+            setIsPermanentDeleting(true);
+            await batchService.permanentlyDeleteBatch(
+              permanentDeleteTarget.id,
+            );
+            appToast.success("Batch permanently deleted");
+            setPermanentDeleteTarget(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          } finally {
+            setIsPermanentDeleting(false);
           }
         }}
       />

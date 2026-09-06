@@ -14,21 +14,40 @@ import type {
   BatchSummary,
 } from "@/src/features/batches/types/batch.types";
 
-import { BatchManageCoursesPanel } from "./batch-manage-courses-panel";
+import { BatchManageAttendancePanel } from "./batch-manage-attendance-panel";
+import { BatchManageDetailsPanel } from "./batch-manage-details-panel";
 import { BatchManageOverviewPanel } from "./batch-manage-overview-panel";
+import { BatchManageReportsPanel } from "./batch-manage-reports-panel";
+import { BatchManageStudentsPanel } from "./batch-manage-students-panel";
+import { BatchManageTimingsPanel } from "./batch-manage-timings-panel";
 
 interface Props {
   batch: Batch;
   summary: BatchSummary | null;
   summaryLoading?: boolean;
-  onTabChange?: (tab: TabKey) => void;
+  onTabChange?: (tab: BatchManageTabKey) => void;
+  onEditBatch: () => void;
+  editDisabled?: boolean;
 }
 
-export type TabKey = "overview" | "course";
+export type BatchManageTabKey =
+  | "overview"
+  | "details"
+  | "timings"
+  | "students"
+  | "attendance"
+  | "reports";
 
-const TABS: { value: TabKey; label: string }[] = [
+export const BATCH_MANAGE_TABS: {
+  value: BatchManageTabKey;
+  label: string;
+}[] = [
   { value: "overview", label: "Overview" },
-  { value: "course", label: "Course" },
+  { value: "details", label: "Batch Details" },
+  { value: "timings", label: "Batch Timings" },
+  { value: "students", label: "Students" },
+  { value: "attendance", label: "Attendance" },
+  { value: "reports", label: "Reports" },
 ];
 
 export function BatchManageWorkspace({
@@ -36,20 +55,22 @@ export function BatchManageWorkspace({
   summary,
   summaryLoading = false,
   onTabChange,
+  onEditBatch,
+  editDisabled = false,
 }: Props) {
-  const [tab, setTab] = useState<TabKey>("overview");
+  const [tab, setTab] = useState<BatchManageTabKey>("overview");
 
   return (
     <Tabs
       value={tab}
       onValueChange={(value) => {
-        const nextTab = value as TabKey;
+        const nextTab = value as BatchManageTabKey;
         setTab(nextTab);
         onTabChange?.(nextTab);
       }}
     >
       <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
-        {TABS.map(({ value, label }) => (
+        {BATCH_MANAGE_TABS.map(({ value, label }) => (
           <TabsTrigger
             key={value}
             value={value}
@@ -68,8 +89,28 @@ export function BatchManageWorkspace({
         />
       </TabsContent>
 
-      <TabsContent value="course">
-        <BatchManageCoursesPanel batch={batch} />
+      <TabsContent value="details">
+        <BatchManageDetailsPanel
+          batch={batch}
+          onEdit={onEditBatch}
+          editDisabled={editDisabled}
+        />
+      </TabsContent>
+
+      <TabsContent value="timings">
+        <BatchManageTimingsPanel batch={batch} />
+      </TabsContent>
+
+      <TabsContent value="students">
+        <BatchManageStudentsPanel batch={batch} />
+      </TabsContent>
+
+      <TabsContent value="attendance">
+        <BatchManageAttendancePanel />
+      </TabsContent>
+
+      <TabsContent value="reports">
+        <BatchManageReportsPanel />
       </TabsContent>
     </Tabs>
   );

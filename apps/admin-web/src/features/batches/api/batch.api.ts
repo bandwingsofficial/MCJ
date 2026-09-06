@@ -9,8 +9,11 @@ import type {
   BatchFilters,
   BatchListResponse,
   BatchSummary,
+  BatchTimingDetailResponse,
+  BatchTimingListResponse,
   BulkBatchOperationResult,
   CreateBatchRequest,
+  CreateBatchWithTimingsRequest,
   DeleteBatchResponse,
   PermanentDeleteBatchResponse,
   ReorderBatchRequest,
@@ -61,6 +64,32 @@ export const batchApi = {
       "/admin/batches",
       payload,
     );
+
+    return response.data;
+  },
+
+  /** Creates one batch that owns every selected timing as a child. */
+  async createBatchWithTimings(payload: CreateBatchWithTimingsRequest) {
+    const response = await apiClient.post<ApiSuccessResponse<Batch>>(
+      "/admin/batches/with-timings",
+      payload,
+    );
+
+    return response.data;
+  },
+
+  async getBatchTimings(batchId: string) {
+    const response = await apiClient.get<
+      ApiSuccessResponse<BatchTimingListResponse>
+    >(`/admin/batches/${batchId}/timings`);
+
+    return response.data;
+  },
+
+  async getBatchTiming(batchId: string, timingId: string) {
+    const response = await apiClient.get<
+      ApiSuccessResponse<BatchTimingDetailResponse>
+    >(`/admin/batches/${batchId}/timings/${timingId}`);
 
     return response.data;
   },
