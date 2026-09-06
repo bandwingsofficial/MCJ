@@ -14,9 +14,11 @@ import type {
   BatchTiming,
 } from "@/src/features/batches/types/batch.types";
 
-import { BatchTimingCoursePanel } from "./batch-timing-course-panel";
+import { BatchTimingAttendancePanel } from "./batch-timing-attendance-panel";
+import { BatchTimingBatchDetailsPanel } from "./batch-timing-batch-details-panel";
 import { BatchTimingDetailsPanel } from "./batch-timing-details-panel";
 import { BatchTimingOverviewPanel } from "./batch-timing-overview-panel";
+import { BatchTimingReportsPanel } from "./batch-timing-reports-panel";
 import { BatchTimingStudentsPanel } from "./batch-timing-students-panel";
 
 interface Props {
@@ -27,18 +29,22 @@ interface Props {
 
 export type BatchTimingManageTabKey =
   | "overview"
-  | "students"
+  | "details"
   | "timing"
-  | "course";
+  | "students"
+  | "attendance"
+  | "reports";
 
 export const BATCH_TIMING_MANAGE_TABS: {
   value: BatchTimingManageTabKey;
   label: string;
 }[] = [
   { value: "overview", label: "Overview" },
-  { value: "students", label: "Students" },
+  { value: "details", label: "Batch Details" },
   { value: "timing", label: "Batch Timing" },
-  { value: "course", label: "Course" },
+  { value: "students", label: "Students" },
+  { value: "attendance", label: "Attendance" },
+  { value: "reports", label: "Reports" },
 ];
 
 export function BatchTimingManageWorkspace({
@@ -73,16 +79,24 @@ export function BatchTimingManageWorkspace({
         <BatchTimingOverviewPanel batch={batch} timing={timing} />
       </TabsContent>
 
+      <TabsContent value="details">
+        <BatchTimingBatchDetailsPanel batch={batch} />
+      </TabsContent>
+
+      <TabsContent value="timing">
+        <BatchTimingDetailsPanel timing={timing} />
+      </TabsContent>
+
       <TabsContent value="students">
         <BatchTimingStudentsPanel timing={timing} />
       </TabsContent>
 
-      <TabsContent value="timing">
-        <BatchTimingDetailsPanel batch={batch} timing={timing} />
+      <TabsContent value="attendance">
+        <BatchTimingAttendancePanel timing={timing} />
       </TabsContent>
 
-      <TabsContent value="course">
-        <BatchTimingCoursePanel batch={batch} timing={timing} />
+      <TabsContent value="reports">
+        <BatchTimingReportsPanel timing={timing} />
       </TabsContent>
     </Tabs>
   );

@@ -14,11 +14,8 @@ import type {
   BatchSummary,
 } from "@/src/features/batches/types/batch.types";
 
-import { BatchManageAttendancePanel } from "./batch-manage-attendance-panel";
 import { BatchManageDetailsPanel } from "./batch-manage-details-panel";
 import { BatchManageOverviewPanel } from "./batch-manage-overview-panel";
-import { BatchManageReportsPanel } from "./batch-manage-reports-panel";
-import { BatchManageStudentsPanel } from "./batch-manage-students-panel";
 import { BatchManageTimingsPanel } from "./batch-manage-timings-panel";
 
 interface Props {
@@ -30,13 +27,7 @@ interface Props {
   editDisabled?: boolean;
 }
 
-export type BatchManageTabKey =
-  | "overview"
-  | "details"
-  | "timings"
-  | "students"
-  | "attendance"
-  | "reports";
+export type BatchManageTabKey = "overview" | "details" | "timings";
 
 export const BATCH_MANAGE_TABS: {
   value: BatchManageTabKey;
@@ -45,9 +36,6 @@ export const BATCH_MANAGE_TABS: {
   { value: "overview", label: "Overview" },
   { value: "details", label: "Batch Details" },
   { value: "timings", label: "Batch Timings" },
-  { value: "students", label: "Students" },
-  { value: "attendance", label: "Attendance" },
-  { value: "reports", label: "Reports" },
 ];
 
 export function BatchManageWorkspace({
@@ -99,18 +87,6 @@ export function BatchManageWorkspace({
 
       <TabsContent value="timings">
         <BatchManageTimingsPanel batch={batch} />
-      </TabsContent>
-
-      <TabsContent value="students">
-        <BatchManageStudentsPanel batch={batch} />
-      </TabsContent>
-
-      <TabsContent value="attendance">
-        <BatchManageAttendancePanel />
-      </TabsContent>
-
-      <TabsContent value="reports">
-        <BatchManageReportsPanel />
       </TabsContent>
     </Tabs>
   );
