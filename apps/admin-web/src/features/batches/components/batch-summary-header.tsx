@@ -8,7 +8,6 @@ import { Button } from "@/src/shared/components/ui/button";
 import { SearchInput } from "@/src/shared/components/ui/search-input";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
-import { cn } from "@/src/shared/lib/cn";
 
 import { FILTER_BATCH_MODES } from "@/src/features/batches/constants/batch.constants";
 import type {
@@ -29,8 +28,7 @@ import {
 interface BatchSummaryHeaderProps {
   total: number;
   isLoading?: boolean;
-  createHref?: string;
-  onCreate?: () => void;
+  onCreate: () => void;
   createLabel?: string;
   createDisabled?: boolean;
   filters: BatchFilters;
@@ -41,9 +39,8 @@ interface BatchSummaryHeaderProps {
 export function BatchSummaryHeader({
   total,
   isLoading = false,
-  createHref = "/assign-batches",
   onCreate,
-  createLabel = "Assign Batches",
+  createLabel = "Create / Assign Batch",
   createDisabled = false,
   filters,
   courses,
@@ -113,19 +110,7 @@ export function BatchSummaryHeader({
         </nav>
 
         {isLoading ? (
-          <Skeleton className="h-[52px] w-full rounded-[14px] sm:w-[170px]" />
-        ) : createHref ? (
-          <Link
-            href={createHref}
-            aria-label={createLabel}
-            className={cn(
-              "admin-create-btn inline-flex h-[52px] w-full shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[#2563EB] px-5 font-semibold text-white shadow-[0_4px_14px_rgba(37,99,235,0.2)] transition-all hover:bg-[#1D4ED8] sm:w-auto",
-              createDisabled && "pointer-events-none opacity-50",
-            )}
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            {createLabel}
-          </Link>
+          <Skeleton className="h-[52px] w-full rounded-[14px] sm:w-[210px]" />
         ) : (
           <Button
             type="button"
@@ -145,17 +130,22 @@ export function BatchSummaryHeader({
           {isLoading ? (
             <Skeleton className="h-8 w-52 rounded-md" />
           ) : (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h1 className="text-[30px] font-bold tracking-tight text-[#102A56]">
-                Batches
-              </h1>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 className="text-[30px] font-bold tracking-tight text-[#102A56]">
+                  Batches
+                </h1>
 
-              <span className="text-sm text-[#647A9B]">
-                Total Batches:
-                <span className="ml-1 font-semibold tabular-nums text-[#102A56]">
-                  {total}
+                <span className="text-sm text-[#647A9B]">
+                  Total Batches:
+                  <span className="ml-1 font-semibold tabular-nums text-[#102A56]">
+                    {total}
+                  </span>
                 </span>
-              </span>
+              </div>
+              <p className="text-sm text-[#647A9B]">
+                Manage course batches and schedules.
+              </p>
             </div>
           )}
         </div>

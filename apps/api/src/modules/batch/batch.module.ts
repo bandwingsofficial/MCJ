@@ -24,6 +24,17 @@ import { BulkDeleteBatchesHandler } from './application/bulk-delete-batches/bulk
 import { BulkPermanentDeleteBatchesHandler } from './application/bulk-permanent-delete-batches/bulk-permanent-delete-batches.handler';
 import { BulkRestoreBatchesHandler } from './application/bulk-restore-batches/bulk-restore-batches.handler';
 import { BulkUpdateBatchStatusHandler } from './application/bulk-update-batch-status/bulk-update-batch-status.handler';
+import {
+  SoftDeleteBatchTemplateHandler,
+  RestoreBatchTemplateHandler,
+  PermanentDeleteBatchTemplateHandler,
+} from './application/batch-templates/archive-batch-template.handlers';
+import {
+  BulkArchiveBatchTemplatesHandler,
+  BulkPermanentDeleteBatchTemplatesHandler,
+  BulkRestoreBatchTemplatesHandler,
+  BulkSetBatchTemplateActiveHandler,
+} from './application/batch-templates/bulk-batch-template.handlers';
 import { CreateBatchTemplateHandler } from './application/batch-templates/create-batch-template.handler';
 import { CreateBatchesFromTemplatesHandler } from './application/batch-templates/create-batches-from-templates.handler';
 import { GetBatchTemplateHandler } from './application/batch-templates/get-batch-template.handler';
@@ -404,6 +415,55 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
       provide: SetBatchTemplateActiveHandler,
       useFactory: (templateRepo: BatchTemplateRepository) =>
         new SetBatchTemplateActiveHandler(templateRepo),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+    },
+
+    {
+      provide: SoftDeleteBatchTemplateHandler,
+      useFactory: (templateRepo: BatchTemplateRepository) =>
+        new SoftDeleteBatchTemplateHandler(templateRepo),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+    },
+
+    {
+      provide: RestoreBatchTemplateHandler,
+      useFactory: (templateRepo: BatchTemplateRepository) =>
+        new RestoreBatchTemplateHandler(templateRepo),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+    },
+
+    {
+      provide: PermanentDeleteBatchTemplateHandler,
+      useFactory: (templateRepo: BatchTemplateRepository) =>
+        new PermanentDeleteBatchTemplateHandler(templateRepo),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+    },
+
+    {
+      provide: BulkSetBatchTemplateActiveHandler,
+      useFactory: (templateRepo: BatchTemplateRepository) =>
+        new BulkSetBatchTemplateActiveHandler(templateRepo),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+    },
+
+    {
+      provide: BulkArchiveBatchTemplatesHandler,
+      useFactory: (templateRepo: BatchTemplateRepository) =>
+        new BulkArchiveBatchTemplatesHandler(templateRepo),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+    },
+
+    {
+      provide: BulkRestoreBatchTemplatesHandler,
+      useFactory: (templateRepo: BatchTemplateRepository) =>
+        new BulkRestoreBatchTemplatesHandler(templateRepo),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+    },
+
+    {
+      provide: BulkPermanentDeleteBatchTemplatesHandler,
+      useFactory: (templateRepo: BatchTemplateRepository) =>
+        new BulkPermanentDeleteBatchTemplatesHandler(templateRepo),
       inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
     },
 

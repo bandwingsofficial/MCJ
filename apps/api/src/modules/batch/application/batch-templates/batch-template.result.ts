@@ -13,6 +13,8 @@ export class BatchTemplateResult {
     public readonly hasFixedTime: boolean,
     public readonly isActive: boolean,
     public readonly displayOrder: number | null,
+    public readonly isDeleted: boolean,
+    public readonly deletedAt: Date | null,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
   ) {}
@@ -28,6 +30,8 @@ export class BatchTemplateResult {
       row.hasFixedTime,
       row.isActive,
       row.displayOrder,
+      row.isDeleted,
+      row.deletedAt,
       row.createdAt,
       row.updatedAt,
     );

@@ -15,10 +15,10 @@ export class UpdateBatchTemplateHandler {
     command: UpdateBatchTemplateCommand,
   ): Promise<BatchTemplateResult> {
     const existing = await this.templateRepo.findById(command.id);
-    if (!existing) {
+    if (!existing || existing.isDeleted) {
       throw new BaseException(
         ERROR_CODES.BATCH_TEMPLATE_NOT_FOUND,
-        'Batch template not found',
+        'Batch timing not found',
         404,
       );
     }

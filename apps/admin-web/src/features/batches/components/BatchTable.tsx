@@ -16,7 +16,6 @@ import {
   isBatchSelectableInBulkList,
 } from "@/src/features/batches/utils/batch-select.utils";
 import {
-  formatBatchDate,
   formatBatchTiming,
 } from "@/src/features/batches/utils/batch.helper";
 import { getBatchPricing } from "@/src/features/batches/utils/batch-pricing.util";
@@ -86,7 +85,7 @@ export function BatchTable({
   const someVisibleSelected =
     selectedVisibleCount > 0 && !allVisibleSelected;
 
-  const columnCount = selectionEnabled ? 12 : 11;
+  const columnCount = selectionEnabled ? 10 : 9;
 
   useEffect(() => {
     setRows(batches);
@@ -239,12 +238,6 @@ export function BatchTable({
               Price
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Start Date
-            </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              End Date
-            </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Status
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -386,24 +379,6 @@ export function BatchTable({
                         pricing.discountedPrice || pricing.originalPrice,
                       );
                     })()}
-                  </td>
-
-                  <td
-                    className={cn(
-                      "truncate px-3 py-3 align-middle text-sm",
-                      isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
-                    )}
-                  >
-                    {formatBatchDate(batch.startDate)}
-                  </td>
-
-                  <td
-                    className={cn(
-                      "truncate px-3 py-3 align-middle text-sm",
-                      isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
-                    )}
-                  >
-                    {formatBatchDate(batch.endDate)}
                   </td>
 
                   <td className="px-3 py-3 align-middle">

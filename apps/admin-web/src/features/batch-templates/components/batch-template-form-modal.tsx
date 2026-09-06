@@ -65,7 +65,7 @@ export function BatchTemplateFormModal({
             : "timing-closed"
         }
         initial={template}
-        submitLabel="Save Timing"
+        submitLabel={isEdit ? "Save Changes" : "Create Batch Timing"}
         onSubmit={handleSubmit}
         onCancel={onClose}
       />

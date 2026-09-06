@@ -28,7 +28,6 @@ import {
   Briefcase,
   FileText,
   ClipboardList,
-  CalendarPlus,
   Settings,
   LogOut,
   ChevronLeft,
@@ -79,11 +78,6 @@ const menu = [
         name: "Batch Timings",
         icon: ClipboardList,
         path: "/batch-timings",
-      },
-      {
-        name: "Assign Batches",
-        icon: CalendarPlus,
-        path: "/assign-batches",
       },
       {
         name: "Students",

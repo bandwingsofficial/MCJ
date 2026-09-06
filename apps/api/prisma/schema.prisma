@@ -718,12 +718,16 @@ model BatchTemplate {
   displayOrder   Int?
   createdBy      String?
   updatedBy      String?
+  isDeleted      Boolean     @default(false)
+  deletedAt      DateTime?
+  deletedBy      String?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   batches        Batch[]
 
   @@index([name])
   @@index([isActive])
+  @@index([isDeleted])
   @@index([displayOrder])
   @@index([createdAt])
 }

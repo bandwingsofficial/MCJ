@@ -1,5 +1,5 @@
-import { AssignBatchesPage } from "@/src/features/batches/pages/assign-batches-page";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <AssignBatchesPage />;
+  redirect("/batches");
 }

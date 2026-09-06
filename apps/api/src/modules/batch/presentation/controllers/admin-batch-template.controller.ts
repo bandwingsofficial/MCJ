@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -20,6 +21,17 @@ import type { AuthUser } from '@common/decorators/current-user.decorator';
 import { SuperAdminGuard } from '@common/guards/super-admin.guard';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 
+import {
+  PermanentDeleteBatchTemplateHandler,
+  RestoreBatchTemplateHandler,
+  SoftDeleteBatchTemplateHandler,
+} from '../../application/batch-templates/archive-batch-template.handlers';
+import {
+  BulkArchiveBatchTemplatesHandler,
+  BulkPermanentDeleteBatchTemplatesHandler,
+  BulkRestoreBatchTemplatesHandler,
+  BulkSetBatchTemplateActiveHandler,
+} from '../../application/batch-templates/bulk-batch-template.handlers';
 import { CreateBatchTemplateCommand } from '../../application/batch-templates/create-batch-template.command';
 import { CreateBatchTemplateHandler } from '../../application/batch-templates/create-batch-template.handler';
 import { CreateBatchesFromTemplatesCommand } from '../../application/batch-templates/create-batches-from-templates.command';
@@ -32,6 +44,10 @@ import { UpdateBatchTemplateHandler } from '../../application/batch-templates/up
 
 import { CreateBatchTemplateDto } from '../dtos/create-batch-template.dto';
 import { CreateBatchesFromTemplatesDto } from '../dtos/create-batches-from-templates.dto';
+import {
+  BulkBatchTemplateIdsDto,
+  ListBatchTemplatesQueryDto,
+} from '../dtos/list-batch-templates-query.dto';
 import { UpdateBatchTemplateDto } from '../dtos/update-batch-template.dto';
 
 @ApiTags('Admin Batch Templates')
@@ -45,34 +61,43 @@ export class AdminBatchTemplateController {
     private readonly listHandler: ListBatchTemplatesHandler,
     private readonly getHandler: GetBatchTemplateHandler,
     private readonly setActiveHandler: SetBatchTemplateActiveHandler,
+    private readonly softDeleteHandler: SoftDeleteBatchTemplateHandler,
+    private readonly restoreHandler: RestoreBatchTemplateHandler,
+    private readonly permanentDeleteHandler: PermanentDeleteBatchTemplateHandler,
+    private readonly bulkSetActiveHandler: BulkSetBatchTemplateActiveHandler,
+    private readonly bulkArchiveHandler: BulkArchiveBatchTemplatesHandler,
+    private readonly bulkRestoreHandler: BulkRestoreBatchTemplatesHandler,
+    private readonly bulkPermanentDeleteHandler: BulkPermanentDeleteBatchTemplatesHandler,
     private readonly createFromTemplatesHandler: CreateBatchesFromTemplatesHandler,
   ) {}
 
   @Get()
   @ApiResponse({ status: 200, description: 'List batch templates' })
-  async list(@Query('isActive') isActive?: string) {
-    const parsed =
-      isActive === undefined
-        ? undefined
-        : isActive === 'true'
-          ? true
-          : isActive === 'false'
-            ? false
-            : undefined;
-
-    const data = await this.listHandler.execute(
-      parsed === undefined ? undefined : { isActive: parsed },
-    );
+  async list(@Query() query: ListBatchTemplatesQueryDto) {
+    const result = await this.listHandler.execute({
+      search: query.search,
+      mode: query.mode,
+      isActive: query.isActive,
+      isDeleted: query.isDeleted,
+      includeDeleted: query.includeDeleted,
+      skip: query.skip,
+      take: query.take,
+    });
 
     return {
       success: true,
-      message: 'Batch templates retrieved successfully',
-      data,
+      message: 'Batch timings retrieved successfully',
+      data: result.items,
+      meta: {
+        total: result.total,
+        catalogTotal: result.catalogTotal,
+        skip: query.skip ?? 0,
+        take: query.take,
+      },
     };
   }
 
   @Post()
-  @ApiResponse({ status: 201, description: 'Create batch template' })
   async create(
     @Body() dto: CreateBatchTemplateDto,
     @CurrentUser() user: AuthUser,
@@ -92,16 +117,12 @@ export class AdminBatchTemplateController {
 
     return {
       success: true,
-      message: 'Batch template created successfully',
+      message: 'Batch timing created successfully',
       data,
     };
   }
 
   @Post('create-batches')
-  @ApiResponse({
-    status: 201,
-    description: 'Create batches from selected templates',
-  })
   async createBatches(
     @Body() dto: CreateBatchesFromTemplatesDto,
     @CurrentUser() user: AuthUser,
@@ -138,19 +159,85 @@ export class AdminBatchTemplateController {
     };
   }
 
+  @Post('bulk/activate')
+  async bulkActivate(@Body() dto: BulkBatchTemplateIdsDto) {
+    const data = await this.bulkSetActiveHandler.execute({
+      ids: dto.ids,
+      isActive: true,
+    });
+    return {
+      success: true,
+      message: `${data.succeeded} batch timing(s) activated`,
+      data,
+    };
+  }
+
+  @Post('bulk/deactivate')
+  async bulkDeactivate(@Body() dto: BulkBatchTemplateIdsDto) {
+    const data = await this.bulkSetActiveHandler.execute({
+      ids: dto.ids,
+      isActive: false,
+    });
+    return {
+      success: true,
+      message: `${data.succeeded} batch timing(s) deactivated`,
+      data,
+    };
+  }
+
+  @Post('bulk/archive')
+  async bulkArchive(
+    @Body() dto: BulkBatchTemplateIdsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const data = await this.bulkArchiveHandler.execute({
+      ids: dto.ids,
+      deletedBy: user?.sub,
+    });
+    return {
+      success: true,
+      message: `${data.succeeded} batch timing(s) archived`,
+      data,
+    };
+  }
+
+  @Post('bulk/restore')
+  async bulkRestore(
+    @Body() dto: BulkBatchTemplateIdsDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const data = await this.bulkRestoreHandler.execute({
+      ids: dto.ids,
+      updatedBy: user?.sub,
+    });
+    return {
+      success: true,
+      message: `${data.succeeded} batch timing(s) restored`,
+      data,
+    };
+  }
+
+  @Post('bulk/permanent-delete')
+  async bulkPermanentDelete(@Body() dto: BulkBatchTemplateIdsDto) {
+    const data = await this.bulkPermanentDeleteHandler.execute(dto.ids);
+    return {
+      success: true,
+      message: `${data.succeeded} batch timing(s) permanently deleted`,
+      data,
+    };
+  }
+
   @Get(':id')
-  @ApiResponse({ status: 200, description: 'Get batch template' })
   async get(@Param('id', ParseUUIDPipe) id: string) {
     const data = await this.getHandler.execute(id);
     return {
       success: true,
-      message: 'Batch template retrieved successfully',
+      message: 'Batch timing retrieved successfully',
       data,
     };
   }
 
   @Patch(':id')
-  @ApiResponse({ status: 200, description: 'Update batch template' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateBatchTemplateDto,
@@ -172,13 +259,12 @@ export class AdminBatchTemplateController {
 
     return {
       success: true,
-      message: 'Batch template updated successfully',
+      message: 'Batch timing updated successfully',
       data,
     };
   }
 
   @Post(':id/enable')
-  @ApiResponse({ status: 200, description: 'Enable batch template' })
   async enable(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthUser,
@@ -191,13 +277,12 @@ export class AdminBatchTemplateController {
 
     return {
       success: true,
-      message: 'Batch template enabled successfully',
+      message: 'Batch timing activated successfully',
       data,
     };
   }
 
   @Post(':id/disable')
-  @ApiResponse({ status: 200, description: 'Disable batch template' })
   async disable(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthUser,
@@ -210,7 +295,48 @@ export class AdminBatchTemplateController {
 
     return {
       success: true,
-      message: 'Batch template disabled successfully',
+      message: 'Batch timing deactivated successfully',
+      data,
+    };
+  }
+
+  @Patch(':id/restore')
+  async restore(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const data = await this.restoreHandler.execute({
+      id,
+      updatedBy: user?.sub,
+    });
+    return {
+      success: true,
+      message: 'Batch timing restored successfully',
+      data,
+    };
+  }
+
+  @Delete(':id/permanent')
+  async permanentDelete(@Param('id', ParseUUIDPipe) id: string) {
+    await this.permanentDeleteHandler.execute(id);
+    return {
+      success: true,
+      message: 'Batch timing permanently deleted',
+    };
+  }
+
+  @Delete(':id')
+  async archive(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const data = await this.softDeleteHandler.execute({
+      id,
+      deletedBy: user?.sub,
+    });
+    return {
+      success: true,
+      message: 'Batch timing archived successfully',
       data,
     };
   }

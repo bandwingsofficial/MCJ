@@ -9,6 +9,8 @@ export type BatchTemplate = {
   endTime: string | null;
   hasFixedTime: boolean;
   isActive: boolean;
+  isDeleted: boolean;
+  deletedAt?: string | null;
   displayOrder: number | null;
   createdAt: string;
   updatedAt: string;
@@ -50,6 +52,12 @@ export type CreateBatchesFromTemplatesResult = {
     success: boolean;
     error?: string;
   }>;
+};
+
+export type BulkBatchTemplateResult = {
+  requested: number;
+  succeeded: number;
+  failed: number;
 };
 
 export type ApiSuccessResponse<T> = {

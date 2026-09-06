@@ -115,20 +115,30 @@ export class CreateBatchesFromTemplatesHandler {
         continue;
       }
 
+      if (template.isDeleted) {
+        results.push({
+          templateId,
+          templateName: template.name,
+          success: false,
+          error: 'Batch timing is archived',
+        });
+        continue;
+      }
+
       if (!template.isActive) {
         results.push({
           templateId,
           templateName: template.name,
           success: false,
-          error: 'Batch timing is disabled',
+          error: 'Batch timing is inactive',
         });
         continue;
       }
 
       try {
         const schedule = resolveTemplateScheduleForBatch(template);
-        // Batch name comes from the timing; course is linked separately.
-        const name = template.name;
+        const courseTitle = course.title.getValue();
+        const name = `${courseTitle} - ${template.name}`;
 
         const durationValue =
           command.durationValue ??

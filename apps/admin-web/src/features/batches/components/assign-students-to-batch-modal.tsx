@@ -251,7 +251,7 @@ export function AssignStudentsToBatchModal({
                 void handleSave();
               }}
             >
-              Assign Selected
+              Save Changes
             </Button>
           </div>
         </div>

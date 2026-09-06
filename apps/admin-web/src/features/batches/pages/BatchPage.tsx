@@ -25,6 +25,7 @@ import {
   BatchBulkActionsToolbar,
   type BulkBatchAction,
 } from "@/src/features/batches/components/batch-bulk-actions-toolbar";
+import { AssignBatchesModal } from "@/src/features/batches/components/assign-batches-modal";
 import { AssignStudentsToBatchModal } from "@/src/features/batches/components/assign-students-to-batch-modal";
 import { UpdateBatchModal } from "@/src/features/batches/components/update-batch-modal";
 import { PermanentDeleteBatchDialog } from "@/src/features/batches/components/permanent-delete-batch-dialog";
@@ -64,6 +65,7 @@ export function BatchPage() {
   const { deleteBatch, isLoading: isArchiving } = useDeleteBatch();
   const { restoreBatch, isLoading: isRestoring } = useRestoreBatch();
 
+  const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<BatchListItem | null>(null);
   const [assignStudentsBatch, setAssignStudentsBatch] =
@@ -307,8 +309,8 @@ export function BatchPage() {
         total={catalogTotal}
         isLoading={isInitialLoading}
         createDisabled={actionLoading}
-        createHref="/assign-batches"
-        createLabel="Assign Batches"
+        createLabel="Create / Assign Batch"
+        onCreate={() => setIsAssignOpen(true)}
         filters={filters}
         courses={courses}
         onFiltersChange={setFilters}
@@ -427,6 +429,14 @@ export function BatchPage() {
           )}
         </Card>
       </div>
+
+      <AssignBatchesModal
+        open={isAssignOpen}
+        onClose={() => setIsAssignOpen(false)}
+        onSuccess={async () => {
+          await refetch();
+        }}
+      />
 
       <AssignStudentsToBatchModal
         open={Boolean(assignStudentsBatch)}
