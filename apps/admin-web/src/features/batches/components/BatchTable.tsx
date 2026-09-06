@@ -16,9 +16,11 @@ import {
   isBatchSelectableInBulkList,
 } from "@/src/features/batches/utils/batch-select.utils";
 import {
-  formatBatchDateRange,
+  formatBatchDate,
   formatBatchTiming,
 } from "@/src/features/batches/utils/batch.helper";
+import { getBatchPricing } from "@/src/features/batches/utils/batch-pricing.util";
+import { formatCurrency } from "@/src/features/enrollments/utils/format-payment";
 
 import { BatchStatusBadge } from "./BatchStatusBadge";
 import { BatchModeBadge } from "./BatchModeBadge";
@@ -33,6 +35,7 @@ interface Props {
   selectionDisabled?: boolean;
   reorderDisabled?: boolean;
   emptyMessage?: string;
+  onAssignStudents: (batch: BatchListItem) => void;
   onActivate: (batch: BatchListItem) => void;
   onDeactivate: (batch: BatchListItem) => void;
   onEdit: (batch: BatchListItem) => void;
@@ -53,6 +56,7 @@ export function BatchTable({
   selectionDisabled = false,
   reorderDisabled = false,
   emptyMessage = "No batches found.",
+  onAssignStudents,
   onActivate,
   onDeactivate,
   onEdit,
@@ -82,7 +86,7 @@ export function BatchTable({
   const someVisibleSelected =
     selectedVisibleCount > 0 && !allVisibleSelected;
 
-  const columnCount = selectionEnabled ? 8 : 7;
+  const columnCount = selectionEnabled ? 12 : 11;
 
   useEffect(() => {
     setRows(batches);
@@ -226,13 +230,25 @@ export function BatchTable({
               Course
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Batch Type
+              Mode
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Schedule
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Price
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Start Date
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              End Date
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Status
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Students
             </th>
             <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
               Actions
@@ -348,29 +364,46 @@ export function BatchTable({
                     <BatchModeBadge mode={batch.mode} />
                   </td>
 
-                  <td className="px-3 py-3 align-middle">
-                    <div className="min-w-0 flex flex-col gap-0.5 leading-snug">
-                      <span
-                        className={cn(
-                          "truncate whitespace-nowrap text-sm",
-                          isLifecycleBlocked
-                            ? "text-slate-500"
-                            : "text-[#102A56]",
-                        )}
-                      >
-                        {formatBatchDateRange(batch.startDate, batch.endDate)}
-                      </span>
-                      <span
-                        className={cn(
-                          "truncate whitespace-nowrap text-sm",
-                          isLifecycleBlocked
-                            ? "text-slate-400"
-                            : "text-slate-600",
-                        )}
-                      >
-                        {formatBatchTiming(batch.startTime, batch.endTime)}
-                      </span>
-                    </div>
+                  <td
+                    className={cn(
+                      "truncate px-3 py-3 align-middle text-sm",
+                      isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
+                    )}
+                  >
+                    {formatBatchTiming(batch.startTime, batch.endTime)}
+                  </td>
+
+                  <td
+                    className={cn(
+                      "truncate px-3 py-3 align-middle text-sm",
+                      isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
+                    )}
+                  >
+                    {(() => {
+                      const pricing = getBatchPricing(batch);
+                      if (pricing.isFree) return "Free";
+                      return formatCurrency(
+                        pricing.discountedPrice || pricing.originalPrice,
+                      );
+                    })()}
+                  </td>
+
+                  <td
+                    className={cn(
+                      "truncate px-3 py-3 align-middle text-sm",
+                      isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
+                    )}
+                  >
+                    {formatBatchDate(batch.startDate)}
+                  </td>
+
+                  <td
+                    className={cn(
+                      "truncate px-3 py-3 align-middle text-sm",
+                      isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
+                    )}
+                  >
+                    {formatBatchDate(batch.endDate)}
                   </td>
 
                   <td className="px-3 py-3 align-middle">
@@ -384,10 +417,20 @@ export function BatchTable({
                     />
                   </td>
 
-                  <td className="w-[9rem] px-2 py-3 align-middle">
+                  <td
+                    className={cn(
+                      "truncate px-3 py-3 align-middle text-sm",
+                      isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
+                    )}
+                  >
+                    {batch.enrolledCount ?? 0} Students
+                  </td>
+
+                  <td className="w-[11rem] px-2 py-3 align-middle">
                     <BatchActions
                       batch={batch}
                       disabled={actionsDisabled || isSavingOrder}
+                      onAssignStudents={onAssignStudents}
                       onActivate={onActivate}
                       onDeactivate={onDeactivate}
                       onEdit={onEdit}

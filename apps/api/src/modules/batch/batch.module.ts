@@ -24,6 +24,12 @@ import { BulkDeleteBatchesHandler } from './application/bulk-delete-batches/bulk
 import { BulkPermanentDeleteBatchesHandler } from './application/bulk-permanent-delete-batches/bulk-permanent-delete-batches.handler';
 import { BulkRestoreBatchesHandler } from './application/bulk-restore-batches/bulk-restore-batches.handler';
 import { BulkUpdateBatchStatusHandler } from './application/bulk-update-batch-status/bulk-update-batch-status.handler';
+import { CreateBatchTemplateHandler } from './application/batch-templates/create-batch-template.handler';
+import { CreateBatchesFromTemplatesHandler } from './application/batch-templates/create-batches-from-templates.handler';
+import { GetBatchTemplateHandler } from './application/batch-templates/get-batch-template.handler';
+import { ListBatchTemplatesHandler } from './application/batch-templates/list-batch-templates.handler';
+import { SetBatchTemplateActiveHandler } from './application/batch-templates/set-batch-template-active.handler';
+import { UpdateBatchTemplateHandler } from './application/batch-templates/update-batch-template.handler';
 import { CreateBatchHandler } from './application/create-batch/create-batch.handler';
 import { DeleteBatchHandler } from './application/delete-batch/delete-batch.handler';
 import { GetBatchHandler } from './application/get-batch/get-batch.handler';
@@ -36,11 +42,14 @@ import { SuggestBatchCodeHandler } from './application/suggest-batch-code/sugges
 import { UpdateBatchHandler } from './application/update-batch/update-batch.handler';
 import { UpdateBatchStatusHandler } from './application/update-batch-status/update-batch-status.handler';
 import type { BatchRepository } from './domain/repositories/batch.repository';
+import type { BatchTemplateRepository } from './domain/repositories/batch-template.repository';
 import { BatchDomainService } from './domain/services/batch-domain.service';
 import { PrismaBatchCourseRepository } from './infrastructure/repositories/prisma-batch-course.repository';
 import { PrismaBatchRepository } from './infrastructure/repositories/prisma-batch.repository';
+import { PrismaBatchTemplateRepository } from './infrastructure/repositories/prisma-batch-template.repository';
 
 import { AdminBatchController } from './presentation/controllers/admin-batch.controller';
+import { AdminBatchTemplateController } from './presentation/controllers/admin-batch-template.controller';
 import { BatchController } from './presentation/controllers/batch.controller';
 
 import { BRANCH_TOKENS } from '../branch/branch.tokens';
@@ -60,6 +69,7 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
 
   controllers: [
     AdminBatchController,
+    AdminBatchTemplateController,
     BatchController,
   ],
 
@@ -71,6 +81,13 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
       provide: BATCH_TOKENS.BATCH_REPOSITORY,
       useFactory: (prisma: PrismaService) =>
         new PrismaBatchRepository(prisma),
+      inject: [PrismaService],
+    },
+
+    {
+      provide: BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY,
+      useFactory: (prisma: PrismaService) =>
+        new PrismaBatchTemplateRepository(prisma),
       inject: [PrismaService],
     },
 
@@ -353,6 +370,63 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
       useFactory: (batchRepo: BatchRepository) =>
         new BulkPermanentDeleteBatchesHandler(batchRepo),
       inject: [BATCH_TOKENS.BATCH_REPOSITORY],
+    },
+
+    {
+      provide: CreateBatchTemplateHandler,
+      useFactory: (templateRepo: BatchTemplateRepository) =>
+        new CreateBatchTemplateHandler(templateRepo),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+    },
+
+    {
+      provide: UpdateBatchTemplateHandler,
+      useFactory: (templateRepo: BatchTemplateRepository) =>
+        new UpdateBatchTemplateHandler(templateRepo),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+    },
+
+    {
+      provide: ListBatchTemplatesHandler,
+      useFactory: (templateRepo: BatchTemplateRepository) =>
+        new ListBatchTemplatesHandler(templateRepo),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+    },
+
+    {
+      provide: GetBatchTemplateHandler,
+      useFactory: (templateRepo: BatchTemplateRepository) =>
+        new GetBatchTemplateHandler(templateRepo),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+    },
+
+    {
+      provide: SetBatchTemplateActiveHandler,
+      useFactory: (templateRepo: BatchTemplateRepository) =>
+        new SetBatchTemplateActiveHandler(templateRepo),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+    },
+
+    {
+      provide: CreateBatchesFromTemplatesHandler,
+      useFactory: (
+        templateRepo: BatchTemplateRepository,
+        courseRepo: CourseRepository,
+        createBatchHandler: CreateBatchHandler,
+        prisma: PrismaService,
+      ) =>
+        new CreateBatchesFromTemplatesHandler(
+          templateRepo,
+          courseRepo,
+          createBatchHandler,
+          prisma,
+        ),
+      inject: [
+        BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY,
+        COURSE_TOKENS.COURSE_REPOSITORY,
+        CreateBatchHandler,
+        PrismaService,
+      ],
     },
   ],
 

@@ -682,6 +682,8 @@ model Batch {
   enrollments   Enrollment[]
   attendances   Attendance[]
   assessments   AcademicAssessment[]
+  batchTemplateId String?
+  batchTemplate   BatchTemplate? @relation(fields: [batchTemplateId], references: [id], onDelete: SetNull)
 
   @@unique([slug, branchId])
   @@index([name])
@@ -699,6 +701,31 @@ model Batch {
   @@index([isDeleted])
   @@index([createdAt])
   @@index([displayOrder])
+  @@index([batchTemplateId])
+}
+
+/// Reusable institute-level schedule defaults. Copied into Batch on create; not a live source of schedule.
+model BatchTemplate {
+  id             String      @id @default(uuid())
+  name           String
+  mode           CourseMode  @default(OFFLINE)
+  daysOfWeek     DayOfWeek[] @default([])
+  startTime      String?
+  endTime        String?
+  /// When true, UI shows Anytime / no fixed time; batch create applies safe schedule defaults.
+  hasFixedTime   Boolean     @default(true)
+  isActive       Boolean     @default(true)
+  displayOrder   Int?
+  createdBy      String?
+  updatedBy      String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  batches        Batch[]
+
+  @@index([name])
+  @@index([isActive])
+  @@index([displayOrder])
+  @@index([createdAt])
 }
 
 model BatchTrainer {

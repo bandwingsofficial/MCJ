@@ -2,11 +2,12 @@
 
 import {
   CircleCheck,
+  MoreHorizontal,
   Pencil,
   Power,
   RotateCcw,
-  Settings2,
   Trash2,
+  UserPlus,
 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
@@ -22,6 +23,7 @@ const iconClass = "h-[1.25rem] w-[1.25rem]";
 interface Props {
   batch: BatchListItem;
   disabled?: boolean;
+  onAssignStudents: (batch: BatchListItem) => void;
   onActivate: (batch: BatchListItem) => void;
   onDeactivate: (batch: BatchListItem) => void;
   onEdit: (batch: BatchListItem) => void;
@@ -33,6 +35,7 @@ interface Props {
 export function BatchActions({
   batch,
   disabled = false,
+  onAssignStudents,
   onActivate,
   onDeactivate,
   onEdit,
@@ -78,6 +81,32 @@ export function BatchActions({
 
   return (
     <div className="flex items-center justify-end gap-1">
+      <Tooltip content="Assign students">
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={disabled}
+          onClick={() => onAssignStudents(batch)}
+          aria-label="Assign students"
+          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+        >
+          <UserPlus className={iconClass} />
+        </Button>
+      </Tooltip>
+
+      <Tooltip content="Edit batch">
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={disabled}
+          onClick={() => onEdit(batch)}
+          aria-label="Edit batch"
+          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+        >
+          <Pencil className={iconClass} />
+        </Button>
+      </Tooltip>
+
       <Tooltip content={isActive ? "Deactivate batch" : "Activate batch"}>
         <Button
           variant="ghost"
@@ -101,29 +130,16 @@ export function BatchActions({
         </Button>
       </Tooltip>
 
-      <Tooltip content="Edit batch">
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={() => onEdit(batch)}
-          aria-label="Edit batch"
-          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
-        >
-          <Pencil className={iconClass} />
-        </Button>
-      </Tooltip>
-
-      <Tooltip content="Batch management">
+      <Tooltip content="More">
         <Button
           variant="ghost"
           size="sm"
           disabled={disabled}
           onClick={() => onManage(batch)}
-          aria-label="Batch management"
+          aria-label="More"
           className={`${iconBtnClass} text-slate-700 hover:bg-slate-100 hover:text-[#102A56]`}
         >
-          <Settings2 className={iconClass} />
+          <MoreHorizontal className={iconClass} />
         </Button>
       </Tooltip>
     </div>

@@ -115,7 +115,7 @@ export function formatBatchTiming(
     return "—";
   }
 
-  return `${formatBatchTime(startTime)} → ${formatBatchTime(endTime)}`;
+  return `${formatBatchTime(startTime)} - ${formatBatchTime(endTime)}`;
 }
 
 export function formatBatchDate(value: string | null | undefined): string {
