@@ -142,6 +142,7 @@ export class AdminBatchTemplateController {
         dto.discountedPrice,
         dto.currency,
         dto.isFree,
+        dto.name,
       ),
     );
 

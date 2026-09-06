@@ -100,4 +100,12 @@ export class CreateBatchesFromTemplatesDto {
   @IsBoolean()
   @Transform(({ value }) => toBoolean(value))
   isFree?: boolean;
+
+  @ApiPropertyOptional({ example: 'Morning Batch' })
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  name?: string;
 }

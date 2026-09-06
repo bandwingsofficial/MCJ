@@ -2,15 +2,13 @@
 
 import {
   CircleCheck,
-  MoreHorizontal,
   Pencil,
   Power,
-  RotateCcw,
-  Trash2,
-  UserPlus,
+  Settings2,
 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
+import { Dropdown } from "@/src/shared/components/ui/dropdown";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { BatchListItem } from "@/src/features/batches/types/batch.types";
@@ -23,11 +21,10 @@ const iconClass = "h-[1.25rem] w-[1.25rem]";
 interface Props {
   batch: BatchListItem;
   disabled?: boolean;
-  onAssignStudents: (batch: BatchListItem) => void;
   onActivate: (batch: BatchListItem) => void;
   onDeactivate: (batch: BatchListItem) => void;
   onEdit: (batch: BatchListItem) => void;
-  onManage: (batch: BatchListItem) => void;
+  onArchive: (batch: BatchListItem) => void;
   onRestore: (batch: BatchListItem) => void;
   onPermanentDelete: (batch: BatchListItem) => void;
 }
@@ -35,67 +32,67 @@ interface Props {
 export function BatchActions({
   batch,
   disabled = false,
-  onAssignStudents,
   onActivate,
   onDeactivate,
   onEdit,
-  onManage,
+  onArchive,
   onRestore,
   onPermanentDelete,
 }: Props) {
   const isArchived = isArchivedBatch(batch);
-
-  if (isArchived) {
-    return (
-      <div className="flex items-center justify-end gap-1">
-        <Tooltip content="Restore batch">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={disabled}
-            onClick={() => onRestore(batch)}
-            aria-label="Restore batch"
-            className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
-          >
-            <RotateCcw className={iconClass} />
-          </Button>
-        </Tooltip>
-
-        <Tooltip content="Permanently delete batch">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={disabled}
-            onClick={() => onPermanentDelete(batch)}
-            aria-label="Permanently delete batch"
-            className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
-          >
-            <Trash2 className={iconClass} />
-          </Button>
-        </Tooltip>
-      </div>
-    );
-  }
-
   const isActive = batch.isActive !== false;
+
+  const managementItems = isArchived
+    ? [
+        {
+          label: "Restore",
+          onClick: () => onRestore(batch),
+        },
+        {
+          label: "Delete Permanently",
+          onClick: () => onPermanentDelete(batch),
+          destructive: true,
+        },
+      ]
+    : [
+        {
+          label: "Archive",
+          onClick: () => onArchive(batch),
+          destructive: true,
+        },
+      ];
 
   return (
     <div className="flex items-center justify-end gap-1">
-      <Tooltip content="Assign students">
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={() => onAssignStudents(batch)}
-          aria-label="Assign students"
-          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
-        >
-          <UserPlus className={iconClass} />
-        </Button>
-      </Tooltip>
+      {!isArchived ? (
+        <Tooltip content={isActive ? "Deactivate batch" : "Activate batch"}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={() =>
+              isActive ? onDeactivate(batch) : onActivate(batch)
+            }
+            aria-label={isActive ? "Deactivate batch" : "Activate batch"}
+            className={`${iconBtnClass} ${
+              isActive
+                ? "text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+                : "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+            }`}
+          >
+            {isActive ? (
+              <Power className={iconClass} />
+            ) : (
+              <CircleCheck className={iconClass} />
+            )}
+          </Button>
+        </Tooltip>
+      ) : null}
 
       <Tooltip content="Edit batch">
         <Button
+          type="button"
           variant="ghost"
           size="sm"
           disabled={disabled}
@@ -107,41 +104,22 @@ export function BatchActions({
         </Button>
       </Tooltip>
 
-      <Tooltip content={isActive ? "Deactivate batch" : "Activate batch"}>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={() =>
-            isActive ? onDeactivate(batch) : onActivate(batch)
-          }
-          aria-label={isActive ? "Deactivate batch" : "Activate batch"}
-          className={`${iconBtnClass} ${
-            isActive
-              ? "text-amber-600 hover:bg-amber-50 hover:text-amber-700"
-              : "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-          }`}
-        >
-          {isActive ? (
-            <Power className={iconClass} />
-          ) : (
-            <CircleCheck className={iconClass} />
-          )}
-        </Button>
-      </Tooltip>
-
-      <Tooltip content="More">
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={() => onManage(batch)}
-          aria-label="More"
-          className={`${iconBtnClass} text-slate-700 hover:bg-slate-100 hover:text-[#102A56]`}
-        >
-          <MoreHorizontal className={iconClass} />
-        </Button>
-      </Tooltip>
+      <Dropdown
+        trigger={
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            title="Management"
+            aria-label="Management"
+            className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+          >
+            <Settings2 className={iconClass} />
+          </Button>
+        }
+        items={managementItems}
+      />
     </div>
   );
 }

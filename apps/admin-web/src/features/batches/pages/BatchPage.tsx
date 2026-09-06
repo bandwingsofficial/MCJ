@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
@@ -26,7 +25,6 @@ import {
   type BulkBatchAction,
 } from "@/src/features/batches/components/batch-bulk-actions-toolbar";
 import { AssignBatchesModal } from "@/src/features/batches/components/assign-batches-modal";
-import { AssignStudentsToBatchModal } from "@/src/features/batches/components/assign-students-to-batch-modal";
 import { UpdateBatchModal } from "@/src/features/batches/components/update-batch-modal";
 import { PermanentDeleteBatchDialog } from "@/src/features/batches/components/permanent-delete-batch-dialog";
 
@@ -46,8 +44,6 @@ import {
 import { getBatchEmptyMessage } from "@/src/features/batches/utils/batch-list.utils";
 
 export function BatchPage() {
-  const router = useRouter();
-
   const {
     batches,
     total,
@@ -68,9 +64,8 @@ export function BatchPage() {
   const [isAssignOpen, setIsAssignOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<BatchListItem | null>(null);
-  const [assignStudentsBatch, setAssignStudentsBatch] =
-    useState<BatchListItem | null>(null);
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
+  const [archiveTarget, setArchiveTarget] = useState<BatchListItem | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<BatchListItem | null>(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] =
     useState<BatchListItem | null>(null);
@@ -366,7 +361,6 @@ export function BatchPage() {
                   selectionDisabled={actionLoading || isFetching}
                   reorderDisabled={reorderDisabled}
                   emptyMessage={emptyMessage}
-                  onAssignStudents={setAssignStudentsBatch}
                   onActivate={(batch) =>
                     setStatusTarget({ batch, action: "activate" })
                   }
@@ -377,9 +371,7 @@ export function BatchPage() {
                     setSelectedBatch(batch);
                     setIsEditOpen(true);
                   }}
-                  onManage={(batch) =>
-                    router.push(`/batches/${batch.id}/manage`)
-                  }
+                  onArchive={setArchiveTarget}
                   onRestore={setRestoreTarget}
                   onPermanentDelete={setPermanentDeleteTarget}
                   onReorder={handleReorder}
@@ -438,15 +430,6 @@ export function BatchPage() {
         }}
       />
 
-      <AssignStudentsToBatchModal
-        open={Boolean(assignStudentsBatch)}
-        batch={assignStudentsBatch}
-        onClose={() => setAssignStudentsBatch(null)}
-        onSuccess={async () => {
-          await refetch();
-        }}
-      />
-
       <UpdateBatchModal
         open={isEditOpen}
         batch={selectedBatch}
@@ -456,6 +439,34 @@ export function BatchPage() {
         }}
         onSuccess={async () => {
           await refetch();
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(archiveTarget)}
+        title="Archive batch?"
+        description={
+          archiveTarget
+            ? `Archive "${archiveTarget.name}"? It can be restored later.`
+            : ""
+        }
+        confirmLabel="Archive"
+        confirmVariant="danger"
+        loading={isArchiving}
+        onCancel={() => setArchiveTarget(null)}
+        onConfirm={async () => {
+          if (!archiveTarget) {
+            return;
+          }
+
+          try {
+            await deleteBatch(archiveTarget.id);
+            appToast.success("Batch archived successfully");
+            setArchiveTarget(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
         }}
       />
 

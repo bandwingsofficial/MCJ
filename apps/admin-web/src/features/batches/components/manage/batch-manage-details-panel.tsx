@@ -186,7 +186,7 @@ export function BatchManageDetailsPanel({ batch }: Props) {
       <SectionCard title="Batch Details">
         <dl className="grid min-w-0 gap-4 sm:grid-cols-2">
           <DetailField label="Batch Name" value={batch.name} />
-          <DetailField label="Batch Code" value={batch.code} />
+          <DetailField label="Batch Number" value={batch.code} />
           <DetailField
             label="Batch Type"
             value={formatBatchMode(batch.mode)}

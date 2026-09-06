@@ -487,17 +487,17 @@ export function BatchForm({
         </IconField>
 
         <IconField
-          label="Batch Code"
+          label="Batch Number"
           required
           icon={Hash}
           state={getFieldState("code", { forceValid: true })}
-          checkingMessage="Generating code..."
+          checkingMessage="Generating batch number..."
           errorMessage={errors.code?.message}
         >
           <FieldIcon icon={Hash} />
           <Input
             readOnly
-            placeholder="MCJ-AUG-001"
+            placeholder="Auto-generated"
             autoComplete="off"
             className={iconInputClass(
               getFieldState("code", { forceValid: true }),

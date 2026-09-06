@@ -33,6 +33,7 @@ export type CreateBatchesFromTemplatesRequest = {
   startDate: string;
   endDate: string;
   templateIds: string[];
+  name?: string;
   capacity?: number;
   durationValue?: number;
   durationType?: string;

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
-import { SearchInput } from "@/src/shared/components/ui/search-input";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
@@ -46,7 +45,6 @@ export function BatchSummaryHeader({
   courses,
   onFiltersChange,
 }: BatchSummaryHeaderProps) {
-  const searchValue = filters.search ?? "";
   const archiveFilterValue = getBatchArchiveFilterValue(filters);
 
   const courseOptions = useMemo(
@@ -130,33 +128,27 @@ export function BatchSummaryHeader({
           {isLoading ? (
             <Skeleton className="h-8 w-52 rounded-md" />
           ) : (
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <h1 className="text-[30px] font-bold tracking-tight text-[#102A56]">
-                  Batches
-                </h1>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <h1 className="text-[30px] font-bold tracking-tight text-[#102A56]">
+                Batches
+              </h1>
 
-                <span className="text-sm text-[#647A9B]">
-                  Total Batches:
-                  <span className="ml-1 font-semibold tabular-nums text-[#102A56]">
-                    {total}
-                  </span>
+              <span className="text-sm text-[#647A9B]">
+                Total Batches:
+                <span className="ml-1 font-semibold tabular-nums text-[#102A56]">
+                  {total}
                 </span>
-              </div>
-              <p className="text-sm text-[#647A9B]">
-                Manage course batches and schedules.
-              </p>
+              </span>
             </div>
           )}
         </div>
 
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:max-w-none lg:shrink-0 lg:justify-end">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:shrink-0 lg:justify-end">
           {isLoading ? (
             <>
               <Skeleton className="h-[46px] w-full rounded-xl sm:w-[190px]" />
+              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[200px]" />
               <Skeleton className="h-[46px] w-full rounded-xl sm:w-[180px]" />
-              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[180px]" />
-              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[240px]" />
             </>
           ) : (
             <>
@@ -207,17 +199,6 @@ export function BatchSummaryHeader({
                     )
                   }
                   options={archiveOptions}
-                />
-              </div>
-
-              <div className="w-full sm:min-w-[220px] sm:flex-1 lg:w-[240px] lg:flex-none">
-                <SearchInput
-                  value={searchValue}
-                  placeholder="Search batches..."
-                  className="h-[46px] rounded-xl !py-2 pl-9 text-[15px]"
-                  onChange={(value) =>
-                    onFiltersChange({ ...filters, search: value })
-                  }
                 />
               </div>
             </>

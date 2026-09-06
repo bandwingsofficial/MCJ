@@ -277,7 +277,7 @@ export function BatchManageOverviewPanel({
       <SectionCard title="Batch Details">
         <dl className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <OverviewField label="Batch Name" value={batch.name} />
-          <OverviewField label="Batch Code" value={batch.code} />
+          <OverviewField label="Batch Number" value={batch.code} />
           <OverviewField
             label="Course"
             value={batch.course?.title?.trim() || "No course assigned"}

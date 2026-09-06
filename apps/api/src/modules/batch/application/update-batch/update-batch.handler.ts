@@ -130,22 +130,8 @@ export class UpdateBatchHandler {
       daysOfWeek: command.daysOfWeek ?? batch.daysOfWeek,
     });
 
-    // Keep existing batch code on edit — never regenerate from schedule changes.
-    const nextCode = command.code?.trim().toUpperCase() ?? batchCodeValue;
-
-    if (nextCode !== batchCodeValue) {
-      await this.domainService.ensureCodeIsAvailable(
-        this.batchRepo,
-        nextCode,
-        batch.id,
-      );
-    } else if (command.code) {
-      await this.domainService.ensureCodeIsAvailable(
-        this.batchRepo,
-        nextCode,
-        batch.id,
-      );
-    }
+    // Batch number is immutable after create — never regenerate or accept client changes.
+    const nextCode = batchCodeValue;
 
     await this.domainService.ensureSlugIsAvailable(
       this.batchRepo,

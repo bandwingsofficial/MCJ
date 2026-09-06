@@ -44,8 +44,8 @@ export const batchSchema = z
     code: z
       .string()
       .trim()
-      .min(2, "Batch code is required")
-      .max(30, "Batch code cannot exceed 30 characters"),
+      .min(2, "Batch number is required")
+      .max(30, "Batch number cannot exceed 30 characters"),
 
     courseId: z
       .string()

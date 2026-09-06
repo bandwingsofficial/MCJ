@@ -115,7 +115,7 @@ export function formatBatchTiming(
     return "—";
   }
 
-  return `${formatBatchTime(startTime)} - ${formatBatchTime(endTime)}`;
+  return `${formatBatchTime(startTime)} – ${formatBatchTime(endTime)}`;
 }
 
 export function formatBatchDate(value: string | null | undefined): string {
@@ -129,8 +129,8 @@ export function formatBatchDate(value: string | null | undefined): string {
     return value;
   }
 
-  return date.toLocaleDateString(undefined, {
-    day: "2-digit",
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
     month: "short",
     year: "numeric",
   });

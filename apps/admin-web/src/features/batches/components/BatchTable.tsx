@@ -16,10 +16,9 @@ import {
   isBatchSelectableInBulkList,
 } from "@/src/features/batches/utils/batch-select.utils";
 import {
+  formatBatchDateRange,
   formatBatchTiming,
 } from "@/src/features/batches/utils/batch.helper";
-import { getBatchPricing } from "@/src/features/batches/utils/batch-pricing.util";
-import { formatCurrency } from "@/src/features/enrollments/utils/format-payment";
 
 import { BatchStatusBadge } from "./BatchStatusBadge";
 import { BatchModeBadge } from "./BatchModeBadge";
@@ -34,11 +33,10 @@ interface Props {
   selectionDisabled?: boolean;
   reorderDisabled?: boolean;
   emptyMessage?: string;
-  onAssignStudents: (batch: BatchListItem) => void;
   onActivate: (batch: BatchListItem) => void;
   onDeactivate: (batch: BatchListItem) => void;
   onEdit: (batch: BatchListItem) => void;
-  onManage: (batch: BatchListItem) => void;
+  onArchive: (batch: BatchListItem) => void;
   onRestore: (batch: BatchListItem) => void;
   onPermanentDelete: (batch: BatchListItem) => void;
   onReorder: (payload: {
@@ -55,11 +53,10 @@ export function BatchTable({
   selectionDisabled = false,
   reorderDisabled = false,
   emptyMessage = "No batches found.",
-  onAssignStudents,
   onActivate,
   onDeactivate,
   onEdit,
-  onManage,
+  onArchive,
   onRestore,
   onPermanentDelete,
   onReorder,
@@ -85,7 +82,7 @@ export function BatchTable({
   const someVisibleSelected =
     selectedVisibleCount > 0 && !allVisibleSelected;
 
-  const columnCount = selectionEnabled ? 10 : 9;
+  const columnCount = selectionEnabled ? 7 : 6;
 
   useEffect(() => {
     setRows(batches);
@@ -187,22 +184,21 @@ export function BatchTable({
     reorderDisabled || isSavingOrder || safeSelectedIds.length > 0;
 
   return (
-    <div className="w-full min-w-0">
-      <table className="w-full table-fixed border-collapse">
+    <div className="w-full min-w-0 overflow-x-auto">
+      <table className="w-full min-w-[48rem] table-fixed border-collapse">
         <colgroup>
-          {selectionEnabled ? <col className="w-11" /> : null}
-          <col className="w-10" />
-          <col className="w-[16%]" />
-          <col className="w-[16%]" />
-          <col className="w-[14%]" />
-          <col className="w-[24%]" />
-          <col className="w-[10%]" />
-          <col className="w-[9rem]" />
+          {selectionEnabled ? <col className="w-9" /> : null}
+          <col className="w-7" />
+          <col className="w-[22%]" />
+          <col className="w-[8.5rem]" />
+          <col />
+          <col className="w-[7rem]" />
+          <col className="w-[8rem]" />
         </colgroup>
         <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
           <tr>
             {selectionEnabled ? (
-              <th className="w-11 px-3 py-3 text-left">
+              <th className="w-9 px-2.5 py-3 text-left">
                 <input
                   ref={selectAllRef}
                   type="checkbox"
@@ -219,32 +215,23 @@ export function BatchTable({
               </th>
             ) : null}
 
-            <th className="w-10 px-2 py-3">
+            <th className="w-7 px-1 py-3">
               <span className="sr-only">Reorder</span>
-            </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Batch Name
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Course
             </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Mode
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Schedule
             </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Price
-            </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Status
             </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Students
-            </th>
-            <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Actions
+            <th className="px-1.5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Management
             </th>
           </tr>
         </thead>
@@ -313,7 +300,7 @@ export function BatchTable({
                   )}
                 >
                   {selectionEnabled ? (
-                    <td className="w-11 px-3 py-3 align-middle">
+                    <td className="w-9 px-2.5 py-3 align-middle">
                       <Checkbox
                         checked={safeSelectedIds.includes(batch.id)}
                         disabled={selectionDisabled || !rowSelectable}
@@ -327,7 +314,7 @@ export function BatchTable({
                     </td>
                   ) : null}
 
-                  <td className="w-10 px-2 py-3 align-middle">
+                  <td className="w-7 px-1 py-3 align-middle">
                     {draggable ? (
                       <GripVertical className="h-4 w-4 cursor-grab text-slate-400 active:cursor-grabbing" />
                     ) : (
@@ -337,51 +324,35 @@ export function BatchTable({
 
                   <td
                     className={cn(
-                      "truncate px-3 py-3 align-middle font-medium",
-                      isLifecycleBlocked ? "text-slate-500" : "text-[#102A56]",
-                    )}
-                  >
-                    {batch.name}
-                  </td>
-
-                  <td
-                    className={cn(
-                      "truncate px-3 py-3 align-middle",
+                      "min-w-0 truncate px-3 py-3 align-middle",
                       isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
                     )}
+                    title={batch.course?.title?.trim() || "Not yet assigned"}
                   >
                     {batch.course?.title?.trim() || "Not yet assigned"}
                   </td>
 
-                  <td className="px-3 py-3 align-middle">
+                  <td className="min-w-0 overflow-hidden px-2 py-3 align-middle">
                     <BatchModeBadge mode={batch.mode} />
                   </td>
 
                   <td
                     className={cn(
-                      "truncate px-3 py-3 align-middle text-sm",
+                      "min-w-0 overflow-hidden px-3 py-3 align-middle text-sm",
                       isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
                     )}
                   >
-                    {formatBatchTiming(batch.startTime, batch.endTime)}
+                    <div className="flex min-w-0 flex-col gap-0.5 leading-snug">
+                      <span className="truncate">
+                        {formatBatchDateRange(batch.startDate, batch.endDate)}
+                      </span>
+                      <span className="truncate">
+                        {formatBatchTiming(batch.startTime, batch.endTime)}
+                      </span>
+                    </div>
                   </td>
 
-                  <td
-                    className={cn(
-                      "truncate px-3 py-3 align-middle text-sm",
-                      isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
-                    )}
-                  >
-                    {(() => {
-                      const pricing = getBatchPricing(batch);
-                      if (pricing.isFree) return "Free";
-                      return formatCurrency(
-                        pricing.discountedPrice || pricing.originalPrice,
-                      );
-                    })()}
-                  </td>
-
-                  <td className="px-3 py-3 align-middle">
+                  <td className="min-w-0 overflow-hidden px-2 py-3 align-middle">
                     <BatchStatusBadge
                       displayStatus={displayStatus}
                       isActive={batch.isActive}
@@ -392,24 +363,14 @@ export function BatchTable({
                     />
                   </td>
 
-                  <td
-                    className={cn(
-                      "truncate px-3 py-3 align-middle text-sm",
-                      isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
-                    )}
-                  >
-                    {batch.enrolledCount ?? 0} Students
-                  </td>
-
-                  <td className="w-[11rem] px-2 py-3 align-middle">
+                  <td className="px-1.5 py-3 align-middle">
                     <BatchActions
                       batch={batch}
                       disabled={actionsDisabled || isSavingOrder}
-                      onAssignStudents={onAssignStudents}
                       onActivate={onActivate}
                       onDeactivate={onDeactivate}
                       onEdit={onEdit}
-                      onManage={onManage}
+                      onArchive={onArchive}
                       onRestore={onRestore}
                       onPermanentDelete={onPermanentDelete}
                     />

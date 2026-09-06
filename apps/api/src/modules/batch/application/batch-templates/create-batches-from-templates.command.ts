@@ -13,5 +13,6 @@ export class CreateBatchesFromTemplatesCommand {
     public readonly discountedPrice?: number,
     public readonly currency?: string,
     public readonly isFree?: boolean,
+    public readonly name?: string,
   ) {}
 }

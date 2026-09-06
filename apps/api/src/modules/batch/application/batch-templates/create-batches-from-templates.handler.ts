@@ -138,7 +138,12 @@ export class CreateBatchesFromTemplatesHandler {
       try {
         const schedule = resolveTemplateScheduleForBatch(template);
         const courseTitle = course.title.getValue();
-        const name = `${courseTitle} - ${template.name}`;
+        const baseName = command.name?.trim();
+        const name = baseName
+          ? templateIds.length > 1
+            ? `${baseName} - ${template.name}`
+            : baseName
+          : `${courseTitle} - ${template.name}`;
 
         const durationValue =
           command.durationValue ??

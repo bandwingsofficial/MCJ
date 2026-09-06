@@ -29,7 +29,6 @@ export function toCreateBatchRequest(
 
   return {
     name: values.name.trim(),
-    code: values.code.trim().toUpperCase(),
     courseId: values.courseId,
     description: values.description?.trim() || undefined,
     startDate: values.startDate,
