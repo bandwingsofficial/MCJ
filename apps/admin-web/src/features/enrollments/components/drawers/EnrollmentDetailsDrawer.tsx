@@ -9,6 +9,7 @@ import { Separator } from "@/src/shared/components/ui/separator";
 
 import { Enrollment, EnrollmentStatus } from "../../types";
 import { formatCurrency } from "../../utils/format-payment";
+import { formatEnrollmentOverviewSelectedMode } from "../../utils/enrollment-overview.utils";
 
 interface EnrollmentDetailsDrawerProps {
   open: boolean;
@@ -170,6 +171,26 @@ export function EnrollmentDetailsDrawer({
               </p>
             </div>
 
+            <div>
+              <span className="font-medium">
+                Selected Mode
+              </span>
+
+              <p>
+                {formatEnrollmentOverviewSelectedMode(enrollment)}
+              </p>
+            </div>
+
+            <div>
+              <span className="font-medium">
+                Batch Timing
+              </span>
+
+              <p>
+                {enrollment.batchTiming?.name ?? "—"}
+              </p>
+            </div>
+
           </div>
 
         </section>
@@ -257,7 +278,7 @@ export function EnrollmentDetailsDrawer({
             </Badge>
 
             <Badge>
-              {enrollment.source === "ADMIN" ? "OFFLINE" : "ONLINE"}
+              {formatEnrollmentOverviewSelectedMode(enrollment)}
             </Badge>
 
           </div>

@@ -5,6 +5,7 @@ import { ERROR_CODES } from '@common/constants/error-codes';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { Enrollment } from '../../domain/entities/enrollment.entity';
+import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { EnrollmentAlreadyExistsException } from '../../domain/errors/enrollment-already-exists.exception';
 import {
   EnrollmentDetailView,
@@ -17,6 +18,17 @@ import {
   enrollmentDetailInclude,
   EnrollmentResponseMapper,
 } from '../mappers/enrollment-response.mapper';
+
+const TIMING_LINKED_STATUSES: EnrollmentStatus[] = [
+  EnrollmentStatus.PENDING,
+  EnrollmentStatus.PENDING_APPROVAL,
+  EnrollmentStatus.ADMITTED,
+  EnrollmentStatus.ACTIVE,
+];
+
+type EnrollmentDetailRecord = Prisma.EnrollmentGetPayload<{
+  include: typeof enrollmentDetailInclude;
+}>;
 
 export class PrismaEnrollmentRepository
   implements EnrollmentRepository
@@ -110,7 +122,9 @@ export class PrismaEnrollmentRepository
     });
 
     return record
-      ? EnrollmentResponseMapper.toDetail(record)
+      ? EnrollmentResponseMapper.toDetail(
+          await this.withLiveBatchTimingCounts(record),
+        )
       : null;
   }
 
@@ -127,7 +141,9 @@ export class PrismaEnrollmentRepository
     });
 
     return record
-      ? EnrollmentResponseMapper.toDetail(record)
+      ? EnrollmentResponseMapper.toDetail(
+          await this.withLiveBatchTimingCounts(record),
+        )
       : null;
   }
 
@@ -144,7 +160,11 @@ export class PrismaEnrollmentRepository
       orderBy: { createdAt: 'desc' },
     });
 
-    return records.map((record) =>
+    const enriched = await Promise.all(
+      records.map((record) => this.withLiveBatchTimingCounts(record)),
+    );
+
+    return enriched.map((record) =>
       EnrollmentResponseMapper.toDetail(record),
     );
   }
@@ -166,7 +186,9 @@ export class PrismaEnrollmentRepository
     });
 
     return record
-      ? EnrollmentResponseMapper.toDetail(record)
+      ? EnrollmentResponseMapper.toDetail(
+          await this.withLiveBatchTimingCounts(record),
+        )
       : null;
   }
 
@@ -181,7 +203,11 @@ export class PrismaEnrollmentRepository
       take: filters.take,
     });
 
-    return records.map((record) =>
+    const enriched = await Promise.all(
+      records.map((record) => this.withLiveBatchTimingCounts(record)),
+    );
+
+    return enriched.map((record) =>
       EnrollmentResponseMapper.toSummary(record),
     );
   }
@@ -198,6 +224,30 @@ export class PrismaEnrollmentRepository
     await this.prisma.enrollment.delete({
       where: { id },
     });
+  }
+
+  private async withLiveBatchTimingCounts(
+    record: EnrollmentDetailRecord,
+  ): Promise<EnrollmentDetailRecord> {
+    if (!record.batchTiming) {
+      return record;
+    }
+
+    const liveCount = await this.prisma.enrollment.count({
+      where: {
+        batchTimingId: record.batchTiming.id,
+        isDeleted: false,
+        status: { in: TIMING_LINKED_STATUSES },
+      },
+    });
+
+    return {
+      ...record,
+      batchTiming: {
+        ...record.batchTiming,
+        enrolledCount: liveCount,
+      },
+    };
   }
 
   private buildOrderBy(

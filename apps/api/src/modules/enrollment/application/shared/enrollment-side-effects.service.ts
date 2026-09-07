@@ -1,17 +1,32 @@
 import type { BatchRepository } from '@modules/batch/domain/repositories/batch.repository';
 import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
 
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
+
 import { Enrollment } from '../../domain/entities/enrollment.entity';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
+import { BatchFullException } from '../../domain/errors/batch-full.exception';
 import { RestoreBatchFullException } from '../../domain/errors/enrollment-business.exception';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
 
-// Synchronizes batch seat counts and student status with enrollment status changes.
+const TIMING_LINKED_STATUSES: EnrollmentStatus[] = [
+  EnrollmentStatus.PENDING,
+  EnrollmentStatus.PENDING_APPROVAL,
+  EnrollmentStatus.ADMITTED,
+  EnrollmentStatus.ACTIVE,
+];
+
+function isTimingLinkedStatus(status: EnrollmentStatus): boolean {
+  return TIMING_LINKED_STATUSES.includes(status);
+}
+
+// Synchronizes batch and batch-timing seat counts with enrollment status changes.
 export class EnrollmentSideEffectsService {
   constructor(
     private readonly batchRepo: BatchRepository,
     private readonly studentRepo: StudentRepository,
     private readonly domainService: EnrollmentDomainService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async apply(
@@ -24,11 +39,13 @@ export class EnrollmentSideEffectsService {
       previousStatus,
       actorId,
     );
+    await this.syncBatchTimingSeatCount(
+      enrollment,
+      previousStatus,
+    );
     await this.syncStudentStatus(enrollment, actorId);
   }
 
-  // Rejects a status transition that would over-fill the batch, before any
-  // state is persisted (there are no cross-aggregate transactions here).
   async assertCapacityForTransition(
     enrollment: Enrollment,
     previousStatus: EnrollmentStatus | null,
@@ -57,6 +74,10 @@ export class EnrollmentSideEffectsService {
       }
 
       throw error;
+    }
+
+    if (enrollment.batchTimingId) {
+      await this.assertBatchTimingHasCapacity(enrollment.batchTimingId);
     }
   }
 
@@ -95,6 +116,74 @@ export class EnrollmentSideEffectsService {
     }
 
     await this.batchRepo.save(batch);
+  }
+
+  private async syncBatchTimingSeatCount(
+    enrollment: Enrollment,
+    previousStatus: EnrollmentStatus | null,
+  ): Promise<void> {
+    if (!enrollment.batchTimingId) {
+      return;
+    }
+
+    const wasLinked =
+      previousStatus !== null && isTimingLinkedStatus(previousStatus);
+    const isLinked = isTimingLinkedStatus(enrollment.status);
+
+    if (wasLinked === isLinked || !wasLinked) {
+      return;
+    }
+
+    await this.decrementBatchTimingSeat(enrollment.batchTimingId);
+  }
+
+  private async decrementBatchTimingSeat(
+    batchTimingId: string,
+  ): Promise<void> {
+    const timing = await this.prisma.batchTiming.findFirst({
+      where: {
+        id: batchTimingId,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        enrolledCount: true,
+      },
+    });
+
+    if (!timing) {
+      return;
+    }
+
+    await this.prisma.batchTiming.update({
+      where: { id: timing.id },
+      data: {
+        enrolledCount: Math.max(0, timing.enrolledCount - 1),
+      },
+    });
+  }
+
+  private async assertBatchTimingHasCapacity(
+    batchTimingId: string,
+  ): Promise<void> {
+    const timing = await this.prisma.batchTiming.findFirst({
+      where: {
+        id: batchTimingId,
+        isDeleted: false,
+      },
+      select: {
+        enrolledCount: true,
+        capacity: true,
+      },
+    });
+
+    if (!timing) {
+      return;
+    }
+
+    if (timing.enrolledCount >= timing.capacity) {
+      throw new BatchFullException();
+    }
   }
 
   private async syncStudentStatus(
@@ -165,27 +254,28 @@ export class EnrollmentSideEffectsService {
     await this.batchRepo.save(toBatch);
   }
 
-  // Releases a batch seat when an occupying enrollment is removed.
   async releaseSeat(
     enrollment: Enrollment,
     actorId?: string | null,
   ): Promise<void> {
-    if (!enrollment.occupiesSeat()) {
-      return;
+    if (enrollment.occupiesSeat()) {
+      const batch = await this.batchRepo.findById(
+        enrollment.batchId,
+      );
+      if (batch) {
+        batch.update({
+          enrolledCount: Math.max(0, batch.enrolledCount - 1),
+          updatedBy: actorId,
+        });
+        await this.batchRepo.save(batch);
+      }
     }
 
-    const batch = await this.batchRepo.findById(
-      enrollment.batchId,
-    );
-    if (!batch) {
-      return;
+    if (
+      enrollment.batchTimingId &&
+      isTimingLinkedStatus(enrollment.status)
+    ) {
+      await this.decrementBatchTimingSeat(enrollment.batchTimingId);
     }
-
-    batch.update({
-      enrolledCount: Math.max(0, batch.enrolledCount - 1),
-      updatedBy: actorId,
-    });
-
-    await this.batchRepo.save(batch);
   }
 }

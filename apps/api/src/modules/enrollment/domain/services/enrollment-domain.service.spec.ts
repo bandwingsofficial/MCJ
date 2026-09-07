@@ -72,6 +72,7 @@ function detail(
       status: 'ACTIVE',
       averageRating: 0,
       totalReviews: 0,
+      trainers: [],
     },
     batch: {
       id: batchId,
@@ -87,6 +88,8 @@ function detail(
       capacity: 30,
       enrolledCount: 1,
       mode: 'OFFLINE',
+      durationValue: null,
+      durationType: null,
       classroom: null,
       meetingLink: null,
       status: 'ONGOING',
@@ -102,6 +105,8 @@ function detail(
       },
       trainers: [],
     },
+    batchTimingId: null,
+    batchTiming: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

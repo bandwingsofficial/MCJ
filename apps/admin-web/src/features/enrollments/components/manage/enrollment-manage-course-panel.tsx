@@ -14,6 +14,13 @@ import { courseService } from "@/src/features/courses/services/course.service";
 import type { Course } from "@/src/features/courses/types/course.types";
 import { EnrollmentDetailItem } from "@/src/features/enrollments/components/manage/enrollment-detail-item";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
+import {
+  formatEnrollmentOverviewCategoryName,
+  formatEnrollmentOverviewCourseTitle,
+  formatEnrollmentOverviewSelectedBatchTiming,
+  formatEnrollmentOverviewSelectedMode,
+  formatEnrollmentOverviewTrainerNames,
+} from "@/src/features/enrollments/utils/enrollment-overview.utils";
 import { formatEnrollmentCategoryName } from "@/src/features/students/utils/enrollment-display.utils";
 
 interface Props {
@@ -106,11 +113,23 @@ export function EnrollmentManageCoursePanel({ enrollment }: Props) {
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <EnrollmentDetailItem
             label="Course"
-            value={enrollment.course?.title ?? "—"}
+            value={formatEnrollmentOverviewCourseTitle(enrollment)}
           />
           <EnrollmentDetailItem
             label="Category"
-            value={formatEnrollmentCategoryName(enrollment)}
+            value={formatEnrollmentOverviewCategoryName(enrollment)}
+          />
+          <EnrollmentDetailItem
+            label="Trainer"
+            value={formatEnrollmentOverviewTrainerNames(enrollment)}
+          />
+          <EnrollmentDetailItem
+            label="Selected Mode"
+            value={formatEnrollmentOverviewSelectedMode(enrollment)}
+          />
+          <EnrollmentDetailItem
+            label="Selected Batch Timing"
+            value={formatEnrollmentOverviewSelectedBatchTiming(enrollment)}
           />
         </div>
       </Card>

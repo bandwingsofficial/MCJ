@@ -2,6 +2,13 @@
 
 import { PaymentStatusBadge } from "@/src/features/enrollments/components/table/PaymentStatusBadge";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
+import {
+  formatEnrollmentOverviewEndDate,
+  formatEnrollmentOverviewSelectedBatchTiming,
+  formatEnrollmentOverviewSelectedMode,
+  formatEnrollmentOverviewStartDate,
+  formatEnrollmentOverviewTrainerNames,
+} from "@/src/features/enrollments/utils/enrollment-overview.utils";
 import { StudentEnrollmentActiveBadge } from "@/src/features/students/components/manage/student-enrollment-active-badge";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
 import {
@@ -11,10 +18,8 @@ import {
   formatEnrollmentCategoryName,
   formatEnrollmentFinalPrice,
   formatEnrollmentPaidAmount,
-  formatEnrollmentTrainerNames,
   resolveEnrollmentBranchName,
 } from "@/src/features/students/utils/enrollment-display.utils";
-import { formatBatchOverviewTiming } from "@/src/features/batches/utils/batch-progress.utils";
 
 interface Props {
   enrollment: Enrollment;
@@ -36,13 +41,6 @@ export function StudentOverviewEnrollmentCard({
 }: Props) {
   const branchName = resolveEnrollmentBranchName(enrollment, branchMap);
   const courseTitle = enrollment.course?.title ?? "—";
-  const batchTiming =
-    enrollment.batch?.startTime && enrollment.batch?.endTime
-      ? formatBatchOverviewTiming(
-          enrollment.batch.startTime,
-          enrollment.batch.endTime,
-        )
-      : "—";
 
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-4">
@@ -66,17 +64,24 @@ export function StudentOverviewEnrollmentCard({
         />
         <DetailItem
           label="Trainer"
-          value={formatEnrollmentTrainerNames(enrollment)}
+          value={formatEnrollmentOverviewTrainerNames(enrollment)}
+        />
+        <DetailItem
+          label="Selected Mode"
+          value={formatEnrollmentOverviewSelectedMode(enrollment)}
         />
         <DetailItem
           label="Batch Start"
-          value={formatStudentDate(enrollment.batch?.startDate)}
+          value={formatEnrollmentOverviewStartDate(enrollment)}
         />
         <DetailItem
           label="Batch End"
-          value={formatStudentDate(enrollment.batch?.endDate)}
+          value={formatEnrollmentOverviewEndDate(enrollment)}
         />
-        <DetailItem label="Batch Timing" value={batchTiming} />
+        <DetailItem
+          label="Selected Batch Timing"
+          value={formatEnrollmentOverviewSelectedBatchTiming(enrollment)}
+        />
         <DetailItem
           label="Enrollment Date"
           value={formatStudentDate(

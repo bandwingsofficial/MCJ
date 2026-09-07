@@ -7,6 +7,7 @@ import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { PaymentStatus } from '../../domain/enums/payment-status.enum';
 import type {
   EnrollmentBatchView,
+  EnrollmentBatchTimingView,
   EnrollmentBranchView,
   EnrollmentCategoryView,
   EnrollmentCourseView,
@@ -22,7 +23,12 @@ export const enrollmentDetailInclude = {
   student: true,
   branch: true,
   category: true,
-  course: true,
+  course: {
+    include: {
+      trainers: { include: { trainer: true } },
+    },
+  },
+  batchTiming: true,
   batch: { include: { trainers: { include: { trainer: true } } } },
 } satisfies Prisma.EnrollmentInclude;
 
@@ -60,6 +66,10 @@ export class EnrollmentResponseMapper {
       category: this.toCategory(record.category),
       course: this.toCourse(record.course),
       batch: this.toBatch(record.batch),
+      batchTimingId: record.batchTimingId,
+      batchTiming: record.batchTiming
+        ? this.toBatchTiming(record.batchTiming)
+        : null,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     };
@@ -91,6 +101,10 @@ export class EnrollmentResponseMapper {
         slug: record.course.slug,
       },
       batch: this.toBatch(record.batch),
+      batchTimingId: record.batchTimingId,
+      batchTiming: record.batchTiming
+        ? this.toBatchTiming(record.batchTiming)
+        : null,
     };
   }
 
@@ -149,6 +163,26 @@ export class EnrollmentResponseMapper {
       status: course.status,
       averageRating: course.averageRating,
       totalReviews: course.totalReviews,
+      trainers: course.trainers.map((link) => this.toTrainer(link.trainer)),
+    };
+  }
+
+  private static toBatchTiming(
+    timing: NonNullable<EnrollmentWithRelations['batchTiming']>,
+  ): EnrollmentBatchTimingView {
+    return {
+      id: timing.id,
+      name: timing.name,
+      mode: timing.mode,
+      daysOfWeek: timing.daysOfWeek,
+      startDate: timing.startDate,
+      endDate: timing.endDate,
+      startTime: timing.startTime,
+      endTime: timing.endTime,
+      capacity: timing.capacity,
+      enrolledCount: timing.enrolledCount,
+      status: timing.status,
+      isActive: timing.isActive,
     };
   }
 
@@ -177,6 +211,8 @@ export class EnrollmentResponseMapper {
       capacity: batch.capacity,
       enrolledCount: batch.enrolledCount,
       mode: batch.mode,
+      durationValue: batch.durationValue,
+      durationType: batch.durationType,
       classroom: batch.classroom,
       meetingLink: batch.meetingLink,
       status: batch.status,

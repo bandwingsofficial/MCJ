@@ -8,6 +8,7 @@ import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/tab
 import { PaymentStatusBadge } from "@/src/features/enrollments/components/table/PaymentStatusBadge";
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
 import { isCurrentEnrollmentStatus } from "@/src/features/enrollments/utils/current-enrollment";
+import { formatEnrollmentOverviewContextLabel } from "@/src/features/enrollments/utils/enrollment-overview.utils";
 
 interface Props {
   enrollment: Enrollment;
@@ -58,6 +59,7 @@ export function EnrollmentManageHeader({ enrollment, activeSection }: Props) {
               enrollment.enrollmentNumber,
               enrollment.branch?.branchName,
               enrollment.batch?.name,
+              formatEnrollmentOverviewContextLabel(enrollment),
               enrollment.course?.title,
             ]
               .filter(Boolean)

@@ -91,6 +91,9 @@ export type BatchWithRelations = PrismaBatch & {
     isDeleted: boolean;
     createdAt: Date;
     updatedAt: Date;
+    _count?: {
+      enrollments: number;
+    };
   }[];
 };
 
@@ -169,7 +172,7 @@ export class BatchMapper {
       startTime: timing.startTime,
       endTime: timing.endTime,
       capacity: timing.capacity,
-      enrolledCount: timing.enrolledCount,
+      enrolledCount: timing._count?.enrollments ?? timing.enrolledCount,
       status: timing.status as BatchStatus,
       isActive: timing.isActive,
       displayOrder: timing.displayOrder,

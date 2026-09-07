@@ -46,6 +46,22 @@ export interface CourseInfo {
   status: string;
   averageRating: number;
   totalReviews: number;
+  trainers?: TrainerInfo[];
+}
+
+export interface BatchTimingInfo {
+  id: string;
+  name: string;
+  mode: string;
+  daysOfWeek: string[];
+  startDate: string;
+  endDate: string | null;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  enrolledCount: number;
+  status: string;
+  isActive: boolean;
 }
 
 export interface TrainerInfo {
@@ -72,6 +88,8 @@ export interface BatchInfo {
   capacity: number;
   enrolledCount: number;
   mode: string;
+  durationValue?: number | null;
+  durationType?: string | null;
   classroom: string | null;
   meetingLink: string | null;
   status: string;
@@ -124,6 +142,8 @@ export interface Enrollment {
   category: CategoryInfo;
   course: CourseInfo;
   batch: BatchInfo;
+  batchTimingId?: string | null;
+  batchTiming?: BatchTimingInfo | null;
 
   createdAt: string;
   updatedAt: string;

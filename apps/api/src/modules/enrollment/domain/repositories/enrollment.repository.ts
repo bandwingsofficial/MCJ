@@ -79,6 +79,22 @@ export interface EnrollmentCourseView {
   status: string;
   averageRating: number;
   totalReviews: number;
+  trainers: EnrollmentTrainerView[];
+}
+
+export interface EnrollmentBatchTimingView {
+  id: string;
+  name: string;
+  mode: string;
+  daysOfWeek: string[];
+  startDate: Date;
+  endDate: Date | null;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  enrolledCount: number;
+  status: string;
+  isActive: boolean;
 }
 
 export interface EnrollmentTrainerView {
@@ -105,6 +121,8 @@ export interface EnrollmentBatchView {
   capacity: number;
   enrolledCount: number;
   mode: string;
+  durationValue: number | null;
+  durationType: string | null;
   classroom: string | null;
   meetingLink: string | null;
   status: string;
@@ -138,6 +156,8 @@ export interface EnrollmentDetailView {
   category: EnrollmentCategoryView;
   course: EnrollmentCourseView;
   batch: EnrollmentBatchView;
+  batchTimingId: string | null;
+  batchTiming: EnrollmentBatchTimingView | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -161,6 +181,8 @@ export interface EnrollmentSummaryView {
   category: EnrollmentCategoryView;
   course: Pick<EnrollmentCourseView, 'id' | 'title' | 'slug'>;
   batch: EnrollmentBatchView;
+  batchTimingId: string | null;
+  batchTiming: EnrollmentBatchTimingView | null;
 }
 
 export interface EnrollmentRepository {

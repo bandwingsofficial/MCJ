@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
+import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-status.enum';
 import {
   BATCH_CODE_SCAN_PREFIX,
   parseBatchCodeSequence,
@@ -480,6 +481,25 @@ export class PrismaBatchRepository implements BatchRepository {
 
       timings: {
         where: { isDeleted: false },
+        include: {
+          _count: {
+            select: {
+              enrollments: {
+                where: {
+                  isDeleted: false,
+                  status: {
+                    in: [
+                      EnrollmentStatus.PENDING,
+                      EnrollmentStatus.PENDING_APPROVAL,
+                      EnrollmentStatus.ADMITTED,
+                      EnrollmentStatus.ACTIVE,
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
         orderBy: [
           { displayOrder: { sort: 'asc' as const, nulls: 'last' as const } },
           { startTime: 'asc' as const },

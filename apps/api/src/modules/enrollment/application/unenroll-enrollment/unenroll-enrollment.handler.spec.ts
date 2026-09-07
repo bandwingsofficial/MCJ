@@ -367,6 +367,12 @@ describe('EnrollmentSideEffectsService seat release', () => {
       batchRepo,
       studentRepo,
       new EnrollmentDomainService(),
+      {
+        batchTiming: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          update: jest.fn(),
+        },
+      } as unknown as import('../../../../infrastructure/prisma/prisma.service').PrismaService,
     );
 
     const enrollment = makeEnrollment({ status: EnrollmentStatus.CANCELLED });

@@ -4,46 +4,46 @@ import { BookOpen, CalendarDays, CreditCard, GraduationCap } from "lucide-react"
 
 import { Card } from "@/src/shared/components/ui/card";
 
-import { formatBatchOverviewTiming } from "@/src/features/batches/utils/batch-progress.utils";
-import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
 import { EnrollmentDetailItem } from "@/src/features/enrollments/components/manage/enrollment-detail-item";
 import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/table/EnrollmentStatusBadge";
 import { PaymentStatusBadge } from "@/src/features/enrollments/components/table/PaymentStatusBadge";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { formatCurrency } from "@/src/features/enrollments/utils/format-payment";
 import {
+  formatEnrollmentOverviewBatchName,
+  formatEnrollmentOverviewBatchNumber,
+  formatEnrollmentOverviewBranchName,
+  formatEnrollmentOverviewCategoryName,
+  formatEnrollmentOverviewCourseTitle,
+  formatEnrollmentOverviewDuration,
+  formatEnrollmentOverviewEndDate,
+  formatEnrollmentOverviewEnrollmentDate,
+  formatEnrollmentOverviewSelectedBatchTiming,
+  formatEnrollmentOverviewSelectedMode,
+  formatEnrollmentOverviewStartDate,
+  formatEnrollmentOverviewStudentId,
+  formatEnrollmentOverviewStudentName,
+  formatEnrollmentOverviewTotalFee,
+  formatEnrollmentOverviewTrainerNames,
+} from "@/src/features/enrollments/utils/enrollment-overview.utils";
+import {
   StudentOverviewMetricGrid,
   type OverviewMetricItem,
 } from "@/src/features/students/components/manage/student-overview-metric-grid";
-import {
-  formatEnrollmentCategoryName,
-  formatEnrollmentTrainerNames,
-} from "@/src/features/students/utils/enrollment-display.utils";
-import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
 
 interface Props {
   enrollment: Enrollment;
 }
 
 export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
-  const studentName = formatPersonName(
-    enrollment.student?.firstName,
-    enrollment.student?.lastName,
-  );
-  const batchTiming =
-    enrollment.batch?.startTime && enrollment.batch?.endTime
-      ? formatBatchOverviewTiming(
-          enrollment.batch.startTime,
-          enrollment.batch.endTime,
-        )
-      : "—";
+  const totalFee = formatEnrollmentOverviewTotalFee(enrollment);
 
   const metrics: OverviewMetricItem[] = [
     {
       key: "fee",
-      label: "Total Fee",
-      hint: "Course fee",
-      value: formatCurrency(enrollment.finalAmount || enrollment.feeAmount),
+      label: "Applicable Price",
+      hint: "Total enrollment fee",
+      value: formatCurrency(totalFee),
       icon: GraduationCap,
       iconClass: "text-emerald-600",
       bgClass: "bg-emerald-50",
@@ -61,7 +61,7 @@ export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
     },
     {
       key: "due",
-      label: "Remaining",
+      label: "Remaining Amount",
       hint: "Balance due",
       value: formatCurrency(enrollment.dueAmount),
       icon: CalendarDays,
@@ -72,8 +72,8 @@ export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
     {
       key: "course",
       label: "Course",
-      hint: enrollment.category?.name ?? "Assigned course",
-      value: enrollment.course?.title ?? "—",
+      hint: formatEnrollmentOverviewCategoryName(enrollment),
+      value: formatEnrollmentOverviewCourseTitle(enrollment),
       icon: BookOpen,
       iconClass: "text-[#2563EB]",
       bgClass: "bg-blue-50",
@@ -96,60 +96,68 @@ export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <EnrollmentDetailItem
-            label="Enrollment No"
+            label="Enrollment Number"
             value={enrollment.enrollmentNumber}
           />
-          <EnrollmentDetailItem label="Student" value={studentName || "—"} />
           <EnrollmentDetailItem
-            label="Student Code"
-            value={enrollment.student?.studentCode ?? "—"}
+            label="Student"
+            value={formatEnrollmentOverviewStudentName(enrollment)}
+          />
+          <EnrollmentDetailItem
+            label="Student ID"
+            value={formatEnrollmentOverviewStudentId(enrollment)}
           />
           <EnrollmentDetailItem
             label="Branch"
-            value={enrollment.branch?.branchName ?? "—"}
+            value={formatEnrollmentOverviewBranchName(enrollment)}
           />
           <EnrollmentDetailItem
-            label="Batch"
-            value={enrollment.batch?.name ?? "—"}
+            label="Batch Name"
+            value={formatEnrollmentOverviewBatchName(enrollment)}
           />
           <EnrollmentDetailItem
-            label="Batch Code"
-            value={enrollment.batch?.code ?? "—"}
+            label="Batch Number"
+            value={formatEnrollmentOverviewBatchNumber(enrollment)}
           />
           <EnrollmentDetailItem
             label="Course"
-            value={enrollment.course?.title ?? "—"}
+            value={formatEnrollmentOverviewCourseTitle(enrollment)}
           />
           <EnrollmentDetailItem
             label="Category"
-            value={formatEnrollmentCategoryName(enrollment)}
+            value={formatEnrollmentOverviewCategoryName(enrollment)}
           />
           <EnrollmentDetailItem
             label="Trainer"
-            value={formatEnrollmentTrainerNames(enrollment)}
+            value={formatEnrollmentOverviewTrainerNames(enrollment)}
           />
           <EnrollmentDetailItem
-            label="Batch Start"
-            value={formatStudentDate(enrollment.batch?.startDate)}
+            label="Selected Mode"
+            value={formatEnrollmentOverviewSelectedMode(enrollment)}
           />
           <EnrollmentDetailItem
-            label="Batch End"
-            value={formatStudentDate(enrollment.batch?.endDate)}
+            label="Selected Batch Timing"
+            value={formatEnrollmentOverviewSelectedBatchTiming(enrollment)}
           />
-          <EnrollmentDetailItem label="Batch Timing" value={batchTiming} />
           <EnrollmentDetailItem
-            label="Source"
-            value={enrollment.source === "ADMIN" ? "OFFLINE" : "ONLINE"}
+            label="Batch Start Date"
+            value={formatEnrollmentOverviewStartDate(enrollment)}
+          />
+          <EnrollmentDetailItem
+            label="Batch End Date"
+            value={formatEnrollmentOverviewEndDate(enrollment)}
+          />
+          <EnrollmentDetailItem
+            label="Duration"
+            value={formatEnrollmentOverviewDuration(enrollment)}
           />
           <EnrollmentDetailItem
             label="Enrollment Date"
-            value={formatStudentDate(
-              enrollment.admissionDate ?? enrollment.createdAt,
-            )}
+            value={formatEnrollmentOverviewEnrollmentDate(enrollment)}
           />
           <EnrollmentDetailItem
-            label="Total Fee"
-            value={formatCurrency(enrollment.finalAmount || enrollment.feeAmount)}
+            label="Applicable Price / Total Fee"
+            value={formatCurrency(totalFee)}
           />
           <EnrollmentDetailItem
             label="Amount Paid"

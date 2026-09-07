@@ -90,16 +90,19 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         batchRepo: BatchRepository,
         studentRepo: StudentRepository,
         domainService: EnrollmentDomainService,
+        prisma: PrismaService,
       ) =>
         new EnrollmentSideEffectsService(
           batchRepo,
           studentRepo,
           domainService,
+          prisma,
         ),
       inject: [
         BATCH_TOKENS.BATCH_REPOSITORY,
         STUDENT_TOKENS.STUDENT_REPOSITORY,
         EnrollmentDomainService,
+        PrismaService,
       ],
     },
 
