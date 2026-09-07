@@ -177,9 +177,11 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
 
     {
       provide: ListBatchesHandler,
-      useFactory: (batchRepo: BatchRepository) =>
-        new ListBatchesHandler(batchRepo),
-      inject: [BATCH_TOKENS.BATCH_REPOSITORY],
+      useFactory: (
+        batchRepo: BatchRepository,
+        prisma: PrismaService,
+      ) => new ListBatchesHandler(batchRepo, prisma),
+      inject: [BATCH_TOKENS.BATCH_REPOSITORY, PrismaService],
     },
 
     {
@@ -187,14 +189,17 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
       useFactory: (
         batchRepo: BatchRepository,
         domainService: BatchDomainService,
+        prisma: PrismaService,
       ) =>
         new GetBatchHandler(
           batchRepo,
           domainService,
+          prisma,
         ),
       inject: [
         BATCH_TOKENS.BATCH_REPOSITORY,
         BatchDomainService,
+        PrismaService,
       ],
     },
 
@@ -203,11 +208,13 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
       useFactory: (
         batchRepo: BatchRepository,
         domainService: BatchDomainService,
+        prisma: PrismaService,
       ) =>
-        new GetBatchSummaryHandler(batchRepo, domainService),
+        new GetBatchSummaryHandler(batchRepo, domainService, prisma),
       inject: [
         BATCH_TOKENS.BATCH_REPOSITORY,
         BatchDomainService,
+        PrismaService,
       ],
     },
 

@@ -83,7 +83,7 @@ export function BatchTimingManageWorkspace({
       </TabsContent>
 
       <TabsContent value="details">
-        <BatchTimingBatchDetailsPanel batch={batch} />
+        <BatchTimingBatchDetailsPanel batch={batch} timing={timing} />
       </TabsContent>
 
       <TabsContent value="timing" className="space-y-4">

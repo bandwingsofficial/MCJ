@@ -5,20 +5,13 @@ import { PrismaService } from '../../../../infrastructure/prisma/prisma.service'
 
 import { Enrollment } from '../../domain/entities/enrollment.entity';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
-import { BatchFullException } from '../../domain/errors/batch-full.exception';
 import { RestoreBatchFullException } from '../../domain/errors/enrollment-business.exception';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
-
-const TIMING_LINKED_STATUSES: EnrollmentStatus[] = [
-  EnrollmentStatus.PENDING,
-  EnrollmentStatus.PENDING_APPROVAL,
-  EnrollmentStatus.ADMITTED,
-  EnrollmentStatus.ACTIVE,
-];
-
-function isTimingLinkedStatus(status: EnrollmentStatus): boolean {
-  return TIMING_LINKED_STATUSES.includes(status);
-}
+import {
+  assertBatchTimingHasLiveCapacity,
+  isTimingLinkedEnrollmentStatus,
+  syncBatchTimingEnrolledCount,
+} from '../../infrastructure/utils/enrollment-timing-count.util';
 
 // Synchronizes batch and batch-timing seat counts with enrollment status changes.
 export class EnrollmentSideEffectsService {
@@ -77,7 +70,10 @@ export class EnrollmentSideEffectsService {
     }
 
     if (enrollment.batchTimingId) {
-      await this.assertBatchTimingHasCapacity(enrollment.batchTimingId);
+      await assertBatchTimingHasLiveCapacity(
+        this.prisma,
+        enrollment.batchTimingId,
+      );
     }
   }
 
@@ -127,63 +123,18 @@ export class EnrollmentSideEffectsService {
     }
 
     const wasLinked =
-      previousStatus !== null && isTimingLinkedStatus(previousStatus);
-    const isLinked = isTimingLinkedStatus(enrollment.status);
+      previousStatus !== null &&
+      isTimingLinkedEnrollmentStatus(previousStatus);
+    const isLinked = isTimingLinkedEnrollmentStatus(enrollment.status);
 
-    if (wasLinked === isLinked || !wasLinked) {
+    if (wasLinked === isLinked) {
       return;
     }
 
-    await this.decrementBatchTimingSeat(enrollment.batchTimingId);
-  }
-
-  private async decrementBatchTimingSeat(
-    batchTimingId: string,
-  ): Promise<void> {
-    const timing = await this.prisma.batchTiming.findFirst({
-      where: {
-        id: batchTimingId,
-        isDeleted: false,
-      },
-      select: {
-        id: true,
-        enrolledCount: true,
-      },
-    });
-
-    if (!timing) {
-      return;
-    }
-
-    await this.prisma.batchTiming.update({
-      where: { id: timing.id },
-      data: {
-        enrolledCount: Math.max(0, timing.enrolledCount - 1),
-      },
-    });
-  }
-
-  private async assertBatchTimingHasCapacity(
-    batchTimingId: string,
-  ): Promise<void> {
-    const timing = await this.prisma.batchTiming.findFirst({
-      where: {
-        id: batchTimingId,
-        isDeleted: false,
-      },
-      select: {
-        enrolledCount: true,
-        capacity: true,
-      },
-    });
-
-    if (!timing) {
-      return;
-    }
-
-    if (timing.enrolledCount >= timing.capacity) {
-      throw new BatchFullException();
-    }
+    await syncBatchTimingEnrolledCount(
+      this.prisma,
+      enrollment.batchTimingId,
+    );
   }
 
   private async syncStudentStatus(
@@ -273,9 +224,12 @@ export class EnrollmentSideEffectsService {
 
     if (
       enrollment.batchTimingId &&
-      isTimingLinkedStatus(enrollment.status)
+      isTimingLinkedEnrollmentStatus(enrollment.status)
     ) {
-      await this.decrementBatchTimingSeat(enrollment.batchTimingId);
+      await syncBatchTimingEnrolledCount(
+        this.prisma,
+        enrollment.batchTimingId,
+      );
     }
   }
 }

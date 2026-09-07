@@ -10,6 +10,7 @@ export class ListEnrollmentsQuery {
     public readonly categoryId?: string,
     public readonly courseId?: string,
     public readonly batchId?: string,
+    public readonly batchTimingId?: string,
     public readonly status?: EnrollmentStatus,
     public readonly paymentStatus?: PaymentStatus,
     public readonly source?: EnrollmentSource,

@@ -1,5 +1,8 @@
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
+import { syncAllBatchTimingEnrolledCounts } from '@modules/enrollment/infrastructure/utils/enrollment-timing-count.util';
+
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
 
@@ -10,6 +13,7 @@ export class GetBatchHandler {
   constructor(
     private readonly batchRepo: BatchRepository,
     private readonly domainService: BatchDomainService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(query: GetBatchQuery): Promise<GetBatchResult> {
@@ -28,6 +32,15 @@ export class GetBatchHandler {
       );
     }
 
-    return GetBatchResult.fromEntity(batch);
+    await syncAllBatchTimingEnrolledCounts(this.prisma, batch.id);
+
+    const refreshed = await this.batchRepo.findById(
+      query.id,
+      query.includeDeleted,
+    );
+
+    return GetBatchResult.fromEntity(
+      refreshed ?? batch,
+    );
   }
 }

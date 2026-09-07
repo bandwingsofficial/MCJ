@@ -139,6 +139,7 @@ export class AdminEnrollmentController {
         query.categoryId,
         query.courseId,
         query.batchId,
+        query.batchTimingId,
         query.status,
         query.paymentStatus,
         query.source,

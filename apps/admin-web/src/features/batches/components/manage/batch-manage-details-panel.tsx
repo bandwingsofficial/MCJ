@@ -10,12 +10,16 @@ import {
   formatBatchDurationType,
 } from "@/src/features/batches/utils/batch-duration.utils";
 import { getConfiguredModeSummaries } from "@/src/features/batches/utils/batch-mode.utils";
-import { formatBatchOverviewDate } from "@/src/features/batches/utils/batch-progress.utils";
+import {
+  formatBatchEnrollmentCapacityLabel,
+  getBatchAggregateStats,
+} from "@/src/features/batches/utils/batch-timing.utils";
 
 import {
   BatchManageField,
   BatchManageSection,
 } from "./batch-manage-section";
+import { formatBatchOverviewDate } from "@/src/features/batches/utils/batch-progress.utils";
 
 interface Props {
   batch: Batch;
@@ -38,6 +42,7 @@ export function BatchManageDetailsPanel({
 }: Props) {
   const isArchived = Boolean(batch.deletedAt || batch.isDeleted);
   const modeSummaries = getConfiguredModeSummaries(batch);
+  const aggregateStats = getBatchAggregateStats(batch);
 
   return (
     <div className="space-y-4">
@@ -92,6 +97,38 @@ export function BatchManageDetailsPanel({
                 endDate={batch.endDate}
               />
             }
+          />
+          <BatchManageField
+            label="Total Timings"
+            value={String(aggregateStats.totalTimings)}
+          />
+          <BatchManageField
+            label="Total Capacity"
+            value={
+              aggregateStats.totalTimings === 0
+                ? "—"
+                : String(aggregateStats.totalCapacity)
+            }
+          />
+          <BatchManageField
+            label="Total Enrolled"
+            value={
+              aggregateStats.totalTimings === 0
+                ? "—"
+                : String(aggregateStats.totalEnrolled)
+            }
+          />
+          <BatchManageField
+            label="Available Seats"
+            value={
+              aggregateStats.totalTimings === 0
+                ? "—"
+                : String(aggregateStats.totalAvailableSeats)
+            }
+          />
+          <BatchManageField
+            label="Enrollment / Capacity"
+            value={formatBatchEnrollmentCapacityLabel(batch)}
           />
         </dl>
       </BatchManageSection>

@@ -2,7 +2,9 @@ import { Logger } from '@nestjs/common';
 
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
+import { syncAllBatchTimingEnrolledCounts } from '@modules/enrollment/infrastructure/utils/enrollment-timing-count.util';
 
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
 
@@ -17,6 +19,7 @@ export class GetBatchSummaryHandler {
   constructor(
     private readonly batchRepo: BatchRepository,
     private readonly domainService: BatchDomainService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(
@@ -30,6 +33,8 @@ export class GetBatchSummaryHandler {
       );
 
       await this.domainService.ensureExists(batch);
+
+      await syncAllBatchTimingEnrolledCounts(this.prisma, query.batchId);
 
       const counts = await this.batchRepo.getSummaryCounts(query.batchId);
 

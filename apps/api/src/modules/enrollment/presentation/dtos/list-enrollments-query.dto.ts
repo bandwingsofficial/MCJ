@@ -52,6 +52,11 @@ export class ListEnrollmentsQueryDto extends PaginationQueryDto {
   @IsUUID()
   batchId?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  batchTimingId?: string;
+
   @ApiPropertyOptional({ enum: EnrollmentStatus })
   @IsOptional()
   @IsEnum(EnrollmentStatus)

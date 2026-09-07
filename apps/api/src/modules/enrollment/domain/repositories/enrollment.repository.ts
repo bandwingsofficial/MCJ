@@ -10,6 +10,7 @@ export interface EnrollmentListFilters {
   categoryId?: string;
   courseId?: string;
   batchId?: string;
+  batchTimingId?: string;
   status?: EnrollmentStatus;
   currentOnly?: boolean;
   paymentStatus?: PaymentStatus;

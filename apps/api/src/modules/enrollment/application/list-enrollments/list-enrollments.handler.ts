@@ -21,6 +21,7 @@ export class ListEnrollmentsHandler {
       categoryId: query.categoryId,
       courseId: query.courseId,
       batchId: query.batchId,
+      batchTimingId: query.batchTimingId,
       status: query.status,
       paymentStatus: query.paymentStatus,
       source: query.source,

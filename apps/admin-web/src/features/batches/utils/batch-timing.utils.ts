@@ -105,6 +105,76 @@ export function getTimingAvailableSeats(timing: BatchTiming): number {
   return Math.max(0, timing.capacity - getTimingEnrolledCount(timing));
 }
 
+/** Sum capacity across every child batch timing on the parent batch. */
+export function getBatchTotalCapacity(
+  batch: Batch | null | undefined,
+): number {
+  return getBatchTimings(batch).reduce(
+    (total, timing) => total + (timing.capacity ?? 0),
+    0,
+  );
+}
+
+/** Sum enrolled students across every child batch timing on the parent batch. */
+export function getBatchTotalEnrolled(
+  batch: Batch | null | undefined,
+): number {
+  return getBatchTimings(batch).reduce(
+    (total, timing) => total + getTimingEnrolledCount(timing),
+    0,
+  );
+}
+
+export function getBatchTotalAvailableSeats(
+  batch: Batch | null | undefined,
+): number {
+  return Math.max(
+    0,
+    getBatchTotalCapacity(batch) - getBatchTotalEnrolled(batch),
+  );
+}
+
+export interface BatchAggregateStats {
+  totalTimings: number;
+  totalCapacity: number;
+  totalEnrolled: number;
+  totalAvailableSeats: number;
+  offlineTimingsCount: number;
+  onlineTimingsCount: number;
+  recordedTimingsCount: number;
+}
+
+/** Parent-batch totals derived from all assigned child timings (all modes). */
+export function getBatchAggregateStats(
+  batch: Batch | null | undefined,
+): BatchAggregateStats {
+  const modeSummaries = getBatchModeSummaries(batch);
+  const findModeCount = (mode: BatchMode) =>
+    modeSummaries.find((row) => row.mode === mode)?.timingsCount ?? 0;
+
+  return {
+    totalTimings: getBatchTimingsCount(batch),
+    totalCapacity: getBatchTotalCapacity(batch),
+    totalEnrolled: getBatchTotalEnrolled(batch),
+    totalAvailableSeats: getBatchTotalAvailableSeats(batch),
+    offlineTimingsCount: findModeCount("OFFLINE"),
+    onlineTimingsCount: findModeCount("ONLINE"),
+    recordedTimingsCount: findModeCount("RECORDED"),
+  };
+}
+
+export function formatBatchEnrollmentCapacityLabel(
+  batch: Batch | null | undefined,
+): string {
+  const stats = getBatchAggregateStats(batch);
+
+  if (stats.totalTimings === 0) {
+    return "—";
+  }
+
+  return `${stats.totalEnrolled} / ${stats.totalCapacity}`;
+}
+
 const MODE_SUMMARY_ORDER: BatchMode[] = ["OFFLINE", "ONLINE", "RECORDED"];
 
 const MODE_SUMMARY_LABELS = Object.fromEntries(

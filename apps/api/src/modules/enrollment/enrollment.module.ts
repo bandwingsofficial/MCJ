@@ -261,11 +261,13 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
       useFactory: (
         enrollmentRepo: EnrollmentRepository,
         domainService: EnrollmentDomainService,
+        prisma: PrismaService,
       ) =>
-        new GetEnrollmentHandler(enrollmentRepo, domainService),
+        new GetEnrollmentHandler(enrollmentRepo, domainService, prisma),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
         EnrollmentDomainService,
+        PrismaService,
       ],
     },
 

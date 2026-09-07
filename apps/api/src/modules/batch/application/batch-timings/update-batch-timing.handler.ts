@@ -2,6 +2,7 @@ import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
+import { countTimingLinkedEnrollments } from '@modules/enrollment/infrastructure/utils/enrollment-timing-count.util';
 import { GetBatchResult } from '../get-batch/get-batch.result';
 import { GetBatchQuery } from '../get-batch/get-batch.query';
 import { GetBatchHandler } from '../get-batch/get-batch.handler';
@@ -46,7 +47,12 @@ export class UpdateBatchTimingHandler {
       );
     }
 
-    if (params.capacity < timing.enrolledCount) {
+    const linkedEnrollmentCount = await countTimingLinkedEnrollments(
+      this.prisma,
+      timing.id,
+    );
+
+    if (params.capacity < linkedEnrollmentCount) {
       throw new BaseException(
         ERROR_CODES.VALIDATION_ERROR,
         'Capacity cannot be lower than the number of enrolled students',

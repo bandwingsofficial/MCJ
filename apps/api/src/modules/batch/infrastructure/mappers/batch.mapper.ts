@@ -172,7 +172,7 @@ export class BatchMapper {
       startTime: timing.startTime,
       endTime: timing.endTime,
       capacity: timing.capacity,
-      enrolledCount: timing._count?.enrollments ?? timing.enrolledCount,
+      enrolledCount: timing.enrolledCount,
       status: timing.status as BatchStatus,
       isActive: timing.isActive,
       displayOrder: timing.displayOrder,

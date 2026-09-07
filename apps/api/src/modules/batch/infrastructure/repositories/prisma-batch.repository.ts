@@ -2,7 +2,10 @@ import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
-import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-status.enum';
+import {
+  BATCH_SEAT_ENROLLMENT_STATUSES,
+  TIMING_LINKED_ENROLLMENT_STATUSES,
+} from '@modules/enrollment/infrastructure/utils/enrollment-timing-count.util';
 import {
   BATCH_CODE_SCAN_PREFIX,
   parseBatchCodeSequence,
@@ -312,19 +315,26 @@ export class PrismaBatchRepository implements BatchRepository {
     attendancePresent: number;
     attendanceAbsent: number;
   }> {
-    const batch = await this.prisma.batch.findUnique({
-      where: { id: batchId },
-      select: {
-        enrolledCount: true,
-        capacity: true,
-      },
-    });
-
-    const [studentsCount, trainerCount] = await Promise.all([
+    const [timings, studentsCount, enrolledCount, trainerCount] =
+      await Promise.all([
+      this.prisma.batchTiming.findMany({
+        where: { batchId, isDeleted: false },
+        select: { capacity: true },
+      }),
       this.prisma.enrollment.count({
         where: {
           batchId,
+          batchTimingId: { not: null },
           isDeleted: false,
+          status: { in: TIMING_LINKED_ENROLLMENT_STATUSES },
+        },
+      }),
+      this.prisma.enrollment.count({
+        where: {
+          batchId,
+          batchTimingId: { not: null },
+          isDeleted: false,
+          status: { in: BATCH_SEAT_ENROLLMENT_STATUSES },
         },
       }),
       this.prisma.batchCourse.findMany({
@@ -340,11 +350,16 @@ export class PrismaBatchRepository implements BatchRepository {
       }).then((rows) => rows.length),
     ]);
 
+    const capacity = timings.reduce(
+      (total, timing) => total + timing.capacity,
+      0,
+    );
+
     return {
       studentsCount,
       trainerCount,
-      enrolledCount: studentsCount,
-      capacity: batch?.capacity ?? 0,
+      enrolledCount,
+      capacity,
       attendancePresent: 0,
       attendanceAbsent: 0,
     };
@@ -481,25 +496,6 @@ export class PrismaBatchRepository implements BatchRepository {
 
       timings: {
         where: { isDeleted: false },
-        include: {
-          _count: {
-            select: {
-              enrollments: {
-                where: {
-                  isDeleted: false,
-                  status: {
-                    in: [
-                      EnrollmentStatus.PENDING,
-                      EnrollmentStatus.PENDING_APPROVAL,
-                      EnrollmentStatus.ADMITTED,
-                      EnrollmentStatus.ACTIVE,
-                    ],
-                  },
-                },
-              },
-            },
-          },
-        },
         orderBy: [
           { displayOrder: { sort: 'asc' as const, nulls: 'last' as const } },
           { startTime: 'asc' as const },

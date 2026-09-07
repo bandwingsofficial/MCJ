@@ -1107,6 +1107,7 @@ export class BranchBatchOpsService {
           enrollments: {
             where: {
               isDeleted: false,
+              batchTimingId: { not: null },
               status: { in: VISIBLE_ENROLLMENT_STATUSES },
             },
           },

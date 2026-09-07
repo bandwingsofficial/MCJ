@@ -6,23 +6,36 @@ import {
   BatchManageField,
   BatchManageSection,
 } from "@/src/features/batches/components/manage/batch-manage-section";
-import type { Batch } from "@/src/features/batches/types/batch.types";
+import type {
+  Batch,
+  BatchTiming,
+} from "@/src/features/batches/types/batch.types";
 import {
   formatBatchDuration,
   formatBatchDurationType,
 } from "@/src/features/batches/utils/batch-duration.utils";
 import { formatBatchOverviewDate } from "@/src/features/batches/utils/batch-progress.utils";
+import {
+  formatTimingDays,
+  formatTimingRange,
+  getTimingAvailableSeats,
+  getTimingEnrolledCount,
+} from "@/src/features/batches/utils/batch-timing.utils";
 
 interface Props {
   batch: Batch;
+  timing: BatchTiming;
 }
 
-/** Parent batch details shown in the context of this child timing. */
-export function BatchTimingBatchDetailsPanel({ batch }: Props) {
+/** Selected timing + parent batch fields scoped to this child timing. */
+export function BatchTimingBatchDetailsPanel({ batch, timing }: Props) {
+  const enrolledCount = getTimingEnrolledCount(timing);
+  const availableSeats = getTimingAvailableSeats(timing);
+
   return (
     <BatchManageSection
       title="Batch Details"
-      description="Parent batch information for this timing."
+      description="Parent batch and selected batch timing information."
     >
       <dl className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <BatchManageField label="Batch Name" value={batch.name} />
@@ -33,7 +46,7 @@ export function BatchTimingBatchDetailsPanel({ batch }: Props) {
         />
         <BatchManageField
           label="Learning Mode"
-          value={<BatchModeBadge mode={batch.mode} />}
+          value={<BatchModeBadge mode={timing.mode} />}
         />
         <BatchManageField
           label="Duration"
@@ -45,23 +58,34 @@ export function BatchTimingBatchDetailsPanel({ batch }: Props) {
         />
         <BatchManageField
           label="Start Date"
-          value={formatBatchOverviewDate(batch.startDate)}
+          value={formatBatchOverviewDate(timing.startDate)}
         />
         <BatchManageField
           label="End Date"
-          value={formatBatchOverviewDate(batch.endDate)}
+          value={formatBatchOverviewDate(timing.endDate)}
         />
         <BatchManageField
           label="Status"
           value={
             <BatchStatusBadge
-              status={batch.status}
-              isActive={batch.isActive}
-              isDeleted={Boolean(batch.deletedAt || batch.isDeleted)}
-              startDate={batch.startDate}
-              endDate={batch.endDate}
+              status={timing.status}
+              isActive={timing.isActive}
+              isDeleted={timing.isDeleted}
+              startDate={timing.startDate}
+              endDate={timing.endDate}
             />
           }
+        />
+        <BatchManageField label="Timing" value={formatTimingRange(timing)} />
+        <BatchManageField
+          label="Batch Days"
+          value={formatTimingDays(timing.daysOfWeek)}
+        />
+        <BatchManageField label="Capacity" value={String(timing.capacity)} />
+        <BatchManageField label="Enrolled" value={String(enrolledCount)} />
+        <BatchManageField
+          label="Available Seats"
+          value={String(availableSeats)}
         />
       </dl>
     </BatchManageSection>

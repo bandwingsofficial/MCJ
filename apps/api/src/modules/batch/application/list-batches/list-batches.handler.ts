@@ -1,11 +1,17 @@
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
+import { syncAllBatchTimingEnrolledCounts } from '@modules/enrollment/infrastructure/utils/enrollment-timing-count.util';
+
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { GetBatchResult } from '../get-batch/get-batch.result';
 
 import { ListBatchesQuery } from './list-batches.query';
 import { ListBatchesResult } from './list-batches.result';
 
 export class ListBatchesHandler {
-  constructor(private readonly batchRepo: BatchRepository) {}
+  constructor(
+    private readonly batchRepo: BatchRepository,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async execute(
     query: ListBatchesQuery,
@@ -32,8 +38,21 @@ export class ListBatchesHandler {
       this.batchRepo.count(filters),
     ]);
 
+    if (batches.length > 0) {
+      await Promise.all(
+        batches.map((batch) =>
+          syncAllBatchTimingEnrolledCounts(this.prisma, batch.id),
+        ),
+      );
+    }
+
+    const refreshed =
+      batches.length > 0
+        ? await this.batchRepo.findAll(filters)
+        : batches;
+
     return new ListBatchesResult(
-      batches.map(GetBatchResult.fromEntity),
+      refreshed.map(GetBatchResult.fromEntity),
       count,
     );
   }

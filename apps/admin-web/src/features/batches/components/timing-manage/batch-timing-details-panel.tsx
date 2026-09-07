@@ -10,6 +10,7 @@ import type { BatchTiming } from "@/src/features/batches/types/batch.types";
 import { formatBatchOverviewDate } from "@/src/features/batches/utils/batch-progress.utils";
 import {
   formatTimingDays,
+  formatTimingRange,
   getTimingAvailableSeats,
   getTimingEnrolledCount,
 } from "@/src/features/batches/utils/batch-timing.utils";
@@ -32,9 +33,10 @@ export function BatchTimingDetailsPanel({ timing }: Props) {
           value={<BatchModeBadge mode={timing.mode} />}
         />
         <BatchManageField
-          label="Days"
+          label="Batch Days"
           value={formatTimingDays(timing.daysOfWeek)}
         />
+        <BatchManageField label="Timing" value={formatTimingRange(timing)} />
         <BatchManageField
           label="Start Date"
           value={formatBatchOverviewDate(timing.startDate)}

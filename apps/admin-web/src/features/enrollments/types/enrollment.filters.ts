@@ -21,6 +21,8 @@ export interface EnrollmentFilters {
 
   batchId?: string;
 
+  batchTimingId?: string;
+
   isActive?: boolean;
 
   currentOnly?: boolean;

@@ -6,7 +6,8 @@ import { Settings2 } from "lucide-react";
 import { Button } from "@/src/shared/components/ui/button";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
-import type { Batch, BatchMode } from "@/src/features/batches/types/batch.types";
+import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
+import type { Batch, BatchMode, BatchStatus } from "@/src/features/batches/types/batch.types";
 import { batchTimingManagePath } from "@/src/features/batches/utils/batch-manage.routes";
 import {
   getBatchModeLabel,
@@ -73,10 +74,10 @@ export function BatchModeTimingsPanel({ batch, mode }: Props) {
                   Available
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Students
+                  Status
                 </th>
                 <th className="px-1.5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Management
+                  Manage
                 </th>
               </tr>
             </thead>
@@ -111,8 +112,11 @@ export function BatchModeTimingsPanel({ batch, mode }: Props) {
                   <td className="px-3 py-3 align-middle text-sm text-slate-700">
                     {getTimingAvailableSeats(timing)}
                   </td>
-                  <td className="px-3 py-3 align-middle text-sm text-slate-700">
-                    {timing.studentsCount ?? 0}
+                  <td className="px-3 py-3 align-middle">
+                    <BatchStatusBadge
+                      status={timing.status as BatchStatus}
+                      isActive={timing.isActive}
+                    />
                   </td>
                   <td className="px-1.5 py-3 align-middle">
                     <div className="flex items-center justify-center">

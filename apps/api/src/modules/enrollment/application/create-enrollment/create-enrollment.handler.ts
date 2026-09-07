@@ -14,7 +14,9 @@ import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import type { EnrollmentRepository } from '../../domain/repositories/enrollment.repository';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
-import { BatchFullException } from '../../domain/errors/batch-full.exception';
+import {
+  assertBatchTimingHasLiveCapacity,
+} from '../../infrastructure/utils/enrollment-timing-count.util';
 import {
   BatchNotFoundException,
   InvalidDiscountException,
@@ -74,7 +76,10 @@ export class CreateEnrollmentHandler {
       : null;
 
     if (batchTiming) {
-      this.ensureBatchTimingHasCapacity(batchTiming);
+      await assertBatchTimingHasLiveCapacity(
+        this.prisma,
+        batchTiming.id,
+      );
     }
 
     await this.domainService.ensureNotDuplicate(
@@ -151,15 +156,6 @@ export class CreateEnrollmentHandler {
 
     await this.enrollmentRepo.save(enrollment);
 
-    if (batchTiming) {
-      await this.prisma.batchTiming.update({
-        where: { id: batchTiming.id },
-        data: {
-          enrolledCount: batchTiming.enrolledCount + 1,
-        },
-      });
-    }
-
     await this.sideEffects.apply(enrollment, null, command.createdBy);
 
     const currency = 'INR';
@@ -233,14 +229,5 @@ export class CreateEnrollmentHandler {
     }
 
     return timing;
-  }
-
-  private ensureBatchTimingHasCapacity(timing: {
-    enrolledCount: number;
-    capacity: number;
-  }): void {
-    if (timing.enrolledCount >= timing.capacity) {
-      throw new BatchFullException();
-    }
   }
 }

@@ -1,5 +1,8 @@
 import type { EnrollmentRepository } from '../../domain/repositories/enrollment.repository';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
+import { syncBatchTimingEnrolledCount } from '../../infrastructure/utils/enrollment-timing-count.util';
+
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { GetEnrollmentQuery } from './get-enrollment.query';
 import { GetEnrollmentResult } from './get-enrollment.result';
@@ -8,6 +11,7 @@ export class GetEnrollmentHandler {
   constructor(
     private readonly enrollmentRepo: EnrollmentRepository,
     private readonly domainService: EnrollmentDomainService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(
@@ -24,6 +28,20 @@ export class GetEnrollmentHandler {
       enrollment.branch.id,
       query.branchId,
     );
+
+    if (enrollment.batchTimingId) {
+      await syncBatchTimingEnrolledCount(
+        this.prisma,
+        enrollment.batchTimingId,
+      );
+
+      return this.domainService.ensureDetailExists(
+        await this.enrollmentRepo.findDetailById(
+          query.id,
+          query.includeDeleted,
+        ),
+      );
+    }
 
     return enrollment;
   }

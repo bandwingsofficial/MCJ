@@ -32,8 +32,9 @@ import {
   formatBatchOverviewTiming,
 } from "@/src/features/batches/utils/batch-progress.utils";
 import {
+  formatBatchEnrollmentCapacityLabel,
+  getBatchAggregateStats,
   getBatchModeSummaries,
-  getBatchTimingsCount,
 } from "@/src/features/batches/utils/batch-timing.utils";
 import { categoryService } from "@/src/features/categories/services/category.service";
 import { useCourse } from "@/src/features/courses/hooks/use-course";
@@ -156,8 +157,11 @@ export function BatchManageOverviewPanel({
   const progress = useMemo(() => calculateBatchProgress(batch), [batch]);
   const pricing = useMemo(() => getBatchPricing(batch), [batch]);
   const modeSummaries = useMemo(() => getBatchModeSummaries(batch), [batch]);
+  const aggregateStats = useMemo(
+    () => getBatchAggregateStats(batch),
+    [batch],
+  );
   const isArchived = Boolean(batch.deletedAt || batch.isDeleted);
-  const timingsCount = getBatchTimingsCount(batch);
 
   const courseId = batch.courseId?.trim() || batch.course?.id || "";
   const { course, isLoading: courseLoading } = useCourse(courseId);
@@ -235,10 +239,12 @@ export function BatchManageOverviewPanel({
       ? `${progress.totalWorkingDays} working day${progress.totalWorkingDays === 1 ? "" : "s"}`
       : "—";
 
-  const enrolledLabel =
-    summary != null
-      ? `${summary.enrolledCount} / ${summary.capacity}`
-      : `${batch.enrolledCount} / ${batch.capacity}`;
+  const enrolledLabel = formatBatchEnrollmentCapacityLabel(batch);
+
+  const summaryEnrolledLabel =
+    summary != null && aggregateStats.totalTimings > 0
+      ? `${summary.studentsCount} / ${summary.capacity}`
+      : enrolledLabel;
 
   const courseTitle =
     course?.title?.trim() || batch.course?.title?.trim() || "";
@@ -262,12 +268,24 @@ export function BatchManageOverviewPanel({
             value={batch.course?.title?.trim() || "No course assigned"}
           />
           <OverviewField
-            label="Batch Timings"
+            label="Total Batch Timings"
             value={
-              timingsCount === 0
+              aggregateStats.totalTimings === 0
                 ? "No timings"
-                : `${timingsCount} timing${timingsCount === 1 ? "" : "s"}`
+                : String(aggregateStats.totalTimings)
             }
+          />
+          <OverviewField
+            label="Offline Timings"
+            value={String(aggregateStats.offlineTimingsCount)}
+          />
+          <OverviewField
+            label="Online Timings"
+            value={String(aggregateStats.onlineTimingsCount)}
+          />
+          <OverviewField
+            label="Self-Paced Timings"
+            value={String(aggregateStats.recordedTimingsCount)}
           />
           <OverviewField
             label="Status"
@@ -283,8 +301,23 @@ export function BatchManageOverviewPanel({
             label="Operational State"
             value={formatBatchOperationalStatus(batch)}
           />
-          <OverviewField label="Capacity" value={batch.capacity} />
-          <OverviewField label="Enrollment" value={enrolledLabel} />
+          <OverviewField
+            label="Total Capacity"
+            value={
+              aggregateStats.totalTimings === 0
+                ? "—"
+                : aggregateStats.totalCapacity
+            }
+          />
+          <OverviewField label="Total Enrolled" value={enrolledLabel} />
+          <OverviewField
+            label="Available Seats"
+            value={
+              aggregateStats.totalTimings === 0
+                ? "—"
+                : aggregateStats.totalAvailableSeats
+            }
+          />
           {batch.description?.trim() ? (
             <div className="sm:col-span-2 lg:col-span-3">
               <OverviewField
@@ -413,8 +446,8 @@ export function BatchManageOverviewPanel({
                 value={summary.trainerCount}
               />
               <OverviewField
-                label="Enrolled"
-                value={`${summary.enrolledCount} / ${summary.capacity}`}
+                label="Enrolled / Capacity"
+                value={summaryEnrolledLabel}
               />
               <OverviewField
                 label="Attendance Present"

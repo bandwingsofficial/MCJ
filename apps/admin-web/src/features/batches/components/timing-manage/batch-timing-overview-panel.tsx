@@ -37,7 +37,7 @@ export function BatchTimingOverviewPanel({ batch, timing }: Props) {
             value={<BatchModeBadge mode={timing.mode} />}
           />
           <BatchManageField
-            label="Days"
+            label="Batch Days"
             value={formatTimingDays(timing.daysOfWeek)}
           />
           <BatchManageField

@@ -9,6 +9,7 @@ import { getBatchPricing } from "@/src/features/batches/utils/batch-pricing.util
 import {
   getBatchModeSummaries,
   getBatchTimings,
+  getTimingEnrolledCount,
 } from "@/src/features/batches/utils/batch-timing.utils";
 
 export const BATCH_MODE_ORDER: BatchMode[] = ["OFFLINE", "ONLINE", "RECORDED"];
@@ -48,7 +49,7 @@ export function getModeStudentCount(
   mode: BatchMode,
 ): number {
   return getTimingsForMode(batch, mode).reduce(
-    (total, timing) => total + (timing.studentsCount ?? 0),
+    (total, timing) => total + getTimingEnrolledCount(timing),
     0,
   );
 }
