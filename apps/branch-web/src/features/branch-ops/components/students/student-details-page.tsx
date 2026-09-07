@@ -1,28 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { ChevronRight, FileText } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type {
-  AssessmentItem,
-  AttendanceItem,
   EnrollmentItem,
   StudentDetail,
+  StudentDocumentItem,
 } from "@/src/features/branch-ops/types";
-import {
-  type AttendanceDatePreset,
-  attendanceStatusVariant,
-  formatAttendanceDisplayDate,
-  resolveAttendanceDateRange,
-} from "@/src/features/branch-ops/utils/attendance-date.utils";
 import {
   formatBatchDate,
   formatBatchLabel,
   formatBatchStatus,
   studentName,
 } from "@/src/features/branch-ops/utils/batch-display";
+import { formatCurrency } from "@/src/features/branch-ops/utils/format-currency";
 import {
   DEFAULT_PAGE_SIZE,
   MAX_LIST_TAKE,
@@ -32,13 +26,10 @@ import { formatRoleLabel } from "@/src/core/auth/roles";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { Avatar } from "@/src/shared/components/ui/avatar";
 import { Badge } from "@/src/shared/components/ui/badge";
-import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
-import { Input } from "@/src/shared/components/ui/input";
 import { Loader } from "@/src/shared/components/ui/loader";
-import { AppSelect } from "@/src/shared/components/ui/select";
 import { TablePaginationBar } from "@/src/shared/components/ui/table-pagination";
 import {
   Tabs,
@@ -54,43 +45,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/shared/components/ui/table";
-import { StudentFeesTab } from "@/src/features/branch-ops/components/students/student-fees-tab";
-import { formatCurrency } from "@/src/features/branch-ops/utils/format-currency";
 import { useAsyncData } from "@/src/shared/hooks/use-async-data";
 
 const TAB_CLASS =
   "rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
 
 const ACTIVE_ENROLLMENT_STATUSES = new Set(["ACTIVE", "ADMITTED"]);
-
-const DATE_PRESET_OPTIONS: Array<{
-  label: string;
-  value: AttendanceDatePreset;
-}> = [
-  { label: "All Time", value: "ALL_TIME" },
-  { label: "Today", value: "TODAY" },
-  { label: "Yesterday", value: "YESTERDAY" },
-  { label: "This Week", value: "THIS_WEEK" },
-  { label: "This Month", value: "THIS_MONTH" },
-  { label: "Custom", value: "CUSTOM" },
-];
-
-const ATTENDANCE_STATUS_OPTIONS = [
-  { label: "All Status", value: "ALL" },
-  { label: "Present", value: "PRESENT" },
-  { label: "Absent", value: "ABSENT" },
-  { label: "Late", value: "LATE" },
-  { label: "Leave", value: "LEAVE" },
-];
-
-const ASSESSMENT_TYPE_OPTIONS = [
-  { label: "All Types", value: "ALL" },
-  { label: "Test", value: "TEST" },
-  { label: "Presentation", value: "PRESENTATION" },
-  { label: "Assignment", value: "ASSIGNMENT" },
-  { label: "Practical", value: "PRACTICAL" },
-  { label: "Other", value: "OTHER" },
-];
 
 function initials(student: Pick<StudentDetail, "firstName" | "lastName">) {
   const first = student.firstName?.charAt(0) ?? "";
@@ -106,51 +66,72 @@ function findActiveEnrollment(enrollments: EnrollmentItem[]) {
   );
 }
 
-function SummaryMetric({
-  label,
-  value,
-  hint,
-}: {
-  label: string;
-  value: string | number;
-  hint?: string;
-}) {
+function displayValue(value?: string | number | null) {
+  if (value === undefined || value === null) return "—";
+  if (typeof value === "string" && value.trim() === "") return "—";
+  return String(value);
+}
+
+function formatGender(value?: string | null) {
+  if (!value) return "—";
+  return value.charAt(0) + value.slice(1).toLowerCase();
+}
+
+function formatDocumentType(type: string) {
+  return type
+    .split("_")
+    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function formatAddress(student: StudentDetail) {
+  const parts = [
+    student.addressLine1,
+    student.addressLine2,
+    student.city,
+    student.state,
+    student.country,
+    student.postalCode,
+  ].filter((part) => Boolean(part?.trim()));
+
+  return parts.length ? parts.join(", ") : "—";
+}
+
+function DetailField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-[#E1EBF5] bg-[#F8FBFF] p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
-        {label}
-      </p>
-      <p className="mt-1 text-xl font-semibold text-[#102A56]">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-[#647A9B]">{hint}</p> : null}
+    <div className="min-w-0">
+      <dt className="text-xs text-[#647A9B]">{label}</dt>
+      <dd className="mt-0.5 break-words text-sm font-medium text-[#102A56]">
+        {value}
+      </dd>
     </div>
   );
 }
 
-function AttendanceSummaryPanel({
-  present,
-  absent,
-  late,
-  total,
-  percentage,
+function OverviewSection({
+  title,
+  children,
 }: {
-  present: number;
-  absent: number;
-  late: number;
-  total: number;
-  percentage: number;
+  title: string;
+  children: ReactNode;
 }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-      <SummaryMetric label="Total Sessions" value={total} />
-      <SummaryMetric label="Present" value={present} />
-      <SummaryMetric label="Absent" value={absent} />
-      <SummaryMetric label="Late" value={late} />
-      <SummaryMetric label="Attendance" value={`${percentage}%`} />
-    </div>
+    <Card className="overflow-hidden rounded-2xl border-[#E1EBF5] p-0 shadow-[0_2px_10px_rgba(16,42,86,0.04)]">
+      <div className="border-b border-[#E1EBF5] px-5 py-3">
+        <h2 className="text-sm font-semibold text-[#102A56]">{title}</h2>
+      </div>
+      <div className="p-5">{children}</div>
+    </Card>
   );
 }
 
-function StudentProfileHeader({ student }: { student: StudentDetail }) {
+function StudentProfileHeader({
+  student,
+  enrollmentDate,
+}: {
+  student: StudentDetail;
+  enrollmentDate: string | null;
+}) {
   const name = studentName(student);
 
   return (
@@ -186,9 +167,9 @@ function StudentProfileHeader({ student }: { student: StudentDetail }) {
                 </span>
               </span>
               <span>
-                Admission Date:{" "}
+                Enrollment Date:{" "}
                 <span className="font-medium text-[#102A56]">
-                  {formatBatchDate(student.admissionDate)}
+                  {formatBatchDate(enrollmentDate)}
                 </span>
               </span>
             </div>
@@ -212,7 +193,21 @@ export function StudentDetailsPage({ studentId }: Props) {
     [studentId],
   );
 
-  if (studentQuery.loading) {
+  const enrollmentsQuery = useAsyncData(
+    () =>
+      branchOpsApi.enrollments({
+        studentId,
+        take: MAX_LIST_TAKE,
+      }),
+    [studentId],
+  );
+
+  const activeEnrollment = useMemo(() => {
+    const enrollments = enrollmentsQuery.data?.items ?? [];
+    return findActiveEnrollment(enrollments);
+  }, [enrollmentsQuery.data?.items]);
+
+  if (studentQuery.loading || (enrollmentsQuery.loading && !enrollmentsQuery.data)) {
     return <Loader />;
   }
 
@@ -260,7 +255,10 @@ export function StudentDetailsPage({ studentId }: Props) {
         </h1>
       </header>
 
-      <StudentProfileHeader student={student} />
+      <StudentProfileHeader
+        student={student}
+        enrollmentDate={activeEnrollment?.enrollmentDate ?? null}
+      />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
@@ -276,17 +274,18 @@ export function StudentDetailsPage({ studentId }: Props) {
           <TabsTrigger value="assessments" className={TAB_CLASS}>
             Assessments
           </TabsTrigger>
-          <TabsTrigger value="fees" className={TAB_CLASS}>
-            Fees
-          </TabsTrigger>
-          <TabsTrigger value="certificates" className={TAB_CLASS}>
-            Certificates
+          <TabsTrigger value="reports" className={TAB_CLASS}>
+            Reports
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
           {tab === "overview" ? (
-            <StudentOverviewTab studentId={studentId} />
+            <StudentOverviewTab
+              student={student}
+              studentId={studentId}
+              activeEnrollmentId={activeEnrollment?.id}
+            />
           ) : null}
         </TabsContent>
 
@@ -298,23 +297,28 @@ export function StudentDetailsPage({ studentId }: Props) {
 
         <TabsContent value="attendance">
           {tab === "attendance" ? (
-            <StudentAttendanceTab studentId={studentId} />
+            <StudentPlaceholderTab
+              title="Attendance records"
+              description="Attendance history for this student will appear here."
+            />
           ) : null}
         </TabsContent>
 
         <TabsContent value="assessments">
           {tab === "assessments" ? (
-            <StudentAssessmentsTab studentId={studentId} />
+            <StudentPlaceholderTab
+              title="Assessment records"
+              description="Assessment history for this student will appear here."
+            />
           ) : null}
         </TabsContent>
 
-        <TabsContent value="fees">
-          {tab === "fees" ? <StudentFeesTab studentId={studentId} /> : null}
-        </TabsContent>
-
-        <TabsContent value="certificates">
-          {tab === "certificates" ? (
-            <EmptyState title="No certificates available." />
+        <TabsContent value="reports">
+          {tab === "reports" ? (
+            <StudentPlaceholderTab
+              title="Student reports"
+              description="Reports for this student will appear here."
+            />
           ) : null}
         </TabsContent>
       </Tabs>
@@ -322,7 +326,77 @@ export function StudentDetailsPage({ studentId }: Props) {
   );
 }
 
-function StudentOverviewTab({ studentId }: { studentId: string }) {
+function StudentPlaceholderTab({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <Card className="rounded-2xl border border-[#E1EBF5] bg-white p-6">
+      <h2 className="text-sm font-semibold text-[#102A56]">{title}</h2>
+      <p className="mt-1 text-sm text-[#647A9B]">{description}</p>
+      <div className="mt-4">
+        <EmptyState title="No records available yet." />
+      </div>
+    </Card>
+  );
+}
+
+function StudentDocumentsSection({
+  documents,
+}: {
+  documents: StudentDocumentItem[];
+}) {
+  if (!documents.length) return null;
+
+  return (
+    <OverviewSection title="Documents">
+      <ul className="divide-y divide-[#E8F0F8] rounded-xl border border-[#E8F0F8]">
+        {documents.map((document) => (
+          <li
+            key={document.id}
+            className="flex flex-wrap items-start justify-between gap-3 px-4 py-3"
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 shrink-0 text-[#2563EB]" />
+                <p className="text-sm font-medium text-[#102A56]">
+                  {document.name}
+                </p>
+              </div>
+              <p className="mt-1 text-xs text-[#647A9B]">
+                {formatDocumentType(document.type)}
+                {document.description ? ` · ${document.description}` : ""}
+              </p>
+            </div>
+            {document.fileUrl ? (
+              <a
+                href={document.fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-medium text-[#2563EB] hover:underline"
+              >
+                View
+              </a>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </OverviewSection>
+  );
+}
+
+function StudentOverviewTab({
+  student,
+  studentId,
+  activeEnrollmentId,
+}: {
+  student: StudentDetail;
+  studentId: string;
+  activeEnrollmentId?: string;
+}) {
   const enrollmentsQuery = useAsyncData(
     () =>
       branchOpsApi.enrollments({
@@ -332,166 +406,135 @@ function StudentOverviewTab({ studentId }: { studentId: string }) {
     [studentId],
   );
 
-  /** take: 1 is valid; totals are computed from the full filtered dataset on the server. */
-  const attendanceQuery = useAsyncData(
-    () =>
-      branchOpsApi.attendanceReport({
-        studentId,
-        take: 1,
-      }),
-    [studentId],
-  );
-
-  const assessmentsQuery = useAsyncData(
-    () => branchOpsApi.assessmentReport({ studentId }),
-    [studentId],
-  );
-
   const feesQuery = useAsyncData(
     () =>
       branchOpsApi.studentFees(studentId, {
+        ...(activeEnrollmentId ? { enrollmentId: activeEnrollmentId } : {}),
         ...paginationParams(1, 1),
       }),
-    [studentId],
+    [studentId, activeEnrollmentId],
   );
 
-  const loading =
-    enrollmentsQuery.loading ||
-    attendanceQuery.loading ||
-    assessmentsQuery.loading ||
-    feesQuery.loading;
+  const enrolledCourses = useMemo(() => {
+    const titles = (enrollmentsQuery.data?.items ?? [])
+      .map((item) => item.course?.title)
+      .filter(Boolean) as string[];
+
+    return [...new Set(titles)];
+  }, [enrollmentsQuery.data?.items]);
+
+  const loading = enrollmentsQuery.loading || feesQuery.loading;
 
   if (loading) {
     return <Loader />;
   }
 
-  const enrollments = enrollmentsQuery.data?.items ?? [];
-  const activeEnrollment = findActiveEnrollment(enrollments);
-  const attendanceTotals = attendanceQuery.data?.totals;
-  const assessmentItems = assessmentsQuery.data?.items ?? [];
-  const assessmentTotal = assessmentsQuery.data?.total ?? 0;
-  const assessmentAverage =
-    assessmentItems.length > 0
-      ? Math.round(
-          (assessmentItems.reduce((sum, item) => sum + item.percentage, 0) /
-            assessmentItems.length) *
-            10,
-        ) / 10
-      : null;
-
   const feeSummary = feesQuery.data?.summary;
 
   return (
     <div className="space-y-4">
-      {enrollmentsQuery.error ? (
-        <ErrorState
-          description={enrollmentsQuery.error}
-          onRetry={enrollmentsQuery.reload}
-        />
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <SummaryMetric
-            label="Active Enrollment"
-            value={activeEnrollment?.enrollmentNumber ?? "—"}
-            hint={
-              activeEnrollment
-                ? formatBatchStatus(activeEnrollment.status)
-                : "No active enrollment"
-            }
+      <OverviewSection title="Student Details">
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <DetailField label="Student Code" value={student.studentCode} />
+          <DetailField
+            label="Full Name"
+            value={studentName(student)}
           />
-          <SummaryMetric
-            label="Total Enrollments"
-            value={enrollmentsQuery.data?.count ?? enrollments.length}
+          <DetailField label="Email" value={displayValue(student.email)} />
+          <DetailField label="Phone" value={displayValue(student.phone)} />
+          <DetailField
+            label="Date of Birth"
+            value={formatBatchDate(student.dateOfBirth)}
           />
-          <SummaryMetric
-            label="Current Batch"
+          <DetailField
+            label="Gender"
+            value={formatGender(student.gender)}
+          />
+          <DetailField
+            label="Parent/Guardian Name"
+            value={displayValue(student.parentName)}
+          />
+          <DetailField
+            label="Parent/Guardian Phone"
+            value={displayValue(student.parentPhone)}
+          />
+          <DetailField
+            label="Branch"
+            value={student.branch?.branchName ?? "—"}
+          />
+          <DetailField
+            label="Status"
+            value={formatBatchStatus(student.status)}
+          />
+          <DetailField
+            label="Opted/Enrolled Course(s)"
             value={
-              activeEnrollment?.batch
-                ? formatBatchLabel(
-                    activeEnrollment.batch.name,
-                    activeEnrollment.batch.code,
-                  )
-                : "—"
+              enrolledCourses.length ? enrolledCourses.join(", ") : "—"
             }
           />
-          <SummaryMetric
-            label="Current Course"
-            value={activeEnrollment?.course?.title ?? "—"}
+          <DetailField label="Qualification" value={displayValue(student.qualification)} />
+          <DetailField label="College" value={displayValue(student.collegeName)} />
+          <DetailField
+            label="Specialization"
+            value={displayValue(student.specialization)}
           />
-        </div>
-      )}
+          <DetailField
+            label="Passing Year"
+            value={displayValue(student.passingYear)}
+          />
+          <DetailField label="Address" value={formatAddress(student)} />
+          <DetailField
+            label="Emergency Contact Name"
+            value={displayValue(student.emergencyContactName)}
+          />
+          <DetailField
+            label="Emergency Contact Phone"
+            value={displayValue(student.emergencyContactPhone)}
+          />
+          <DetailField label="Notes" value={displayValue(student.notes)} />
+        </dl>
+      </OverviewSection>
 
-      {attendanceQuery.error ? (
-        <ErrorState
-          description={attendanceQuery.error}
-          onRetry={attendanceQuery.reload}
-        />
-      ) : attendanceTotals && attendanceTotals.total > 0 ? (
-        <div className="space-y-2">
-          <p className="text-sm font-semibold text-[#102A56]">
-            Attendance Summary
+      <StudentDocumentsSection documents={student.documents ?? []} />
+
+      <OverviewSection title="Fee Structure">
+        {feesQuery.error ? (
+          <p className="text-sm text-[#647A9B]">
+            Unable to load fee summary for the current enrollment.
           </p>
-          <AttendanceSummaryPanel
-            present={attendanceTotals.present}
-            absent={attendanceTotals.absent}
-            late={attendanceTotals.late}
-            total={attendanceTotals.total}
-            percentage={attendanceTotals.percentage}
-          />
-        </div>
-      ) : (
-        <EmptyState title="No attendance records found." />
-      )}
-
-      {assessmentsQuery.error ? (
-        <ErrorState
-          description={assessmentsQuery.error}
-          onRetry={assessmentsQuery.reload}
-        />
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          <SummaryMetric
-            label="Total Assessments"
-            value={assessmentTotal}
-            hint={
-              assessmentAverage != null
-                ? `Average score: ${assessmentAverage}%`
-                : "No assessments recorded"
-            }
-          />
-          {feesQuery.error ? (
-            <SummaryMetric
-              label="Fee Records"
-              value="—"
-              hint="Unable to load fee summary."
-            />
-          ) : feeSummary ? (
-            <>
-              <SummaryMetric
-                label="Course Fee"
-                value={formatCurrency(feeSummary.totalCourseFee)}
-                hint={`Paid: ${formatCurrency(feeSummary.amountPaid)}`}
-              />
-              <SummaryMetric
-                label="Balance Due"
-                value={formatCurrency(feeSummary.balanceDue)}
-                hint={formatBatchStatus(feeSummary.paymentStatus)}
-              />
-            </>
-          ) : (
-            <SummaryMetric
-              label="Fee Records"
-              value="—"
-              hint="No fee records available."
-            />
-          )}
-          <SummaryMetric
-            label="Certificates"
-            value="—"
-            hint="No certificates available."
-          />
-        </div>
-      )}
+        ) : !feeSummary ? (
+          <p className="text-sm text-[#647A9B]">
+            No fee summary is available for the current enrollment.
+          </p>
+        ) : (
+          <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
+            <div className="min-w-[120px]">
+              <p className="text-xs text-[#647A9B]">Course Fee</p>
+              <p className="mt-0.5 text-sm font-semibold text-[#102A56]">
+                {formatCurrency(feeSummary.totalCourseFee)}
+              </p>
+            </div>
+            <div className="min-w-[120px]">
+              <p className="text-xs text-[#647A9B]">Amount Paid</p>
+              <p className="mt-0.5 text-sm font-semibold text-[#102A56]">
+                {formatCurrency(feeSummary.amountPaid)}
+              </p>
+            </div>
+            <div className="min-w-[120px]">
+              <p className="text-xs text-[#647A9B]">Remaining Amount</p>
+              <p className="mt-0.5 text-sm font-semibold text-[#102A56]">
+                {formatCurrency(feeSummary.balanceDue)}
+              </p>
+            </div>
+            <div className="min-w-[120px]">
+              <p className="text-xs text-[#647A9B]">Payment Status</p>
+              <p className="mt-0.5 text-sm font-semibold text-[#102A56]">
+                {formatBatchStatus(feeSummary.paymentStatus)}
+              </p>
+            </div>
+          </div>
+        )}
+      </OverviewSection>
     </div>
   );
 }
@@ -606,552 +649,6 @@ function StudentEnrollmentsTab({
           setPage(1);
         }}
       />
-    </div>
-  );
-}
-
-type AttendanceFilters = {
-  batchId: string;
-  batchCourseId: string;
-  status: string;
-  datePreset: AttendanceDatePreset;
-  from: string;
-  to: string;
-};
-
-function StudentAttendanceTab({ studentId }: { studentId: string }) {
-  const [filters, setFilters] = useState<AttendanceFilters>({
-    batchId: "ALL",
-    batchCourseId: "ALL",
-    status: "ALL",
-    datePreset: "ALL_TIME",
-    from: "",
-    to: "",
-  });
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-
-  const batchesQuery = useAsyncData(() => branchOpsApi.batches(), []);
-
-  const enrollmentsQuery = useAsyncData(
-    () =>
-      branchOpsApi.enrollments({ studentId, take: MAX_LIST_TAKE }),
-    [studentId],
-  );
-
-  const batchOptions = useMemo(() => {
-    const enrolledBatchIds = new Set(
-      (enrollmentsQuery.data?.items ?? [])
-        .map((item) => item.batch?.id)
-        .filter(Boolean) as string[],
-    );
-    const batches = (batchesQuery.data ?? []).filter((batch) =>
-      enrolledBatchIds.has(batch.id),
-    );
-    return [
-      { label: "All Batches", value: "ALL" },
-      ...batches.map((batch) => ({
-        label: formatBatchLabel(batch.name, batch.code),
-        value: batch.id,
-      })),
-    ];
-  }, [batchesQuery.data, enrollmentsQuery.data?.items]);
-
-  const sessionsQuery = useAsyncData(
-    () =>
-      filters.batchId !== "ALL"
-        ? branchOpsApi.batchSessions(filters.batchId)
-        : Promise.resolve([]),
-    [filters.batchId],
-  );
-
-  const sessionOptions = useMemo(
-    () => [
-      { label: "All Sessions", value: "ALL" },
-      ...(sessionsQuery.data ?? []).map((session) => ({
-        label: session.label,
-        value: session.batchCourseId,
-      })),
-    ],
-    [sessionsQuery.data],
-  );
-
-  const dateRange = useMemo(
-    () =>
-      resolveAttendanceDateRange(filters.datePreset, filters.from, filters.to),
-    [filters.datePreset, filters.from, filters.to],
-  );
-
-  const reportParams = useMemo(
-    () => ({
-      studentId,
-      batchId: filters.batchId === "ALL" ? undefined : filters.batchId,
-      batchCourseId:
-        filters.batchCourseId === "ALL" ? undefined : filters.batchCourseId,
-      status: filters.status === "ALL" ? undefined : filters.status,
-      from: dateRange.from,
-      to: dateRange.to,
-      ...paginationParams(page, pageSize),
-    }),
-    [
-      studentId,
-      filters.batchId,
-      filters.batchCourseId,
-      filters.status,
-      dateRange.from,
-      dateRange.to,
-      page,
-      pageSize,
-    ],
-  );
-
-  const reportQuery = useAsyncData(
-    () => branchOpsApi.attendanceReport(reportParams),
-    [
-      reportParams.studentId,
-      reportParams.batchId,
-      reportParams.batchCourseId,
-      reportParams.status,
-      reportParams.from,
-      reportParams.to,
-      reportParams.skip,
-      reportParams.take,
-    ],
-  );
-
-  const updateFilters = (patch: Partial<AttendanceFilters>) => {
-    setFilters((prev) => {
-      const next = { ...prev, ...patch };
-      if (patch.batchId && patch.batchId !== prev.batchId) {
-        next.batchCourseId = "ALL";
-      }
-      return next;
-    });
-    setPage(1);
-  };
-
-  const items = reportQuery.data?.items ?? [];
-  const total = reportQuery.data?.total ?? 0;
-  const totals = reportQuery.data?.totals;
-
-  return (
-    <div className="space-y-4">
-      <Card className="rounded-2xl border border-[#E1EBF5] bg-white p-4">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#647A9B]">
-          Filters
-        </p>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <AppSelect
-            value={filters.batchId}
-            options={batchOptions}
-            onValueChange={(value) => updateFilters({ batchId: value })}
-          />
-          <AppSelect
-            value={filters.batchCourseId}
-            options={sessionOptions}
-            disabled={filters.batchId === "ALL"}
-            onValueChange={(value) => updateFilters({ batchCourseId: value })}
-          />
-          <AppSelect
-            value={filters.status}
-            options={ATTENDANCE_STATUS_OPTIONS}
-            onValueChange={(value) => updateFilters({ status: value })}
-          />
-          <AppSelect
-            value={filters.datePreset}
-            options={DATE_PRESET_OPTIONS.map((item) => ({
-              label: item.label,
-              value: item.value,
-            }))}
-            onValueChange={(value) =>
-              updateFilters({ datePreset: value as AttendanceDatePreset })
-            }
-          />
-        </div>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <Input
-            type="date"
-            className="h-[46px] rounded-xl"
-            value={
-              filters.datePreset === "CUSTOM"
-                ? filters.from
-                : (dateRange.from ?? "")
-            }
-            disabled={filters.datePreset !== "CUSTOM"}
-            onChange={(event) => updateFilters({ from: event.target.value })}
-          />
-          <Input
-            type="date"
-            className="h-[46px] rounded-xl"
-            value={
-              filters.datePreset === "CUSTOM"
-                ? filters.to
-                : (dateRange.to ?? "")
-            }
-            disabled={filters.datePreset !== "CUSTOM"}
-            onChange={(event) => updateFilters({ to: event.target.value })}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="h-[46px] rounded-xl"
-            onClick={() => {
-              setFilters({
-                batchId: "ALL",
-                batchCourseId: "ALL",
-                status: "ALL",
-                datePreset: "ALL_TIME",
-                from: "",
-                to: "",
-              });
-              setPage(1);
-            }}
-          >
-            Clear Filters
-          </Button>
-        </div>
-      </Card>
-
-      {reportQuery.loading && !reportQuery.data ? (
-        <Loader />
-      ) : reportQuery.error ? (
-        <ErrorState description={reportQuery.error} onRetry={reportQuery.reload} />
-      ) : (
-        <>
-          {totals && totals.total > 0 ? (
-            <AttendanceSummaryPanel
-              present={totals.present}
-              absent={totals.absent}
-              late={totals.late}
-              total={totals.total}
-              percentage={totals.percentage}
-            />
-          ) : null}
-
-          {!items.length ? (
-            <EmptyState title="No attendance records found." />
-          ) : (
-            <div className="overflow-hidden rounded-2xl border border-[#E1EBF5] bg-white">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Batch</TableHead>
-                    <TableHead>Session</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item: AttendanceItem) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="whitespace-nowrap">
-                        {formatAttendanceDisplayDate(String(item.date))}
-                      </TableCell>
-                      <TableCell className="min-w-[120px]">
-                        {formatBatchLabel(item.batch.name, item.batch.code)}
-                      </TableCell>
-                      <TableCell className="min-w-[120px]">
-                        {item.session?.label ?? "—"}
-                      </TableCell>
-                      <TableCell className="min-w-[120px]">
-                        {item.course.title}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={attendanceStatusVariant(item.status)}>
-                          {formatBatchStatus(item.status)}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              <TablePaginationBar
-                page={page}
-                pageSize={pageSize}
-                total={total}
-                onPageChange={setPage}
-                onPageSizeChange={(size) => {
-                  setPageSize(size);
-                  setPage(1);
-                }}
-              />
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-type AssessmentFilters = {
-  batchId: string;
-  batchCourseId: string;
-  type: string;
-  datePreset: AttendanceDatePreset;
-  from: string;
-  to: string;
-};
-
-function StudentAssessmentsTab({ studentId }: { studentId: string }) {
-  const [filters, setFilters] = useState<AssessmentFilters>({
-    batchId: "ALL",
-    batchCourseId: "ALL",
-    type: "ALL",
-    datePreset: "ALL_TIME",
-    from: "",
-    to: "",
-  });
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-
-  const batchesQuery = useAsyncData(() => branchOpsApi.batches(), []);
-  const enrollmentsQuery = useAsyncData(
-    () =>
-      branchOpsApi.enrollments({ studentId, take: MAX_LIST_TAKE }),
-    [studentId],
-  );
-
-  const batchOptions = useMemo(() => {
-    const enrolledBatchIds = new Set(
-      (enrollmentsQuery.data?.items ?? [])
-        .map((item) => item.batch?.id)
-        .filter(Boolean) as string[],
-    );
-    const batches = (batchesQuery.data ?? []).filter((batch) =>
-      enrolledBatchIds.has(batch.id),
-    );
-    return [
-      { label: "All Batches", value: "ALL" },
-      ...batches.map((batch) => ({
-        label: formatBatchLabel(batch.name, batch.code),
-        value: batch.id,
-      })),
-    ];
-  }, [batchesQuery.data, enrollmentsQuery.data?.items]);
-
-  const sessionsQuery = useAsyncData(
-    () =>
-      filters.batchId !== "ALL"
-        ? branchOpsApi.batchSessions(filters.batchId)
-        : Promise.resolve([]),
-    [filters.batchId],
-  );
-
-  const sessionOptions = useMemo(
-    () => [
-      { label: "All Sessions", value: "ALL" },
-      ...(sessionsQuery.data ?? []).map((session) => ({
-        label: session.label,
-        value: session.batchCourseId,
-      })),
-    ],
-    [sessionsQuery.data],
-  );
-
-  const dateRange = useMemo(
-    () =>
-      resolveAttendanceDateRange(filters.datePreset, filters.from, filters.to),
-    [filters.datePreset, filters.from, filters.to],
-  );
-
-  const reportParams = useMemo(
-    () => ({
-      studentId,
-      batchId: filters.batchId === "ALL" ? undefined : filters.batchId,
-      batchCourseId:
-        filters.batchCourseId === "ALL" ? undefined : filters.batchCourseId,
-      type: filters.type === "ALL" ? undefined : filters.type,
-      from: dateRange.from,
-      to: dateRange.to,
-      ...paginationParams(page, pageSize),
-    }),
-    [
-      studentId,
-      filters.batchId,
-      filters.batchCourseId,
-      filters.type,
-      dateRange.from,
-      dateRange.to,
-      page,
-      pageSize,
-    ],
-  );
-
-  const reportQuery = useAsyncData(
-    () => branchOpsApi.assessmentReport(reportParams),
-    [
-      reportParams.studentId,
-      reportParams.batchId,
-      reportParams.batchCourseId,
-      reportParams.type,
-      reportParams.from,
-      reportParams.to,
-      reportParams.skip,
-      reportParams.take,
-    ],
-  );
-
-  const updateFilters = (patch: Partial<AssessmentFilters>) => {
-    setFilters((prev) => {
-      const next = { ...prev, ...patch };
-      if (patch.batchId && patch.batchId !== prev.batchId) {
-        next.batchCourseId = "ALL";
-      }
-      return next;
-    });
-    setPage(1);
-  };
-
-  const items = reportQuery.data?.items ?? [];
-  const total = reportQuery.data?.total ?? 0;
-
-  return (
-    <div className="space-y-4">
-      <Card className="rounded-2xl border border-[#E1EBF5] bg-white p-4">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#647A9B]">
-          Filters
-        </p>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <AppSelect
-            value={filters.batchId}
-            options={batchOptions}
-            onValueChange={(value) => updateFilters({ batchId: value })}
-          />
-          <AppSelect
-            value={filters.batchCourseId}
-            options={sessionOptions}
-            disabled={filters.batchId === "ALL"}
-            onValueChange={(value) => updateFilters({ batchCourseId: value })}
-          />
-          <AppSelect
-            value={filters.type}
-            options={ASSESSMENT_TYPE_OPTIONS}
-            onValueChange={(value) => updateFilters({ type: value })}
-          />
-          <AppSelect
-            value={filters.datePreset}
-            options={DATE_PRESET_OPTIONS.map((item) => ({
-              label: item.label,
-              value: item.value,
-            }))}
-            onValueChange={(value) =>
-              updateFilters({ datePreset: value as AttendanceDatePreset })
-            }
-          />
-        </div>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <Input
-            type="date"
-            className="h-[46px] rounded-xl"
-            value={
-              filters.datePreset === "CUSTOM"
-                ? filters.from
-                : (dateRange.from ?? "")
-            }
-            disabled={filters.datePreset !== "CUSTOM"}
-            onChange={(event) => updateFilters({ from: event.target.value })}
-          />
-          <Input
-            type="date"
-            className="h-[46px] rounded-xl"
-            value={
-              filters.datePreset === "CUSTOM"
-                ? filters.to
-                : (dateRange.to ?? "")
-            }
-            disabled={filters.datePreset !== "CUSTOM"}
-            onChange={(event) => updateFilters({ to: event.target.value })}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            className="h-[46px] rounded-xl"
-            onClick={() => {
-              setFilters({
-                batchId: "ALL",
-                batchCourseId: "ALL",
-                type: "ALL",
-                datePreset: "ALL_TIME",
-                from: "",
-                to: "",
-              });
-              setPage(1);
-            }}
-          >
-            Clear Filters
-          </Button>
-        </div>
-      </Card>
-
-      {reportQuery.loading && !reportQuery.data ? (
-        <Loader />
-      ) : reportQuery.error ? (
-        <ErrorState description={reportQuery.error} onRetry={reportQuery.reload} />
-      ) : !items.length ? (
-        <EmptyState title="No assessments found." />
-      ) : (
-        <div className="overflow-hidden rounded-2xl border border-[#E1EBF5] bg-white">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Batch</TableHead>
-                <TableHead>Session</TableHead>
-                <TableHead>Course</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Assessment</TableHead>
-                <TableHead>Total Marks</TableHead>
-                <TableHead>Obtained Marks</TableHead>
-                <TableHead>Percentage</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((item: AssessmentItem) => (
-                <TableRow key={item.id}>
-                  <TableCell className="whitespace-nowrap">
-                    {formatAttendanceDisplayDate(String(item.date))}
-                  </TableCell>
-                  <TableCell className="min-w-[120px]">
-                    {formatBatchLabel(item.batch.name, item.batch.code)}
-                  </TableCell>
-                  <TableCell className="min-w-[120px]">
-                    {item.session?.label ?? "—"}
-                  </TableCell>
-                  <TableCell className="min-w-[120px]">
-                    {item.course?.title ?? "—"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="default">{item.type}</Badge>
-                  </TableCell>
-                  <TableCell className="min-w-[140px] font-medium">
-                    {item.name}
-                  </TableCell>
-                  <TableCell>{item.maxMarks}</TableCell>
-                  <TableCell>{item.obtainedMarks}</TableCell>
-                  <TableCell>{item.percentage}%</TableCell>
-                  <TableCell>
-                    <Badge variant="success">Graded</Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          <TablePaginationBar
-            page={page}
-            pageSize={pageSize}
-            total={total}
-            onPageChange={setPage}
-            onPageSizeChange={(size) => {
-              setPageSize(size);
-              setPage(1);
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }

@@ -3,10 +3,11 @@
 import { use, useEffect } from "react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
-import { BatchAssignedTimingsPanel } from "@/src/features/branch-ops/components/batches/batch-assigned-timings-panel";
-import { BatchCoursePanel } from "@/src/features/branch-ops/components/batches/batch-course-panel";
-import { BatchManageHeader } from "@/src/features/branch-ops/components/batches/batch-manage-header";
-import { BatchOverviewPanel } from "@/src/features/branch-ops/components/batches/batch-overview-panel";
+import {
+  BatchTimingManageHeader,
+  BatchTimingOverviewPanel,
+} from "@/src/features/branch-ops/components/batches/batch-timing-manage-panels";
+import { BatchTimingStudentsPanel } from "@/src/features/branch-ops/components/batches/batch-timing-students-panel";
 import { formatRoleLabel } from "@/src/core/auth/roles";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
@@ -21,14 +22,14 @@ import {
 import { useAsyncData } from "@/src/shared/hooks/use-async-data";
 
 interface PageProps {
-  params: Promise<{ batchId: string }>;
+  params: Promise<{ batchId: string; timingId: string }>;
 }
 
 const TAB_CLASS =
   "rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
 
-export default function BatchManagePage({ params }: PageProps) {
-  const { batchId } = use(params);
+export default function BatchTimingManagePage({ params }: PageProps) {
+  const { batchId, timingId } = use(params);
   const role = useAuthStore((state) => state.user?.role);
   const { data, loading, error, reload } = useAsyncData(
     () => branchOpsApi.batch(batchId),
@@ -53,10 +54,16 @@ export default function BatchManagePage({ params }: PageProps) {
   if (error) return <ErrorState description={error} onRetry={reload} />;
   if (!data) return <EmptyState title="Batch not found." />;
 
+  const timing = data.timings?.find((item) => item.id === timingId);
+  if (!timing) {
+    return <EmptyState title="Batch timing not found for this batch." />;
+  }
+
   return (
     <div className="space-y-5">
-      <BatchManageHeader
+      <BatchTimingManageHeader
         batch={data}
+        timing={timing}
         parentLabel={formatRoleLabel(role) || "Branch"}
       />
 
@@ -65,35 +72,16 @@ export default function BatchManagePage({ params }: PageProps) {
           <TabsTrigger value="overview" className={TAB_CLASS}>
             Overview
           </TabsTrigger>
-          <TabsTrigger value="course" className={TAB_CLASS}>
-            Course
-          </TabsTrigger>
-          <TabsTrigger value="details" className={TAB_CLASS}>
-            Batch Details
-          </TabsTrigger>
-          <TabsTrigger value="timings" className={TAB_CLASS}>
-            Batch Timings
+          <TabsTrigger value="students" className={TAB_CLASS}>
+            Students
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
-          <BatchOverviewPanel
-            batch={data}
-            sections={["summary", "enrolled"]}
-          />
+          <BatchTimingOverviewPanel batch={data} timing={timing} />
         </TabsContent>
-        <TabsContent value="course">
-          <BatchCoursePanel batchId={batchId} courseId={data.course?.id} />
-        </TabsContent>
-        <TabsContent value="details">
-          <BatchOverviewPanel
-            batch={data}
-            sections={["summary", "timings"]}
-            timingsVariant="details"
-          />
-        </TabsContent>
-        <TabsContent value="timings">
-          <BatchAssignedTimingsPanel batch={data} />
+        <TabsContent value="students">
+          <BatchTimingStudentsPanel batchId={batchId} timingId={timingId} />
         </TabsContent>
       </Tabs>
     </div>

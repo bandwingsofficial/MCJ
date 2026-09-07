@@ -336,6 +336,7 @@ export interface BatchListItem {
   name: string;
   code: string;
   mode: string;
+  learningModes?: string[];
   status: string;
   startDate: string;
   endDate: string | null;
@@ -347,6 +348,19 @@ export interface BatchListItem {
   availableSeats?: number;
   totalWorkingDays?: number | null;
   durationDays?: number | null;
+  durationValue?: number | null;
+  durationType?: string | null;
+  durationLabel?: string | null;
+  modePricing?: Record<
+    string,
+    {
+      originalPrice: number;
+      discountAmount: number;
+      discountedPrice: number;
+      currency: string;
+    }
+  > | null;
+  timings?: BatchTimingListItem[];
   course: {
     id: string;
     title?: string;
@@ -383,6 +397,22 @@ export interface BatchListItem {
   students?: BatchStudentItem[];
 }
 
+export interface BatchTimingListItem {
+  id: string;
+  name: string;
+  mode: string;
+  daysOfWeek: string[];
+  startDate: string;
+  endDate: string | null;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  enrolledStudents: number;
+  availableSeats: number;
+  status: string;
+  isActive: boolean;
+}
+
 export interface BatchStudentItem {
   id: string;
   enrollmentId: string;
@@ -395,6 +425,11 @@ export interface BatchStudentItem {
   enrollmentStatus?: string;
   enrollmentDate?: string | null;
   batch?: { id: string; name: string; code: string } | null;
+  batchTiming?: {
+    id: string;
+    name: string;
+    mode: string;
+  } | null;
   branch?: { id: string; branchName: string; branchCode?: string } | null;
   course?: { id: string; title: string } | null;
   attendance?: AttendanceSummary;
@@ -522,22 +557,48 @@ export interface StudentListItem {
   batchName?: string;
 }
 
+export interface StudentDocumentItem {
+  id: string;
+  name: string;
+  type: string;
+  description: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
+}
+
 export interface StudentDetail {
   id: string;
   firstName: string;
   lastName: string | null;
   email: string | null;
   phone: string | null;
+  gender: string | null;
+  dateOfBirth: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  postalCode: string | null;
+  qualification: string | null;
+  collegeName: string | null;
+  specialization: string | null;
+  passingYear: number | null;
+  parentName: string | null;
+  parentPhone: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  notes: string | null;
   studentCode: string;
   status: string;
   branchId: string | null;
   profileImageUrl: string | null;
-  admissionDate: string | null;
   branch: {
     id: string;
     branchName: string;
     branchCode: string;
   } | null;
+  documents: StudentDocumentItem[];
 }
 
 export interface AttendanceItem {

@@ -35,6 +35,9 @@ const VISIBLE_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
   EnrollmentStatus.ACTIVE,
 ];
 
+/** Batch/timing seat counts in Branch My Batches use ADMITTED enrollments only. */
+const BATCH_TIMING_ADMITTED_STATUS = EnrollmentStatus.ADMITTED;
+
 const DAY_INDEX: Record<DayOfWeek, number> = {
   SUNDAY: 0,
   MONDAY: 1,
@@ -131,13 +134,17 @@ export class BranchBatchOpsService {
       include: this.batchListInclude(),
       orderBy: { createdAt: 'desc' },
     });
-    const assignments = await this.assignmentsByBatchId(
-      batches.map((batch) => batch.id),
-    );
+    const batchIds = batches.map((batch) => batch.id);
+    const [assignments, admittedCounts] = await Promise.all([
+      this.assignmentsByBatchId(batchIds),
+      this.admittedEnrollmentCounts(batchIds),
+    ]);
 
     return batches.map((batch) =>
       this.toBatchDto(batch, {
         assignments: assignments.get(batch.id) ?? [],
+        admittedByTiming: admittedCounts.byTiming,
+        admittedByBatch: admittedCounts.byBatch,
       }),
     );
   }
@@ -154,14 +161,17 @@ export class BranchBatchOpsService {
       throw new NotFoundException('Batch not found');
     }
 
-    const [students, assignments] = await Promise.all([
+    const [students, assignments, admittedCounts] = await Promise.all([
       this.listBatchStudents(user, batchId),
       this.batchCourseRepo.findByBatchId(batchId),
+      this.admittedEnrollmentCounts([batchId]),
     ]);
 
     return {
       ...this.toBatchDto(batch, {
         assignments,
+        admittedByTiming: admittedCounts.byTiming,
+        admittedByBatch: admittedCounts.byBatch,
         enrolledOverride: students.length,
       }),
       students,
@@ -172,7 +182,10 @@ export class BranchBatchOpsService {
     await this.access.assertFacultyCanAccessBatch(user, batchId);
 
     const enrollments = await this.prisma.enrollment.findMany({
-      where: facultyBatchStudentWhere(batchId, user.branchId),
+      where: {
+        ...facultyBranchEnrollmentWhere(user.branchId, { batchId }),
+        status: BATCH_TIMING_ADMITTED_STATUS,
+      },
       include: {
         student: {
           select: {
@@ -186,6 +199,9 @@ export class BranchBatchOpsService {
           },
         },
         batch: { select: { id: true, name: true, code: true } },
+        batchTiming: {
+          select: { id: true, name: true, mode: true },
+        },
         branch: { select: { id: true, branchName: true, branchCode: true } },
         course: { select: { id: true, title: true } },
       },
@@ -255,6 +271,7 @@ export class BranchBatchOpsService {
         enrollmentDate:
           item.admissionDate ?? item.joiningDate ?? item.createdAt,
         batch: item.batch,
+        batchTiming: item.batchTiming,
         branch: item.branch,
         course: item.course,
         attendance: {
@@ -652,16 +669,47 @@ export class BranchBatchOpsService {
         lastName: true,
         email: true,
         phone: true,
+        gender: true,
+        dateOfBirth: true,
+        addressLine1: true,
+        addressLine2: true,
+        city: true,
+        state: true,
+        country: true,
+        postalCode: true,
+        qualification: true,
+        collegeName: true,
+        specialization: true,
+        passingYear: true,
+        parentName: true,
+        parentPhone: true,
+        emergencyContactName: true,
+        emergencyContactPhone: true,
+        notes: true,
         studentCode: true,
         status: true,
         branchId: true,
         profileImageUrl: true,
-        admissionDate: true,
         branch: {
           select: {
             id: true,
             branchName: true,
             branchCode: true,
+          },
+        },
+        documents: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            description: true,
+            file: {
+              select: {
+                url: true,
+                originalName: true,
+              },
+            },
           },
         },
       },
@@ -671,7 +719,20 @@ export class BranchBatchOpsService {
       throw new NotFoundException('Student not found');
     }
 
-    return student;
+    const { documents, dateOfBirth, ...rest } = student;
+
+    return {
+      ...rest,
+      dateOfBirth: dateOfBirth?.toISOString() ?? null,
+      documents: documents.map((document) => ({
+        id: document.id,
+        name: document.name,
+        type: document.type,
+        description: document.description,
+        fileUrl: document.file?.url ?? null,
+        fileName: document.file?.originalName ?? null,
+      })),
+    };
   }
 
   async assignFaculty(
@@ -1049,6 +1110,48 @@ export class BranchBatchOpsService {
     };
   }
 
+  private async admittedEnrollmentCounts(batchIds: string[]) {
+    if (!batchIds.length) {
+      return {
+        byTiming: new Map<string, number>(),
+        byBatch: new Map<string, number>(),
+      };
+    }
+
+    const baseWhere = {
+      batchId: { in: batchIds },
+      isDeleted: false,
+      status: BATCH_TIMING_ADMITTED_STATUS,
+    } as const;
+
+    const [timingGroups, batchGroups] = await Promise.all([
+      this.prisma.enrollment.groupBy({
+        by: ['batchTimingId'],
+        where: {
+          ...baseWhere,
+          batchTimingId: { not: null },
+        },
+        _count: { _all: true },
+      }),
+      this.prisma.enrollment.groupBy({
+        by: ['batchId'],
+        where: baseWhere,
+        _count: { _all: true },
+      }),
+    ]);
+
+    return {
+      byTiming: new Map(
+        timingGroups
+          .filter((group) => group.batchTimingId)
+          .map((group) => [group.batchTimingId!, group._count._all]),
+      ),
+      byBatch: new Map(
+        batchGroups.map((group) => [group.batchId, group._count._all]),
+      ),
+    };
+  }
+
   private async assignmentsByBatchId(batchIds: string[]) {
     const rows = await this.batchCourseRepo.findByBatchIds(batchIds);
     const grouped = new Map<string, BatchCourseAssignmentRecord[]>();
@@ -1102,16 +1205,9 @@ export class BranchBatchOpsService {
           },
         },
       },
-      _count: {
-        select: {
-          enrollments: {
-            where: {
-              isDeleted: false,
-              batchTimingId: { not: null },
-              status: { in: VISIBLE_ENROLLMENT_STATUSES },
-            },
-          },
-        },
+      timings: {
+        where: { isDeleted: false },
+        orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
       },
     } satisfies Prisma.BatchInclude;
   }
@@ -1129,6 +1225,8 @@ export class BranchBatchOpsService {
       endTime: string;
       daysOfWeek: DayOfWeek[];
       capacity: number;
+      durationValue?: number | null;
+      durationType?: string | null;
       course: CourseSelect | null;
       category?: { id: string; name: string } | null;
       branch: {
@@ -1154,17 +1252,68 @@ export class BranchBatchOpsService {
           email: string;
         };
       }>;
-      _count: { enrollments: number };
+      timings?: Array<{
+        id: string;
+        name: string;
+        mode: string;
+        daysOfWeek: DayOfWeek[];
+        startDate: Date;
+        endDate: Date | null;
+        startTime: string;
+        endTime: string;
+        capacity: number;
+        status: string;
+        isActive: boolean;
+      }>;
     },
     options?: {
       assignments?: BatchCourseAssignmentRecord[];
       enrolledOverride?: number;
+      admittedByTiming?: Map<string, number>;
+      admittedByBatch?: Map<string, number>;
     },
   ) {
     const assignments = options?.assignments ?? [];
+    const admittedByTiming = options?.admittedByTiming ?? new Map<string, number>();
+    const admittedByBatch = options?.admittedByBatch ?? new Map<string, number>();
+    const timings = (batch.timings ?? []).map((timing) => {
+      const enrolledStudents = admittedByTiming.get(timing.id) ?? 0;
+
+      return {
+        id: timing.id,
+        name: timing.name,
+        mode: timing.mode,
+        daysOfWeek: timing.daysOfWeek,
+        startDate: timing.startDate,
+        endDate: timing.endDate,
+        startTime: timing.startTime,
+        endTime: timing.endTime,
+        capacity: timing.capacity,
+        enrolledStudents,
+        availableSeats: Math.max(0, timing.capacity - enrolledStudents),
+        status: timing.status,
+        isActive: timing.isActive,
+      };
+    });
+
+    const timingCapacity = timings.reduce(
+      (total, timing) => total + timing.capacity,
+      0,
+    );
+    const timingEnrolled = timings.reduce(
+      (total, timing) => total + timing.enrolledStudents,
+      0,
+    );
+    const capacity = timings.length ? timingCapacity : batch.capacity;
     const enrolledStudents =
-      options?.enrolledOverride ?? batch._count.enrollments;
-    const availableSeats = Math.max(0, batch.capacity - enrolledStudents);
+      options?.enrolledOverride ??
+      (timings.length
+        ? timingEnrolled
+        : (admittedByBatch.get(batch.id) ?? 0));
+    const availableSeats = Math.max(0, capacity - enrolledStudents);
+    const learningModes = [
+      ...new Set(timings.map((timing) => timing.mode)),
+    ];
     const totalWorkingDays = this.countWorkingDays(
       batch.startDate,
       batch.endDate,
@@ -1218,17 +1367,28 @@ export class BranchBatchOpsService {
       name: batch.name,
       code: batch.code,
       mode: batch.mode,
+      learningModes,
       status: batch.status,
       startDate: batch.startDate,
       endDate: batch.endDate,
       startTime: batch.startTime,
       endTime: batch.endTime,
       daysOfWeek: batch.daysOfWeek,
-      capacity: batch.capacity,
+      capacity,
       enrolledStudents,
       availableSeats,
       totalWorkingDays,
       durationDays: this.countCalendarDays(batch.startDate, batch.endDate),
+      durationValue: batch.durationValue ?? null,
+      durationType: batch.durationType ?? null,
+      durationLabel: this.formatBatchDuration(
+        batch.durationValue,
+        batch.durationType,
+      ),
+      modePricing: this.parseModePricing(
+        (batch as { modePricing?: unknown }).modePricing,
+      ),
+      timings,
       course: detailedCourse
         ? {
             id: detailedCourse.id,
@@ -1314,6 +1474,54 @@ export class BranchBatchOpsService {
 
   private personName(first: string, last?: string | null) {
     return [first, last].filter(Boolean).join(' ');
+  }
+
+  private parseModePricing(value: unknown) {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    const parsed = value as Record<
+      string,
+      {
+        originalPrice?: number;
+        discountAmount?: number;
+        discountedPrice?: number;
+        currency?: string;
+      }
+    >;
+
+    return Object.fromEntries(
+      Object.entries(parsed).map(([mode, pricing]) => [
+        mode,
+        {
+          originalPrice: Number(pricing.originalPrice ?? 0),
+          discountAmount: Number(pricing.discountAmount ?? 0),
+          discountedPrice: Number(
+            pricing.discountedPrice ??
+              Math.max(
+                0,
+                Number(pricing.originalPrice ?? 0) -
+                  Number(pricing.discountAmount ?? 0),
+              ),
+          ),
+          currency: pricing.currency ?? 'INR',
+        },
+      ]),
+    );
+  }
+
+  private formatBatchDuration(
+    durationValue?: number | null,
+    durationType?: string | null,
+  ) {
+    if (!durationValue) {
+      return null;
+    }
+
+    const unit = (durationType ?? 'DAYS').toLowerCase();
+    const singular = unit.replace(/s$/, '');
+    return `${durationValue} ${durationValue === 1 ? singular : unit}`;
   }
 
   private formatCourseDuration(
