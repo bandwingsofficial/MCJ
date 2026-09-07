@@ -32,11 +32,20 @@ export const AuthGuard = ({ children }: Props) => {
     }
   }, [status, isAuthenticated, user, router, pathname]);
 
-  if (
-    status === "UNKNOWN" ||
-    status === "BOOTSTRAPPING" ||
-    status === "REFRESHING"
-  ) {
+  // Keep the current page mounted during silent token refresh so in-flight
+  // forms/modals (e.g. Create Student) are not unmounted mid-submit.
+  if (status === "UNKNOWN" || status === "BOOTSTRAPPING") {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-3 text-slate-600">
+          <Loader />
+          <p className="text-sm">Checking your session…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "REFRESHING" && !isAuthenticated) {
     return (
       <div className="flex h-screen items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-3 text-slate-600">

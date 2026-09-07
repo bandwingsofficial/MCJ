@@ -135,12 +135,24 @@ export class CreateStudentHandler {
     if (command.email?.trim()) {
       const existingEmail = await this.prisma.user.findFirst({
         where: { email, deletedAt: null },
-        select: { id: true },
+        select: { id: true, role: true },
       });
+
       if (existingEmail) {
+        const linkedStudent = await this.studentRepo.findByUserId(
+          existingEmail.id,
+          true,
+        );
+
+        if (!linkedStudent && existingEmail.role === Role.STUDENT) {
+          return existingEmail.id;
+        }
+
         throw new BaseException(
           ERROR_CODES.STUDENT_EMAIL_EXISTS,
-          'This email address is already registered. Use a different email address.',
+          linkedStudent
+            ? 'A student with this email already exists. Use a different email address.'
+            : 'This email address is already registered. Use a different email address.',
           409,
           { field: 'email' },
         );
@@ -150,12 +162,24 @@ export class CreateStudentHandler {
     if (phone) {
       const existingPhone = await this.prisma.user.findFirst({
         where: { phone, deletedAt: null },
-        select: { id: true },
+        select: { id: true, role: true },
       });
+
       if (existingPhone) {
+        const linkedStudent = await this.studentRepo.findByUserId(
+          existingPhone.id,
+          true,
+        );
+
+        if (!linkedStudent && existingPhone.role === Role.STUDENT) {
+          return existingPhone.id;
+        }
+
         throw new BaseException(
           ERROR_CODES.STUDENT_PHONE_EXISTS,
-          'This phone number is already registered. Use a different phone number.',
+          linkedStudent
+            ? 'A student with this phone number already exists. Use a different phone number.'
+            : 'This phone number is already registered. Use a different phone number.',
           409,
           { field: 'phone' },
         );

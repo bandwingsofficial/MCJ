@@ -6,6 +6,7 @@ export interface StudentListFilters {
   status?: StudentStatus;
   search?: string;
   includeDeleted?: boolean;
+  includeAll?: boolean;
   onlyActive?: boolean;
   skip?: number;
   take?: number;

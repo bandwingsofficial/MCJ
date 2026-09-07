@@ -23,6 +23,8 @@ interface Props {
   onEdit: (student: StudentListItem) => void;
   onActivate: (student: StudentListItem) => void;
   onDeactivate: (student: StudentListItem) => void;
+  onRestore?: (student: StudentListItem) => void;
+  onPermanentDelete?: (student: StudentListItem) => void;
 }
 
 function formatStudentName(student: StudentListItem): string {
@@ -41,6 +43,8 @@ export function StudentTable({
   onEdit,
   onActivate,
   onDeactivate,
+  onRestore,
+  onPermanentDelete,
 }: Props) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
@@ -193,6 +197,8 @@ export function StudentTable({
                     onEdit={onEdit}
                     onActivate={onActivate}
                     onDeactivate={onDeactivate}
+                    onRestore={onRestore}
+                    onPermanentDelete={onPermanentDelete}
                   />
                 </td>
               </tr>

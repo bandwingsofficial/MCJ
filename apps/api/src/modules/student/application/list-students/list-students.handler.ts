@@ -15,6 +15,7 @@ export class ListStudentsHandler {
       status: query.status,
       search: query.search,
       includeDeleted: query.includeDeleted,
+      includeAll: query.includeAll,
       onlyActive: query.onlyActive,
       skip: query.skip,
       take: query.take,

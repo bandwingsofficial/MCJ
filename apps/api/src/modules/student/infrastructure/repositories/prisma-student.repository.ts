@@ -193,9 +193,10 @@ export class PrismaStudentRepository implements StudentRepository {
   async getMaxStudentCodeNumber(): Promise<number> {
     const records = await this.prisma.student.findMany({
       where: {
-        studentCode: {
-          startsWith: 'STU',
-        },
+        OR: [
+          { studentCode: { startsWith: 'MCJ-STU-' } },
+          { studentCode: { startsWith: 'STU' } },
+        ],
       },
       select: {
         studentCode: true,
@@ -226,7 +227,11 @@ export class PrismaStudentRepository implements StudentRepository {
   ): Prisma.StudentWhereInput {
     const where: Prisma.StudentWhereInput = {};
 
-    if (!filters.includeDeleted) {
+    if (filters.includeDeleted === true) {
+      where.isDeleted = true;
+    } else if (filters.onlyActive || filters.status) {
+      where.isDeleted = false;
+    } else if (filters.includeAll !== true) {
       where.isDeleted = false;
     }
 

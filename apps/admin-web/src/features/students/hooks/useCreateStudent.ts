@@ -24,9 +24,9 @@ export const useCreateStudent = (): UseCreateStudentReturn => {
     payload: CreateStudentRequest,
     image?: File | null,
   ) => {
-    try {
-      setIsLoading(true);
+    setIsLoading(true);
 
+    try {
       const requestPayload: CreateStudentRequest = { ...payload };
 
       if (image) {
@@ -36,6 +36,8 @@ export const useCreateStudent = (): UseCreateStudentReturn => {
 
       const response = await studentService.createStudent(requestPayload);
       return response.data;
+    } catch (error) {
+      throw error;
     } finally {
       setIsLoading(false);
     }

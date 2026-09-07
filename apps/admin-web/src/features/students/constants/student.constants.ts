@@ -6,8 +6,14 @@ import type {
   StudentStatus,
   StudentDocumentType,
 } from "@/src/features/students/types/student.types";
-import { DELETED_STUDENTS_FILTER } from "@/src/features/students/utils/student-list.utils";
+import type { CreateStudentFormValues } from "@/src/features/students/schemas/create-student.schema";
 import type { StudentFormSchema } from "@/src/features/students/schemas/student.schema";
+
+export const ARCHIVED_STUDENTS_FILTER = "ARCHIVED" as const;
+export const ACTIVE_STUDENTS_FILTER = "ACTIVE" as const;
+
+/** @deprecated Use ARCHIVED_STUDENTS_FILTER */
+export const DELETED_STUDENTS_FILTER = ARCHIVED_STUDENTS_FILTER;
 
 export const STUDENT_GENDER_OPTIONS: ReadonlyArray<{
   label: string;
@@ -31,13 +37,15 @@ export const STUDENT_STATUSES: ReadonlyArray<{
 ];
 
 export const STUDENT_STATUS_FILTER_OPTIONS = [
+  { label: "Active", value: ACTIVE_STUDENTS_FILTER },
   ...STUDENT_STATUSES,
-  { label: "Deleted", value: DELETED_STUDENTS_FILTER },
+  { label: "Archived", value: ARCHIVED_STUDENTS_FILTER },
 ] as const;
 
 export const DEFAULT_STUDENT_FILTERS: StudentFilters = {
   search: "",
   includeDeleted: false,
+  includeAll: true,
   page: 1,
   pageSize: 20,
 };
@@ -65,6 +73,31 @@ export const DEFAULT_STUDENT_FORM_VALUES: StudentFormSchema = {
   emergencyContactName: "",
   emergencyContactPhone: "",
   admissionDate: "",
+  notes: "",
+  status: "LEAD",
+  profileImageFileId: "",
+};
+
+export const DEFAULT_CREATE_STUDENT_FORM_VALUES: CreateStudentFormValues = {
+  studentCode: "",
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  gender: "MALE",
+  dateOfBirth: "",
+  addressLine1: "",
+  addressLine2: "",
+  city: "",
+  state: "",
+  country: "India",
+  postalCode: "",
+  qualification: "",
+  collegeName: "",
+  specialization: "",
+  passingYear: undefined,
+  parentName: "",
+  parentPhone: "",
   notes: "",
   status: "LEAD",
   profileImageFileId: "",

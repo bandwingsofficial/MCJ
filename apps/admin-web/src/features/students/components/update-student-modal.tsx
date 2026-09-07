@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Modal } from "@/src/shared/components/ui/model";
 import { appToast } from "@/src/shared/components/ui/toast";
 import {
+  getErrorCode,
   getErrorFieldErrors,
   getErrorMessage,
 } from "@/src/core/utils/get-error-message";
 
-import { StudentForm } from "@/src/features/students/components/student-form";
+import { EditStudentForm } from "@/src/features/students/components/edit-student-form";
 import { useUpdateStudent } from "@/src/features/students/hooks/useUpdateStudent";
-import type { StudentFormValues } from "@/src/features/students/schemas/student.schema";
+import type { CreateStudentFormValues } from "@/src/features/students/schemas/create-student.schema";
 import type { StudentListItem } from "@/src/features/students/types/student.types";
 import {
   mapStudentToFormValues,
@@ -34,8 +35,44 @@ export function UpdateStudentModal({
   const { updateStudent, isLoading } = useUpdateStudent();
   const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
 
+  const defaultValues = useMemo<CreateStudentFormValues | null>(() => {
+    if (!student) {
+      return null;
+    }
+
+    return mapStudentToFormValues(student);
+  }, [student]);
+
+  const applySubmitError = (error: unknown) => {
+    const fieldErrors = getErrorFieldErrors(error);
+    const errorCode = getErrorCode(error);
+    const message = getErrorMessage(error);
+
+    if (
+      !fieldErrors.email &&
+      (errorCode === "STUDENT_EMAIL_EXISTS" ||
+        errorCode === "EMAIL_ALREADY_EXISTS")
+    ) {
+      fieldErrors.email = message;
+    }
+
+    if (
+      !fieldErrors.phone &&
+      (errorCode === "STUDENT_PHONE_EXISTS" ||
+        errorCode === "PHONE_ALREADY_EXISTS")
+    ) {
+      fieldErrors.phone = message;
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
+      setServerErrors(fieldErrors);
+    }
+
+    appToast.error(message);
+  };
+
   const handleSubmit = async (
-    values: StudentFormValues,
+    values: CreateStudentFormValues,
     image: File | null,
   ) => {
     if (!student) {
@@ -53,11 +90,7 @@ export function UpdateStudentModal({
       await onSuccess();
       onClose();
     } catch (error) {
-      const fieldErrors = getErrorFieldErrors(error);
-      if (Object.keys(fieldErrors).length > 0) {
-        setServerErrors(fieldErrors);
-      }
-      appToast.error(getErrorMessage(error));
+      applySubmitError(error);
     }
   };
 
@@ -66,23 +99,28 @@ export function UpdateStudentModal({
       open={open}
       title="Edit Student"
       onClose={() => {
+        if (isLoading) {
+          return;
+        }
+
         setServerErrors({});
         onClose();
       }}
       contentClassName="!flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-3xl flex-col !overflow-hidden"
     >
-      {student ? (
-        <StudentForm
+      {student && defaultValues ? (
+        <EditStudentForm
           key={student.id}
-          mode="edit"
-          defaultValues={mapStudentToFormValues(student)}
+          defaultValues={defaultValues}
           profileImageUrl={student.profileImageUrl}
           isSubmitting={isLoading}
-          submitLabel="Update Student"
-          loadingLabel="Updating Student..."
           serverErrors={serverErrors}
           onSubmit={handleSubmit}
           onCancel={() => {
+            if (isLoading) {
+              return;
+            }
+
             setServerErrors({});
             onClose();
           }}

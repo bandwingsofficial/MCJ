@@ -42,59 +42,39 @@ export function StudentRowActionsMenu({
   onPermanentDelete,
 }: Props) {
   if (isArchivedStudent(student)) {
-    if (onRestore || onPermanentDelete) {
-      return (
-        <div className="flex items-center justify-end gap-1">
-          {onRestore ? (
-            <Tooltip content="Restore student">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={disabled}
-                onClick={() => onRestore(student)}
-                aria-label="Restore student"
-                className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
-              >
-                <RotateCcw className={iconClass} />
-              </Button>
-            </Tooltip>
-          ) : null}
-
-          {onPermanentDelete ? (
-            <Tooltip content="Permanently delete student">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={disabled}
-                onClick={() => onPermanentDelete(student)}
-                aria-label="Permanently delete student"
-                className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
-              >
-                <Trash2 className={iconClass} />
-              </Button>
-            </Tooltip>
-          ) : null}
-        </div>
-      );
-    }
-
     return (
       <div className="flex items-center justify-end gap-1">
-        <Tooltip content="Manage student">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={disabled}
-            onClick={() => onManage(student)}
-            aria-label="Manage student"
-            className={`${iconBtnClass} text-slate-700 hover:bg-slate-100 hover:text-[#102A56]`}
-          >
-            <Settings2 className={iconClass} />
-          </Button>
-        </Tooltip>
+        {onRestore ? (
+          <Tooltip content="Restore student">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={disabled}
+              onClick={() => onRestore(student)}
+              aria-label="Restore student"
+              className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
+            >
+              <RotateCcw className={iconClass} />
+            </Button>
+          </Tooltip>
+        ) : null}
+
+        {onPermanentDelete ? (
+          <Tooltip content="Permanently delete student">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={disabled}
+              onClick={() => onPermanentDelete(student)}
+              aria-label="Permanently delete student"
+              className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
+            >
+              <Trash2 className={iconClass} />
+            </Button>
+          </Tooltip>
+        ) : null}
       </div>
     );
   }

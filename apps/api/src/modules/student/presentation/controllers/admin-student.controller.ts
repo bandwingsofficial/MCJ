@@ -134,6 +134,7 @@ export class AdminStudentController {
         dto.admissionDate ? new Date(dto.admissionDate) : undefined,
         dto.notes,
         dto.status,
+        undefined,
         user.sub,
       ),
     );
@@ -165,6 +166,7 @@ export class AdminStudentController {
         query.onlyActive === true,
         query.skip,
         query.take,
+        query.includeAll === true,
       ),
     );
 

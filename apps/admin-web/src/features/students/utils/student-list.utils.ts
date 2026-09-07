@@ -3,19 +3,36 @@ import type {
   StudentFilters,
   StudentListResponse,
 } from "@/src/features/students/types/student.types";
+import {
+  ACTIVE_STUDENTS_FILTER,
+  ARCHIVED_STUDENTS_FILTER,
+  DELETED_STUDENTS_FILTER,
+} from "@/src/features/students/constants/student.constants";
 import { STUDENT_SELECT_ALL } from "@/src/features/students/utils/student-select.utils";
 
-export const DELETED_STUDENTS_FILTER = "DELETED" as const;
+export {
+  ACTIVE_STUDENTS_FILTER,
+  ARCHIVED_STUDENTS_FILTER,
+  DELETED_STUDENTS_FILTER,
+} from "@/src/features/students/constants/student.constants";
 
 export type StudentStatusFilterValue =
   | Student["status"]
-  | typeof DELETED_STUDENTS_FILTER;
+  | typeof ARCHIVED_STUDENTS_FILTER
+  | typeof ACTIVE_STUDENTS_FILTER;
 
 export function getStudentStatusFilterValue(
-  filters: Pick<StudentFilters, "status" | "includeDeleted">,
+  filters: Pick<
+    StudentFilters,
+    "status" | "includeDeleted" | "onlyActive" | "includeAll"
+  >,
 ): StudentStatusFilterValue | typeof STUDENT_SELECT_ALL {
   if (filters.includeDeleted) {
-    return DELETED_STUDENTS_FILTER;
+    return ARCHIVED_STUDENTS_FILTER;
+  }
+
+  if (filters.onlyActive) {
+    return ACTIVE_STUDENTS_FILTER;
   }
 
   if (filters.status) {
@@ -34,14 +51,31 @@ export function applyStudentStatusFilter(
       ...filters,
       status: undefined,
       includeDeleted: false,
+      includeAll: true,
+      onlyActive: undefined,
+      page: 1,
     };
   }
 
-  if (value === DELETED_STUDENTS_FILTER) {
+  if (value === ARCHIVED_STUDENTS_FILTER) {
     return {
       ...filters,
       status: undefined,
       includeDeleted: true,
+      includeAll: false,
+      onlyActive: undefined,
+      page: 1,
+    };
+  }
+
+  if (value === ACTIVE_STUDENTS_FILTER) {
+    return {
+      ...filters,
+      status: undefined,
+      includeDeleted: false,
+      includeAll: false,
+      onlyActive: true,
+      page: 1,
     };
   }
 
@@ -49,6 +83,9 @@ export function applyStudentStatusFilter(
     ...filters,
     status: value,
     includeDeleted: false,
+    includeAll: false,
+    onlyActive: undefined,
+    page: 1,
   };
 }
 
@@ -64,6 +101,7 @@ export function buildStudentListQueryParams(filters?: StudentFilters) {
     status: includeDeleted ? undefined : filters?.status || undefined,
     gender: filters?.gender || undefined,
     includeDeleted: includeDeleted ? true : undefined,
+    includeAll: filters?.includeAll === true ? true : undefined,
     onlyActive: filters?.onlyActive === true ? true : undefined,
     skip,
     take: pageSize,

@@ -9,8 +9,8 @@ import type {
   StudentFilters,
 } from "@/src/features/students/types/student.types";
 import { parseStudentListResponse } from "@/src/features/students/utils/student-list.utils";
+import { DEFAULT_STUDENT_FILTERS } from "@/src/features/students/constants/student.constants";
 
-const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
 
 interface UseStudentsReturn {
@@ -33,10 +33,7 @@ export const useStudents = (): UseStudentsReturn => {
   const [error, setError] = useState<string | null>(null);
 
   const [filters, setFiltersState] = useState<StudentFilters>({
-    search: "",
-    includeDeleted: false,
-    page: 1,
-    pageSize: DEFAULT_PAGE_SIZE,
+    ...DEFAULT_STUDENT_FILTERS,
   });
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -52,6 +49,8 @@ export const useStudents = (): UseStudentsReturn => {
         next.status !== prev.status ||
         next.gender !== prev.gender ||
         next.includeDeleted !== prev.includeDeleted ||
+        next.includeAll !== prev.includeAll ||
+        next.onlyActive !== prev.onlyActive ||
         next.pageSize !== prev.pageSize;
 
       return {
@@ -121,6 +120,8 @@ export const useStudents = (): UseStudentsReturn => {
     filters.branchId,
     filters.gender,
     filters.includeDeleted,
+    filters.includeAll,
+    filters.onlyActive,
     filters.page,
     filters.pageSize,
     filters.status,

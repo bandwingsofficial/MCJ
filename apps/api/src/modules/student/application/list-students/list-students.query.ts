@@ -9,5 +9,6 @@ export class ListStudentsQuery {
     public readonly onlyActive = false,
     public readonly skip?: number,
     public readonly take?: number,
+    public readonly includeAll = false,
   ) {}
 }

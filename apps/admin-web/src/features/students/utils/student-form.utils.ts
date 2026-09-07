@@ -1,4 +1,4 @@
-import type { StudentFormSchema } from "@/src/features/students/schemas/student.schema";
+import type { CreateStudentFormValues } from "@/src/features/students/schemas/create-student.schema";
 import type {
   CreateStudentRequest,
   Student,
@@ -30,22 +30,20 @@ export function formatStudentDate(value?: string | null): string {
   });
 }
 
-export function mapStudentToFormValues(
-  student: Student,
-): Partial<StudentFormSchema> {
+export function mapStudentToFormValues(student: Student): CreateStudentFormValues {
   return {
     studentCode: student.studentCode,
     firstName: student.firstName,
     lastName: student.lastName ?? "",
     email: student.email ?? "",
     phone: student.phone ?? "",
-    gender: student.gender ?? undefined,
+    gender: student.gender ?? "MALE",
     dateOfBirth: student.dateOfBirth?.split("T")[0] ?? "",
     addressLine1: student.addressLine1 ?? "",
     addressLine2: student.addressLine2 ?? "",
     city: student.city ?? "",
     state: student.state ?? "",
-    country: student.country ?? "",
+    country: student.country ?? "India",
     postalCode: student.postalCode ?? "",
     qualification: student.qualification ?? "",
     collegeName: student.collegeName ?? "",
@@ -53,9 +51,6 @@ export function mapStudentToFormValues(
     passingYear: student.passingYear ?? undefined,
     parentName: student.parentName ?? "",
     parentPhone: student.parentPhone ?? "",
-    emergencyContactName: student.emergencyContactName ?? "",
-    emergencyContactPhone: student.emergencyContactPhone ?? "",
-    admissionDate: student.admissionDate?.split("T")[0] ?? "",
     notes: student.notes ?? "",
     status: student.status,
     profileImageFileId: student.profileImageFileId ?? "",
@@ -63,7 +58,7 @@ export function mapStudentToFormValues(
 }
 
 export function toCreateStudentRequest(
-  values: StudentFormSchema,
+  values: CreateStudentFormValues,
 ): CreateStudentRequest {
   return {
     firstName: values.firstName.trim(),
@@ -84,9 +79,6 @@ export function toCreateStudentRequest(
     passingYear: values.passingYear,
     parentName: emptyToUndefined(values.parentName),
     parentPhone: emptyToUndefined(values.parentPhone),
-    emergencyContactName: emptyToUndefined(values.emergencyContactName),
-    emergencyContactPhone: emptyToUndefined(values.emergencyContactPhone),
-    admissionDate: emptyToUndefined(values.admissionDate),
     notes: emptyToUndefined(values.notes),
     status: values.status,
     profileImageFileId: emptyToUndefined(values.profileImageFileId),
@@ -94,12 +86,10 @@ export function toCreateStudentRequest(
 }
 
 export function toUpdateStudentRequest(
-  values: StudentFormSchema & { branchId?: string | null },
+  values: CreateStudentFormValues & { branchId?: string | null },
 ): UpdateStudentRequest {
-  const payload = toCreateStudentRequest(values);
-
   return {
-    ...payload,
+    ...toCreateStudentRequest(values),
     studentCode: values.studentCode?.trim() || undefined,
     ...(values.branchId !== undefined ? { branchId: values.branchId } : {}),
   };

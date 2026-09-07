@@ -4,7 +4,6 @@ import {
   mapStudentToFormValues,
   toUpdateStudentRequest,
 } from "@/src/features/students/utils/student-form.utils";
-import type { StudentFormSchema } from "@/src/features/students/schemas/student.schema";
 
 export async function assignBatchToBranch(
   batchId: string,
@@ -26,7 +25,7 @@ export async function assignStudentToBranch(
   const response = await studentService.getStudent(studentId);
   const formValues = mapStudentToFormValues(response.data);
   const payload = toUpdateStudentRequest({
-    ...(formValues as StudentFormSchema),
+    ...formValues,
     branchId,
   });
 

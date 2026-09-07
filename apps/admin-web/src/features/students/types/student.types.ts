@@ -61,6 +61,7 @@ export interface Student {
 export interface StudentFilters {
   search?: string;
   includeDeleted?: boolean;
+  includeAll?: boolean;
   onlyActive?: boolean;
   status?: StudentStatus;
   gender?: StudentGender;

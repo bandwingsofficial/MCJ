@@ -119,7 +119,11 @@ export const setupRefreshInterceptor = (api: AxiosInstance): void => {
       }
 
       isRefreshing = true;
-      useAuthStore.getState().setStatus("REFRESHING");
+
+      const authState = useAuthStore.getState();
+      if (!authState.isAuthenticated || !authState.user) {
+        useAuthStore.getState().setStatus("REFRESHING");
+      }
 
       try {
         const refreshToken = TokenStorage.getRefreshToken();

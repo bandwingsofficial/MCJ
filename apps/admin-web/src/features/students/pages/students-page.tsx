@@ -14,6 +14,8 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { useStudents } from "@/src/features/students/hooks/useStudents";
 import { useActivateStudent } from "@/src/features/students/hooks/useActivateStudent";
 import { useDeactivateStudent } from "@/src/features/students/hooks/useDeactivateStudent";
+import { useRestoreStudent } from "@/src/features/students/hooks/useRestoreStudent";
+import { usePermanentDeleteStudent } from "@/src/features/students/hooks/usePermanentDeleteStudent";
 import { studentService } from "@/src/features/students/services/student.service";
 
 import { StudentSummaryHeader } from "@/src/features/students/components/student-summary-header";
@@ -55,6 +57,9 @@ export function StudentsPage() {
 
   const { activateStudent, isLoading: isActivating } = useActivateStudent();
   const { deactivateStudent, isLoading: isDeactivating } = useDeactivateStudent();
+  const { restoreStudent, isPending: isRestoring } = useRestoreStudent();
+  const { permanentDeleteStudent, isPending: isPermanentlyDeleting } =
+    usePermanentDeleteStudent();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<StudentListItem | null>(null);
@@ -65,6 +70,11 @@ export function StudentsPage() {
     student: StudentListItem;
     action: "activate" | "deactivate";
   } | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<StudentListItem | null>(
+    null,
+  );
+  const [permanentDeleteTarget, setPermanentDeleteTarget] =
+    useState<StudentListItem | null>(null);
   const [isBulkLoading, setIsBulkLoading] = useState(false);
   const [branches, setBranches] = useState<BranchOption[]>([]);
 
@@ -78,12 +88,16 @@ export function StudentsPage() {
     (filters.search ?? "").trim() ||
       filters.branchId ||
       filters.status ||
-      filters.includeDeleted,
+      filters.includeDeleted ||
+      filters.onlyActive ||
+      filters.includeAll === false,
   );
 
   const actionLoading =
     isActivating ||
     isDeactivating ||
+    isRestoring ||
+    isPermanentlyDeleting ||
     isBulkLoading;
 
   useEffect(() => {
@@ -106,6 +120,8 @@ export function StudentsPage() {
     filters.pageSize,
     filters.status,
     filters.includeDeleted,
+    filters.includeAll,
+    filters.onlyActive,
     filters.search,
     filters.branchId,
   ]);
@@ -328,6 +344,8 @@ export function StudentsPage() {
                   onDeactivate={(student) =>
                     setStatusTarget({ student, action: "deactivate" })
                   }
+                  onRestore={setRestoreTarget}
+                  onPermanentDelete={setPermanentDeleteTarget}
                 />
               </div>
 
@@ -429,6 +447,60 @@ export function StudentsPage() {
             }
 
             setStatusTarget(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(restoreTarget)}
+        title="Restore student?"
+        description={
+          restoreTarget
+            ? `Restore "${[restoreTarget.firstName, restoreTarget.lastName].filter(Boolean).join(" ")}"? Their previous student status will be kept.`
+            : ""
+        }
+        confirmLabel="Restore"
+        loading={isRestoring}
+        onCancel={() => setRestoreTarget(null)}
+        onConfirm={async () => {
+          if (!restoreTarget) {
+            return;
+          }
+
+          try {
+            await restoreStudent(restoreTarget.id);
+            appToast.success("Student restored successfully");
+            setRestoreTarget(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(permanentDeleteTarget)}
+        title="Permanently delete student?"
+        description={
+          permanentDeleteTarget
+            ? `You are about to permanently delete "${[permanentDeleteTarget.firstName, permanentDeleteTarget.lastName].filter(Boolean).join(" ")}". This action cannot be undone.`
+            : ""
+        }
+        confirmLabel="Permanently Delete"
+        loading={isPermanentlyDeleting}
+        onCancel={() => setPermanentDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!permanentDeleteTarget) {
+            return;
+          }
+
+          try {
+            await permanentDeleteStudent(permanentDeleteTarget.id);
+            appToast.success("Student permanently deleted");
+            setPermanentDeleteTarget(null);
             await refetch();
           } catch (err) {
             appToast.error(getErrorMessage(err));

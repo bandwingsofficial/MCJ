@@ -44,4 +44,10 @@ export class ListStudentsQueryDto extends PaginationQueryDto {
   @IsBoolean()
   @Transform(({ value }) => toBoolean(value))
   onlyActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => toBoolean(value))
+  includeAll?: boolean;
 }
