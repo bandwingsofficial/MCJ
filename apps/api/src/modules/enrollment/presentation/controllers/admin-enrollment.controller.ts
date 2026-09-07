@@ -208,6 +208,7 @@ export class AdminEnrollmentController {
         dto.isActive,
         dto.studentId,
         dto.batchId,
+        dto.batchTimingId,
         user.sub,
         this.resolveBranchId(undefined, user),
       ),

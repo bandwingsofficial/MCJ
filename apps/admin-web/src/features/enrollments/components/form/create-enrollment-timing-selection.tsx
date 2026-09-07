@@ -15,6 +15,7 @@ interface Props {
   batch: Batch;
   mode: BatchMode;
   selectedTimingId: string;
+  reservedTimingId?: string;
   onSelectTiming: (timingId: string) => void;
 }
 
@@ -22,6 +23,7 @@ export function CreateEnrollmentTimingSelection({
   batch,
   mode,
   selectedTimingId,
+  reservedTimingId,
   onSelectTiming,
 }: Props) {
   const timings = getTimingsForMode(batch, mode);
@@ -44,7 +46,7 @@ export function CreateEnrollmentTimingSelection({
         {timings.map((timing) => {
           const enrolledCount = getTimingEnrolledCount(timing);
           const availableSeats = getTimingAvailableSeats(timing);
-          const selectable = isTimingSelectable(timing);
+          const selectable = isTimingSelectable(timing, reservedTimingId);
           const isSelected = selectedTimingId === timing.id;
 
           return (

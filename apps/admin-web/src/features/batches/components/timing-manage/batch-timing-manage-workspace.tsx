@@ -14,12 +14,10 @@ import type {
   BatchTiming,
 } from "@/src/features/batches/types/batch.types";
 
-import { BatchTimingAttendancePanel } from "./batch-timing-attendance-panel";
 import { BatchTimingBatchDetailsPanel } from "./batch-timing-batch-details-panel";
 import { BatchTimingDetailsPanel } from "./batch-timing-details-panel";
 import { BatchTimingCapacityForm } from "./batch-timing-capacity-form";
 import { BatchTimingOverviewPanel } from "./batch-timing-overview-panel";
-import { BatchTimingReportsPanel } from "./batch-timing-reports-panel";
 import { BatchTimingStudentsPanel } from "./batch-timing-students-panel";
 
 interface Props {
@@ -33,9 +31,7 @@ export type BatchTimingManageTabKey =
   | "overview"
   | "details"
   | "timing"
-  | "students"
-  | "attendance"
-  | "reports";
+  | "students";
 
 export const BATCH_TIMING_MANAGE_TABS: {
   value: BatchTimingManageTabKey;
@@ -45,8 +41,6 @@ export const BATCH_TIMING_MANAGE_TABS: {
   { value: "details", label: "Batch Details" },
   { value: "timing", label: "Batch Timing" },
   { value: "students", label: "Students" },
-  { value: "attendance", label: "Attendance" },
-  { value: "reports", label: "Reports" },
 ];
 
 export function BatchTimingManageWorkspace({
@@ -97,14 +91,6 @@ export function BatchTimingManageWorkspace({
 
       <TabsContent value="students">
         <BatchTimingStudentsPanel timing={timing} />
-      </TabsContent>
-
-      <TabsContent value="attendance">
-        <BatchTimingAttendancePanel timing={timing} />
-      </TabsContent>
-
-      <TabsContent value="reports">
-        <BatchTimingReportsPanel timing={timing} />
       </TabsContent>
     </Tabs>
   );

@@ -14,6 +14,7 @@ export class UpdateEnrollmentCommand {
     public readonly isActive?: boolean,
     public readonly studentId?: string,
     public readonly batchId?: string,
+    public readonly batchTimingId?: string | null,
     public readonly updatedBy?: string,
     public readonly actorBranchId?: string,
   ) {}

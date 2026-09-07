@@ -207,6 +207,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         batchRepo: BatchRepository,
         domainService: EnrollmentDomainService,
         sideEffects: EnrollmentSideEffectsService,
+        prisma: PrismaService,
       ) =>
         new UpdateEnrollmentHandler(
           enrollmentRepo,
@@ -217,6 +218,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
           batchRepo,
           domainService,
           sideEffects,
+          prisma,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
@@ -227,6 +229,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         BATCH_TOKENS.BATCH_REPOSITORY,
         EnrollmentDomainService,
         EnrollmentSideEffectsService,
+        PrismaService,
       ],
     },
 

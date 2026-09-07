@@ -15,9 +15,16 @@ import { formatBatchOverviewDate } from "@/src/features/batches/utils/batch-prog
 
 export { getTimingEnrolledCount, getTimingAvailableSeats } from "@/src/features/batches/utils/batch-timing.utils";
 
-export function isTimingSelectable(timing: BatchTiming): boolean {
+export function isTimingSelectable(
+  timing: BatchTiming,
+  reservedTimingId?: string,
+): boolean {
   if (timing.isDeleted || !timing.isActive) {
     return false;
+  }
+
+  if (reservedTimingId && timing.id === reservedTimingId) {
+    return true;
   }
 
   return getTimingAvailableSeats(timing) > 0;
@@ -36,6 +43,19 @@ export function findBatchTimingById(
   timingId: string,
 ): BatchTiming | undefined {
   return batch?.timings?.find((timing) => timing.id === timingId);
+}
+
+/** Pricing for the mode assigned to a specific batch timing (resolved by timing ID). */
+export function getCreateEnrollmentTimingPricing(
+  batch: Batch | null | undefined,
+  timingId: string,
+) {
+  const timing = findBatchTimingById(batch, timingId);
+  if (!timing) {
+    return null;
+  }
+
+  return getBatchModePricing(batch, timing.mode);
 }
 
 export function getCreateEnrollmentModePricing(

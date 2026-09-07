@@ -4,7 +4,6 @@ import { formatPersonName } from "@/src/features/branches/utils/branch-display.u
 import { EnrollmentActions } from "@/src/features/enrollments/components/table/enrollment-actions";
 import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/table/EnrollmentStatusBadge";
 import type { Enrollment } from "@/src/features/enrollments/types";
-import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
 
 interface EnrollmentTableProps {
   enrollments: Enrollment[];
@@ -29,7 +28,7 @@ export function EnrollmentTable({
         <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
           <tr>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Enrollment No
+              Student Code
             </th>
             <th className="min-w-[160px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Student
@@ -44,9 +43,6 @@ export function EnrollmentTable({
               Course
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Enrollment Date
-            </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Status
             </th>
             <th className="w-[6.5rem] px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -58,7 +54,7 @@ export function EnrollmentTable({
           {enrollments.length === 0 ? (
             <tr>
               <td
-                colSpan={8}
+                colSpan={7}
                 className="px-3 py-12 text-center align-middle"
               >
                 <p className="text-sm font-medium text-[#102A56]">
@@ -80,7 +76,7 @@ export function EnrollmentTable({
                   className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
                 >
                   <td className="px-3 py-3 align-middle font-mono text-[15px] font-medium text-[#102A56]">
-                    {enrollment.enrollmentNumber}
+                    {enrollment.student?.studentCode ?? "—"}
                   </td>
                   <td className="px-3 py-3 align-middle">
                     <button
@@ -99,11 +95,6 @@ export function EnrollmentTable({
                   </td>
                   <td className="px-3 py-3 align-middle text-slate-700">
                     {enrollment.course?.title ?? "—"}
-                  </td>
-                  <td className="px-3 py-3 align-middle text-slate-700">
-                    {formatStudentDate(
-                      enrollment.admissionDate ?? enrollment.createdAt,
-                    )}
                   </td>
                   <td className="px-3 py-3 align-middle">
                     <EnrollmentStatusBadge status={enrollment.status} />

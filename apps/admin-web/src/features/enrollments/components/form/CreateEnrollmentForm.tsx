@@ -11,25 +11,18 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type {
   Batch,
-  BatchCourseAssignment,
   BatchMode,
 } from "@/src/features/batches/types/batch.types";
-import { BatchAssignedCoursesGrid } from "@/src/features/enrollments/components/form/BatchAssignedCoursesGrid";
 import { CreateEnrollmentModeSelection } from "@/src/features/enrollments/components/form/create-enrollment-mode-selection";
 import { CreateEnrollmentSummaryPanel } from "@/src/features/enrollments/components/form/create-enrollment-summary-panel";
 import { CreateEnrollmentTimingSelection } from "@/src/features/enrollments/components/form/create-enrollment-timing-selection";
-import { BranchBatchAssignDetails } from "@/src/features/branches/components/manage/branch-batch-assign-details";
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
 import { branchService } from "@/src/features/branches/services/branch.service";
 import type { Course } from "@/src/features/courses/types/course.types";
 import { courseService } from "@/src/features/courses/services/course.service";
 import {
-  getBatchDefaultDiscount,
-  getBatchPricing,
-} from "@/src/features/batches/utils/batch-pricing.util";
-import {
   findBatchTimingById,
-  getCreateEnrollmentModePricing,
+  getCreateEnrollmentTimingPricing,
 } from "@/src/features/enrollments/utils/create-enrollment-selection.utils";
 import {
   ENROLLMENT_PAYMENT_METHODS,
@@ -80,6 +73,28 @@ function computedPaymentStatus(paid: number, remaining: number): string {
   return "PARTIAL";
 }
 
+function buildEnrollmentStudentOption(enrollment: Enrollment | undefined) {
+  if (!enrollment?.student) {
+    return null;
+  }
+
+  return {
+    id: enrollment.student.id,
+    label: formatPersonName(
+      enrollment.student.firstName,
+      enrollment.student.lastName,
+    ),
+    meta: [
+      enrollment.student.studentCode,
+      enrollment.student.phone,
+      enrollment.student.email,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    enrolledElsewhere: false as const,
+  };
+}
+
 export function CreateEnrollmentForm({
   mode = "create",
   enrollment,
@@ -100,22 +115,19 @@ export function CreateEnrollmentForm({
   );
   const [paymentDate, setPaymentDate] = useState(todayDateInputValue());
   const [batchId, setBatchId] = useState(enrollment?.batch?.id ?? "");
-  const [selectedMode, setSelectedMode] = useState<BatchMode | "">("");
-  const [batchTimingId, setBatchTimingId] = useState("");
+  const [selectedMode, setSelectedMode] = useState<BatchMode | "">(
+    (enrollment?.batchTiming?.mode as BatchMode | undefined) ?? "",
+  );
+  const [batchTimingId, setBatchTimingId] = useState(
+    enrollment?.batchTimingId ?? enrollment?.batchTiming?.id ?? "",
+  );
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
-  const [courseAssignments, setCourseAssignments] = useState<
-    BatchCourseAssignment[]
-  >([]);
   const [categoryName, setCategoryName] = useState(
     enrollment?.category?.name ?? "—",
   );
-  const [feeAmount, setFeeAmount] = useState(
-    normalizeMoney(enrollment?.feeAmount),
-  );
-  const [discountAmount, setDiscountAmount] = useState(
-    normalizeMoney(enrollment?.discountAmount),
-  );
+  const [feeAmount, setFeeAmount] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState(0);
 
   const [students, setStudents] = useState<
     Array<{
@@ -124,8 +136,13 @@ export function CreateEnrollmentForm({
       meta?: string;
       enrolledElsewhere?: boolean;
     }>
-  >([]);
-  const [studentId, setStudentId] = useState(enrollment?.student?.id ?? "");
+  >(() => {
+    const enrolledStudent = buildEnrollmentStudentOption(enrollment);
+    return enrolledStudent ? [enrolledStudent] : [];
+  });
+  const [studentId, setStudentId] = useState(
+    enrollment?.student?.id ?? "",
+  );
 
   const [amountPaidNow, setAmountPaidNow] = useState("");
   const [paymentMethod, setPaymentMethod] =
@@ -139,17 +156,24 @@ export function CreateEnrollmentForm({
 
   const finalAmount = Math.max(0, feeAmount - discountAmount);
   const paidNowValue = normalizeMoney(amountPaidNow);
-  const remainingAmount = Math.max(0, finalAmount - paidNowValue);
-  const paymentStatus = computedPaymentStatus(paidNowValue, remainingAmount);
+  const existingPaidAmount = isEdit
+    ? normalizeMoney(enrollment?.paidAmount)
+    : 0;
+  const totalPaidAmount = existingPaidAmount + paidNowValue;
+  const remainingAmount = Math.max(0, finalAmount - totalPaidAmount);
+  const paymentStatus =
+    isEdit && paidNowValue === 0 && enrollment?.paymentStatus
+      ? enrollment.paymentStatus
+      : computedPaymentStatus(totalPaidAmount, remainingAmount);
 
   const selectedTiming = useMemo(
     () => findBatchTimingById(selectedBatch, batchTimingId),
     [batchTimingId, selectedBatch],
   );
 
-  const courseTitle = course?.title ?? "—";
+  const courseTitle = course?.title ?? enrollment?.course?.title ?? "—";
   const selectionComplete = Boolean(
-    !isEdit && batchId && selectedMode && batchTimingId && selectedTiming,
+    batchId && selectedMode && batchTimingId && selectedTiming,
   );
 
   useEffect(() => {
@@ -188,9 +212,10 @@ export function CreateEnrollmentForm({
       setBatchTimingId("");
       setSelectedBatch(null);
       setCourse(null);
-      setCourseAssignments([]);
-      setStudents([]);
-      setStudentId("");
+      if (!isEdit) {
+        setStudents([]);
+        setStudentId("");
+      }
       return;
     }
 
@@ -221,7 +246,8 @@ export function CreateEnrollmentForm({
           setBatchId("");
           setSelectedBatch(null);
           setCourse(null);
-          setCourseAssignments([]);
+          setSelectedMode("");
+          setBatchTimingId("");
           if (!isEdit) {
             setStudents([]);
             setStudentId("");
@@ -230,7 +256,8 @@ export function CreateEnrollmentForm({
           setBatchId("");
           setSelectedBatch(null);
           setCourse(null);
-          setCourseAssignments([]);
+          setSelectedMode("");
+          setBatchTimingId("");
           if (!isEdit) {
             setStudents([]);
             setStudentId("");
@@ -255,7 +282,6 @@ export function CreateEnrollmentForm({
       setSelectedMode("");
       setBatchTimingId("");
       setCourse(null);
-      setCourseAssignments([]);
       if (!isEdit) {
         setStudents([]);
         setStudentId("");
@@ -266,36 +292,54 @@ export function CreateEnrollmentForm({
     const loadBatchContext = async () => {
       setIsLoadingContext(true);
       try {
-        const [batchResponse, assignments] = await Promise.all([
-          batchService.getBatch(batchId),
-          isEdit
-            ? batchService.getBatchCourses(batchId)
-            : Promise.resolve([] as BatchCourseAssignment[]),
-        ]);
-
+        const batchResponse = await batchService.getBatch(batchId);
         const batch = batchResponse.data;
         setSelectedBatch(batch);
-        setCourseAssignments(assignments);
 
-        let nextFee = feeAmount;
-        let nextDiscount = discountAmount;
+        let nextFee = 0;
+        let nextDiscount = 0;
         let nextCategory = categoryName;
         let nextCourse: Course | null = null;
+        let nextMode = selectedMode;
+        let nextTimingId = batchTimingId;
 
-        const courseId = batch.courseId ?? assignments[0]?.courseId;
+        if (
+          isEdit &&
+          enrollment &&
+          enrollment.batch?.id === batchId &&
+          (enrollment.batchTimingId ?? enrollment.batchTiming?.id)
+        ) {
+          const savedTimingId =
+            enrollment.batchTimingId ?? enrollment.batchTiming?.id ?? "";
+          const savedTiming = findBatchTimingById(batch, savedTimingId);
+          if (savedTiming) {
+            nextMode = savedTiming.mode;
+            nextTimingId = savedTiming.id;
+          }
+        }
+
+        if (nextTimingId) {
+          const timingPricing = getCreateEnrollmentTimingPricing(
+            batch,
+            nextTimingId,
+          );
+          if (timingPricing) {
+            nextFee = timingPricing.originalPrice;
+            nextDiscount = timingPricing.discountAmount;
+          }
+        }
+
+        const courseId = batch.courseId ?? enrollment?.course?.id;
         if (courseId) {
           const courseResponse = await courseService.getCourse(courseId);
           nextCourse = courseResponse.data;
-          if (!isEdit || enrollment?.batch?.id !== batchId) {
-            const batchPricing = getBatchPricing(batch);
-            nextFee = batchPricing.originalPrice;
-            nextDiscount = getBatchDefaultDiscount(batch);
-          }
           nextCategory = nextCourse.category?.name ?? "—";
-        } else if (assignments[0]?.course?.category?.name) {
-          nextCategory = assignments[0].course.category.name;
+        } else if (enrollment?.category?.name) {
+          nextCategory = enrollment.category.name;
         }
 
+        setSelectedMode(nextMode);
+        setBatchTimingId(nextTimingId);
         setCourse(nextCourse);
         setFeeAmount(nextFee);
         setDiscountAmount(nextDiscount);
@@ -304,7 +348,6 @@ export function CreateEnrollmentForm({
         appToast.error(getErrorMessage(error));
         setSelectedBatch(null);
         setCourse(null);
-        setCourseAssignments([]);
       } finally {
         setIsLoadingContext(false);
       }
@@ -312,28 +355,27 @@ export function CreateEnrollmentForm({
 
     void loadBatchContext();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branchId, batchId, enrollment?.batch?.id, isEdit]);
+  }, [branchId, batchId, enrollment?.batch?.id, enrollment?.id, isEdit]);
 
   useEffect(() => {
-    if (isEdit || !selectedBatch || !selectedMode) {
+    if (!selectedBatch || !batchTimingId) {
       return;
     }
 
-    const pricing = getCreateEnrollmentModePricing(selectedBatch, selectedMode);
+    const pricing = getCreateEnrollmentTimingPricing(
+      selectedBatch,
+      batchTimingId,
+    );
     if (!pricing) {
       return;
     }
 
     setFeeAmount(pricing.originalPrice);
     setDiscountAmount(pricing.discountAmount);
-  }, [isEdit, selectedBatch, selectedMode]);
+  }, [batchTimingId, selectedBatch]);
 
   useEffect(() => {
-    const shouldLoadStudents = isEdit
-      ? Boolean(branchId && batchId)
-      : Boolean(branchId && batchId && batchTimingId);
-
-    if (!shouldLoadStudents) {
+    if (!branchId || !batchId || !batchTimingId) {
       if (!isEdit) {
         setStudents([]);
         setStudentId("");
@@ -404,27 +446,24 @@ export function CreateEnrollmentForm({
           enrollment?.student &&
           !mappedStudents.some((item) => item.id === enrollment.student.id)
         ) {
-          mappedStudents.unshift({
-            id: enrollment.student.id,
-            label: formatPersonName(
-              enrollment.student.firstName,
-              enrollment.student.lastName,
-            ),
-            meta: [
-              enrollment.student.studentCode,
-              enrollment.student.phone,
-              enrollment.student.email,
-            ]
-              .filter(Boolean)
-              .join(" · "),
-            enrolledElsewhere: false,
-          });
+          const enrolledStudent = buildEnrollmentStudentOption(enrollment);
+          if (enrolledStudent) {
+            mappedStudents.unshift(enrolledStudent);
+          }
         }
 
         setStudents(mappedStudents);
+
+        if (isEdit && enrollment?.student?.id) {
+          setStudentId(enrollment.student.id);
+        }
       } catch (error) {
         appToast.error(getErrorMessage(error));
-        setStudents([]);
+        const enrolledStudent = buildEnrollmentStudentOption(enrollment);
+        setStudents(enrolledStudent ? [enrolledStudent] : []);
+        if (isEdit && enrollment?.student?.id) {
+          setStudentId(enrollment.student.id);
+        }
       } finally {
         setIsLoadingContext(false);
       }
@@ -468,22 +507,13 @@ export function CreateEnrollmentForm({
     (student) => student.id === studentId,
   );
 
-  const existingPaidAmount = isEdit
-    ? normalizeMoney(enrollment?.paidAmount)
-    : paidNowValue;
-  const existingRemainingAmount = Math.max(0, finalAmount - existingPaidAmount);
-  const existingPaymentStatus = computedPaymentStatus(
-    existingPaidAmount,
-    existingRemainingAmount,
-  );
-
   const handleSubmit = async () => {
     if (!branchId || !batchId || !studentId) {
       appToast.error("Select branch, batch, and student.");
       return;
     }
 
-    if (!isEdit && (!selectedMode || !batchTimingId)) {
+    if (!selectedMode || !batchTimingId) {
       appToast.error("Select batch mode and batch timing.");
       return;
     }
@@ -525,6 +555,11 @@ export function CreateEnrollmentForm({
       return;
     }
 
+    if (isEdit && paidNowValue > 0 && totalPaidAmount > finalAmount) {
+      appToast.error("Amount paying now cannot exceed the remaining course fee.");
+      return;
+    }
+
     const apiAdmissionDate = toApiDateTime(admissionDate);
 
     if (!apiAdmissionDate) {
@@ -538,6 +573,7 @@ export function CreateEnrollmentForm({
         await enrollmentService.updateEnrollment(enrollment.id, {
           studentId,
           batchId,
+          batchTimingId,
           admissionDate: apiAdmissionDate,
           feeAmount,
           discountAmount,
@@ -601,7 +637,7 @@ export function CreateEnrollmentForm({
                 setBatchId("");
                 setSelectedMode("");
                 setBatchTimingId("");
-                setStudentId(isEdit ? studentId : "");
+                setStudentId("");
               }}
             />
           )}
@@ -624,64 +660,47 @@ export function CreateEnrollmentForm({
                 setBatchId(value);
                 setSelectedMode("");
                 setBatchTimingId("");
-                if (!isEdit) {
-                  setStudentId("");
-                }
+                setStudentId("");
               }}
             />
           )}
         </div>
       ) : null}
 
-      {batchId && selectedBatch && isEdit ? (
-        <BranchBatchAssignDetails
-          batch={selectedBatch}
-          categoryName={categoryName}
-          isLoading={isLoadingContext}
-          hideCourseAndTrainer
-        />
-      ) : null}
-
-      {batchId && isEdit ? (
-        <BatchAssignedCoursesGrid
-          assignments={courseAssignments}
-          isLoading={isLoadingContext}
-        />
-      ) : null}
-
-      {!isEdit && batchId && selectedBatch && !isLoadingContext ? (
+      {batchId && selectedBatch && !isLoadingContext ? (
         <CreateEnrollmentModeSelection
           batch={selectedBatch}
           selectedMode={selectedMode}
           onSelectMode={(mode) => {
             setSelectedMode(mode);
             setBatchTimingId("");
-            setStudentId("");
+            if (!isEdit) {
+              setStudentId("");
+            }
           }}
         />
       ) : null}
 
-      {!isEdit &&
-      batchId &&
-      selectedBatch &&
-      selectedMode &&
-      !isLoadingContext ? (
+      {batchId && selectedBatch && selectedMode && !isLoadingContext ? (
         <CreateEnrollmentTimingSelection
           batch={selectedBatch}
           mode={selectedMode}
           selectedTimingId={batchTimingId}
+          reservedTimingId={
+            isEdit
+              ? (enrollment?.batchTimingId ?? enrollment?.batchTiming?.id)
+              : undefined
+          }
           onSelectTiming={(timingId) => {
             setBatchTimingId(timingId);
-            setStudentId("");
+            if (!isEdit) {
+              setStudentId("");
+            }
           }}
         />
       ) : null}
 
-      {!isEdit &&
-      selectionComplete &&
-      selectedBatch &&
-      selectedMode &&
-      selectedTiming ? (
+      {selectionComplete && selectedBatch && selectedMode && selectedTiming ? (
         <CreateEnrollmentSummaryPanel
           batch={selectedBatch}
           mode={selectedMode}
@@ -693,10 +712,11 @@ export function CreateEnrollmentForm({
         />
       ) : null}
 
-      {(isEdit ? batchId : selectionComplete) ? (
+      {selectionComplete ? (
         <div className="space-y-2">
           <p className="text-sm font-medium text-slate-700">Select Student</p>
-          {isLoadingContext ? (
+          {isLoadingContext &&
+          !(isEdit && studentId && students.some((s) => s.id === studentId)) ? (
             <p className="text-sm text-[#647A9B]">Loading students...</p>
           ) : students.length === 0 ? (
             <p className="text-sm text-[#647A9B]">No data yet</p>
@@ -719,8 +739,7 @@ export function CreateEnrollmentForm({
         </div>
       ) : null}
 
-      {!isEdit &&
-      selectionComplete &&
+      {selectionComplete &&
       studentId &&
       !selectedStudentEnrollment?.enrolledElsewhere ? (
         <div className="space-y-4 rounded-xl border border-slate-200 p-4">
@@ -788,41 +807,6 @@ export function CreateEnrollmentForm({
         </div>
       ) : null}
 
-      {isEdit && batchId && studentId ? (
-        <div className="space-y-4 rounded-xl border border-slate-200 p-4">
-          <h3 className="text-sm font-semibold text-[#102A56]">Payment</h3>
-          <p className="text-xs text-slate-500">
-            Existing payments are historical records and are not changed when
-            you update branch, batch, or student.
-          </p>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="mb-1 text-xs text-slate-500">Total Fee</p>
-              <Input readOnly value={formatCurrency(finalAmount)} />
-            </div>
-            <div>
-              <p className="mb-1 text-xs text-slate-500">Amount Paid</p>
-              <Input readOnly value={formatCurrency(existingPaidAmount)} />
-            </div>
-            <div>
-              <p className="mb-1 text-xs text-slate-500">Remaining Amount</p>
-              <Input
-                readOnly
-                value={formatCurrency(existingRemainingAmount)}
-              />
-            </div>
-            <div>
-              <p className="mb-1 text-xs text-slate-500">Payment Status</p>
-              <Input
-                readOnly
-                value={enrollment?.paymentStatus ?? existingPaymentStatus}
-              />
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">
         <Button
           type="button"
@@ -840,7 +824,8 @@ export function CreateEnrollmentForm({
             !branchId ||
             !batchId ||
             !studentId ||
-            (!isEdit && !batchTimingId) ||
+            !batchTimingId ||
+            !selectedMode ||
             isLoadingContext ||
             Boolean(!isEdit && selectedStudentEnrollment?.enrolledElsewhere)
           }

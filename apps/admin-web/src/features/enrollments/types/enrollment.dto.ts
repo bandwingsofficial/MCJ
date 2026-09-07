@@ -32,6 +32,7 @@ export interface CreateEnrollmentRequest {
 export interface UpdateEnrollmentRequest {
   studentId?: string;
   batchId?: string;
+  batchTimingId?: string;
   admissionDate?: string;
   joiningDate?: string;
   expectedCompletionDate?: string;

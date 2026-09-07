@@ -42,8 +42,26 @@ export class EnrollmentSideEffectsService {
   async assertCapacityForTransition(
     enrollment: Enrollment,
     previousStatus: EnrollmentStatus | null,
-    options?: { restore?: boolean },
+    options?: {
+      restore?: boolean;
+      previousBatchTimingId?: string | null;
+    },
   ): Promise<void> {
+    const timingChanged =
+      options?.previousBatchTimingId !== undefined &&
+      options.previousBatchTimingId !== enrollment.batchTimingId;
+
+    if (
+      timingChanged &&
+      enrollment.batchTimingId &&
+      isTimingLinkedEnrollmentStatus(enrollment.status)
+    ) {
+      await assertBatchTimingHasLiveCapacity(
+        this.prisma,
+        enrollment.batchTimingId,
+      );
+    }
+
     const wasOccupying = previousStatus
       ? Enrollment.statusOccupiesSeat(previousStatus)
       : false;
@@ -172,6 +190,34 @@ export class EnrollmentSideEffectsService {
     });
 
     await this.studentRepo.save(student);
+  }
+
+  async syncBatchTimingTransfer(
+    fromBatchTimingId: string | null,
+    toBatchTimingId: string | null,
+    previousStatus: EnrollmentStatus,
+    currentStatus: EnrollmentStatus,
+  ): Promise<void> {
+    if (fromBatchTimingId === toBatchTimingId) {
+      return;
+    }
+
+    const wasLinked = isTimingLinkedEnrollmentStatus(previousStatus);
+    const isLinked = isTimingLinkedEnrollmentStatus(currentStatus);
+
+    if (fromBatchTimingId && wasLinked) {
+      await syncBatchTimingEnrolledCount(
+        this.prisma,
+        fromBatchTimingId,
+      );
+    }
+
+    if (toBatchTimingId && isLinked) {
+      await syncBatchTimingEnrolledCount(
+        this.prisma,
+        toBatchTimingId,
+      );
+    }
   }
 
   async transferSeat(

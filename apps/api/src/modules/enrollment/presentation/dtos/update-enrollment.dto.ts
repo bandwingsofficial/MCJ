@@ -91,4 +91,9 @@ export class UpdateEnrollmentDto {
   @IsOptional()
   @IsUUID()
   batchId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  batchTimingId?: string;
 }
