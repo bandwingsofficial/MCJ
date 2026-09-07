@@ -17,7 +17,6 @@ import {
   formatBatchDurationType,
 } from "@/src/features/batches/utils/batch-duration.utils";
 import {
-  formatBatchMode,
   formatBatchOperationalStatus,
   formatBatchTime,
 } from "@/src/features/batches/utils/batch.helper";
@@ -26,13 +25,16 @@ import {
   formatBatchPrice,
   getBatchPricing,
 } from "@/src/features/batches/utils/batch-pricing.util";
+import { calculateBatchProgress } from "@/src/features/batches/utils/batch-progress.utils";
 import {
-  calculateBatchProgress,
   formatBatchDaysLabel,
   formatBatchOverviewDate,
   formatBatchOverviewTiming,
 } from "@/src/features/batches/utils/batch-progress.utils";
-import { getBatchTimingsCount } from "@/src/features/batches/utils/batch-timing.utils";
+import {
+  getBatchModeSummaries,
+  getBatchTimingsCount,
+} from "@/src/features/batches/utils/batch-timing.utils";
 import { categoryService } from "@/src/features/categories/services/category.service";
 import { useCourse } from "@/src/features/courses/hooks/use-course";
 import { useCourseTrainers } from "@/src/features/courses/hooks/use-course-trainers";
@@ -153,6 +155,7 @@ export function BatchManageOverviewPanel({
 }: Props) {
   const progress = useMemo(() => calculateBatchProgress(batch), [batch]);
   const pricing = useMemo(() => getBatchPricing(batch), [batch]);
+  const modeSummaries = useMemo(() => getBatchModeSummaries(batch), [batch]);
   const isArchived = Boolean(batch.deletedAt || batch.isDeleted);
   const timingsCount = getBatchTimingsCount(batch);
 
@@ -259,10 +262,6 @@ export function BatchManageOverviewPanel({
             value={batch.course?.title?.trim() || "No course assigned"}
           />
           <OverviewField
-            label="Learning Mode"
-            value={formatBatchMode(batch.mode)}
-          />
-          <OverviewField
             label="Batch Timings"
             value={
               timingsCount === 0
@@ -295,6 +294,28 @@ export function BatchManageOverviewPanel({
             </div>
           ) : null}
         </dl>
+      </SectionCard>
+
+      <SectionCard title="Learning Modes">
+        {modeSummaries.length === 0 ? (
+          <EmptyMessage message="No batch timings are linked to this batch yet." />
+        ) : (
+          <div className="space-y-2">
+            {modeSummaries.map((row) => (
+              <div
+                key={row.mode}
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"
+              >
+                <span className="font-medium text-[#102A56]">{row.label}</span>
+                <span className="text-[#647A9B]">
+                  {row.timingsCount} timing
+                  {row.timingsCount === 1 ? "" : "s"} → {row.studentsCount}{" "}
+                  student{row.studentsCount === 1 ? "" : "s"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </SectionCard>
 
       <SectionCard title="Schedule">

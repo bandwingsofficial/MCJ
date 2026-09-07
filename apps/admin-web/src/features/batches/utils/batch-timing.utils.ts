@@ -1,8 +1,10 @@
 import type {
   Batch,
+  BatchMode,
   BatchTiming,
   DayOfWeek,
 } from "@/src/features/batches/types/batch.types";
+import { FILTER_BATCH_MODES } from "@/src/features/batches/constants/batch.constants";
 import {
   formatBatchTiming,
   formatBatchDateRange,
@@ -93,4 +95,50 @@ export function formatBatchTimingNames(batch: Batch): string {
   const names = getBatchTimings(batch).map((timing) => timing.name.trim());
 
   return names.length ? names.join(" • ") : "";
+}
+
+const MODE_SUMMARY_ORDER: BatchMode[] = ["OFFLINE", "ONLINE", "RECORDED"];
+
+const MODE_SUMMARY_LABELS = Object.fromEntries(
+  FILTER_BATCH_MODES.map(({ value, label }) => [value, label]),
+) as Record<BatchMode, string>;
+
+export interface BatchModeSummary {
+  mode: BatchMode;
+  label: string;
+  timingsCount: number;
+  studentsCount: number;
+}
+
+/** Groups child batch timings by mode for parent batch overview. */
+export function getBatchModeSummaries(
+  batch: Batch | null | undefined,
+): BatchModeSummary[] {
+  const totals = new Map<
+    BatchMode,
+    { timingsCount: number; studentsCount: number }
+  >();
+
+  for (const timing of getBatchTimings(batch)) {
+    const current = totals.get(timing.mode) ?? {
+      timingsCount: 0,
+      studentsCount: 0,
+    };
+
+    totals.set(timing.mode, {
+      timingsCount: current.timingsCount + 1,
+      studentsCount: current.studentsCount + (timing.studentsCount ?? 0),
+    });
+  }
+
+  return MODE_SUMMARY_ORDER.filter((mode) => totals.has(mode)).map((mode) => {
+    const stats = totals.get(mode)!;
+
+    return {
+      mode,
+      label: MODE_SUMMARY_LABELS[mode] ?? mode,
+      timingsCount: stats.timingsCount,
+      studentsCount: stats.studentsCount,
+    };
+  });
 }
