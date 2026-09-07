@@ -10,6 +10,7 @@ export class UpdateBatchTemplateCommand {
     public readonly hasFixedTime: boolean | undefined,
     public readonly startTime: string | null | undefined,
     public readonly endTime: string | null | undefined,
+    public readonly capacity: number | undefined,
     public readonly isActive: boolean | undefined,
     public readonly updatedBy?: string,
   ) {}

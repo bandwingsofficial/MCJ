@@ -8,6 +8,7 @@ export type BatchTemplate = {
   startTime: string | null;
   endTime: string | null;
   hasFixedTime: boolean;
+  capacity: number;
   isActive: boolean;
   isDeleted: boolean;
   deletedAt?: string | null;
@@ -23,6 +24,7 @@ export type CreateBatchTemplateRequest = {
   startTime?: string | null;
   endTime?: string | null;
   hasFixedTime?: boolean;
+  capacity: number;
   isActive?: boolean;
 };
 

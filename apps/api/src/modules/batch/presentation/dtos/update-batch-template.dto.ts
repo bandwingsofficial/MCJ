@@ -4,10 +4,12 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsInt,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
+  Min,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -19,6 +21,11 @@ const toBoolean = (value: unknown) =>
 
 const trimOrUndefined = (value: unknown) =>
   typeof value === 'string' ? value.trim() || undefined : value;
+
+const toNumber = (value: unknown) =>
+  value !== undefined && value !== null && value !== ''
+    ? Number(value)
+    : undefined;
 
 export class UpdateBatchTemplateDto {
   @ApiPropertyOptional()
@@ -65,6 +72,13 @@ export class UpdateBatchTemplateDto {
   @IsBoolean()
   @Transform(({ value }) => toBoolean(value))
   hasFixedTime?: boolean;
+
+  @ApiPropertyOptional({ minimum: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Transform(({ value }) => toNumber(value))
+  capacity?: number;
 
   @ApiPropertyOptional()
   @IsOptional()

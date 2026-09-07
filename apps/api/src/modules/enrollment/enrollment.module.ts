@@ -134,6 +134,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         domainService: EnrollmentDomainService,
         sideEffects: EnrollmentSideEffectsService,
         paymentRecording: EnrollmentPaymentRecordingService,
+        prisma: PrismaService,
       ) =>
         new CreateEnrollmentHandler(
           enrollmentRepo,
@@ -145,6 +146,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
           domainService,
           sideEffects,
           paymentRecording,
+          prisma,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
@@ -156,6 +158,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         EnrollmentDomainService,
         EnrollmentSideEffectsService,
         EnrollmentPaymentRecordingService,
+        PrismaService,
       ],
     },
 

@@ -116,6 +116,10 @@ export interface BatchTimingDetailResponse {
   batch: Batch;
 }
 
+export interface UpdateBatchTimingRequest {
+  capacity: number;
+}
+
 export interface BatchModePricing {
   originalPrice: number;
   discountAmount: number;

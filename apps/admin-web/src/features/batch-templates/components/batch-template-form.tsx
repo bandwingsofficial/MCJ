@@ -34,6 +34,7 @@ const DEFAULT_VALUES: BatchTemplateFormValues = {
   startTime: "07:00",
   endTime: "09:00",
   isActive: true,
+  capacity: 30,
 };
 
 type BatchTemplateFormProps = {
@@ -78,6 +79,7 @@ export function BatchTemplateForm({
       startTime: initial.startTime ?? "07:00",
       endTime: initial.endTime ?? "09:00",
       isActive: initial.isActive,
+      capacity: initial.capacity ?? 30,
     });
   }, [initial, reset]);
 
@@ -112,6 +114,21 @@ export function BatchTemplateForm({
         />
         {errors.name ? (
           <p className="text-sm text-red-600">{errors.name.message}</p>
+        ) : null}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="template-capacity">Capacity</Label>
+        <Input
+          id="template-capacity"
+          type="number"
+          min={1}
+          step={1}
+          placeholder="30"
+          {...register("capacity", { valueAsNumber: true })}
+        />
+        {errors.capacity ? (
+          <p className="text-sm text-red-600">{errors.capacity.message}</p>
         ) : null}
       </div>
 

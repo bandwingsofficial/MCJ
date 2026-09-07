@@ -8,7 +8,11 @@ import {
 } from "@/src/features/batches/components/manage/batch-manage-section";
 import type { BatchTiming } from "@/src/features/batches/types/batch.types";
 import { formatBatchOverviewDate } from "@/src/features/batches/utils/batch-progress.utils";
-import { formatTimingDays } from "@/src/features/batches/utils/batch-timing.utils";
+import {
+  formatTimingDays,
+  getTimingAvailableSeats,
+  getTimingEnrolledCount,
+} from "@/src/features/batches/utils/batch-timing.utils";
 import { formatBatchTime } from "@/src/features/batches/utils/batch.helper";
 
 interface Props {
@@ -46,6 +50,15 @@ export function BatchTimingDetailsPanel({ timing }: Props) {
         <BatchManageField
           label="End Time"
           value={formatBatchTime(timing.endTime)}
+        />
+        <BatchManageField label="Capacity" value={String(timing.capacity)} />
+        <BatchManageField
+          label="Enrolled"
+          value={String(getTimingEnrolledCount(timing))}
+        />
+        <BatchManageField
+          label="Available Seats"
+          value={String(getTimingAvailableSeats(timing))}
         />
         <BatchManageField
           label="Status"

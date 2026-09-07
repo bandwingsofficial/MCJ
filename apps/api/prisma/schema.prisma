@@ -717,6 +717,7 @@ model BatchTemplate {
   endTime        String?
   /// When true, UI shows Anytime / no fixed time; batch create applies safe schedule defaults.
   hasFixedTime   Boolean     @default(true)
+  capacity       Int         @default(1)
   isActive       Boolean     @default(true)
   displayOrder   Int?
   createdBy      String?
@@ -763,8 +764,9 @@ model BatchTiming {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  batch    Batch          @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  template BatchTemplate? @relation(fields: [batchTemplateId], references: [id], onDelete: SetNull)
+  batch        Batch          @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  template     BatchTemplate? @relation(fields: [batchTemplateId], references: [id], onDelete: SetNull)
+  enrollments  Enrollment[]
 
   @@index([batchId])
   @@index([batchTemplateId])
@@ -917,6 +919,7 @@ model Enrollment {
   categoryId             String
   courseId               String
   batchId                String
+  batchTimingId          String?
   admissionDate          DateTime?
   joiningDate            DateTime?
   expectedCompletionDate DateTime?
@@ -939,6 +942,7 @@ model Enrollment {
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
   batch                  Batch            @relation(fields: [batchId], references: [id])
+  batchTiming            BatchTiming?     @relation(fields: [batchTimingId], references: [id], onDelete: SetNull)
   branch                 Branch           @relation(fields: [branchId], references: [id])
   category               Category         @relation(fields: [categoryId], references: [id])
   course                 Course           @relation(fields: [courseId], references: [id])
@@ -955,6 +959,7 @@ model Enrollment {
   @@index([categoryId])
   @@index([courseId])
   @@index([batchId])
+  @@index([batchTimingId])
   @@index([status])
   @@index([paymentStatus])
   @@index([isActive])

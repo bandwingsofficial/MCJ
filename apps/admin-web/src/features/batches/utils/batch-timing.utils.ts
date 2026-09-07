@@ -97,6 +97,14 @@ export function formatBatchTimingNames(batch: Batch): string {
   return names.length ? names.join(" • ") : "";
 }
 
+export function getTimingEnrolledCount(timing: BatchTiming): number {
+  return timing.enrolledCount ?? timing.studentsCount ?? 0;
+}
+
+export function getTimingAvailableSeats(timing: BatchTiming): number {
+  return Math.max(0, timing.capacity - getTimingEnrolledCount(timing));
+}
+
 const MODE_SUMMARY_ORDER: BatchMode[] = ["OFFLINE", "ONLINE", "RECORDED"];
 
 const MODE_SUMMARY_LABELS = Object.fromEntries(
@@ -127,7 +135,8 @@ export function getBatchModeSummaries(
 
     totals.set(timing.mode, {
       timingsCount: current.timingsCount + 1,
-      studentsCount: current.studentsCount + (timing.studentsCount ?? 0),
+      studentsCount:
+        current.studentsCount + getTimingEnrolledCount(timing),
     });
   }
 

@@ -27,6 +27,7 @@ import type {
   CreateBatchWithTimingsRequest,
   ReorderBatchRequest,
   UpdateBatchRequest,
+  UpdateBatchTimingRequest,
 } from "@/src/features/batches/types/batch.types";
 import { unwrapBulkBatchOperationResult } from "@/src/features/batches/utils/batch-bulk.utils";
 
@@ -116,6 +117,23 @@ class BatchService {
   async getBatchTiming(batchId: string, timingId: string) {
     try {
       const response = await batchApi.getBatchTiming(batchId, timingId);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async updateBatchTiming(
+    batchId: string,
+    timingId: string,
+    payload: UpdateBatchTimingRequest,
+  ) {
+    try {
+      const response = await batchApi.updateBatchTiming(
+        batchId,
+        timingId,
+        payload,
+      );
       return response.data;
     } catch (error) {
       throw this.handleError(error);

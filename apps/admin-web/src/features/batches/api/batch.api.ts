@@ -19,6 +19,7 @@ import type {
   ReorderBatchRequest,
   SuggestBatchCodeResponse,
   UpdateBatchRequest,
+  UpdateBatchTimingRequest,
 } from "@/src/features/batches/types/batch.types";
 import { buildBatchListQueryParams } from "@/src/features/batches/utils/batch-list.utils";
 
@@ -90,6 +91,18 @@ export const batchApi = {
     const response = await apiClient.get<
       ApiSuccessResponse<BatchTimingDetailResponse>
     >(`/admin/batches/${batchId}/timings/${timingId}`);
+
+    return response.data;
+  },
+
+  async updateBatchTiming(
+    batchId: string,
+    timingId: string,
+    payload: UpdateBatchTimingRequest,
+  ) {
+    const response = await apiClient.patch<
+      ApiSuccessResponse<BatchTimingDetailResponse>
+    >(`/admin/batches/${batchId}/timings/${timingId}`, payload);
 
     return response.data;
   },

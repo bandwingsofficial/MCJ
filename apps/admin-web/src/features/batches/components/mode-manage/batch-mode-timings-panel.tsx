@@ -16,6 +16,8 @@ import { formatBatchOverviewDate } from "@/src/features/batches/utils/batch-prog
 import {
   formatTimingDays,
   formatTimingRange,
+  getTimingAvailableSeats,
+  getTimingEnrolledCount,
 } from "@/src/features/batches/utils/batch-timing.utils";
 
 import {
@@ -47,7 +49,9 @@ export function BatchModeTimingsPanel({ batch, mode }: Props) {
             <colgroup>
               <col className="w-[24%]" />
               <col />
-              <col className="w-[8rem]" />
+              <col className="w-[7rem]" />
+              <col className="w-[7rem]" />
+              <col className="w-[7rem]" />
               <col className="w-[6rem]" />
             </colgroup>
 
@@ -58,6 +62,15 @@ export function BatchModeTimingsPanel({ batch, mode }: Props) {
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Schedule
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Capacity
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Enrolled
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Available
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Students
@@ -88,6 +101,15 @@ export function BatchModeTimingsPanel({ batch, mode }: Props) {
                         {formatBatchOverviewDate(timing.endDate)}
                       </span>
                     </div>
+                  </td>
+                  <td className="px-3 py-3 align-middle text-sm text-slate-700">
+                    {timing.capacity}
+                  </td>
+                  <td className="px-3 py-3 align-middle text-sm text-slate-700">
+                    {getTimingEnrolledCount(timing)}
+                  </td>
+                  <td className="px-3 py-3 align-middle text-sm text-slate-700">
+                    {getTimingAvailableSeats(timing)}
                   </td>
                   <td className="px-3 py-3 align-middle text-sm text-slate-700">
                     {timing.studentsCount ?? 0}

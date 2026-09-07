@@ -9,6 +9,7 @@ export class CreateBatchTemplateCommand {
     public readonly hasFixedTime: boolean,
     public readonly startTime: string | null | undefined,
     public readonly endTime: string | null | undefined,
+    public readonly capacity: number,
     public readonly isActive: boolean | undefined,
     public readonly createdBy?: string,
   ) {}

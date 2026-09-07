@@ -19,6 +19,10 @@ export const batchTemplateSchema = z
     startTime: z.string().optional(),
     endTime: z.string().optional(),
     isActive: z.boolean(),
+    capacity: z
+      .number({ invalid_type_error: "Capacity is required" })
+      .int("Capacity must be a whole number")
+      .min(1, "Capacity must be at least 1"),
   })
   .superRefine((values, ctx) => {
     if (!values.hasFixedTime) {

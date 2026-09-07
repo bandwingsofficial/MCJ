@@ -34,6 +34,7 @@ export function BatchTemplateFormModal({
         startTime: values.hasFixedTime ? values.startTime : null,
         endTime: values.hasFixedTime ? values.endTime : null,
         isActive: values.isActive,
+        capacity: values.capacity,
       };
 
       if (isEdit && template) {

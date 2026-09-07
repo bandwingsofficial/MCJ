@@ -22,6 +22,7 @@ import type { AuthUser } from '@common/decorators/current-user.decorator';
 import { SuperAdminGuard } from '@common/guards/super-admin.guard';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 
+import { UpdateBatchTimingHandler } from '../../application/batch-timings/update-batch-timing.handler';
 import { CreateBatchWithTimingsCommand } from '../../application/batch-timings/create-batch-with-timings.command';
 import { CreateBatchWithTimingsHandler } from '../../application/batch-timings/create-batch-with-timings.handler';
 import { AssignBatchCourseHandler } from '../../application/batch-courses/assign-batch-course.handler';
@@ -68,6 +69,7 @@ import { CreateBatchWithTimingsDto } from '../dtos/create-batch-with-timings.dto
 import { ListBatchesQueryDto } from '../dtos/list-batches-query.dto';
 import { ReorderBatchesDto } from '../dtos/reorder-batches.dto';
 import { UpdateBatchDto } from '../dtos/update-batch.dto';
+import { UpdateBatchTimingDto } from '../dtos/update-batch-timing.dto';
 
 @ApiTags('Admin Batches')
 @ApiBearerAuth()
@@ -95,6 +97,7 @@ export class AdminBatchController {
     private readonly listBatchCoursesHandler: ListBatchCoursesHandler,
     private readonly assignBatchCourseHandler: AssignBatchCourseHandler,
     private readonly removeBatchCourseHandler: RemoveBatchCourseHandler,
+    private readonly updateBatchTimingHandler: UpdateBatchTimingHandler,
   ) {}
 
   @Post()
@@ -554,6 +557,37 @@ export class AdminBatchController {
     return {
       success: true,
       message: 'Batch timing fetched successfully',
+      data: {
+        timing,
+        batch,
+      },
+    };
+  }
+
+  @Patch(':id/timings/:timingId')
+  @ApiBody({ type: UpdateBatchTimingDto })
+  async updateTiming(
+    @Param('id') id: string,
+    @Param('timingId') timingId: string,
+    @Body() dto: UpdateBatchTimingDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const batch = await this.updateBatchTimingHandler.execute({
+      batchId: id,
+      timingId,
+      capacity: dto.capacity,
+      updatedBy: user?.sub,
+    });
+
+    const timing = batch.timings.find((item) => item.id === timingId);
+
+    if (!timing) {
+      throw new NotFoundException('Batch timing not found for this batch');
+    }
+
+    return {
+      success: true,
+      message: 'Batch timing updated successfully',
       data: {
         timing,
         batch,

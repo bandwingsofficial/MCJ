@@ -92,8 +92,7 @@ export class BatchTimingResult {
       timing.endTime,
       timing.capacity,
       timing.enrolledCount,
-      // Student assignment is not implemented yet; always zero for now.
-      0,
+      timing.enrolledCount,
       resolveBatchApiStatus({
         storedStatus: timing.status,
         isDeleted: timing.isDeleted,

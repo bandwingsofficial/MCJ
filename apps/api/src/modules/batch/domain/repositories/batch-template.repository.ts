@@ -9,6 +9,7 @@ export type BatchTemplateRecord = {
   startTime: string | null;
   endTime: string | null;
   hasFixedTime: boolean;
+  capacity: number;
   isActive: boolean;
   displayOrder: number | null;
   createdBy: string | null;
@@ -27,6 +28,7 @@ export type CreateBatchTemplateInput = {
   startTime: string | null;
   endTime: string | null;
   hasFixedTime: boolean;
+  capacity: number;
   isActive?: boolean;
   createdBy?: string;
 };
@@ -38,6 +40,7 @@ export type UpdateBatchTemplateInput = {
   startTime?: string | null;
   endTime?: string | null;
   hasFixedTime?: boolean;
+  capacity?: number;
   isActive?: boolean;
   updatedBy?: string;
 };

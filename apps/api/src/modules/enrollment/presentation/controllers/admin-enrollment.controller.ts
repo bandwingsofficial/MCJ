@@ -109,6 +109,7 @@ export class AdminEnrollmentController {
         EnrollmentSource.ADMIN,
         user.sub,
         dto.branchId,
+        dto.batchTimingId,
       ),
     );
 

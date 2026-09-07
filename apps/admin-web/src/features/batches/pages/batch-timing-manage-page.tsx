@@ -62,6 +62,9 @@ export function BatchTimingManagePage({ batchId, timingId }: Props) {
           onTabChange={(tab) => {
             setActiveSection(TAB_LABELS[tab]);
           }}
+          onTimingUpdated={() => {
+            void refetch();
+          }}
         />
       </div>
     </div>

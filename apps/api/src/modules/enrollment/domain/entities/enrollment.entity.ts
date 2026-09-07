@@ -17,6 +17,7 @@ export class Enrollment {
     public categoryId: string,
     public courseId: string,
     public batchId: string,
+    public batchTimingId: string | null,
     public admissionDate: Date | null,
     public joiningDate: Date | null,
     public expectedCompletionDate: Date | null,
@@ -55,6 +56,7 @@ export class Enrollment {
       params.categoryId,
       params.courseId,
       params.batchId,
+      params.batchTimingId ?? null,
       params.admissionDate ?? null,
       params.joiningDate ?? null,
       params.expectedCompletionDate ?? null,
@@ -94,6 +96,7 @@ export class Enrollment {
       params.categoryId,
       params.courseId,
       params.batchId,
+      params.batchTimingId,
       params.admissionDate,
       params.joiningDate,
       params.expectedCompletionDate,
@@ -124,6 +127,8 @@ export class Enrollment {
     if (params.categoryId !== undefined) this.categoryId = params.categoryId;
     if (params.courseId !== undefined) this.courseId = params.courseId;
     if (params.batchId !== undefined) this.batchId = params.batchId;
+    if (params.batchTimingId !== undefined)
+      this.batchTimingId = params.batchTimingId;
 
     if (params.admissionDate !== undefined)
       this.admissionDate = params.admissionDate;
@@ -265,6 +270,7 @@ export interface EnrollmentCreateParams {
   categoryId: string;
   courseId: string;
   batchId: string;
+  batchTimingId?: string | null;
   admissionDate?: Date | null;
   joiningDate?: Date | null;
   expectedCompletionDate?: Date | null;
@@ -284,6 +290,7 @@ export interface EnrollmentUpdateParams {
   categoryId?: string;
   courseId?: string;
   batchId?: string;
+  batchTimingId?: string | null;
   admissionDate?: Date | null;
   joiningDate?: Date | null;
   expectedCompletionDate?: Date | null;
@@ -305,6 +312,7 @@ export interface EnrollmentReconstituteParams {
   categoryId: string;
   courseId: string;
   batchId: string;
+  batchTimingId: string | null;
   admissionDate: Date | null;
   joiningDate: Date | null;
   expectedCompletionDate: Date | null;

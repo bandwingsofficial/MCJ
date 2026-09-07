@@ -21,6 +21,7 @@ function mapRecord(row: {
   startTime: string | null;
   endTime: string | null;
   hasFixedTime: boolean;
+  capacity: number;
   isActive: boolean;
   displayOrder: number | null;
   createdBy: string | null;
@@ -39,6 +40,7 @@ function mapRecord(row: {
     startTime: row.startTime,
     endTime: row.endTime,
     hasFixedTime: row.hasFixedTime,
+    capacity: row.capacity,
     isActive: row.isActive,
     displayOrder: row.displayOrder,
     createdBy: row.createdBy,
@@ -176,6 +178,7 @@ export class PrismaBatchTemplateRepository
         startTime: input.startTime,
         endTime: input.endTime,
         hasFixedTime: input.hasFixedTime,
+        capacity: input.capacity,
         isActive: input.isActive ?? true,
         displayOrder: maxOrder + 1,
         createdBy: input.createdBy ?? null,
@@ -198,6 +201,7 @@ export class PrismaBatchTemplateRepository
     if (input.startTime !== undefined) data.startTime = input.startTime;
     if (input.endTime !== undefined) data.endTime = input.endTime;
     if (input.hasFixedTime !== undefined) data.hasFixedTime = input.hasFixedTime;
+    if (input.capacity !== undefined) data.capacity = input.capacity;
     if (input.isActive !== undefined) data.isActive = input.isActive;
     if (input.updatedBy !== undefined) data.updatedBy = input.updatedBy;
 

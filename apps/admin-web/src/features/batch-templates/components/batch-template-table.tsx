@@ -54,7 +54,7 @@ export function BatchTemplateTable({
     visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
   const someVisibleSelected =
     selectedVisibleCount > 0 && !allVisibleSelected;
-  const columnCount = selectionEnabled ? 7 : 6;
+  const columnCount = selectionEnabled ? 8 : 7;
 
   useEffect(() => {
     if (selectAllRef.current) {
@@ -111,6 +111,9 @@ export function BatchTemplateTable({
               Time
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Capacity
+            </th>
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Status
             </th>
             <th className="px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -164,6 +167,9 @@ export function BatchTemplateTable({
                 </td>
                 <td className="truncate px-3 py-3 align-middle text-sm text-slate-700">
                   {formatTemplateTime(template)}
+                </td>
+                <td className="px-3 py-3 align-middle text-sm text-slate-700">
+                  {template.capacity}
                 </td>
                 <td className="px-3 py-3 align-middle">
                   <BatchTemplateStatusBadge

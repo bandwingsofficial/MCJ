@@ -37,6 +37,7 @@ import {
 } from './application/batch-templates/bulk-batch-template.handlers';
 import { CreateBatchTemplateHandler } from './application/batch-templates/create-batch-template.handler';
 import { CreateBatchWithTimingsHandler } from './application/batch-timings/create-batch-with-timings.handler';
+import { UpdateBatchTimingHandler } from './application/batch-timings/update-batch-timing.handler';
 import { GetBatchTemplateHandler } from './application/batch-templates/get-batch-template.handler';
 import { ListBatchTemplatesHandler } from './application/batch-templates/list-batch-templates.handler';
 import { SetBatchTemplateActiveHandler } from './application/batch-templates/set-batch-template-active.handler';
@@ -398,9 +399,9 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
 
     {
       provide: UpdateBatchTemplateHandler,
-      useFactory: (templateRepo: BatchTemplateRepository) =>
-        new UpdateBatchTemplateHandler(templateRepo),
-      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+      useFactory: (templateRepo: BatchTemplateRepository, prisma: PrismaService) =>
+        new UpdateBatchTemplateHandler(templateRepo, prisma),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY, PrismaService],
     },
 
     {
@@ -496,6 +497,13 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
         CreateBatchHandler,
         PrismaService,
       ],
+    },
+
+    {
+      provide: UpdateBatchTimingHandler,
+      useFactory: (prisma: PrismaService, getBatchHandler: GetBatchHandler) =>
+        new UpdateBatchTimingHandler(prisma, getBatchHandler),
+      inject: [PrismaService, GetBatchHandler],
     },
   ],
 

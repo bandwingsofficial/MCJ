@@ -36,6 +36,7 @@ type ResolvedTiming = {
   daysOfWeek: DayOfWeek[];
   startTime: string;
   endTime: string;
+  capacity: number;
 };
 
 /**
@@ -178,6 +179,7 @@ export class CreateBatchWithTimingsHandler {
         daysOfWeek: schedule.daysOfWeek,
         startTime: schedule.startTime,
         endTime: schedule.endTime,
+        capacity: template.capacity,
       };
     });
 
@@ -247,7 +249,7 @@ export class CreateBatchWithTimingsHandler {
         endDate: command.endDate,
         startTime: timing.startTime,
         endTime: timing.endTime,
-        capacity: command.capacity ?? 0,
+        capacity: timing.capacity,
         displayOrder: index + 1,
         createdBy: command.createdBy ?? null,
       })),

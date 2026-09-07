@@ -17,5 +17,6 @@ export class CreateEnrollmentCommand {
     public readonly source: EnrollmentSource = EnrollmentSource.ADMIN,
     public readonly createdBy?: string,
     public readonly expectedBranchId?: string,
+    public readonly batchTimingId?: string,
   ) {}
 }

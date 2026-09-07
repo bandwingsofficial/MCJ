@@ -14,6 +14,8 @@ import { formatBatchOverviewDate } from "@/src/features/batches/utils/batch-prog
 import {
   formatTimingDays,
   formatTimingRange,
+  getTimingAvailableSeats,
+  getTimingEnrolledCount,
 } from "@/src/features/batches/utils/batch-timing.utils";
 
 interface Props {
@@ -22,7 +24,8 @@ interface Props {
 }
 
 export function BatchTimingOverviewPanel({ batch, timing }: Props) {
-  const studentsCount = timing.studentsCount ?? 0;
+  const enrolledCount = getTimingEnrolledCount(timing);
+  const availableSeats = getTimingAvailableSeats(timing);
 
   return (
     <div className="space-y-4">
@@ -50,8 +53,16 @@ export function BatchTimingOverviewPanel({ batch, timing }: Props) {
             value={formatBatchOverviewDate(timing.endDate)}
           />
           <BatchManageField
-            label="Students"
-            value={`${studentsCount} Student${studentsCount === 1 ? "" : "s"}`}
+            label="Capacity"
+            value={String(timing.capacity)}
+          />
+          <BatchManageField
+            label="Enrolled"
+            value={`${enrolledCount} Student${enrolledCount === 1 ? "" : "s"}`}
+          />
+          <BatchManageField
+            label="Available Seats"
+            value={String(availableSeats)}
           />
           <BatchManageField
             label="Status"

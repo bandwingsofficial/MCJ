@@ -17,6 +17,7 @@ import type {
 import { BatchTimingAttendancePanel } from "./batch-timing-attendance-panel";
 import { BatchTimingBatchDetailsPanel } from "./batch-timing-batch-details-panel";
 import { BatchTimingDetailsPanel } from "./batch-timing-details-panel";
+import { BatchTimingCapacityForm } from "./batch-timing-capacity-form";
 import { BatchTimingOverviewPanel } from "./batch-timing-overview-panel";
 import { BatchTimingReportsPanel } from "./batch-timing-reports-panel";
 import { BatchTimingStudentsPanel } from "./batch-timing-students-panel";
@@ -25,6 +26,7 @@ interface Props {
   batch: Batch;
   timing: BatchTiming;
   onTabChange?: (tab: BatchTimingManageTabKey) => void;
+  onTimingUpdated?: () => void;
 }
 
 export type BatchTimingManageTabKey =
@@ -51,6 +53,7 @@ export function BatchTimingManageWorkspace({
   batch,
   timing,
   onTabChange,
+  onTimingUpdated,
 }: Props) {
   const [tab, setTab] = useState<BatchTimingManageTabKey>("overview");
 
@@ -83,8 +86,13 @@ export function BatchTimingManageWorkspace({
         <BatchTimingBatchDetailsPanel batch={batch} />
       </TabsContent>
 
-      <TabsContent value="timing">
+      <TabsContent value="timing" className="space-y-4">
         <BatchTimingDetailsPanel timing={timing} />
+        <BatchTimingCapacityForm
+          batchId={batch.id}
+          timing={timing}
+          onUpdated={() => onTimingUpdated?.()}
+        />
       </TabsContent>
 
       <TabsContent value="students">

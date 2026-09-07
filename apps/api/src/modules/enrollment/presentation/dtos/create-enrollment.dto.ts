@@ -37,6 +37,11 @@ export class CreateEnrollmentDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsUUID()
+  batchTimingId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
   branchId?: string;
 
   @ApiProperty()

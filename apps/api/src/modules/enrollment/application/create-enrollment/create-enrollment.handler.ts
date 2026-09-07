@@ -7,13 +7,16 @@ import type { BranchRepository } from '@modules/branch/domain/repositories/branc
 import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { Enrollment } from '../../domain/entities/enrollment.entity';
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import type { EnrollmentRepository } from '../../domain/repositories/enrollment.repository';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
+import { BatchFullException } from '../../domain/errors/batch-full.exception';
 import {
+  BatchNotFoundException,
   InvalidDiscountException,
   InvalidPaymentAmountException,
 } from '../../domain/errors/enrollment-business.exception';
@@ -40,6 +43,7 @@ export class CreateEnrollmentHandler {
     private readonly domainService: EnrollmentDomainService,
     private readonly sideEffects: EnrollmentSideEffectsService,
     private readonly paymentRecording: EnrollmentPaymentRecordingService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(
@@ -61,6 +65,17 @@ export class CreateEnrollmentHandler {
     );
 
     await this.domainService.ensureBatchHasCapacity(hierarchy.batch);
+
+    const batchTiming = command.batchTimingId
+      ? await this.resolveBatchTiming(
+          command.batchId,
+          command.batchTimingId,
+        )
+      : null;
+
+    if (batchTiming) {
+      this.ensureBatchTimingHasCapacity(batchTiming);
+    }
 
     await this.domainService.ensureNotDuplicate(
       this.enrollmentRepo,
@@ -118,9 +133,11 @@ export class CreateEnrollmentHandler {
       categoryId: hierarchy.categoryId,
       courseId: hierarchy.courseId,
       batchId: command.batchId,
+      batchTimingId: command.batchTimingId ?? null,
       admissionDate,
-      joiningDate: hierarchy.batch.startDate,
-      expectedCompletionDate: hierarchy.batch.endDate,
+      joiningDate: batchTiming?.startDate ?? hierarchy.batch.startDate,
+      expectedCompletionDate:
+        batchTiming?.endDate ?? hierarchy.batch.endDate,
       feeAmount: command.feeAmount,
       discountAmount,
       paidAmount: 0,
@@ -133,6 +150,15 @@ export class CreateEnrollmentHandler {
     });
 
     await this.enrollmentRepo.save(enrollment);
+
+    if (batchTiming) {
+      await this.prisma.batchTiming.update({
+        where: { id: batchTiming.id },
+        data: {
+          enrolledCount: batchTiming.enrolledCount + 1,
+        },
+      });
+    }
 
     await this.sideEffects.apply(enrollment, null, command.createdBy);
 
@@ -182,5 +208,39 @@ export class CreateEnrollmentHandler {
     return this.domainService.ensureDetailExists(
       await this.enrollmentRepo.findDetailById(enrollment.id, true),
     );
+  }
+
+  private async resolveBatchTiming(batchId: string, batchTimingId: string) {
+    const timing = await this.prisma.batchTiming.findFirst({
+      where: {
+        id: batchTimingId,
+        batchId,
+        isDeleted: false,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        batchId: true,
+        enrolledCount: true,
+        capacity: true,
+        startDate: true,
+        endDate: true,
+      },
+    });
+
+    if (!timing) {
+      throw new BatchNotFoundException();
+    }
+
+    return timing;
+  }
+
+  private ensureBatchTimingHasCapacity(timing: {
+    enrolledCount: number;
+    capacity: number;
+  }): void {
+    if (timing.enrolledCount >= timing.capacity) {
+      throw new BatchFullException();
+    }
   }
 }

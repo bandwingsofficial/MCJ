@@ -23,6 +23,14 @@ export class CreateBatchTemplateHandler {
       );
     }
 
+    if (!command.capacity || command.capacity < 1) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Capacity must be at least 1',
+        400,
+      );
+    }
+
     const schedule = validateBatchTemplateSchedule({
       hasFixedTime: command.hasFixedTime,
       mode: command.mode,
@@ -38,6 +46,7 @@ export class CreateBatchTemplateHandler {
       startTime: schedule.startTime,
       endTime: schedule.endTime,
       hasFixedTime: schedule.hasFixedTime,
+      capacity: command.capacity,
       isActive: command.isActive ?? true,
       createdBy: command.createdBy,
     });
