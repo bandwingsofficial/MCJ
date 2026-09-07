@@ -116,11 +116,35 @@ export interface BatchTimingDetailResponse {
   batch: Batch;
 }
 
+export interface BatchModePricing {
+  originalPrice: number;
+  discountAmount: number;
+  discountedPrice: number;
+  discountPercent?: number;
+  currency: string;
+  isFree: boolean;
+}
+
+export type BatchModePricingMap = Partial<
+  Record<BatchMode, BatchModePricing>
+>;
+
+export interface BatchModeConfigRequest {
+  mode: BatchMode;
+  templateIds: string[];
+  originalPrice?: number;
+  discountAmount?: number;
+  discountedPrice?: number;
+  currency?: string;
+  isFree?: boolean;
+}
+
 export interface CreateBatchWithTimingsRequest {
   courseId: string;
   startDate: string;
   endDate: string;
-  templateIds: string[];
+  templateIds?: string[];
+  modeConfigs?: BatchModeConfigRequest[];
   durationValue: number;
   durationType: BatchDurationType;
   name?: string;
@@ -184,6 +208,7 @@ export interface Batch {
   currency?: string;
   isFree?: boolean;
   pricing?: BatchPricing | null;
+  modePricing?: BatchModePricingMap | null;
   trainers: BatchTrainer[];
   createdBy: string | null;
   updatedBy: string | null;
@@ -266,6 +291,7 @@ export interface CreateBatchRequest {
 export interface UpdateBatchRequest extends Partial<CreateBatchRequest> {
   branchId?: string | null;
   templateIds?: string[];
+  modeConfigs?: BatchModeConfigRequest[];
 }
 
 export interface AssignBatchTrainersRequest {

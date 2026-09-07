@@ -1,3 +1,15 @@
+import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
+
+export type BatchModeConfigInput = {
+  mode: CourseMode;
+  templateIds: string[];
+  originalPrice?: number;
+  discountAmount?: number;
+  discountedPrice?: number;
+  currency?: string;
+  isFree?: boolean;
+};
+
 export class CreateBatchWithTimingsCommand {
   constructor(
     public readonly courseId: string,
@@ -15,5 +27,6 @@ export class CreateBatchWithTimingsCommand {
     public readonly discountedPrice?: number,
     public readonly currency?: string,
     public readonly isFree?: boolean,
+    public readonly modeConfigs?: BatchModeConfigInput[],
   ) {}
 }

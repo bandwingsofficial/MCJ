@@ -5,6 +5,7 @@ import { DurationType } from '@modules/course/domain/enums/duration-type.enum';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import type { BatchTemplateRepository } from '../../domain/repositories/batch-template.repository';
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
 import { DayOfWeek } from '../../domain/enums/day-of-week.enum';
@@ -53,9 +54,19 @@ export class CreateBatchWithTimingsHandler {
   async execute(
     command: CreateBatchWithTimingsCommand,
   ): Promise<GetBatchResult> {
+    const modeConfigs = (command.modeConfigs ?? []).filter(
+      (config) => (config.templateIds ?? []).length > 0,
+    );
+
     const templateIds = [
       ...new Set(
-        (command.templateIds ?? []).map((id) => id.trim()).filter(Boolean),
+        modeConfigs.length
+          ? modeConfigs.flatMap((config) =>
+              (config.templateIds ?? []).map((id) => id.trim()).filter(Boolean),
+            )
+          : (command.templateIds ?? [])
+              .map((id) => id.trim())
+              .filter(Boolean),
       ),
     ];
 
@@ -66,6 +77,45 @@ export class CreateBatchWithTimingsHandler {
         400,
       );
     }
+
+    const primaryConfig = modeConfigs[0];
+    const originalPrice =
+      primaryConfig?.originalPrice ?? command.originalPrice ?? 0;
+    const discountedPrice =
+      primaryConfig?.discountedPrice ??
+      command.discountedPrice ??
+      originalPrice;
+    const discountAmount =
+      primaryConfig?.discountAmount ??
+      command.discountAmount ??
+      Math.max(0, originalPrice - discountedPrice);
+    const isFree =
+      primaryConfig?.isFree ?? command.isFree ?? originalPrice === 0;
+    const currency =
+      primaryConfig?.currency ?? command.currency ?? 'INR';
+
+    const modePricing =
+      modeConfigs.length > 0
+        ? Object.fromEntries(
+            modeConfigs.map((config) => [
+              config.mode,
+              {
+                originalPrice: config.originalPrice ?? 0,
+                discountAmount:
+                  config.discountAmount ??
+                  Math.max(
+                    0,
+                    (config.originalPrice ?? 0) -
+                      (config.discountedPrice ?? config.originalPrice ?? 0),
+                  ),
+                discountedPrice:
+                  config.discountedPrice ?? config.originalPrice ?? 0,
+                currency: config.currency ?? 'INR',
+                isFree: config.isFree ?? (config.originalPrice ?? 0) === 0,
+              },
+            ]),
+          )
+        : undefined;
 
     if (!command.courseId?.trim()) {
       throw new BaseException(
@@ -149,13 +199,6 @@ export class CreateBatchWithTimingsHandler {
     const durationValue = command.durationValue;
     const durationType = command.durationType as DurationType;
 
-    const originalPrice = command.originalPrice ?? 0;
-    const discountedPrice = command.discountedPrice ?? originalPrice;
-    const discountAmount =
-      command.discountAmount ??
-      Math.max(0, originalPrice - discountedPrice);
-    const isFree = command.isFree ?? originalPrice === 0;
-
     // The parent batch spans every child timing: earliest start, latest end.
     const span = this.resolveBatchSpan(timings);
 
@@ -186,7 +229,7 @@ export class CreateBatchWithTimingsHandler {
         originalPrice,
         discountAmount,
         discountedPrice,
-        command.currency ?? 'INR',
+        currency,
         isFree,
         durationValue,
         durationType,
@@ -209,6 +252,13 @@ export class CreateBatchWithTimingsHandler {
         createdBy: command.createdBy ?? null,
       })),
     });
+
+    if (modePricing) {
+      await this.prisma.batch.update({
+        where: { id: created.id },
+        data: { modePricing } as Prisma.BatchUpdateInput,
+      });
+    }
 
     const batch = await this.batchRepo.findById(created.id);
 

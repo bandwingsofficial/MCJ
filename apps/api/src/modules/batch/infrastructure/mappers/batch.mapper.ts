@@ -13,6 +13,7 @@ import { DayOfWeek } from '../../domain/enums/day-of-week.enum';
 
 export type BatchWithRelations = PrismaBatch & {
   displayOrder?: number | null;
+  modePricing?: Prisma.JsonValue | null;
 
   course: {
     id: string;
@@ -95,7 +96,7 @@ export type BatchWithRelations = PrismaBatch & {
 
 export class BatchMapper {
   static toDomain(record: BatchWithRelations): Batch {
-  return Batch.reconstitute({
+    const batch = Batch.reconstitute({
     id: record.id,
     name: record.name,
     code: record.code,
@@ -232,6 +233,11 @@ export class BatchMapper {
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   });
+
+    (batch as Batch & { modePricing?: unknown }).modePricing =
+      record.modePricing ?? null;
+
+    return batch;
 }
 
   static toPersistence(

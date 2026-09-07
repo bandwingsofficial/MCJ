@@ -158,7 +158,7 @@ export class AdminBatchController {
         dto.courseId,
         new Date(dto.startDate),
         new Date(dto.endDate),
-        dto.templateIds,
+        dto.templateIds ?? [],
         dto.durationValue,
         dto.durationType,
         dto.name,
@@ -169,6 +169,15 @@ export class AdminBatchController {
         dto.discountedPrice,
         dto.currency,
         dto.isFree,
+        dto.modeConfigs?.map((config) => ({
+          mode: config.mode,
+          templateIds: config.templateIds,
+          originalPrice: config.originalPrice,
+          discountAmount: config.discountAmount,
+          discountedPrice: config.discountedPrice,
+          currency: config.currency,
+          isFree: config.isFree,
+        })),
       ),
     );
 
@@ -409,6 +418,15 @@ export class AdminBatchController {
         dto.durationValue,
         dto.durationType,
         dto.templateIds,
+        dto.modeConfigs?.map((config) => ({
+          mode: config.mode,
+          templateIds: config.templateIds,
+          originalPrice: config.originalPrice,
+          discountAmount: config.discountAmount,
+          discountedPrice: config.discountedPrice,
+          currency: config.currency,
+          isFree: config.isFree,
+        })),
       ),
     );
 

@@ -18,6 +18,7 @@ import { syncBatchTimings } from '../batch-timings/sync-batch-timings.util';
 import { UpdateBatchCommand } from './update-batch.command';
 import type { BatchTemplateRepository } from '../../domain/repositories/batch-template.repository';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 export class UpdateBatchHandler {
   constructor(
@@ -201,6 +202,37 @@ export class UpdateBatchHandler {
           batch.startDate,
         capacity: command.capacity ?? batch.capacity.getValue(),
         updatedBy: command.updatedBy,
+      });
+    }
+
+    const modeConfigs = (command.modeConfigs ?? []).filter(
+      (config) => (config.templateIds ?? []).length > 0,
+    );
+
+    if (modeConfigs.length > 0) {
+      const modePricing = Object.fromEntries(
+        modeConfigs.map((config) => [
+          config.mode,
+          {
+            originalPrice: config.originalPrice ?? 0,
+            discountAmount:
+              config.discountAmount ??
+              Math.max(
+                0,
+                (config.originalPrice ?? 0) -
+                  (config.discountedPrice ?? config.originalPrice ?? 0),
+              ),
+            discountedPrice:
+              config.discountedPrice ?? config.originalPrice ?? 0,
+            currency: config.currency ?? 'INR',
+            isFree: config.isFree ?? (config.originalPrice ?? 0) === 0,
+          },
+        ]),
+      );
+
+      await this.prisma.batch.update({
+        where: { id: batch.id },
+        data: { modePricing } as Prisma.BatchUpdateInput,
       });
     }
 

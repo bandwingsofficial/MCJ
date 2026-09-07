@@ -3,6 +3,7 @@ import type {
   Batch,
   BatchDurationType,
   BatchMode,
+  BatchModeConfigRequest,
   UpdateBatchRequest,
 } from "@/src/features/batches/types/batch.types";
 import { getBatchPricing } from "@/src/features/batches/utils/batch-pricing.util";
@@ -16,6 +17,7 @@ export interface AssignBatchFormSubmitPayload {
   startDate: string;
   endDate: string;
   templateIds: string[];
+  modeConfigs?: BatchModeConfigRequest[];
   durationValue: number;
   durationType: BatchDurationType;
   originalPrice: number;
@@ -140,5 +142,6 @@ export function toUpdateBatchRequestFromAssignForm(
     capacity: existingBatch.capacity,
     enrolledCount: existingBatch.enrolledCount,
     templateIds: payload.templateIds,
+    modeConfigs: payload.modeConfigs,
   };
 }

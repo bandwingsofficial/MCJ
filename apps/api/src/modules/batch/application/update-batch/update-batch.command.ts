@@ -1,6 +1,7 @@
 import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
 import { BatchStatus } from '../../domain/enums/batch-status.enum';
 import { DayOfWeek } from '../../domain/enums/day-of-week.enum';
+import type { BatchModeConfigInput } from '../batch-timings/create-batch-with-timings.command';
 
 export class UpdateBatchCommand {
   constructor(
@@ -33,5 +34,6 @@ export class UpdateBatchCommand {
     public readonly durationValue?: number | null,
     public readonly durationType?: string | null,
     public readonly templateIds?: string[],
+    public readonly modeConfigs?: BatchModeConfigInput[],
   ) {}
 }

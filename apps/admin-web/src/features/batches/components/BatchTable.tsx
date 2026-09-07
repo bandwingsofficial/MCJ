@@ -21,8 +21,8 @@ import {
   formatBatchTimingsSummary,
 } from "@/src/features/batches/utils/batch-timing.utils";
 
+import { BatchModesLabel } from "./BatchModesLabel";
 import { BatchStatusBadge } from "./BatchStatusBadge";
-import { BatchModeBadge } from "./BatchModeBadge";
 import { BatchActions } from "./batch-actions";
 import { cn } from "@/src/shared/lib/cn";
 
@@ -332,7 +332,7 @@ export function BatchTable({
                   </td>
 
                   <td className="min-w-0 overflow-hidden px-2 py-3 align-middle">
-                    <BatchModeBadge mode={batch.mode} />
+                    <BatchModesLabel batch={batch} />
                   </td>
 
                   <td

@@ -659,6 +659,8 @@ model Batch {
   discountedPrice  Decimal          @default(0) @db.Decimal(12, 2)
   currency         String           @default("INR")
   isFree           Boolean          @default(false)
+  /// Per-mode pricing configuration for multi-mode parent batches.
+  modePricing      Json?
   classroom     String?
   meetingLink   String?
   isFeatured    Boolean        @default(false)

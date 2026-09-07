@@ -12,10 +12,14 @@ import {
   IsString,
   IsUUID,
   Min,
+  ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { DurationType } from '@modules/course/domain/enums/duration-type.enum';
+import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
+
+import { BatchModeConfigDto } from './batch-mode-config.dto';
 
 const toNumber = (value: unknown) =>
   value !== undefined && value !== null && value !== ''
@@ -42,11 +46,18 @@ export class CreateBatchWithTimingsDto {
   endDate!: string;
 
   @ApiProperty({ type: [String] })
+  @IsOptional()
   @IsArray()
-  @ArrayNotEmpty()
   @ArrayUnique()
   @IsUUID('4', { each: true })
-  templateIds!: string[];
+  templateIds?: string[];
+
+  @ApiPropertyOptional({ type: [BatchModeConfigDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BatchModeConfigDto)
+  modeConfigs?: BatchModeConfigDto[];
 
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()

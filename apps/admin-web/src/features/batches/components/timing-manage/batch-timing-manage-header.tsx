@@ -8,7 +8,10 @@ import type {
   Batch,
   BatchTiming,
 } from "@/src/features/batches/types/batch.types";
-import { batchManagePath } from "@/src/features/batches/utils/batch-manage.routes";
+import {
+  batchManagePath,
+  batchModeManagePath,
+} from "@/src/features/batches/utils/batch-manage.routes";
 import { formatTimingRange } from "@/src/features/batches/utils/batch-timing.utils";
 
 interface Props {
@@ -39,6 +42,13 @@ export function BatchTimingManageHeader({
           className="font-medium text-[#2563EB] hover:underline"
         >
           {batch.name}
+        </Link>
+        <span aria-hidden>›</span>
+        <Link
+          href={batchModeManagePath(batch.id, timing.mode)}
+          className="font-medium text-[#2563EB] hover:underline"
+        >
+          <BatchModeBadge mode={timing.mode} />
         </Link>
         <span aria-hidden>›</span>
         <span className="font-medium text-slate-700">{timing.name}</span>

@@ -64,6 +64,7 @@ export function AssignBatchesModal({ open, onClose, onSuccess }: Props) {
               startDate: payload.startDate,
               endDate: payload.endDate,
               templateIds: payload.templateIds,
+              modeConfigs: payload.modeConfigs,
               durationValue: payload.durationValue,
               durationType: payload.durationType,
               originalPrice: payload.originalPrice,

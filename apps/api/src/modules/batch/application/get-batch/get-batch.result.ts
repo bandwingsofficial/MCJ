@@ -144,6 +144,7 @@ export class GetBatchResult {
     public readonly discountPercent: number,
     public readonly currency: string,
     public readonly isFree: boolean,
+    public readonly modePricing: Record<string, unknown> | null,
     public readonly classroom: string | null,
     public readonly meetingLink: string | null,
     public readonly isFeatured: boolean,
@@ -170,6 +171,11 @@ export class GetBatchResult {
       endTime: batch.endTime,
     });
     const timings = (batch.timings ?? []).map(BatchTimingResult.fromRef);
+    const modePricing =
+      ((batch as Batch & { modePricing?: unknown }).modePricing as
+        | Record<string, unknown>
+        | null
+        | undefined) ?? null;
 
     return new GetBatchResult(
       batch.id,
@@ -237,6 +243,7 @@ export class GetBatchResult {
       pricing.discountPercent,
       pricing.currency,
       pricing.isFree,
+      modePricing,
       batch.classroom.getValue(),
       batch.meetingLink,
       batch.isFeatured,

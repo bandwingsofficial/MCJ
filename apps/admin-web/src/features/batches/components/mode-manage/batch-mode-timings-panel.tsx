@@ -7,51 +7,60 @@ import { Button } from "@/src/shared/components/ui/button";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { Batch, BatchMode } from "@/src/features/batches/types/batch.types";
-import { batchModeManagePath } from "@/src/features/batches/utils/batch-manage.routes";
+import { batchTimingManagePath } from "@/src/features/batches/utils/batch-manage.routes";
 import {
-  getBatchModeSummaries,
+  getBatchModeLabel,
+  getTimingsForMode,
+} from "@/src/features/batches/utils/batch-mode.utils";
+import { formatBatchOverviewDate } from "@/src/features/batches/utils/batch-progress.utils";
+import {
+  formatTimingDays,
+  formatTimingRange,
 } from "@/src/features/batches/utils/batch-timing.utils";
 
 import {
   BatchManageEmptyMessage,
   BatchManageSection,
-} from "./batch-manage-section";
+} from "../manage/batch-manage-section";
 
 interface Props {
   batch: Batch;
+  mode: BatchMode;
 }
 
-export function BatchManageTimingsPanel({ batch }: Props) {
+export function BatchModeTimingsPanel({ batch, mode }: Props) {
   const router = useRouter();
-  const modeSummaries = getBatchModeSummaries(batch);
+  const timings = getTimingsForMode(batch, mode);
 
   return (
     <BatchManageSection
       title="Batch Timings"
-      description="Manage timings by learning mode. Open a mode to view its individual batch timings."
+      description={`Individual ${getBatchModeLabel(mode)} timings for this batch.`}
     >
-      {modeSummaries.length === 0 ? (
-        <BatchManageEmptyMessage message="No batch timings are linked to this batch yet." />
+      {timings.length === 0 ? (
+        <BatchManageEmptyMessage
+          message={`No ${getBatchModeLabel(mode)} timings are linked to this batch.`}
+        />
       ) : (
         <div className="w-full min-w-0 overflow-x-auto">
-          <table className="w-full min-w-[40rem] table-fixed border-collapse">
+          <table className="w-full min-w-[44rem] table-fixed border-collapse">
             <colgroup>
-              <col className="w-[34%]" />
-              <col className="w-[22%]" />
-              <col className="w-[22%]" />
+              <col className="w-[24%]" />
+              <col />
               <col className="w-[8rem]" />
+              <col className="w-[6rem]" />
             </colgroup>
 
             <thead className="border-b border-slate-200 bg-[#F6F9FD]">
               <tr>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Mode
+                  Batch Timing
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Batch Timings
+                  Schedule
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Total Students
+                  Students
                 </th>
                 <th className="px-1.5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Management
@@ -60,33 +69,42 @@ export function BatchManageTimingsPanel({ batch }: Props) {
             </thead>
 
             <tbody className="divide-y divide-slate-100">
-              {modeSummaries.map((row) => (
+              {timings.map((timing) => (
                 <tr
-                  key={row.mode}
+                  key={timing.id}
                   className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
                 >
                   <td className="min-w-0 truncate px-3 py-3 align-middle text-sm font-medium text-[#102A56]">
-                    {row.label}
+                    {timing.name}
+                  </td>
+                  <td className="min-w-0 overflow-hidden px-3 py-3 align-middle text-sm text-slate-700">
+                    <div className="flex min-w-0 flex-col gap-0.5 leading-snug">
+                      <span className="truncate">
+                        {formatTimingDays(timing.daysOfWeek)} ·{" "}
+                        {formatTimingRange(timing)}
+                      </span>
+                      <span className="truncate text-xs text-slate-500">
+                        {formatBatchOverviewDate(timing.startDate)} –{" "}
+                        {formatBatchOverviewDate(timing.endDate)}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-3 py-3 align-middle text-sm text-slate-700">
-                    {row.timingsCount} Batch Timing
-                    {row.timingsCount === 1 ? "" : "s"}
-                  </td>
-                  <td className="px-3 py-3 align-middle text-sm text-slate-700">
-                    {row.studentsCount} Student
-                    {row.studentsCount === 1 ? "" : "s"}
+                    {timing.studentsCount ?? 0}
                   </td>
                   <td className="px-1.5 py-3 align-middle">
                     <div className="flex items-center justify-center">
-                      <Tooltip content={`Manage ${row.label}`}>
+                      <Tooltip content="Manage batch timing">
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() =>
-                            router.push(batchModeManagePath(batch.id, row.mode))
+                            router.push(
+                              batchTimingManagePath(batch.id, timing.id),
+                            )
                           }
-                          aria-label={`Manage ${row.label}`}
+                          aria-label={`Manage ${timing.name}`}
                           className="h-9 w-9 shrink-0 rounded-lg p-0 text-[#2563EB] transition-colors hover:bg-blue-50 hover:text-[#1E3A8A]"
                         >
                           <Settings2 className="h-[1.25rem] w-[1.25rem]" />
