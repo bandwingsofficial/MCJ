@@ -20,22 +20,18 @@ import {
   assignBatchToBranch,
   unassignBatchFromBranch,
 } from "@/src/features/branches/utils/branch-assign.utils";
-import { BatchModeBadge } from "@/src/features/batches/components/BatchModeBadge";
 import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type { Batch, BatchFilters } from "@/src/features/batches/types/batch.types";
+import { formatBatchDateRange } from "@/src/features/batches/utils/batch.helper";
 import {
   BLOCKED_BATCH_SELECTION_MESSAGE,
   getBatchDisplayStatus,
   isBatchSelectableForAssignment,
 } from "@/src/features/batches/utils/batch-select.utils";
+import { getBatchTimingsCount } from "@/src/features/batches/utils/batch-timing.utils";
 import { categoryService } from "@/src/features/categories/services/category.service";
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
-import {
-  loadBranchBatchRelationMeta,
-  type BranchBatchRelationMeta,
-} from "@/src/features/branches/utils/branch-batch-relation.utils";
-import { COURSE_TRAINER_UNASSIGNED_LABEL } from "@/src/features/batches/utils/batch-course.utils";
 import { cn } from "@/src/shared/lib/cn";
 
 interface Props {
@@ -58,9 +54,6 @@ export function BranchManageBatchesPanel({
     includeDeleted: false,
   });
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [displayMetaByBatchId, setDisplayMetaByBatchId] = useState<
-    Record<string, BranchBatchRelationMeta>
-  >({});
   const [categoryOptions, setCategoryOptions] = useState<CategoryListItem[]>(
     [],
   );
@@ -118,11 +111,9 @@ export function BranchManageBatchesPanel({
 
       const items = batchResponse.data.items ?? [];
       setBatches(items);
-      setDisplayMetaByBatchId(await loadBranchBatchRelationMeta(items));
     } catch (error) {
       appToast.error(getErrorMessage(error));
       setBatches([]);
-      setDisplayMetaByBatchId({});
     } finally {
       setIsLoading(false);
     }
@@ -291,11 +282,9 @@ export function BranchManageBatchesPanel({
 
         <BranchManageTableShell
           columns={[
-            { key: "batch", label: "Batch" },
+            { key: "batch", label: "Batch Name" },
             { key: "course", label: "Course" },
-            { key: "mode", label: "Mode", className: "w-[8rem]" },
-            { key: "category", label: "Category" },
-            { key: "trainer", label: "Trainer" },
+            { key: "schedule", label: "Schedule" },
             { key: "status", label: "Status", className: "w-[8rem]" },
             {
               key: "actions",
@@ -310,12 +299,19 @@ export function BranchManageBatchesPanel({
         >
           {batches.map((batch) => {
             const displayStatus = getBatchDisplayStatus(batch);
-            const meta = displayMetaByBatchId[batch.id];
             const isLifecycleBlocked =
               displayStatus.key === "COMPLETED" ||
               displayStatus.key === "EXPIRED" ||
               displayStatus.key === "CANCELLED" ||
               displayStatus.key === "ARCHIVED";
+            const scheduleRange = formatBatchDateRange(
+              batch.startDate,
+              batch.endDate,
+            ).replace(" – ", " → ");
+            const timingsCount = getBatchTimingsCount(batch);
+            const timingsLabel = `${timingsCount} Batch Timing${
+              timingsCount === 1 ? "" : "s"
+            }`;
 
             return (
               <tr
@@ -347,31 +343,20 @@ export function BranchManageBatchesPanel({
                     isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
                   )}
                 >
-                  {meta?.courseTitle ||
-                    batch.course?.title?.trim() ||
-                    "No course assigned"}
-                </td>
-                <td className="px-4 py-3">
-                  <BatchModeBadge mode={batch.mode} />
+                  {batch.course?.title?.trim() || "No course assigned"}
                 </td>
                 <td
                   className={cn(
-                    "truncate px-4 py-3 text-sm",
+                    "min-w-0 px-4 py-3 text-sm",
                     isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
                   )}
                 >
-                  {meta?.categoryLabel ||
-                    batch.course?.category?.name?.trim() ||
-                    batch.category?.name?.trim() ||
-                    "—"}
-                </td>
-                <td
-                  className={cn(
-                    "truncate px-4 py-3 text-sm",
-                    isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
-                  )}
-                >
-                  {meta?.trainerLabel || COURSE_TRAINER_UNASSIGNED_LABEL}
+                  <div className="flex min-w-0 flex-col gap-0.5 leading-snug">
+                    <span className="truncate">{scheduleRange}</span>
+                    <span className="truncate text-xs text-[#647A9B]">
+                      {timingsLabel}
+                    </span>
+                  </div>
                 </td>
                 <td className="px-4 py-3">
                   <BatchStatusBadge

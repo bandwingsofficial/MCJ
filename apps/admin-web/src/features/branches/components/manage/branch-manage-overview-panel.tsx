@@ -12,14 +12,19 @@ import type { BranchSummaryCounts } from "@/src/features/branches/hooks/use-bran
 import { BranchStatusBadge } from "@/src/features/branches/components/branch-status-badge";
 import { BranchOverviewSectionHeader } from "@/src/features/branches/components/manage/branch-overview-section-header";
 import { BranchManageCardGrid } from "@/src/features/branches/components/manage/branch-manage-card-grid";
+import { BranchBatchOverviewCard } from "@/src/features/branches/components/manage/branch-batch-overview-card";
+import { BranchBatchOverviewMetrics } from "@/src/features/branches/components/manage/branch-batch-overview-metrics";
 import { BranchSummaryModuleCard } from "@/src/features/branches/components/manage/branch-summary-module-card";
-import { BranchBatchCard } from "@/src/features/branches/components/manage/branch-batch-card";
 import { BranchStudentEnrolledCard } from "@/src/features/branches/components/manage/branch-student-enrolled-card";
 import type { BranchManageTabKey } from "@/src/features/branches/components/manage/branch-manage-tab.types";
 import {
   formatBranchAddress,
   formatTrainerNames,
 } from "@/src/features/branches/utils/branch-display.utils";
+import {
+  computeBranchBatchOverviewStats,
+  getBranchBatchTotalTimings,
+} from "@/src/features/branches/utils/branch-batch-overview.utils";
 import { categoryService } from "@/src/features/categories/services/category.service";
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
 import { CategoryStatusBadge } from "@/src/features/categories/components/category-status-badge";
@@ -27,10 +32,6 @@ import { courseService } from "@/src/features/courses/services/course.service";
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type { Batch } from "@/src/features/batches/types/batch.types";
-import {
-  loadBranchBatchRelationMeta,
-  type BranchBatchRelationMeta,
-} from "@/src/features/branches/utils/branch-batch-relation.utils";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
@@ -53,6 +54,8 @@ interface OverviewCourse extends CourseListItem {
 
 const PREVIEW_LIMIT = 4;
 const BATCH_PREVIEW_LIMIT = 4;
+const BRANCH_BATCH_FETCH_LIMIT = 100;
+const BRANCH_ENROLLMENT_FETCH_LIMIT = 500;
 
 function OverviewField({
   label,
@@ -104,9 +107,7 @@ export function BranchManageOverviewPanel({
   const [categories, setCategories] = useState<CategoryListItem[]>([]);
   const [courses, setCourses] = useState<OverviewCourse[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [batchRelationMeta, setBatchRelationMeta] = useState<
-    Record<string, BranchBatchRelationMeta>
-  >({});
+  const [branchEnrollments, setBranchEnrollments] = useState<Enrollment[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [courseCountByCategory, setCourseCountByCategory] = useState<
     Record<string, number>
@@ -120,6 +121,7 @@ export function BranchManageOverviewPanel({
         courseResponse,
         allCoursesResponse,
         batchResponse,
+        branchEnrollmentResponse,
         enrollmentResponse,
       ] = await Promise.all([
         categoryService.getCategories({
@@ -143,7 +145,12 @@ export function BranchManageOverviewPanel({
           branchId,
           includeDeleted: false,
           page: 1,
-          pageSize: BATCH_PREVIEW_LIMIT,
+          pageSize: BRANCH_BATCH_FETCH_LIMIT,
+        }),
+        enrollmentService.getEnrollments({
+          branchId,
+          skip: 0,
+          take: BRANCH_ENROLLMENT_FETCH_LIMIT,
         }),
         enrollmentService.getEnrollments({
           branchId,
@@ -159,14 +166,17 @@ export function BranchManageOverviewPanel({
         (item) => !item.isDeleted,
       );
       const batchItems = batchResponse.data.items ?? [];
+      const branchEnrollmentItems = parseEnrollmentListResponse(
+        branchEnrollmentResponse,
+      ).items;
       const enrollmentItems = parseEnrollmentListResponse(enrollmentResponse)
         .items;
 
       setCategories(categoryItems);
       setCourses(await loadCourseTrainers(courseItems));
       setBatches(batchItems);
+      setBranchEnrollments(branchEnrollmentItems);
       setEnrollments(enrollmentItems);
-      setBatchRelationMeta(await loadBranchBatchRelationMeta(batchItems));
 
       const categoryCounts: Record<string, number> = {};
       for (const course of allCoursesResponse.data.items ?? []) {
@@ -181,8 +191,8 @@ export function BranchManageOverviewPanel({
       setCategories([]);
       setCourses([]);
       setBatches([]);
+      setBranchEnrollments([]);
       setEnrollments([]);
-      setBatchRelationMeta({});
       setCourseCountByCategory({});
     } finally {
       setPreviewLoading(false);
@@ -193,7 +203,13 @@ export function BranchManageOverviewPanel({
     void loadPreview();
   }, [loadPreview]);
 
-  const batchCount = summary?.batches ?? batches.length;
+  const batchStats = computeBranchBatchOverviewStats(
+    batches,
+    branchEnrollments,
+  );
+  const batchCount = batchStats.totalBatches;
+  const totalTimings = getBranchBatchTotalTimings(batches);
+  const previewBatches = batches.slice(0, BATCH_PREVIEW_LIMIT);
   const categoryCount = summary?.categories ?? categories.length;
   const courseCount = summary?.courses ?? courses.length;
   const enrolledCount = summary?.enrollments ?? enrollments.length;
@@ -237,38 +253,40 @@ export function BranchManageOverviewPanel({
 
       <Card className="rounded-xl border border-slate-200/80 p-5 shadow-sm">
         <BranchOverviewSectionHeader
-          title={`Batches (${summaryLoading ? "…" : batchCount})`}
+          title="Branch Batches"
           onViewAll={() => onNavigateToTab("batches")}
           actionLabel="Assign Batch"
           onAction={() => onNavigateToTab("batches", { assign: true })}
           actionDisabled={assignmentsDisabled}
         />
 
-        <BranchManageCardGrid
+        <BranchBatchOverviewMetrics
+          stats={batchStats}
           isLoading={previewLoading}
-          isEmpty={!previewLoading && batches.length === 0}
-          emptyMessage="No Batches Yet"
-          emptyDescription="Assign batches to this branch to manage schedules and enrollments."
-          columnsClassName="grid grid-cols-1 gap-4 xl:grid-cols-2"
-          skeletonCount={2}
-        >
-          {batches.map((batch) => {
-            const meta = batchRelationMeta[batch.id];
+        />
 
-            return (
-              <BranchBatchCard
-                key={batch.id}
-                batch={batch}
-                courseTitles={
-                  meta?.courseTitle ? [meta.courseTitle] : undefined
-                }
-                categoryLabel={meta?.categoryLabel}
-                trainerLabel={meta?.trainerLabel}
-                compact
-              />
-            );
-          })}
-        </BranchManageCardGrid>
+        <div className="mt-5 border-t border-slate-100 pt-4">
+          <p className="text-sm text-[#647A9B]">
+            {previewLoading
+              ? "Loading batch summary…"
+              : `${batchCount} parent batch${batchCount === 1 ? "" : "es"} · ${totalTimings} batch timing${totalTimings === 1 ? "" : "s"} · ${batchStats.totalStudents} student${batchStats.totalStudents === 1 ? "" : "s"}`}
+          </p>
+        </div>
+
+        <div className="mt-4">
+          <BranchManageCardGrid
+            isLoading={previewLoading}
+            isEmpty={!previewLoading && previewBatches.length === 0}
+            emptyMessage="No Batches Yet"
+            emptyDescription="Assign batches to this branch to manage schedules and enrollments."
+            columnsClassName="grid grid-cols-1 gap-4 xl:grid-cols-2"
+            skeletonCount={2}
+          >
+            {previewBatches.map((batch) => (
+              <BranchBatchOverviewCard key={batch.id} batch={batch} />
+            ))}
+          </BranchManageCardGrid>
+        </div>
       </Card>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
