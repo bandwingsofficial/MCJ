@@ -57,7 +57,7 @@ export function BatchTemplateFormModal({
       open={open}
       title={isEdit ? "Edit Batch Timing" : "Add Batch Timing"}
       onClose={onClose}
-      contentClassName="!max-w-xl"
+      contentClassName={isEdit ? "!max-w-2xl" : "!max-w-xl"}
     >
       <BatchTemplateForm
         key={
