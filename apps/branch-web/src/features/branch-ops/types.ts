@@ -379,6 +379,16 @@ export interface AttendanceReport {
   total: number;
 }
 
+export interface BatchSummary {
+  batchId: string;
+  studentsCount: number;
+  trainerCount: number;
+  enrolledCount: number;
+  capacity: number;
+  attendancePresent: number;
+  attendanceAbsent: number;
+}
+
 export interface BatchListItem {
   id: string;
   name: string;
