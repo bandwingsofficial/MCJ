@@ -49,12 +49,15 @@ export function resolveAttendanceDateRange(
     const mondayOffset = weekday === 0 ? -6 : 1 - weekday;
     const from = new Date(today);
     from.setDate(from.getDate() + mondayOffset);
-    return { from: toLocalDateInput(from), to: toLocalDateInput(today) };
+    const to = new Date(from);
+    to.setDate(to.getDate() + 5);
+    return { from: toLocalDateInput(from), to: toLocalDateInput(to) };
   }
 
   if (preset === "THIS_MONTH") {
     const from = new Date(today.getFullYear(), today.getMonth(), 1);
-    return { from: toLocalDateInput(from), to: toLocalDateInput(today) };
+    const to = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return { from: toLocalDateInput(from), to: toLocalDateInput(to) };
   }
 
   return {

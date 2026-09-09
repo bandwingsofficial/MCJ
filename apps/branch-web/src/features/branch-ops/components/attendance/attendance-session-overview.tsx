@@ -3,19 +3,22 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
-import type { AttendanceItem, BatchListItem } from "@/src/features/branch-ops/types";
+import { AttendanceSessionDetailModal } from "@/src/features/branch-ops/components/attendance/attendance-session-detail-modal";
 import {
-  attendanceStatusVariant,
-  formatAttendanceDisplayDate,
-} from "@/src/features/branch-ops/utils/attendance-date.utils";
+  AttendanceDateRangeFilters,
+  defaultAttendanceDateRangeFilters,
+  resolveDateRangeFromFilters,
+  type AttendanceDateRangeFilterState,
+} from "@/src/features/branch-ops/components/attendance/attendance-date-range-filters";
+import type { AttendanceItem, BatchListItem } from "@/src/features/branch-ops/types";
+import { formatAttendanceDisplayDate } from "@/src/features/branch-ops/utils/attendance-date.utils";
 import {
   type BatchMode,
   getBatchModeSectionLabel,
   getConfiguredBatchModes,
   getTimingsForMode,
 } from "@/src/features/branch-ops/utils/batch-mode.utils";
-import { Badge } from "@/src/shared/components/ui/badge";
-import { Card } from "@/src/shared/components/ui/card";
+import { Button } from "@/src/shared/components/ui/button";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
@@ -28,13 +31,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/shared/components/ui/table";
-import { cn } from "@/src/shared/lib/cn";
 
 interface Props {
   batches: BatchListItem[];
   initialBatchId?: string;
-  dateFrom?: string;
-  dateTo?: string;
 }
 
 type SessionRow = {
@@ -42,7 +42,6 @@ type SessionRow = {
   batchName: string;
   mode: string;
   timingName: string;
-  courseTitle: string;
   totalStudents: number;
   present: number;
   absent: number;
@@ -50,19 +49,28 @@ type SessionRow = {
   percentage: number;
 };
 
+const FILTER_TRIGGER =
+  "h-[46px] rounded-xl w-full min-w-0 text-sm [&>span]:line-clamp-1 [&>span]:text-left";
+
 export function AttendanceSessionOverview({
   batches,
   initialBatchId,
-  dateFrom,
-  dateTo,
 }: Props) {
   const [batchId, setBatchId] = useState(initialBatchId ?? "");
   const [mode, setMode] = useState<string>("");
   const [batchTimingId, setBatchTimingId] = useState("");
+  const [dateFilters, setDateFilters] = useState<AttendanceDateRangeFilterState>(
+    defaultAttendanceDateRangeFilters,
+  );
   const [items, setItems] = useState<AttendanceItem[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [viewSessionDate, setViewSessionDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const dateRange = useMemo(
+    () => resolveDateRangeFromFilters(dateFilters),
+    [dateFilters],
+  );
 
   const selectedBatch = useMemo(
     () => batches.find((batch) => batch.id === batchId) ?? null,
@@ -92,17 +100,17 @@ export function AttendanceSessionOverview({
   useEffect(() => {
     setMode("");
     setBatchTimingId("");
-    setSelectedDate(null);
+    setViewSessionDate(null);
   }, [batchId]);
 
   useEffect(() => {
     setBatchTimingId("");
-    setSelectedDate(null);
+    setViewSessionDate(null);
   }, [mode]);
 
   useEffect(() => {
-    setSelectedDate(null);
-  }, [batchTimingId, dateFrom, dateTo]);
+    setViewSessionDate(null);
+  }, [batchTimingId, dateRange.from, dateRange.to]);
 
   useEffect(() => {
     if (!batchId || !batchTimingId) {
@@ -119,8 +127,8 @@ export function AttendanceSessionOverview({
       const first = await branchOpsApi.attendanceReport({
         batchId,
         batchTimingId,
-        from: dateFrom,
-        to: dateTo,
+        from: dateRange.from,
+        to: dateRange.to,
         requireBatchTiming: "true",
         take: 200,
         skip: 0,
@@ -134,8 +142,8 @@ export function AttendanceSessionOverview({
         const page = await branchOpsApi.attendanceReport({
           batchId,
           batchTimingId,
-          from: dateFrom,
-          to: dateTo,
+          from: dateRange.from,
+          to: dateRange.to,
           requireBatchTiming: "true",
           take: 200,
           skip,
@@ -167,7 +175,7 @@ export function AttendanceSessionOverview({
     return () => {
       cancelled = true;
     };
-  }, [batchId, batchTimingId, dateFrom, dateTo]);
+  }, [batchId, batchTimingId, dateRange.from, dateRange.to]);
 
   const sessionRows = useMemo(() => {
     const map = new Map<string, SessionRow>();
@@ -181,7 +189,6 @@ export function AttendanceSessionOverview({
           ? getBatchModeSectionLabel(item.batchTiming.mode)
           : "—",
         timingName: item.batchTiming?.name ?? "—",
-        courseTitle: item.course.title,
         totalStudents: 0,
         present: 0,
         absent: 0,
@@ -207,10 +214,6 @@ export function AttendanceSessionOverview({
       .sort((a, b) => b.dateKey.localeCompare(a.dateKey));
   }, [items]);
 
-  const detailRows = selectedDate
-    ? items.filter((item) => String(item.date).slice(0, 10) === selectedDate)
-    : [];
-
   const selectedTiming = timingOptions.find(
     (option) => option.value === batchTimingId,
   );
@@ -224,6 +227,7 @@ export function AttendanceSessionOverview({
           </label>
           <AppSelect
             value={batchId || undefined}
+            triggerClassName={FILTER_TRIGGER}
             placeholder="Select main batch"
             onValueChange={setBatchId}
             options={batches.map((batch) => ({
@@ -238,6 +242,7 @@ export function AttendanceSessionOverview({
           </label>
           <AppSelect
             value={mode || undefined}
+            triggerClassName={FILTER_TRIGGER}
             placeholder={!batchId ? "Select batch first" : "Select mode"}
             onValueChange={setMode}
             disabled={!batchId}
@@ -250,6 +255,7 @@ export function AttendanceSessionOverview({
           </label>
           <AppSelect
             value={batchTimingId || undefined}
+            triggerClassName={FILTER_TRIGGER}
             placeholder={
               !mode ? "Select learning mode first" : "Select batch timing"
             }
@@ -260,8 +266,15 @@ export function AttendanceSessionOverview({
         </div>
       </div>
 
+      <AttendanceDateRangeFilters
+        filters={dateFilters}
+        onChange={(patch) =>
+          setDateFilters((prev) => ({ ...prev, ...patch }))
+        }
+      />
+
       {!batchId || !mode || !batchTimingId ? (
-        <EmptyState title="Select main batch, learning mode, and batch timing to view session-wise attendance." />
+        <EmptyState title="Select main batch, learning mode, and batch timing to view attendance sessions." />
       ) : loading ? (
         <Loader />
       ) : error ? (
@@ -270,11 +283,10 @@ export function AttendanceSessionOverview({
         <>
           <div>
             <h3 className="text-sm font-semibold text-[#102A56]">
-              Session Overview · {selectedTiming?.label ?? "Batch Timing"}
+              Attendance Sessions · {selectedTiming?.label ?? "Batch Timing"}
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Attendance sessions for the selected batch timing
-              {dateFrom && dateTo ? ` (${dateFrom} → ${dateTo})` : ""}.
+              Day-by-day attendance sessions for the selected batch timing.
             </p>
           </div>
 
@@ -286,87 +298,56 @@ export function AttendanceSessionOverview({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead>Main Batch</TableHead>
-                    <TableHead>Learning Mode</TableHead>
-                    <TableHead>Batch Timing</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead>Total Students</TableHead>
+                    <TableHead>Batch</TableHead>
+                    <TableHead>Mode</TableHead>
+                    <TableHead>Timing</TableHead>
+                    <TableHead>Students</TableHead>
                     <TableHead>Present</TableHead>
                     <TableHead>Absent</TableHead>
                     <TableHead>Late</TableHead>
                     <TableHead>Attendance %</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sessionRows.map((row) => (
-                    <TableRow
-                      key={row.dateKey}
-                      className={cn(
-                        "cursor-pointer hover:bg-slate-50",
-                        selectedDate === row.dateKey && "bg-sky-50/80",
-                      )}
-                      onClick={() => setSelectedDate(row.dateKey)}
-                    >
+                    <TableRow key={row.dateKey}>
                       <TableCell>
                         {formatAttendanceDisplayDate(row.dateKey)}
                       </TableCell>
                       <TableCell>{row.batchName}</TableCell>
                       <TableCell>{row.mode}</TableCell>
                       <TableCell>{row.timingName}</TableCell>
-                      <TableCell>{row.courseTitle}</TableCell>
                       <TableCell>{row.totalStudents}</TableCell>
                       <TableCell>{row.present}</TableCell>
                       <TableCell>{row.absent}</TableCell>
                       <TableCell>{row.late}</TableCell>
                       <TableCell>{row.percentage}%</TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setViewSessionDate(row.dateKey)}
+                        >
+                          View
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
           )}
-
-          {selectedDate ? (
-            <Card className="space-y-3 p-4">
-              <h4 className="text-sm font-semibold text-[#102A56]">
-                Students · {formatAttendanceDisplayDate(selectedDate)}
-              </h4>
-              {!detailRows.length ? (
-                <EmptyState title="No student records for this session." />
-              ) : (
-                <div className="overflow-x-auto rounded-xl border border-slate-200">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Student</TableHead>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {detailRows.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{item.student.name}</TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {item.student.studentCode}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={attendanceStatusVariant(item.status)}
-                            >
-                              {item.status}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </Card>
-          ) : null}
         </>
       )}
+
+      <AttendanceSessionDetailModal
+        open={Boolean(viewSessionDate)}
+        onClose={() => setViewSessionDate(null)}
+        batchId={batchId}
+        batchTimingId={batchTimingId}
+        date={viewSessionDate ?? ""}
+      />
     </div>
   );
 }

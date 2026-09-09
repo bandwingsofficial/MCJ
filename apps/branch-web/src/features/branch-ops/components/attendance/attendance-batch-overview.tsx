@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type {
@@ -27,6 +27,21 @@ import { cn } from "@/src/shared/lib/cn";
 interface Props {
   batches: BatchListItem[];
   initialBatchId?: string;
+}
+
+function computeOverallPercentage(overview: BatchTimingAttendanceOverview) {
+  const timings = overview.modes.flatMap((section) => section.timings);
+  const present = timings.reduce((sum, timing) => sum + timing.present, 0);
+  const totalRecords = timings.reduce(
+    (sum, timing) => sum + timing.totalRecords,
+    0,
+  );
+
+  if (totalRecords <= 0) {
+    return null;
+  }
+
+  return Math.round((present / totalRecords) * 1000) / 10;
 }
 
 export function AttendanceBatchOverview({
@@ -116,6 +131,11 @@ export function AttendanceBatchOverview({
     };
   }, [batchId, selectedTimingId]);
 
+  const overallPercentage = useMemo(
+    () => (overview ? computeOverallPercentage(overview) : null),
+    [overview],
+  );
+
   const selectedTiming = overview?.modes
     .flatMap((section) => section.timings)
     .find((timing) => timing.id === selectedTimingId);
@@ -128,6 +148,7 @@ export function AttendanceBatchOverview({
         </label>
         <AppSelect
           value={batchId || undefined}
+          triggerClassName="h-[46px] rounded-xl w-full min-w-0 text-sm"
           placeholder="Select main batch"
           onValueChange={(value) => {
             setBatchId(value);
@@ -141,7 +162,7 @@ export function AttendanceBatchOverview({
       </div>
 
       {!batchId ? (
-        <EmptyState title="Select a main batch to view attendance by batch timing." />
+        <EmptyState title="Select a main batch to view batch attendance performance." />
       ) : loadingOverview ? (
         <Loader />
       ) : error ? (
@@ -152,12 +173,47 @@ export function AttendanceBatchOverview({
         <EmptyState title="No batch timings configured for this batch." />
       ) : (
         <>
+          <Card className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div>
+              <p className="text-xs font-semibold uppercase text-slate-500">
+                Batch Name
+              </p>
+              <p className="mt-1 text-sm font-semibold text-[#102A56]">
+                {overview.batch.name}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase text-slate-500">
+                Batch Number
+              </p>
+              <p className="mt-1 text-sm font-semibold text-[#102A56]">
+                {overview.batch.code || "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase text-slate-500">
+                Date Range
+              </p>
+              <p className="mt-1 text-sm font-medium text-[#102A56]">
+                All attendance history
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase text-slate-500">
+                Overall Attendance %
+              </p>
+              <p className="mt-1 text-sm font-semibold text-[#102A56]">
+                {overallPercentage == null ? "—" : `${overallPercentage}%`}
+              </p>
+            </div>
+          </Card>
+
           <div>
             <h3 className="text-sm font-semibold text-[#102A56]">
-              {overview.batch.name}
+              Batch Attendance by Learning Mode and Timing
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Attendance grouped by learning mode and batch timing
+              Complete attendance history for the selected parent batch.
             </p>
           </div>
 
@@ -172,7 +228,7 @@ export function AttendanceBatchOverview({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Batch Timing</TableHead>
+                      <TableHead>Timing</TableHead>
                       <TableHead>Enrolled Students</TableHead>
                       <TableHead>Total Attendance Sessions</TableHead>
                       <TableHead>Present</TableHead>

@@ -5,16 +5,18 @@ import { Plus } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { AttendanceBatchOverview } from "@/src/features/branch-ops/components/attendance/attendance-batch-overview";
+import {
+  AttendanceDateRangeFilters,
+  defaultAttendanceDateRangeFilters,
+  resolveDateRangeFromFilters,
+} from "@/src/features/branch-ops/components/attendance/attendance-date-range-filters";
 import { AttendanceSessionOverview } from "@/src/features/branch-ops/components/attendance/attendance-session-overview";
 import { ManageAttendanceModal } from "@/src/features/branch-ops/components/attendance/manage-attendance-modal";
 import { TakeAttendanceModal } from "@/src/features/branch-ops/components/attendance/take-attendance-modal";
 import type { AttendanceItem } from "@/src/features/branch-ops/types";
 import {
-  type AttendanceDatePreset,
   attendanceStatusVariant,
   formatAttendanceDisplayDate,
-  resolveAttendanceDateRange,
-  todayLocalInput,
 } from "@/src/features/branch-ops/utils/attendance-date.utils";
 import {
   BATCH_MODE_SECTION_LABELS,
@@ -30,7 +32,6 @@ import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
-import { Input } from "@/src/shared/components/ui/input";
 import { ListPageHeader } from "@/src/shared/components/ui/list-page-header";
 import { Loader } from "@/src/shared/components/ui/loader";
 import { SearchInput } from "@/src/shared/components/ui/search-input";
@@ -65,21 +66,9 @@ const MODE_OPTIONS: Array<{ label: string; value: BatchMode }> = [
   { label: BATCH_MODE_SECTION_LABELS.RECORDED, value: "RECORDED" },
 ];
 
-const DATE_PRESET_OPTIONS: Array<{
-  label: string;
-  value: AttendanceDatePreset;
-}> = [
-  { label: "Today", value: "TODAY" },
-  { label: "Yesterday", value: "YESTERDAY" },
-  { label: "This Week", value: "THIS_WEEK" },
-  { label: "This Month", value: "THIS_MONTH" },
-  { label: "Custom", value: "CUSTOM" },
-];
-
 const TAB_CLASS =
   "rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
 
-/** Shared filter control sizing — matches Faculty portal selects/inputs. */
 const FILTER_H = "h-[46px]";
 const FILTER_RADIUS = "rounded-xl";
 const FILTER_TRIGGER = `${FILTER_H} ${FILTER_RADIUS} w-full min-w-0 text-sm [&>span]:line-clamp-1 [&>span]:text-left`;
@@ -90,7 +79,7 @@ type Filters = {
   mode: string;
   batchTimingId: string;
   status: string;
-  datePreset: AttendanceDatePreset;
+  datePreset: ReturnType<typeof defaultAttendanceDateRangeFilters>["datePreset"];
   from: string;
   to: string;
 };
@@ -101,14 +90,12 @@ const defaultFilters = (): Filters => ({
   mode: "ALL",
   batchTimingId: "ALL",
   status: "ALL",
-  datePreset: "TODAY",
-  from: "",
-  to: "",
+  ...defaultAttendanceDateRangeFilters(),
 });
 
 export function AttendanceModulePage() {
   const role = useAuthStore((state) => state.user?.role);
-  const [tab, setTab] = useState("records");
+  const [tab, setTab] = useState("attendance");
   const [takeOpen, setTakeOpen] = useState(false);
   const [manageRecord, setManageRecord] = useState<AttendanceItem | null>(
     null,
@@ -128,8 +115,7 @@ export function AttendanceModulePage() {
   }, [filters.search]);
 
   const dateRange = useMemo(
-    () =>
-      resolveAttendanceDateRange(filters.datePreset, filters.from, filters.to),
+    () => resolveDateRangeFromFilters(filters),
     [filters.datePreset, filters.from, filters.to],
   );
 
@@ -238,8 +224,6 @@ export function AttendanceModulePage() {
     setPage(1);
   };
 
-  const isCustomDateRange = filters.datePreset === "CUSTOM";
-
   if (batchesQuery.loading && !batchesQuery.data) {
     return <Loader />;
   }
@@ -260,7 +244,7 @@ export function AttendanceModulePage() {
         currentLabel="Attendance"
         title="Attendance"
         totalLabel="Records"
-        total={total}
+        total={tab === "attendance" ? total : null}
         action={
           <Button type="button" onClick={() => setTakeOpen(true)}>
             <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
@@ -269,174 +253,116 @@ export function AttendanceModulePage() {
         }
       />
 
-      <Card className="overflow-hidden p-5">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Filters
-        </p>
+      {tab === "attendance" ? (
+        <Card className="overflow-hidden p-5">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Filters
+          </p>
 
-        {/* Row 1: Search, Main Batch, Learning Mode, Batch Timing, Status */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 lg:items-center">
-          <div className="min-w-0">
-            <SearchInput
-              value={filters.search}
-              placeholder="Search student name/code..."
-              className={`${FILTER_H} ${FILTER_RADIUS} text-sm`}
-              onChange={(value) =>
-                setFilters((prev) => ({ ...prev, search: value }))
-              }
-            />
-          </div>
-
-          <div className="min-w-0">
-            <AppSelect
-              value={filters.batchId}
-              triggerClassName={FILTER_TRIGGER}
-              onValueChange={(value) =>
-                updateFilters({
-                  batchId: value,
-                  mode: "ALL",
-                  batchTimingId: "ALL",
-                })
-              }
-              options={[
-                { label: "All Batches", value: "ALL" },
-                ...batches.map((batch) => ({
-                  label: `${batch.name} (${batch.code})`,
-                  value: batch.id,
-                })),
-              ]}
-            />
-          </div>
-
-          <div className="min-w-0">
-            <AppSelect
-              value={filters.mode}
-              triggerClassName={FILTER_TRIGGER}
-              onValueChange={(value) =>
-                updateFilters({ mode: value, batchTimingId: "ALL" })
-              }
-              options={modeOptions}
-            />
-          </div>
-
-          <div className="min-w-0">
-            <AppSelect
-              value={filters.batchTimingId}
-              triggerClassName={FILTER_TRIGGER}
-              onValueChange={(value) => updateFilters({ batchTimingId: value })}
-              options={timingOptions}
-              disabled={
-                filters.batchId === "ALL" ||
-                filters.mode === "ALL" ||
-                timingOptions.length <= 1
-              }
-              placeholder={
-                filters.batchId === "ALL"
-                  ? "Select batch first"
-                  : filters.mode === "ALL"
-                    ? "Select mode first"
-                    : timingOptions.length <= 1
-                      ? "No timings"
-                      : "All Timings"
-              }
-            />
-          </div>
-
-          <div className="min-w-0">
-            <AppSelect
-              value={filters.status}
-              triggerClassName={FILTER_TRIGGER}
-              onValueChange={(value) => updateFilters({ status: value })}
-              options={STATUS_OPTIONS}
-            />
-          </div>
-        </div>
-
-        {/* Row 2: Date range, From, To, Clear — always visible */}
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
-          <div className="min-w-0">
-            <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
-              Date Range
-            </label>
-            <AppSelect
-              value={filters.datePreset}
-              triggerClassName={FILTER_TRIGGER}
-              onValueChange={(value) => {
-                const preset = value as AttendanceDatePreset;
-                if (preset !== "CUSTOM") {
-                  updateFilters({ datePreset: preset, from: "", to: "" });
-                  return;
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 lg:items-center">
+            <div className="min-w-0">
+              <SearchInput
+                value={filters.search}
+                placeholder="Search student name/code..."
+                className={`${FILTER_H} ${FILTER_RADIUS} text-sm`}
+                onChange={(value) =>
+                  setFilters((prev) => ({ ...prev, search: value }))
                 }
-                const today = todayLocalInput();
-                updateFilters({
-                  datePreset: preset,
-                  from: filters.from || today,
-                  to: filters.to || today,
-                });
-              }}
-              options={DATE_PRESET_OPTIONS}
-            />
+              />
+            </div>
+
+            <div className="min-w-0">
+              <AppSelect
+                value={filters.batchId}
+                triggerClassName={FILTER_TRIGGER}
+                onValueChange={(value) =>
+                  updateFilters({
+                    batchId: value,
+                    mode: "ALL",
+                    batchTimingId: "ALL",
+                  })
+                }
+                options={[
+                  { label: "All Batches", value: "ALL" },
+                  ...batches.map((batch) => ({
+                    label: `${batch.name} (${batch.code})`,
+                    value: batch.id,
+                  })),
+                ]}
+              />
+            </div>
+
+            <div className="min-w-0">
+              <AppSelect
+                value={filters.mode}
+                triggerClassName={FILTER_TRIGGER}
+                onValueChange={(value) =>
+                  updateFilters({ mode: value, batchTimingId: "ALL" })
+                }
+                options={modeOptions}
+              />
+            </div>
+
+            <div className="min-w-0">
+              <AppSelect
+                value={filters.batchTimingId}
+                triggerClassName={FILTER_TRIGGER}
+                onValueChange={(value) =>
+                  updateFilters({ batchTimingId: value })
+                }
+                options={timingOptions}
+                disabled={
+                  filters.batchId === "ALL" ||
+                  filters.mode === "ALL" ||
+                  timingOptions.length <= 1
+                }
+                placeholder={
+                  filters.batchId === "ALL"
+                    ? "Select batch first"
+                    : filters.mode === "ALL"
+                      ? "Select mode first"
+                      : timingOptions.length <= 1
+                        ? "No timings"
+                        : "All Timings"
+                }
+              />
+            </div>
+
+            <div className="min-w-0">
+              <AppSelect
+                value={filters.status}
+                triggerClassName={FILTER_TRIGGER}
+                onValueChange={(value) => updateFilters({ status: value })}
+                options={STATUS_OPTIONS}
+              />
+            </div>
           </div>
 
-          <div className="min-w-0">
-            <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
-              Date From
-            </label>
-            <Input
-              type="date"
-              aria-label="Date from"
-              className={`${FILTER_H} ${FILTER_RADIUS} w-full text-sm`}
-              value={
-                isCustomDateRange ? filters.from : (dateRange.from ?? "")
-              }
-              disabled={!isCustomDateRange}
-              onChange={(event) =>
-                updateFilters({ from: event.target.value })
-              }
+          <div className="mt-3">
+            <AttendanceDateRangeFilters
+              filters={filters}
+              onChange={(patch) => updateFilters(patch)}
+              showClear
+              onClear={clearFilters}
             />
           </div>
-
-          <div className="min-w-0">
-            <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
-              Date To
-            </label>
-            <Input
-              type="date"
-              aria-label="Date to"
-              className={`${FILTER_H} ${FILTER_RADIUS} w-full text-sm`}
-              value={isCustomDateRange ? filters.to : (dateRange.to ?? "")}
-              disabled={!isCustomDateRange}
-              onChange={(event) => updateFilters({ to: event.target.value })}
-            />
-          </div>
-
-          <div className="min-w-0">
-            <Button
-              type="button"
-              variant="outline"
-              className={`${FILTER_H} ${FILTER_RADIUS} w-full px-3 text-sm`}
-              onClick={clearFilters}
-            >
-              Clear Filters
-            </Button>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      ) : null}
 
       <Tabs value={tab} onValueChange={setTab} className="gap-3">
         <TabsList className="mb-2 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
-          <TabsTrigger value="records" className={TAB_CLASS}>
-            Records
+          <TabsTrigger value="attendance" className={TAB_CLASS}>
+            Attendance
           </TabsTrigger>
-          <TabsTrigger value="batch" className={TAB_CLASS}>
-            Batch Overview
+          <TabsTrigger value="batch-attendance" className={TAB_CLASS}>
+            Batch Attendance
           </TabsTrigger>
-          <TabsTrigger value="session" className={TAB_CLASS}>
-            Session Overview
+          <TabsTrigger value="sessions" className={TAB_CLASS}>
+            Attendance Sessions
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="records" className="space-y-3">
+        <TabsContent value="attendance" className="space-y-3">
           <p className="text-sm font-semibold text-[#102A56]">
             Attendance Records
           </p>
@@ -462,11 +388,12 @@ export function AttendanceModulePage() {
                       <TableHead>Date</TableHead>
                       <TableHead>Student</TableHead>
                       <TableHead>Student Code</TableHead>
-                      <TableHead>Main Batch</TableHead>
-                      <TableHead>Learning Mode</TableHead>
-                      <TableHead>Batch Timing</TableHead>
-                      <TableHead>Course</TableHead>
+                      <TableHead>Batch</TableHead>
+                      <TableHead>Mode</TableHead>
+                      <TableHead>Timing</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Marked By</TableHead>
+                      <TableHead>Remarks</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -491,13 +418,18 @@ export function AttendanceModulePage() {
                         <TableCell className="max-w-[10rem] truncate">
                           {item.batchTiming?.name ?? "—"}
                         </TableCell>
-                        <TableCell>{item.course.title}</TableCell>
                         <TableCell>
                           <Badge
                             variant={attendanceStatusVariant(item.status)}
                           >
                             {item.status}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {item.faculty?.name?.trim() || "—"}
+                        </TableCell>
+                        <TableCell className="max-w-[12rem] truncate">
+                          {item.remarks?.trim() || "—"}
                         </TableCell>
                         <TableCell>
                           <Button
@@ -528,7 +460,7 @@ export function AttendanceModulePage() {
           )}
         </TabsContent>
 
-        <TabsContent value="batch">
+        <TabsContent value="batch-attendance">
           <AttendanceBatchOverview
             batches={batches}
             initialBatchId={
@@ -537,14 +469,12 @@ export function AttendanceModulePage() {
           />
         </TabsContent>
 
-        <TabsContent value="session">
+        <TabsContent value="sessions">
           <AttendanceSessionOverview
             batches={batches}
             initialBatchId={
               filters.batchId !== "ALL" ? filters.batchId : undefined
             }
-            dateFrom={dateRange.from || undefined}
-            dateTo={dateRange.to || undefined}
           />
         </TabsContent>
       </Tabs>
