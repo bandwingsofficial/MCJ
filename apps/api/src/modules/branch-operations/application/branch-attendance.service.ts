@@ -1540,6 +1540,9 @@ export class BranchAttendanceService {
             },
           },
         },
+        batchTiming: {
+          select: { id: true, name: true, mode: true },
+        },
       },
     });
 
@@ -1551,6 +1554,9 @@ export class BranchAttendanceService {
     const sessionFilter: Prisma.AttendanceWhereInput = {
       batchId,
       branchId: user.branchId,
+      ...(enrollment.batchTimingId
+        ? { batchTimingId: enrollment.batchTimingId }
+        : {}),
       ...(dateFilter ? { date: dateFilter } : {}),
       ...(query.batchCourseId ? { batchCourseId: query.batchCourseId } : {}),
       ...(query.courseId
@@ -1560,7 +1566,7 @@ export class BranchAttendanceService {
 
     const [conductedGroups, allStudentRows, assignments] = await Promise.all([
       this.prisma.attendance.groupBy({
-        by: ['date', 'batchCourseId'],
+        by: ['date'],
         where: sessionFilter,
       }),
       this.prisma.attendance.findMany({
@@ -1570,6 +1576,9 @@ export class BranchAttendanceService {
         },
         orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
         include: {
+          batchTiming: {
+            select: { id: true, name: true, mode: true },
+          },
           batchCourse: {
             select: {
               id: true,
@@ -1615,18 +1624,6 @@ export class BranchAttendanceService {
       historyRows.map((row) => row.date.toISOString().slice(0, 10)),
     );
 
-    const workingDaysRangeStart =
-      (dateFilter?.gte as Date | undefined) ?? enrollment.batch.startDate;
-    const workingDaysRangeEnd =
-      (dateFilter?.lte as Date | undefined) ??
-      enrollment.batch.endDate ??
-      new Date();
-    const workingDays = this.countWorkingDays(
-      workingDaysRangeStart,
-      workingDaysRangeEnd,
-      enrollment.batch.daysOfWeek ?? [],
-    );
-
     const history = historyRows.map((row) => {
       const courseTitle = row.batchCourse.course.title;
       const sessionNumber = row.batchCourse.session?.sessionNumber ?? null;
@@ -1638,6 +1635,19 @@ export class BranchAttendanceService {
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         markedAt: row.updatedAt ?? row.createdAt,
+        batchTiming: row.batchTiming
+          ? {
+              id: row.batchTiming.id,
+              name: row.batchTiming.name,
+              mode: row.batchTiming.mode,
+            }
+          : enrollment.batchTiming
+            ? {
+                id: enrollment.batchTiming.id,
+                name: enrollment.batchTiming.name,
+                mode: enrollment.batchTiming.mode,
+              }
+            : null,
         course: {
           id: row.batchCourse.course.id,
           title: courseTitle,
@@ -1664,7 +1674,7 @@ export class BranchAttendanceService {
     for (const group of conductedGroups) {
       const key = monthKeyFromDate(group.date);
       const set = conductedByMonth.get(key) ?? new Set<string>();
-      set.add(`${group.date.toISOString().slice(0, 10)}:${group.batchCourseId}`);
+      set.add(group.date.toISOString().slice(0, 10));
       conductedByMonth.set(key, set);
     }
 
@@ -1731,6 +1741,13 @@ export class BranchAttendanceService {
       branch: enrollment.batch.branch,
       enrollmentId: enrollment.id,
       enrollmentStatus: enrollment.status,
+      batchTiming: enrollment.batchTiming
+        ? {
+            id: enrollment.batchTiming.id,
+            name: enrollment.batchTiming.name,
+            mode: enrollment.batchTiming.mode,
+          }
+        : null,
       courses: assignments.map((row) =>
         toAttendanceSessionDto({
           batchCourseId: row.id,
@@ -1742,7 +1759,7 @@ export class BranchAttendanceService {
         }),
       ),
       summary: {
-        workingDays,
+        workingDays: null,
         attendanceDates: attendanceDateKeys.size,
         sessionsConducted: stats.conductedSessions,
         present: stats.present,

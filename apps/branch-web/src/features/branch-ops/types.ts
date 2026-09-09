@@ -276,6 +276,11 @@ export interface StudentBatchAttendanceDetail {
   branch: { id: string; branchName: string; branchCode: string };
   enrollmentId: string;
   enrollmentStatus: string;
+  batchTiming: {
+    id: string;
+    name: string;
+    mode: string;
+  } | null;
   courses: AttendanceSessionOption[];
   summary: {
     workingDays: number | null;
@@ -312,6 +317,11 @@ export interface StudentBatchAttendanceDetail {
     createdAt?: string;
     updatedAt?: string;
     markedAt?: string | null;
+    batchTiming: {
+      id: string;
+      name: string;
+      mode: string;
+    } | null;
     course: { id: string; title: string; code: string | null };
     session: {
       batchCourseId: string;

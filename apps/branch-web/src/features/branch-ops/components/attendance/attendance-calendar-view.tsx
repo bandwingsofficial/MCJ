@@ -10,10 +10,11 @@ import {
 } from "@/src/features/branch-ops/utils/attendance-date.utils";
 import {
   buildAttendanceCalendarDays,
+  calendarDayCellClass,
   currentMonthKey,
   formatMonthLabel,
+  resolveCalendarDayStatus,
   shiftMonthKey,
-  statusDotClass,
   summarizeDaySessions,
   type AttendanceCalendarDay,
 } from "@/src/features/branch-ops/utils/attendance-calendar.utils";
@@ -157,11 +158,9 @@ function CalendarCell({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const hasSessions = day.sessions.length > 0;
-  const ariaLabel = hasSessions
-    ? `${formatAttendanceDisplayDate(day.dateKey)}, ${day.sessions
-        .map((session) => `${session.sessionLabel}, ${session.status}`)
-        .join("; ")}`
+  const dayStatus = resolveCalendarDayStatus(day.sessions);
+  const ariaLabel = dayStatus
+    ? `${formatAttendanceDisplayDate(day.dateKey)}, ${dayStatus}`
     : `${formatAttendanceDisplayDate(day.dateKey)}, no attendance record`;
 
   return (
@@ -172,45 +171,13 @@ function CalendarCell({
       aria-label={ariaLabel}
       title={ariaLabel}
       className={cn(
-        "flex min-h-[52px] flex-col items-center justify-start rounded-md border px-0.5 py-1 text-xs transition-colors",
+        "flex min-h-[52px] flex-col items-center justify-center rounded-md border px-0.5 py-1 text-xs transition-colors",
         !day.inMonth && "invisible border-transparent",
-        day.inMonth &&
-          !day.inBatchRange &&
-          "border-slate-100 bg-slate-50/80 text-slate-300",
-        day.inMonth &&
-          day.inBatchRange &&
-          !hasSessions &&
-          day.isWorkingDay &&
-          "border-slate-200 bg-slate-100 text-slate-500",
-        day.inMonth &&
-          day.inBatchRange &&
-          !hasSessions &&
-          !day.isWorkingDay &&
-          "border-slate-100 bg-white text-slate-400",
-        day.inMonth && hasSessions && "border-slate-200 bg-white text-[#102A56]",
+        day.inMonth && calendarDayCellClass(dayStatus),
         selected && "ring-2 ring-[#2563EB] ring-offset-1",
       )}
     >
-      <span className="font-medium">{day.day}</span>
-      {hasSessions ? (
-        <span className="mt-1 flex flex-wrap items-center justify-center gap-0.5">
-          {day.sessions.map((session) => (
-            <span
-              key={session.id}
-              className={cn(
-                "h-1.5 w-1.5 rounded-full",
-                statusDotClass(session.status),
-              )}
-              aria-hidden="true"
-            />
-          ))}
-        </span>
-      ) : day.inMonth && day.inBatchRange && day.isWorkingDay ? (
-        <span
-          className="mt-1 h-1.5 w-1.5 rounded-full bg-slate-300"
-          aria-hidden="true"
-        />
-      ) : null}
+      <span className="text-sm font-semibold">{day.day}</span>
     </button>
   );
 }

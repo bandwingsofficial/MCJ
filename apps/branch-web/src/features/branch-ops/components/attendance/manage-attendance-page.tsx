@@ -11,6 +11,7 @@ import type { StudentBatchAttendanceDetail } from "@/src/features/branch-ops/typ
 import {
   attendanceStatusVariant,
   formatAttendanceDisplayDate,
+  formatAttendanceMarkedAt,
 } from "@/src/features/branch-ops/utils/attendance-date.utils";
 import {
   initialCalendarMonth,
@@ -43,7 +44,6 @@ interface Props {
 export function AttendanceDetailsPage({
   batchId,
   studentId,
-  recordId = null,
 }: Props) {
   const role = useAuthStore((state) => state.user?.role);
 
@@ -56,7 +56,6 @@ export function AttendanceDetailsPage({
   const [calendarData, setCalendarData] =
     useState<StudentBatchAttendanceDetail | null>(null);
 
-  const [sessionFilter, setSessionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [calendarMonth, setCalendarMonth] = useState(initialCalendarMonth);
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
@@ -65,20 +64,18 @@ export function AttendanceDetailsPage({
 
   const tableQueryParams = useMemo(() => {
     const params: Record<string, string | undefined> = {};
-    if (sessionFilter) params.batchCourseId = sessionFilter;
     if (statusFilter) params.status = statusFilter;
     return params;
-  }, [sessionFilter, statusFilter]);
+  }, [statusFilter]);
 
   const calendarQueryParams = useMemo(() => {
     const range = monthRangeFromKey(calendarMonth);
     return {
       from: range.from,
       to: range.to,
-      ...(sessionFilter ? { batchCourseId: sessionFilter } : {}),
       ...(statusFilter ? { status: statusFilter } : {}),
     };
-  }, [calendarMonth, sessionFilter, statusFilter]);
+  }, [calendarMonth, statusFilter]);
 
   const loadTable = useCallback(async () => {
     setLoading(true);
@@ -130,19 +127,10 @@ export function AttendanceDetailsPage({
   useEffect(() => {
     setPage(1);
     setSelectedDateKey(null);
-  }, [sessionFilter, statusFilter]);
+  }, [statusFilter]);
 
   const data = tableData;
   const calendarViewData = calendarData ?? tableData;
-
-  const focusRecord = useMemo(() => {
-    if (!data?.history.length) return null;
-    return (
-      (recordId && data.history.find((row) => row.id === recordId)) ||
-      data.history[0] ||
-      null
-    );
-  }, [data?.history, recordId]);
 
   const history = data?.history ?? [];
 
@@ -197,22 +185,10 @@ export function AttendanceDetailsPage({
           label="Batch"
           value={`${data.batch.name} (${data.batch.code})`}
         />
-        {focusRecord ? (
-          <>
-            <Field label="Session" value={focusRecord.session.label} />
-            <Field label="Course" value={focusRecord.course.title} />
-            <div className="min-w-0">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-[#647A9B]">
-                Current Status
-              </p>
-              <div className="mt-1">
-                <Badge variant={attendanceStatusVariant(focusRecord.status)}>
-                  {focusRecord.status}
-                </Badge>
-              </div>
-            </div>
-          </>
-        ) : null}
+        <Field
+          label="Batch Timing"
+          value={data.batchTiming?.name ?? "—"}
+        />
       </Card>
 
       <section className="space-y-3">
@@ -220,42 +196,32 @@ export function AttendanceDetailsPage({
           Student Attendance History
         </h2>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <FilterSelect
-            value={sessionFilter}
-            onChange={setSessionFilter}
-            emptyLabel="All Sessions"
-            options={(data.courses ?? []).map((course) => ({
-              value: course.batchCourseId,
-              label: course.label,
-            }))}
-          />
-          <FilterSelect
-            value={statusFilter}
-            onChange={setStatusFilter}
-            emptyLabel="All Status"
-            options={[
-              { value: "PRESENT", label: "Present" },
-              { value: "ABSENT", label: "Absent" },
-              { value: "LATE", label: "Late" },
-            ]}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              setSessionFilter("");
-              setStatusFilter("");
-              setPage(1);
-              setSelectedDateKey(null);
-            }}
-            className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Clear Filters
-          </button>
-        </div>
-
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_240px]">
-          <Card className="p-4">
+          <Card className="space-y-3 p-4">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <FilterSelect
+                value={statusFilter}
+                onChange={setStatusFilter}
+                emptyLabel="All Status"
+                options={[
+                  { value: "PRESENT", label: "Present" },
+                  { value: "ABSENT", label: "Absent" },
+                  { value: "LATE", label: "Late" },
+                ]}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter("");
+                  setPage(1);
+                  setSelectedDateKey(null);
+                }}
+                className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Clear Filters
+              </button>
+            </div>
+
             {calendarViewData ? (
               <AttendanceCalendarView
                 data={calendarViewData}
@@ -295,7 +261,7 @@ export function AttendanceDetailsPage({
         {!history.length ? (
           <EmptyState
             title={
-              sessionFilter || statusFilter
+              statusFilter
                 ? "No attendance matches these filters."
                 : "No attendance recorded yet."
             }
@@ -307,9 +273,10 @@ export function AttendanceDetailsPage({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead>Session</TableHead>
+                    <TableHead>Timing</TableHead>
                     <TableHead>Course</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Marked At</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -318,8 +285,8 @@ export function AttendanceDetailsPage({
                       <TableCell className="whitespace-nowrap">
                         {formatAttendanceDisplayDate(String(item.date))}
                       </TableCell>
-                      <TableCell className="max-w-[14rem] truncate font-medium">
-                        {item.session.label}
+                      <TableCell className="max-w-[12rem] truncate font-medium text-[#102A56]">
+                        {item.batchTiming?.name ?? data.batchTiming?.name ?? "—"}
                       </TableCell>
                       <TableCell className="max-w-[12rem] truncate">
                         {item.course.title}
@@ -328,6 +295,9 @@ export function AttendanceDetailsPage({
                         <Badge variant={attendanceStatusVariant(item.status)}>
                           {item.status}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {formatAttendanceMarkedAt(item.markedAt ?? item.updatedAt ?? item.createdAt)}
                       </TableCell>
                     </TableRow>
                   ))}

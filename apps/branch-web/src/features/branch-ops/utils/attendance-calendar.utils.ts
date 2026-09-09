@@ -172,6 +172,30 @@ export function statusDotClass(status: AttendanceCalendarStatus): string {
   return "bg-amber-400";
 }
 
+export function resolveCalendarDayStatus(
+  sessions: AttendanceCalendarSessionRecord[],
+): AttendanceCalendarStatus | null {
+  if (!sessions.length) return null;
+  if (sessions.some((session) => session.status === "ABSENT")) return "ABSENT";
+  if (sessions.some((session) => session.status === "LATE")) return "LATE";
+  return "PRESENT";
+}
+
+export function calendarDayCellClass(
+  status: AttendanceCalendarStatus | null,
+): string {
+  if (status === "PRESENT") {
+    return "border-emerald-200 bg-emerald-100 text-emerald-950";
+  }
+  if (status === "ABSENT") {
+    return "border-red-200 bg-red-100 text-red-950";
+  }
+  if (status === "LATE") {
+    return "border-amber-200 bg-amber-100 text-amber-950";
+  }
+  return "border-slate-100 bg-white text-slate-500";
+}
+
 export function summarizeDaySessions(sessions: AttendanceCalendarSessionRecord[]) {
   return {
     present: sessions.filter((row) => row.status === "PRESENT").length,

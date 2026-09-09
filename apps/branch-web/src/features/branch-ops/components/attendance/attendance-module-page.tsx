@@ -10,6 +10,7 @@ import {
   defaultAttendanceDateRangeFilters,
   resolveDateRangeFromFilters,
 } from "@/src/features/branch-ops/components/attendance/attendance-date-range-filters";
+import { MonthlyAttendancePanel } from "@/src/features/branch-ops/components/attendance/monthly-attendance-panel";
 import { AttendanceSessionOverview } from "@/src/features/branch-ops/components/attendance/attendance-session-overview";
 import { ManageAttendanceModal } from "@/src/features/branch-ops/components/attendance/manage-attendance-modal";
 import { TakeAttendanceModal } from "@/src/features/branch-ops/components/attendance/take-attendance-modal";
@@ -354,6 +355,9 @@ export function AttendanceModulePage() {
           <TabsTrigger value="attendance" className={TAB_CLASS}>
             Attendance
           </TabsTrigger>
+          <TabsTrigger value="monthly" className={TAB_CLASS}>
+            Monthly Attendance
+          </TabsTrigger>
           <TabsTrigger value="batch-attendance" className={TAB_CLASS}>
             Batch Attendance
           </TabsTrigger>
@@ -454,6 +458,15 @@ export function AttendanceModulePage() {
               />
             </>
           )}
+        </TabsContent>
+
+        <TabsContent value="monthly">
+          <MonthlyAttendancePanel
+            batches={batches}
+            initialBatchId={
+              filters.batchId !== "ALL" ? filters.batchId : undefined
+            }
+          />
         </TabsContent>
 
         <TabsContent value="batch-attendance">

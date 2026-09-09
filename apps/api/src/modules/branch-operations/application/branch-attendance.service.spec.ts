@@ -195,6 +195,7 @@ describe('BranchAttendanceService session integrity', () => {
           course: bc.course,
           session: bc.session,
         },
+        batchTiming: null,
         branch: bc.batch.branch,
       };
     };
@@ -254,12 +255,16 @@ describe('BranchAttendanceService session integrity', () => {
               id: morningBatchId,
               name: 'Morning',
               code: 'BCH0001',
+              startDate: new Date('2026-08-01T00:00:00.000Z'),
+              endDate: new Date('2026-08-31T00:00:00.000Z'),
+              daysOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
               branch: {
                 id: branchId,
                 branchName: 'Malleswaram',
                 branchCode: 'BR001',
               },
             },
+            batchTiming: null,
           };
         }),
       },
@@ -318,6 +323,15 @@ describe('BranchAttendanceService session integrity', () => {
             if (where.studentId && row.studentId !== where.studentId) return false;
             return true;
           });
+
+          if (by.join(',') === 'date') {
+            const keys = new Set(
+              filtered.map((row) => row.date.toISOString().slice(0, 10)),
+            );
+            return [...keys].map((dateKey) => ({
+              date: new Date(`${dateKey}T00:00:00.000Z`),
+            }));
+          }
 
           if (by.join(',') === 'date,batchCourseId') {
             const keys = new Set(
@@ -613,11 +627,11 @@ describe('BranchAttendanceService session integrity', () => {
       studentAkshay,
     );
 
-    expect(detail.summary.sessionsConducted).toBe(2);
+    expect(detail.summary.sessionsConducted).toBe(1);
     expect(detail.summary.present).toBe(1);
     expect(detail.summary.absent).toBe(1);
-    expect(detail.summary.ratioLabel).toBe('1 / 2');
-    expect(detail.summary.percentage).toBe(50);
+    expect(detail.summary.ratioLabel).toBe('1 / 1');
+    expect(detail.summary.percentage).toBe(100);
     expect(detail.history).toHaveLength(2);
     expect(detail.history[0].markedAt).toBeTruthy();
     expect(detail.monthly[0]?.monthKey).toBe('2026-08');

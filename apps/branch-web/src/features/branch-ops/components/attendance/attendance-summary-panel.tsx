@@ -30,10 +30,9 @@ export function AttendanceSummaryPanel({ summary }: Props) {
 
       <div className="mt-3 space-y-2">
         <SummaryRow
-          label="Working Days"
-          value={summary.workingDays ?? "—"}
+          label="Working Days / Sessions"
+          value={summary.sessionsConducted}
         />
-        <SummaryRow label="Attendance Dates" value={summary.attendanceDates} />
         <SummaryRow label="Present" value={summary.present} />
         <SummaryRow label="Absent" value={summary.absent} />
         <SummaryRow label="Late" value={summary.late} />
@@ -54,20 +53,20 @@ export function AttendanceSummaryPanel({ summary }: Props) {
         </p>
         <ul className="space-y-1.5 text-xs text-slate-600">
           <li className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="h-4 w-4 rounded-md bg-emerald-100 ring-1 ring-emerald-200" />
             Present
           </li>
           <li className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-red-500" />
+            <span className="h-4 w-4 rounded-md bg-red-100 ring-1 ring-red-200" />
             Absent
           </li>
           <li className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-amber-400" />
+            <span className="h-4 w-4 rounded-md bg-amber-100 ring-1 ring-amber-200" />
             Late
           </li>
           <li className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-slate-300" />
-            No Record
+            <span className="h-4 w-4 rounded-md bg-white ring-1 ring-slate-200" />
+            No Session / Future
           </li>
         </ul>
       </div>
