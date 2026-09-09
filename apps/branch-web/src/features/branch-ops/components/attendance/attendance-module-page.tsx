@@ -393,7 +393,6 @@ export function AttendanceModulePage() {
                       <TableHead>Timing</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Marked By</TableHead>
-                      <TableHead>Remarks</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -427,9 +426,6 @@ export function AttendanceModulePage() {
                         </TableCell>
                         <TableCell>
                           {item.faculty?.name?.trim() || "—"}
-                        </TableCell>
-                        <TableCell className="max-w-[12rem] truncate">
-                          {item.remarks?.trim() || "—"}
                         </TableCell>
                         <TableCell>
                           <Button
