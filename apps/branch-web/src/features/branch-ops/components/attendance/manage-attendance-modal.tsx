@@ -13,6 +13,7 @@ import {
   formatAttendanceDisplayDate,
   formatAttendanceMarkedAt,
 } from "@/src/features/branch-ops/utils/attendance-date.utils";
+import { getBatchModeSectionLabel } from "@/src/features/branch-ops/utils/batch-mode.utils";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
@@ -66,11 +67,15 @@ export function ManageAttendanceModal({
 
   const save = async () => {
     if (!record) return;
+    if (!record.batchTiming?.id) {
+      appToast.error("This record is missing batch timing information.");
+      return;
+    }
     try {
       setSaving(true);
       await branchOpsApi.saveAttendance({
         batchId: record.batch.id,
-        batchCourseId: record.session.batchCourseId,
+        batchTimingId: record.batchTiming.id,
         studentId: record.student.id,
         date: String(record.date).slice(0, 10),
         status,
@@ -122,14 +127,25 @@ export function ManageAttendanceModal({
                 value={record.branch?.branchName ?? "—"}
               />
               <Detail
-                label="Batch"
+                label="Main Batch"
                 value={
                   record.batch.code
                     ? `${record.batch.name} (${record.batch.code})`
                     : record.batch.name
                 }
               />
-              <Detail label="Session" value={record.session.label} />
+              <Detail
+                label="Learning Mode"
+                value={
+                  record.batchTiming
+                    ? getBatchModeSectionLabel(record.batchTiming.mode)
+                    : "—"
+                }
+              />
+              <Detail
+                label="Batch Timing"
+                value={record.batchTiming?.name ?? "—"}
+              />
               <Detail label="Course" value={record.course.title} />
               <Detail
                 label="Attendance Date"

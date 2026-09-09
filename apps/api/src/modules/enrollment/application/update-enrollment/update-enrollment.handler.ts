@@ -172,6 +172,7 @@ export class UpdateEnrollmentHandler {
         previousBatchId,
         enrollment.batchId,
         command.updatedBy,
+        { batchTimingId: enrollment.batchTimingId },
       );
     } else if (
       command.status !== undefined &&

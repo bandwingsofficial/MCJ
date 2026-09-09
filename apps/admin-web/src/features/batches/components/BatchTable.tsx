@@ -21,7 +21,6 @@ import {
   formatBatchTimingsSummary,
 } from "@/src/features/batches/utils/batch-timing.utils";
 
-import { BatchModesLabel } from "./BatchModesLabel";
 import { BatchStatusBadge } from "./BatchStatusBadge";
 import { BatchActions } from "./batch-actions";
 import { cn } from "@/src/shared/lib/cn";
@@ -188,8 +187,8 @@ export function BatchTable({
         <colgroup>
           {selectionEnabled ? <col className="w-9" /> : null}
           <col className="w-7" />
-          <col className="w-[22%]" />
-          <col className="w-[8.5rem]" />
+          <col className="w-[18%]" />
+          <col className="w-[18%]" />
           <col />
           <col className="w-[7rem]" />
           <col className="w-[8rem]" />
@@ -218,10 +217,10 @@ export function BatchTable({
               <span className="sr-only">Reorder</span>
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Course
+              Batch Name
             </th>
-            <th className="px-2 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Mode
+            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Course
             </th>
             <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Schedule
@@ -323,16 +322,22 @@ export function BatchTable({
 
                   <td
                     className={cn(
+                      "min-w-0 truncate px-3 py-3 align-middle font-medium",
+                      isLifecycleBlocked ? "text-slate-400" : "text-[#102A56]",
+                    )}
+                    title={batch.name}
+                  >
+                    {batch.name}
+                  </td>
+
+                  <td
+                    className={cn(
                       "min-w-0 truncate px-3 py-3 align-middle",
                       isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
                     )}
                     title={batch.course?.title?.trim() || "Not yet assigned"}
                   >
                     {batch.course?.title?.trim() || "Not yet assigned"}
-                  </td>
-
-                  <td className="min-w-0 overflow-hidden px-2 py-3 align-middle">
-                    <BatchModesLabel batch={batch} />
                   </td>
 
                   <td

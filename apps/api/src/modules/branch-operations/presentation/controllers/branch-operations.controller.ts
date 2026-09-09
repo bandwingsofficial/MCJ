@@ -302,6 +302,39 @@ export class BranchOperationsController {
     };
   }
 
+  @Get('batches/:id/attendance/timings')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ATTENDANCE_READ)
+  async batchTimingAttendanceOverview(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+  ) {
+    return {
+      success: true,
+      message: 'Batch timing attendance overview fetched successfully',
+      data: await this.attendance.getBatchTimingAttendanceOverview(user, id),
+    };
+  }
+
+  @Get('batches/:batchId/attendance/timings/:timingId/students')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ATTENDANCE_READ)
+  async batchTimingStudentAttendance(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('batchId') batchId: string,
+    @Param('timingId') timingId: string,
+  ) {
+    return {
+      success: true,
+      message: 'Batch timing student attendance fetched successfully',
+      data: await this.attendance.getBatchTimingStudentAttendance(
+        user,
+        batchId,
+        timingId,
+      ),
+    };
+  }
+
   @Get('batches/:id/attendance/students')
   @Roles(...FacultyOrManager)
   @Permissions(Permission.ATTENDANCE_READ)

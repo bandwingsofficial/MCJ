@@ -66,7 +66,11 @@ export class CreateEnrollmentHandler {
       },
     );
 
-    await this.domainService.ensureBatchHasCapacity(hierarchy.batch);
+    await this.domainService.ensureNotDuplicate(
+      this.enrollmentRepo,
+      command.studentId,
+      command.batchId,
+    );
 
     const batchTiming = command.batchTimingId
       ? await this.resolveBatchTiming(
@@ -75,18 +79,16 @@ export class CreateEnrollmentHandler {
         )
       : null;
 
+    if (!command.batchTimingId) {
+      await this.domainService.ensureBatchHasCapacity(hierarchy.batch);
+    }
+
     if (batchTiming) {
       await assertBatchTimingHasLiveCapacity(
         this.prisma,
         batchTiming.id,
       );
     }
-
-    await this.domainService.ensureNotDuplicate(
-      this.enrollmentRepo,
-      command.studentId,
-      command.batchId,
-    );
 
     const discountAmount = command.discountAmount ?? 0;
 

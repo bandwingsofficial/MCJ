@@ -1,13 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type {
-  BatchAttendanceAnalytics,
   BatchListItem,
+  BatchTimingAttendanceOverview,
+  BatchTimingStudentAttendanceRow,
 } from "@/src/features/branch-ops/types";
+import { getBatchModeSectionLabel } from "@/src/features/branch-ops/utils/batch-mode.utils";
+import { Card } from "@/src/shared/components/ui/card";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
@@ -20,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/shared/components/ui/table";
+import { cn } from "@/src/shared/lib/cn";
 
 interface Props {
   batches: BatchListItem[];
@@ -31,8 +34,17 @@ export function AttendanceBatchOverview({
   initialBatchId,
 }: Props) {
   const [batchId, setBatchId] = useState(initialBatchId ?? "");
-  const [data, setData] = useState<BatchAttendanceAnalytics | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [overview, setOverview] = useState<BatchTimingAttendanceOverview | null>(
+    null,
+  );
+  const [selectedTimingId, setSelectedTimingId] = useState<string | null>(
+    null,
+  );
+  const [students, setStudents] = useState<BatchTimingStudentAttendanceRow[]>(
+    [],
+  );
+  const [loadingOverview, setLoadingOverview] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,19 +53,23 @@ export function AttendanceBatchOverview({
 
   useEffect(() => {
     if (!batchId) {
-      setData(null);
+      setOverview(null);
+      setSelectedTimingId(null);
+      setStudents([]);
       setError(null);
       return;
     }
 
     let cancelled = false;
-    setLoading(true);
+    setLoadingOverview(true);
     setError(null);
+    setSelectedTimingId(null);
+    setStudents([]);
 
     branchOpsApi
-      .batchAttendanceSummary(batchId)
+      .batchTimingAttendanceOverview(batchId)
       .then((result) => {
-        if (!cancelled) setData(result);
+        if (!cancelled) setOverview(result);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -62,11 +78,11 @@ export function AttendanceBatchOverview({
             ? (err as { response?: { data?: { message?: string } } }).response
                 ?.data?.message
             : null;
-        setError(message ?? "Unable to load batch attendance.");
-        setData(null);
+        setError(message ?? "Unable to load batch attendance overview.");
+        setOverview(null);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setLoadingOverview(false);
       });
 
     return () => {
@@ -74,16 +90,49 @@ export function AttendanceBatchOverview({
     };
   }, [batchId]);
 
+  useEffect(() => {
+    if (!batchId || !selectedTimingId) {
+      setStudents([]);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingStudents(true);
+
+    branchOpsApi
+      .batchTimingStudentAttendance(batchId, selectedTimingId)
+      .then((result) => {
+        if (!cancelled) setStudents(result.students);
+      })
+      .catch(() => {
+        if (!cancelled) setStudents([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingStudents(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [batchId, selectedTimingId]);
+
+  const selectedTiming = overview?.modes
+    .flatMap((section) => section.timings)
+    .find((timing) => timing.id === selectedTimingId);
+
   return (
     <div className="space-y-4">
       <div className="max-w-md">
         <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
-          Batch
+          Main Batch
         </label>
         <AppSelect
           value={batchId || undefined}
-          placeholder="Select batch"
-          onValueChange={setBatchId}
+          placeholder="Select main batch"
+          onValueChange={(value) => {
+            setBatchId(value);
+            setSelectedTimingId(null);
+          }}
           options={batches.map((batch) => ({
             label: `${batch.name} (${batch.code})`,
             value: batch.id,
@@ -92,76 +141,131 @@ export function AttendanceBatchOverview({
       </div>
 
       {!batchId ? (
-        <EmptyState title="Select a batch to view attendance overview." />
-      ) : loading ? (
+        <EmptyState title="Select a main batch to view attendance by batch timing." />
+      ) : loadingOverview ? (
         <Loader />
       ) : error ? (
         <ErrorState description={error} />
-      ) : !data ? (
+      ) : !overview ? (
         <EmptyState title="No batch attendance data." />
+      ) : !overview.modes.length ? (
+        <EmptyState title="No batch timings configured for this batch." />
       ) : (
         <>
           <div>
             <h3 className="text-sm font-semibold text-[#102A56]">
-              Batch Attendance Overview
+              {overview.batch.name}
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              {data.batch.name} · {data.batch.code}
+              Attendance grouped by learning mode and batch timing
             </p>
           </div>
 
-          {!data.students.length ? (
-            <EmptyState title="No students enrolled in this batch." />
-          ) : (
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Present</TableHead>
-                    <TableHead>Absent</TableHead>
-                    <TableHead>Late</TableHead>
-                    <TableHead>Attendance %</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.students.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium text-[#102A56]">
-                        {student.name}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {student.studentCode}
-                      </TableCell>
-                      <TableCell>{student.present}</TableCell>
-                      <TableCell>{student.absent}</TableCell>
-                      <TableCell>{student.late}</TableCell>
-                      <TableCell>
-                        {student.percentage == null
-                          ? "Not Started"
-                          : `${student.percentage}%`}
-                        {student.ratioLabel ? (
-                          <span className="ml-1 text-xs text-slate-500">
-                            ({student.ratioLabel})
-                          </span>
-                        ) : null}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Link
-                          href={`/attendance/details/${batchId}/${student.id}`}
-                          className="inline-flex h-8 items-center rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-[#2563EB] hover:bg-sky-50"
-                        >
-                          Details
-                        </Link>
-                      </TableCell>
+          {overview.modes.map((section) => (
+            <Card key={section.mode} className="overflow-hidden p-0">
+              <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+                <h4 className="text-sm font-semibold text-[#102A56]">
+                  {getBatchModeSectionLabel(section.mode)}
+                </h4>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Batch Timing</TableHead>
+                      <TableHead>Enrolled Students</TableHead>
+                      <TableHead>Total Attendance Sessions</TableHead>
+                      <TableHead>Present</TableHead>
+                      <TableHead>Absent</TableHead>
+                      <TableHead>Late</TableHead>
+                      <TableHead>Attendance %</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  </TableHeader>
+                  <TableBody>
+                    {section.timings.map((timing) => (
+                      <TableRow
+                        key={timing.id}
+                        className={cn(
+                          "cursor-pointer hover:bg-slate-50",
+                          selectedTimingId === timing.id && "bg-sky-50/80",
+                        )}
+                        onClick={() => setSelectedTimingId(timing.id)}
+                      >
+                        <TableCell className="font-medium text-[#102A56]">
+                          {timing.name}
+                        </TableCell>
+                        <TableCell>{timing.enrolledStudents}</TableCell>
+                        <TableCell>{timing.sessionsConducted}</TableCell>
+                        <TableCell>{timing.present}</TableCell>
+                        <TableCell>{timing.absent}</TableCell>
+                        <TableCell>{timing.late}</TableCell>
+                        <TableCell>
+                          {timing.totalRecords > 0
+                            ? `${timing.percentage}%`
+                            : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          ))}
+
+          {selectedTimingId ? (
+            <Card className="space-y-3 p-4">
+              <div>
+                <h4 className="text-sm font-semibold text-[#102A56]">
+                  Students · {selectedTiming?.name ?? "Batch Timing"}
+                </h4>
+                <p className="mt-1 text-sm text-slate-500">
+                  Attendance for students assigned to this exact batch timing
+                  only.
+                </p>
+              </div>
+
+              {loadingStudents ? (
+                <Loader />
+              ) : !students.length ? (
+                <EmptyState title="No admitted students in this batch timing." />
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Code</TableHead>
+                        <TableHead>Present</TableHead>
+                        <TableHead>Absent</TableHead>
+                        <TableHead>Late</TableHead>
+                        <TableHead>Attendance %</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {students.map((student) => (
+                        <TableRow key={student.id}>
+                          <TableCell className="font-medium text-[#102A56]">
+                            {student.name}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">
+                            {student.studentCode}
+                          </TableCell>
+                          <TableCell>{student.present}</TableCell>
+                          <TableCell>{student.absent}</TableCell>
+                          <TableCell>{student.late}</TableCell>
+                          <TableCell>
+                            {student.totalRecords > 0
+                              ? `${student.percentage}%`
+                              : "—"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </Card>
+          ) : null}
         </>
       )}
     </div>

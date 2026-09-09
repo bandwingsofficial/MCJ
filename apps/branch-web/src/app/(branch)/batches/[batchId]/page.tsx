@@ -1,12 +1,13 @@
 "use client";
 
-import { use, useEffect } from "react";
+import { use } from "react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
-import { BatchAssignedTimingsPanel } from "@/src/features/branch-ops/components/batches/batch-assigned-timings-panel";
+import { BatchAttendancePanel } from "@/src/features/branch-ops/components/batches/batch-attendance-panel";
 import { BatchCoursePanel } from "@/src/features/branch-ops/components/batches/batch-course-panel";
 import { BatchManageHeader } from "@/src/features/branch-ops/components/batches/batch-manage-header";
 import { BatchOverviewPanel } from "@/src/features/branch-ops/components/batches/batch-overview-panel";
+import { BatchStudentsPanel } from "@/src/features/branch-ops/components/batches/batch-students-panel";
 import { formatRoleLabel } from "@/src/core/auth/roles";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
@@ -35,20 +36,6 @@ export default function BatchManagePage({ params }: PageProps) {
     [batchId],
   );
 
-  useEffect(() => {
-    const refresh = () => {
-      if (document.visibilityState === "hidden") return;
-      void reload({ silent: true });
-    };
-
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
-    return () => {
-      window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
-    };
-  }, [reload]);
-
   if (loading) return <Loader />;
   if (error) return <ErrorState description={error} onRetry={reload} />;
   if (!data) return <EmptyState title="Batch not found." />;
@@ -68,32 +55,30 @@ export default function BatchManagePage({ params }: PageProps) {
           <TabsTrigger value="course" className={TAB_CLASS}>
             Course
           </TabsTrigger>
-          <TabsTrigger value="details" className={TAB_CLASS}>
-            Batch Details
+          <TabsTrigger value="students" className={TAB_CLASS}>
+            Enrolled Students
           </TabsTrigger>
-          <TabsTrigger value="timings" className={TAB_CLASS}>
-            Batch Timings
+          <TabsTrigger value="attendance" className={TAB_CLASS}>
+            Attendance
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
-          <BatchOverviewPanel
-            batch={data}
-            sections={["summary", "enrolled"]}
-          />
+          <BatchOverviewPanel batch={data} />
         </TabsContent>
         <TabsContent value="course">
-          <BatchCoursePanel batchId={batchId} courseId={data.course?.id} />
+          <BatchCoursePanel batchId={batchId} />
         </TabsContent>
-        <TabsContent value="details">
-          <BatchOverviewPanel
-            batch={data}
-            sections={["summary", "timings"]}
-            timingsVariant="details"
+        <TabsContent value="students">
+          <BatchStudentsPanel
+            batchId={batchId}
+            onStudentsChanged={() => {
+              void reload();
+            }}
           />
         </TabsContent>
-        <TabsContent value="timings">
-          <BatchAssignedTimingsPanel batch={data} />
+        <TabsContent value="attendance">
+          <BatchAttendancePanel batchId={batchId} />
         </TabsContent>
       </Tabs>
     </div>

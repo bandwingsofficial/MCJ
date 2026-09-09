@@ -70,6 +70,23 @@ export class EnrollmentSideEffectsService {
       return;
     }
 
+    if (enrollment.batchTimingId) {
+      try {
+        await assertBatchTimingHasLiveCapacity(
+          this.prisma,
+          enrollment.batchTimingId,
+        );
+      } catch (error) {
+        if (options?.restore) {
+          throw new RestoreBatchFullException();
+        }
+
+        throw error;
+      }
+
+      return;
+    }
+
     const batch = await this.batchRepo.findById(
       enrollment.batchId,
     );
@@ -85,13 +102,6 @@ export class EnrollmentSideEffectsService {
       }
 
       throw error;
-    }
-
-    if (enrollment.batchTimingId) {
-      await assertBatchTimingHasLiveCapacity(
-        this.prisma,
-        enrollment.batchTimingId,
-      );
     }
   }
 
@@ -117,7 +127,14 @@ export class EnrollmentSideEffectsService {
     }
 
     if (isOccupying) {
-      this.domainService.ensureBatchHasCapacity(batch);
+      if (enrollment.batchTimingId) {
+        await assertBatchTimingHasLiveCapacity(
+          this.prisma,
+          enrollment.batchTimingId,
+        );
+      } else {
+        this.domainService.ensureBatchHasCapacity(batch);
+      }
       batch.update({
         enrolledCount: batch.enrolledCount + 1,
         updatedBy: actorId,
@@ -224,6 +241,7 @@ export class EnrollmentSideEffectsService {
     fromBatchId: string,
     toBatchId: string,
     actorId?: string | null,
+    options?: { batchTimingId?: string | null },
   ): Promise<void> {
     if (fromBatchId === toBatchId) {
       return;
@@ -243,7 +261,14 @@ export class EnrollmentSideEffectsService {
       return;
     }
 
-    this.domainService.ensureBatchHasCapacity(toBatch);
+    if (options?.batchTimingId) {
+      await assertBatchTimingHasLiveCapacity(
+        this.prisma,
+        options.batchTimingId,
+      );
+    } else {
+      this.domainService.ensureBatchHasCapacity(toBatch);
+    }
     toBatch.update({
       enrolledCount: toBatch.enrolledCount + 1,
       updatedBy: actorId,

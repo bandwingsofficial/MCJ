@@ -49,3 +49,16 @@ export function facultyBatchStudentWhere(
     status: { in: FACULTY_VISIBLE_ENROLLMENT_STATUSES },
   };
 }
+
+/** ADMITTED students assigned to one batch timing (Take Attendance sheet). */
+export function facultyBatchTimingStudentWhere(
+  batchId: string,
+  batchTimingId: string,
+  branchId: string,
+): Prisma.EnrollmentWhereInput {
+  return {
+    ...facultyBranchEnrollmentWhere(branchId, { batchId }),
+    batchTimingId,
+    status: EnrollmentStatus.ADMITTED,
+  };
+}

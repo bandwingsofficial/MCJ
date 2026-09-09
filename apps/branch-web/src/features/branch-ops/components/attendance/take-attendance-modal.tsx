@@ -8,7 +8,6 @@ import {
 } from "@/src/features/branch-ops/api/parse-api-error";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type {
-  AttendanceSessionOption,
   AttendanceSheetStudent,
   BatchListItem,
 } from "@/src/features/branch-ops/types";
@@ -17,6 +16,12 @@ import {
   isBatchSelectableForAssignment,
 } from "@/src/features/branch-ops/utils/batch-selection.utils";
 import { formatAttendanceDisplayDate } from "@/src/features/branch-ops/utils/attendance-date.utils";
+import {
+  getBatchModeSectionLabel,
+  getConfiguredBatchModes,
+  getTimingsForMode,
+  type BatchMode,
+} from "@/src/features/branch-ops/utils/batch-mode.utils";
 import { Button } from "@/src/shared/components/ui/button";
 import { Input } from "@/src/shared/components/ui/input";
 import { Modal } from "@/src/shared/components/ui/model";
@@ -56,7 +61,8 @@ export function TakeAttendanceModal({
 }: Props) {
   const [date, setDate] = useState(todayInputValue());
   const [batchId, setBatchId] = useState("");
-  const [batchCourseId, setBatchCourseId] = useState("");
+  const [mode, setMode] = useState<BatchMode | "">("");
+  const [batchTimingId, setBatchTimingId] = useState("");
   const [statuses, setStatuses] = useState<Record<string, MarkStatus | "">>(
     {},
   );
@@ -67,34 +73,61 @@ export function TakeAttendanceModal({
     [batches],
   );
 
-  const sessionsQuery = useAsyncData(
-    () =>
-      batchId
-        ? branchOpsApi.batchSessions(batchId)
-        : Promise.resolve([] as AttendanceSessionOption[]),
-    [batchId],
-  );
+  const selectedBatch =
+    selectableBatches.find((batch) => batch.id === batchId) ?? null;
+
+  const branchInfo = useMemo(() => {
+    return selectedBatch?.branch ?? selectableBatches[0]?.branch ?? null;
+  }, [selectedBatch, selectableBatches]);
+
+  const modeOptions = useMemo(() => {
+    if (!selectedBatch) return [];
+    return getConfiguredBatchModes(selectedBatch).map((item) => ({
+      label: getBatchModeSectionLabel(item),
+      value: item,
+    }));
+  }, [selectedBatch]);
+
+  const timingOptions = useMemo(() => {
+    if (!selectedBatch || !mode) return [];
+    return getTimingsForMode(selectedBatch, mode).map((timing) => ({
+      label: timing.name,
+      value: timing.id,
+    }));
+  }, [mode, selectedBatch]);
+
+  const selectedTiming = useMemo(() => {
+    if (!selectedBatch || !batchTimingId) return null;
+    return (selectedBatch.timings ?? []).find((timing) => timing.id === batchTimingId) ?? null;
+  }, [batchTimingId, selectedBatch]);
 
   const sheetQuery = useAsyncData(
     () =>
-      batchId && batchCourseId && date
-        ? branchOpsApi.attendanceSheet({ batchId, batchCourseId, date })
+      batchId && batchTimingId && date
+        ? branchOpsApi.attendanceSheet({ batchId, batchTimingId, date })
         : Promise.resolve(null),
-    [batchId, batchCourseId, date],
+    [batchId, batchTimingId, date],
   );
 
   useEffect(() => {
     if (!open) return;
     setDate(todayInputValue());
     setBatchId("");
-    setBatchCourseId("");
+    setMode("");
+    setBatchTimingId("");
     setStatuses({});
   }, [open]);
 
   useEffect(() => {
-    setBatchCourseId("");
+    setMode("");
+    setBatchTimingId("");
     setStatuses({});
   }, [batchId]);
+
+  useEffect(() => {
+    setBatchTimingId("");
+    setStatuses({});
+  }, [mode]);
 
   useEffect(() => {
     const students = sheetQuery.data?.students ?? [];
@@ -110,12 +143,6 @@ export function TakeAttendanceModal({
   }, [sheetQuery.data]);
 
   const students: AttendanceSheetStudent[] = sheetQuery.data?.students ?? [];
-  const selectedSession =
-    sessionsQuery.data?.find((item) => item.batchCourseId === batchCourseId) ??
-    sheetQuery.data?.session ??
-    null;
-  const selectedBatch =
-    selectableBatches.find((batch) => batch.id === batchId) ?? null;
 
   const summary = useMemo(() => {
     const values = Object.values(statuses);
@@ -128,21 +155,27 @@ export function TakeAttendanceModal({
     };
   }, [statuses, students]);
 
+  const selectionComplete = Boolean(batchId && mode && batchTimingId);
+
   const save = async () => {
     if (!date) {
       appToast.error("Please select an attendance date.");
       return;
     }
     if (!batchId) {
-      appToast.error("Please select a batch.");
+      appToast.error("Please select a main batch.");
       return;
     }
-    if (!batchCourseId) {
-      appToast.error("Please select a session.");
+    if (!mode) {
+      appToast.error("Please select a learning mode.");
+      return;
+    }
+    if (!batchTimingId) {
+      appToast.error("Please select a batch timing.");
       return;
     }
     if (!students.length) {
-      appToast.error("No students are enrolled in this batch.");
+      appToast.error("No students are enrolled in this batch timing.");
       return;
     }
     if (summary.unmarked > 0) {
@@ -154,7 +187,7 @@ export function TakeAttendanceModal({
       setSaving(true);
       await branchOpsApi.saveAttendanceBulk({
         batchId,
-        batchCourseId,
+        batchTimingId,
         date,
         records: students.map((student) => ({
           studentId: student.id,
@@ -195,8 +228,7 @@ export function TakeAttendanceModal({
             onClick={() => void save()}
             disabled={
               saving ||
-              !batchId ||
-              !batchCourseId ||
+              !selectionComplete ||
               !students.length ||
               summary.unmarked > 0
             }
@@ -207,7 +239,37 @@ export function TakeAttendanceModal({
       }
     >
       <div className="space-y-5">
-        <div className="grid gap-4 md:grid-cols-3">
+        {branchInfo ? (
+          <div className="rounded-xl border border-slate-200 bg-[#F8FBFF] px-4 py-3 text-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Branch
+            </p>
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[#102A56]">
+              <span>
+                <span className="text-slate-500">Name:</span>{" "}
+                <span className="font-medium">{branchInfo.branchName}</span>
+              </span>
+              <span>
+                <span className="text-slate-500">Code:</span>{" "}
+                <span className="font-medium">{branchInfo.branchCode}</span>
+              </span>
+              {branchInfo.city ? (
+                <span>
+                  <span className="text-slate-500">City:</span>{" "}
+                  <span className="font-medium">{branchInfo.city}</span>
+                </span>
+              ) : null}
+              {branchInfo.phone ? (
+                <span>
+                  <span className="text-slate-500">Phone:</span>{" "}
+                  <span className="font-medium">{branchInfo.phone}</span>
+                </span>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
               Attendance Date
@@ -220,11 +282,11 @@ export function TakeAttendanceModal({
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
-              Batch
+              Main Batch
             </label>
             <AppSelect
               value={batchId || undefined}
-              placeholder="Select batch"
+              placeholder="Select main batch"
               onValueChange={setBatchId}
               options={selectableBatches.map((batch) => ({
                 label: `${batch.name} (${batch.code})`,
@@ -239,58 +301,80 @@ export function TakeAttendanceModal({
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
-              Session
+              Learning Mode
             </label>
             <AppSelect
-              value={batchCourseId || undefined}
-              placeholder={
-                sessionsQuery.loading ? "Loading sessions..." : "Select session"
-              }
-              onValueChange={setBatchCourseId}
-              options={(sessionsQuery.data ?? []).map((session) => ({
-                label: session.label,
-                value: session.batchCourseId,
-              }))}
-              disabled={!batchId || sessionsQuery.loading}
+              value={mode || undefined}
+              placeholder="Select mode"
+              onValueChange={(value) => setMode(value as BatchMode)}
+              options={modeOptions}
+              disabled={!batchId || !modeOptions.length}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+              Batch Timing
+            </label>
+            <AppSelect
+              value={batchTimingId || undefined}
+              placeholder="Select batch timing"
+              onValueChange={setBatchTimingId}
+              options={timingOptions}
+              disabled={!batchId || !mode || !timingOptions.length}
             />
           </div>
         </div>
 
-        {batchId && batchCourseId && selectedSession ? (
+        {selectionComplete && sheetQuery.data ? (
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-              <Meta label="Date" value={formatAttendanceDisplayDate(date)} />
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               <Meta
                 label="Branch"
-                value={sheetQuery.data?.branch.branchName ?? "—"}
+                value={sheetQuery.data.branch.branchName}
               />
               <Meta
-                label="Batch"
+                label="Attendance Date"
+                value={formatAttendanceDisplayDate(date)}
+              />
+              <Meta
+                label="Main Batch"
                 value={
                   selectedBatch
                     ? `${selectedBatch.name} (${selectedBatch.code})`
-                    : (sheetQuery.data?.batch.name ?? "—")
+                    : sheetQuery.data.batch.name
                 }
               />
-              <Meta label="Session" value={selectedSession.label} />
-              <Meta label="Course" value={selectedSession.course.title} />
+              <Meta
+                label="Learning Mode"
+                value={mode ? getBatchModeSectionLabel(mode) : "—"}
+              />
+              <Meta
+                label="Batch Timing"
+                value={selectedTiming?.name ?? sheetQuery.data.timing?.name ?? "—"}
+              />
+              <Meta
+                label="Course"
+                value={sheetQuery.data.session.course.title}
+              />
             </div>
           </div>
         ) : null}
 
-        {batchId && batchCourseId ? (
+        {selectionComplete ? (
           sheetQuery.loading ? (
             <p className="text-sm text-slate-500">Loading enrolled students...</p>
+          ) : sheetQuery.error ? (
+            <p className="text-sm text-rose-600">{sheetQuery.error}</p>
           ) : !students.length ? (
             <p className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
-              No students are enrolled in this batch.
+              No admitted students are assigned to this batch timing.
             </p>
           ) : (
             <>
               {sheetQuery.data?.hasExisting ? (
                 <p className="text-xs font-medium text-amber-700">
-                  Attendance already marked for this session. Existing statuses
-                  are loaded for editing.
+                  Attendance already marked for this batch timing. Existing
+                  statuses are loaded for editing.
                 </p>
               ) : null}
 
@@ -298,7 +382,7 @@ export function TakeAttendanceModal({
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">#</TableHead>
-                    <TableHead>Student</TableHead>
+                    <TableHead>Student Name</TableHead>
                     <TableHead>Student Code</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
@@ -352,8 +436,7 @@ export function TakeAttendanceModal({
                 <p className="font-semibold text-[#102A56]">Attendance Summary</p>
                 <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1">
                   <span>
-                    Total Students:{" "}
-                    <strong>{summary.total}</strong>
+                    Total Students: <strong>{summary.total}</strong>
                   </span>
                   <span>
                     Present:{" "}
@@ -373,7 +456,8 @@ export function TakeAttendanceModal({
           )
         ) : (
           <p className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
-            Select date, batch, and session to load enrolled students.
+            Select date, main batch, learning mode, and batch timing to load
+            enrolled students.
           </p>
         )}
       </div>

@@ -22,6 +22,7 @@ import {
 import {
   AssessmentType,
   AttendanceStatus,
+  CourseMode,
   EnrollmentStatus,
   InterviewMode,
   InterviewStatus,
@@ -34,8 +35,13 @@ export class RecordAttendanceDto {
   @IsUUID()
   batchId!: string;
 
+  @IsOptional()
   @IsUUID()
-  batchCourseId!: string;
+  batchCourseId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  batchTimingId?: string;
 
   @IsUUID()
   studentId!: string;
@@ -77,8 +83,13 @@ export class BulkRecordAttendanceDto {
   @IsUUID()
   batchId!: string;
 
+  @IsOptional()
   @IsUUID()
-  batchCourseId!: string;
+  batchCourseId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  batchTimingId?: string;
 
   @IsDateString()
   date!: string;
@@ -94,8 +105,13 @@ export class AttendanceSheetQueryDto {
   @IsUUID()
   batchId!: string;
 
+  @IsOptional()
   @IsUUID()
-  batchCourseId!: string;
+  batchCourseId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  batchTimingId?: string;
 
   @IsDateString()
   date!: string;
@@ -148,6 +164,19 @@ export class AttendanceQueryDto {
   @IsOptional()
   @IsUUID()
   batchCourseId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  batchTimingId?: string;
+
+  @IsOptional()
+  @IsEnum(CourseMode)
+  mode?: CourseMode;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === true || value === 'true')
+  requireBatchTiming?: boolean;
 
   @IsOptional()
   @IsUUID()

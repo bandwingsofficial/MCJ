@@ -3,14 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
-import type {
-  AttendanceItem,
-  AttendanceSessionOption,
-  BatchListItem,
-} from "@/src/features/branch-ops/types";
+import type { AttendanceItem, BatchListItem } from "@/src/features/branch-ops/types";
 import {
+  attendanceStatusVariant,
   formatAttendanceDisplayDate,
 } from "@/src/features/branch-ops/utils/attendance-date.utils";
+import {
+  type BatchMode,
+  getBatchModeSectionLabel,
+  getConfiguredBatchModes,
+  getTimingsForMode,
+} from "@/src/features/branch-ops/utils/batch-mode.utils";
+import { Badge } from "@/src/shared/components/ui/badge";
 import { Card } from "@/src/shared/components/ui/card";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -24,73 +28,85 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/shared/components/ui/table";
-import { Badge } from "@/src/shared/components/ui/badge";
-import { attendanceStatusVariant } from "@/src/features/branch-ops/utils/attendance-date.utils";
+import { cn } from "@/src/shared/lib/cn";
 
 interface Props {
   batches: BatchListItem[];
   initialBatchId?: string;
-  initialSessionId?: string;
   dateFrom?: string;
   dateTo?: string;
 }
 
-type DateRow = {
+type SessionRow = {
   dateKey: string;
+  batchName: string;
+  mode: string;
+  timingName: string;
+  courseTitle: string;
+  totalStudents: number;
   present: number;
   absent: number;
   late: number;
-  total: number;
   percentage: number;
 };
 
 export function AttendanceSessionOverview({
   batches,
   initialBatchId,
-  initialSessionId,
   dateFrom,
   dateTo,
 }: Props) {
   const [batchId, setBatchId] = useState(initialBatchId ?? "");
-  const [batchCourseId, setBatchCourseId] = useState(initialSessionId ?? "");
-  const [sessions, setSessions] = useState<AttendanceSessionOption[]>([]);
+  const [mode, setMode] = useState<string>("");
+  const [batchTimingId, setBatchTimingId] = useState("");
   const [items, setItems] = useState<AttendanceItem[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const selectedBatch = useMemo(
+    () => batches.find((batch) => batch.id === batchId) ?? null,
+    [batches, batchId],
+  );
+
+  const modeOptions = useMemo(() => {
+    if (!selectedBatch) return [];
+    return getConfiguredBatchModes(selectedBatch).map((value) => ({
+      label: getBatchModeSectionLabel(value),
+      value,
+    }));
+  }, [selectedBatch]);
+
+  const timingOptions = useMemo(() => {
+    if (!selectedBatch || !mode) return [];
+    return getTimingsForMode(selectedBatch, mode as BatchMode).map((timing) => ({
+      label: timing.name,
+      value: timing.id,
+    }));
+  }, [selectedBatch, mode]);
 
   useEffect(() => {
     if (initialBatchId) setBatchId(initialBatchId);
   }, [initialBatchId]);
 
   useEffect(() => {
-    if (initialSessionId) setBatchCourseId(initialSessionId);
-  }, [initialSessionId]);
-
-  useEffect(() => {
-    if (!batchId) {
-      setSessions([]);
-      setBatchCourseId("");
-      return;
-    }
-    let cancelled = false;
-    branchOpsApi
-      .batchSessions(batchId)
-      .then((result) => {
-        if (!cancelled) setSessions(result);
-      })
-      .catch(() => {
-        if (!cancelled) setSessions([]);
-      });
-    return () => {
-      cancelled = true;
-    };
+    setMode("");
+    setBatchTimingId("");
+    setSelectedDate(null);
   }, [batchId]);
 
   useEffect(() => {
-    if (!batchId || !batchCourseId) {
+    setBatchTimingId("");
+    setSelectedDate(null);
+  }, [mode]);
+
+  useEffect(() => {
+    setSelectedDate(null);
+  }, [batchTimingId, dateFrom, dateTo]);
+
+  useEffect(() => {
+    if (!batchId || !batchTimingId) {
       setItems([]);
-      setSelectedDate(null);
       setError(null);
       return;
     }
@@ -99,36 +115,41 @@ export function AttendanceSessionOverview({
     setLoading(true);
     setError(null);
 
-    branchOpsApi
-      .attendanceReport({
+    const loadAll = async () => {
+      const first = await branchOpsApi.attendanceReport({
         batchId,
-        batchCourseId,
+        batchTimingId,
         from: dateFrom,
         to: dateTo,
+        requireBatchTiming: "true",
         take: 200,
         skip: 0,
-      })
-      .then(async (first) => {
+      });
+
+      if (cancelled) return;
+
+      const all = [...(first.items ?? [])];
+      let skip = 200;
+      while (skip < first.total) {
+        const page = await branchOpsApi.attendanceReport({
+          batchId,
+          batchTimingId,
+          from: dateFrom,
+          to: dateTo,
+          requireBatchTiming: "true",
+          take: 200,
+          skip,
+        });
         if (cancelled) return;
-        const all = [...(first.items ?? [])];
-        let skip = 200;
-        while (skip < first.total) {
-          const page = await branchOpsApi.attendanceReport({
-            batchId,
-            batchCourseId,
-            from: dateFrom,
-            to: dateTo,
-            take: 200,
-            skip,
-          });
-          if (cancelled) return;
-          all.push(...(page.items ?? []));
-          if (!(page.items ?? []).length) break;
-          skip += 200;
-        }
-        setItems(all);
-        setSelectedDate(null);
-      })
+        all.push(...(page.items ?? []));
+        if (!(page.items ?? []).length) break;
+        skip += 200;
+      }
+
+      setItems(all);
+    };
+
+    loadAll()
       .catch((err: unknown) => {
         if (cancelled) return;
         const message =
@@ -146,25 +167,29 @@ export function AttendanceSessionOverview({
     return () => {
       cancelled = true;
     };
-  }, [batchId, batchCourseId, dateFrom, dateTo]);
+  }, [batchId, batchTimingId, dateFrom, dateTo]);
 
-  const selectedSession = sessions.find(
-    (session) => session.batchCourseId === batchCourseId,
-  );
+  const sessionRows = useMemo(() => {
+    const map = new Map<string, SessionRow>();
 
-  const dateRows = useMemo(() => {
-    const map = new Map<string, DateRow>();
     for (const item of items) {
       const dateKey = String(item.date).slice(0, 10);
       const current = map.get(dateKey) ?? {
         dateKey,
+        batchName: item.batch.name,
+        mode: item.batchTiming
+          ? getBatchModeSectionLabel(item.batchTiming.mode)
+          : "—",
+        timingName: item.batchTiming?.name ?? "—",
+        courseTitle: item.course.title,
+        totalStudents: 0,
         present: 0,
         absent: 0,
         late: 0,
-        total: 0,
         percentage: 0,
       };
-      current.total += 1;
+
+      current.totalStudents += 1;
       if (item.status === "PRESENT") current.present += 1;
       if (item.status === "ABSENT") current.absent += 1;
       if (item.status === "LATE") current.late += 1;
@@ -175,8 +200,8 @@ export function AttendanceSessionOverview({
       .map((row) => ({
         ...row,
         percentage:
-          row.total > 0
-            ? Math.round(((row.present + row.late) / row.total) * 1000) / 10
+          row.totalStudents > 0
+            ? Math.round((row.present / row.totalStudents) * 1000) / 10
             : 0,
       }))
       .sort((a, b) => b.dateKey.localeCompare(a.dateKey));
@@ -186,20 +211,21 @@ export function AttendanceSessionOverview({
     ? items.filter((item) => String(item.date).slice(0, 10) === selectedDate)
     : [];
 
+  const selectedTiming = timingOptions.find(
+    (option) => option.value === batchTimingId,
+  );
+
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:max-w-3xl">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
-            Batch
+            Main Batch
           </label>
           <AppSelect
             value={batchId || undefined}
-            placeholder="Select batch"
-            onValueChange={(value) => {
-              setBatchId(value);
-              setBatchCourseId("");
-            }}
+            placeholder="Select main batch"
+            onValueChange={setBatchId}
             options={batches.map((batch) => ({
               label: `${batch.name} (${batch.code})`,
               value: batch.id,
@@ -208,23 +234,34 @@ export function AttendanceSessionOverview({
         </div>
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
-            Session
+            Learning Mode
           </label>
           <AppSelect
-            value={batchCourseId || undefined}
-            placeholder={!batchId ? "Select a batch first" : "Select session"}
-            onValueChange={setBatchCourseId}
+            value={mode || undefined}
+            placeholder={!batchId ? "Select batch first" : "Select mode"}
+            onValueChange={setMode}
             disabled={!batchId}
-            options={sessions.map((session) => ({
-              label: session.label,
-              value: session.batchCourseId,
-            }))}
+            options={modeOptions}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+            Batch Timing
+          </label>
+          <AppSelect
+            value={batchTimingId || undefined}
+            placeholder={
+              !mode ? "Select learning mode first" : "Select batch timing"
+            }
+            onValueChange={setBatchTimingId}
+            disabled={!batchId || !mode}
+            options={timingOptions}
           />
         </div>
       </div>
 
-      {!batchId || !batchCourseId ? (
-        <EmptyState title="Select a batch and session to view date-wise attendance." />
+      {!batchId || !mode || !batchTimingId ? (
+        <EmptyState title="Select main batch, learning mode, and batch timing to view session-wise attendance." />
       ) : loading ? (
         <Loader />
       ) : error ? (
@@ -233,22 +270,27 @@ export function AttendanceSessionOverview({
         <>
           <div>
             <h3 className="text-sm font-semibold text-[#102A56]">
-              {selectedSession?.label ?? "Session Attendance"}
+              Session Overview · {selectedTiming?.label ?? "Batch Timing"}
             </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Date-wise attendance for the selected session
+              Attendance sessions for the selected batch timing
               {dateFrom && dateTo ? ` (${dateFrom} → ${dateTo})` : ""}.
             </p>
           </div>
 
-          {!dateRows.length ? (
-            <EmptyState title="No attendance records for this session in the selected range." />
+          {!sessionRows.length ? (
+            <EmptyState title="No attendance sessions found for this batch timing in the selected date range." />
           ) : (
             <div className="overflow-x-auto rounded-xl border border-slate-200">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
+                    <TableHead>Main Batch</TableHead>
+                    <TableHead>Learning Mode</TableHead>
+                    <TableHead>Batch Timing</TableHead>
+                    <TableHead>Course</TableHead>
+                    <TableHead>Total Students</TableHead>
                     <TableHead>Present</TableHead>
                     <TableHead>Absent</TableHead>
                     <TableHead>Late</TableHead>
@@ -256,19 +298,23 @@ export function AttendanceSessionOverview({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {dateRows.map((row) => (
+                  {sessionRows.map((row) => (
                     <TableRow
                       key={row.dateKey}
-                      className={
-                        selectedDate === row.dateKey
-                          ? "bg-sky-50/80"
-                          : "cursor-pointer hover:bg-slate-50"
-                      }
+                      className={cn(
+                        "cursor-pointer hover:bg-slate-50",
+                        selectedDate === row.dateKey && "bg-sky-50/80",
+                      )}
                       onClick={() => setSelectedDate(row.dateKey)}
                     >
                       <TableCell>
                         {formatAttendanceDisplayDate(row.dateKey)}
                       </TableCell>
+                      <TableCell>{row.batchName}</TableCell>
+                      <TableCell>{row.mode}</TableCell>
+                      <TableCell>{row.timingName}</TableCell>
+                      <TableCell>{row.courseTitle}</TableCell>
+                      <TableCell>{row.totalStudents}</TableCell>
                       <TableCell>{row.present}</TableCell>
                       <TableCell>{row.absent}</TableCell>
                       <TableCell>{row.late}</TableCell>
@@ -283,10 +329,10 @@ export function AttendanceSessionOverview({
           {selectedDate ? (
             <Card className="space-y-3 p-4">
               <h4 className="text-sm font-semibold text-[#102A56]">
-                Student records · {formatAttendanceDisplayDate(selectedDate)}
+                Students · {formatAttendanceDisplayDate(selectedDate)}
               </h4>
               {!detailRows.length ? (
-                <EmptyState title="No student records for this date." />
+                <EmptyState title="No student records for this session." />
               ) : (
                 <div className="overflow-x-auto rounded-xl border border-slate-200">
                   <Table>

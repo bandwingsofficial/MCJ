@@ -12,6 +12,8 @@ import type {
   AttendanceSummary,
   BatchAssessmentAnalytics,
   BatchAttendanceAnalytics,
+  BatchTimingAttendanceOverview,
+  BatchTimingStudentAttendanceRow,
   BatchCourseContent,
   BatchListItem,
   BatchStudentItem,
@@ -78,8 +80,8 @@ export const branchOpsApi = {
 
   attendanceSheet: (params: {
     batchId: string;
-    batchCourseId: string;
     date: string;
+    batchTimingId: string;
   }) =>
     unwrap<AttendanceSheet>(
       apiClient.get("/branch/attendance/sheet", { params }),
@@ -93,6 +95,18 @@ export const branchOpsApi = {
   batchAttendanceSummary: (batchId: string) =>
     unwrap<BatchAttendanceAnalytics>(
       apiClient.get(`/branch/batches/${batchId}/attendance/summary`),
+    ),
+
+  batchTimingAttendanceOverview: (batchId: string) =>
+    unwrap<BatchTimingAttendanceOverview>(
+      apiClient.get(`/branch/batches/${batchId}/attendance/timings`),
+    ),
+
+  batchTimingStudentAttendance: (batchId: string, timingId: string) =>
+    unwrap<{ students: BatchTimingStudentAttendanceRow[] }>(
+      apiClient.get(
+        `/branch/batches/${batchId}/attendance/timings/${timingId}/students`,
+      ),
     ),
 
   studentBatchAttendance: (
@@ -109,7 +123,8 @@ export const branchOpsApi = {
 
   saveAttendance: (payload: {
     batchId: string;
-    batchCourseId: string;
+    batchCourseId?: string;
+    batchTimingId?: string;
     studentId: string;
     date: string;
     status: string;
@@ -118,7 +133,7 @@ export const branchOpsApi = {
 
   saveAttendanceBulk: (payload: {
     batchId: string;
-    batchCourseId: string;
+    batchTimingId: string;
     date: string;
     records: Array<{ studentId: string; status: string; remarks?: string }>;
   }) =>

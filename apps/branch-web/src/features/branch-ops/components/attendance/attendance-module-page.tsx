@@ -10,12 +10,17 @@ import { ManageAttendanceModal } from "@/src/features/branch-ops/components/atte
 import { TakeAttendanceModal } from "@/src/features/branch-ops/components/attendance/take-attendance-modal";
 import type { AttendanceItem } from "@/src/features/branch-ops/types";
 import {
-  type AttendanceDatePreset,
   attendanceStatusVariant,
   formatAttendanceDisplayDate,
-  resolveAttendanceDateRange,
   todayLocalInput,
 } from "@/src/features/branch-ops/utils/attendance-date.utils";
+import {
+  BATCH_MODE_SECTION_LABELS,
+  type BatchMode,
+  getBatchModeSectionLabel,
+  getConfiguredBatchModes,
+  getTimingsForMode,
+} from "@/src/features/branch-ops/utils/batch-mode.utils";
 import { formatRoleLabel } from "@/src/core/auth/roles";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { Badge } from "@/src/shared/components/ui/badge";
@@ -52,16 +57,10 @@ const STATUS_OPTIONS = [
   { label: "Late", value: "LATE" },
 ];
 
-const DATE_PRESET_OPTIONS: Array<{
-  label: string;
-  value: AttendanceDatePreset;
-}> = [
-  { label: "Today", value: "TODAY" },
-  { label: "Yesterday", value: "YESTERDAY" },
-  { label: "This Week", value: "THIS_WEEK" },
-  { label: "This Month", value: "THIS_MONTH" },
-  { label: "Custom", value: "CUSTOM" },
-  { label: "All Time", value: "ALL_TIME" },
+const MODE_OPTIONS: Array<{ label: string; value: BatchMode }> = [
+  { label: BATCH_MODE_SECTION_LABELS.OFFLINE, value: "OFFLINE" },
+  { label: BATCH_MODE_SECTION_LABELS.ONLINE, value: "ONLINE" },
+  { label: BATCH_MODE_SECTION_LABELS.RECORDED, value: "RECORDED" },
 ];
 
 const TAB_CLASS =
@@ -75,9 +74,9 @@ const FILTER_TRIGGER = `${FILTER_H} ${FILTER_RADIUS} w-full min-w-0 text-sm [&>s
 type Filters = {
   search: string;
   batchId: string;
-  batchCourseId: string;
+  mode: string;
+  batchTimingId: string;
   status: string;
-  datePreset: AttendanceDatePreset;
   from: string;
   to: string;
 };
@@ -85,11 +84,11 @@ type Filters = {
 const defaultFilters = (): Filters => ({
   search: "",
   batchId: "ALL",
-  batchCourseId: "ALL",
+  mode: "ALL",
+  batchTimingId: "ALL",
   status: "ALL",
-  datePreset: "TODAY",
-  from: "",
-  to: "",
+  from: todayLocalInput(),
+  to: todayLocalInput(),
 });
 
 export function AttendanceModulePage() {
@@ -113,41 +112,76 @@ export function AttendanceModulePage() {
     return () => window.clearTimeout(timer);
   }, [filters.search]);
 
-  const dateRange = useMemo(
-    () =>
-      resolveAttendanceDateRange(filters.datePreset, filters.from, filters.to),
-    [filters.datePreset, filters.from, filters.to],
-  );
-
   const batchesQuery = useAsyncData(() => branchOpsApi.batches(), []);
+  const batches = batchesQuery.data ?? [];
 
-  const sessionsQuery = useAsyncData(
+  const selectedBatch = useMemo(
     () =>
-      filters.batchId !== "ALL"
-        ? branchOpsApi.batchSessions(filters.batchId)
-        : Promise.resolve([]),
-    [filters.batchId],
+      filters.batchId === "ALL"
+        ? null
+        : (batches.find((batch) => batch.id === filters.batchId) ?? null),
+    [batches, filters.batchId],
   );
+
+  const modeOptions = useMemo(() => {
+    const options = [{ label: "All Modes", value: "ALL" }];
+    const modes =
+      selectedBatch != null
+        ? getConfiguredBatchModes(selectedBatch)
+        : MODE_OPTIONS.map((option) => option.value);
+
+    for (const mode of modes) {
+      options.push({
+        label: getBatchModeSectionLabel(mode),
+        value: mode,
+      });
+    }
+
+    return options;
+  }, [selectedBatch]);
+
+  const timingOptions = useMemo(() => {
+    const options = [{ label: "All Timings", value: "ALL" }];
+
+    if (
+      selectedBatch &&
+      (filters.mode === "OFFLINE" ||
+        filters.mode === "ONLINE" ||
+        filters.mode === "RECORDED")
+    ) {
+      for (const timing of getTimingsForMode(selectedBatch, filters.mode)) {
+        options.push({ label: timing.name, value: timing.id });
+      }
+    }
+
+    return options;
+  }, [selectedBatch, filters.mode]);
 
   const reportParams = useMemo(
     () => ({
       batchId: filters.batchId === "ALL" ? undefined : filters.batchId,
-      batchCourseId:
-        filters.batchCourseId === "ALL" ? undefined : filters.batchCourseId,
+      batchTimingId:
+        filters.batchTimingId === "ALL" ? undefined : filters.batchTimingId,
+      mode:
+        filters.mode === "ALL"
+          ? undefined
+          : (filters.mode as BatchMode),
       status: filters.status === "ALL" ? undefined : filters.status,
       search: debouncedSearch || undefined,
-      from: dateRange.from,
-      to: dateRange.to,
+      from: filters.from || undefined,
+      to: filters.to || undefined,
+      requireBatchTiming: "true" as const,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
     [
       filters.batchId,
-      filters.batchCourseId,
+      filters.batchTimingId,
+      filters.mode,
       filters.status,
       debouncedSearch,
-      dateRange.from,
-      dateRange.to,
+      filters.from,
+      filters.to,
       page,
       pageSize,
     ],
@@ -157,11 +191,13 @@ export function AttendanceModulePage() {
     () => branchOpsApi.attendanceReport(reportParams),
     [
       reportParams.batchId,
-      reportParams.batchCourseId,
+      reportParams.batchTimingId,
+      reportParams.mode,
       reportParams.status,
       reportParams.search,
       reportParams.from,
       reportParams.to,
+      reportParams.requireBatchTiming,
       reportParams.skip,
       reportParams.take,
     ],
@@ -215,8 +251,8 @@ export function AttendanceModulePage() {
           Filters
         </p>
 
-        {/* Row 1: Search, Batch, Session, Status — 4 equal columns */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-center">
+        {/* Row 1: Search, Main Batch, Learning Mode, Batch Timing, Status */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 lg:items-center">
           <div className="min-w-0">
             <SearchInput
               value={filters.search}
@@ -233,11 +269,15 @@ export function AttendanceModulePage() {
               value={filters.batchId}
               triggerClassName={FILTER_TRIGGER}
               onValueChange={(value) =>
-                updateFilters({ batchId: value, batchCourseId: "ALL" })
+                updateFilters({
+                  batchId: value,
+                  mode: "ALL",
+                  batchTimingId: "ALL",
+                })
               }
               options={[
                 { label: "All Batches", value: "ALL" },
-                ...(batchesQuery.data ?? []).map((batch) => ({
+                ...batches.map((batch) => ({
                   label: `${batch.name} (${batch.code})`,
                   value: batch.id,
                 })),
@@ -247,23 +287,34 @@ export function AttendanceModulePage() {
 
           <div className="min-w-0">
             <AppSelect
-              value={filters.batchCourseId}
+              value={filters.mode}
               triggerClassName={FILTER_TRIGGER}
-              onValueChange={(value) => updateFilters({ batchCourseId: value })}
-              options={[
-                { label: "All Sessions", value: "ALL" },
-                ...(sessionsQuery.data ?? []).map((session) => ({
-                  label: session.label,
-                  value: session.batchCourseId,
-                })),
-              ]}
-              disabled={filters.batchId === "ALL" || sessionsQuery.loading}
+              onValueChange={(value) =>
+                updateFilters({ mode: value, batchTimingId: "ALL" })
+              }
+              options={modeOptions}
+            />
+          </div>
+
+          <div className="min-w-0">
+            <AppSelect
+              value={filters.batchTimingId}
+              triggerClassName={FILTER_TRIGGER}
+              onValueChange={(value) => updateFilters({ batchTimingId: value })}
+              options={timingOptions}
+              disabled={
+                filters.batchId === "ALL" ||
+                filters.mode === "ALL" ||
+                timingOptions.length <= 1
+              }
               placeholder={
                 filters.batchId === "ALL"
-                  ? "All Sessions"
-                  : sessionsQuery.loading
-                    ? "Loading..."
-                    : "All Sessions"
+                  ? "Select batch first"
+                  : filters.mode === "ALL"
+                    ? "Select mode first"
+                    : timingOptions.length <= 1
+                      ? "No timings"
+                      : "All Timings"
               }
             />
           </div>
@@ -278,40 +329,17 @@ export function AttendanceModulePage() {
           </div>
         </div>
 
-        {/* Row 2: Date preset, From, To, Clear — 4 equal columns */}
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-center">
+        {/* Row 2: Date From, Date To, Clear */}
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:items-end">
           <div className="min-w-0">
-            <AppSelect
-              value={filters.datePreset}
-              triggerClassName={FILTER_TRIGGER}
-              onValueChange={(value) => {
-                const preset = value as AttendanceDatePreset;
-                if (preset === "CUSTOM") {
-                  const today = todayLocalInput();
-                  updateFilters({
-                    datePreset: preset,
-                    from: filters.from || today,
-                    to: filters.to || today,
-                  });
-                  return;
-                }
-                updateFilters({ datePreset: preset, from: "", to: "" });
-              }}
-              options={DATE_PRESET_OPTIONS}
-            />
-          </div>
-
-          <div className="min-w-0">
+            <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+              Date From
+            </label>
             <Input
               type="date"
-              aria-label="From date"
-              disabled={filters.datePreset !== "CUSTOM"}
-              className={`${FILTER_H} ${FILTER_RADIUS} w-full text-sm disabled:cursor-default disabled:bg-slate-50 disabled:text-slate-400`}
-              value={
-                filters.datePreset === "CUSTOM"
-                  ? filters.from
-                  : (dateRange.from ?? "")
-              }
+              aria-label="Date from"
+              className={`${FILTER_H} ${FILTER_RADIUS} w-full text-sm`}
+              value={filters.from}
               onChange={(event) =>
                 updateFilters({ from: event.target.value })
               }
@@ -319,16 +347,14 @@ export function AttendanceModulePage() {
           </div>
 
           <div className="min-w-0">
+            <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+              Date To
+            </label>
             <Input
               type="date"
-              aria-label="To date"
-              disabled={filters.datePreset !== "CUSTOM"}
-              className={`${FILTER_H} ${FILTER_RADIUS} w-full text-sm disabled:cursor-default disabled:bg-slate-50 disabled:text-slate-400`}
-              value={
-                filters.datePreset === "CUSTOM"
-                  ? filters.to
-                  : (dateRange.to ?? "")
-              }
+              aria-label="Date to"
+              className={`${FILTER_H} ${FILTER_RADIUS} w-full text-sm`}
+              value={filters.to}
               onChange={(event) => updateFilters({ to: event.target.value })}
             />
           </div>
@@ -362,11 +388,6 @@ export function AttendanceModulePage() {
         <TabsContent value="records" className="space-y-3">
           <p className="text-sm font-semibold text-[#102A56]">
             Attendance Records
-            {filters.datePreset === "TODAY" ? (
-              <span className="ml-2 text-xs font-medium text-slate-500">
-                (Today)
-              </span>
-            ) : null}
           </p>
 
           {reportQuery.loading && !reportQuery.data ? (
@@ -378,16 +399,8 @@ export function AttendanceModulePage() {
             />
           ) : !items.length ? (
             <EmptyState
-              title={
-                filters.datePreset === "TODAY"
-                  ? "No attendance records for today"
-                  : "No attendance records found"
-              }
-              description={
-                filters.datePreset === "TODAY"
-                  ? "Records appear here once attendance is marked."
-                  : "Try changing your filters or date range."
-              }
+              title="No attendance records found"
+              description="Try changing your filters or date range."
             />
           ) : (
             <>
@@ -398,8 +411,9 @@ export function AttendanceModulePage() {
                       <TableHead>Date</TableHead>
                       <TableHead>Student</TableHead>
                       <TableHead>Student Code</TableHead>
-                      <TableHead>Batch</TableHead>
-                      <TableHead>Session</TableHead>
+                      <TableHead>Main Batch</TableHead>
+                      <TableHead>Learning Mode</TableHead>
+                      <TableHead>Batch Timing</TableHead>
                       <TableHead>Course</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
@@ -418,8 +432,13 @@ export function AttendanceModulePage() {
                           {item.student.studentCode}
                         </TableCell>
                         <TableCell>{item.batch.name}</TableCell>
+                        <TableCell>
+                          {item.batchTiming
+                            ? getBatchModeSectionLabel(item.batchTiming.mode)
+                            : "—"}
+                        </TableCell>
                         <TableCell className="max-w-[10rem] truncate">
-                          {item.session.label}
+                          {item.batchTiming?.name ?? "—"}
                         </TableCell>
                         <TableCell>{item.course.title}</TableCell>
                         <TableCell>
@@ -460,7 +479,7 @@ export function AttendanceModulePage() {
 
         <TabsContent value="batch">
           <AttendanceBatchOverview
-            batches={batchesQuery.data ?? []}
+            batches={batches}
             initialBatchId={
               filters.batchId !== "ALL" ? filters.batchId : undefined
             }
@@ -469,17 +488,12 @@ export function AttendanceModulePage() {
 
         <TabsContent value="session">
           <AttendanceSessionOverview
-            batches={batchesQuery.data ?? []}
+            batches={batches}
             initialBatchId={
               filters.batchId !== "ALL" ? filters.batchId : undefined
             }
-            initialSessionId={
-              filters.batchCourseId !== "ALL"
-                ? filters.batchCourseId
-                : undefined
-            }
-            dateFrom={dateRange.from}
-            dateTo={dateRange.to}
+            dateFrom={filters.from || undefined}
+            dateTo={filters.to || undefined}
           />
         </TabsContent>
       </Tabs>
@@ -488,7 +502,7 @@ export function AttendanceModulePage() {
         open={takeOpen}
         onClose={() => setTakeOpen(false)}
         onSaved={() => void reportQuery.reload()}
-        batches={batchesQuery.data ?? []}
+        batches={batches}
       />
 
       <ManageAttendanceModal

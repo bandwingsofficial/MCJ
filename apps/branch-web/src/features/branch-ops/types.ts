@@ -211,6 +211,49 @@ export interface BatchAttendanceAnalytics {
   students: BatchAttendanceStudentRow[];
 }
 
+export interface BatchTimingAttendanceRow {
+  id: string;
+  name: string;
+  mode: string;
+  enrolledStudents: number;
+  sessionsConducted: number;
+  present: number;
+  absent: number;
+  late: number;
+  totalRecords: number;
+  percentage: number;
+}
+
+export interface BatchTimingAttendanceOverview {
+  batch: { id: string; name: string; code: string };
+  branch: { id: string; branchName: string; branchCode: string };
+  modes: Array<{
+    mode: string;
+    timings: BatchTimingAttendanceRow[];
+  }>;
+}
+
+export interface BatchTimingStudentAttendanceRow {
+  id: string;
+  enrollmentId: string;
+  name: string;
+  firstName: string;
+  lastName: string | null;
+  studentCode: string;
+  status: string;
+  enrollmentStatus: string;
+  present: number;
+  absent: number;
+  late: number;
+  leave: number;
+  totalRecords: number;
+  percentage: number;
+  conductedSessions: number;
+  hasAttendance: boolean;
+  lastAttendanceDate: string | null;
+  lastAttendanceStatus: string | null;
+}
+
 export interface StudentBatchAttendanceDetail {
   student: {
     id: string;
@@ -309,6 +352,11 @@ export interface AttendanceSheet {
   date: string;
   branch: { id: string; branchName: string; branchCode: string };
   batch: { id: string; name: string; code: string };
+  timing?: {
+    id: string;
+    name: string;
+    mode: string;
+  };
   session: AttendanceSessionOption;
   students: AttendanceSheetStudent[];
   summary: AttendanceSummary;
@@ -623,6 +671,11 @@ export interface AttendanceItem {
     sessionCode: string | null;
     label: string;
   };
+  batchTiming: {
+    id: string;
+    name: string;
+    mode: string;
+  } | null;
   faculty: { id: string; name: string } | null;
 }
 

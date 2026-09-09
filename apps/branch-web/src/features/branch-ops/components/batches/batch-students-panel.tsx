@@ -22,7 +22,7 @@ import type { BatchStudentItem } from "@/src/features/branch-ops/types";
 
 import {
 
-  formatBatchMode,
+  formatBatchLabel,
 
   formatBatchStatus,
 
@@ -159,12 +159,6 @@ export function BatchStudentsPanel({ batchId, onStudentsChanged }: Props) {
 
         student.studentCode,
 
-        student.email,
-
-        student.phone,
-
-        student.batchTiming?.name,
-
         student.enrollmentStatus,
 
         student.batch?.name,
@@ -285,7 +279,7 @@ export function BatchStudentsPanel({ batchId, onStudentsChanged }: Props) {
 
                 <TableHead>Student name</TableHead>
 
-                <TableHead>Batch timing</TableHead>
+                <TableHead>Batch</TableHead>
 
                 <TableHead>Status</TableHead>
 
@@ -315,9 +309,7 @@ export function BatchStudentsPanel({ batchId, onStudentsChanged }: Props) {
 
                   <TableCell>
 
-                    {student.batchTiming?.name
-                      ? `${student.batchTiming.name} (${formatBatchMode(student.batchTiming.mode)})`
-                      : "—"}
+                    {formatBatchLabel(student.batch?.name, student.batch?.code)}
 
                   </TableCell>
 

@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
           source: "/branches/:branchId/manage",
           destination: "/branches/:branchId",
         },
+        {
+          source: "/batches/:id/timings/:timingId/manage",
+          destination: "/batches/:id/timings/:timingId",
+        },
       ],
     };
   },

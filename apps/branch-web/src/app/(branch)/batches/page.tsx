@@ -7,12 +7,14 @@ import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { FacultyBatchCard } from "@/src/features/branch-ops/components/batches/faculty-batch-card";
 import type { BatchListItem } from "@/src/features/branch-ops/types";
 import {
+  assignedLabel,
   courseTitle,
   formatBatchDate,
-  formatBatchStatus,
-  formatLearningModes,
+  formatBatchMode,
+  formatBatchTiming,
   getBatchDisplayStatus,
   isBatchLifecycleGreyed,
+  trainerNames,
 } from "@/src/features/branch-ops/utils/batch-display";
 import { formatRoleLabel } from "@/src/core/auth/roles";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
@@ -80,7 +82,7 @@ export default function BatchesPage() {
         batch.code,
         batch.course?.title,
         batch.course?.name,
-        ...(batch.timings ?? []).map((timing) => timing.name),
+        trainerNames(batch.trainers),
       ]
         .filter(Boolean)
         .join(" ")
@@ -101,7 +103,7 @@ export default function BatchesPage() {
       <ListPageHeader
         parentLabel={formatRoleLabel(role) || "Branch"}
         currentLabel="Batches"
-        title={isFaculty ? "My Batches" : "Batches"}
+        title="Batches"
         totalLabel="Total Batches"
         total={loading || error ? null : items.length}
         filters={
@@ -210,12 +212,15 @@ export default function BatchesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Batch name</TableHead>
-                <TableHead>Learning mode</TableHead>
+                <TableHead>Batch</TableHead>
                 <TableHead>Course</TableHead>
+                <TableHead>Trainer</TableHead>
+                <TableHead>Mode</TableHead>
                 <TableHead>Start date</TableHead>
                 <TableHead>End date</TableHead>
-                <TableHead>Batch status</TableHead>
+                <TableHead>Timing</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Students</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -230,24 +235,34 @@ export default function BatchesPage() {
                     className={greyed ? "bg-slate-100/80 text-slate-500" : undefined}
                   >
                     <TableCell>
-                      <p
-                        className={cn(
-                          "font-medium",
-                          greyed ? "text-slate-500" : "text-[#102A56]",
-                        )}
-                      >
-                        {batch.name}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      {formatLearningModes(batch.learningModes, batch.mode)}
+                      <div>
+                        <p
+                          className={cn(
+                            "font-medium",
+                            greyed ? "text-slate-500" : "text-[#102A56]",
+                          )}
+                        >
+                          {batch.name}
+                        </p>
+                        <p className="font-mono text-xs text-[#647A9B]">
+                          {batch.code}
+                        </p>
+                      </div>
                     </TableCell>
                     <TableCell>{courseTitle(batch.course)}</TableCell>
+                    <TableCell>
+                      {assignedLabel(trainerNames(batch.trainers))}
+                    </TableCell>
+                    <TableCell>{formatBatchMode(batch.mode)}</TableCell>
                     <TableCell>{formatBatchDate(batch.startDate)}</TableCell>
                     <TableCell>{formatBatchDate(batch.endDate)}</TableCell>
                     <TableCell>
+                      {formatBatchTiming(batch.startTime, batch.endTime)}
+                    </TableCell>
+                    <TableCell>
                       <Badge variant={display.variant}>{display.label}</Badge>
                     </TableCell>
+                    <TableCell>{batch.enrolledStudents}</TableCell>
                     <TableCell>
                       <Link
                         href={`/batches/${batch.id}`}

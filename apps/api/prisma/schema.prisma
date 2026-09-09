@@ -767,6 +767,7 @@ model BatchTiming {
   batch        Batch          @relation(fields: [batchId], references: [id], onDelete: Cascade)
   template     BatchTemplate? @relation(fields: [batchTemplateId], references: [id], onDelete: SetNull)
   enrollments  Enrollment[]
+  attendances  Attendance[]
 
   @@index([batchId])
   @@index([batchTemplateId])
@@ -1179,6 +1180,8 @@ model Attendance {
   batchId         String
   /// BatchCourse assignment (session) this attendance belongs to.
   batchCourseId   String
+  /// Child batch timing this attendance belongs to (when marked via timing flow).
+  batchTimingId   String?
   studentId       String
   facultyId       String?
   date            DateTime         @db.Date
@@ -1194,14 +1197,18 @@ model Attendance {
   branch          Branch           @relation(fields: [branchId], references: [id])
   batch           Batch            @relation(fields: [batchId], references: [id])
   batchCourse     BatchCourse      @relation(fields: [batchCourseId], references: [id])
+  batchTiming     BatchTiming?     @relation(fields: [batchTimingId], references: [id], onDelete: SetNull)
   student         Student          @relation(fields: [studentId], references: [id])
   faculty         BranchUser?      @relation(fields: [facultyId], references: [id], onDelete: SetNull)
 
   /// One attendance status per student per batch-course session per date.
   @@unique([studentId, batchCourseId, date])
+  /// One attendance status per student per batch timing per date.
+  @@unique([studentId, batchTimingId, date])
   @@index([branchId])
   @@index([batchId])
   @@index([batchCourseId])
+  @@index([batchTimingId])
   @@index([studentId])
   @@index([facultyId])
   @@index([date])
@@ -1209,6 +1216,7 @@ model Attendance {
   @@index([branchId, date])
   @@index([batchId, date])
   @@index([batchCourseId, date])
+  @@index([batchTimingId, date])
 }
 
 model AcademicAssessment {

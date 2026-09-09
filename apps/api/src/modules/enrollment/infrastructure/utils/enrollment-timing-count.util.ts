@@ -4,16 +4,17 @@ import type { PrismaService } from '../../../../infrastructure/prisma/prisma.ser
 import { BatchFullException } from '../../domain/errors/batch-full.exception';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 
-/** Statuses that keep an enrollment linked to its batch timing seat. */
-export const TIMING_LINKED_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
-  EnrollmentStatus.PENDING,
-  EnrollmentStatus.PENDING_APPROVAL,
+/** Statuses that occupy a parent batch seat. */
+export const BATCH_SEAT_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
   EnrollmentStatus.ADMITTED,
   EnrollmentStatus.ACTIVE,
 ];
 
-/** Statuses that occupy a parent batch seat. */
-export const BATCH_SEAT_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
+/**
+ * Statuses counted against a batch timing's capacity.
+ * Cancelled / completed / pending enrollments are excluded.
+ */
+export const TIMING_LINKED_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
   EnrollmentStatus.ADMITTED,
   EnrollmentStatus.ACTIVE,
 ];
@@ -41,6 +42,20 @@ export async function countTimingLinkedEnrollments(
   return prisma.enrollment.count({
     where: buildTimingLinkedEnrollmentWhere(batchTimingId),
   });
+}
+
+export function calculateTimingAvailableSeats(
+  capacity: number,
+  enrolledCount: number,
+): number {
+  return Math.max(0, capacity - enrolledCount);
+}
+
+export function hasTimingCapacityAvailable(
+  capacity: number,
+  enrolledCount: number,
+): boolean {
+  return calculateTimingAvailableSeats(capacity, enrolledCount) > 0;
 }
 
 export async function syncBatchTimingEnrolledCount(
@@ -92,7 +107,7 @@ export async function assertBatchTimingHasLiveCapacity(
     batchTimingId,
   );
 
-  if (liveCount >= timing.capacity) {
+  if (!hasTimingCapacityAvailable(timing.capacity, liveCount)) {
     throw new BatchFullException();
   }
 }

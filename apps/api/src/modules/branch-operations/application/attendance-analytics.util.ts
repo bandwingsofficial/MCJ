@@ -62,6 +62,16 @@ export function emptyStatusCounts(): AttendanceStatusCounts {
   };
 }
 
+/** Present-only attendance rate for timing-scoped summaries. */
+export function buildPresentOnlyPercentage(
+  present: number,
+  totalRecords: number,
+): number {
+  return totalRecords > 0
+    ? Math.round((present / totalRecords) * 1000) / 10
+    : 0;
+}
+
 export function applyStatusCount(
   counts: AttendanceStatusCounts,
   status: AttendanceStatus,
