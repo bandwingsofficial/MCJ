@@ -9,6 +9,7 @@ import { cn } from "@/src/shared/lib/cn";
 export interface SelectOption {
   label: string;
   value: string;
+  disabled?: boolean;
 }
 
 interface AppSelectProps {
@@ -36,28 +37,42 @@ export function AppSelect({
     >
       <SelectPrimitive.Trigger
         className={cn(
-          "flex h-11 w-full items-center justify-between rounded-xl border border-[#DCE8F5] bg-white px-4 text-sm text-[#102A56]",
+          "flex h-11 w-full min-w-0 max-w-full items-center justify-between gap-2 overflow-hidden rounded-xl border border-[#DCE8F5] bg-white px-4 text-sm text-[#102A56]",
           "focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20",
+          "disabled:cursor-not-allowed disabled:opacity-50",
           triggerClassName,
         )}
       >
-        <SelectPrimitive.Value placeholder={placeholder} />
+        <SelectPrimitive.Value
+          placeholder={placeholder}
+          className="min-w-0 truncate text-left"
+        />
 
-        <ChevronDown className="h-4 w-4" />
+        <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" />
       </SelectPrimitive.Trigger>
 
       <SelectPrimitive.Portal>
         <SelectPrimitive.Content
-          className="z-[80] min-w-[200px] overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-lg"
+          position="popper"
+          side="bottom"
+          align="start"
+          sideOffset={4}
+          collisionPadding={12}
+          avoidCollisions
+          className="z-[100] max-h-60 w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-[0_8px_24px_rgba(16,42,86,0.08)]"
         >
-          <SelectPrimitive.Viewport className="p-1">
+          <SelectPrimitive.Viewport className="max-h-60 overflow-y-auto p-1">
             {options.map((option) => (
               <SelectPrimitive.Item
                 key={option.value}
                 value={option.value}
-                className="relative flex cursor-pointer items-center rounded-lg px-3 py-2 text-sm outline-none hover:bg-slate-100"
+                disabled={option.disabled}
+                className={cn(
+                  "relative flex cursor-pointer items-center rounded-lg px-3 py-2 text-sm text-[#102A56] outline-none hover:bg-[#F4F9FF] focus:bg-[#F4F9FF]",
+                  "data-[disabled]:cursor-not-allowed data-[disabled]:bg-slate-100 data-[disabled]:text-slate-400 data-[disabled]:opacity-100 data-[disabled]:hover:bg-slate-100",
+                )}
               >
-                <SelectPrimitive.ItemText>
+                <SelectPrimitive.ItemText className="min-w-0 truncate">
                   {option.label}
                 </SelectPrimitive.ItemText>
 

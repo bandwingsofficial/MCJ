@@ -10,8 +10,10 @@ import { ManageAttendanceModal } from "@/src/features/branch-ops/components/atte
 import { TakeAttendanceModal } from "@/src/features/branch-ops/components/attendance/take-attendance-modal";
 import type { AttendanceItem } from "@/src/features/branch-ops/types";
 import {
+  type AttendanceDatePreset,
   attendanceStatusVariant,
   formatAttendanceDisplayDate,
+  resolveAttendanceDateRange,
   todayLocalInput,
 } from "@/src/features/branch-ops/utils/attendance-date.utils";
 import {
@@ -63,6 +65,17 @@ const MODE_OPTIONS: Array<{ label: string; value: BatchMode }> = [
   { label: BATCH_MODE_SECTION_LABELS.RECORDED, value: "RECORDED" },
 ];
 
+const DATE_PRESET_OPTIONS: Array<{
+  label: string;
+  value: AttendanceDatePreset;
+}> = [
+  { label: "Today", value: "TODAY" },
+  { label: "Yesterday", value: "YESTERDAY" },
+  { label: "This Week", value: "THIS_WEEK" },
+  { label: "This Month", value: "THIS_MONTH" },
+  { label: "Custom", value: "CUSTOM" },
+];
+
 const TAB_CLASS =
   "rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
 
@@ -77,6 +90,7 @@ type Filters = {
   mode: string;
   batchTimingId: string;
   status: string;
+  datePreset: AttendanceDatePreset;
   from: string;
   to: string;
 };
@@ -87,8 +101,9 @@ const defaultFilters = (): Filters => ({
   mode: "ALL",
   batchTimingId: "ALL",
   status: "ALL",
-  from: todayLocalInput(),
-  to: todayLocalInput(),
+  datePreset: "TODAY",
+  from: "",
+  to: "",
 });
 
 export function AttendanceModulePage() {
@@ -111,6 +126,12 @@ export function AttendanceModulePage() {
     }, 400);
     return () => window.clearTimeout(timer);
   }, [filters.search]);
+
+  const dateRange = useMemo(
+    () =>
+      resolveAttendanceDateRange(filters.datePreset, filters.from, filters.to),
+    [filters.datePreset, filters.from, filters.to],
+  );
 
   const batchesQuery = useAsyncData(() => branchOpsApi.batches(), []);
   const batches = batchesQuery.data ?? [];
@@ -168,8 +189,8 @@ export function AttendanceModulePage() {
           : (filters.mode as BatchMode),
       status: filters.status === "ALL" ? undefined : filters.status,
       search: debouncedSearch || undefined,
-      from: filters.from || undefined,
-      to: filters.to || undefined,
+      from: dateRange.from,
+      to: dateRange.to,
       requireBatchTiming: "true" as const,
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -180,8 +201,8 @@ export function AttendanceModulePage() {
       filters.mode,
       filters.status,
       debouncedSearch,
-      filters.from,
-      filters.to,
+      dateRange.from,
+      dateRange.to,
       page,
       pageSize,
     ],
@@ -216,6 +237,8 @@ export function AttendanceModulePage() {
     setDebouncedSearch("");
     setPage(1);
   };
+
+  const isCustomDateRange = filters.datePreset === "CUSTOM";
 
   if (batchesQuery.loading && !batchesQuery.data) {
     return <Loader />;
@@ -329,8 +352,32 @@ export function AttendanceModulePage() {
           </div>
         </div>
 
-        {/* Row 2: Date From, Date To, Clear */}
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:items-end">
+        {/* Row 2: Date range, From, To, Clear — always visible */}
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
+          <div className="min-w-0">
+            <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+              Date Range
+            </label>
+            <AppSelect
+              value={filters.datePreset}
+              triggerClassName={FILTER_TRIGGER}
+              onValueChange={(value) => {
+                const preset = value as AttendanceDatePreset;
+                if (preset !== "CUSTOM") {
+                  updateFilters({ datePreset: preset, from: "", to: "" });
+                  return;
+                }
+                const today = todayLocalInput();
+                updateFilters({
+                  datePreset: preset,
+                  from: filters.from || today,
+                  to: filters.to || today,
+                });
+              }}
+              options={DATE_PRESET_OPTIONS}
+            />
+          </div>
+
           <div className="min-w-0">
             <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
               Date From
@@ -339,7 +386,10 @@ export function AttendanceModulePage() {
               type="date"
               aria-label="Date from"
               className={`${FILTER_H} ${FILTER_RADIUS} w-full text-sm`}
-              value={filters.from}
+              value={
+                isCustomDateRange ? filters.from : (dateRange.from ?? "")
+              }
+              disabled={!isCustomDateRange}
               onChange={(event) =>
                 updateFilters({ from: event.target.value })
               }
@@ -354,7 +404,8 @@ export function AttendanceModulePage() {
               type="date"
               aria-label="Date to"
               className={`${FILTER_H} ${FILTER_RADIUS} w-full text-sm`}
-              value={filters.to}
+              value={isCustomDateRange ? filters.to : (dateRange.to ?? "")}
+              disabled={!isCustomDateRange}
               onChange={(event) => updateFilters({ to: event.target.value })}
             />
           </div>
@@ -492,8 +543,8 @@ export function AttendanceModulePage() {
             initialBatchId={
               filters.batchId !== "ALL" ? filters.batchId : undefined
             }
-            dateFrom={filters.from || undefined}
-            dateTo={filters.to || undefined}
+            dateFrom={dateRange.from || undefined}
+            dateTo={dateRange.to || undefined}
           />
         </TabsContent>
       </Tabs>

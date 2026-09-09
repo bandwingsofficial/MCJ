@@ -15,6 +15,7 @@ import type { BranchAuthUser } from '@common/decorators/current-branch-user.deco
 import { BranchUserRole } from '@modules/branch-user/domain/enums/branch-user-role.enum';
 import type { BatchCourseAssignmentRecord } from '@modules/batch/application/batch-courses/batch-course.types';
 import { ensureBatchSelectableForAssignment } from '@modules/batch/domain/utils/batch-selection.util';
+import { resolveBatchApiStatus } from '@modules/batch/domain/utils/batch-lifecycle-status.util';
 import { BatchStatus } from '@modules/batch/domain/enums/batch-status.enum';
 import { PrismaBatchCourseRepository } from '@modules/batch/infrastructure/repositories/prisma-batch-course.repository';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
@@ -1291,7 +1292,13 @@ export class BranchBatchOpsService {
         capacity: timing.capacity,
         enrolledStudents,
         availableSeats: Math.max(0, timing.capacity - enrolledStudents),
-        status: timing.status,
+        status: resolveBatchApiStatus({
+          storedStatus: timing.status as BatchStatus,
+          startDate: timing.startDate,
+          startTime: timing.startTime,
+          endDate: timing.endDate,
+          endTime: timing.endTime,
+        }),
         isActive: timing.isActive,
       };
     });
@@ -1368,7 +1375,13 @@ export class BranchBatchOpsService {
       code: batch.code,
       mode: batch.mode,
       learningModes,
-      status: batch.status,
+      status: resolveBatchApiStatus({
+        storedStatus: batch.status as BatchStatus,
+        startDate: batch.startDate,
+        startTime: batch.startTime,
+        endDate: batch.endDate,
+        endTime: batch.endTime,
+      }),
       startDate: batch.startDate,
       endDate: batch.endDate,
       startTime: batch.startTime,

@@ -7,6 +7,43 @@ import { X } from "lucide-react";
 
 import { cn } from "@/src/shared/lib/cn";
 
+function isPortaledLayerTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+
+  return Boolean(
+    target.closest(
+      "[data-radix-select-content], [data-radix-select-viewport], [data-radix-popper-content-wrapper]",
+    ),
+  );
+}
+
+function shouldPreventDialogDismiss(event: Event): boolean {
+  const target = event.target;
+  const active = document.activeElement;
+
+  if (isPortaledLayerTarget(target)) {
+    return true;
+  }
+
+  if (target instanceof HTMLInputElement) {
+    const type = target.type;
+    if (type === "date" || type === "time" || type === "datetime-local") {
+      return true;
+    }
+  }
+
+  if (active instanceof HTMLInputElement) {
+    const type = active.type;
+    if (type === "date" || type === "time" || type === "datetime-local") {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 interface ModalProps {
   open: boolean;
   title: string;
@@ -48,6 +85,21 @@ export function Modal({
             "fixed left-1/2 top-1/2 z-[70] flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-[#E1EBF5] bg-white shadow-[0_16px_40px_rgba(16,42,86,0.12)]",
             contentClassName,
           )}
+          onPointerDownOutside={(event) => {
+            if (shouldPreventDialogDismiss(event)) {
+              event.preventDefault();
+            }
+          }}
+          onInteractOutside={(event) => {
+            if (shouldPreventDialogDismiss(event)) {
+              event.preventDefault();
+            }
+          }}
+          onFocusOutside={(event) => {
+            if (shouldPreventDialogDismiss(event)) {
+              event.preventDefault();
+            }
+          }}
         >
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-6 py-4">
             <div className="min-w-0">

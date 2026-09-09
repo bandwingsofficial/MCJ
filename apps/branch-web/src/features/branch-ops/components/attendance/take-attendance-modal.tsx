@@ -13,6 +13,7 @@ import type {
 } from "@/src/features/branch-ops/types";
 import {
   BLOCKED_BATCH_SELECTION_MESSAGE,
+  isBatchNotYetStarted,
   isBatchSelectableForAssignment,
 } from "@/src/features/branch-ops/utils/batch-selection.utils";
 import { formatAttendanceDisplayDate } from "@/src/features/branch-ops/utils/attendance-date.utils";
@@ -68,9 +69,29 @@ export function TakeAttendanceModal({
   );
   const [saving, setSaving] = useState(false);
 
-  const selectableBatches = useMemo(
+  const assignmentBatches = useMemo(
     () => batches.filter((batch) => isBatchSelectableForAssignment(batch)),
     [batches],
+  );
+
+  const selectableBatches = useMemo(
+    () => assignmentBatches.filter((batch) => !isBatchNotYetStarted(batch)),
+    [assignmentBatches],
+  );
+
+  const batchDropdownOptions = useMemo(
+    () =>
+      assignmentBatches.map((batch) => {
+        const notStarted = isBatchNotYetStarted(batch);
+        return {
+          value: batch.id,
+          disabled: notStarted,
+          label: notStarted
+            ? `${batch.name} (${batch.code}) — Not Started`
+            : `${batch.name} (${batch.code})`,
+        };
+      }),
+    [assignmentBatches],
   );
 
   const selectedBatch =
@@ -288,12 +309,9 @@ export function TakeAttendanceModal({
               value={batchId || undefined}
               placeholder="Select main batch"
               onValueChange={setBatchId}
-              options={selectableBatches.map((batch) => ({
-                label: `${batch.name} (${batch.code})`,
-                value: batch.id,
-              }))}
+              options={batchDropdownOptions}
             />
-            {!selectableBatches.length ? (
+            {!assignmentBatches.length ? (
               <p className="mt-1 text-xs text-amber-700">
                 {BLOCKED_BATCH_SELECTION_MESSAGE}
               </p>
