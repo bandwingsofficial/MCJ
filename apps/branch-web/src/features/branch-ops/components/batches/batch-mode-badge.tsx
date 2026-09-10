@@ -8,15 +8,29 @@ interface Props {
   mode: BatchMode | string;
 }
 
+const compactBadgeClass = "px-2 py-0 text-[11px] font-semibold leading-5";
+
 export function BatchModeBadge({ mode }: Props) {
   switch (mode) {
     case "ONLINE":
-      return <Badge variant="success">Online</Badge>;
+      return (
+        <Badge variant="success" className={compactBadgeClass}>
+          Online
+        </Badge>
+      );
     case "OFFLINE":
-      return <Badge variant="warning">Offline / Classroom</Badge>;
+      return (
+        <Badge variant="warning" className={compactBadgeClass}>
+          Offline / Classroom
+        </Badge>
+      );
     case "RECORDED":
-      return <Badge variant="info">Self-Paced / Pre-Recorded</Badge>;
+      return (
+        <Badge variant="info" className={compactBadgeClass}>
+          Self-Paced / Pre-Recorded
+        </Badge>
+      );
     default:
-      return <Badge>{mode}</Badge>;
+      return <Badge className={compactBadgeClass}>{mode}</Badge>;
   }
 }
