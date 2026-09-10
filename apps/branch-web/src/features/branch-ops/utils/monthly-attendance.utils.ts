@@ -84,18 +84,58 @@ export function extractSessionDates(records: AttendanceItem[]): string[] {
   return Array.from(dates).sort();
 }
 
-function countStatuses(records: AttendanceItem[]) {
+/** Mirrors backend buildSessionSummaryFromRows: one session per date. */
+export function buildSessionSummaryFromAttendanceRecords(
+  records: AttendanceItem[],
+  options?: {
+    monthFrom?: string;
+    monthTo?: string;
+    enrollmentStart?: string;
+  },
+): {
+  workingSessions: number;
+  present: number;
+  absent: number;
+  late: number;
+  percentage: number | null;
+} {
+  const statusByDate = new Map<string, AttendanceItem["status"]>();
+
+  for (const record of records) {
+    const dateKey = normalizeDateKey(String(record.date));
+    if (options?.monthFrom && dateKey < options.monthFrom) continue;
+    if (options?.monthTo && dateKey > options.monthTo) continue;
+    if (options?.enrollmentStart && dateKey < options.enrollmentStart) continue;
+    if (
+      record.status !== "PRESENT" &&
+      record.status !== "ABSENT" &&
+      record.status !== "LATE"
+    ) {
+      continue;
+    }
+    if (!statusByDate.has(dateKey)) {
+      statusByDate.set(dateKey, record.status);
+    }
+  }
+
   let present = 0;
   let absent = 0;
   let late = 0;
-
-  for (const record of records) {
-    if (record.status === "PRESENT") present += 1;
-    else if (record.status === "ABSENT") absent += 1;
-    else if (record.status === "LATE") late += 1;
+  for (const status of statusByDate.values()) {
+    if (status === "PRESENT") present += 1;
+    else if (status === "ABSENT") absent += 1;
+    else if (status === "LATE") late += 1;
   }
 
-  return { present, absent, late };
+  const workingSessions = statusByDate.size;
+
+  return {
+    workingSessions,
+    present,
+    absent,
+    late,
+    percentage: buildMonthlyAttendancePercentage(present, late, workingSessions),
+  };
 }
 
 export function buildMonthlyAttendancePercentage(
@@ -117,47 +157,22 @@ export function formatMonthlyAttendancePercentage(
 export function buildMonthlyStudentRows(params: {
   students: MonthlyAttendanceStudentInput[];
   records: AttendanceItem[];
-  monthFrom: string;
-  monthTo: string;
-  sessionDates: string[];
 }): MonthlyAttendanceStudentRow[] {
-  const { students, records, monthFrom, monthTo, sessionDates } = params;
+  const { students, records } = params;
 
   return students.map((student) => {
-    const enrollmentStart = enrollmentStartDateKey(
-      student.enrollmentDate,
-      monthFrom,
-    );
-    const applicableSessionDates = sessionDates.filter(
-      (dateKey) =>
-        dateKey >= enrollmentStart &&
-        dateKey >= monthFrom &&
-        dateKey <= monthTo,
-    );
-    const applicableSessionSet = new Set(applicableSessionDates);
-
     const studentRecords = records.filter(
-      (record) =>
-        record.student.id === student.id &&
-        applicableSessionSet.has(normalizeDateKey(String(record.date))),
+      (record) => record.student.id === student.id,
     );
 
-    const { present, absent, late } = countStatuses(studentRecords);
+    const summary = buildSessionSummaryFromAttendanceRecords(studentRecords);
 
     return {
       studentId: student.id,
       enrollmentId: student.enrollmentId,
       studentCode: student.studentCode,
       studentName: student.name,
-      workingSessions: applicableSessionDates.length,
-      present,
-      absent,
-      late,
-      percentage: buildMonthlyAttendancePercentage(
-        present,
-        late,
-        applicableSessionDates.length,
-      ),
+      ...summary,
     };
   });
 }

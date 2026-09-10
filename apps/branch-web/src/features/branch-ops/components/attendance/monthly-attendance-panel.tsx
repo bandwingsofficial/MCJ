@@ -53,14 +53,10 @@ const FILTER_TRIGGER = `${FILTER_H} ${FILTER_RADIUS} w-full min-w-0 text-sm [&>s
 async function loadMonthlyAttendanceRecords(params: {
   batchId: string;
   batchTimingId: string;
-  from: string;
-  to: string;
 }): Promise<AttendanceItem[]> {
   const first = await branchOpsApi.attendanceReport({
     batchId: params.batchId,
     batchTimingId: params.batchTimingId,
-    from: params.from,
-    to: params.to,
     requireBatchTiming: "true",
     take: 200,
     skip: 0,
@@ -72,8 +68,6 @@ async function loadMonthlyAttendanceRecords(params: {
     const page = await branchOpsApi.attendanceReport({
       batchId: params.batchId,
       batchTimingId: params.batchTimingId,
-      from: params.from,
-      to: params.to,
       requireBatchTiming: "true",
       take: 200,
       skip,
@@ -188,8 +182,6 @@ export function MonthlyAttendancePanel({
       loadMonthlyAttendanceRecords({
         batchId,
         batchTimingId,
-        from: monthRange.from,
-        to: monthRange.to,
       }),
       branchOpsApi.batchCalendarWorkingDays(batchId, mode, {
         from: monthRange.from,
@@ -246,11 +238,8 @@ export function MonthlyAttendancePanel({
       buildMonthlyStudentRows({
         students: studentInputs,
         records,
-        monthFrom: monthRange.from,
-        monthTo: monthRange.to,
-        sessionDates,
       }).sort((a, b) => a.studentName.localeCompare(b.studentName)),
-    [studentInputs, records, monthRange.from, monthRange.to, sessionDates],
+    [studentInputs, records],
   );
 
   const filteredRows = useMemo(
@@ -272,8 +261,8 @@ export function MonthlyAttendancePanel({
       <div>
         <p className="text-sm font-semibold text-[#102A56]">Monthly Attendance</p>
         <p className="mt-1 text-sm text-slate-500">
-          Student-wise attendance for {monthLabel}. Working sessions follow the
-          batch calendar for the selected learning mode.
+          Student-wise attendance for {monthLabel}. Session counts use recorded
+          attendance for the selected batch timing.
         </p>
       </div>
 
