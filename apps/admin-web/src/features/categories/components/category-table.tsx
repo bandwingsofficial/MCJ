@@ -7,7 +7,6 @@ import Image from "next/image";
 import { GripVertical } from "lucide-react";
 
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
 import { CategoryStatusBadge } from "./category-status-badge";
 import { CategoryActions } from "./category-actions";
@@ -66,6 +65,7 @@ export function CategoryTable({
   const safeSelectedIds = selectedCategoryIds ?? [];
   const selectionEnabled = Boolean(onSelectionChange);
   const visibleIds = rows.map((category) => category.id);
+  const columnCount = selectionEnabled ? 8 : 7;
 
   const selectedVisibleCount = visibleIds.filter((id) =>
     safeSelectedIds.includes(id),
@@ -116,15 +116,6 @@ export function CategoryTable({
       Array.from(new Set([...safeSelectedIds, ...visibleIds])),
     );
   };
-
-  if (rows.length === 0) {
-    return (
-      <EmptyState
-        title="No Categories Found"
-        description="Create your first category or adjust your filters."
-      />
-    );
-  }
 
   const handleDrop = async (targetId: string) => {
     if (
@@ -200,8 +191,7 @@ export function CategoryTable({
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full min-w-full border-collapse text-sm">
-<thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]">          <tr>
-            {selectionEnabled ? (
+        <thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]"><tr>{selectionEnabled ? (
               <th className="w-9 !px-6 !py-4 text-left">
                 <input
                   ref={selectAllRef}
@@ -215,175 +205,155 @@ export function CategoryTable({
                   aria-label="Select all categories on this page"
                 />
               </th>
-            ) : null}
-
-            <th className="w-8 !px-4 !py-4">
-              <span className="sr-only">Reorder</span>
-            </th>
-
-            <th className="w-12 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Image
-            </th>
-
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Name
-            </th>
-
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Slug
-            </th>
-
-            <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Status
-            </th>
-
-            <th className="min-w-[8.75rem] w-[8.75rem] !px-3 !py-4 text-center text-[11px] font-semibold leading-none tracking-normal text-slate-500 whitespace-nowrap">
-              Total Courses
-            </th>
-
-            <th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
-              Actions
-            </th>
-          </tr>
-        </thead>
-
+            ) : null}<th className="w-8 !px-4 !py-4"><span className="sr-only">Reorder</span></th><th className="w-12 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">Image</th><th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">Name</th><th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">Slug</th><th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">Status</th><th className="min-w-[8.75rem] w-[8.75rem] !px-3 !py-4 text-center text-[11px] font-semibold leading-none tracking-normal text-slate-500 whitespace-nowrap">Total Courses</th><th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">Actions</th></tr></thead>
         <tbody className="divide-y divide-slate-100">
-          {rows.map((category) => {
-            const draggable =
-              canReorder(category) && !dragDisabled;
-
-            const isArchived =
-              category.isDeleted ||
-              category.status === "ARCHIVED";
-
-            return (
-              <tr
-                key={category.id}
-                draggable={draggable}
-                onDragStart={() => {
-                  if (!draggable) {
-                    return;
-                  }
-
-                  setDragId(category.id);
-                }}
-                onDragOver={(event) => {
-                  if (!draggable || !dragId) {
-                    return;
-                  }
-
-                  event.preventDefault();
-                  setDropTargetId(category.id);
-                }}
-                onDragLeave={() => {
-                  if (dropTargetId === category.id) {
-                    setDropTargetId(null);
-                  }
-                }}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  void handleDrop(category.id);
-                }}
-                onDragEnd={() => {
-                  setDragId(null);
-                  setDropTargetId(null);
-                }}
-                className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${
-                  dropTargetId === category.id
-                    ? "bg-blue-50/60"
-                    : ""
-                } ${
-                  dragId === category.id
-                    ? "opacity-60"
-                    : ""
-                } ${
-                  isArchived
-                    ? "bg-slate-50/40"
-                    : "bg-white"
-                }`}
+          {rows.length === 0 ? (
+            <tr>
+              <td
+                colSpan={columnCount}
+                className="!px-4 !py-4 align-middle"
               >
-                {selectionEnabled ? (
-                  <td className="w-9 !px-6 !py-4 align-middle">
-                    <Checkbox
-                      checked={safeSelectedIds.includes(
-                        category.id,
-                      )}
-                      disabled={selectionDisabled}
-                      onCheckedChange={(checked) => {
-                        toggleRow(
+                <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-4 text-center">
+                  <h3 className="text-base font-semibold">
+                    No Categories Found
+                  </h3>
+                  <p className="mt-1 max-w-md text-sm text-[#647A9B]">
+                    Create your first category or adjust your filters.
+                  </p>
+                </div>
+              </td>
+            </tr>
+          ) : (
+            rows.map((category) => {
+              const draggable =
+                canReorder(category) && !dragDisabled;
+
+              const isArchived =
+                category.isDeleted ||
+                category.status === "ARCHIVED";
+
+              return (
+                <tr
+                  key={category.id}
+                  draggable={draggable}
+                  onDragStart={() => {
+                    if (!draggable) {
+                      return;
+                    }
+
+                    setDragId(category.id);
+                  }}
+                  onDragOver={(event) => {
+                    if (!draggable || !dragId) {
+                      return;
+                    }
+
+                    event.preventDefault();
+                    setDropTargetId(category.id);
+                  }}
+                  onDragLeave={() => {
+                    if (dropTargetId === category.id) {
+                      setDropTargetId(null);
+                    }
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    void handleDrop(category.id);
+                  }}
+                  onDragEnd={() => {
+                    setDragId(null);
+                    setDropTargetId(null);
+                  }}
+                  className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${
+                    dropTargetId === category.id
+                      ? "bg-blue-50/60"
+                      : ""
+                  } ${
+                    dragId === category.id
+                      ? "opacity-60"
+                      : ""
+                  } ${
+                    isArchived
+                      ? "bg-slate-50/40"
+                      : "bg-white"
+                  }`}
+                >
+                  {selectionEnabled ? (
+                    <td className="w-9 !px-6 !py-4 align-middle">
+                      <Checkbox
+                        checked={safeSelectedIds.includes(
                           category.id,
-                          Boolean(checked),
-                        );
-                      }}
+                        )}
+                        disabled={selectionDisabled}
+                        onCheckedChange={(checked) => {
+                          toggleRow(
+                            category.id,
+                            Boolean(checked),
+                          );
+                        }}
+                      />
+                    </td>
+                  ) : null}
+                  <td className="w-8 !px-4 !py-4 align-middle">
+                    {draggable ? (
+                      <GripVertical className="h-3.5 w-3.5 cursor-grab text-slate-400 active:cursor-grabbing" />
+                    ) : (
+                      <span className="inline-block w-3.5" />
+                    )}
+                  </td>
+                  <td className="w-12 !px-4 !py-4 align-middle">
+                    {category.thumbnailUrl ? (
+                      <Image
+                        src={category.thumbnailUrl}
+                        alt={category.name}
+                        width={36}
+                        height={36}
+                        className="h-9 w-9 rounded-md border border-slate-200 object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-9 w-9 items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-[9px] font-medium uppercase tracking-wide text-slate-400">
+                        N/A
+                      </div>
+                    )}
+                  </td>
+                  <td className="!px-4 !py-4 align-middle">
+                    <p className="text-sm font-medium leading-snug text-[#102A56]">
+                      {category.name}
+                    </p>
+                  </td>
+                  <td className="!px-4 !py-4 align-middle">
+                    <code className="rounded bg-slate-100 px-1 py-0.5 text-[12px] text-slate-700">
+                      {category.slug}
+                    </code>
+                  </td>
+                  <td className="!px-4 !py-4 align-middle">
+                    <CategoryStatusBadge
+                      status={category.status}
                     />
                   </td>
-                ) : null}
-
-                <td className="w-8 !px-4 !py-4 align-middle">
-                  {draggable ? (
-                    <GripVertical className="h-3.5 w-3.5 cursor-grab text-slate-400 active:cursor-grabbing" />
-                  ) : (
-                    <span className="inline-block w-3.5" />
-                  )}
-                </td>
-
-                <td className="w-12 !px-4 !py-4 align-middle">
-                  {category.thumbnailUrl ? (
-                    <Image
-                      src={category.thumbnailUrl}
-                      alt={category.name}
-                      width={36}
-                      height={36}
-                      className="h-9 w-9 rounded-md border border-slate-200 object-cover"
+                  <td className="min-w-[8.75rem] w-[8.75rem] !px-3 !py-4 text-center align-middle text-sm font-semibold tabular-nums text-[#102A56]">
+                    {category.courseCount ?? 0}
+                  </td>
+                  <td className="!px-8 !py-4 align-middle">
+                    <CategoryActions
+                      category={category}
+                      disabled={
+                        actionsDisabled || isSavingOrder
+                      }
+                      onEdit={onEdit}
+                      onActivate={onActivate}
+                      onDeactivate={onDeactivate}
+                      onDelete={onDelete}
+                      onRestore={onRestore}
+                      onPermanentDelete={
+                        onPermanentDelete
+                      }
                     />
-                  ) : (
-                    <div className="flex h-9 w-9 items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-[9px] font-medium uppercase tracking-wide text-slate-400">
-                      N/A
-                    </div>
-                  )}
-                </td>
-
-                <td className="!px-4 !py-4 align-middle">
-                  <p className="text-sm font-medium leading-snug text-[#102A56]">
-                    {category.name}
-                  </p>
-                </td>
-
-                <td className="!px-4 !py-4 align-middle">
-                  <code className="rounded bg-slate-100 px-1 py-0.5 text-[12px] text-slate-700">
-                    {category.slug}
-                  </code>
-                </td>
-
-                <td className="!px-4 !py-4 align-middle">
-                  <CategoryStatusBadge
-                    status={category.status}
-                  />
-                </td>
-
-                <td className="min-w-[8.75rem] w-[8.75rem] !px-3 !py-4 text-center align-middle text-sm font-semibold tabular-nums text-[#102A56]">
-                  {category.courseCount ?? 0}
-                </td>
-
-                <td className="!px-8 !py-4 align-middle">
-                  <CategoryActions
-                    category={category}
-                    disabled={
-                      actionsDisabled || isSavingOrder
-                    }
-                    onEdit={onEdit}
-                    onActivate={onActivate}
-                    onDeactivate={onDeactivate}
-                    onDelete={onDelete}
-                    onRestore={onRestore}
-                    onPermanentDelete={
-                      onPermanentDelete
-                    }
-                  />
-                </td>
-              </tr>
-            );
-          })}
+                  </td>
+                </tr>
+              );
+            })
+          )}
         </tbody>
       </table>
     </div>

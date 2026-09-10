@@ -11,7 +11,6 @@ import Link from "next/link";
 import { GripVertical } from "lucide-react";
 
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
 import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
@@ -85,6 +84,8 @@ export function CourseTable({
   const someVisibleSelected =
     selectedVisibleCount > 0 && !allVisibleSelected;
 
+  const columnCount = selectionEnabled ? 9 : 8;
+
   useEffect(() => {
     setRows(courses);
   }, [courses]);
@@ -123,15 +124,6 @@ export function CourseTable({
       Array.from(new Set([...safeSelectedIds, ...visibleIds]))
     );
   };
-
-  if (rows.length === 0) {
-    return (
-      <EmptyState
-        title={emptyTitle}
-        description={emptyDescription}
-      />
-    );
-  }
 
   const handleDrop = async (targetId: string) => {
     if (
@@ -199,16 +191,16 @@ export function CourseTable({
     safeSelectedIds.length > 0;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse">
-        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
+    <div className="w-full overflow-x-auto">
+      <table className="w-full min-w-full border-collapse text-sm">
+        <thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]">
           <tr>
             {selectionEnabled ? (
-              <th className="w-11 px-3 py-3 text-left">
+              <th className="w-9 !px-6 !py-4 text-left">
                 <input
                   ref={selectAllRef}
                   type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300"
+                  className="h-3.5 w-3.5 rounded border-slate-300"
                   checked={allVisibleSelected}
                   disabled={selectionDisabled}
                   onChange={(event) => {
@@ -219,35 +211,52 @@ export function CourseTable({
               </th>
             ) : null}
 
-            <th className="w-10 px-2 py-3">
+            <th className="w-8 !px-4 !py-4">
               <span className="sr-only">Reorder</span>
             </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="w-12 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Image
             </th>
-            <th className="min-w-[120px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Code
             </th>
-            <th className="min-w-[180px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Name
             </th>
-            <th className="min-w-[140px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Category
             </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Level
             </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Status
             </th>
-            <th className="w-[9.5rem] px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
               Actions
             </th>
           </tr>
         </thead>
 
         <tbody className="divide-y divide-slate-100">
-          {rows.map((course) => {
+          {rows.length === 0 ? (
+            <tr>
+              <td
+                colSpan={columnCount}
+                className="!px-4 !py-4 align-middle"
+              >
+                <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-4 text-center">
+                  <h3 className="text-base font-semibold">
+                    No Courses Found
+                  </h3>
+                  <p className="mt-1 max-w-md text-sm text-[#647A9B]">
+                    Create your first course or adjust your filters.
+                  </p>
+                </div>
+              </td>
+            </tr>
+          ) : (
+            rows.map((course) => {
             const draggable =
               canReorder(course) && !dragDisabled;
             const isArchived = isArchivedCourse(course);
@@ -289,7 +298,7 @@ export function CourseTable({
                 }`}
               >
                 {selectionEnabled ? (
-                  <td className="w-11 px-3 py-3 align-middle">
+                  <td className="w-9 !px-6 !py-4 align-middle">
                     <Checkbox
                       checked={safeSelectedIds.includes(course.id)}
                       disabled={selectionDisabled}
@@ -300,38 +309,38 @@ export function CourseTable({
                   </td>
                 ) : null}
 
-                <td className="w-10 px-2 py-3 align-middle">
+                <td className="w-8 !px-4 !py-4 align-middle">
                   {draggable ? (
-                    <GripVertical className="h-4 w-4 cursor-grab text-slate-400 active:cursor-grabbing" />
+                    <GripVertical className="h-3.5 w-3.5 cursor-grab text-slate-400 active:cursor-grabbing" />
                   ) : (
-                    <span className="inline-block w-4" />
+                    <span className="inline-block w-3.5" />
                   )}
                 </td>
 
-                <td className="px-3 py-3 align-middle">
+                <td className="w-12 !px-4 !py-4 align-middle">
                   {course.thumbnailUrl ? (
                     <Image
                       src={course.thumbnailUrl}
                       alt={course.title}
-                      width={44}
-                      height={44}
-                      className="h-11 w-11 rounded-lg border border-slate-200 object-cover shadow-sm"
+                      width={36}
+                      height={36}
+                      className="h-9 w-9 rounded-md border border-slate-200 object-cover"
                     />
                   ) : (
-                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-[9px] font-medium uppercase tracking-wide text-slate-400">
                       N/A
                     </div>
                   )}
                 </td>
 
-                <td className="px-3 py-3 align-middle font-mono text-sm text-slate-700">
+                <td className="!px-4 !py-4 align-middle font-mono text-sm text-slate-700">
                   {course.code ?? course.slug}
                 </td>
 
-                <td className="px-3 py-3 align-middle">
+                <td className="!px-4 !py-4 align-middle">
                   <Link
                     href={`/courses/${course.id}/manage`}
-                    className="text-[15px] font-medium text-[#102A56] hover:text-[#2563EB] hover:underline"
+                    className="text-sm font-medium leading-snug text-[#102A56] hover:text-[#2563EB] hover:underline"
                   >
                     {course.title}
                   </Link>
@@ -342,15 +351,15 @@ export function CourseTable({
                   ) : null}
                 </td>
 
-                <td className="px-3 py-3 align-middle text-sm text-slate-700">
+                <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
                   {getCourseCategoryDisplayName(course)}
                 </td>
 
-                <td className="px-3 py-3 align-middle text-sm capitalize text-slate-700">
+                <td className="!px-4 !py-4 align-middle text-sm capitalize text-slate-700">
                   {resolveCourseLevel(course)}
                 </td>
 
-                <td className="px-3 py-3 align-middle">
+                <td className="!px-4 !py-4 align-middle">
                   <CourseStatusBadge
                     status={course.status}
                     deletedAt={course.deletedAt}
@@ -358,7 +367,7 @@ export function CourseTable({
                   />
                 </td>
 
-                <td className="px-2 py-3 align-middle">
+                <td className="!px-8 !py-4 align-middle">
                   <CourseActions
                     course={course}
                     disabled={actionsDisabled || isSavingOrder}
@@ -369,7 +378,8 @@ export function CourseTable({
                 </td>
               </tr>
             );
-          })}
+          })
+          )}
         </tbody>
       </table>
     </div>

@@ -17,12 +17,11 @@ export function CourseStatusBadge({
   deletedAt,
   isDeleted,
 }: Props) {
+  const compactClass = "px-2 py-0 text-[11px] font-semibold leading-5";
+
   if (deletedAt || isDeleted) {
     return (
-      <Badge
-        variant="danger"
-        className="px-2.5 py-0.5 text-sm"
-      >
+      <Badge variant="danger" className={compactClass}>
         Archived
       </Badge>
     );
@@ -31,50 +30,35 @@ export function CourseStatusBadge({
   switch (status) {
     case "ACTIVE":
       return (
-        <Badge
-          variant="success"
-          className="px-2.5 py-0.5 text-sm"
-        >
+        <Badge variant="success" className={compactClass}>
           Active
         </Badge>
       );
 
     case "INACTIVE":
       return (
-        <Badge
-          variant="danger"
-          className="px-2.5 py-0.5 text-sm"
-        >
+        <Badge variant="danger" className={compactClass}>
           Inactive
         </Badge>
       );
 
     case "DRAFT":
       return (
-        <Badge
-          variant="default"
-          className="px-2.5 py-0.5 text-sm"
-        >
+        <Badge variant="default" className={compactClass}>
           Draft
         </Badge>
       );
 
     case "ARCHIVED":
       return (
-        <Badge
-          variant="danger"
-          className="px-2.5 py-0.5 text-sm"
-        >
+        <Badge variant="danger" className={compactClass}>
           Archived
         </Badge>
       );
 
     default:
       return (
-        <Badge
-          variant="default"
-          className="px-2.5 py-0.5 text-sm"
-        >
+        <Badge variant="default" className={compactClass}>
           {status}
         </Badge>
       );

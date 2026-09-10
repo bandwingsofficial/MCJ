@@ -14,9 +14,9 @@ import { Tooltip } from "@/src/shared/components/ui/tooltip";
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
 
 const iconButtonClass =
-  "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex h-6 w-6 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40";
 
-const iconClass = "h-[15px] w-[14px] stroke-[2]";
+const iconClass = "h-[17px] w-[16px] stroke-[2.25]";
 
 interface Props {
   category: CategoryListItem;
@@ -44,7 +44,7 @@ export function CategoryActions({
 
   if (isArchived) {
     return (
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-end gap-1.5">
         <Tooltip content="Restore category">
           <button
             type="button"
@@ -75,7 +75,7 @@ export function CategoryActions({
   const isActive = category.status === "ACTIVE";
 
   return (
-    <div className="flex items-center justify-end gap-2">
+    <div className="flex items-center justify-end gap-1.5">
       <Tooltip content="Edit category">
         <button
           type="button"
@@ -108,7 +108,9 @@ export function CategoryActions({
               ? "Deactivate category"
               : "Activate category"
           }
-          className={`${iconButtonClass} text-orange-700`}
+          className={`${iconButtonClass} ${
+            isActive ? "text-orange-700" : "text-green-800"
+          }`}
         >
           {isActive ? (
             <Power className={iconClass} />

@@ -226,11 +226,16 @@ export function TrainerTable({
             <tr>
               <td
                 colSpan={columnCount}
-                className="!px-4 !py-12 text-center align-middle"
+                className="!px-4 !py-4 align-middle"
               >
-                <p className="text-sm font-medium text-[#102A56]">
-                  {emptyMessage}
-                </p>
+                <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-4 text-center">
+                  <h3 className="text-base font-semibold">
+                    No Trainers Found
+                  </h3>
+                  <p className="mt-1 max-w-md text-sm text-[#647A9B]">
+                    Create your first trainer or adjust your filters.
+                  </p>
+                </div>
               </td>
             </tr>
           ) : (

@@ -6,7 +6,7 @@ import { useCategories } from "@/src/features/categories/hooks/use-categories";
 
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
-import { Pagination } from "@/src/shared/components/ui/pagination";
+import { CategoryPagination } from "@/src/features/categories/components/category-pagination";
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { appToast } from "@/src/shared/components/ui/toast";
@@ -114,12 +114,6 @@ export function CoursesPage() {
         value: category.id,
       })),
     [categories]
-  );
-
-  const hasActiveFilters = Boolean(
-    (filters.search ?? "").trim() ||
-      filters.categoryId ||
-      filters.status
   );
 
   const bulkActionLoading =
@@ -377,7 +371,7 @@ export function CoursesPage() {
   }
 
   return (
-    <div className="min-h-full">
+    <div className="space-y-3">
       <CourseSummaryHeader
         total={catalogTotal}
         isLoading={isInitialLoading && courses.length === 0}
@@ -407,8 +401,7 @@ export function CoursesPage() {
         }
       />
 
-      <div className="mt-5 space-y-3">
-        <Card className="overflow-hidden p-0">
+      <Card className="overflow-hidden rounded-xl border-[#E1EBF5] p-0 shadow-sm">
           <CourseBulkActionsToolbar
             courses={courses}
             selectedCourseIds={selectedCourseIds}
@@ -421,7 +414,7 @@ export function CoursesPage() {
           ) : (
             <>
               {error ? (
-                <div className="border-b border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                <div className="border-b border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
                   {error}{" "}
                   <button
                     type="button"
@@ -456,16 +449,6 @@ export function CoursesPage() {
                     isFetching ||
                     selectedCourseIds.length > 0
                   }
-                  emptyTitle={
-                    hasActiveFilters
-                      ? "No Courses Found"
-                      : "No Courses Yet"
-                  }
-                  emptyDescription={
-                    hasActiveFilters
-                      ? "Try adjusting your search or filters."
-                      : "Create your first course to get started."
-                  }
                   onReorder={handleReorder}
                   onActivate={handleActivate}
                   onDeactivate={handleDeactivate}
@@ -473,61 +456,52 @@ export function CoursesPage() {
                 />
               </div>
 
-              <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-[#DCE8F5] bg-[#F8FBFF] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                {total > 0 ? (
-                  <>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-[#647A9B]">
-                      <span className="leading-9">
-                        Showing {from}–{to} of {total}
-                      </span>
+              <div className="flex flex-col gap-1.5 border-t border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#647A9B] sm:text-sm">
+                  <span>
+                    Showing {from}–{to} of {total}
+                  </span>
 
-                      <label className="flex items-center gap-2 leading-9">
-                        <span className="whitespace-nowrap">
-                          Rows per page
-                        </span>
-                        <select
-                          className="h-9 rounded-xl border border-[#DCE8F5] bg-white px-2 text-[15px] text-[#102A56]"
-                          value={pageSize}
-                          disabled={bulkActionLoading}
-                          onChange={(event) =>
-                            setFilters({
-                              ...filters,
-                              pageSize: Number(
-                                event.target.value
-                              ),
-                            })
-                          }
-                        >
-                          {[10, 20, 50].map((size) => (
-                            <option key={size} value={size}>
-                              {size}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-
-                    <Pagination
-                      page={page}
-                      totalPages={totalPages}
-                      onPageChange={(nextPage) =>
+                  <label className="flex items-center gap-1.5">
+                    <span className="whitespace-nowrap">
+                      Rows per page
+                    </span>
+                    <select
+                      className="h-7 rounded-md border border-[#DCE8F5] bg-white px-1.5 text-xs text-[#102A56] sm:text-sm"
+                      value={pageSize}
+                      disabled={bulkActionLoading}
+                      onChange={(event) =>
                         setFilters({
                           ...filters,
-                          page: nextPage,
+                          pageSize: Number(
+                            event.target.value
+                          ),
                         })
                       }
-                    />
-                  </>
-                ) : (
-                  <p className="text-[15px] leading-9 text-slate-500">
-                    No courses to paginate
-                  </p>
-                )}
+                    >
+                      {[10, 20, 50].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <CategoryPagination
+                  page={page}
+                  totalPages={totalPages}
+                  onPageChange={(nextPage) =>
+                    setFilters({
+                      ...filters,
+                      page: nextPage,
+                    })
+                  }
+                />
               </div>
             </>
           )}
         </Card>
-      </div>
 
       <CourseFormModal
         open={isCreateOpen}

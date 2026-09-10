@@ -1155,96 +1155,43 @@ export function CategoriesPage() {
 
 
               <div className="flex flex-col gap-1.5 border-t border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                {total > 0 ? (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#647A9B] sm:text-sm">
+                  <span>
+                    Showing {from}–{to} of {total}
+                  </span>
 
-                  <>
-
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#647A9B] sm:text-sm">
-
-                      <span>
-
-                        Showing {from}–{to} of {total}
-
-                      </span>
-
-
-
-                      <label className="flex items-center gap-1.5">
-
-                        <span className="whitespace-nowrap">Rows per page</span>
-
-                        <select
-
-                          className="h-7 rounded-md border border-[#DCE8F5] bg-white px-1.5 text-xs text-[#102A56] sm:text-sm"
-
-                          value={filters.pageSize}
-
-                          disabled={bulkActionLoading}
-
-                          onChange={(event) =>
-
-                            setFilters({
-
-                              ...filters,
-
-                              pageSize: Number(event.target.value),
-
-                            })
-
-                          }
-
-                        >
-
-                          {[10, 20, 50, 100].map((size) => (
-
-                            <option key={size} value={size}>
-
-                              {size}
-
-                            </option>
-
-                          ))}
-
-                        </select>
-
-                      </label>
-
-                    </div>
-
-
-
-                    <CategoryPagination
-
-                      page={filters.page}
-
-                      totalPages={totalPages}
-
-                      onPageChange={(page) =>
-
+                  <label className="flex items-center gap-1.5">
+                    <span className="whitespace-nowrap">Rows per page</span>
+                    <select
+                      className="h-7 rounded-md border border-[#DCE8F5] bg-white px-1.5 text-xs text-[#102A56] sm:text-sm"
+                      value={filters.pageSize}
+                      disabled={bulkActionLoading}
+                      onChange={(event) =>
                         setFilters({
-
                           ...filters,
-
-                          page,
-
+                          pageSize: Number(event.target.value),
                         })
-
                       }
+                    >
+                      {[10, 20, 50, 100].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
 
-                    />
-
-                  </>
-
-                ) : (
-
-                  <p className="text-xs text-slate-500 sm:text-sm">
-
-                    No categories to paginate
-
-                  </p>
-
-                )}
-
+                <CategoryPagination
+                  page={filters.page}
+                  totalPages={totalPages}
+                  onPageChange={(page) =>
+                    setFilters({
+                      ...filters,
+                      page,
+                    })
+                  }
+                />
               </div>
 
             </>
