@@ -170,7 +170,6 @@ export function getBatchEmptyMessage(filters: BatchFilters): string {
   const hasActiveFilters = Boolean(
     (filters.search ?? "").trim() ||
       filters.courseId ||
-      filters.mode ||
       filters.status !== undefined ||
       filters.isDeleted !== undefined,
   );

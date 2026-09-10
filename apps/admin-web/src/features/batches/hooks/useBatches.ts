@@ -42,7 +42,6 @@ export const useBatches = (options?: {
   const [filters, setFiltersState] = useState<BatchFilters>({
     search: "",
     courseId: undefined,
-    mode: undefined,
     status: undefined,
     batchStatus: "UPCOMING",
     isDeleted: undefined,
@@ -60,7 +59,6 @@ export const useBatches = (options?: {
       const filterChanged =
         next.search !== prev.search ||
         next.courseId !== prev.courseId ||
-        next.mode !== prev.mode ||
         next.status !== prev.status ||
         next.batchStatus !== prev.batchStatus ||
         next.isDeleted !== prev.isDeleted ||
@@ -146,7 +144,6 @@ export const useBatches = (options?: {
   }, [
     debouncedSearch,
     filters.courseId,
-    filters.mode,
     filters.status,
     filters.batchStatus,
     filters.isDeleted,

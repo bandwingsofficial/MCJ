@@ -8,10 +8,8 @@ import { Button } from "@/src/shared/components/ui/button";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
-import { FILTER_BATCH_MODES } from "@/src/features/batches/constants/batch.constants";
 import type {
   BatchFilters,
-  BatchMode,
   CourseOption,
 } from "@/src/features/batches/types/batch.types";
 import {
@@ -61,15 +59,6 @@ export function BatchSummaryHeader({
     [courses],
   );
 
-  const modeOptions = useMemo(
-    () =>
-      uniqueSelectOptions([
-        { label: "All Learning Modes", value: BATCH_SELECT_ALL },
-        ...FILTER_BATCH_MODES,
-      ]),
-    [],
-  );
-
   const archiveOptions = useMemo(
     () =>
       uniqueSelectOptions([
@@ -81,61 +70,44 @@ export function BatchSummaryHeader({
   );
 
   return (
-    <header>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <nav
-          aria-label="Breadcrumb"
-          className="flex items-center gap-1.5 text-sm"
-        >
-          <Link
-            href="/dashboard"
-            className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
+    <header className="px-1 py-1">
+      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+        <div className="min-w-0 space-y-1">
+          <nav
+            aria-label="Breadcrumb"
+            className="flex items-center gap-1 text-xs"
           >
-            Home
-          </Link>
+            <Link
+              href="/dashboard"
+              className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
+            >
+              Home
+            </Link>
 
-          <ChevronRight
-            className="h-4 w-4 text-slate-400"
-            aria-hidden="true"
-          />
+            <ChevronRight
+              className="h-3.5 w-3.5 text-slate-400"
+              aria-hidden="true"
+            />
 
-          <span
-            aria-current="page"
-            className="font-medium text-[#102A56]"
-          >
-            Batches
-          </span>
-        </nav>
+            <span
+              aria-current="page"
+              className="font-medium text-[#102A56]"
+            >
+              Batches
+            </span>
+          </nav>
 
-        {isLoading ? (
-          <Skeleton className="h-[52px] w-full rounded-[14px] sm:w-[210px]" />
-        ) : (
-          <Button
-            type="button"
-            onClick={onCreate}
-            disabled={createDisabled}
-            className="admin-create-btn h-[52px] w-full shrink-0 px-5 font-semibold sm:w-auto"
-            aria-label={createLabel}
-          >
-            <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
-            {createLabel}
-          </Button>
-        )}
-      </div>
-
-      <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
           {isLoading ? (
             <Skeleton className="h-8 w-52 rounded-md" />
           ) : (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h1 className="text-[30px] font-bold tracking-tight text-[#102A56]">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+              <h1 className="text-[22px] font-bold tracking-tight text-[#102A56] sm:text-[26px]">
                 Batches
               </h1>
 
-              <span className="text-sm text-[#647A9B]">
+              <span className="text-xs text-[#647A9B] sm:text-[13px]">
                 Total Batches:
-                <span className="ml-1 font-semibold tabular-nums text-[#102A56]">
+                <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
                   {total}
                 </span>
               </span>
@@ -143,19 +115,19 @@ export function BatchSummaryHeader({
           )}
         </div>
 
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:shrink-0 lg:justify-end">
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:shrink-0">
           {isLoading ? (
             <>
-              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[190px]" />
-              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[200px]" />
-              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[180px]" />
+              <Skeleton className="h-9 w-full rounded-lg sm:w-[160px]" />
+              <Skeleton className="h-9 w-full rounded-lg sm:w-[140px]" />
+              <Skeleton className="h-9 w-full rounded-lg sm:w-[180px]" />
             </>
           ) : (
             <>
-              <div className="w-full sm:w-[190px]">
+              <div className="w-full sm:w-[160px] sm:shrink-0">
                 <AppSelect
                   value={filters.courseId ?? BATCH_SELECT_ALL}
-                  triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
+                  triggerClassName="h-9 rounded-lg px-2.5 text-sm"
                   onValueChange={(value) =>
                     onFiltersChange({
                       ...filters,
@@ -167,27 +139,10 @@ export function BatchSummaryHeader({
                 />
               </div>
 
-              <div className="w-full sm:w-[200px]">
-                <AppSelect
-                  value={filters.mode ?? BATCH_SELECT_ALL}
-                  triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
-                  onValueChange={(value) =>
-                    onFiltersChange({
-                      ...filters,
-                      mode:
-                        value === BATCH_SELECT_ALL
-                          ? undefined
-                          : (value as BatchMode),
-                    })
-                  }
-                  options={modeOptions}
-                />
-              </div>
-
-              <div className="w-full sm:w-[180px]">
+              <div className="w-full sm:w-[140px] sm:shrink-0">
                 <AppSelect
                   value={archiveFilterValue}
-                  triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
+                  triggerClassName="h-9 rounded-lg px-2.5 text-sm"
                   onValueChange={(value) =>
                     onFiltersChange(
                       applyBatchArchiveFilter(
@@ -201,6 +156,17 @@ export function BatchSummaryHeader({
                   options={archiveOptions}
                 />
               </div>
+
+              <Button
+                type="button"
+                onClick={onCreate}
+                disabled={createDisabled}
+                className="h-11 w-full shrink-0 border-0 bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] px-6 text-sm font-semibold text-white shadow-[0_3px_10px_rgba(37,99,235,0.25)] transition-all hover:from-[#0284C7] hover:to-[#1D4ED8] hover:shadow-[0_4px_12px_rgba(37,99,235,0.3)] sm:w-auto"
+                aria-label={createLabel}
+              >
+                <Plus className="mr-1 h-4 w-4" aria-hidden="true" />
+                {createLabel}
+              </Button>
             </>
           )}
         </div>

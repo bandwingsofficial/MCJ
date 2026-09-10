@@ -38,7 +38,10 @@ export function BatchStatusBadge({
     });
 
   return (
-    <Badge variant={resolved.variant} className="px-2.5 py-0.5 text-sm">
+    <Badge
+      variant={resolved.variant}
+      className="px-2 py-0 text-[11px] font-semibold leading-5"
+    >
       {resolved.label}
     </Badge>
   );

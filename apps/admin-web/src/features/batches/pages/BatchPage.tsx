@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
-import { Pagination } from "@/src/shared/components/ui/pagination";
+import { CategoryPagination } from "@/src/features/categories/components/category-pagination";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
@@ -40,7 +40,6 @@ import {
   getEligibleRestoreIds,
   notifyBulkBatchResult,
 } from "@/src/features/batches/utils/batch-bulk.utils";
-import { getBatchEmptyMessage } from "@/src/features/batches/utils/batch-list.utils";
 
 export function BatchPage() {
   const {
@@ -84,17 +83,12 @@ export function BatchPage() {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
-  const emptyMessage = useMemo(
-    () => getBatchEmptyMessage(filters),
-    [filters],
-  );
 
   const isArchivedOnlyView = filters.isDeleted === true;
 
   const hasActiveFilters = Boolean(
     (filters.search ?? "").trim() ||
       filters.courseId ||
-      filters.mode ||
       filters.isDeleted !== undefined,
   );
 
@@ -128,7 +122,6 @@ export function BatchPage() {
     filters.status,
     filters.search,
     filters.courseId,
-    filters.mode,
     filters.batchStatus,
     filters.isDeleted,
   ]);
@@ -297,7 +290,7 @@ export function BatchPage() {
   }
 
   return (
-    <div className="min-h-full min-w-0">
+    <div className="space-y-3">
       <BatchSummaryHeader
         total={catalogTotal}
         isLoading={isInitialLoading}
@@ -309,115 +302,110 @@ export function BatchPage() {
         onFiltersChange={setFilters}
       />
 
-      <div className="mt-5 space-y-3">
-        <BatchLifecycleTabs
-          value={filters.batchStatus ?? "UPCOMING"}
+      <BatchLifecycleTabs
+        value={filters.batchStatus ?? "UPCOMING"}
+        disabled={actionLoading || isFetching}
+        onChange={(batchStatus: BatchLifecycleStatus) =>
+          setFilters({ ...filters, batchStatus, page: 1 })
+        }
+      />
+
+      <Card className="overflow-hidden rounded-xl border-[#E1EBF5] p-0 shadow-sm">
+        <BatchBulkActionsToolbar
+          batches={batches}
+          selectedBatchIds={selectedBatchIds}
           disabled={actionLoading || isFetching}
-          onChange={(batchStatus: BatchLifecycleStatus) =>
-            setFilters({ ...filters, batchStatus, page: 1 })
-          }
+          archivedView={isArchivedOnlyView}
+          onAction={setBulkConfirmAction}
         />
 
-        <Card className="min-w-0 overflow-hidden p-0">
-          <BatchBulkActionsToolbar
-            batches={batches}
-            selectedBatchIds={selectedBatchIds}
-            disabled={actionLoading || isFetching}
-            archivedView={isArchivedOnlyView}
-            onAction={setBulkConfirmAction}
-          />
+        {isInitialLoading ? (
+          <SkeletonTable rows={10} />
+        ) : (
+          <>
+            {error ? (
+              <div className="border-b border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
+                {error}{" "}
+                <button
+                  type="button"
+                  className="font-medium underline"
+                  onClick={() => {
+                    void refetch();
+                  }}
+                >
+                  Retry
+                </button>
+              </div>
+            ) : null}
 
-          {isInitialLoading ? (
-            <SkeletonTable rows={10} />
-          ) : (
-            <>
-              {error ? (
-                <div className="border-b border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-700">
-                  {error}{" "}
-                  <button
-                    type="button"
-                    className="font-medium underline"
-                    onClick={() => {
-                      void refetch();
-                    }}
-                  >
-                    Retry
-                  </button>
-                </div>
+            <div aria-busy={isFetching} className="relative">
+              {isFetching ? (
+                <span className="sr-only">Updating batches</span>
               ) : null}
 
-              <div aria-busy={isFetching} className="relative min-w-0">
-                {isFetching ? (
-                  <span className="sr-only">Updating batches</span>
-                ) : null}
+              <BatchTable
+                batches={batches}
+                selectedBatchIds={selectedBatchIds}
+                onSelectionChange={setSelectedBatchIds}
+                actionsDisabled={actionLoading || isFetching}
+                selectionDisabled={actionLoading || isFetching}
+                reorderDisabled={reorderDisabled}
+                onActivate={(batch) =>
+                  setStatusTarget({ batch, action: "activate" })
+                }
+                onDeactivate={(batch) =>
+                  setStatusTarget({ batch, action: "deactivate" })
+                }
+                onEdit={(batch) => {
+                  setSelectedBatch(batch);
+                  setIsEditOpen(true);
+                }}
+                onRestore={setRestoreTarget}
+                onPermanentDelete={setPermanentDeleteTarget}
+                onReorder={handleReorder}
+              />
+            </div>
 
-                <BatchTable
-                  batches={batches}
-                  selectedBatchIds={selectedBatchIds}
-                  onSelectionChange={setSelectedBatchIds}
-                  actionsDisabled={actionLoading || isFetching}
-                  selectionDisabled={actionLoading || isFetching}
-                  reorderDisabled={reorderDisabled}
-                  emptyMessage={emptyMessage}
-                  onActivate={(batch) =>
-                    setStatusTarget({ batch, action: "activate" })
-                  }
-                  onDeactivate={(batch) =>
-                    setStatusTarget({ batch, action: "deactivate" })
-                  }
-                  onEdit={(batch) => {
-                    setSelectedBatch(batch);
-                    setIsEditOpen(true);
-                  }}
-                  onRestore={setRestoreTarget}
-                  onPermanentDelete={setPermanentDeleteTarget}
-                  onReorder={handleReorder}
-                />
+            <div className="flex flex-col gap-1.5 border-t border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#647A9B] sm:text-sm">
+                <span>
+                  Showing {from}–{to} of {total}
+                </span>
+
+                <label className="flex items-center gap-1.5">
+                  <span className="whitespace-nowrap">Rows per page</span>
+                  <select
+                    className="h-7 rounded-md border border-[#DCE8F5] bg-white px-1.5 text-xs text-[#102A56] sm:text-sm"
+                    value={pageSize}
+                    disabled={actionLoading}
+                    onChange={(event) =>
+                      setFilters({
+                        ...filters,
+                        pageSize: Number(event.target.value),
+                        page: 1,
+                      })
+                    }
+                  >
+                    {[10, 20, 50, 100].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
 
-              {total > 0 ? (
-                <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-[#DCE8F5] bg-[#F8FBFF] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-[#647A9B]">
-                    <span className="leading-9">
-                      Showing {from}–{to} of {total}
-                    </span>
-
-                    <label className="flex items-center gap-2 leading-9">
-                      <span className="whitespace-nowrap">Rows per page</span>
-                      <select
-                        className="h-9 rounded-xl border border-[#DCE8F5] bg-white px-2 text-[15px] text-[#102A56]"
-                        value={pageSize}
-                        disabled={actionLoading}
-                        onChange={(event) =>
-                          setFilters({
-                            ...filters,
-                            pageSize: Number(event.target.value),
-                            page: 1,
-                          })
-                        }
-                      >
-                        {[10, 20, 50, 100].map((size) => (
-                          <option key={size} value={size}>
-                            {size}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-
-                  <Pagination
-                    page={page}
-                    totalPages={totalPages}
-                    onPageChange={(nextPage) =>
-                      setFilters({ ...filters, page: nextPage })
-                    }
-                  />
-                </div>
-              ) : null}
-            </>
-          )}
-        </Card>
-      </div>
+              <CategoryPagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={(nextPage) =>
+                  setFilters({ ...filters, page: nextPage })
+                }
+              />
+            </div>
+          </>
+        )}
+      </Card>
 
       <AssignBatchesModal
         open={isAssignOpen}

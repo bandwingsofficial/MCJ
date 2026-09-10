@@ -10,16 +10,16 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { BatchListItem } from "@/src/features/batches/types/batch.types";
 import { isArchivedBatch } from "@/src/features/batches/utils/batch-bulk.utils";
 import { batchManagePath } from "@/src/features/batches/utils/batch-manage.routes";
 
-const iconBtnClass =
-  "h-9 w-9 shrink-0 rounded-lg p-0 transition-colors";
-const iconClass = "h-[1.25rem] w-[1.25rem]";
+const iconButtonClass =
+  "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40";
+
+const iconClass = "h-[15px] w-[14px] stroke-[2]";
 
 interface Props {
   batch: BatchListItem;
@@ -44,91 +44,76 @@ export function BatchActions({
   const isArchived = isArchivedBatch(batch);
   const isActive = batch.isActive !== false;
 
-  // Archived rows stay visible but only offer Restore / Permanent Delete.
   if (isArchived) {
     return (
-      <div className="flex items-center justify-end gap-1">
+      <div className="flex items-center justify-end gap-2">
         <Tooltip content="Restore batch">
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
             disabled={disabled}
             onClick={() => onRestore(batch)}
             aria-label="Restore batch"
-            className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
+            className={`${iconButtonClass} text-green-800`}
           >
             <RotateCcw className={iconClass} />
-          </Button>
+          </button>
         </Tooltip>
 
-        <Tooltip content="Permanently delete">
-          <Button
+        <Tooltip content="Permanently delete batch">
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
             disabled={disabled}
             onClick={() => onPermanentDelete(batch)}
             aria-label="Permanently delete batch"
-            className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
+            className={`${iconButtonClass} text-red-800`}
           >
             <Trash2 className={iconClass} />
-          </Button>
+          </button>
         </Tooltip>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className="flex items-center justify-end gap-2">
       <Tooltip content={isActive ? "Deactivate batch" : "Activate batch"}>
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
           disabled={disabled}
           onClick={() => (isActive ? onDeactivate(batch) : onActivate(batch))}
           aria-label={isActive ? "Deactivate batch" : "Activate batch"}
-          className={`${iconBtnClass} ${
-            isActive
-              ? "text-amber-600 hover:bg-amber-50 hover:text-amber-700"
-              : "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-          }`}
+          className={`${iconButtonClass} text-orange-700`}
         >
           {isActive ? (
             <Power className={iconClass} />
           ) : (
             <CircleCheck className={iconClass} />
           )}
-        </Button>
+        </button>
       </Tooltip>
 
       <Tooltip content="Edit batch">
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
           disabled={disabled}
           onClick={() => onEdit(batch)}
           aria-label="Edit batch"
-          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+          className={`${iconButtonClass} text-blue-900`}
         >
           <Pencil className={iconClass} />
-        </Button>
+        </button>
       </Tooltip>
 
       <Tooltip content="Manage batch">
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
           disabled={disabled}
           onClick={() => router.push(batchManagePath(batch.id))}
           aria-label="Manage batch"
-          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+          className={`${iconButtonClass} text-blue-900`}
         >
           <Settings2 className={iconClass} />
-        </Button>
+        </button>
       </Tooltip>
     </div>
   );
