@@ -750,6 +750,11 @@ export interface AssessmentSheetStudent {
 export interface AssessmentSheet {
   branch: { id: string; branchName: string; branchCode: string };
   batch: { id: string; name: string; code: string };
+  timing?: {
+    id: string;
+    name: string;
+    mode: string;
+  } | null;
   session: {
     batchCourseId: string;
     sessionId: string | null;
@@ -758,6 +763,7 @@ export interface AssessmentSheet {
     label: string;
     course: { id: string; title: string; code: string | null };
   };
+  course?: { id: string; title: string; code: string | null };
   students: AssessmentSheetStudent[];
   totalStudents: number;
 }
@@ -796,6 +802,53 @@ export interface BatchAssessmentAnalytics {
     byType: Record<string, number | null>;
     averagePercentage: number | null;
   }>;
+}
+
+export interface BatchTimingAssessmentProgress {
+  batch: { id: string; name: string; code: string };
+  branch: { id: string; branchName: string; branchCode: string };
+  timing: { id: string; name: string; mode: string };
+  course: { id: string; title: string; code: string | null };
+  assessmentTypes: string[];
+  students: Array<{
+    student: { id: string; name: string; studentCode: string };
+    countsByType: Record<string, number>;
+    totalAssessments: number;
+    overallPerformance: number | null;
+  }>;
+}
+
+export interface StudentTimingAssessmentDetail {
+  student: {
+    id: string;
+    name: string;
+    firstName: string;
+    lastName: string | null;
+    studentCode: string;
+    email: string | null;
+    phone: string | null;
+    status: string;
+  };
+  enrollmentId: string;
+  batch: { id: string; name: string; code: string };
+  branch: { id: string; branchName: string; branchCode: string };
+  timing: { id: string; name: string; mode: string };
+  course: { id: string; title: string; code: string | null };
+  overallPerformance: number;
+  totalAssessments: number;
+  countsByType: Record<string, number>;
+  groupedAssessments: Array<{
+    type: string;
+    items: AssessmentItem[];
+  }>;
+  summary: {
+    totalAssessments: number;
+    marksEntered: number;
+    averageMarks: number;
+    averagePercentage: number;
+    highestMarks: number;
+    lowestMarks: number;
+  };
 }
 
 export interface JobApplicationItem {

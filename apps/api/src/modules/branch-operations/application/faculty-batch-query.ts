@@ -62,3 +62,16 @@ export function facultyBatchTimingStudentWhere(
     status: EnrollmentStatus.ADMITTED,
   };
 }
+
+/** Active/admitted students assigned to one batch timing. */
+export function facultyBatchTimingActiveStudentWhere(
+  batchId: string,
+  batchTimingId: string,
+  branchId: string,
+): Prisma.EnrollmentWhereInput {
+  return {
+    ...facultyBranchEnrollmentWhere(branchId, { batchId }),
+    batchTimingId,
+    status: { in: FACULTY_VISIBLE_ENROLLMENT_STATUSES },
+  };
+}

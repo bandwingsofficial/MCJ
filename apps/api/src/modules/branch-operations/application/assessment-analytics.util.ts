@@ -73,3 +73,23 @@ export function averagePercentageByType(
   }
   return result;
 }
+
+export function countAssessmentsByType(
+  rows: AssessmentMarkRow[],
+): Record<AssessmentType, number> {
+  const result = {} as Record<AssessmentType, number>;
+  for (const type of ASSESSMENT_TYPES) {
+    result[type] = rows.filter((row) => row.type === type).length;
+  }
+  return result;
+}
+
+export function listAssessmentTypesPresent(
+  rows: AssessmentMarkRow[],
+): AssessmentType[] {
+  return ASSESSMENT_TYPES.filter((type) =>
+    rows.some((row) => row.type === type),
+  );
+}
+
+export { ASSESSMENT_TYPES };

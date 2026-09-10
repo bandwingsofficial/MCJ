@@ -676,6 +676,48 @@ export class BranchOperationsController {
     };
   }
 
+  @Get('batches/:id/assessments/timings/:timingId/progress')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ASSESSMENT_READ)
+  async batchTimingAssessmentProgress(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+    @Param('timingId') timingId: string,
+    @Query('search') search?: string,
+  ) {
+    return {
+      success: true,
+      message: 'Batch timing assessment progress fetched successfully',
+      data: await this.assessments.getBatchTimingProgress(
+        user,
+        id,
+        timingId,
+        search,
+      ),
+    };
+  }
+
+  @Get('batches/:id/assessments/timings/:timingId/students/:studentId')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ASSESSMENT_READ)
+  async batchTimingStudentAssessmentDetail(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+    @Param('timingId') timingId: string,
+    @Param('studentId') studentId: string,
+  ) {
+    return {
+      success: true,
+      message: 'Student assessment detail fetched successfully',
+      data: await this.assessments.getStudentTimingAssessmentDetail(
+        user,
+        id,
+        timingId,
+        studentId,
+      ),
+    };
+  }
+
   @Get('job-applications')
   @Roles(...InterviewOrManager)
   @Permissions(Permission.JOB_APPLICATION_READ)

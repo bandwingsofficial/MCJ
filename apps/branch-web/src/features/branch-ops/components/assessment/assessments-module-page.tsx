@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { AddAssessmentModal } from "@/src/features/branch-ops/components/assessment/add-assessment-modal";
 import { AssessmentBatchOverview } from "@/src/features/branch-ops/components/assessment/assessment-batch-overview";
+import { AssessmentProgressPanel } from "@/src/features/branch-ops/components/assessment/assessment-progress-panel";
 import { AssessmentSessionOverview } from "@/src/features/branch-ops/components/assessment/assessment-session-overview";
 import { ManageAssessmentModal } from "@/src/features/branch-ops/components/assessment/manage-assessment-modal";
 import type { AssessmentItem } from "@/src/features/branch-ops/types";
@@ -92,6 +93,7 @@ export function AssessmentsModulePage() {
   const [tab, setTab] = useState("records");
   const [addOpen, setAddOpen] = useState(false);
   const [manageRecord, setManageRecord] = useState<AssessmentItem | null>(null);
+  const [progressReloadKey, setProgressReloadKey] = useState(0);
 
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -315,6 +317,9 @@ export function AssessmentsModulePage() {
           <TabsTrigger value="records" className={TAB_CLASS}>
             Records
           </TabsTrigger>
+          <TabsTrigger value="progress" className={TAB_CLASS}>
+            Batch Progress
+          </TabsTrigger>
           <TabsTrigger value="batch" className={TAB_CLASS}>
             Batch Overview
           </TabsTrigger>
@@ -429,6 +434,13 @@ export function AssessmentsModulePage() {
           )}
         </TabsContent>
 
+        <TabsContent value="progress">
+          <AssessmentProgressPanel
+            batches={batchesQuery.data ?? []}
+            reloadKey={progressReloadKey}
+          />
+        </TabsContent>
+
         <TabsContent value="batch">
           <AssessmentBatchOverview
             batches={batchesQuery.data ?? []}
@@ -458,7 +470,10 @@ export function AssessmentsModulePage() {
       <AddAssessmentModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        onSaved={() => void reportQuery.reload()}
+        onSaved={() => {
+          void reportQuery.reload();
+          setProgressReloadKey((value) => value + 1);
+        }}
         batches={batchesQuery.data ?? []}
       />
 
@@ -466,7 +481,10 @@ export function AssessmentsModulePage() {
         open={Boolean(manageRecord)}
         record={manageRecord}
         onClose={() => setManageRecord(null)}
-        onSaved={() => void reportQuery.reload()}
+        onSaved={() => {
+          void reportQuery.reload();
+          setProgressReloadKey((value) => value + 1);
+        }}
       />
     </div>
   );

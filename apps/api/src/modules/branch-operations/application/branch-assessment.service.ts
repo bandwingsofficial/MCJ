@@ -17,6 +17,8 @@ import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import {
   assessmentPercentage,
   averagePercentageByType,
+  countAssessmentsByType,
+  ASSESSMENT_TYPES,
   summarizeAssessmentMarks,
 } from './assessment-analytics.util';
 import {
@@ -25,7 +27,12 @@ import {
 } from './attendance-session.util';
 import { BranchOperationsAccessService } from './branch-operations-access.service';
 import { addUtcDays, parseDateOnly } from './date.util';
-import { facultyBatchStudentWhere } from './faculty-batch-query';
+import {
+  FACULTY_VISIBLE_ENROLLMENT_STATUSES,
+  facultyBatchStudentWhere,
+  facultyBatchTimingActiveStudentWhere,
+  facultyBranchEnrollmentWhere,
+} from './faculty-batch-query';
 
 export interface AssessmentListQuery {
   batchId?: string;
@@ -76,8 +83,21 @@ export class BranchAssessmentService {
 
   async getSheet(
     user: BranchAuthUser,
-    input: { batchId: string; batchCourseId: string },
+    input: { batchId: string; batchCourseId?: string; batchTimingId?: string },
   ) {
+    if (input.batchTimingId) {
+      return this.getTimingSheet(user, {
+        batchId: input.batchId,
+        batchTimingId: input.batchTimingId,
+      });
+    }
+
+    if (!input.batchCourseId) {
+      throw new BadRequestException(
+        'Either batchTimingId or batchCourseId is required',
+      );
+    }
+
     const context = await this.resolveSessionContext(
       user,
       input.batchId,
@@ -103,7 +123,56 @@ export class BranchAssessmentService {
     return {
       branch: context.branch,
       batch: context.batch,
+      timing: null,
       session: context.session,
+      course: context.session.course,
+      students: enrollments.map((row) => ({
+        id: row.student.id,
+        firstName: row.student.firstName,
+        lastName: row.student.lastName,
+        studentCode: row.student.studentCode,
+        name: this.personName(row.student.firstName, row.student.lastName),
+      })),
+      totalStudents: enrollments.length,
+    };
+  }
+
+  private async getTimingSheet(
+    user: BranchAuthUser,
+    input: { batchId: string; batchTimingId: string },
+  ) {
+    const context = await this.resolveTimingContext(
+      user,
+      input.batchId,
+      input.batchTimingId,
+      { forWrite: false },
+    );
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: facultyBatchTimingActiveStudentWhere(
+        input.batchId,
+        input.batchTimingId,
+        user.branchId,
+      ),
+      include: {
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            studentCode: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return {
+      branch: context.branch,
+      batch: context.batch,
+      timing: context.timing,
+      session: context.session,
+      course: context.session.course,
       students: enrollments.map((row) => ({
         id: row.student.id,
         firstName: row.student.firstName,
@@ -119,7 +188,8 @@ export class BranchAssessmentService {
     user: BranchAuthUser,
     input: {
       batchId: string;
-      batchCourseId: string;
+      batchCourseId?: string;
+      batchTimingId?: string;
       type: AssessmentType;
       name: string;
       date: string;
@@ -137,18 +207,43 @@ export class BranchAssessmentService {
       );
     }
 
+    let batchCourseId = input.batchCourseId;
+    if (input.batchTimingId) {
+      const context = await this.resolveTimingContext(
+        user,
+        input.batchId,
+        input.batchTimingId,
+        { forWrite: true },
+      );
+      batchCourseId = batchCourseId ?? context.batchCourseId;
+    }
+
+    if (!batchCourseId) {
+      throw new BadRequestException(
+        'Either batchTimingId or batchCourseId is required',
+      );
+    }
+
     const context = await this.resolveSessionContext(
       user,
       input.batchId,
-      input.batchCourseId,
+      batchCourseId,
       { forWrite: true },
     );
     const date = this.parseDate(input.date);
     const maxMarks = input.maxMarks;
     this.assertMarks(maxMarks, maxMarks);
 
+    const enrollmentWhere = input.batchTimingId
+      ? facultyBatchTimingActiveStudentWhere(
+          input.batchId,
+          input.batchTimingId,
+          user.branchId,
+        )
+      : facultyBatchStudentWhere(input.batchId, user.branchId);
+
     const enrollments = await this.prisma.enrollment.findMany({
-      where: facultyBatchStudentWhere(input.batchId, user.branchId),
+      where: enrollmentWhere,
       select: { studentId: true },
     });
     const enrolledIds = new Set(enrollments.map((row) => row.studentId));
@@ -186,7 +281,7 @@ export class BranchAssessmentService {
           data: {
             branchId: user.branchId,
             batchId: context.batch.id,
-            batchCourseId: input.batchCourseId,
+            batchCourseId,
             assessmentGroupId,
             studentId: row.studentId,
             facultyId: user.sub,
@@ -213,7 +308,7 @@ export class BranchAssessmentService {
       resourceId: assessmentGroupId,
       metadata: {
         batchId: input.batchId,
-        batchCourseId: input.batchCourseId,
+        batchCourseId,
         type: input.type,
         name: input.name,
         count: saved.length,
@@ -711,6 +806,225 @@ export class BranchAssessmentService {
     return { batch, students };
   }
 
+  async getBatchTimingProgress(
+    user: BranchAuthUser,
+    batchId: string,
+    batchTimingId: string,
+    search?: string,
+  ) {
+    const context = await this.resolveTimingContext(
+      user,
+      batchId,
+      batchTimingId,
+      { forWrite: false },
+    );
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: facultyBatchTimingActiveStudentWhere(
+        batchId,
+        batchTimingId,
+        user.branchId,
+      ),
+      include: {
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            studentCode: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const studentIds = enrollments.map((row) => row.student.id);
+    const assessmentRows =
+      studentIds.length === 0
+        ? []
+        : await this.prisma.academicAssessment.findMany({
+            where: {
+              branchId: user.branchId,
+              batchId,
+              studentId: { in: studentIds },
+            },
+            select: {
+              studentId: true,
+              type: true,
+              maxMarks: true,
+              obtainedMarks: true,
+            },
+          });
+
+    const byStudent = new Map<
+      string,
+      Array<{
+        type: AssessmentType;
+        maxMarks: number;
+        obtainedMarks: number;
+      }>
+    >();
+
+    for (const row of assessmentRows) {
+      const list = byStudent.get(row.studentId) ?? [];
+      list.push({
+        type: row.type,
+        maxMarks: Number(row.maxMarks),
+        obtainedMarks: Number(row.obtainedMarks),
+      });
+      byStudent.set(row.studentId, list);
+    }
+
+    const assessmentTypes = [...ASSESSMENT_TYPES];
+
+    const normalizedSearch = search?.trim().toLowerCase() ?? '';
+
+    const students = enrollments
+      .map((enrollment) => {
+        const rows = byStudent.get(enrollment.student.id) ?? [];
+        const countsByType = countAssessmentsByType(rows);
+        const overall =
+          rows.length > 0
+            ? Math.round(
+                (rows.reduce(
+                  (acc, row) =>
+                    acc +
+                    assessmentPercentage(row.obtainedMarks, row.maxMarks),
+                  0,
+                ) /
+                  rows.length) *
+                  10,
+              ) / 10
+            : null;
+
+        return {
+          student: {
+            id: enrollment.student.id,
+            name: this.personName(
+              enrollment.student.firstName,
+              enrollment.student.lastName,
+            ),
+            studentCode: enrollment.student.studentCode,
+          },
+          countsByType,
+          totalAssessments: rows.length,
+          overallPerformance: overall,
+        };
+      })
+      .filter((row) => {
+        if (!normalizedSearch) return true;
+        return (
+          row.student.name.toLowerCase().includes(normalizedSearch) ||
+          row.student.studentCode.toLowerCase().includes(normalizedSearch)
+        );
+      });
+
+    return {
+      batch: context.batch,
+      branch: context.branch,
+      timing: context.timing,
+      course: context.session.course,
+      assessmentTypes,
+      students,
+    };
+  }
+
+  async getStudentTimingAssessmentDetail(
+    user: BranchAuthUser,
+    batchId: string,
+    batchTimingId: string,
+    studentId: string,
+  ) {
+    const context = await this.resolveTimingContext(
+      user,
+      batchId,
+      batchTimingId,
+      { forWrite: false },
+    );
+
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: {
+        ...facultyBatchTimingActiveStudentWhere(
+          batchId,
+          batchTimingId,
+          user.branchId,
+        ),
+        studentId,
+      },
+      include: {
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            studentCode: true,
+            email: true,
+            phone: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException(
+        'Student is not enrolled in this batch timing',
+      );
+    }
+
+    const records = await this.prisma.academicAssessment.findMany({
+      where: {
+        branchId: user.branchId,
+        batchId,
+        studentId,
+      },
+      include: assessmentInclude,
+      orderBy: [{ type: 'asc' }, { date: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    const markRows = records.map((row) => ({
+      type: row.type,
+      maxMarks: Number(row.maxMarks),
+      obtainedMarks: Number(row.obtainedMarks),
+    }));
+
+    const grouped = ASSESSMENT_TYPES.map((type) => ({
+      type,
+      items: records
+        .filter((row) => row.type === type)
+        .map((row) => this.toDto(row)),
+    }));
+
+    const summary = summarizeAssessmentMarks(markRows);
+    const countsByType = countAssessmentsByType(markRows);
+
+    return {
+      student: {
+        id: enrollment.student.id,
+        name: this.personName(
+          enrollment.student.firstName,
+          enrollment.student.lastName,
+        ),
+        firstName: enrollment.student.firstName,
+        lastName: enrollment.student.lastName,
+        studentCode: enrollment.student.studentCode,
+        email: enrollment.student.email,
+        phone: enrollment.student.phone,
+        status: enrollment.student.status,
+      },
+      enrollmentId: enrollment.id,
+      batch: context.batch,
+      branch: context.branch,
+      timing: context.timing,
+      course: context.session.course,
+      overallPerformance: summary.averagePercentage,
+      totalAssessments: records.length,
+      countsByType,
+      groupedAssessments: grouped,
+      summary,
+    };
+  }
+
   async findById(user: BranchAuthUser, id: string) {
     const record = await this.prisma.academicAssessment.findFirst({
       where: { id },
@@ -894,6 +1208,113 @@ export class BranchAssessmentService {
         name: assignment.batch.name,
         code: assignment.batch.code,
       },
+      session: toAttendanceSessionDto({
+        batchCourseId: assignment.id,
+        sessionId: assignment.session?.id,
+        sessionNumber: assignment.session?.sessionNumber,
+        courseId: assignment.course.id,
+        courseTitle: assignment.course.title,
+        courseCode: assignment.course.code,
+      }),
+    };
+  }
+
+  private async resolveTimingContext(
+    user: BranchAuthUser,
+    batchId: string,
+    batchTimingId: string,
+    options: { forWrite: boolean },
+  ) {
+    await this.access.assertFacultyCanAccessBatch(user, batchId);
+
+    const timing = await this.prisma.batchTiming.findFirst({
+      where: {
+        id: batchTimingId,
+        batchId,
+        isDeleted: false,
+      },
+      include: {
+        batch: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            branchId: true,
+            courseId: true,
+            status: true,
+            startDate: true,
+            endDate: true,
+            isActive: true,
+            isDeleted: true,
+            branch: {
+              select: { id: true, branchName: true, branchCode: true },
+            },
+            course: {
+              select: { id: true, title: true, code: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!timing) {
+      throw new NotFoundException('Batch timing not found for this batch');
+    }
+
+    if (timing.batch.branchId !== user.branchId) {
+      throw new BaseException(
+        ERROR_CODES.BRANCH_ACCESS_DENIED,
+        'Branch access denied',
+        403,
+      );
+    }
+
+    if (options.forWrite) {
+      ensureBatchSelectableForAssignment({
+        status: timing.batch.status as BatchStatus,
+        startDate: timing.batch.startDate,
+        endDate: timing.batch.endDate,
+        isActive: timing.batch.isActive,
+        isDeleted: timing.batch.isDeleted,
+      });
+    }
+
+    const courseId = timing.batch.course?.id ?? timing.batch.courseId;
+    if (!courseId) {
+      throw new NotFoundException('Batch course not found for this batch timing');
+    }
+
+    const assignment = await this.prisma.batchCourse.findFirst({
+      where: {
+        batchId,
+        courseId,
+        isDeleted: false,
+      },
+      include: {
+        course: { select: { id: true, title: true, code: true } },
+        session: { select: { id: true, sessionNumber: true } },
+      },
+    });
+
+    if (!assignment) {
+      throw new NotFoundException(
+        'Course assignment not found for this batch timing',
+      );
+    }
+
+    return {
+      batch: {
+        id: timing.batch.id,
+        name: timing.batch.name,
+        code: timing.batch.code,
+      },
+      branch: timing.batch.branch,
+      timing: {
+        id: timing.id,
+        name: timing.name,
+        mode: timing.mode,
+      },
+      batchCourseId: assignment.id,
       session: toAttendanceSessionDto({
         batchCourseId: assignment.id,
         sessionId: assignment.session?.id,

@@ -11,6 +11,8 @@ import type {
   AttendanceSheet,
   AttendanceSummary,
   BatchAssessmentAnalytics,
+  BatchTimingAssessmentProgress,
+  StudentTimingAssessmentDetail,
   BatchAttendanceAnalytics,
   BatchTimingAttendanceOverview,
   BatchTimingStudentAttendanceRow,
@@ -219,9 +221,36 @@ export const branchOpsApi = {
       apiClient.get("/branch/assessments/report", { params }),
     ),
 
-  assessmentSheet: (params: { batchId: string; batchCourseId: string }) =>
+  assessmentSheet: (params: {
+    batchId: string;
+    batchCourseId?: string;
+    batchTimingId?: string;
+  }) =>
     unwrap<AssessmentSheet>(
       apiClient.get("/branch/assessments/sheet", { params }),
+    ),
+
+  batchTimingAssessmentProgress: (
+    batchId: string,
+    timingId: string,
+    params?: { search?: string },
+  ) =>
+    unwrap<BatchTimingAssessmentProgress>(
+      apiClient.get(
+        `/branch/batches/${batchId}/assessments/timings/${timingId}/progress`,
+        { params },
+      ),
+    ),
+
+  studentTimingAssessmentDetail: (
+    batchId: string,
+    timingId: string,
+    studentId: string,
+  ) =>
+    unwrap<StudentTimingAssessmentDetail>(
+      apiClient.get(
+        `/branch/batches/${batchId}/assessments/timings/${timingId}/students/${studentId}`,
+      ),
     ),
 
   assessmentGroup: (groupId: string) =>
@@ -248,7 +277,8 @@ export const branchOpsApi = {
 
   createAssessmentBulk: (payload: {
     batchId: string;
-    batchCourseId: string;
+    batchCourseId?: string;
+    batchTimingId?: string;
     type: string;
     name: string;
     date: string;

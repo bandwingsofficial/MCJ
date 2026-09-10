@@ -374,8 +374,13 @@ export class BulkCreateAssessmentDto {
   @IsUUID()
   batchId!: string;
 
+  @IsOptional()
   @IsUUID()
-  batchCourseId!: string;
+  batchCourseId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  batchTimingId?: string;
 
   @IsEnum(AssessmentType)
   type!: AssessmentType;
@@ -427,8 +432,13 @@ export class AssessmentSheetQueryDto {
   @IsUUID()
   batchId!: string;
 
+  @IsOptional()
   @IsUUID()
-  batchCourseId!: string;
+  batchCourseId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  batchTimingId?: string;
 }
 
 export class ScheduleInterviewDto {
