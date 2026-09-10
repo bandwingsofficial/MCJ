@@ -13,6 +13,7 @@ import { BRANCH_TOKENS } from '../branch/branch.tokens';
 import { BranchModule } from '../branch/branch.module';
 import type { BranchRepository } from '../branch/domain/repositories/branch.repository';
 import { BranchUserModule } from '../branch-user/branch-user.module';
+import { BranchOperationsModule } from '../branch-operations/branch-operations.module';
 import { UploadsModule } from '../uploads/uploads.module';
 import { UploadDomainService } from '../uploads/domain/services/upload-domain.service';
 import { CreateProfileHandler } from '../profile/application/create-profile/create-profile.handler';
@@ -56,6 +57,7 @@ import { PublicStudentController } from './presentation/controllers/public-stude
     AuthModule,
     BranchModule,
     BranchUserModule,
+    forwardRef(() => BranchOperationsModule),
     UploadsModule,
     forwardRef(() => ProfileModule),
   ],

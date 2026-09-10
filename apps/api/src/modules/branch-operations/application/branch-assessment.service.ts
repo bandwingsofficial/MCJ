@@ -1092,9 +1092,41 @@ export class BranchAssessmentService {
   ) {
     await this.access.assertFacultyCanAccessStudent(user, studentId);
 
+    return this.buildStudentAssessmentOverview(studentId, user.branchId);
+  }
+
+  async getAdminStudentAssessmentOverview(
+    studentId: string,
+    branchId?: string,
+  ) {
+    const student = await this.prisma.student.findFirst({
+      where: {
+        id: studentId,
+        isDeleted: false,
+      },
+      select: { id: true },
+    });
+
+    if (!student) {
+      throw new NotFoundException('Student not found');
+    }
+
+    return this.buildStudentAssessmentOverview(studentId, branchId);
+  }
+
+  private async buildStudentAssessmentOverview(
+    studentId: string,
+    branchId?: string,
+  ) {
     const enrollments = await this.prisma.enrollment.findMany({
       where: {
-        ...facultyBranchEnrollmentWhere(user.branchId, { studentId }),
+        ...(branchId
+          ? facultyBranchEnrollmentWhere(branchId, { studentId })
+          : {
+              studentId,
+              isDeleted: false,
+              batch: { isDeleted: false },
+            }),
         status: { in: FACULTY_VISIBLE_ENROLLMENT_STATUSES },
       },
       include: enrollmentAssessmentInclude,
@@ -1106,7 +1138,7 @@ export class BranchAssessmentService {
     for (const enrollment of enrollments) {
       const assessmentRows = await this.prisma.academicAssessment.findMany({
         where: {
-          branchId: user.branchId,
+          branchId: enrollment.branchId,
           batchId: enrollment.batchId,
           studentId,
         },

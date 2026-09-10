@@ -11,7 +11,10 @@ import type { Student } from "@/src/features/students/types/student.types";
 import { STUDENT_MANAGE_DEFAULT_TAB } from "@/src/features/students/utils/student-manage.routes";
 
 import { StudentManageActivityPanel } from "./student-manage-activity-panel";
+import { StudentManageAssessmentsPanel } from "./student-manage-assessments-panel";
+import { StudentManageAttendancePanel } from "./student-manage-attendance-panel";
 import { StudentManageDocumentsPanel } from "./student-manage-documents-panel";
+import { StudentManageEnrollmentsPanel } from "./student-manage-enrollments-panel";
 import { StudentManageOverviewPanel } from "./student-manage-overview-panel";
 
 interface Props {
@@ -21,12 +24,22 @@ interface Props {
   onTabChange?: (tab: TabKey) => void;
   onStudentRefresh?: () => Promise<void>;
   onDocumentsChanged?: () => void;
+  onEnrollmentMutation?: () => Promise<void>;
 }
 
-export type TabKey = "overview" | "documents" | "activity";
+export type TabKey =
+  | "overview"
+  | "enrollments"
+  | "attendance"
+  | "assessments"
+  | "documents"
+  | "activity";
 
 const TAB_ITEMS: ReadonlyArray<[TabKey, string]> = [
   ["overview", "Overview"],
+  ["enrollments", "Enrollments"],
+  ["attendance", "Attendance"],
+  ["assessments", "Assessments"],
   ["documents", "Documents"],
   ["activity", "Activity"],
 ];
@@ -36,7 +49,9 @@ export function StudentManageWorkspace({
   activeTab = STUDENT_MANAGE_DEFAULT_TAB,
   overviewRefreshKey = 0,
   onTabChange,
+  onStudentRefresh,
   onDocumentsChanged,
+  onEnrollmentMutation,
 }: Props) {
   return (
     <Tabs
@@ -62,6 +77,29 @@ export function StudentManageWorkspace({
           student={student}
           refreshKey={overviewRefreshKey}
           onNavigateToTab={(tab) => onTabChange?.(tab)}
+        />
+      </TabsContent>
+
+      <TabsContent value="enrollments">
+        <StudentManageEnrollmentsPanel
+          student={student}
+          refreshKey={overviewRefreshKey}
+          onStudentRefresh={onStudentRefresh}
+          onEnrollmentMutation={onEnrollmentMutation}
+        />
+      </TabsContent>
+
+      <TabsContent value="attendance">
+        <StudentManageAttendancePanel
+          student={student}
+          refreshKey={overviewRefreshKey}
+        />
+      </TabsContent>
+
+      <TabsContent value="assessments">
+        <StudentManageAssessmentsPanel
+          student={student}
+          refreshKey={overviewRefreshKey}
         />
       </TabsContent>
 

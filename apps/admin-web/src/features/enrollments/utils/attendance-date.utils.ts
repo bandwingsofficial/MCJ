@@ -9,6 +9,72 @@ export function formatAttendanceDisplayDate(value: string): string {
   });
 }
 
+function pad(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function toLocalDateInput(date: Date): string {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+export function todayLocalInput(): string {
+  return toLocalDateInput(new Date());
+}
+
+export type AttendanceDatePreset =
+  | "TODAY"
+  | "YESTERDAY"
+  | "THIS_WEEK"
+  | "THIS_MONTH"
+  | "CUSTOM"
+  | "ALL_TIME";
+
+export function resolveAttendanceDateRange(
+  preset: AttendanceDatePreset,
+  customFrom?: string,
+  customTo?: string,
+): { from?: string; to?: string } {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (preset === "ALL_TIME") {
+    return {};
+  }
+
+  if (preset === "TODAY") {
+    const value = toLocalDateInput(today);
+    return { from: value, to: value };
+  }
+
+  if (preset === "YESTERDAY") {
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const value = toLocalDateInput(yesterday);
+    return { from: value, to: value };
+  }
+
+  if (preset === "THIS_WEEK") {
+    const weekday = today.getDay();
+    const mondayOffset = weekday === 0 ? -6 : 1 - weekday;
+    const from = new Date(today);
+    from.setDate(from.getDate() + mondayOffset);
+    const to = new Date(from);
+    to.setDate(to.getDate() + 5);
+    return { from: toLocalDateInput(from), to: toLocalDateInput(to) };
+  }
+
+  if (preset === "THIS_MONTH") {
+    const from = new Date(today.getFullYear(), today.getMonth(), 1);
+    const to = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return { from: toLocalDateInput(from), to: toLocalDateInput(to) };
+  }
+
+  return {
+    from: customFrom || undefined,
+    to: customTo || undefined,
+  };
+}
+
 export function formatAttendanceMarkedAt(value?: string | null): string {
   if (!value) return "—";
   const date = new Date(value);

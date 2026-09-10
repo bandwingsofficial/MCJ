@@ -66,6 +66,7 @@ import { CreateStudentDocumentDto } from '../dtos/create-student-document.dto';
 import { ListStudentsQueryDto } from '../dtos/list-students-query.dto';
 import { UpdateStudentDto } from '../dtos/update-student.dto';
 import { UpdateStudentDocumentDto } from '../dtos/update-student-document.dto';
+import { BranchAssessmentService } from '@modules/branch-operations/application/branch-assessment.service';
 
 type StudentAdminUser = AuthUser & {
   branchId?: string;
@@ -93,6 +94,7 @@ export class AdminStudentController {
     private readonly createStudentDocumentHandler: CreateStudentDocumentHandler,
     private readonly updateStudentDocumentHandler: UpdateStudentDocumentHandler,
     private readonly deleteStudentDocumentHandler: DeleteStudentDocumentHandler,
+    private readonly assessments: BranchAssessmentService,
   ) {}
 
   @Post()
@@ -339,6 +341,26 @@ export class AdminStudentController {
       success: true,
       message: 'Students permanently deleted successfully',
       data: result.summary,
+    };
+  }
+
+  @Get(':id/assessments')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async getAssessments(
+    @Param('id') id: string,
+    @CurrentUser() user: StudentAdminUser,
+  ) {
+    return {
+      success: true,
+      message: 'Student assessments fetched successfully',
+      data: await this.assessments.getAdminStudentAssessmentOverview(
+        id,
+        this.resolveBranchId(undefined, user),
+      ),
     };
   }
 

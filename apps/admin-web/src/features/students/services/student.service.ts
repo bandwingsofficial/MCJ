@@ -35,6 +35,15 @@ class StudentService {
     }
   }
 
+  async getStudentAssessments(id: string) {
+    try {
+      const response = await studentApi.getStudentAssessments(id);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async suggestStudentCode() {
     try {
       return await studentApi.suggestStudentCode();

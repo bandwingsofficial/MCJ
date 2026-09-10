@@ -13,6 +13,7 @@ import type {
   UpdateStudentDocumentRequest,
   UpdateStudentRequest,
 } from "@/src/features/students/types/student.types";
+import type { StudentAssessmentOverview } from "@/src/features/students/types/student-assessment.types";
 import { buildStudentListQueryParams } from "@/src/features/students/utils/student-list.utils";
 
 export const studentApi = {
@@ -30,6 +31,14 @@ export const studentApi = {
     const response = await apiClient.get<ApiSuccessResponse<Student>>(
       `/admin/students/${id}`,
     );
+
+    return response.data;
+  },
+
+  async getStudentAssessments(id: string) {
+    const response = await apiClient.get<
+      ApiSuccessResponse<StudentAssessmentOverview>
+    >(`/admin/students/${id}/assessments`);
 
     return response.data;
   },

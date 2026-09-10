@@ -33,18 +33,17 @@ interface Props {
 
 const TAB_LABELS: Record<TabKey, string> = {
   overview: "Overview",
+  enrollments: "Enrollments",
+  attendance: "Attendance",
+  assessments: "Assessments",
   documents: "Documents",
   activity: "Activity",
 };
 
 const VALID_TABS = new Set<TabKey>(Object.keys(TAB_LABELS) as TabKey[]);
 
-function resolveInitialTab(initialTab?: TabKey | "enrollments" | "attendance" | "payments"): TabKey {
-  if (
-    initialTab === "enrollments" ||
-    initialTab === "attendance" ||
-    initialTab === "payments"
-  ) {
+function resolveInitialTab(initialTab?: TabKey | "payments" | "reports"): TabKey {
+  if (initialTab === "payments" || initialTab === "reports") {
     return STUDENT_MANAGE_DEFAULT_TAB;
   }
 
@@ -145,6 +144,7 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
         onTabChange={handleTabChange}
         onStudentRefresh={handleStudentDataRefresh}
         onDocumentsChanged={bumpOverviewRefresh}
+        onEnrollmentMutation={handleStudentDataRefresh}
       />
 
       <UpdateStudentModal

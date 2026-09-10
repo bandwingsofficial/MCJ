@@ -35,7 +35,8 @@ export function CategorySummaryHeader({
 
   return (
     <header>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* Top row: Breadcrumb + Create button */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <nav
           aria-label="Breadcrumb"
           className="flex items-center gap-1.5 text-sm"
@@ -61,13 +62,13 @@ export function CategorySummaryHeader({
         </nav>
 
         {isLoading ? (
-          <Skeleton className="h-[52px] w-full rounded-[14px] sm:w-[190px]" />
+          <Skeleton className="h-[46px] w-full rounded-[14px] sm:w-[190px]" />
         ) : (
           <Button
             type="button"
             onClick={onCreate}
             disabled={createDisabled}
-            className="admin-create-btn h-[52px] w-full shrink-0 px-5 font-semibold sm:w-[190px]"
+            className="admin-create-btn h-[46px] w-full shrink-0 px-5 font-semibold sm:w-[190px]"
             aria-label="Create a new category"
           >
             <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
@@ -76,13 +77,14 @@ export function CategorySummaryHeader({
         )}
       </div>
 
-      <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      {/* Main row: Title + Search + Status */}
+      <div className="mt-2 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           {isLoading ? (
             <Skeleton className="h-8 w-52 rounded-md" />
           ) : (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h1 className="text-[30px] font-bold tracking-tight text-[#102A56]">
+              <h1 className="text-[28px] font-bold tracking-tight text-[#102A56]">
                 Categories
               </h1>
 
