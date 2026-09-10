@@ -9,15 +9,15 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { StudentListItem } from "@/src/features/students/types/student.types";
 import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.utils";
 
-const iconBtnClass =
-  "h-9 w-9 shrink-0 rounded-lg p-0 transition-colors";
-const iconClass = "h-[1.25rem] w-[1.25rem]";
+const iconButtonClass =
+  "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40";
+
+const iconClass = "h-[15px] w-[14px] stroke-[2]";
 
 interface Props {
   student: StudentListItem;
@@ -43,36 +43,32 @@ export function StudentRowActionsMenu({
 }: Props) {
   if (isArchivedStudent(student)) {
     return (
-      <div className="flex items-center justify-end gap-1">
+      <div className="flex items-center justify-end gap-2">
         {onRestore ? (
           <Tooltip content="Restore student">
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
               disabled={disabled}
               onClick={() => onRestore(student)}
               aria-label="Restore student"
-              className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
+              className={`${iconButtonClass} text-green-800`}
             >
               <RotateCcw className={iconClass} />
-            </Button>
+            </button>
           </Tooltip>
         ) : null}
 
         {onPermanentDelete ? (
           <Tooltip content="Permanently delete student">
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
               disabled={disabled}
               onClick={() => onPermanentDelete(student)}
               aria-label="Permanently delete student"
-              className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
+              className={`${iconButtonClass} text-red-800`}
             >
               <Trash2 className={iconClass} />
-            </Button>
+            </button>
           </Tooltip>
         ) : null}
       </div>
@@ -82,57 +78,47 @@ export function StudentRowActionsMenu({
   const isActive = student.isActive !== false;
 
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className="flex items-center justify-end gap-2">
       <Tooltip content={isActive ? "Deactivate student" : "Activate student"}>
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
           disabled={disabled}
           onClick={() =>
             isActive ? onDeactivate(student) : onActivate(student)
           }
           aria-label={isActive ? "Deactivate student" : "Activate student"}
-          className={`${iconBtnClass} ${
-            isActive
-              ? "text-amber-600 hover:bg-amber-50 hover:text-amber-700"
-              : "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-          }`}
+          className={`${iconButtonClass} text-orange-700`}
         >
           {isActive ? (
             <Power className={iconClass} />
           ) : (
             <CircleCheck className={iconClass} />
           )}
-        </Button>
+        </button>
       </Tooltip>
 
       <Tooltip content="Edit student">
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
           disabled={disabled}
           onClick={() => onEdit(student)}
           aria-label="Edit student"
-          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+          className={`${iconButtonClass} text-blue-900`}
         >
           <Pencil className={iconClass} />
-        </Button>
+        </button>
       </Tooltip>
 
       <Tooltip content="Manage student">
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
           disabled={disabled}
           onClick={() => onManage(student)}
           aria-label="Manage student"
-          className={`${iconBtnClass} text-slate-700 hover:bg-slate-100 hover:text-[#102A56]`}
+          className={`${iconButtonClass} text-green-800`}
         >
           <Settings2 className={iconClass} />
-        </Button>
+        </button>
       </Tooltip>
     </div>
   );

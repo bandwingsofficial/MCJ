@@ -31,6 +31,8 @@ const STATUS_LABELS: Record<StudentStatus, string> = {
   PLACED: "Placed",
 };
 
+const compactClass = "px-2 py-0 text-[11px] font-semibold leading-5";
+
 export function StudentStatusBadge({
   status,
   isActive,
@@ -38,22 +40,22 @@ export function StudentStatusBadge({
 }: StudentStatusBadgeProps) {
   if (isDeleted) {
     return (
-      <Badge variant="danger" className="px-2.5 py-0.5 text-sm">
+      <Badge variant="danger" className={compactClass}>
         Archived
       </Badge>
     );
   }
 
   return (
-  <div className="flex flex-wrap items-center gap-1.5">
-    <Badge variant={STATUS_VARIANTS[status]} className="px-2.5 py-0.5 text-sm">
-      {STATUS_LABELS[status]}
-    </Badge>
-    {isActive === false ? (
-      <Badge variant="danger" className="px-2.5 py-0.5 text-sm">
-        Inactive
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Badge variant={STATUS_VARIANTS[status]} className={compactClass}>
+        {STATUS_LABELS[status]}
       </Badge>
-    ) : null}
-  </div>
+      {isActive === false ? (
+        <Badge variant="danger" className={compactClass}>
+          Inactive
+        </Badge>
+      ) : null}
+    </div>
   );
 }

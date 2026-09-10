@@ -53,16 +53,16 @@ export function StudentBulkActionsToolbar({
   ).length;
 
   return (
-    <div className="mb-3 flex flex-col gap-2 rounded-lg border border-[#2563EB]/20 bg-[#2563EB]/5 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm font-medium text-slate-800">
+    <div className="flex flex-col gap-1.5 border-b border-[#2563EB]/15 bg-[#2563EB]/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs font-medium text-slate-800">
         {selectedCount} student{selectedCount === 1 ? "" : "s"} selected
       </p>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         <Button
           type="button"
           variant="outline"
-          className="h-8"
+          className="h-7 px-2.5 text-xs"
           disabled={disabled || activateCount === 0}
           onClick={() => onAction("activate")}
         >
@@ -72,7 +72,7 @@ export function StudentBulkActionsToolbar({
         <Button
           type="button"
           variant="outline"
-          className="h-8"
+          className="h-7 px-2.5 text-xs"
           disabled={disabled || deactivateCount === 0}
           onClick={() => onAction("deactivate")}
         >
@@ -82,7 +82,7 @@ export function StudentBulkActionsToolbar({
         <Button
           type="button"
           variant="outline"
-          className="h-8"
+          className="h-7 px-2.5 text-xs"
           disabled={disabled || deleteCount === 0}
           onClick={() => onAction("delete")}
         >
@@ -92,7 +92,7 @@ export function StudentBulkActionsToolbar({
         <Button
           type="button"
           variant="outline"
-          className="h-8"
+          className="h-7 px-2.5 text-xs"
           disabled={disabled || restoreCount === 0}
           onClick={() => onAction("restore")}
         >
@@ -102,7 +102,7 @@ export function StudentBulkActionsToolbar({
         <Button
           type="button"
           variant="danger"
-          className="h-8"
+          className="h-7 px-2.5 text-xs"
           disabled={disabled || permanentDeleteCount === 0}
           onClick={() => onAction("permanent-delete")}
         >

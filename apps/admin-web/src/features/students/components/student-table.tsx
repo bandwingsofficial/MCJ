@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
 import type { StudentListItem } from "@/src/features/students/types/student.types";
 import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.utils";
@@ -51,6 +50,7 @@ export function StudentTable({
   const safeSelectedIds = selectedStudentIds ?? [];
   const selectionEnabled = Boolean(onSelectionChange);
   const visibleIds = students.map((student) => student.id);
+  const columnCount = selectionEnabled ? 7 : 6;
   const selectedVisibleCount = visibleIds.filter((id) =>
     safeSelectedIds.includes(id),
   ).length;
@@ -94,23 +94,17 @@ export function StudentTable({
     );
   };
 
-  if (students.length === 0) {
-    return (
-      <EmptyState title={emptyTitle} description={emptyDescription} />
-    );
-  }
-
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse">
-        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
+    <div className="w-full overflow-x-auto">
+      <table className="w-full min-w-full border-collapse text-sm">
+        <thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]">
           <tr>
             {selectionEnabled ? (
-              <th className="w-11 px-3 py-3 text-left">
+              <th className="w-9 !px-6 !py-4 text-left">
                 <input
                   ref={selectAllRef}
                   type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300"
+                  className="h-3.5 w-3.5 rounded border-slate-300"
                   checked={allVisibleSelected}
                   disabled={selectionDisabled}
                   onChange={(event) => {
@@ -120,90 +114,106 @@ export function StudentTable({
                 />
               </th>
             ) : null}
-            <th className="min-w-[140px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Student Code
             </th>
-            <th className="min-w-[180px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Student
             </th>
-            <th className="min-w-[180px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Email
             </th>
-            <th className="min-w-[120px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Phone
             </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Status
             </th>
-            <th className="w-[7.5rem] px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
               Actions
             </th>
           </tr>
         </thead>
 
         <tbody className="divide-y divide-slate-100">
-          {students.map((student) => {
-            const isArchived = isArchivedStudent(student);
-
-            return (
-              <tr
-                key={student.id}
-                className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${
-                  isArchived ? "bg-slate-50/40" : "bg-white"
-                }`}
+          {students.length === 0 ? (
+            <tr>
+              <td
+                colSpan={columnCount}
+                className="!px-4 !py-4 align-middle"
               >
-                {selectionEnabled ? (
-                  <td className="w-11 px-3 py-3 align-middle">
-                    <Checkbox
-                      checked={safeSelectedIds.includes(student.id)}
-                      disabled={selectionDisabled}
-                      onCheckedChange={(checked) =>
-                        toggleRow(student.id, Boolean(checked))
-                      }
-                      aria-label={`Select ${formatStudentName(student)}`}
+                <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-4 text-center">
+                  <h3 className="text-base font-semibold">{emptyTitle}</h3>
+                  <p className="mt-1 max-w-md text-sm text-[#647A9B]">
+                    {emptyDescription}
+                  </p>
+                </div>
+              </td>
+            </tr>
+          ) : (
+            students.map((student) => {
+              const isArchived = isArchivedStudent(student);
+
+              return (
+                <tr
+                  key={student.id}
+                  className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${
+                    isArchived ? "bg-slate-50/40" : "bg-white"
+                  }`}
+                >
+                  {selectionEnabled ? (
+                    <td className="!px-6 !py-4 align-middle">
+                      <Checkbox
+                        checked={safeSelectedIds.includes(student.id)}
+                        disabled={selectionDisabled}
+                        onCheckedChange={(checked) =>
+                          toggleRow(student.id, Boolean(checked))
+                        }
+                        aria-label={`Select ${formatStudentName(student)}`}
+                      />
+                    </td>
+                  ) : null}
+
+                  <td className="!px-4 !py-4 align-middle font-mono text-sm text-slate-700">
+                    {student.studentCode}
+                  </td>
+
+                  <td className="!px-4 !py-4 align-middle text-sm font-medium leading-snug text-[#102A56]">
+                    {formatStudentName(student)}
+                  </td>
+
+                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
+                    {student.email ?? "—"}
+                  </td>
+
+                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
+                    {student.phone ?? "—"}
+                  </td>
+
+                  <td className="!px-4 !py-4 align-middle">
+                    <StudentStatusBadge
+                      status={student.status}
+                      isActive={student.isActive}
+                      isDeleted={isArchived}
                     />
                   </td>
-                ) : null}
 
-                <td className="px-3 py-3 align-middle font-mono text-[15px] text-slate-700">
-                  {student.studentCode}
-                </td>
-
-                <td className="px-3 py-3 align-middle text-[15px] font-medium text-[#102A56]">
-                  {formatStudentName(student)}
-                </td>
-
-                <td className="px-3 py-3 align-middle text-[15px] text-slate-700">
-                  {student.email ?? "—"}
-                </td>
-
-                <td className="px-3 py-3 align-middle text-[15px] text-slate-700">
-                  {student.phone ?? "—"}
-                </td>
-
-                <td className="px-3 py-3 align-middle">
-                  <StudentStatusBadge
-                    status={student.status}
-                    isActive={student.isActive}
-                    isDeleted={isArchived}
-                  />
-                </td>
-
-                <td className="px-2 py-3 text-right align-middle">
-                  <StudentRowActionsMenu
-                    student={student}
-                    disabled={actionsDisabled}
-                    onManage={onManage}
-                    onEdit={onEdit}
-                    onActivate={onActivate}
-                    onDeactivate={onDeactivate}
-                    onRestore={onRestore}
-                    onPermanentDelete={onPermanentDelete}
-                  />
-                </td>
-              </tr>
-            );
-          })}
+                  <td className="!px-8 !py-4 text-right align-middle">
+                    <StudentRowActionsMenu
+                      student={student}
+                      disabled={actionsDisabled}
+                      onManage={onManage}
+                      onEdit={onEdit}
+                      onActivate={onActivate}
+                      onDeactivate={onDeactivate}
+                      onRestore={onRestore}
+                      onPermanentDelete={onPermanentDelete}
+                    />
+                  </td>
+                </tr>
+              );
+            })
+          )}
         </tbody>
       </table>
     </div>
