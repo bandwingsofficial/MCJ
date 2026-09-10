@@ -61,6 +61,36 @@ export interface StudentBatchAttendanceQuery {
   status?: AttendanceStatus;
 }
 
+const enrollmentAttendanceInclude = {
+  student: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      studentCode: true,
+      status: true,
+      email: true,
+      phone: true,
+    },
+  },
+  batch: {
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      startDate: true,
+      endDate: true,
+      daysOfWeek: true,
+      branch: {
+        select: { id: true, branchName: true, branchCode: true },
+      },
+    },
+  },
+  batchTiming: {
+    select: { id: true, name: true, mode: true },
+  },
+} satisfies Prisma.EnrollmentInclude;
+
 export interface AttendanceReportQuery {
   period?: 'daily' | 'weekly' | 'monthly' | 'yearly';
   date?: string;
@@ -1538,6 +1568,30 @@ export class BranchAttendanceService {
   }
 
   /**
+   * Admin enrollment manage → attendance (scoped to exact enrollment).
+   */
+  async getEnrollmentAttendanceDetail(
+    enrollmentId: string,
+    query: StudentBatchAttendanceQuery = {},
+    branchId?: string,
+  ) {
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: {
+        id: enrollmentId,
+        isDeleted: false,
+        ...(branchId ? { branchId } : {}),
+      },
+      include: enrollmentAttendanceInclude,
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException('Enrollment not found');
+    }
+
+    return this.buildStudentBatchAttendanceDetail(enrollment, query);
+  }
+
+  /**
    * Batch Manage → student Manage attendance (scoped to branch + batch + student).
    */
   async getStudentBatchAttendanceDetail(
@@ -1554,44 +1608,29 @@ export class BranchAttendanceService {
         ...facultyBatchStudentWhere(batchId, user.branchId),
         studentId,
       },
-      include: {
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            studentCode: true,
-            status: true,
-            email: true,
-            phone: true,
-          },
-        },
-        batch: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            startDate: true,
-            endDate: true,
-            daysOfWeek: true,
-            branch: {
-              select: { id: true, branchName: true, branchCode: true },
-            },
-          },
-        },
-        batchTiming: {
-          select: { id: true, name: true, mode: true },
-        },
-      },
+      include: enrollmentAttendanceInclude,
     });
 
     if (!enrollment) {
       throw new NotFoundException('Student is not enrolled in this batch');
     }
 
+    return this.buildStudentBatchAttendanceDetail(enrollment, query);
+  }
+
+  private async buildStudentBatchAttendanceDetail(
+    enrollment: Prisma.EnrollmentGetPayload<{
+      include: typeof enrollmentAttendanceInclude;
+    }>,
+    query: StudentBatchAttendanceQuery,
+  ) {
+    const batchId = enrollment.batchId;
+    const branchId = enrollment.branchId;
+    const studentId = enrollment.studentId;
+
     const sessionFilter: Prisma.AttendanceWhereInput = {
       batchId,
-      branchId: user.branchId,
+      branchId,
       ...(enrollment.batchTimingId
         ? { batchTimingId: enrollment.batchTimingId }
         : {}),
@@ -1628,7 +1667,7 @@ export class BranchAttendanceService {
         where: {
           batchId,
           isDeleted: false,
-          batch: { branchId: user.branchId, isDeleted: false },
+          batch: { branchId, isDeleted: false },
         },
         include: {
           course: { select: { id: true, title: true, code: true } },

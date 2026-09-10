@@ -14,6 +14,7 @@ import { BRANCH_TOKENS } from '../branch/branch.tokens';
 import { BranchModule } from '../branch/branch.module';
 import type { BranchRepository } from '../branch/domain/repositories/branch.repository';
 import { BranchUserModule } from '../branch-user/branch-user.module';
+import { BranchOperationsModule } from '../branch-operations/branch-operations.module';
 import { CATEGORY_TOKENS } from '../category/category.tokens';
 import { CategoryModule } from '../category/category.module';
 import type { CategoryRepository } from '../category/domain/repositories/category.repository';
@@ -57,6 +58,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
     AuthModule,
     BranchModule,
     BranchUserModule,
+    BranchOperationsModule,
     CategoryModule,
     forwardRef(() => CourseModule),
     // Batch does not import Enrollment, but Course -> Enrollment -> Batch

@@ -8,6 +8,9 @@ export const ENROLLMENT_ENDPOINTS = {
   DETAILS: (id: string) =>
     `/admin/enrollments/${id}`,
 
+  ATTENDANCE: (id: string) =>
+    `/admin/enrollments/${id}/attendance`,
+
   UPDATE: (id: string) =>
     `/admin/enrollments/${id}`,
 

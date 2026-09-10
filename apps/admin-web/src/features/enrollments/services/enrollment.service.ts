@@ -44,6 +44,19 @@ export const enrollmentService = {
     }
   },
 
+  async getEnrollmentAttendance(
+    id: string,
+    params?: Record<string, string | undefined>,
+  ) {
+    try {
+      const response = await enrollmentApi.getEnrollmentAttendance(id, params);
+
+      return response.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
+  },
+
   async createEnrollment(
     payload: CreateEnrollmentRequest,
   ) {

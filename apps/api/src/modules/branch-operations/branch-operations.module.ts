@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { PermissionsGuard } from '@common/guards/permissions.guard';
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
@@ -17,7 +17,12 @@ import { BranchStaffService } from './application/branch-staff.service';
 import { BranchOperationsController } from './presentation/controllers/branch-operations.controller';
 
 @Module({
-  imports: [PrismaModule, BatchModule, BranchUserModule, JobApplicationModule],
+  imports: [
+    PrismaModule,
+    forwardRef(() => BatchModule),
+    BranchUserModule,
+    JobApplicationModule,
+  ],
   controllers: [BranchOperationsController],
   providers: [
     PermissionsGuard,
@@ -30,5 +35,6 @@ import { BranchOperationsController } from './presentation/controllers/branch-op
     BranchInterviewService,
     BranchStaffService,
   ],
+  exports: [BranchAttendanceService],
 })
 export class BranchOperationsModule {}

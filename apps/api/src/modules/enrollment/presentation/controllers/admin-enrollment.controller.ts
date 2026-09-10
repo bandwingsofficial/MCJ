@@ -54,6 +54,8 @@ import { RejectEnrollmentDto } from '../dtos/reject-enrollment.dto';
 import { UpdateEnrollmentDto } from '../dtos/update-enrollment.dto';
 import { UpdateEnrollmentStatusDto } from '../dtos/update-enrollment-status.dto';
 import { UnenrollEnrollmentDto } from '../dtos/unenroll-enrollment.dto';
+import { BranchAttendanceService } from '@modules/branch-operations/application/branch-attendance.service';
+import { StudentBatchAttendanceQueryDto } from '@modules/branch-operations/presentation/dtos/branch-operations.dto';
 
 type EnrollmentAdminUser = AuthUser & {
   branchId?: string;
@@ -78,6 +80,7 @@ export class AdminEnrollmentController {
     private readonly approveEnrollmentHandler: ApproveEnrollmentHandler,
     private readonly rejectEnrollmentHandler: RejectEnrollmentHandler,
     private readonly unenrollEnrollmentHandler: UnenrollEnrollmentHandler,
+    private readonly attendance: BranchAttendanceService,
   ) {}
 
   @Post()
@@ -183,6 +186,25 @@ export class AdminEnrollmentController {
       success: true,
       message: 'Enrollment fetched successfully',
       data: result,
+    };
+  }
+
+  @Get(':id/attendance')
+  @UseGuards(JwtOrBranchJwtAuthGuard, AdminOrBranchRoleGuard)
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async getAttendance(
+    @Param('id') id: string,
+    @Query() query: StudentBatchAttendanceQueryDto,
+    @CurrentUser() user: EnrollmentAdminUser,
+  ) {
+    return {
+      success: true,
+      message: 'Enrollment attendance fetched successfully',
+      data: await this.attendance.getEnrollmentAttendanceDetail(
+        id,
+        query,
+        this.resolveBranchId(undefined, user),
+      ),
     };
   }
 
