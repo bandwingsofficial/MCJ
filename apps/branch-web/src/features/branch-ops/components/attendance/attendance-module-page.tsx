@@ -4,14 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
-import { AttendanceBatchOverview } from "@/src/features/branch-ops/components/attendance/attendance-batch-overview";
 import {
   AttendanceDateRangeFilters,
   defaultAttendanceDateRangeFilters,
   resolveDateRangeFromFilters,
 } from "@/src/features/branch-ops/components/attendance/attendance-date-range-filters";
 import { MonthlyAttendancePanel } from "@/src/features/branch-ops/components/attendance/monthly-attendance-panel";
-import { AttendanceSessionOverview } from "@/src/features/branch-ops/components/attendance/attendance-session-overview";
 import { ManageAttendanceModal } from "@/src/features/branch-ops/components/attendance/manage-attendance-modal";
 import { TakeAttendanceModal } from "@/src/features/branch-ops/components/attendance/take-attendance-modal";
 import type { AttendanceItem } from "@/src/features/branch-ops/types";
@@ -358,12 +356,6 @@ export function AttendanceModulePage() {
           <TabsTrigger value="monthly" className={TAB_CLASS}>
             Monthly Attendance
           </TabsTrigger>
-          <TabsTrigger value="batch-attendance" className={TAB_CLASS}>
-            Batch Attendance
-          </TabsTrigger>
-          <TabsTrigger value="sessions" className={TAB_CLASS}>
-            Attendance Sessions
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="attendance" className="space-y-3">
@@ -462,24 +454,6 @@ export function AttendanceModulePage() {
 
         <TabsContent value="monthly">
           <MonthlyAttendancePanel
-            batches={batches}
-            initialBatchId={
-              filters.batchId !== "ALL" ? filters.batchId : undefined
-            }
-          />
-        </TabsContent>
-
-        <TabsContent value="batch-attendance">
-          <AttendanceBatchOverview
-            batches={batches}
-            initialBatchId={
-              filters.batchId !== "ALL" ? filters.batchId : undefined
-            }
-          />
-        </TabsContent>
-
-        <TabsContent value="sessions">
-          <AttendanceSessionOverview
             batches={batches}
             initialBatchId={
               filters.batchId !== "ALL" ? filters.batchId : undefined
