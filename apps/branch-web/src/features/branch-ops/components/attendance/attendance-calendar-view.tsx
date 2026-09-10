@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import type {
-  BatchCalendarDayType,
   StudentBatchAttendanceDetail,
 } from "@/src/features/branch-ops/types";
 import {
@@ -14,12 +13,13 @@ import {
 import {
   buildAttendanceCalendarDays,
   calendarDayCellClass,
-  calendarDayLabel,
+  calendarDayCellStatusLines,
   currentMonthKey,
   formatMonthLabel,
   shiftMonthKey,
   summarizeDaySessions,
   type AttendanceCalendarDay,
+  type AttendanceCalendarDayMeta,
 } from "@/src/features/branch-ops/utils/attendance-calendar.utils";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
@@ -31,7 +31,7 @@ interface Props {
   data: StudentBatchAttendanceDetail;
   monthKey: string;
   loading?: boolean;
-  calendarDayTypes?: Map<string, BatchCalendarDayType>;
+  calendarDayMeta?: Map<string, AttendanceCalendarDayMeta>;
   onMonthChange: (monthKey: string) => void;
   selectedDateKey: string | null;
   onSelectDate: (dateKey: string | null) => void;
@@ -41,7 +41,7 @@ export function AttendanceCalendarView({
   data,
   monthKey,
   loading = false,
-  calendarDayTypes,
+  calendarDayMeta,
   onMonthChange,
   selectedDateKey,
   onSelectDate,
@@ -53,14 +53,14 @@ export function AttendanceCalendarView({
         startDate: data.batch.startDate,
         endDate: data.batch.endDate,
         history: data.history,
-        calendarDayTypes,
+        calendarDayMeta,
       }),
     [
       monthKey,
       data.batch.startDate,
       data.batch.endDate,
       data.history,
-      calendarDayTypes,
+      calendarDayMeta,
     ],
   );
 
@@ -147,7 +147,11 @@ export function AttendanceCalendarView({
       ) : selectedDay ? (
         <p className="rounded-lg border border-dashed border-slate-200 px-3 py-2 text-sm text-slate-500">
           {formatAttendanceDisplayDate(selectedDay.dateKey)} —{" "}
-          {calendarDayLabel(selectedDay.dayType)}
+          {(() => {
+            const { primary, secondary } =
+              calendarDayCellStatusLines(selectedDay);
+            return secondary ? `${primary} (${secondary})` : primary;
+          })()}
           {selectedDay.sessions.length
             ? ""
             : ". No attendance records for this date."}
@@ -166,8 +170,10 @@ function CalendarCell({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const label = calendarDayLabel(day.dayType);
-  const ariaLabel = `${formatAttendanceDisplayDate(day.dateKey)}, ${label}`;
+  const { primary, secondary } = calendarDayCellStatusLines(day);
+  const ariaLabel = secondary
+    ? `${formatAttendanceDisplayDate(day.dateKey)}, ${primary}, ${secondary}`
+    : `${formatAttendanceDisplayDate(day.dateKey)}, ${primary}`;
 
   return (
     <button
@@ -177,13 +183,21 @@ function CalendarCell({
       aria-label={ariaLabel}
       title={ariaLabel}
       className={cn(
-        "flex min-h-[52px] flex-col items-center justify-center rounded-md border px-0.5 py-1 text-xs transition-colors",
+        "flex min-h-[4.5rem] flex-col items-center justify-start rounded-md border px-0.5 py-1 text-xs transition-colors",
         !day.inMonth && "invisible border-transparent",
         day.inMonth && calendarDayCellClass(day.dayType),
         selected && "ring-2 ring-[#2563EB] ring-offset-1",
       )}
     >
-      <span className="text-sm font-semibold">{day.day}</span>
+      <span className="text-sm font-semibold leading-none">{day.day}</span>
+      <span className="mt-1 line-clamp-2 text-center text-[10px] font-medium leading-tight">
+        {primary}
+      </span>
+      {secondary ? (
+        <span className="line-clamp-2 text-center text-[9px] leading-tight opacity-80">
+          {secondary}
+        </span>
+      ) : null}
     </button>
   );
 }

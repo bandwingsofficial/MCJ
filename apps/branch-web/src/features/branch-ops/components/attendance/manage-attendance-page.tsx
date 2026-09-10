@@ -8,7 +8,6 @@ import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { AttendanceCalendarView } from "@/src/features/branch-ops/components/attendance/attendance-calendar-view";
 import { AttendanceSummaryPanel } from "@/src/features/branch-ops/components/attendance/attendance-summary-panel";
 import type {
-  BatchCalendarDayType,
   StudentBatchAttendanceDetail,
 } from "@/src/features/branch-ops/types";
 import {
@@ -19,6 +18,7 @@ import {
 import {
   initialCalendarMonth,
   monthRangeFromKey,
+  type AttendanceCalendarDayMeta,
 } from "@/src/features/branch-ops/utils/attendance-calendar.utils";
 import { formatRoleLabel } from "@/src/core/auth/roles";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
@@ -58,8 +58,8 @@ export function AttendanceDetailsPage({
   );
   const [calendarData, setCalendarData] =
     useState<StudentBatchAttendanceDetail | null>(null);
-  const [calendarDayTypes, setCalendarDayTypes] = useState<
-    Map<string, BatchCalendarDayType>
+  const [calendarDayMeta, setCalendarDayMeta] = useState<
+    Map<string, AttendanceCalendarDayMeta>
   >(new Map());
 
   const [statusFilter, setStatusFilter] = useState("");
@@ -120,19 +120,22 @@ export function AttendanceDetailsPage({
         const calendarView = await branchOpsApi.batchCalendarView(batchId, mode, {
           month: calendarMonth,
         });
-        const dayTypeMap = new Map<string, BatchCalendarDayType>();
+        const dayMetaMap = new Map<string, AttendanceCalendarDayMeta>();
         for (const day of calendarView.days) {
           if (day.inMonth) {
-            dayTypeMap.set(day.dateKey, day.dayType);
+            dayMetaMap.set(day.dateKey, {
+              dayType: day.dayType,
+              reason: day.reason,
+            });
           }
         }
-        setCalendarDayTypes(dayTypeMap);
+        setCalendarDayMeta(dayMetaMap);
       } else {
-        setCalendarDayTypes(new Map());
+        setCalendarDayMeta(new Map());
       }
     } catch {
       setCalendarData(null);
-      setCalendarDayTypes(new Map());
+      setCalendarDayMeta(new Map());
     } finally {
       setCalendarLoading(false);
     }
@@ -249,7 +252,7 @@ export function AttendanceDetailsPage({
                 data={calendarViewData}
                 monthKey={calendarMonth}
                 loading={calendarLoading}
-                calendarDayTypes={calendarDayTypes}
+                calendarDayMeta={calendarDayMeta}
                 onMonthChange={(monthKey) => {
                   setCalendarMonth(monthKey);
                   setSelectedDateKey(null);

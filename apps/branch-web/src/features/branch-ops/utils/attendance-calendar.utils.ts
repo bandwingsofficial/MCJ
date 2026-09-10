@@ -16,12 +16,18 @@ export interface AttendanceCalendarSessionRecord {
   courseTitle: string;
 }
 
+export interface AttendanceCalendarDayMeta {
+  dayType: BatchCalendarDayType;
+  reason?: string | null;
+}
+
 export interface AttendanceCalendarDay {
   dateKey: string;
   day: number;
   inMonth: boolean;
   dayType: AttendanceCalendarDayType;
   inBatchRange: boolean;
+  reason?: string | null;
   sessions: AttendanceCalendarSessionRecord[];
 }
 
@@ -115,9 +121,9 @@ export function buildAttendanceCalendarDays(params: {
     session: { label: string };
     course: { title: string };
   }>;
-  calendarDayTypes?: Map<string, BatchCalendarDayType>;
+  calendarDayMeta?: Map<string, AttendanceCalendarDayMeta>;
 }): AttendanceCalendarDay[] {
-  const { monthKey, startDate, endDate, history, calendarDayTypes } = params;
+  const { monthKey, startDate, endDate, history, calendarDayMeta } = params;
   const { year, month } = parseMonthKey(monthKey);
   const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
 
@@ -149,7 +155,8 @@ export function buildAttendanceCalendarDays(params: {
     const inMonth = cursor.getUTCMonth() === month - 1;
     const sessions = sessionsByDate.get(dateKey) ?? [];
     const attendanceStatus = resolveCalendarDayStatus(sessions);
-    const calendarDayType = calendarDayTypes?.get(dateKey);
+    const calendarMeta = calendarDayMeta?.get(dateKey);
+    const calendarDayType = calendarMeta?.dayType;
 
     cells.push({
       dateKey,
@@ -157,6 +164,7 @@ export function buildAttendanceCalendarDays(params: {
       inMonth,
       dayType: resolveAttendanceDayType(calendarDayType, attendanceStatus),
       inBatchRange: isInBatchRange(dateKey, startDate, endDate),
+      reason: calendarMeta?.reason ?? null,
       sessions,
     });
   }
@@ -216,7 +224,7 @@ export function calendarDayLabel(dayType: AttendanceCalendarDayType): string {
     case "WORKING":
       return "Working Day";
     case "FUTURE":
-      return "Future";
+      return "Upcoming";
     case "SUNDAY":
       return "Sunday";
     case "NON_WORKING":
@@ -226,6 +234,23 @@ export function calendarDayLabel(dayType: AttendanceCalendarDayType): string {
     case "OUTSIDE_PERIOD":
     default:
       return "Outside Period";
+  }
+}
+
+export function calendarDayCellStatusLines(day: AttendanceCalendarDay): {
+  primary: string;
+  secondary?: string;
+} {
+  switch (day.dayType) {
+    case "HOLIDAY": {
+      const reason = day.reason?.trim();
+      return {
+        primary: "Holiday",
+        secondary: reason || undefined,
+      };
+    }
+    default:
+      return { primary: calendarDayLabel(day.dayType) };
   }
 }
 
