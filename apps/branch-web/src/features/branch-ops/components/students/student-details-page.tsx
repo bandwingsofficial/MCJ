@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronRight, FileText } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type {
   EnrollmentItem,
+  StudentBatchAttendanceDetail,
   StudentDetail,
   StudentDocumentItem,
 } from "@/src/features/branch-ops/types";
@@ -17,6 +18,7 @@ import {
   studentName,
 } from "@/src/features/branch-ops/utils/batch-display";
 import { formatCurrency } from "@/src/features/branch-ops/utils/format-currency";
+import { getBatchModeSectionLabel } from "@/src/features/branch-ops/utils/batch-mode.utils";
 import {
   DEFAULT_PAGE_SIZE,
   MAX_LIST_TAKE,
@@ -297,10 +299,7 @@ export function StudentDetailsPage({ studentId }: Props) {
 
         <TabsContent value="attendance">
           {tab === "attendance" ? (
-            <StudentPlaceholderTab
-              title="Attendance records"
-              description="Attendance history for this student will appear here."
-            />
+            <StudentAttendanceTab studentId={studentId} />
           ) : null}
         </TabsContent>
 
@@ -535,6 +534,136 @@ function StudentOverviewTab({
           </div>
         )}
       </OverviewSection>
+    </div>
+  );
+}
+
+function StudentAttendanceTab({ studentId }: { studentId: string }) {
+  const [rows, setRows] = useState<
+    Array<{ enrollment: EnrollmentItem; detail: StudentBatchAttendanceDetail }>
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    branchOpsApi
+      .enrollments({ studentId, take: MAX_LIST_TAKE })
+      .then(async (result) => {
+        const enrollments = (result.items ?? []).filter(
+          (item) => item.batch?.id,
+        );
+        const summaries = await Promise.all(
+          enrollments.map(async (enrollment) => {
+            const detail = await branchOpsApi.studentBatchAttendance(
+              enrollment.batch!.id,
+              studentId,
+            );
+            return { enrollment, detail };
+          }),
+        );
+        if (!cancelled) setRows(summaries);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        const message =
+          err && typeof err === "object" && "response" in err
+            ? (err as { response?: { data?: { message?: string } } }).response
+                ?.data?.message
+            : null;
+        setError(message ?? "Unable to load attendance summaries.");
+        setRows([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [studentId]);
+
+  if (loading) return <Loader />;
+  if (error) return <ErrorState description={error} />;
+  if (!rows.length) {
+    return <EmptyState title="No enrollment attendance found for this student." />;
+  }
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[#E1EBF5] bg-white">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Batch</TableHead>
+            <TableHead>Timing</TableHead>
+            <TableHead>Mode</TableHead>
+            <TableHead>Enrollment Status</TableHead>
+            <TableHead>Total Sessions</TableHead>
+            <TableHead>Present</TableHead>
+            <TableHead>Absent</TableHead>
+            <TableHead>Late</TableHead>
+            <TableHead>Attendance %</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map(({ enrollment, detail }) => {
+            const attendance = detail.summary.attendance;
+            const batchId = enrollment.batch!.id;
+            const timingLabel =
+              detail.batchTiming?.name ??
+              enrollment.batchTiming?.name ??
+              "—";
+            const modeLabel = detail.batchTiming?.mode
+              ? getBatchModeSectionLabel(
+                  detail.batchTiming.mode as "OFFLINE" | "ONLINE" | "RECORDED",
+                )
+              : enrollment.batchTiming?.mode
+                ? getBatchModeSectionLabel(
+                    enrollment.batchTiming.mode as
+                      | "OFFLINE"
+                      | "ONLINE"
+                      | "RECORDED",
+                  )
+                : "—";
+
+            return (
+              <TableRow key={enrollment.id}>
+                <TableCell className="min-w-[140px]">
+                  {formatBatchLabel(detail.batch.name, detail.batch.code)}
+                </TableCell>
+                <TableCell>{timingLabel}</TableCell>
+                <TableCell>{modeLabel}</TableCell>
+                <TableCell>
+                  <Badge variant="default">
+                    {formatBatchStatus(detail.enrollmentStatus)}
+                  </Badge>
+                </TableCell>
+                <TableCell>{attendance.totalSessions}</TableCell>
+                <TableCell>{attendance.present}</TableCell>
+                <TableCell>{attendance.absent}</TableCell>
+                <TableCell>{attendance.late}</TableCell>
+                <TableCell>
+                  {attendance.percentage == null
+                    ? "—"
+                    : `${attendance.percentage.toFixed(2)}%`}
+                </TableCell>
+                <TableCell>
+                  <Link
+                    href={`/attendance/details/${batchId}/${studentId}`}
+                    className="text-sm font-medium text-[#2563EB] hover:underline"
+                  >
+                    View Details
+                  </Link>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
 }

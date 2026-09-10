@@ -35,6 +35,7 @@ import {
 import {
   applyStatusCount,
   buildAttendanceAnalyticsStats,
+  buildSessionSummaryFromAttendanceRows,
   emptyStatusCounts,
   monthKeyFromDate,
   monthLabelFromKey,
@@ -1435,29 +1436,6 @@ export class BranchAttendanceService {
       forWrite: false,
     });
 
-    const batch = await this.prisma.batch.findFirst({
-      where: { id: batchId, isDeleted: false },
-      select: { startDate: true, endDate: true },
-    });
-
-    if (!batch) {
-      throw new NotFoundException('Batch not found');
-    }
-
-    const statsRange = this.resolveStatsDateRange({
-      enrollmentStartKey: dateKeyFromDate(batch.startDate),
-      batchStartDate: batch.startDate,
-      batchEndDate: batch.endDate,
-    });
-
-    const modeWorkingDays = await this.listApplicableWorkingDayKeys({
-      batchId,
-      mode: context.timing.mode,
-      from: statsRange.from,
-      to: statsRange.to,
-      enrollmentStartKey: statsRange.from,
-    });
-
     const [enrollments, attendanceRows, lastAttendanceRows] = await Promise.all([
       this.prisma.enrollment.findMany({
         where: facultyBatchTimingStudentWhere(
@@ -1489,6 +1467,7 @@ export class BranchAttendanceService {
           date: true,
           status: true,
         },
+        orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
       }),
       this.prisma.attendance.findMany({
         where: {
@@ -1505,6 +1484,13 @@ export class BranchAttendanceService {
       }),
     ]);
 
+    const rowsByStudent = new Map<string, Array<{ date: Date; status: AttendanceStatus }>>();
+    for (const row of attendanceRows) {
+      const list = rowsByStudent.get(row.studentId) ?? [];
+      list.push({ date: row.date, status: row.status });
+      rowsByStudent.set(row.studentId, list);
+    }
+
     const lastByStudent = new Map<
       string,
       { date: Date; status: AttendanceStatus }
@@ -1519,24 +1505,8 @@ export class BranchAttendanceService {
     }
 
     const students = enrollments.map((enrollment) => {
-      const enrollmentStartKey = this.enrollmentDateKey(enrollment);
-      const applicableWorkingDays = modeWorkingDays.filter(
-        (dateKey) => dateKey >= enrollmentStartKey,
-      );
-      const applicableWorkingSet = new Set(applicableWorkingDays);
-
-      const counts = emptyStatusCounts();
-      for (const row of attendanceRows) {
-        if (row.studentId !== enrollment.student.id) continue;
-        const dateKey = row.date.toISOString().slice(0, 10);
-        if (!applicableWorkingSet.has(dateKey)) continue;
-        applyStatusCount(counts, row.status);
-      }
-
-      const stats = buildAttendanceAnalyticsStats(
-        counts,
-        applicableWorkingDays.length,
-      );
+      const studentRows = rowsByStudent.get(enrollment.student.id) ?? [];
+      const stats = buildSessionSummaryFromAttendanceRows(studentRows);
       const name = [enrollment.student.firstName, enrollment.student.lastName]
         .filter(Boolean)
         .join(' ');
@@ -1723,7 +1693,7 @@ export class BranchAttendanceService {
       return true;
     });
 
-    const attendanceStats = this.buildSessionSummaryFromRows(allStudentRows);
+    const attendanceStats = buildSessionSummaryFromAttendanceRows(allStudentRows);
 
     const statusByWorkingDate = new Map<string, AttendanceStatus>();
     for (const row of allStudentRows) {
@@ -1881,35 +1851,6 @@ export class BranchAttendanceService {
       monthly,
       history,
     };
-  }
-
-  private buildSessionSummaryFromRows(
-    rows: Array<{ date: Date; status: AttendanceStatus }>,
-  ) {
-    const statusBySessionDate = new Map<string, AttendanceStatus>();
-    for (const row of rows) {
-      if (
-        row.status !== AttendanceStatus.PRESENT &&
-        row.status !== AttendanceStatus.ABSENT &&
-        row.status !== AttendanceStatus.LATE
-      ) {
-        continue;
-      }
-      const dateKey = dateKeyFromDate(row.date);
-      if (!statusBySessionDate.has(dateKey)) {
-        statusBySessionDate.set(dateKey, row.status);
-      }
-    }
-
-    const sessionCounts = emptyStatusCounts();
-    for (const status of statusBySessionDate.values()) {
-      applyStatusCount(sessionCounts, status);
-    }
-
-    return buildAttendanceAnalyticsStats(
-      sessionCounts,
-      statusBySessionDate.size,
-    );
   }
 
   private buildDateFilter(

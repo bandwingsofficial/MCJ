@@ -868,6 +868,11 @@ export interface EnrollmentItem {
     status: string;
   };
   batch: { id: string; name: string; code?: string } | null;
+  batchTiming: {
+    id: string;
+    name: string;
+    mode: string;
+  } | null;
   course: { id: string; title: string } | null;
 }
 

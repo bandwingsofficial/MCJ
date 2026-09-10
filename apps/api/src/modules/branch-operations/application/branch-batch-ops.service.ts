@@ -31,6 +31,7 @@ import {
   facultyBranchEnrollmentWhere,
 } from './faculty-batch-query';
 import { formatAttendanceSessionLabel } from './attendance-session.util';
+import { buildSessionSummaryFromAttendanceRows } from './attendance-analytics.util';
 
 const VISIBLE_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
   EnrollmentStatus.ADMITTED,
@@ -212,54 +213,33 @@ export class BranchBatchOpsService {
     });
 
     const studentIds = enrollments.map((item) => item.student.id);
-    const attendanceByStudent = new Map<
-      string,
-      {
-        present: number;
-        absent: number;
-        late: number;
-        leave: number;
-        total: number;
-      }
-    >();
-
-    if (studentIds.length) {
-      const groups = await this.prisma.attendance.groupBy({
-        by: ['studentId', 'status'],
-        where: {
-          batchId,
-          studentId: { in: studentIds },
-        },
-        _count: { _all: true },
-      });
-
-      for (const group of groups) {
-        const current = attendanceByStudent.get(group.studentId) ?? {
-          present: 0,
-          absent: 0,
-          late: 0,
-          leave: 0,
-          total: 0,
-        };
-        const count = group._count._all;
-        current.total += count;
-        if (group.status === AttendanceStatus.PRESENT) current.present += count;
-        if (group.status === AttendanceStatus.ABSENT) current.absent += count;
-        if (group.status === AttendanceStatus.LATE) current.late += count;
-        if (group.status === AttendanceStatus.LEAVE) current.leave += count;
-        attendanceByStudent.set(group.studentId, current);
-      }
-    }
+    const attendanceRows =
+      studentIds.length > 0
+        ? await this.prisma.attendance.findMany({
+            where: {
+              batchId,
+              branchId: user.branchId,
+              studentId: { in: studentIds },
+            },
+            select: {
+              studentId: true,
+              batchTimingId: true,
+              date: true,
+              status: true,
+            },
+            orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+          })
+        : [];
 
     return enrollments.map((item) => {
-      const counts = attendanceByStudent.get(item.student.id) ?? {
-        present: 0,
-        absent: 0,
-        late: 0,
-        leave: 0,
-        total: 0,
-      };
-      const attended = counts.present + counts.late;
+      const scopedRows = attendanceRows.filter((row) => {
+        if (row.studentId !== item.student.id) return false;
+        if (item.batchTimingId) {
+          return row.batchTimingId === item.batchTimingId;
+        }
+        return true;
+      });
+      const stats = buildSessionSummaryFromAttendanceRows(scopedRows);
 
       return {
         id: item.student.id,
@@ -278,11 +258,14 @@ export class BranchBatchOpsService {
         branch: item.branch,
         course: item.course,
         attendance: {
-          ...counts,
-          percentage:
-            counts.total > 0
-              ? Math.round((attended / counts.total) * 100)
-              : 0,
+          present: stats.present,
+          absent: stats.absent,
+          late: stats.late,
+          leave: stats.leave,
+          total: stats.conductedSessions,
+          percentage: stats.percentage ?? 0,
+          conductedSessions: stats.conductedSessions,
+          ratioLabel: stats.ratioLabel,
         },
       };
     });
@@ -468,6 +451,9 @@ export class BranchBatchOpsService {
           },
         },
         batch: { select: { id: true, name: true, code: true } },
+        batchTiming: {
+          select: { id: true, name: true, mode: true },
+        },
       },
     });
 
@@ -477,12 +463,18 @@ export class BranchBatchOpsService {
       );
     }
 
+    const attendanceWhere: Prisma.AttendanceWhereInput = {
+      batchId,
+      branchId: user.branchId,
+      studentId,
+      ...(enrollment.batchTimingId
+        ? { batchTimingId: enrollment.batchTimingId }
+        : {}),
+    };
+
     const [attendanceRows, assessmentRows] = await Promise.all([
       this.prisma.attendance.findMany({
-        where: {
-          batchId,
-          studentId,
-        },
+        where: attendanceWhere,
         orderBy: { date: 'desc' },
         include: {
           faculty: {
@@ -554,6 +546,7 @@ export class BranchBatchOpsService {
         enrollment.joiningDate ??
         enrollment.createdAt,
       enrollmentStatus: enrollment.status,
+      batchTiming: enrollment.batchTiming,
       attendance: {
         items: attendanceItems,
         overall: this.summarizeAttendance(attendanceRows),
@@ -913,6 +906,9 @@ export class BranchBatchOpsService {
             },
           },
           batch: { select: { id: true, name: true, code: true } },
+          batchTiming: {
+            select: { id: true, name: true, mode: true },
+          },
           course: { select: { id: true, title: true } },
         },
       }),
@@ -927,6 +923,7 @@ export class BranchBatchOpsService {
         enrollmentDate: item.admissionDate ?? item.joiningDate ?? item.createdAt,
         student: item.student,
         batch: item.batch,
+        batchTiming: item.batchTiming,
         course: item.course,
       })),
       count,
@@ -1611,28 +1608,15 @@ export class BranchBatchOpsService {
     const filtered = from
       ? rows.filter((row) => row.date.getTime() >= from.getTime())
       : rows;
-    const present = filtered.filter(
-      (row) => row.status === AttendanceStatus.PRESENT,
-    ).length;
-    const absent = filtered.filter(
-      (row) => row.status === AttendanceStatus.ABSENT,
-    ).length;
-    const late = filtered.filter(
-      (row) => row.status === AttendanceStatus.LATE,
-    ).length;
-    const leave = filtered.filter(
-      (row) => row.status === AttendanceStatus.LEAVE,
-    ).length;
-    const total = filtered.length;
-    const attended = present + late;
+    const stats = buildSessionSummaryFromAttendanceRows(filtered);
 
     return {
-      present,
-      absent,
-      late,
-      leave,
-      total,
-      percentage: total > 0 ? Math.round((attended / total) * 100) : 0,
+      present: stats.present,
+      absent: stats.absent,
+      late: stats.late,
+      leave: stats.leave,
+      total: stats.conductedSessions,
+      percentage: stats.percentage ?? 0,
     };
   }
 

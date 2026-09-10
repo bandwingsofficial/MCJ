@@ -1,4 +1,7 @@
-import type { AttendanceItem } from "@/src/features/branch-ops/types";
+import type {
+  AttendanceItem,
+  BatchTimingStudentAttendanceRow,
+} from "@/src/features/branch-ops/types";
 import {
   currentMonthKey,
   formatMonthLabel,
@@ -82,6 +85,22 @@ export function extractSessionDates(records: AttendanceItem[]): string[] {
     dates.add(normalizeDateKey(String(record.date)));
   }
   return Array.from(dates).sort();
+}
+
+export function mapTimingStudentRowToMonthlyRow(
+  row: BatchTimingStudentAttendanceRow,
+): MonthlyAttendanceStudentRow {
+  return {
+    studentId: row.id,
+    enrollmentId: row.enrollmentId,
+    studentCode: row.studentCode,
+    studentName: row.name,
+    workingSessions: row.conductedSessions,
+    present: row.present,
+    absent: row.absent,
+    late: row.late,
+    percentage: row.hasAttendance ? row.percentage : null,
+  };
 }
 
 /** Mirrors backend buildSessionSummaryFromRows: one session per date. */

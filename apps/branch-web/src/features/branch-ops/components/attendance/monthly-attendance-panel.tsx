@@ -5,11 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarDays } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
-import type {
-  AttendanceItem,
-  BatchListItem,
-  BatchStudentItem,
-} from "@/src/features/branch-ops/types";
+import type { BatchListItem } from "@/src/features/branch-ops/types";
 import { attendanceStatusVariant } from "@/src/features/branch-ops/utils/attendance-date.utils";
 import {
   type BatchMode,
@@ -18,10 +14,9 @@ import {
   getTimingsForMode,
 } from "@/src/features/branch-ops/utils/batch-mode.utils";
 import {
-  buildMonthlyStudentRows,
   currentMonthlyAttendanceLabel,
-  currentMonthlyAttendanceRange,
   formatMonthlyAttendancePercentage,
+  mapTimingStudentRowToMonthlyRow,
   type MonthlyAttendanceStudentRow,
 } from "@/src/features/branch-ops/utils/monthly-attendance.utils";
 import { Badge } from "@/src/shared/components/ui/badge";
@@ -50,40 +45,6 @@ const FILTER_H = "h-[46px]";
 const FILTER_RADIUS = "rounded-xl";
 const FILTER_TRIGGER = `${FILTER_H} ${FILTER_RADIUS} w-full min-w-0 text-sm [&>span]:line-clamp-1 [&>span]:text-left`;
 
-async function loadMonthlyAttendanceRecords(params: {
-  batchId: string;
-  batchTimingId: string;
-}): Promise<AttendanceItem[]> {
-  const first = await branchOpsApi.attendanceReport({
-    batchId: params.batchId,
-    batchTimingId: params.batchTimingId,
-    requireBatchTiming: "true",
-    take: 200,
-    skip: 0,
-  });
-
-  const all = [...(first.items ?? [])];
-  let skip = 200;
-  while (skip < first.total) {
-    const page = await branchOpsApi.attendanceReport({
-      batchId: params.batchId,
-      batchTimingId: params.batchTimingId,
-      requireBatchTiming: "true",
-      take: 200,
-      skip,
-    });
-    all.push(...(page.items ?? []));
-    if (!(page.items ?? []).length) break;
-    skip += 200;
-  }
-
-  return all;
-}
-
-function studentDisplayName(student: BatchStudentItem): string {
-  return [student.firstName, student.lastName].filter(Boolean).join(" ");
-}
-
 function matchesStudentSearch(
   row: MonthlyAttendanceStudentRow,
   search: string,
@@ -100,7 +61,6 @@ export function MonthlyAttendancePanel({
   batches,
   initialBatchId,
 }: Props) {
-  const monthRange = useMemo(() => currentMonthlyAttendanceRange(), []);
   const monthLabel = useMemo(() => currentMonthlyAttendanceLabel(), []);
 
   const [batchId, setBatchId] = useState(initialBatchId ?? "");
@@ -111,9 +71,7 @@ export function MonthlyAttendancePanel({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const [students, setStudents] = useState<BatchStudentItem[]>([]);
-  const [records, setRecords] = useState<AttendanceItem[]>([]);
-  const [sessionDates, setSessionDates] = useState<string[]>([]);
+  const [rows, setRows] = useState<MonthlyAttendanceStudentRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -166,9 +124,7 @@ export function MonthlyAttendancePanel({
 
   useEffect(() => {
     if (!batchId || !batchTimingId || !mode) {
-      setStudents([]);
-      setRecords([]);
-      setSessionDates([]);
+      setRows([]);
       setError(null);
       return;
     }
@@ -177,28 +133,15 @@ export function MonthlyAttendancePanel({
     setLoading(true);
     setError(null);
 
-    Promise.all([
-      branchOpsApi.batchStudents(batchId),
-      loadMonthlyAttendanceRecords({
-        batchId,
-        batchTimingId,
-      }),
-      branchOpsApi.batchCalendarWorkingDays(batchId, mode, {
-        from: monthRange.from,
-        to: monthRange.to,
-      }),
-    ])
-      .then(([batchStudents, attendanceRecords, calendarWorkingDays]) => {
+    branchOpsApi
+      .batchTimingStudentAttendance(batchId, batchTimingId)
+      .then((response) => {
         if (cancelled) return;
-        setStudents(
-          batchStudents.filter(
-            (student) =>
-              student.batchTiming?.id === batchTimingId &&
-              student.enrollmentStatus === "ADMITTED",
-          ),
+        setRows(
+          response.students
+            .map(mapTimingStudentRowToMonthlyRow)
+            .sort((a, b) => a.studentName.localeCompare(b.studentName)),
         );
-        setRecords(attendanceRecords);
-        setSessionDates(calendarWorkingDays.dateKeys);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -208,9 +151,7 @@ export function MonthlyAttendancePanel({
                 ?.data?.message
             : null;
         setError(message ?? "Unable to load monthly attendance.");
-        setStudents([]);
-        setRecords([]);
-        setSessionDates([]);
+        setRows([]);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -219,28 +160,7 @@ export function MonthlyAttendancePanel({
     return () => {
       cancelled = true;
     };
-  }, [batchId, batchTimingId, mode, monthRange.from, monthRange.to]);
-
-  const studentInputs = useMemo(
-    () =>
-      students.map((student) => ({
-        id: student.id,
-        enrollmentId: student.enrollmentId,
-        studentCode: student.studentCode,
-        name: studentDisplayName(student),
-        enrollmentDate: student.enrollmentDate,
-      })),
-    [students],
-  );
-
-  const rows = useMemo(
-    () =>
-      buildMonthlyStudentRows({
-        students: studentInputs,
-        records,
-      }).sort((a, b) => a.studentName.localeCompare(b.studentName)),
-    [studentInputs, records],
-  );
+  }, [batchId, batchTimingId, mode]);
 
   const filteredRows = useMemo(
     () => rows.filter((row) => matchesStudentSearch(row, debouncedSearch)),

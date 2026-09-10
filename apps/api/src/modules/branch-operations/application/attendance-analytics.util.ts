@@ -84,6 +84,36 @@ export function applyStatusCount(
   if (status === AttendanceStatus.LEAVE) counts.leave += amount;
 }
 
+/** One session per date; first qualifying record wins (matches student detail summary). */
+export function buildSessionSummaryFromAttendanceRows(
+  rows: Array<{ date: Date; status: AttendanceStatus }>,
+): AttendanceAnalyticsStats {
+  const statusBySessionDate = new Map<string, AttendanceStatus>();
+  for (const row of rows) {
+    if (
+      row.status !== AttendanceStatus.PRESENT &&
+      row.status !== AttendanceStatus.ABSENT &&
+      row.status !== AttendanceStatus.LATE
+    ) {
+      continue;
+    }
+    const dateKey = row.date.toISOString().slice(0, 10);
+    if (!statusBySessionDate.has(dateKey)) {
+      statusBySessionDate.set(dateKey, row.status);
+    }
+  }
+
+  const sessionCounts = emptyStatusCounts();
+  for (const status of statusBySessionDate.values()) {
+    applyStatusCount(sessionCounts, status);
+  }
+
+  return buildAttendanceAnalyticsStats(
+    sessionCounts,
+    statusBySessionDate.size,
+  );
+}
+
 export function monthKeyFromDate(date: Date): string {
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
