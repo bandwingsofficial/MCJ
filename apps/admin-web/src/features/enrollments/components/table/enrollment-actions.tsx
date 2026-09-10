@@ -1,8 +1,7 @@
 "use client";
 
-import { Pencil, Settings2, UserMinus } from "lucide-react";
+import { Archive, Pencil, Settings2 } from "lucide-react";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { Enrollment } from "@/src/features/enrollments/types";
@@ -11,9 +10,10 @@ import {
   isCurrentEnrollmentStatus,
 } from "@/src/features/enrollments/utils/current-enrollment";
 
-const iconBtnClass =
-  "h-9 w-9 shrink-0 rounded-lg p-0 transition-colors";
-const iconClass = "h-[1.25rem] w-[1.25rem]";
+const iconButtonClass =
+  "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40";
+
+const iconClass = "h-[15px] w-[14px] stroke-[2]";
 
 interface Props {
   enrollment: Enrollment;
@@ -36,49 +36,50 @@ export function EnrollmentActions({
     onUnenroll && canUnenrollEnrollment(enrollment) && !enrollment.isDeleted;
 
   return (
-    <div className="flex items-center justify-end gap-1">
-      {showUnenroll ? (
-        <Tooltip content="Unenroll student">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={disabled}
-            onClick={() => onUnenroll(enrollment)}
-            aria-label="Unenroll student"
-            className={`${iconBtnClass} text-rose-600 hover:bg-rose-50 hover:text-rose-700`}
-          >
-            <UserMinus className={iconClass} />
-          </Button>
-        </Tooltip>
-      ) : null}
-
+    <div className="flex items-center justify-end gap-2">
       {isCurrent ? (
         <Tooltip content="Edit enrollment">
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
             disabled={disabled}
             onClick={() => onEdit(enrollment)}
             aria-label="Edit enrollment"
-            className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+            className={`${iconButtonClass} text-blue-900`}
           >
             <Pencil className={iconClass} />
-          </Button>
+          </button>
         </Tooltip>
       ) : null}
 
-      <Tooltip content={isCurrent ? "Manage enrollment" : "View enrollment history"}>
-        <Button
-          variant="ghost"
-          size="sm"
+      <Tooltip
+        content={isCurrent ? "Manage enrollment" : "View enrollment history"}
+      >
+        <button
+          type="button"
           disabled={disabled}
           onClick={() => onManage(enrollment)}
-          aria-label={isCurrent ? "Manage enrollment" : "View enrollment history"}
-          className={`${iconBtnClass} text-slate-700 hover:bg-slate-100 hover:text-[#102A56]`}
+          aria-label={
+            isCurrent ? "Manage enrollment" : "View enrollment history"
+          }
+          className={`${iconButtonClass} text-green-800`}
         >
           <Settings2 className={iconClass} />
-        </Button>
+        </button>
       </Tooltip>
+
+      {showUnenroll ? (
+        <Tooltip content="Unenroll student">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onUnenroll(enrollment)}
+            aria-label="Unenroll student"
+            className={`${iconButtonClass} text-red-800`}
+          >
+            <Archive className={iconClass} />
+          </button>
+        </Tooltip>
+      ) : null}
     </div>
   );
 }
