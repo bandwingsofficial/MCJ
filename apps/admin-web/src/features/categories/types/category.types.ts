@@ -82,6 +82,8 @@ export interface CategoryListItem {
   updatedAt: string;
 
   thumbnailUrl: string | null;
+
+  courseCount?: number;
 }
 
 export type CategoryListResponse =

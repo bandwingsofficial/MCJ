@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Inject,
   Param,
   Patch,
   Post,
@@ -70,6 +71,8 @@ import { BulkRestoreCategoryDto } from '../dtos/bulk-restore-category.dto';
 import { ReorderCategoriesDto } from '../dtos/reorder-categories.dto';
 import { CheckCategoryAvailabilityHandler } from '../../application/check-category-availability/check-category-availability.handler';
 import { CheckCategoryAvailabilityQuery } from '../../application/check-category-availability/check-category-availability.query';
+import { CATEGORY_TOKENS } from '../../category.tokens';
+import type { CategoryRepository } from '../../domain/repositories/category.repository';
 
 function resolveCategoryIds(
   dto: { categoryIds?: string[]; ids?: string[] },
@@ -100,6 +103,8 @@ export class AdminCategoryController {
     private readonly reorderCategoriesHandler: ReorderCategoriesHandler,
     private readonly getCategoryDependenciesHandler: GetCategoryDependenciesHandler,
     private readonly checkCategoryAvailabilityHandler: CheckCategoryAvailabilityHandler,
+    @Inject(CATEGORY_TOKENS.CATEGORY_REPOSITORY)
+    private readonly categoryRepo: CategoryRepository,
   ) {}
 
   @Get('check-availability')
@@ -171,10 +176,27 @@ export class AdminCategoryController {
       ),
     );
 
+    const courseCounts =
+      await this.categoryRepo.countActiveCoursesByCategoryIds(
+        result.items.map((item) => item.id),
+      );
+
     return {
       success: true,
       message: 'Categories fetched successfully',
-      data: result.items,
+      data: result.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        slug: item.slug,
+        description: item.description,
+        thumbnailUrl: item.thumbnailUrl,
+        status: item.status,
+        displayOrder: item.displayOrder,
+        isDeleted: item.isDeleted,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        courseCount: courseCounts[item.id] ?? 0,
+      })),
       meta: {
         total: result.total,
         skip: result.skip,

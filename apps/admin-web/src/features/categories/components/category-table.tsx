@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Image from "next/image";
 
@@ -70,12 +66,15 @@ export function CategoryTable({
   const safeSelectedIds = selectedCategoryIds ?? [];
   const selectionEnabled = Boolean(onSelectionChange);
   const visibleIds = rows.map((category) => category.id);
+
   const selectedVisibleCount = visibleIds.filter((id) =>
     safeSelectedIds.includes(id),
   ).length;
+
   const allVisibleSelected =
     visibleIds.length > 0 &&
     selectedVisibleCount === visibleIds.length;
+
   const someVisibleSelected =
     selectedVisibleCount > 0 && !allVisibleSelected;
 
@@ -142,8 +141,14 @@ export function CategoryTable({
 
     const previous = rows;
     const next = [...rows];
-    const fromIndex = next.findIndex((item) => item.id === dragId);
-    const toIndex = next.findIndex((item) => item.id === targetId);
+
+    const fromIndex = next.findIndex(
+      (item) => item.id === dragId,
+    );
+
+    const toIndex = next.findIndex(
+      (item) => item.id === targetId,
+    );
 
     if (fromIndex < 0 || toIndex < 0) {
       setDragId(null);
@@ -165,12 +170,15 @@ export function CategoryTable({
     }
 
     const newDisplayOrder = target.displayOrder;
+
     const [moved] = next.splice(fromIndex, 1);
     next.splice(toIndex, 0, moved);
+
     setRows(next);
 
     try {
       setIsSavingOrder(true);
+
       await onReorder({
         categoryId: source.id,
         newDisplayOrder,
@@ -185,19 +193,20 @@ export function CategoryTable({
   };
 
   const dragDisabled =
-    reorderDisabled || isSavingOrder || safeSelectedIds.length > 0;
+    reorderDisabled ||
+    isSavingOrder ||
+    safeSelectedIds.length > 0;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse">
-        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
-          <tr>
+    <div className="w-full overflow-x-auto">
+      <table className="w-full min-w-full border-collapse text-sm">
+<thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]">          <tr>
             {selectionEnabled ? (
-              <th className="w-11 text-left">
+              <th className="w-9 !px-6 !py-4 text-left">
                 <input
                   ref={selectAllRef}
                   type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300"
+                  className="h-3.5 w-3.5 rounded border-slate-300"
                   checked={allVisibleSelected}
                   disabled={selectionDisabled}
                   onChange={(event) => {
@@ -208,25 +217,31 @@ export function CategoryTable({
               </th>
             ) : null}
 
-            <th className="w-10 px-2 py-3">
+            <th className="w-8 !px-4 !py-4">
               <span className="sr-only">Reorder</span>
             </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+
+            <th className="w-12 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Image
             </th>
-            <th className="min-w-[180px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Name
             </th>
-            <th className="min-w-[160px] px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Slug
             </th>
-            <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+
+            <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Status
             </th>
-            <th className="w-20 px-3 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Order
+
+            <th className="min-w-[8.75rem] w-[8.75rem] !px-3 !py-4 text-center text-[11px] font-semibold leading-none tracking-normal text-slate-500 whitespace-nowrap">
+              Total Courses
             </th>
-            <th className="w-[7.5rem] px-2 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+
+            <th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
               Actions
             </th>
           </tr>
@@ -234,9 +249,12 @@ export function CategoryTable({
 
         <tbody className="divide-y divide-slate-100">
           {rows.map((category) => {
-            const draggable = canReorder(category) && !dragDisabled;
+            const draggable =
+              canReorder(category) && !dragDisabled;
+
             const isArchived =
-              category.isDeleted || category.status === "ARCHIVED";
+              category.isDeleted ||
+              category.status === "ARCHIVED";
 
             return (
               <tr
@@ -246,12 +264,14 @@ export function CategoryTable({
                   if (!draggable) {
                     return;
                   }
+
                   setDragId(category.id);
                 }}
                 onDragOver={(event) => {
                   if (!draggable || !dragId) {
                     return;
                   }
+
                   event.preventDefault();
                   setDropTargetId(category.id);
                 }}
@@ -269,75 +289,96 @@ export function CategoryTable({
                   setDropTargetId(null);
                 }}
                 className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${
-                  dropTargetId === category.id ? "bg-blue-50/60" : ""
-                } ${dragId === category.id ? "opacity-60" : ""} ${
-                  isArchived ? "bg-slate-50/40" : "bg-white"
+                  dropTargetId === category.id
+                    ? "bg-blue-50/60"
+                    : ""
+                } ${
+                  dragId === category.id
+                    ? "opacity-60"
+                    : ""
+                } ${
+                  isArchived
+                    ? "bg-slate-50/40"
+                    : "bg-white"
                 }`}
               >
                 {selectionEnabled ? (
-                  <td className="w-11 px-3 py-3 align-middle">
+                  <td className="w-9 !px-6 !py-4 align-middle">
                     <Checkbox
-                      checked={safeSelectedIds.includes(category.id)}
+                      checked={safeSelectedIds.includes(
+                        category.id,
+                      )}
                       disabled={selectionDisabled}
                       onCheckedChange={(checked) => {
-                        toggleRow(category.id, Boolean(checked));
+                        toggleRow(
+                          category.id,
+                          Boolean(checked),
+                        );
                       }}
                     />
                   </td>
                 ) : null}
 
-                <td className="w-10 px-2 py-3 align-middle">
+                <td className="w-8 !px-4 !py-4 align-middle">
                   {draggable ? (
-                    <GripVertical className="h-4 w-4 cursor-grab text-slate-400 active:cursor-grabbing" />
+                    <GripVertical className="h-3.5 w-3.5 cursor-grab text-slate-400 active:cursor-grabbing" />
                   ) : (
-                    <span className="inline-block w-4" />
+                    <span className="inline-block w-3.5" />
                   )}
                 </td>
 
-                <td className="px-3 py-3 align-middle">
+                <td className="w-12 !px-4 !py-4 align-middle">
                   {category.thumbnailUrl ? (
                     <Image
                       src={category.thumbnailUrl}
                       alt={category.name}
-                      width={44}
-                      height={44}
-                      className="h-11 w-11 rounded-lg border border-slate-200 object-cover shadow-sm"
+                      width={36}
+                      height={36}
+                      className="h-9 w-9 rounded-md border border-slate-200 object-cover"
                     />
                   ) : (
-                    <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-[9px] font-medium uppercase tracking-wide text-slate-400">
                       N/A
                     </div>
                   )}
                 </td>
 
-                <td className="px-3 py-3 align-middle">
-                  <p className="font-medium text-[#102A56]">{category.name}</p>
+                <td className="!px-4 !py-4 align-middle">
+                  <p className="text-sm font-medium leading-snug text-[#102A56]">
+                    {category.name}
+                  </p>
                 </td>
 
-                <td className="px-3 py-3 align-middle">
-                  <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700">
+                <td className="!px-4 !py-4 align-middle">
+                  <code className="rounded bg-slate-100 px-1 py-0.5 text-[12px] text-slate-700">
                     {category.slug}
                   </code>
                 </td>
 
-                <td className="px-3 py-3 align-middle">
-                  <CategoryStatusBadge status={category.status} />
+                <td className="!px-4 !py-4 align-middle">
+                  <CategoryStatusBadge
+                    status={category.status}
+                  />
                 </td>
 
-                <td className="px-3 py-3 text-center align-middle tabular-nums text-slate-700">
-                  {category.displayOrder ?? "—"}
+                <td className="min-w-[8.75rem] w-[8.75rem] !px-3 !py-4 text-center align-middle text-sm font-semibold tabular-nums text-[#102A56]">
+                  {category.courseCount ?? 0}
                 </td>
 
-                <td className="px-2 py-3 align-middle">
+                <td className="!px-8 !py-4 align-middle">
                   <CategoryActions
                     category={category}
-                    disabled={actionsDisabled || isSavingOrder}
+                    disabled={
+                      actionsDisabled || isSavingOrder
+                    }
                     onEdit={onEdit}
                     onActivate={onActivate}
                     onDeactivate={onDeactivate}
                     onDelete={onDelete}
                     onRestore={onRestore}
-                    onPermanentDelete={onPermanentDelete}
+                    onPermanentDelete={
+                      onPermanentDelete
+                    }
                   />
                 </td>
               </tr>
