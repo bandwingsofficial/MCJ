@@ -62,14 +62,6 @@ export function JobSummaryHeader({
   const isJobs = tab === "jobs";
   const isOnboarding = tab === "onboarding";
 
-  const title =
-    isJobs ? "Jobs" : isOnboarding ? "Onboarding" : "Applications";
-  const totalLabel =
-    isJobs
-      ? "Total Jobs:"
-      : isOnboarding
-        ? "Total Submissions:"
-        : "Total Applications:";
   const searchPlaceholder =
     isJobs
       ? "Search jobs..."
@@ -78,62 +70,136 @@ export function JobSummaryHeader({
         : "Search applications...";
 
   return (
-    <header>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <nav
-          aria-label="Breadcrumb"
-          className="flex items-center gap-1.5 text-sm"
-        >
-          <Link
-            href="/dashboard"
-            className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
+    <header className="space-y-2.5 px-1 py-1">
+      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+        <div className="min-w-0 space-y-1">
+          <nav
+            aria-label="Breadcrumb"
+            className="flex items-center gap-1 text-xs"
           >
-            Home
-          </Link>
-          <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden="true" />
-          <span aria-current="page" className="font-medium text-[#102A56]">
-            Jobs
-          </span>
-        </nav>
+            <Link
+              href="/dashboard"
+              className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
+            >
+              Home
+            </Link>
+            <ChevronRight
+              className="h-3.5 w-3.5 text-slate-400"
+              aria-hidden="true"
+            />
+            <span aria-current="page" className="font-medium text-[#102A56]">
+              Jobs
+            </span>
+          </nav>
 
-        {isJobs ? (
-          isLoading ? (
-            <Skeleton className="h-[52px] w-full rounded-[14px] sm:w-[190px]" />
+          {isLoading ? (
+            <Skeleton className="h-8 w-52 rounded-md" />
           ) : (
-            <Button
-              type="button"
-              onClick={onCreate}
-              disabled={createDisabled}
-              className="admin-create-btn h-[52px] w-full shrink-0 px-5 font-semibold sm:w-[190px]"
-              aria-label="Create a new job"
-            >
-              <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
-              Create Job
-            </Button>
-          )
-        ) : isOnboarding ? (
-          isLoading ? (
-            <Skeleton className="h-[52px] w-full rounded-[14px] sm:w-[280px]" />
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+              <h1 className="text-[22px] font-bold tracking-tight text-[#102A56] sm:text-[26px]">
+                Jobs
+              </h1>
+              <span className="text-xs text-[#647A9B] sm:text-[13px]">
+                Total Jobs:
+                <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
+                  {total}
+                </span>
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto lg:shrink-0">
+          {isLoading ? (
+            <>
+              <Skeleton className="h-9 w-full rounded-lg sm:w-[280px]" />
+              {!isJobs && isOnboarding ? (
+                <Skeleton className="h-9 w-full rounded-lg sm:w-[140px]" />
+              ) : isJobs ? (
+                <Skeleton className="h-9 w-full rounded-lg sm:w-[140px]" />
+              ) : null}
+              {isJobs ? (
+                <Skeleton className="h-9 w-full rounded-lg sm:w-[150px]" />
+              ) : isOnboarding ? (
+                <Skeleton className="h-9 w-full rounded-lg sm:w-[180px]" />
+              ) : null}
+            </>
           ) : (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCopyOnboardingLink}
-              className="h-[52px] w-full shrink-0 px-5 font-semibold sm:w-auto"
-              aria-label="Copy company onboarding link"
-            >
-              <Copy className="mr-1.5 h-4 w-4" aria-hidden="true" />
-              Copy Company Onboarding Link
-            </Button>
-          )
-        ) : null}
+            <>
+              <div
+                className={`w-full ${isJobs || isOnboarding ? "sm:w-[280px]" : "sm:max-w-xl"}`}
+              >
+                <SearchInput
+                  value={search}
+                  placeholder={searchPlaceholder}
+                  className="h-9 rounded-lg !py-1.5 pl-9 text-sm"
+                  onChange={onSearchChange}
+                />
+              </div>
+
+              {isJobs ? (
+                <div className="w-full sm:w-[140px]">
+                  <AppSelect
+                    value={jobStatus ?? "ALL"}
+                    triggerClassName="h-9 rounded-lg px-2.5 text-sm"
+                    onValueChange={(value) =>
+                      onJobStatusChange(
+                        value === "ALL"
+                          ? undefined
+                          : (value as JobLifecycleStatus),
+                      )
+                    }
+                    options={JOB_LIFECYCLE_STATUS_OPTIONS}
+                  />
+                </div>
+              ) : isOnboarding ? (
+                <div className="w-full sm:w-[140px]">
+                  <AppSelect
+                    value={onboardingStatus}
+                    triggerClassName="h-9 rounded-lg px-2.5 text-sm"
+                    onValueChange={(value) =>
+                      onOnboardingStatusChange(
+                        value as JobOnboardingStatusFilter,
+                      )
+                    }
+                    options={[...JOB_ONBOARDING_STATUS_OPTIONS]}
+                  />
+                </div>
+              ) : null}
+
+              {isJobs ? (
+                <Button
+                  type="button"
+                  onClick={onCreate}
+                  disabled={createDisabled}
+                  className="h-11 w-full shrink-0 border-0 bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] px-6 text-sm font-semibold text-white shadow-[0_3px_10px_rgba(37,99,235,0.25)] transition-all hover:from-[#0284C7] hover:to-[#1D4ED8] hover:shadow-[0_4px_12px_rgba(37,99,235,0.3)] sm:w-auto"
+                  aria-label="Create a new job"
+                >
+                  <Plus className="mr-1 h-4 w-4" aria-hidden="true" />
+                  Create Job
+                </Button>
+              ) : isOnboarding ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onCopyOnboardingLink}
+                  className="h-9 w-full shrink-0 px-4 text-sm font-semibold sm:w-auto"
+                  aria-label="Copy company onboarding link"
+                >
+                  <Copy className="mr-1 h-4 w-4" aria-hidden="true" />
+                  Copy Company Onboarding Link
+                </Button>
+              ) : null}
+            </>
+          )}
+        </div>
       </div>
 
       <Tabs
         value={tab}
         onValueChange={(value) => onTabChange(value as JobsModuleTab)}
       >
-        <TabsList className="mt-4 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
           <TabsTrigger
             value="jobs"
             className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none"
@@ -164,77 +230,6 @@ export function JobSummaryHeader({
           </TabsTrigger>
         </TabsList>
       </Tabs>
-
-      <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          {isLoading ? (
-            <Skeleton className="h-8 w-52 rounded-md" />
-          ) : (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <h1 className="text-[30px] font-bold tracking-tight text-[#102A56]">
-                {title}
-              </h1>
-              <span className="text-sm text-[#647A9B]">
-                {totalLabel}
-                <span className="ml-1 font-semibold tabular-nums text-[#102A56]">
-                  {total}
-                </span>
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto lg:shrink-0 lg:justify-end">
-          {isLoading ? (
-            <>
-              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[380px]" />
-              {!isJobs && isOnboarding ? (
-                <Skeleton className="h-[46px] w-full rounded-xl sm:w-[170px]" />
-              ) : null}
-            </>
-          ) : (
-            <>
-              <div className={`w-full ${isJobs || isOnboarding ? "sm:w-[380px]" : "sm:max-w-xl"}`}>
-                <SearchInput
-                  value={search}
-                  placeholder={searchPlaceholder}
-                  className="h-[46px] rounded-xl !py-2 pl-9 text-[15px]"
-                  onChange={onSearchChange}
-                />
-              </div>
-              {isJobs ? (
-                <div className="w-full sm:w-[170px]">
-                  <AppSelect
-                    value={jobStatus ?? "ALL"}
-                    triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
-                    onValueChange={(value) =>
-                      onJobStatusChange(
-                        value === "ALL"
-                          ? undefined
-                          : (value as JobLifecycleStatus),
-                      )
-                    }
-                    options={JOB_LIFECYCLE_STATUS_OPTIONS}
-                  />
-                </div>
-              ) : isOnboarding ? (
-                <div className="w-full sm:w-[170px]">
-                  <AppSelect
-                    value={onboardingStatus}
-                    triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
-                    onValueChange={(value) =>
-                      onOnboardingStatusChange(
-                        value as JobOnboardingStatusFilter,
-                      )
-                    }
-                    options={[...JOB_ONBOARDING_STATUS_OPTIONS]}
-                  />
-                </div>
-              ) : null}
-            </>
-          )}
-        </div>
-      </div>
     </header>
   );
 }

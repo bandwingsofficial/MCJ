@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
-import { Pagination } from "@/src/shared/components/ui/pagination";
+import { CategoryPagination } from "@/src/features/categories/components/category-pagination";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { appToast } from "@/src/shared/components/ui/toast";
 
@@ -28,7 +28,7 @@ import type {
   CreateJobRequest,
   Job,
 } from "@/src/features/jobs/types/job.types";
-import { getCompanyOnboardingUrl, getJobApplicationUrl } from "@/src/features/jobs/utils/job-form.utils";
+import { getCompanyOnboardingUrl } from "@/src/features/jobs/utils/job-form.utils";
 import {
   formatBulkResultToast,
   getEligibleActivateIds,
@@ -105,12 +105,6 @@ export function JobsPage() {
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
 
-  const headerTotal =
-    tab === "jobs"
-      ? catalogTotal
-      : tab === "onboarding"
-        ? onboarding.catalogTotal
-        : applications.catalogTotal;
   const headerLoading =
     tab === "jobs"
       ? isInitialLoading
@@ -334,19 +328,6 @@ export function JobsPage() {
     router.replace("/jobs");
   };
 
-  const copyApplicationLink = async (job: Job) => {
-    try {
-      await navigator.clipboard.writeText(getJobApplicationUrl(job.slug));
-      appToast.success("Application link copied.");
-    } catch {
-      appToast.error("Unable to copy the application link.");
-    }
-  };
-
-  const openApplicationPage = (job: Job) => {
-    window.open(getJobApplicationUrl(job.slug), "_blank", "noopener,noreferrer");
-  };
-
   const runAction = async () => {
     if (!selectedJob || !confirmAction) {
       return;
@@ -423,11 +404,11 @@ export function JobsPage() {
   };
 
   return (
-    <div>
+    <div className="space-y-3">
       <JobSummaryHeader
         tab={tab}
         onTabChange={setTab}
-        total={headerTotal}
+        total={catalogTotal}
         pendingOnboardingCount={onboarding.pendingCount}
         pendingApplicationCount={applications.pendingCount}
         isLoading={headerLoading}
@@ -471,7 +452,7 @@ export function JobsPage() {
       />
 
       {tab === "jobs" && onboarding.pendingCount > 0 ? (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           New Job Submission — {onboarding.pendingCount} hiring{" "}
           {onboarding.pendingCount === 1 ? "requirement is" : "requirements are"}{" "}
           awaiting review.{" "}
@@ -486,7 +467,7 @@ export function JobsPage() {
       ) : null}
 
       {tab === "jobs" && applications.pendingCount > 0 ? (
-        <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+        <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
           New Job Application — {applications.pendingCount} candidate{" "}
           {applications.pendingCount === 1
             ? "application is"
@@ -529,25 +510,20 @@ export function JobsPage() {
           actionsDisabled={isActing}
         />
       ) : (
-        <div className="mt-5">
-          <Card className="overflow-hidden p-0">
+          <Card className="overflow-hidden rounded-xl border-[#E1EBF5] p-0 shadow-sm">
             {isInitialLoading ? (
-              <div className="p-4">
-                <SkeletonTable rows={8} />
-              </div>
+              <SkeletonTable rows={8} />
             ) : (
               <>
-                <div className="px-4 pt-4 empty:hidden">
-                  <JobBulkActionsToolbar
-                    jobs={jobs}
-                    selectedJobIds={selectedIds}
-                    disabled={actionLoading || isFetching}
-                    onAction={setBulkConfirmAction}
-                  />
-                </div>
+                <JobBulkActionsToolbar
+                  jobs={jobs}
+                  selectedJobIds={selectedIds}
+                  disabled={actionLoading || isFetching}
+                  onAction={setBulkConfirmAction}
+                />
 
                 {error ? (
-                  <div className="border-b border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                  <div className="border-b border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
                     {error}{" "}
                     <button
                       type="button"
@@ -563,7 +539,7 @@ export function JobsPage() {
 
                 <div aria-busy={isFetching} className="relative">
                   {isFetching ? (
-                    <div className="pointer-events-none absolute inset-0 z-10 bg-white/40" />
+                    <span className="sr-only">Updating jobs</span>
                   ) : null}
                   <JobTable
                     jobs={jobs}
@@ -577,10 +553,6 @@ export function JobsPage() {
                       setEditingJob(job);
                       setDialogOpen(true);
                     }}
-                    onCopyLink={(job) => {
-                      void copyApplicationLink(job);
-                    }}
-                    onOpenLink={openApplicationPage}
                     onActivate={(job) => {
                       setSelectedJob(job);
                       setConfirmAction("activate");
@@ -600,54 +572,43 @@ export function JobsPage() {
                   />
                 </div>
 
-                <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-[#DCE8F5] bg-[#F8FBFF] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  {total > 0 ? (
-                    <>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-[#647A9B]">
-                        <span className="leading-9">
-                          Showing {from}–{to} of {total}
-                        </span>
-                        <label className="flex items-center gap-2 leading-9">
-                          <span className="whitespace-nowrap">
-                            Rows per page
-                          </span>
-                          <select
-                            className="h-9 rounded-xl border border-[#DCE8F5] bg-white px-2 text-[15px] text-[#102A56]"
-                            value={pageSize}
-                            disabled={actionLoading}
-                            onChange={(event) =>
-                              setFilters({
-                                ...filters,
-                                pageSize: Number(event.target.value),
-                              })
-                            }
-                          >
-                            {[10, 20, 50, 100].map((size) => (
-                              <option key={size} value={size}>
-                                {size}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
-                      <Pagination
-                        page={page}
-                        totalPages={totalPages}
-                        onPageChange={(nextPage) =>
-                          setFilters({ ...filters, page: nextPage })
+                <div className="flex flex-col gap-1.5 border-t border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#647A9B] sm:text-sm">
+                    <span>
+                      Showing {from}–{to} of {total}
+                    </span>
+                    <label className="flex items-center gap-1.5">
+                      <span className="whitespace-nowrap">Rows per page</span>
+                      <select
+                        className="h-7 rounded-md border border-[#DCE8F5] bg-white px-1.5 text-xs text-[#102A56] sm:text-sm"
+                        value={pageSize}
+                        disabled={actionLoading}
+                        onChange={(event) =>
+                          setFilters({
+                            ...filters,
+                            pageSize: Number(event.target.value),
+                          })
                         }
-                      />
-                    </>
-                  ) : (
-                    <p className="text-[15px] leading-9 text-slate-500">
-                      No jobs to paginate
-                    </p>
-                  )}
+                      >
+                        {[10, 20, 50, 100].map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <CategoryPagination
+                    page={page}
+                    totalPages={totalPages}
+                    onPageChange={(nextPage) =>
+                      setFilters({ ...filters, page: nextPage })
+                    }
+                  />
                 </div>
               </>
             )}
           </Card>
-        </div>
       )}
 
       <JobDialog

@@ -1,8 +1,7 @@
 "use client";
 
-import { Check, Eye, X } from "lucide-react";
+import { CircleCheck, Eye, X } from "lucide-react";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
@@ -11,9 +10,10 @@ import {
   canRejectApplication,
 } from "@/src/features/job-applications/types/job-application.types";
 
-const iconBtnClass =
-  "h-9 w-9 shrink-0 rounded-lg p-0 transition-colors";
-const iconClass = "h-[1.25rem] w-[1.25rem]";
+const iconButtonClass =
+  "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40";
+
+const iconClass = "h-[15px] w-[14px] stroke-[2]";
 
 interface JobApplicationActionsProps {
   application: JobApplication;
@@ -31,47 +31,44 @@ export function JobApplicationActions({
   onReject,
 }: JobApplicationActionsProps) {
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className="flex items-center justify-end gap-2">
       <Tooltip content="View">
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
+          type="button"
           disabled={disabled}
           onClick={() => onView(application)}
           aria-label="View application"
-          className={`${iconBtnClass} text-[#647A9B] hover:bg-slate-100 hover:text-[#102A56]`}
+          className={`${iconButtonClass} text-blue-900`}
         >
           <Eye className={iconClass} />
-        </Button>
+        </button>
       </Tooltip>
 
       {canApproveApplication(application.status) ? (
         <Tooltip content="Approve">
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
             disabled={disabled}
             onClick={() => onApprove(application)}
             aria-label="Approve application"
-            className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
+            className={`${iconButtonClass} text-green-800`}
           >
-            <Check className={iconClass} />
-          </Button>
+            <CircleCheck className={iconClass} />
+          </button>
         </Tooltip>
       ) : null}
 
       {canRejectApplication(application.status) ? (
         <Tooltip content="Reject">
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
             disabled={disabled}
             onClick={() => onReject(application)}
             aria-label="Reject application"
-            className={`${iconBtnClass} text-rose-600 hover:bg-rose-50 hover:text-rose-700`}
+            className={`${iconButtonClass} text-red-800`}
           >
             <X className={iconClass} />
-          </Button>
+          </button>
         </Tooltip>
       ) : null}
     </div>

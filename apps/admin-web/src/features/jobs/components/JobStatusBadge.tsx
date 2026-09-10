@@ -1,5 +1,7 @@
 "use client";
 
+import { Badge } from "@/src/shared/components/ui/badge";
+
 import { getOnboardingStatusLabel } from "@/src/features/jobs/utils/job-form.utils";
 import type { Job, JobLifecycleStatus } from "@/src/features/jobs/types/job.types";
 import { isJobExpired } from "@/src/features/jobs/types/job.types";
@@ -10,6 +12,8 @@ interface JobStatusBadgeProps {
   variant?: "lifecycle" | "onboarding";
 }
 
+const compactClass = "px-2 py-0 text-[11px] font-semibold leading-5";
+
 export function JobStatusBadge({
   status,
   job,
@@ -18,54 +22,54 @@ export function JobStatusBadge({
   if (variant === "onboarding" && job) {
     if (job.status === "PENDING_APPROVAL") {
       return (
-        <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-sm font-medium text-amber-700">
+        <Badge variant="warning" className={compactClass}>
           Pending
-        </span>
+        </Badge>
       );
     }
 
     if (job.status === "REJECTED") {
       return (
-        <span className="inline-flex rounded-full bg-red-50 px-2.5 py-0.5 text-sm font-medium text-red-700">
+        <Badge variant="danger" className={compactClass}>
           Rejected
-        </span>
+        </Badge>
       );
     }
 
     return (
-      <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-sm font-medium text-emerald-700">
+      <Badge variant="success" className={compactClass}>
         {getOnboardingStatusLabel(job.status)}
-      </span>
+      </Badge>
     );
   }
 
   if (status === "ARCHIVED") {
     return (
-      <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-medium text-slate-600">
+      <Badge variant="danger" className={compactClass}>
         Archived
-      </span>
+      </Badge>
     );
   }
 
   if (status === "INACTIVE") {
     return (
-      <span className="inline-flex rounded-full bg-red-50 px-2.5 py-0.5 text-sm font-medium text-red-700">
+      <Badge variant="danger" className={compactClass}>
         Inactive
-      </span>
+      </Badge>
     );
   }
 
   if (job && isJobExpired(job)) {
     return (
-      <span className="inline-flex rounded-full bg-slate-200/80 px-2.5 py-0.5 text-sm font-medium text-slate-600">
+      <Badge variant="default" className={compactClass}>
         Expired
-      </span>
+      </Badge>
     );
   }
 
   return (
-    <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-sm font-medium text-emerald-700">
+    <Badge variant="success" className={compactClass}>
       Active
-    </span>
+    </Badge>
   );
 }

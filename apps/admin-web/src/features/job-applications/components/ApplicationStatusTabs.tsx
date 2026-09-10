@@ -27,7 +27,7 @@ export function ApplicationStatusTabs({
   ];
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1.5 border-b border-slate-200 pb-2">
       {tabs.map((tab) => {
         const isActive = activeStatus === tab.value;
 
@@ -37,18 +37,18 @@ export function ApplicationStatusTabs({
             type="button"
             disabled={disabled}
             onClick={() => onChange(tab.value)}
-            className={`inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-medium transition-colors ${
+            className={`inline-flex items-center gap-1.5 border-b-2 px-2.5 py-1.5 text-sm font-medium transition-colors ${
               isActive
-                ? "border-[#2563EB] bg-[#F4F9FF] text-[#2563EB]"
-                : "border-[#DCE8F5] bg-white text-[#647A9B] hover:bg-[#F8FBFF] hover:text-[#102A56]"
+                ? "border-[#2563EB] text-[#2563EB]"
+                : "border-transparent text-[#647A9B] hover:text-[#102A56]"
             } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
           >
             <span>{tab.label}</span>
             <span
-              className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${
+              className={`rounded-full px-1.5 py-0 text-[11px] font-semibold tabular-nums leading-5 ${
                 isActive
-                  ? "bg-[#2563EB] text-white"
-                  : "bg-[#F4F9FF] text-[#647A9B]"
+                  ? "bg-[#2563EB]/10 text-[#2563EB]"
+                  : "bg-slate-100 text-[#647A9B]"
               }`}
             >
               {tab.count}
