@@ -106,9 +106,13 @@ export function StudentAssessmentDetailPage({
         <Field label="Batch" value={`${data.batch.name} (${data.batch.code})`} />
         <Field
           label="Learning Mode"
-          value={getBatchModeSectionLabel(data.timing.mode)}
+          value={
+            data.timing?.mode
+              ? getBatchModeSectionLabel(data.timing.mode)
+              : "—"
+          }
         />
-        <Field label="Batch Timing" value={data.timing.name} />
+        <Field label="Batch Timing" value={data.timing?.name ?? "—"} />
         <Field label="Course" value={data.course.title} />
         <Field
           label="Overall Performance"

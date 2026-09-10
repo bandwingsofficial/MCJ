@@ -5,6 +5,10 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronRight, FileText } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
+import {
+  StudentAssessmentRecordsPanel,
+  StudentAssessmentReportsPanel,
+} from "@/src/features/branch-ops/components/students/student-assessment-panels";
 import type {
   EnrollmentItem,
   StudentBatchAttendanceDetail,
@@ -305,19 +309,13 @@ export function StudentDetailsPage({ studentId }: Props) {
 
         <TabsContent value="assessments">
           {tab === "assessments" ? (
-            <StudentPlaceholderTab
-              title="Assessment records"
-              description="Assessment history for this student will appear here."
-            />
+            <StudentAssessmentsTab studentId={studentId} />
           ) : null}
         </TabsContent>
 
         <TabsContent value="reports">
           {tab === "reports" ? (
-            <StudentPlaceholderTab
-              title="Student reports"
-              description="Reports for this student will appear here."
-            />
+            <StudentReportsTab studentId={studentId} />
           ) : null}
         </TabsContent>
       </Tabs>
@@ -325,22 +323,42 @@ export function StudentDetailsPage({ studentId }: Props) {
   );
 }
 
-function StudentPlaceholderTab({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <Card className="rounded-2xl border border-[#E1EBF5] bg-white p-6">
-      <h2 className="text-sm font-semibold text-[#102A56]">{title}</h2>
-      <p className="mt-1 text-sm text-[#647A9B]">{description}</p>
-      <div className="mt-4">
-        <EmptyState title="No records available yet." />
-      </div>
-    </Card>
+function StudentAssessmentsTab({ studentId }: { studentId: string }) {
+  const query = useAsyncData(
+    () => branchOpsApi.studentAssessments(studentId),
+    [studentId],
   );
+
+  if (query.loading && !query.data) return <Loader />;
+  if (query.error) {
+    return (
+      <ErrorState description={query.error} onRetry={query.reload} />
+    );
+  }
+  if (!query.data) {
+    return <EmptyState title="Assessment records are not available." />;
+  }
+
+  return <StudentAssessmentRecordsPanel data={query.data} />;
+}
+
+function StudentReportsTab({ studentId }: { studentId: string }) {
+  const query = useAsyncData(
+    () => branchOpsApi.studentAssessments(studentId),
+    [studentId],
+  );
+
+  if (query.loading && !query.data) return <Loader />;
+  if (query.error) {
+    return (
+      <ErrorState description={query.error} onRetry={query.reload} />
+    );
+  }
+  if (!query.data) {
+    return <EmptyState title="Assessment reports are not available." />;
+  }
+
+  return <StudentAssessmentReportsPanel data={query.data} />;
 }
 
 function StudentDocumentsSection({

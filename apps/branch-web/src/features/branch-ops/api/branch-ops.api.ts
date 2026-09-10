@@ -13,6 +13,7 @@ import type {
   BatchAssessmentAnalytics,
   BatchTimingAssessmentProgress,
   StudentTimingAssessmentDetail,
+  StudentAssessmentOverview,
   BatchAttendanceAnalytics,
   BatchTimingAttendanceOverview,
   BatchTimingStudentAttendanceRow,
@@ -134,6 +135,16 @@ export const branchOpsApi = {
   ) =>
     unwrap<StudentFeesData>(
       apiClient.get(`/branch/students/${studentId}/fees`, { params }),
+    ),
+
+  studentAssessments: (studentId: string) =>
+    unwrap<StudentAssessmentOverview>(
+      apiClient.get(`/branch/students/${studentId}/assessments`),
+    ),
+
+  enrollmentAssessments: (enrollmentId: string) =>
+    unwrap<StudentTimingAssessmentDetail>(
+      apiClient.get(`/branch/enrollments/${enrollmentId}/assessments`),
     ),
 
   attendance: (params?: Record<string, string | number | undefined>) =>

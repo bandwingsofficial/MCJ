@@ -339,6 +339,20 @@ export class BranchOperationsController {
     };
   }
 
+  @Get('enrollments/:id/assessments')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ASSESSMENT_READ)
+  async enrollmentAssessments(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+  ) {
+    return {
+      success: true,
+      message: 'Enrollment assessments fetched successfully',
+      data: await this.assessments.getEnrollmentAssessments(user, id),
+    };
+  }
+
   @Get('students')
   @Roles(...BranchOpsReadRoles)
   @Permissions(Permission.STUDENT_READ)
@@ -362,6 +376,20 @@ export class BranchOperationsController {
       success: true,
       message: 'Student fees fetched successfully',
       data: await this.batches.getStudentFees(user, id, query),
+    };
+  }
+
+  @Get('students/:id/assessments')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.ASSESSMENT_READ)
+  async studentAssessments(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+  ) {
+    return {
+      success: true,
+      message: 'Student assessments fetched successfully',
+      data: await this.assessments.getStudentAssessmentOverview(user, id),
     };
   }
 

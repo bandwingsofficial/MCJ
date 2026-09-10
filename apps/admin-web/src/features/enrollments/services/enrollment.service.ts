@@ -57,6 +57,16 @@ export const enrollmentService = {
     }
   },
 
+  async getEnrollmentAssessments(id: string) {
+    try {
+      const response = await enrollmentApi.getEnrollmentAssessments(id);
+
+      return response.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
+  },
+
   async createEnrollment(
     payload: CreateEnrollmentRequest,
   ) {

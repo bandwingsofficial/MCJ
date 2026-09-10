@@ -35,6 +35,6 @@ import { BranchOperationsController } from './presentation/controllers/branch-op
     BranchInterviewService,
     BranchStaffService,
   ],
-  exports: [BranchAttendanceService],
+  exports: [BranchAttendanceService, BranchAssessmentService],
 })
 export class BranchOperationsModule {}

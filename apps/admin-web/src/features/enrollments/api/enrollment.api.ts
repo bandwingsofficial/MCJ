@@ -12,6 +12,7 @@ import {
   DeleteEnrollmentResponse,
 } from "../types";
 import type { EnrollmentAttendanceResponse } from "../types/enrollment-attendance.types";
+import type { EnrollmentAssessmentResponse } from "../types/enrollment-assessment.types";
 
 import { ENROLLMENT_ENDPOINTS } from "./enrollment.endpoints";
 import { buildEnrollmentQuery } from "./enrollment.helper";
@@ -44,6 +45,12 @@ export const enrollmentApi = {
     return apiClient.get<EnrollmentAttendanceResponse>(
       ENROLLMENT_ENDPOINTS.ATTENDANCE(id),
       { params },
+    );
+  },
+
+  async getEnrollmentAssessments(id: string) {
+    return apiClient.get<EnrollmentAssessmentResponse>(
+      ENROLLMENT_ENDPOINTS.ASSESSMENTS(id),
     );
   },
 

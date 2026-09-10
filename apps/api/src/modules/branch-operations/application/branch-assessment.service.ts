@@ -19,6 +19,7 @@ import {
   averagePercentageByType,
   countAssessmentsByType,
   ASSESSMENT_TYPES,
+  listAssessmentTypesPresent,
   summarizeAssessmentMarks,
 } from './assessment-analytics.util';
 import { resolveBranchBatchTimingContext } from './utils/resolve-branch-timing-context.util';
@@ -74,6 +75,52 @@ const assessmentInclude = {
 type AssessmentRow = Prisma.AcademicAssessmentGetPayload<{
   include: typeof assessmentInclude;
 }>;
+
+const enrollmentAssessmentInclude = {
+  student: {
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      studentCode: true,
+      email: true,
+      phone: true,
+      status: true,
+    },
+  },
+  batch: {
+    select: { id: true, name: true, code: true, branchId: true },
+  },
+  batchTiming: {
+    select: { id: true, name: true, mode: true },
+  },
+  course: {
+    select: { id: true, title: true, code: true },
+  },
+  branch: {
+    select: { id: true, branchName: true, branchCode: true },
+  },
+} satisfies Prisma.EnrollmentInclude;
+
+type EnrollmentAssessmentRow = Prisma.EnrollmentGetPayload<{
+  include: typeof enrollmentAssessmentInclude;
+}>;
+
+export interface StudentAssessmentRecordDto {
+  id: string;
+  assessmentGroupId: string | null;
+  enrollmentId: string;
+  date: Date;
+  name: string;
+  type: AssessmentType;
+  batch: { id: string; name: string; code: string };
+  batchTiming: { id: string; name: string; mode: string } | null;
+  course: { id: string; title: string; code: string | null };
+  maxMarks: number;
+  obtainedMarks: number;
+  percentage: number;
+  remarks: string | null;
+}
 
 @Injectable()
 export class BranchAssessmentService {
@@ -1015,19 +1062,7 @@ export class BranchAssessmentService {
         ),
         studentId,
       },
-      include: {
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            studentCode: true,
-            email: true,
-            phone: true,
-            status: true,
-          },
-        },
-      },
+      include: enrollmentAssessmentInclude,
     });
 
     if (!enrollment) {
@@ -1036,57 +1071,172 @@ export class BranchAssessmentService {
       );
     }
 
-    const records = await this.prisma.academicAssessment.findMany({
-      where: {
-        branchId: user.branchId,
-        batchId: effectiveBatchId,
-        studentId,
+    return this.buildEnrollmentAssessmentDetail(enrollment, user.branchId, {
+      batch: context.batch,
+      branch: context.branch ?? {
+        id: enrollment.branch.id,
+        branchName: enrollment.branch.branchName,
+        branchCode: enrollment.branch.branchCode,
       },
-      include: assessmentInclude,
-      orderBy: [{ type: 'asc' }, { date: 'desc' }, { createdAt: 'desc' }],
+      timing: context.timing,
+      course: context.session.course,
+    });
+  }
+
+  /**
+   * Student page → assessment records and reports (active/current enrollments only).
+   */
+  async getStudentAssessmentOverview(
+    user: BranchAuthUser,
+    studentId: string,
+  ) {
+    await this.access.assertFacultyCanAccessStudent(user, studentId);
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: {
+        ...facultyBranchEnrollmentWhere(user.branchId, { studentId }),
+        status: { in: FACULTY_VISIBLE_ENROLLMENT_STATUSES },
+      },
+      include: enrollmentAssessmentInclude,
+      orderBy: { createdAt: 'desc' },
     });
 
+    const records: StudentAssessmentRecordDto[] = [];
+
+    for (const enrollment of enrollments) {
+      const assessmentRows = await this.prisma.academicAssessment.findMany({
+        where: {
+          branchId: user.branchId,
+          batchId: enrollment.batchId,
+          studentId,
+        },
+        include: assessmentInclude,
+        orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+      });
+
+      for (const row of assessmentRows) {
+        records.push(this.toStudentAssessmentRecord(row, enrollment));
+      }
+    }
+
+    records.sort(
+      (left, right) =>
+        new Date(String(right.date)).getTime() -
+        new Date(String(left.date)).getTime(),
+    );
+
     const markRows = records.map((row) => ({
-      type: row.type,
-      maxMarks: Number(row.maxMarks),
-      obtainedMarks: Number(row.obtainedMarks),
+      type: row.type as AssessmentType,
+      maxMarks: row.maxMarks,
+      obtainedMarks: row.obtainedMarks,
     }));
-
-    const grouped = ASSESSMENT_TYPES.map((type) => ({
-      type,
-      items: records
-        .filter((row) => row.type === type)
-        .map((row) => this.toDto(row)),
-    }));
-
     const summary = summarizeAssessmentMarks(markRows);
     const countsByType = countAssessmentsByType(markRows);
 
     return {
-      student: {
-        id: enrollment.student.id,
-        name: this.personName(
-          enrollment.student.firstName,
-          enrollment.student.lastName,
-        ),
-        firstName: enrollment.student.firstName,
-        lastName: enrollment.student.lastName,
-        studentCode: enrollment.student.studentCode,
-        email: enrollment.student.email,
-        phone: enrollment.student.phone,
-        status: enrollment.student.status,
-      },
-      enrollmentId: enrollment.id,
-      batch: context.batch,
-      branch: context.branch,
-      timing: context.timing,
-      course: context.session.course,
-      overallPerformance: summary.averagePercentage,
-      totalAssessments: records.length,
+      studentId,
+      records,
+      assessmentTypes: listAssessmentTypesPresent(markRows),
       countsByType,
-      groupedAssessments: grouped,
+      totalAssessments: records.length,
+      overallPerformance: summary.averagePercentage,
       summary,
     };
+  }
+
+  /**
+   * Enrollment manage → assessment/progress (exact enrollment context).
+   */
+  async getEnrollmentAssessmentDetail(
+    enrollmentId: string,
+    branchId?: string,
+  ) {
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: {
+        id: enrollmentId,
+        isDeleted: false,
+        ...(branchId ? { branchId } : {}),
+      },
+      include: enrollmentAssessmentInclude,
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException('Enrollment not found');
+    }
+
+    return this.buildEnrollmentAssessmentDetail(
+      enrollment,
+      enrollment.branchId,
+      {
+        batch: {
+          id: enrollment.batch.id,
+          name: enrollment.batch.name,
+          code: enrollment.batch.code,
+        },
+        branch: {
+          id: enrollment.branch.id,
+          branchName: enrollment.branch.branchName,
+          branchCode: enrollment.branch.branchCode,
+        },
+        timing: enrollment.batchTiming
+          ? {
+              id: enrollment.batchTiming.id,
+              name: enrollment.batchTiming.name,
+              mode: enrollment.batchTiming.mode,
+            }
+          : null,
+        course: {
+          id: enrollment.course.id,
+          title: enrollment.course.title,
+          code: enrollment.course.code,
+        },
+      },
+    );
+  }
+
+  async getEnrollmentAssessments(
+    user: BranchAuthUser,
+    enrollmentId: string,
+  ) {
+    const enrollment = await this.prisma.enrollment.findFirst({
+      where: {
+        id: enrollmentId,
+        isDeleted: false,
+        ...facultyBranchEnrollmentWhere(user.branchId),
+      },
+      include: enrollmentAssessmentInclude,
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException('Enrollment not found');
+    }
+
+    await this.access.assertFacultyCanAccessBatch(user, enrollment.batchId);
+
+    return this.buildEnrollmentAssessmentDetail(enrollment, user.branchId, {
+      batch: {
+        id: enrollment.batch.id,
+        name: enrollment.batch.name,
+        code: enrollment.batch.code,
+      },
+      branch: {
+        id: enrollment.branch.id,
+        branchName: enrollment.branch.branchName,
+        branchCode: enrollment.branch.branchCode,
+      },
+      timing: enrollment.batchTiming
+        ? {
+            id: enrollment.batchTiming.id,
+            name: enrollment.batchTiming.name,
+            mode: enrollment.batchTiming.mode,
+          }
+        : null,
+      course: {
+        id: enrollment.course.id,
+        title: enrollment.course.title,
+        code: enrollment.course.code,
+      },
+    });
   }
 
   async findById(user: BranchAuthUser, id: string) {
@@ -1458,6 +1608,116 @@ export class BranchAssessmentService {
     }
 
     return best?.timing ?? null;
+  }
+
+  private async buildEnrollmentAssessmentDetail(
+    enrollment: EnrollmentAssessmentRow,
+    branchId: string,
+    context: {
+      batch: { id: string; name: string; code: string };
+      branch: { id: string; branchName: string; branchCode: string };
+      timing: { id: string; name: string; mode: string } | null;
+      course: { id: string; title: string; code: string | null };
+    },
+  ) {
+    const records = await this.prisma.academicAssessment.findMany({
+      where: {
+        branchId,
+        batchId: enrollment.batchId,
+        studentId: enrollment.studentId,
+      },
+      include: assessmentInclude,
+      orderBy: [{ type: 'asc' }, { date: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    const markRows = records.map((row) => ({
+      type: row.type,
+      maxMarks: Number(row.maxMarks),
+      obtainedMarks: Number(row.obtainedMarks),
+    }));
+
+    const grouped = ASSESSMENT_TYPES.map((type) => ({
+      type,
+      items: records
+        .filter((row) => row.type === type)
+        .map((row) => this.toDto(row)),
+    }));
+
+    const summary = summarizeAssessmentMarks(markRows);
+    const countsByType = countAssessmentsByType(markRows);
+
+    return {
+      student: {
+        id: enrollment.student.id,
+        name: this.personName(
+          enrollment.student.firstName,
+          enrollment.student.lastName,
+        ),
+        firstName: enrollment.student.firstName,
+        lastName: enrollment.student.lastName,
+        studentCode: enrollment.student.studentCode,
+        email: enrollment.student.email,
+        phone: enrollment.student.phone,
+        status: enrollment.student.status,
+      },
+      enrollmentId: enrollment.id,
+      batch: context.batch,
+      branch: context.branch,
+      timing: context.timing,
+      course: context.course,
+      overallPerformance: summary.averagePercentage,
+      totalAssessments: records.length,
+      countsByType,
+      assessmentTypes: listAssessmentTypesPresent(markRows),
+      groupedAssessments: grouped,
+      records: records.map((row) => this.toStudentAssessmentRecord(row, enrollment)),
+      summary,
+    };
+  }
+
+  private toStudentAssessmentRecord(
+    row: AssessmentRow,
+    enrollment: EnrollmentAssessmentRow,
+  ): StudentAssessmentRecordDto {
+    const maxMarks = Number(row.maxMarks);
+    const obtainedMarks = Number(row.obtainedMarks);
+    const courseFromAssessment = row.batchCourse?.course;
+
+    return {
+      id: row.id,
+      assessmentGroupId: row.assessmentGroupId,
+      enrollmentId: enrollment.id,
+      date: row.date,
+      name: row.name,
+      type: row.type,
+      batch: {
+        id: enrollment.batch.id,
+        name: enrollment.batch.name,
+        code: enrollment.batch.code,
+      },
+      batchTiming: enrollment.batchTiming
+        ? {
+            id: enrollment.batchTiming.id,
+            name: enrollment.batchTiming.name,
+            mode: enrollment.batchTiming.mode,
+          }
+        : null,
+      course: courseFromAssessment
+        ? {
+            id: courseFromAssessment.id,
+            title: courseFromAssessment.title,
+            code: courseFromAssessment.code,
+          }
+        : {
+            id: enrollment.course.id,
+            title: enrollment.course.title,
+            code: enrollment.course.code,
+          },
+      maxMarks,
+      obtainedMarks,
+      percentage: assessmentPercentage(obtainedMarks, maxMarks),
+      remarks: row.remarks,
+    };
   }
 
   private toDto(row: AssessmentRow) {
