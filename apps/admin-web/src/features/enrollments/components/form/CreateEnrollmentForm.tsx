@@ -57,7 +57,7 @@ import {
 interface Props {
   mode?: "create" | "edit";
   enrollment?: Enrollment;
-  onSuccess?: () => void;
+  onSuccess?: (enrollmentId?: string) => void;
   onCancel?: () => void;
 }
 
@@ -600,7 +600,7 @@ export function CreateEnrollmentForm({
         appToast.success("Enrollment created successfully");
       }
 
-      onSuccess?.();
+      onSuccess?.(isEdit && enrollment ? enrollment.id : undefined);
     } catch (error) {
       appToast.error(getErrorMessage(error));
     } finally {

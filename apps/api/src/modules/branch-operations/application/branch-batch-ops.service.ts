@@ -19,6 +19,7 @@ import { resolveBatchApiStatus } from '@modules/batch/domain/utils/batch-lifecyc
 import { BatchStatus } from '@modules/batch/domain/enums/batch-status.enum';
 import { BatchCalendarService } from '@modules/batch/application/batch-calendar/batch-calendar.service';
 import { PrismaBatchCourseRepository } from '@modules/batch/infrastructure/repositories/prisma-batch-course.repository';
+import { resolveBatchTimingScope } from '@modules/batch/infrastructure/utils/resolve-batch-timing-scope.util';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BranchOperationsAccessService } from './branch-operations-access.service';
 import {
@@ -179,6 +180,83 @@ export class BranchBatchOpsService {
         enrolledOverride: students.length,
       }),
       students,
+    };
+  }
+
+  async getBatchTiming(
+    user: BranchAuthUser,
+    requestedBatchId: string,
+    timingId: string,
+  ) {
+    const scope = await resolveBatchTimingScope(
+      this.prisma,
+      requestedBatchId,
+      timingId,
+    );
+
+    if (!scope) {
+      throw new NotFoundException('Batch timing not found');
+    }
+
+    await this.access.assertFacultyCanAccessBatch(user, scope.batchId);
+
+    const batch = await this.prisma.batch.findFirst({
+      where: {
+        id: scope.batchId,
+        isDeleted: false,
+        branchId: user.branchId,
+      },
+      include: this.batchListInclude(),
+    });
+
+    if (!batch) {
+      throw new NotFoundException('Batch not found');
+    }
+
+    const timing = batch.timings.find((item) => item.id === scope.timingId);
+
+    if (!timing) {
+      throw new NotFoundException('Batch timing not found');
+    }
+
+    const [assignments, admittedCounts] = await Promise.all([
+      this.batchCourseRepo.findByBatchId(scope.batchId),
+      this.admittedEnrollmentCounts([scope.batchId]),
+    ]);
+
+    const admittedByTiming = admittedCounts.byTiming;
+    const enrolledStudents = admittedByTiming.get(timing.id) ?? 0;
+
+    return {
+      batch: this.toBatchDto(batch, {
+        assignments,
+        admittedByTiming,
+        admittedByBatch: admittedCounts.byBatch,
+      }),
+      timing: {
+        id: timing.id,
+        name: timing.name,
+        mode: timing.mode,
+        daysOfWeek: timing.daysOfWeek,
+        startDate: timing.startDate,
+        endDate: timing.endDate,
+        startTime: timing.startTime,
+        endTime: timing.endTime,
+        capacity: timing.capacity,
+        enrolledStudents,
+        availableSeats: Math.max(0, timing.capacity - enrolledStudents),
+        status: resolveBatchApiStatus({
+          storedStatus: timing.status as BatchStatus,
+          startDate: timing.startDate,
+          startTime: timing.startTime,
+          endDate: timing.endDate,
+          endTime: timing.endTime,
+        }),
+        isActive: timing.isActive,
+      },
+      ...(scope.batchIdCorrected
+        ? { canonicalBatchId: scope.batchId }
+        : {}),
     };
   }
 

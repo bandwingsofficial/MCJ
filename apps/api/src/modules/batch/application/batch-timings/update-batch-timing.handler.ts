@@ -2,6 +2,7 @@ import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
+import { resolveBatchTimingScope } from '../../infrastructure/utils/resolve-batch-timing-scope.util';
 import { countTimingLinkedEnrollments } from '@modules/enrollment/infrastructure/utils/enrollment-timing-count.util';
 import { GetBatchResult } from '../get-batch/get-batch.result';
 import { GetBatchQuery } from '../get-batch/get-batch.query';
@@ -27,10 +28,24 @@ export class UpdateBatchTimingHandler {
       );
     }
 
+    const scope = await resolveBatchTimingScope(
+      this.prisma,
+      params.batchId,
+      params.timingId,
+    );
+
+    if (!scope) {
+      throw new BaseException(
+        ERROR_CODES.BATCH_NOT_FOUND,
+        'Batch timing not found for this batch',
+        404,
+      );
+    }
+
     const timing = await this.prisma.batchTiming.findFirst({
       where: {
-        id: params.timingId,
-        batchId: params.batchId,
+        id: scope.timingId,
+        batchId: scope.batchId,
         isDeleted: false,
       },
       select: {
@@ -69,7 +84,7 @@ export class UpdateBatchTimingHandler {
     });
 
     return this.getBatchHandler.execute(
-      new GetBatchQuery(params.batchId, true),
+      new GetBatchQuery(scope.batchId, true),
     );
   }
 }

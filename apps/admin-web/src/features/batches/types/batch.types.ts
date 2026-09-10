@@ -114,6 +114,8 @@ export interface BatchTimingListResponse {
 export interface BatchTimingDetailResponse {
   timing: BatchTiming;
   batch: Batch;
+  /** Present when the URL batch id did not match the timing's parent batch. */
+  canonicalBatchId?: string;
 }
 
 export interface UpdateBatchTimingRequest {

@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { batchService } from "@/src/features/batches/services/batch.service";
+import { batchTimingManagePath } from "@/src/features/batches/utils/batch-manage.routes";
 
 import type {
   Batch,
@@ -25,6 +27,7 @@ export const useBatchTiming = (
   batchId: string,
   timingId: string,
 ): UseBatchTimingReturn => {
+  const router = useRouter();
   const [timing, setTiming] = useState<BatchTiming | null>(null);
   const [batch, setBatch] = useState<Batch | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +40,16 @@ export const useBatchTiming = (
 
       const data = await batchService.getBatchTiming(batchId, timingId);
 
+      if (
+        data.canonicalBatchId &&
+        data.canonicalBatchId !== batchId
+      ) {
+        router.replace(
+          batchTimingManagePath(data.canonicalBatchId, timingId),
+        );
+        return;
+      }
+
       setTiming(data.timing);
       setBatch(data.batch);
     } catch (err) {
@@ -46,7 +59,7 @@ export const useBatchTiming = (
     } finally {
       setIsLoading(false);
     }
-  }, [batchId, timingId]);
+  }, [batchId, timingId, router]);
 
   useEffect(() => {
     if (!batchId || !timingId) {

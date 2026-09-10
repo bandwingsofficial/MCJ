@@ -25,6 +25,8 @@ import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 
 import { UpdateBatchTimingHandler } from '../../application/batch-timings/update-batch-timing.handler';
 import { BatchCalendarService } from '../../application/batch-calendar/batch-calendar.service';
+import { resolveBatchTimingScope } from '../../infrastructure/utils/resolve-batch-timing-scope.util';
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { CreateBatchWithTimingsCommand } from '../../application/batch-timings/create-batch-with-timings.command';
 import { CreateBatchWithTimingsHandler } from '../../application/batch-timings/create-batch-with-timings.handler';
 import { AssignBatchCourseHandler } from '../../application/batch-courses/assign-batch-course.handler';
@@ -106,6 +108,7 @@ export class AdminBatchController {
     private readonly removeBatchCourseHandler: RemoveBatchCourseHandler,
     private readonly updateBatchTimingHandler: UpdateBatchTimingHandler,
     private readonly batchCalendarService: BatchCalendarService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post()
@@ -552,11 +555,17 @@ export class AdminBatchController {
     @Param('id') id: string,
     @Param('timingId') timingId: string,
   ) {
+    const scope = await resolveBatchTimingScope(this.prisma, id, timingId);
+
+    if (!scope) {
+      throw new NotFoundException('Batch timing not found for this batch');
+    }
+
     const batch = await this.getBatchHandler.execute(
-      new GetBatchQuery(id, true),
+      new GetBatchQuery(scope.batchId, true),
     );
 
-    const timing = batch.timings.find((item) => item.id === timingId);
+    const timing = batch.timings.find((item) => item.id === scope.timingId);
 
     if (!timing) {
       throw new NotFoundException('Batch timing not found for this batch');
@@ -568,6 +577,9 @@ export class AdminBatchController {
       data: {
         timing,
         batch,
+        ...(scope.batchIdCorrected
+          ? { canonicalBatchId: scope.batchId }
+          : {}),
       },
     };
   }

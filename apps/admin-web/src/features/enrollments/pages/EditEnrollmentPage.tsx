@@ -10,6 +10,7 @@ import { ErrorState } from "@/src/shared/components/ui/error-state";
 
 import { CreateEnrollmentForm } from "../components/form/CreateEnrollmentForm";
 import { useEnrollment } from "../hooks";
+import { enrollmentManagePath } from "../utils/enrollment-manage.routes";
 
 interface EditEnrollmentPageProps {
   enrollmentId: string;
@@ -57,7 +58,9 @@ export function EditEnrollmentPage({
           mode="edit"
           enrollment={enrollment}
           onCancel={() => router.push("/enrollments")}
-          onSuccess={() => router.push("/enrollments")}
+          onSuccess={() =>
+            router.push(enrollmentManagePath(enrollment.id))
+          }
         />
       </Card>
     </>

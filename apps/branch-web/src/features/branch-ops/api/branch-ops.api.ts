@@ -48,6 +48,13 @@ export const branchOpsApi = {
   batch: (id: string) =>
     unwrap<BatchListItem>(apiClient.get(`/branch/batches/${id}`)),
 
+  batchTiming: (batchId: string, timingId: string) =>
+    unwrap<{
+      batch: BatchListItem;
+      timing: NonNullable<BatchListItem["timings"]>[number];
+      canonicalBatchId?: string;
+    }>(apiClient.get(`/branch/batches/${batchId}/timings/${timingId}`)),
+
   batchCalendarSummaries: (batchId: string) =>
     unwrap<BatchCalendarSummariesResponse>(
       apiClient.get(`/branch/batches/${batchId}/calendar`),

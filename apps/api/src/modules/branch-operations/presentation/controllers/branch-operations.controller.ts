@@ -153,6 +153,21 @@ export class BranchOperationsController {
     };
   }
 
+  @Get('batches/:id/timings/:timingId')
+  @Roles(...BranchOpsReadRoles)
+  @Permissions(Permission.BATCH_READ)
+  async getBatchTiming(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+    @Param('timingId') timingId: string,
+  ) {
+    return {
+      success: true,
+      message: 'Batch timing fetched successfully',
+      data: await this.batches.getBatchTiming(user, id, timingId),
+    };
+  }
+
   @Get('batches/:id/students')
   @Roles(...BranchOpsReadRoles)
   @Permissions(Permission.STUDENT_READ)

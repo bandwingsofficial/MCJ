@@ -89,6 +89,23 @@ export class UpdateEnrollmentHandler {
       } else {
         batchTimingId = null;
       }
+    } else if (
+      command.batchId !== undefined &&
+      command.batchId !== enrollment.batchId &&
+      enrollment.batchTimingId
+    ) {
+      const timingStillValid = await this.prisma.batchTiming.findFirst({
+        where: {
+          id: enrollment.batchTimingId,
+          batchId: nextBatchId,
+          isDeleted: false,
+        },
+        select: { id: true },
+      });
+
+      if (!timingStillValid) {
+        batchTimingId = null;
+      }
     }
 
     if (hierarchyChanged) {

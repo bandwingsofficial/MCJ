@@ -20,6 +20,7 @@ import {
 import { BatchStatus } from '@modules/batch/domain/enums/batch-status.enum';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BranchOperationsAccessService } from './branch-operations-access.service';
+import { resolveBranchBatchTimingContext } from './utils/resolve-branch-timing-context.util';
 import {
   addUtcDays,
   durationMinutes,
@@ -293,11 +294,12 @@ export class BranchAttendanceService {
       input.batchTimingId,
       { forWrite: false },
     );
+    const effectiveBatchId = context.batch.id;
     const date = this.parseDate(input.date);
 
     const enrollments = await this.prisma.enrollment.findMany({
       where: facultyBatchTimingStudentWhere(
-        input.batchId,
+        effectiveBatchId,
         input.batchTimingId,
         user.branchId,
       ),
@@ -317,7 +319,7 @@ export class BranchAttendanceService {
     const existing = await this.prisma.attendance.findMany({
       where: {
         branchId: user.branchId,
-        batchId: input.batchId,
+        batchId: effectiveBatchId,
         batchTimingId: input.batchTimingId,
         date,
       },
@@ -514,11 +516,12 @@ export class BranchAttendanceService {
       input.batchTimingId!,
       { forWrite: true },
     );
+    const effectiveBatchId = context.batch.id;
 
     const enrollment = await this.prisma.enrollment.findFirst({
       where: {
         ...facultyBatchTimingStudentWhere(
-          input.batchId,
+          effectiveBatchId,
           input.batchTimingId!,
           user.branchId,
         ),
@@ -534,7 +537,7 @@ export class BranchAttendanceService {
     }
 
     await this.assertCalendarAllowsAttendance(
-      input.batchId,
+      effectiveBatchId,
       context.timing.mode,
       input.date,
     );
@@ -784,9 +787,10 @@ export class BranchAttendanceService {
       input.batchTimingId!,
       { forWrite: true },
     );
+    const effectiveBatchId = context.batch.id;
 
     await this.assertCalendarAllowsAttendance(
-      input.batchId,
+      effectiveBatchId,
       context.timing.mode,
       input.date,
     );
@@ -795,7 +799,7 @@ export class BranchAttendanceService {
 
     const enrollments = await this.prisma.enrollment.findMany({
       where: facultyBatchTimingStudentWhere(
-        input.batchId,
+        effectiveBatchId,
         input.batchTimingId!,
         user.branchId,
       ),
@@ -1465,11 +1469,12 @@ export class BranchAttendanceService {
     const context = await this.resolveTimingContext(user, batchId, batchTimingId, {
       forWrite: false,
     });
+    const effectiveBatchId = context.batch.id;
 
     const [enrollments, attendanceRows, lastAttendanceRows] = await Promise.all([
       this.prisma.enrollment.findMany({
         where: facultyBatchTimingStudentWhere(
-          batchId,
+          effectiveBatchId,
           batchTimingId,
           user.branchId,
         ),
@@ -1488,7 +1493,7 @@ export class BranchAttendanceService {
       }),
       this.prisma.attendance.findMany({
         where: {
-          batchId,
+          batchId: effectiveBatchId,
           batchTimingId,
           branchId: user.branchId,
         },
@@ -1501,7 +1506,7 @@ export class BranchAttendanceService {
       }),
       this.prisma.attendance.findMany({
         where: {
-          batchId,
+          batchId: effectiveBatchId,
           batchTimingId,
           branchId: user.branchId,
         },
@@ -2021,105 +2026,14 @@ export class BranchAttendanceService {
     batchTimingId: string,
     options: { forWrite: boolean },
   ) {
-    await this.access.assertFacultyCanAccessBatch(user, batchId);
-
-    const timing = await this.prisma.batchTiming.findFirst({
-      where: {
-        id: batchTimingId,
-        batchId,
-        isDeleted: false,
-      },
-      include: {
-        batch: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            branchId: true,
-            courseId: true,
-            status: true,
-            startDate: true,
-            endDate: true,
-            isActive: true,
-            isDeleted: true,
-            branch: {
-              select: { id: true, branchName: true, branchCode: true },
-            },
-            course: {
-              select: { id: true, title: true, code: true },
-            },
-          },
-        },
-      },
-    });
-
-    if (!timing) {
-      throw new NotFoundException('Batch timing not found for this batch');
-    }
-
-    if (timing.batch.branchId !== user.branchId) {
-      throw new BaseException(
-        ERROR_CODES.PERMISSION_DENIED,
-        'Branch access denied',
-        403,
-      );
-    }
-
-    if (options.forWrite) {
-      ensureBatchSelectableForAssignment({
-        status: timing.batch.status as BatchStatus,
-        startDate: timing.batch.startDate,
-        endDate: timing.batch.endDate,
-        isActive: timing.batch.isActive,
-        isDeleted: timing.batch.isDeleted,
-      });
-    }
-
-    const courseId = timing.batch.course?.id ?? timing.batch.courseId;
-    if (!courseId) {
-      throw new NotFoundException('Batch course not found for this batch timing');
-    }
-
-    const assignment = await this.prisma.batchCourse.findFirst({
-      where: {
-        batchId,
-        courseId,
-        isDeleted: false,
-      },
-      include: {
-        course: { select: { id: true, title: true, code: true } },
-        session: { select: { id: true, sessionNumber: true } },
-      },
-    });
-
-    if (!assignment) {
-      throw new NotFoundException(
-        'Course assignment not found for this batch timing',
-      );
-    }
-
-    return {
-      batch: {
-        id: timing.batch.id,
-        name: timing.batch.name,
-        code: timing.batch.code,
-      },
-      branch: timing.batch.branch,
-      timing: {
-        id: timing.id,
-        name: timing.name,
-        mode: timing.mode,
-      },
-      batchCourseId: assignment.id,
-      session: toAttendanceSessionDto({
-        batchCourseId: assignment.id,
-        sessionId: assignment.session?.id,
-        sessionNumber: assignment.session?.sessionNumber,
-        courseId: assignment.course.id,
-        courseTitle: assignment.course.title,
-        courseCode: assignment.course.code,
-      }),
-    };
+    return resolveBranchBatchTimingContext(
+      this.prisma,
+      this.access,
+      user,
+      batchId,
+      batchTimingId,
+      options,
+    );
   }
 
   private async resolveSessionContext(

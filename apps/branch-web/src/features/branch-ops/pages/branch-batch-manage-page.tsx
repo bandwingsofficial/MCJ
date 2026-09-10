@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import {
@@ -18,7 +19,9 @@ import {
   type BatchManageTabKey,
 } from "@/src/features/branch-ops/components/batches/manage/batch-manage-workspace";
 import { BATCH_MANAGE_DEFAULT_TAB } from "@/src/features/branch-ops/utils/batch-manage.routes";
+import { batchTimingManagePath } from "@/src/features/branch-ops/utils/batch-manage.routes";
 import { buildBatchSummary } from "@/src/features/branch-ops/utils/batch-summary.utils";
+import type { BatchListItem } from "@/src/features/branch-ops/types";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
@@ -77,21 +80,57 @@ export function BranchBatchTimingManagePage({
   batchId,
   timingId,
 }: TimingPageProps) {
-  const { data, loading, error, reload } = useAsyncData(
-    () => branchOpsApi.batch(batchId),
-    [batchId],
-  );
+  const router = useRouter();
+  const [data, setData] = useState<BatchListItem | null>(null);
+  const [timing, setTiming] = useState<
+    NonNullable<BatchListItem["timings"]>[number] | null
+  >(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string | undefined>(
     TIMING_TAB_LABELS.overview,
   );
 
-  const timing = useMemo(
-    () => data?.timings?.find((item) => item.id === timingId) ?? null,
-    [data, timingId],
-  );
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    branchOpsApi
+      .batchTiming(batchId, timingId)
+      .then((result) => {
+        if (cancelled) return;
+
+        if (result.canonicalBatchId && result.canonicalBatchId !== batchId) {
+          router.replace(
+            batchTimingManagePath(result.canonicalBatchId, timingId),
+          );
+          return;
+        }
+
+        setData(result.batch);
+        setTiming(result.timing);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Unable to load batch timing.",
+          );
+          setData(null);
+          setTiming(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [batchId, timingId, router]);
 
   if (loading) return <Loader />;
-  if (error) return <ErrorState description={error} onRetry={reload} />;
+  if (error) return <ErrorState description={error} />;
   if (!data || !timing) {
     return (
       <EmptyState
