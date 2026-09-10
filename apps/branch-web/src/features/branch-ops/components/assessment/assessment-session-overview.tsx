@@ -10,18 +10,9 @@ import type {
 } from "@/src/features/branch-ops/types";
 import { formatAttendanceDisplayDate } from "@/src/features/branch-ops/utils/attendance-date.utils";
 import { Badge } from "@/src/shared/components/ui/badge";
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
-import { Loader } from "@/src/shared/components/ui/loader";
 import { AppSelect } from "@/src/shared/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/src/shared/components/ui/table";
+import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 
 interface Props {
   batches: BatchListItem[];
@@ -30,6 +21,11 @@ interface Props {
   dateFrom?: string;
   dateTo?: string;
 }
+
+const FILTER_TRIGGER =
+  "h-9 rounded-lg px-2.5 text-sm w-full min-w-0 [&>span]:line-clamp-1 [&>span]:text-left";
+
+const compactBadgeClass = "px-2 py-0 text-[11px] font-semibold leading-5";
 
 type GroupedAssessment = {
   assessmentGroupId: string | null;
@@ -176,118 +172,157 @@ export function AssessmentSessionOverview({
   );
 
   return (
-    <div className="space-y-4">
-      <div className="grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
-            Batch
-          </label>
-          <AppSelect
-            value={batchId || undefined}
-            placeholder="Select batch"
-            onValueChange={setBatchId}
-            options={batches.map((batch) => ({
-              label: `${batch.name} (${batch.code})`,
-              value: batch.id,
-            }))}
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
-            Session
-          </label>
-          <AppSelect
-            value={batchCourseId || undefined}
-            placeholder="Select session"
-            onValueChange={setBatchCourseId}
-            disabled={!batchId}
-            options={sessions.map((session) => ({
-              label: session.label,
-              value: session.batchCourseId,
-            }))}
-          />
+    <div className="space-y-3">
+      <div className="rounded-xl border border-[#E1EBF5] bg-white p-3 shadow-sm">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="min-w-0">
+            <label className="mb-1 block text-xs font-semibold text-[#647A9B]">
+              Batch
+            </label>
+            <AppSelect
+              value={batchId || undefined}
+              triggerClassName={FILTER_TRIGGER}
+              placeholder="Select batch"
+              onValueChange={setBatchId}
+              options={batches.map((batch) => ({
+                label: `${batch.name} (${batch.code})`,
+                value: batch.id,
+              }))}
+            />
+          </div>
+
+          <div className="min-w-0">
+            <label className="mb-1 block text-xs font-semibold text-[#647A9B]">
+              Session
+            </label>
+            <AppSelect
+              value={batchCourseId || undefined}
+              triggerClassName={FILTER_TRIGGER}
+              placeholder="Select session"
+              onValueChange={setBatchCourseId}
+              disabled={!batchId}
+              options={sessions.map((session) => ({
+                label: session.label,
+                value: session.batchCourseId,
+              }))}
+            />
+          </div>
         </div>
       </div>
 
       {!batchId || !batchCourseId ? (
-        <EmptyState title="Select a batch and session to view assessments." />
-      ) : loading ? (
-        <Loader />
-      ) : error ? (
-        <ErrorState description={error} />
-      ) : !grouped.length ? (
-        <EmptyState title="No assessments found for this session." />
-      ) : (
-        <>
-          <div>
-            <h3 className="text-sm font-semibold text-[#102A56]">
-              Session Assessments
+        <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
+          <div className="flex min-h-[120px] flex-col items-center justify-center px-4 py-6 text-center">
+            <h3 className="text-base font-semibold text-[#102A56]">
+              Select Batch and Session
             </h3>
-            <p className="mt-1 text-sm text-slate-500">
-              {selectedSession?.label ?? "Selected session"}
+            <p className="mt-1 max-w-md text-sm text-[#647A9B]">
+              Select a batch and session to view assessments.
             </p>
           </div>
-
-          <div className="space-y-4">
-            {grouped.map((assessment) => (
-              <div
-                key={
-                  assessment.assessmentGroupId ??
-                  `${assessment.type}-${assessment.name}-${assessment.date}`
-                }
-                className="overflow-hidden rounded-xl border border-slate-200"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3">
-                  <div>
-                    <p className="font-medium text-[#102A56]">
-                      {assessment.name}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {formatAttendanceDisplayDate(assessment.date)} · Max{" "}
-                      {assessment.maxMarks}
-                    </p>
-                  </div>
-                  <Badge variant="default">{assessment.type}</Badge>
-                </div>
-
-                <div className="grid gap-3 border-b border-slate-200 px-4 py-3 text-sm text-slate-600 sm:grid-cols-2 lg:grid-cols-5">
-                  <span>Students: {assessment.summary.totalStudents}</span>
-                  <span>Avg Marks: {assessment.summary.averageMarks}</span>
-                  <span>Avg %: {assessment.summary.averagePercentage}%</span>
-                  <span>Highest: {assessment.summary.highestMarks}</span>
-                  <span>Lowest: {assessment.summary.lowestMarks}</span>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Student</TableHead>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Marks</TableHead>
-                        <TableHead>%</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {assessment.records.map((row) => (
-                        <TableRow key={row.id}>
-                          <TableCell className="font-medium text-[#102A56]">
-                            {row.student.name}
-                          </TableCell>
-                          <TableCell>{row.student.studentCode}</TableCell>
-                          <TableCell>
-                            {row.obtainedMarks} / {row.maxMarks}
-                          </TableCell>
-                          <TableCell>{row.percentage}%</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            ))}
+        </div>
+      ) : loading ? (
+        <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
+          <SkeletonTable rows={8} />
+        </div>
+      ) : error ? (
+        <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
+          <div className="p-3">
+            <ErrorState description={error} />
           </div>
-        </>
+        </div>
+      ) : !grouped.length ? (
+        <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
+          <div className="flex min-h-[120px] flex-col items-center justify-center px-4 py-6 text-center">
+            <h3 className="text-base font-semibold">No Assessments Found</h3>
+            <p className="mt-1 max-w-md text-sm text-[#647A9B]">
+              No assessments found for this session.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {selectedSession ? (
+            <p className="px-1 text-xs font-medium text-[#647A9B]">
+              {selectedSession.label}
+            </p>
+          ) : null}
+
+          {grouped.map((assessment) => (
+            <div
+              key={
+                assessment.assessmentGroupId ??
+                `${assessment.type}-${assessment.name}-${assessment.date}`
+              }
+              className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[#102A56]">
+                    {assessment.name}
+                  </p>
+                  <p className="text-xs text-[#647A9B]">
+                    {formatAttendanceDisplayDate(assessment.date)} · Max{" "}
+                    {assessment.maxMarks}
+                  </p>
+                </div>
+                <Badge variant="default" className={compactBadgeClass}>
+                  {assessment.type}
+                </Badge>
+              </div>
+
+              <div className="grid gap-2 border-b border-[#D9E4F2] px-3 py-2 text-xs text-[#647A9B] sm:grid-cols-2 lg:grid-cols-5">
+                <span>Students: {assessment.summary.totalStudents}</span>
+                <span>Avg Marks: {assessment.summary.averageMarks}</span>
+                <span>Avg %: {assessment.summary.averagePercentage}%</span>
+                <span>Highest: {assessment.summary.highestMarks}</span>
+                <span>Lowest: {assessment.summary.lowestMarks}</span>
+              </div>
+
+              <div className="w-full overflow-x-auto">
+                <table className="w-full min-w-full border-collapse text-sm">
+                  <thead className="border-b border-[#D9E4F2] bg-white text-[#526581]">
+                    <tr>
+                      <th className="!px-4 !py-3 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+                        Student
+                      </th>
+                      <th className="!px-4 !py-3 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+                        Code
+                      </th>
+                      <th className="!px-4 !py-3 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+                        Marks
+                      </th>
+                      <th className="!px-4 !py-3 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+                        %
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {assessment.records.map((row) => (
+                      <tr
+                        key={row.id}
+                        className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
+                      >
+                        <td className="!px-4 !py-3 align-middle text-sm font-medium leading-snug text-[#102A56]">
+                          {row.student.name}
+                        </td>
+                        <td className="!px-4 !py-3 align-middle text-sm text-slate-700">
+                          {row.student.studentCode}
+                        </td>
+                        <td className="!px-4 !py-3 align-middle text-sm tabular-nums text-slate-700">
+                          {row.obtainedMarks} / {row.maxMarks}
+                        </td>
+                        <td className="!px-4 !py-3 align-middle text-sm tabular-nums text-slate-700">
+                          {row.percentage}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
