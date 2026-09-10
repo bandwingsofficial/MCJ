@@ -8,8 +8,6 @@ import { AddAssessmentModal } from "@/src/features/branch-ops/components/assessm
 import { AssessmentBatchOverview } from "@/src/features/branch-ops/components/assessment/assessment-batch-overview";
 import { AssessmentProgressPanel } from "@/src/features/branch-ops/components/assessment/assessment-progress-panel";
 import { AssessmentSessionOverview } from "@/src/features/branch-ops/components/assessment/assessment-session-overview";
-import { ManageAssessmentModal } from "@/src/features/branch-ops/components/assessment/manage-assessment-modal";
-import type { AssessmentItem } from "@/src/features/branch-ops/types";
 import {
   type AttendanceDatePreset,
   formatAttendanceDisplayDate,
@@ -92,7 +90,7 @@ export function AssessmentsModulePage() {
   const role = useAuthStore((state) => state.user?.role);
   const [tab, setTab] = useState("records");
   const [addOpen, setAddOpen] = useState(false);
-  const [manageRecord, setManageRecord] = useState<AssessmentItem | null>(null);
+  const [editAssessmentId, setEditAssessmentId] = useState<string | null>(null);
   const [progressReloadKey, setProgressReloadKey] = useState(0);
 
   const [filters, setFilters] = useState<Filters>(defaultFilters);
@@ -198,7 +196,13 @@ export function AssessmentsModulePage() {
         totalLabel="Total Assessments"
         total={total}
         action={
-          <Button type="button" onClick={() => setAddOpen(true)}>
+          <Button
+            type="button"
+            onClick={() => {
+              setEditAssessmentId(null);
+              setAddOpen(true);
+            }}
+          >
             <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
             Add Assessment
           </Button>
@@ -365,16 +369,15 @@ export function AssessmentsModulePage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Student Code</TableHead>
                       <TableHead>Batch</TableHead>
                       <TableHead>Session</TableHead>
                       <TableHead>Course</TableHead>
                       <TableHead>Assessment</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Marks</TableHead>
+                      <TableHead>Students</TableHead>
+                      <TableHead>Avg Marks</TableHead>
                       <TableHead>Max Marks</TableHead>
-                      <TableHead>Percentage</TableHead>
+                      <TableHead>Avg %</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -384,10 +387,6 @@ export function AssessmentsModulePage() {
                         <TableCell className="whitespace-nowrap">
                           {formatAttendanceDisplayDate(String(item.date))}
                         </TableCell>
-                        <TableCell className="font-medium text-[#102A56]">
-                          {item.student.name}
-                        </TableCell>
-                        <TableCell>{item.student.studentCode}</TableCell>
                         <TableCell>{item.batch.name}</TableCell>
                         <TableCell className="min-w-[140px]">
                           {item.session?.label ?? "—"}
@@ -401,15 +400,19 @@ export function AssessmentsModulePage() {
                         <TableCell>
                           <Badge variant="default">{item.type}</Badge>
                         </TableCell>
-                        <TableCell>{item.obtainedMarks}</TableCell>
+                        <TableCell>{item.studentCount}</TableCell>
+                        <TableCell>{item.averageMarks}</TableCell>
                         <TableCell>{item.maxMarks}</TableCell>
-                        <TableCell>{item.percentage}%</TableCell>
+                        <TableCell>{item.averagePercentage}%</TableCell>
                         <TableCell>
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => setManageRecord(item)}
+                            onClick={() => {
+                              setEditAssessmentId(item.id);
+                              setAddOpen(true);
+                            }}
                           >
                             Manage
                           </Button>
@@ -469,22 +472,16 @@ export function AssessmentsModulePage() {
 
       <AddAssessmentModal
         open={addOpen}
-        onClose={() => setAddOpen(false)}
+        editAssessmentId={editAssessmentId}
+        onClose={() => {
+          setAddOpen(false);
+          setEditAssessmentId(null);
+        }}
         onSaved={() => {
           void reportQuery.reload();
           setProgressReloadKey((value) => value + 1);
         }}
         batches={batchesQuery.data ?? []}
-      />
-
-      <ManageAssessmentModal
-        open={Boolean(manageRecord)}
-        record={manageRecord}
-        onClose={() => setManageRecord(null)}
-        onSaved={() => {
-          void reportQuery.reload();
-          setProgressReloadKey((value) => value + 1);
-        }}
       />
     </div>
   );

@@ -49,6 +49,14 @@ function todayInputValue() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
+function toDateInputValue(value: string) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return todayInputValue();
+  }
+  return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`;
+}
+
 function Meta({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
@@ -60,6 +68,7 @@ function Meta({ label, value }: { label: string; value: string }) {
 
 interface Props {
   open: boolean;
+  editAssessmentId?: string | null;
   onClose: () => void;
   onSaved: () => void;
   batches: BatchListItem[];
@@ -67,10 +76,13 @@ interface Props {
 
 export function AddAssessmentModal({
   open,
+  editAssessmentId = null,
   onClose,
   onSaved,
   batches,
 }: Props) {
+  const isEditMode = Boolean(editAssessmentId);
+  const [loadingEdit, setLoadingEdit] = useState(false);
   const [date, setDate] = useState(todayInputValue());
   const [name, setName] = useState("");
   const [type, setType] = useState<AssessmentTypeValue>("TEST");
@@ -145,38 +157,90 @@ export function AddAssessmentModal({
 
   useEffect(() => {
     if (!open) return;
-    setDate(todayInputValue());
-    setName("");
-    setType("TEST");
-    setBatchId("");
+
+    if (!editAssessmentId) {
+      setDate(todayInputValue());
+      setName("");
+      setType("TEST");
+      setBatchId("");
+      setMode("");
+      setBatchTimingId("");
+      setMaxMarks("100");
+      setMarks({});
+      setRemarks({});
+      setMarkErrors({});
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingEdit(true);
+
+    branchOpsApi
+      .assessmentGroup(editAssessmentId)
+      .then((group) => {
+        if (cancelled) return;
+        setDate(toDateInputValue(String(group.date)));
+        setName(group.name);
+        setType(group.type as AssessmentTypeValue);
+        setBatchId(group.batch.id);
+        setMode((group.timing?.mode as BatchMode) ?? "");
+        setBatchTimingId(group.timing?.id ?? "");
+        setMaxMarks(String(group.maxMarks));
+
+        const nextMarks: Record<string, string> = {};
+        const nextRemarks: Record<string, string> = {};
+        for (const row of group.marks) {
+          nextMarks[row.student.id] = String(row.obtainedMarks);
+          if (row.remarks) {
+            nextRemarks[row.student.id] = row.remarks;
+          }
+        }
+        setMarks(nextMarks);
+        setRemarks(nextRemarks);
+        setMarkErrors({});
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        appToast.error(
+          userFacingApiMessage(
+            parseBranchOpsError(error),
+            "Unable to load assessment for editing.",
+          ),
+        );
+        onClose();
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingEdit(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, editAssessmentId, onClose]);
+
+  useEffect(() => {
+    if (!open || isEditMode) return;
     setMode("");
     setBatchTimingId("");
-    setMaxMarks("100");
     setMarks({});
     setRemarks({});
     setMarkErrors({});
-  }, [open]);
+  }, [batchId, isEditMode, open]);
 
   useEffect(() => {
-    setMode("");
+    if (!open || isEditMode) return;
     setBatchTimingId("");
     setMarks({});
     setRemarks({});
     setMarkErrors({});
-  }, [batchId]);
+  }, [mode, isEditMode, open]);
 
   useEffect(() => {
-    setBatchTimingId("");
+    if (!open || isEditMode) return;
     setMarks({});
     setRemarks({});
     setMarkErrors({});
-  }, [mode]);
-
-  useEffect(() => {
-    setMarks({});
-    setRemarks({});
-    setMarkErrors({});
-  }, [batchTimingId]);
+  }, [batchTimingId, isEditMode, open]);
 
   const students: AssessmentSheetStudent[] = sheetQuery.data?.students ?? [];
   const maxMarksValue = Number(maxMarks);
@@ -279,16 +343,29 @@ export function AddAssessmentModal({
 
     try {
       setSaving(true);
-      await branchOpsApi.createAssessmentBulk({
-        batchId,
-        batchTimingId,
-        type,
-        name: name.trim(),
-        date,
-        maxMarks: maxMarksValue,
-        records,
-      });
-      appToast.success("Assessment saved successfully");
+
+      if (isEditMode && editAssessmentId) {
+        await branchOpsApi.updateAssessmentGroup(editAssessmentId, {
+          name: name.trim(),
+          type,
+          date,
+          maxMarks: maxMarksValue,
+          records,
+        });
+        appToast.success("Assessment updated successfully");
+      } else {
+        await branchOpsApi.createAssessmentBulk({
+          batchId,
+          batchTimingId,
+          type,
+          name: name.trim(),
+          date,
+          maxMarks: maxMarksValue,
+          records,
+        });
+        appToast.success("Assessment saved successfully");
+      }
+
       onSaved();
       onClose();
     } catch (error) {
@@ -311,7 +388,7 @@ export function AddAssessmentModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Add Assessment"
+      title={isEditMode ? "Edit Assessment" : "Add Assessment"}
       contentClassName="max-w-5xl"
       footer={
         <>
@@ -322,6 +399,7 @@ export function AddAssessmentModal({
             onClick={() => void save()}
             disabled={
               saving ||
+              loadingEdit ||
               !selectionComplete ||
               !name.trim() ||
               !students.length ||
@@ -329,11 +407,18 @@ export function AddAssessmentModal({
               Object.keys(markErrors).length > 0
             }
           >
-            {saving ? "Saving..." : "Save Assessment"}
+            {saving
+              ? "Saving..."
+              : isEditMode
+                ? "Save Changes"
+                : "Save Assessment"}
           </Button>
         </>
       }
     >
+      {loadingEdit ? (
+        <p className="text-sm text-slate-500">Loading assessment...</p>
+      ) : (
       <div className="space-y-5">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div>
@@ -539,6 +624,7 @@ export function AddAssessmentModal({
           </>
         )}
       </div>
+      )}
     </Modal>
   );
 }

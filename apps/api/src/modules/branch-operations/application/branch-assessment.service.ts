@@ -322,20 +322,48 @@ export class BranchAssessmentService {
     return this.getGroup(user, assessmentGroupId);
   }
 
-  async getGroup(user: BranchAuthUser, assessmentGroupId: string) {
-    const records = await this.prisma.academicAssessment.findMany({
+  async getForEdit(user: BranchAuthUser, id: string) {
+    const grouped = await this.prisma.academicAssessment.findMany({
       where: {
-        assessmentGroupId,
+        assessmentGroupId: id,
         branchId: user.branchId,
       },
       include: assessmentInclude,
       orderBy: [{ student: { firstName: 'asc' } }, { createdAt: 'asc' }],
     });
 
-    if (!records.length) {
+    if (grouped.length) {
+      return this.buildGroupDetail(user, grouped, id);
+    }
+
+    const record = await this.prisma.academicAssessment.findFirst({
+      where: {
+        id,
+        branchId: user.branchId,
+      },
+      include: assessmentInclude,
+    });
+
+    if (!record) {
       throw new NotFoundException('Assessment not found');
     }
 
+    return this.buildGroupDetail(
+      user,
+      [record],
+      record.assessmentGroupId ?? record.id,
+    );
+  }
+
+  async getGroup(user: BranchAuthUser, assessmentGroupId: string) {
+    return this.getForEdit(user, assessmentGroupId);
+  }
+
+  private async buildGroupDetail(
+    user: BranchAuthUser,
+    records: AssessmentRow[],
+    assessmentGroupId: string,
+  ) {
     await this.access.assertFacultyCanAccessBatch(user, records[0].batchId);
 
     const first = records[0];
@@ -358,6 +386,12 @@ export class BranchAssessmentService {
       })),
     );
 
+    const timing = await this.inferAssessmentTiming(
+      first.batchId,
+      user.branchId,
+      records.map((row) => row.studentId),
+    );
+
     return {
       assessmentGroupId,
       type: first.type,
@@ -365,6 +399,7 @@ export class BranchAssessmentService {
       date: first.date,
       maxMarks: Number(first.maxMarks),
       batch: first.batch,
+      timing,
       session: first.batchCourse
         ? toAttendanceSessionDto({
             batchCourseId: first.batchCourse.id,
@@ -398,6 +433,8 @@ export class BranchAssessmentService {
     assessmentGroupId: string,
     input: {
       name?: string;
+      type?: AssessmentType;
+      date?: string;
       maxMarks?: number;
       records?: Array<{
         studentId: string;
@@ -407,7 +444,7 @@ export class BranchAssessmentService {
       removeStudentIds?: string[];
     },
   ) {
-    const existing = await this.prisma.academicAssessment.findMany({
+    let existing = await this.prisma.academicAssessment.findMany({
       where: {
         assessmentGroupId,
         branchId: user.branchId,
@@ -415,8 +452,22 @@ export class BranchAssessmentService {
     });
 
     if (!existing.length) {
+      const single = await this.prisma.academicAssessment.findFirst({
+        where: {
+          id: assessmentGroupId,
+          branchId: user.branchId,
+        },
+      });
+      if (single) {
+        existing = [single];
+      }
+    }
+
+    if (!existing.length) {
       throw new NotFoundException('Assessment not found');
     }
+
+    const groupKey = existing[0].assessmentGroupId ?? existing[0].id;
 
     await this.access.assertFacultyCanAccessBatch(user, existing[0].batchId);
 
@@ -433,10 +484,16 @@ export class BranchAssessmentService {
 
     const maxMarks = input.maxMarks ?? Number(existing[0].maxMarks);
     const name = input.name?.trim() ?? existing[0].name;
+    const type = input.type ?? existing[0].type;
+    const date = input.date ? this.parseDate(input.date) : existing[0].date;
     this.assertMarks(maxMarks, maxMarks);
 
     const byStudent = new Map(existing.map((row) => [row.studentId, row]));
     const batchId = existing[0].batchId;
+    const groupFilter: Prisma.AcademicAssessmentWhereInput =
+      existing[0].assessmentGroupId != null
+        ? { assessmentGroupId: groupKey, branchId: user.branchId }
+        : { id: existing[0].id, branchId: user.branchId };
 
     if (input.records?.length) {
       const enrollments = await this.prisma.enrollment.findMany({
@@ -473,6 +530,8 @@ export class BranchAssessmentService {
               where: { id: current.id },
               data: {
                 name,
+                type,
+                date,
                 maxMarks,
                 obtainedMarks: row.obtainedMarks,
                 remarks: row.remarks ?? current.remarks,
@@ -485,12 +544,12 @@ export class BranchAssessmentService {
                 branchId: existing[0].branchId,
                 batchId: existing[0].batchId,
                 batchCourseId: existing[0].batchCourseId,
-                assessmentGroupId,
+                assessmentGroupId: existing[0].assessmentGroupId ?? groupKey,
                 studentId: row.studentId,
                 facultyId: user.sub,
-                type: existing[0].type,
+                type,
                 name,
-                date: existing[0].date,
+                date,
                 maxMarks,
                 obtainedMarks: row.obtainedMarks,
                 remarks: row.remarks,
@@ -504,7 +563,7 @@ export class BranchAssessmentService {
       }
 
       const remaining = await tx.academicAssessment.findMany({
-        where: { assessmentGroupId, branchId: user.branchId },
+        where: groupFilter,
       });
 
       if (!remaining.length) {
@@ -513,12 +572,14 @@ export class BranchAssessmentService {
         );
       }
 
-      if (input.name || input.maxMarks != null) {
+      if (input.name || input.maxMarks != null || input.type || input.date) {
         await tx.academicAssessment.updateMany({
-          where: { assessmentGroupId, branchId: user.branchId },
+          where: groupFilter,
           data: {
             ...(input.name ? { name } : {}),
             ...(input.maxMarks != null ? { maxMarks } : {}),
+            ...(input.type ? { type } : {}),
+            ...(input.date ? { date } : {}),
             updatedBy: user.sub,
           },
         });
@@ -533,7 +594,7 @@ export class BranchAssessmentService {
       metadata: { name, maxMarks },
     });
 
-    return this.getGroup(user, assessmentGroupId);
+    return this.getForEdit(user, groupKey);
   }
 
   async create(
@@ -683,23 +744,20 @@ export class BranchAssessmentService {
 
   async report(user: BranchAuthUser, query: AssessmentListQuery) {
     const where = await this.buildWhere(user, query);
-    const skip = query.skip ?? 0;
-    const take = query.take;
 
-    const [records, total] = await Promise.all([
-      this.prisma.academicAssessment.findMany({
-        where,
-        include: assessmentInclude,
-        orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
-        skip,
-        ...(take != null ? { take } : {}),
-      }),
-      this.prisma.academicAssessment.count({ where }),
-    ]);
+    const records = await this.prisma.academicAssessment.findMany({
+      where,
+      include: assessmentInclude,
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    const groups = this.groupAssessmentRecords(records);
+    const skip = query.skip ?? 0;
+    const take = query.take ?? groups.length;
 
     return {
-      items: records.map((row) => this.toDto(row)),
-      total,
+      items: groups.slice(skip, skip + take),
+      total: groups.length,
     };
   }
 
@@ -1277,6 +1335,129 @@ export class BranchAssessmentService {
 
   private personName(firstName: string, lastName?: string | null) {
     return [firstName, lastName].filter(Boolean).join(' ');
+  }
+
+  private groupAssessmentRecords(records: AssessmentRow[]) {
+    const map = new Map<string, AssessmentRow[]>();
+
+    for (const row of records) {
+      const key =
+        row.assessmentGroupId ??
+        `legacy:${row.id}:${row.type}:${row.name}:${row.date.toISOString()}:${row.maxMarks}`;
+      const list = map.get(key) ?? [];
+      list.push(row);
+      map.set(key, list);
+    }
+
+    return Array.from(map.values()).map((rows) => this.toReportGroupDto(rows));
+  }
+
+  private toReportGroupDto(rows: AssessmentRow[]) {
+    const first = rows[0];
+    const summary = summarizeAssessmentMarks(
+      rows.map((row) => ({
+        type: row.type,
+        maxMarks: Number(row.maxMarks),
+        obtainedMarks: Number(row.obtainedMarks),
+      })),
+    );
+
+    return {
+      id: first.assessmentGroupId ?? first.id,
+      assessmentGroupId: first.assessmentGroupId,
+      type: first.type,
+      name: first.name,
+      date: first.date,
+      maxMarks: Number(first.maxMarks),
+      batch: first.batch,
+      course: first.batchCourse
+        ? {
+            id: first.batchCourse.course.id,
+            title: first.batchCourse.course.title,
+            code: first.batchCourse.course.code,
+          }
+        : null,
+      session: first.batchCourse
+        ? toAttendanceSessionDto({
+            batchCourseId: first.batchCourse.id,
+            sessionId: first.batchCourse.session?.id,
+            sessionNumber: first.batchCourse.session?.sessionNumber,
+            courseId: first.batchCourse.course.id,
+            courseTitle: first.batchCourse.course.title,
+            courseCode: first.batchCourse.course.code,
+          })
+        : null,
+      faculty: first.faculty
+        ? {
+            id: first.faculty.id,
+            name: this.personName(
+              first.faculty.firstName,
+              first.faculty.lastName,
+            ),
+          }
+        : null,
+      studentCount: rows.length,
+      averageMarks: summary.averageMarks,
+      averagePercentage: summary.averagePercentage,
+      summary,
+    };
+  }
+
+  private async inferAssessmentTiming(
+    batchId: string,
+    branchId: string,
+    studentIds: string[],
+  ) {
+    if (!studentIds.length) {
+      return null;
+    }
+
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: {
+        batchId,
+        branchId,
+        studentId: { in: studentIds },
+        batchTimingId: { not: null },
+        status: { in: ['ADMITTED', 'ACTIVE'] },
+      },
+      select: {
+        batchTimingId: true,
+        batchTiming: {
+          select: { id: true, name: true, mode: true },
+        },
+      },
+    });
+
+    const counts = new Map<
+      string,
+      { count: number; timing: { id: string; name: string; mode: string } }
+    >();
+
+    for (const enrollment of enrollments) {
+      if (!enrollment.batchTimingId || !enrollment.batchTiming) {
+        continue;
+      }
+
+      const current = counts.get(enrollment.batchTimingId) ?? {
+        count: 0,
+        timing: enrollment.batchTiming,
+      };
+      current.count += 1;
+      counts.set(enrollment.batchTimingId, current);
+    }
+
+    let best: {
+      count: number;
+      timing: { id: string; name: string; mode: string };
+    } | null = null;
+
+    for (const value of counts.values()) {
+      if (!best || value.count > best.count) {
+        best = value;
+      }
+    }
+
+    return best?.timing ?? null;
   }
 
   private toDto(row: AssessmentRow) {

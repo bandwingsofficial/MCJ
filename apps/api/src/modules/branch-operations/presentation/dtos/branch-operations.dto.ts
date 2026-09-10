@@ -417,6 +417,14 @@ export class BulkUpdateAssessmentGroupDto {
   name?: string;
 
   @IsOptional()
+  @IsEnum(AssessmentType)
+  type?: AssessmentType;
+
+  @IsOptional()
+  @IsDateString()
+  date?: string;
+
+  @IsOptional()
   @IsNumber()
   @Min(0.01)
   maxMarks?: number;

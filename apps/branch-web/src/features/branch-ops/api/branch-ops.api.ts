@@ -228,6 +228,11 @@ export const branchOpsApi = {
       apiClient.get("/branch/assessments/report", { params }),
     ),
 
+  assessmentList: (params?: Record<string, string | number | undefined>) =>
+    unwrap<AssessmentItem[]>(
+      apiClient.get("/branch/assessments", { params }),
+    ),
+
   assessmentSheet: (params: {
     batchId: string;
     batchCourseId?: string;
@@ -317,6 +322,8 @@ export const branchOpsApi = {
     groupId: string,
     payload: {
       name?: string;
+      type?: string;
+      date?: string;
       maxMarks?: number;
       records?: Array<{
         studentId: string;

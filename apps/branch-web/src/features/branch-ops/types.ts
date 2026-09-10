@@ -734,8 +734,25 @@ export interface AssessmentItem {
   faculty: { id: string; name: string } | null;
 }
 
+export interface AssessmentReportItem {
+  id: string;
+  assessmentGroupId: string | null;
+  type: string;
+  name: string;
+  date: string;
+  maxMarks: number;
+  batch: { id: string; name: string; code?: string };
+  course: { id: string; title: string; code: string | null } | null;
+  session: AssessmentItem["session"];
+  faculty: { id: string; name: string } | null;
+  studentCount: number;
+  averageMarks: number;
+  averagePercentage: number;
+  summary: AssessmentGroupDetail["summary"];
+}
+
 export interface AssessmentReport {
-  items: AssessmentItem[];
+  items: AssessmentReportItem[];
   total: number;
 }
 
@@ -775,6 +792,7 @@ export interface AssessmentGroupDetail {
   date: string;
   maxMarks: number;
   batch: { id: string; name: string; code: string };
+  timing?: { id: string; name: string; mode: string } | null;
   session: AssessmentSheet["session"] | null;
   course: { id: string; title: string; code: string | null } | null;
   faculty: { id: string; name: string } | null;

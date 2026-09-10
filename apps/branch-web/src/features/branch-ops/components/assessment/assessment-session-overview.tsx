@@ -142,31 +142,14 @@ export function AssessmentSessionOverview({
     setError(null);
 
     branchOpsApi
-      .assessmentReport({
+      .assessmentList({
         batchId,
         batchCourseId,
         from: dateFrom,
         to: dateTo,
-        take: 200,
-        skip: 0,
       })
-      .then(async (first) => {
-        if (cancelled) return;
-        const all = [...(first.items ?? [])];
-        let skip = 200;
-        while (skip < first.total) {
-          const page = await branchOpsApi.assessmentReport({
-            batchId,
-            batchCourseId,
-            from: dateFrom,
-            to: dateTo,
-            take: 200,
-            skip,
-          });
-          all.push(...(page.items ?? []));
-          skip += 200;
-        }
-        if (!cancelled) setItems(all);
+      .then((result) => {
+        if (!cancelled) setItems(result);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
