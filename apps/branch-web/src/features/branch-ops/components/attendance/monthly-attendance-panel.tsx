@@ -14,36 +14,34 @@ import {
   getTimingsForMode,
 } from "@/src/features/branch-ops/utils/batch-mode.utils";
 import {
-  currentMonthlyAttendanceLabel,
   formatMonthlyAttendancePercentage,
   mapTimingStudentRowToMonthlyRow,
   type MonthlyAttendanceStudentRow,
 } from "@/src/features/branch-ops/utils/monthly-attendance.utils";
 import { Badge } from "@/src/shared/components/ui/badge";
-import { Card } from "@/src/shared/components/ui/card";
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
+import { CategoryPagination } from "@/src/shared/components/ui/category-pagination";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
-import { Loader } from "@/src/shared/components/ui/loader";
 import { SearchInput } from "@/src/shared/components/ui/search-input";
 import { AppSelect } from "@/src/shared/components/ui/select";
-import { TablePaginationBar } from "@/src/shared/components/ui/table-pagination";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/src/shared/components/ui/table";
+import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
+import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 interface Props {
   batches: BatchListItem[];
   initialBatchId?: string;
 }
 
-const FILTER_H = "h-[46px]";
-const FILTER_RADIUS = "rounded-xl";
-const FILTER_TRIGGER = `${FILTER_H} ${FILTER_RADIUS} w-full min-w-0 text-sm [&>span]:line-clamp-1 [&>span]:text-left`;
+const FILTER_TRIGGER =
+  "h-9 rounded-lg px-2.5 text-sm w-full min-w-0 [&>span]:line-clamp-1 [&>span]:text-left";
+
+const compactBadgeClass = "px-2 py-0 text-[11px] font-semibold leading-5";
+
+const iconButtonClass =
+  "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80";
+
+const iconClass = "h-[15px] w-[14px] stroke-[2]";
+
+const COLUMN_COUNT = 8;
 
 function matchesStudentSearch(
   row: MonthlyAttendanceStudentRow,
@@ -61,8 +59,6 @@ export function MonthlyAttendancePanel({
   batches,
   initialBatchId,
 }: Props) {
-  const monthLabel = useMemo(() => currentMonthlyAttendanceLabel(), []);
-
   const [batchId, setBatchId] = useState(initialBatchId ?? "");
   const [mode, setMode] = useState<string>("");
   const [batchTimingId, setBatchTimingId] = useState("");
@@ -172,28 +168,23 @@ export function MonthlyAttendancePanel({
     return filteredRows.slice(start, start + pageSize);
   }, [filteredRows, page, pageSize]);
 
+  const total = filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+
   const selectionLabel = selectedBatch
     ? `${selectedBatch.name} · ${mode ? getBatchModeSectionLabel(mode as BatchMode) : "—"} · ${selectedTiming?.label ?? "—"}`
     : null;
 
+  const hasSelection = Boolean(batchId && mode && batchTimingId);
+
   return (
-    <div className="space-y-4">
-      <div>
-        <p className="text-sm font-semibold text-[#102A56]">Monthly Attendance</p>
-        <p className="mt-1 text-sm text-slate-500">
-          Student-wise attendance for {monthLabel}. Session counts use recorded
-          attendance for the selected batch timing.
-        </p>
-      </div>
-
-      <Card className="overflow-hidden p-5">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Filters
-        </p>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="space-y-3">
+      <div className="rounded-xl border border-[#E1EBF5] bg-white p-3 shadow-sm">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
           <div className="min-w-0">
-            <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+            <label className="mb-1 block text-xs font-semibold text-[#647A9B]">
               Main Batch
             </label>
             <AppSelect
@@ -209,7 +200,7 @@ export function MonthlyAttendancePanel({
           </div>
 
           <div className="min-w-0">
-            <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+            <label className="mb-1 block text-xs font-semibold text-[#647A9B]">
               Learning Mode
             </label>
             <AppSelect
@@ -223,7 +214,7 @@ export function MonthlyAttendancePanel({
           </div>
 
           <div className="min-w-0">
-            <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+            <label className="mb-1 block text-xs font-semibold text-[#647A9B]">
               Batch Timing
             </label>
             <AppSelect
@@ -245,115 +236,187 @@ export function MonthlyAttendancePanel({
           </div>
 
           <div className="min-w-0">
-            <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+            <label className="mb-1 block text-xs font-semibold text-[#647A9B]">
               Student Search
             </label>
             <SearchInput
               value={search}
               placeholder="Search student name/code..."
-              className={`${FILTER_H} ${FILTER_RADIUS} text-sm`}
+              className="h-9 rounded-lg !py-1.5 pl-9 text-sm"
               onChange={setSearch}
             />
           </div>
         </div>
-      </Card>
+      </div>
 
-      {!batchId || !mode || !batchTimingId ? (
-        <EmptyState title="Select main batch, learning mode, and batch timing to view monthly attendance." />
-      ) : loading ? (
-        <Loader />
-      ) : error ? (
-        <ErrorState description={error} />
-      ) : (
-        <>
-          {selectionLabel ? (
-            <p className="text-sm font-medium text-[#102A56]">{selectionLabel}</p>
-          ) : null}
+      <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
+        {!hasSelection ? (
+          <div className="flex min-h-[120px] flex-col items-center justify-center px-4 py-6 text-center">
+            <h3 className="text-base font-semibold text-[#102A56]">
+              Select Batch Details
+            </h3>
+            <p className="mt-1 max-w-md text-sm text-[#647A9B]">
+              Select main batch, learning mode, and batch timing to view monthly
+              attendance.
+            </p>
+          </div>
+        ) : loading ? (
+          <SkeletonTable rows={8} />
+        ) : error ? (
+          <div className="p-3">
+            <ErrorState description={error} />
+          </div>
+        ) : (
+          <>
+            {selectionLabel ? (
+              <p className="border-b border-[#D9E4F2] bg-[#F8FBFF] px-3 py-2 text-xs font-medium text-[#647A9B]">
+                {selectionLabel}
+              </p>
+            ) : null}
 
-          {!filteredRows.length ? (
-            <EmptyState
-              title={
-                debouncedSearch
-                  ? "No students match your search."
-                  : "No admitted students in this batch timing."
-              }
-            />
-          ) : (
-            <>
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Student Code</TableHead>
-                      <TableHead>Student Name</TableHead>
-                      <TableHead>Working Days / Sessions</TableHead>
-                      <TableHead>Present</TableHead>
-                      <TableHead>Absent</TableHead>
-                      <TableHead>Late</TableHead>
-                      <TableHead>Attendance %</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pagedRows.map((row) => (
-                      <TableRow key={row.studentId}>
-                        <TableCell className="font-mono text-xs">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full min-w-full border-collapse text-sm">
+                <thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]">
+                  <tr>
+                    <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+                      Student Code
+                    </th>
+                    <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+                      Student Name
+                    </th>
+                    <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+                      Working Days / Sessions
+                    </th>
+                    <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+                      Present
+                    </th>
+                    <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+                      Absent
+                    </th>
+                    <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+                      Late
+                    </th>
+                    <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+                      Attendance %
+                    </th>
+                    <th className="w-[4.5rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredRows.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={COLUMN_COUNT}
+                        className="!px-4 !py-4 align-middle"
+                      >
+                        <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-4 text-center">
+                          <h3 className="text-base font-semibold">
+                            No Students Found
+                          </h3>
+                          <p className="mt-1 max-w-md text-sm text-[#647A9B]">
+                            {debouncedSearch
+                              ? "No students match your search."
+                              : "No admitted students in this batch timing."}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    pagedRows.map((row) => (
+                      <tr
+                        key={row.studentId}
+                        className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
+                      >
+                        <td className="!px-4 !py-4 align-middle font-mono text-xs text-slate-700">
                           {row.studentCode}
-                        </TableCell>
-                        <TableCell className="font-medium text-[#102A56]">
+                        </td>
+                        <td className="!px-4 !py-4 align-middle text-sm font-medium leading-snug text-[#102A56]">
                           {row.studentName}
-                        </TableCell>
-                        <TableCell>{row.workingSessions}</TableCell>
-                        <TableCell>
-                          <Badge variant={attendanceStatusVariant("PRESENT")}>
+                        </td>
+                        <td className="!px-4 !py-4 align-middle text-sm tabular-nums text-slate-700">
+                          {row.workingSessions}
+                        </td>
+                        <td className="!px-4 !py-4 align-middle">
+                          <Badge
+                            variant={attendanceStatusVariant("PRESENT")}
+                            className={compactBadgeClass}
+                          >
                             {row.present}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={attendanceStatusVariant("ABSENT")}>
+                        </td>
+                        <td className="!px-4 !py-4 align-middle">
+                          <Badge
+                            variant={attendanceStatusVariant("ABSENT")}
+                            className={compactBadgeClass}
+                          >
                             {row.absent}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={attendanceStatusVariant("LATE")}>
+                        </td>
+                        <td className="!px-4 !py-4 align-middle">
+                          <Badge
+                            variant={attendanceStatusVariant("LATE")}
+                            className={compactBadgeClass}
+                          >
                             {row.late}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
+                        </td>
+                        <td className="!px-4 !py-4 align-middle text-sm tabular-nums text-slate-700">
                           {formatMonthlyAttendancePercentage(row.percentage)}
-                        </TableCell>
-                        <TableCell>
-                          <Link
-                            href={`/attendance/details/${batchId}/${row.studentId}`}
-                            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 text-sm font-medium transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#2447A8]"
-                          >
-                            <CalendarDays
-                              className="h-4 w-4"
-                              aria-hidden="true"
-                            />
-                            Calendar
-                          </Link>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                        </td>
+                        <td className="!px-8 !py-4 text-right align-middle">
+                          <div className="flex items-center justify-end gap-2">
+                            <Tooltip content="Calendar">
+                              <Link
+                                href={`/attendance/details/${batchId}/${row.studentId}`}
+                                className={`${iconButtonClass} text-blue-900`}
+                                aria-label="Calendar"
+                              >
+                                <CalendarDays className={iconClass} />
+                              </Link>
+                            </Tooltip>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-              <TablePaginationBar
+            <div className="flex flex-col gap-1.5 border-t border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#647A9B] sm:text-sm">
+                <span>
+                  Showing {from}–{to} of {total}
+                </span>
+                <label className="flex items-center gap-1.5">
+                  <span className="whitespace-nowrap">Rows per page</span>
+                  <select
+                    className="h-7 rounded-md border border-[#DCE8F5] bg-white px-1.5 text-xs text-[#102A56] sm:text-sm"
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setPage(1);
+                    }}
+                  >
+                    {[10, 20, 50, 100].map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <CategoryPagination
                 page={page}
-                pageSize={pageSize}
-                total={filteredRows.length}
+                totalPages={totalPages}
                 onPageChange={setPage}
-                onPageSizeChange={(size) => {
-                  setPageSize(size);
-                  setPage(1);
-                }}
               />
-            </>
-          )}
-        </>
-      )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
