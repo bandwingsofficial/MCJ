@@ -46,7 +46,7 @@ export function CategoryStatusBadge({
 
     default:
       return (
-        <Badge className={compactClass}>
+        <Badge variant="default" className={compactClass}>
           Unknown
         </Badge>
       );

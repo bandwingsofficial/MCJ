@@ -28,7 +28,6 @@ interface Props {
 }
 
 export function BatchTemplateSummaryHeader({
-  total,
   isLoading = false,
   onCreate,
   createDisabled = false,
@@ -42,95 +41,65 @@ export function BatchTemplateSummaryHeader({
   const searchValue = search ?? "";
 
   return (
-    <header>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <nav
-          aria-label="Breadcrumb"
-          className="flex items-center gap-1.5 text-sm"
-        >
-          <Link
-            href="/dashboard"
-            className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
+    <header className="px-1 py-1">
+      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+        <div className="min-w-0 space-y-1">
+          <nav
+            aria-label="Breadcrumb"
+            className="flex items-center gap-1 text-xs"
           >
-            Home
-          </Link>
+            <Link
+              href="/dashboard"
+              className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
+            >
+              Home
+            </Link>
 
-          <ChevronRight
-            className="h-4 w-4 text-slate-400"
-            aria-hidden="true"
-          />
+            <ChevronRight
+              className="h-3.5 w-3.5 text-slate-400"
+              aria-hidden="true"
+            />
 
-          <span
-            aria-current="page"
-            className="font-medium text-[#102A56]"
-          >
-            Batch Timings
-          </span>
-        </nav>
+            <span
+              aria-current="page"
+              className="font-medium text-[#102A56]"
+            >
+              Batch Timings
+            </span>
+          </nav>
 
-        {isLoading ? (
-          <Skeleton className="h-[52px] w-full rounded-[14px] sm:w-[210px]" />
-        ) : (
-          <Button
-            type="button"
-            onClick={onCreate}
-            disabled={createDisabled}
-            className="admin-create-btn h-[52px] w-full shrink-0 px-5 font-semibold sm:w-[210px]"
-            aria-label="Add batch timing"
-          >
-            <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
-            Add Batch Timing
-          </Button>
-        )}
-      </div>
-
-      <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
           {isLoading ? (
             <Skeleton className="h-8 w-52 rounded-md" />
           ) : (
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <h1 className="text-[30px] font-bold tracking-tight text-[#102A56]">
-                  Batch Timings
-                </h1>
-
-                <span className="text-sm text-[#647A9B]">
-                  Total Batch Timings:
-                  <span className="ml-1 font-semibold tabular-nums text-[#102A56]">
-                    {total}
-                  </span>
-                </span>
-              </div>
-              <p className="text-sm text-[#647A9B]">
-                Manage standard class schedules used across all courses.
-              </p>
-            </div>
+            <h1 className="text-[22px] font-bold tracking-tight text-[#102A56] sm:text-[26px]">
+              Batch Timings
+            </h1>
           )}
         </div>
 
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto lg:shrink-0 lg:justify-end">
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto lg:shrink-0">
           {isLoading ? (
             <>
-              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[380px]" />
-              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[170px]" />
-              <Skeleton className="h-[46px] w-full rounded-xl sm:w-[170px]" />
+              <Skeleton className="h-9 w-full rounded-lg sm:w-[220px]" />
+              <Skeleton className="h-9 w-full rounded-lg sm:w-[140px]" />
+              <Skeleton className="h-9 w-full rounded-lg sm:w-[140px]" />
+              <Skeleton className="h-9 w-full rounded-lg sm:w-[150px]" />
             </>
           ) : (
             <>
-              <div className="w-full sm:w-[380px]">
+              <div className="w-full sm:w-[220px] sm:shrink-0">
                 <SearchInput
                   value={searchValue}
                   placeholder="Search batch timings..."
-                  className="h-[46px] rounded-xl !py-2 pl-9 text-[15px]"
+                  className="h-9 rounded-lg !py-1.5 pl-9 text-sm"
                   onChange={onSearchChange}
                 />
               </div>
 
-              <div className="w-full sm:w-[170px]">
+              <div className="w-full sm:w-[140px] sm:shrink-0">
                 <AppSelect
                   value={mode ?? "ALL"}
-                  triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
+                  triggerClassName="h-9 rounded-lg px-2.5 text-sm"
                   onValueChange={(value) =>
                     onModeChange(
                       value === "ALL"
@@ -148,10 +117,10 @@ export function BatchTemplateSummaryHeader({
                 />
               </div>
 
-              <div className="w-full sm:w-[170px]">
+              <div className="w-full sm:w-[140px] sm:shrink-0">
                 <AppSelect
                   value={status ?? "ALL"}
-                  triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
+                  triggerClassName="h-9 rounded-lg px-2.5 text-sm"
                   onValueChange={(value) =>
                     onStatusChange(
                       value === "ALL"
@@ -167,6 +136,17 @@ export function BatchTemplateSummaryHeader({
                   ]}
                 />
               </div>
+
+              <Button
+                type="button"
+                onClick={onCreate}
+                disabled={createDisabled}
+                className="h-11 w-full shrink-0 border-0 bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] px-6 text-sm font-semibold text-white shadow-[0_3px_10px_rgba(37,99,235,0.25)] transition-all hover:from-[#0284C7] hover:to-[#1D4ED8] hover:shadow-[0_4px_12px_rgba(37,99,235,0.3)] sm:w-auto"
+                aria-label="Add batch timing"
+              >
+                <Plus className="mr-1 h-4 w-4" aria-hidden="true" />
+                Add Batch Timing
+              </Button>
             </>
           )}
         </div>

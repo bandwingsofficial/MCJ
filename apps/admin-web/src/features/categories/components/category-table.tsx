@@ -65,7 +65,7 @@ export function CategoryTable({
   const safeSelectedIds = selectedCategoryIds ?? [];
   const selectionEnabled = Boolean(onSelectionChange);
   const visibleIds = rows.map((category) => category.id);
-  const columnCount = selectionEnabled ? 8 : 7;
+  const columnCount = selectionEnabled ? 9 : 8;
 
   const selectedVisibleCount = visibleIds.filter((id) =>
     safeSelectedIds.includes(id),
@@ -191,7 +191,9 @@ export function CategoryTable({
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full min-w-full border-collapse text-sm">
-        <thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]"><tr>{selectionEnabled ? (
+        <thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]">
+          <tr>
+            {selectionEnabled ? (
               <th className="w-9 !px-6 !py-4 text-left">
                 <input
                   ref={selectAllRef}
@@ -205,7 +207,31 @@ export function CategoryTable({
                   aria-label="Select all categories on this page"
                 />
               </th>
-            ) : null}<th className="w-8 !px-4 !py-4"><span className="sr-only">Reorder</span></th><th className="w-12 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">Image</th><th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">Name</th><th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">Slug</th><th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">Status</th><th className="min-w-[8.75rem] w-[8.75rem] !px-3 !py-4 text-center text-[11px] font-semibold leading-none tracking-normal text-slate-500 whitespace-nowrap">Total Courses</th><th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">Actions</th></tr></thead>
+            ) : null}
+
+            <th className="w-8 !px-4 !py-4">
+              <span className="sr-only">Reorder</span>
+            </th>
+            <th className="w-12 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Image
+            </th>
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Name
+            </th>
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Slug
+            </th>
+            <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Status
+            </th>
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Total Courses
+            </th>
+            <th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
+              Actions
+            </th>
+          </tr>
+        </thead>
         <tbody className="divide-y divide-slate-100">
           {rows.length === 0 ? (
             <tr>
@@ -321,7 +347,7 @@ export function CategoryTable({
                       {category.name}
                     </p>
                   </td>
-                  <td className="!px-4 !py-4 align-middle">
+                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
                     <code className="rounded bg-slate-100 px-1 py-0.5 text-[12px] text-slate-700">
                       {category.slug}
                     </code>
@@ -331,7 +357,7 @@ export function CategoryTable({
                       status={category.status}
                     />
                   </td>
-                  <td className="min-w-[8.75rem] w-[8.75rem] !px-3 !py-4 text-center align-middle text-sm font-semibold tabular-nums text-[#102A56]">
+                  <td className="!px-4 !py-4 align-middle text-sm tabular-nums text-slate-700">
                     {category.courseCount ?? 0}
                   </td>
                   <td className="!px-8 !py-4 align-middle">
