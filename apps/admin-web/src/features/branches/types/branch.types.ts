@@ -54,6 +54,8 @@ export interface BranchListItem {
 
   phone: string | null;
 
+  postalCode: string | null;
+
   city: string | null;
 
   state: string | null;

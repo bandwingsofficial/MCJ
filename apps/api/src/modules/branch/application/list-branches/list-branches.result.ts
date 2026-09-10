@@ -14,6 +14,7 @@ export class ListBranchItemResult {
     public readonly city: string | null,
     public readonly state: string | null,
     public readonly country: string | null,
+    public readonly postalCode: string | null,
 
     public readonly status: BranchStatus,
 

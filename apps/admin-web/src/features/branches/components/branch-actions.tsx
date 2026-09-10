@@ -9,14 +9,14 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { BranchListItem } from "@/src/features/branches/types/branch.types";
 
-const iconBtnClass =
-  "h-9 w-9 shrink-0 rounded-lg p-0 transition-colors";
-const iconClass = "h-[1.25rem] w-[1.25rem]";
+const iconButtonClass =
+  "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40";
+
+const iconClass = "h-[15px] w-[14px] stroke-[2]";
 
 interface Props {
   branch: BranchListItem;
@@ -44,44 +44,41 @@ export function BranchActions({
 
   if (isArchived) {
     return (
-      <div className="flex items-center justify-end gap-1">
+      <div className="flex items-center justify-end gap-2">
         <Tooltip content="Restore branch">
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
             disabled={disabled}
             onClick={() => onRestore(branch)}
             aria-label="Restore branch"
-            className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
+            className={`${iconButtonClass} text-green-800`}
           >
             <RotateCcw className={iconClass} />
-          </Button>
+          </button>
         </Tooltip>
 
         <Tooltip content="Permanently delete branch">
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
             disabled={disabled}
             onClick={() => onPermanentDelete(branch)}
             aria-label="Permanently delete branch"
-            className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
+            className={`${iconButtonClass} text-red-800`}
           >
             <Trash2 className={iconClass} />
-          </Button>
+          </button>
         </Tooltip>
 
         <Tooltip content="Manage branch">
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
             disabled={disabled}
             onClick={() => onManage(branch)}
             aria-label="Manage branch"
-            className={`${iconBtnClass} text-slate-700 hover:bg-slate-100 hover:text-[#102A56]`}
+            className={`${iconButtonClass} text-blue-900`}
           >
             <Settings2 className={iconClass} />
-          </Button>
+          </button>
         </Tooltip>
       </div>
     );
@@ -90,54 +87,47 @@ export function BranchActions({
   const isActive = branch.status === "ACTIVE";
 
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className="flex items-center justify-end gap-2">
       <Tooltip content={isActive ? "Deactivate branch" : "Activate branch"}>
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
+          type="button"
           disabled={disabled}
           onClick={() =>
             isActive ? onDeactivate(branch) : onActivate(branch)
           }
           aria-label={isActive ? "Deactivate branch" : "Activate branch"}
-          className={`${iconBtnClass} ${
-            isActive
-              ? "text-amber-600 hover:bg-amber-50 hover:text-amber-700"
-              : "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-          }`}
+          className={`${iconButtonClass} text-orange-700`}
         >
           {isActive ? (
             <Power className={iconClass} />
           ) : (
             <CircleCheck className={iconClass} />
           )}
-        </Button>
+        </button>
       </Tooltip>
 
       <Tooltip content="Edit branch">
-        <Button
-          variant="ghost"
-          size="sm"
+        <button
+          type="button"
           disabled={disabled}
           onClick={() => onEdit(branch)}
           aria-label="Edit branch"
-          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+          className={`${iconButtonClass} text-blue-900`}
         >
           <Pencil className={iconClass} />
-        </Button>
+        </button>
       </Tooltip>
 
-      <Tooltip content="Branch management">
-        <Button
-          variant="ghost"
-          size="sm"
+      <Tooltip content="Manage branch">
+        <button
+          type="button"
           disabled={disabled}
           onClick={() => onManage(branch)}
-          aria-label="Branch management"
-          className={`${iconBtnClass} text-slate-700 hover:bg-slate-100 hover:text-[#102A56]`}
+          aria-label="Manage branch"
+          className={`${iconButtonClass} text-blue-900`}
         >
           <Settings2 className={iconClass} />
-        </Button>
+        </button>
       </Tooltip>
     </div>
   );
