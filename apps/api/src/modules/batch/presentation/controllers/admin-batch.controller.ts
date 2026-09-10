@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -23,6 +24,7 @@ import { SuperAdminGuard } from '@common/guards/super-admin.guard';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 
 import { UpdateBatchTimingHandler } from '../../application/batch-timings/update-batch-timing.handler';
+import { BatchCalendarService } from '../../application/batch-calendar/batch-calendar.service';
 import { CreateBatchWithTimingsCommand } from '../../application/batch-timings/create-batch-with-timings.command';
 import { CreateBatchWithTimingsHandler } from '../../application/batch-timings/create-batch-with-timings.handler';
 import { AssignBatchCourseHandler } from '../../application/batch-courses/assign-batch-course.handler';
@@ -70,6 +72,11 @@ import { ListBatchesQueryDto } from '../dtos/list-batches-query.dto';
 import { ReorderBatchesDto } from '../dtos/reorder-batches.dto';
 import { UpdateBatchDto } from '../dtos/update-batch.dto';
 import { UpdateBatchTimingDto } from '../dtos/update-batch-timing.dto';
+import {
+  BatchCalendarMonthQueryDto,
+  BatchCalendarRangeQueryDto,
+  UpsertBatchCalendarExceptionDto,
+} from '../dtos/batch-calendar.dto';
 
 @ApiTags('Admin Batches')
 @ApiBearerAuth()
@@ -98,6 +105,7 @@ export class AdminBatchController {
     private readonly assignBatchCourseHandler: AssignBatchCourseHandler,
     private readonly removeBatchCourseHandler: RemoveBatchCourseHandler,
     private readonly updateBatchTimingHandler: UpdateBatchTimingHandler,
+    private readonly batchCalendarService: BatchCalendarService,
   ) {}
 
   @Post()
@@ -592,6 +600,88 @@ export class AdminBatchController {
         timing,
         batch,
       },
+    };
+  }
+
+  @Get(':id/calendar')
+  async listCalendarSummaries(@Param('id') id: string) {
+    return {
+      success: true,
+      message: 'Batch calendar summaries fetched successfully',
+      data: await this.batchCalendarService.listModeSummaries(id),
+    };
+  }
+
+  @Get(':id/calendar/:mode')
+  async getCalendarView(
+    @Param('id') id: string,
+    @Param('mode') mode: string,
+    @Query() query: BatchCalendarMonthQueryDto,
+  ) {
+    return {
+      success: true,
+      message: 'Batch calendar fetched successfully',
+      data: await this.batchCalendarService.getCalendarView(
+        id,
+        mode,
+        query.month,
+      ),
+    };
+  }
+
+  @Get(':id/calendar/:mode/working-days')
+  async listCalendarWorkingDays(
+    @Param('id') id: string,
+    @Param('mode') mode: string,
+    @Query() query: BatchCalendarRangeQueryDto,
+  ) {
+    return {
+      success: true,
+      message: 'Batch calendar working days fetched successfully',
+      data: await this.batchCalendarService.listWorkingDays(
+        id,
+        mode,
+        query.from,
+        query.to,
+      ),
+    };
+  }
+
+  @Put(':id/calendar/:mode/exceptions')
+  async upsertCalendarException(
+    @Param('id') id: string,
+    @Param('mode') mode: string,
+    @Body() dto: UpsertBatchCalendarExceptionDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return {
+      success: true,
+      message: 'Batch calendar exception saved successfully',
+      data: await this.batchCalendarService.upsertException({
+        batchId: id,
+        modeParam: mode,
+        date: dto.date,
+        status: dto.status,
+        reason: dto.reason,
+        actorId: user?.sub,
+      }),
+    };
+  }
+
+  @Delete(':id/calendar/:mode/exceptions/:date')
+  async deleteCalendarException(
+    @Param('id') id: string,
+    @Param('mode') mode: string,
+    @Param('date') date: string,
+  ) {
+    return {
+      success: true,
+      message: 'Batch calendar exception removed successfully',
+      data: await this.batchCalendarService.deleteException({
+        batchId: id,
+        modeParam: mode,
+        date,
+      }),
     };
   }
 

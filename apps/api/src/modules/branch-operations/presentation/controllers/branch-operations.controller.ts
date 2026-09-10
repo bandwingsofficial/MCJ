@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Res,
   UseGuards,
@@ -56,6 +57,11 @@ import {
   UpdateBranchStaffDto,
   UpdateInterviewDto,
 } from '../dtos/branch-operations.dto';
+import {
+  BatchCalendarMonthQueryDto,
+  BatchCalendarRangeQueryDto,
+  UpsertBatchCalendarExceptionDto,
+} from '@modules/batch/presentation/dtos/batch-calendar.dto';
 
 const FacultyOrManager = [
   BranchUserRole.BRANCH_MANAGER,
@@ -172,6 +178,90 @@ export class BranchOperationsController {
       success: true,
       message: 'Batch course fetched successfully',
       data: await this.batches.getBatchCourse(user, id),
+    };
+  }
+
+  @Get('batches/:id/calendar')
+  @Roles(...BranchOpsReadRoles)
+  @Permissions(Permission.BATCH_READ)
+  async batchCalendarSummaries(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+  ) {
+    return {
+      success: true,
+      message: 'Batch calendar summaries fetched successfully',
+      data: await this.batches.listBatchCalendarSummaries(user, id),
+    };
+  }
+
+  @Get('batches/:id/calendar/:mode')
+  @Roles(...BranchOpsReadRoles)
+  @Permissions(Permission.BATCH_READ)
+  async batchCalendarView(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+    @Param('mode') mode: string,
+    @Query() query: BatchCalendarMonthQueryDto,
+  ) {
+    return {
+      success: true,
+      message: 'Batch calendar fetched successfully',
+      data: await this.batches.getBatchCalendarView(user, id, mode, query.month),
+    };
+  }
+
+  @Get('batches/:id/calendar/:mode/working-days')
+  @Roles(...BranchOpsReadRoles)
+  @Permissions(Permission.BATCH_READ)
+  async batchCalendarWorkingDays(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+    @Param('mode') mode: string,
+    @Query() query: BatchCalendarRangeQueryDto,
+  ) {
+    return {
+      success: true,
+      message: 'Batch calendar working days fetched successfully',
+      data: await this.batches.listBatchCalendarWorkingDays(
+        user,
+        id,
+        mode,
+        query.from,
+        query.to,
+      ),
+    };
+  }
+
+  @Put('batches/:id/calendar/:mode/exceptions')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.BATCH_READ)
+  async upsertBatchCalendarException(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+    @Param('mode') mode: string,
+    @Body() dto: UpsertBatchCalendarExceptionDto,
+  ) {
+    return {
+      success: true,
+      message: 'Batch calendar exception saved successfully',
+      data: await this.batches.upsertBatchCalendarException(user, id, mode, dto),
+    };
+  }
+
+  @Delete('batches/:id/calendar/:mode/exceptions/:date')
+  @Roles(...FacultyOrManager)
+  @Permissions(Permission.BATCH_READ)
+  async deleteBatchCalendarException(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+    @Param('mode') mode: string,
+    @Param('date') date: string,
+  ) {
+    return {
+      success: true,
+      message: 'Batch calendar exception removed successfully',
+      data: await this.batches.deleteBatchCalendarException(user, id, mode, date),
     };
   }
 

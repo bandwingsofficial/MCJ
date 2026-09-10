@@ -283,18 +283,22 @@ export interface StudentBatchAttendanceDetail {
   } | null;
   courses: AttendanceSessionOption[];
   summary: {
-    workingDays: number | null;
-    attendanceDates: number;
-    sessionsConducted: number;
-    present: number;
-    absent: number;
-    late: number;
-    leave: number;
-    attended: number;
-    percentage: number | null;
-    ratioLabel: string | null;
-    hasAttendance: boolean;
-    totalRecords: number;
+    calendar: {
+      workingDays: number;
+      sundays: number;
+      holidays: number;
+      nonWorkingDays: number;
+      totalCalendarDays: number;
+    };
+    attendance: {
+      totalSessions: number;
+      attended: number;
+      present: number;
+      absent: number;
+      late: number;
+      percentage: number | null;
+      ratioLabel: string | null;
+    };
   };
   monthly: Array<{
     monthKey: string;
@@ -346,6 +350,13 @@ export interface AttendanceSessionOption {
   };
 }
 
+export interface AttendanceSheetCalendar {
+  dayType: BatchCalendarDayType;
+  isAttendanceAllowed: boolean;
+  blockMessage: string | null;
+  reason?: string | null;
+}
+
 export interface AttendanceSheetStudent {
   id: string;
   studentCode: string;
@@ -371,6 +382,7 @@ export interface AttendanceSheet {
   students: AttendanceSheetStudent[];
   summary: AttendanceSummary;
   hasExisting: boolean;
+  calendar?: AttendanceSheetCalendar;
 }
 
 export interface AttendanceReport {
@@ -914,4 +926,77 @@ export interface StudentFeesData {
     skip: number;
     take: number;
   };
+}
+
+export type BatchCalendarDayType =
+  | "WORKING"
+  | "SUNDAY"
+  | "NON_WORKING"
+  | "HOLIDAY"
+  | "OUTSIDE_PERIOD"
+  | "FUTURE";
+
+export type BatchCalendarExceptionStatus =
+  | "HOLIDAY"
+  | "NON_WORKING"
+  | "WORKING";
+
+export interface BatchCalendarSummary {
+  totalCalendarDays: number;
+  workingDays: number;
+  sundays: number;
+  nonWorkingDays: number;
+  holidays: number;
+  completedPassedDays: number;
+}
+
+export interface BatchCalendarModeSummaryItem {
+  mode: "OFFLINE" | "ONLINE" | "RECORDED";
+  modeLabel: string;
+  scheduleLabel: string;
+  startDate: string;
+  endDate: string | null;
+  summary: BatchCalendarSummary;
+}
+
+export interface BatchCalendarSummariesResponse {
+  batchId: string;
+  batchName: string;
+  batchCode: string;
+  items: BatchCalendarModeSummaryItem[];
+}
+
+export interface BatchCalendarDayCell {
+  dateKey: string;
+  day: number;
+  inMonth: boolean;
+  dayType: BatchCalendarDayType;
+  reason?: string | null;
+  isEditable: boolean;
+  hasException: boolean;
+}
+
+export interface BatchCalendarViewResponse {
+  batch: {
+    id: string;
+    name: string;
+    code: string;
+    startDate: string;
+    endDate: string | null;
+  };
+  mode: "OFFLINE" | "ONLINE" | "RECORDED";
+  modeLabel: string;
+  scheduleLabel: string;
+  monthKey: string;
+  monthLabel: string;
+  previousMonthKey: string;
+  nextMonthKey: string;
+  summary: BatchCalendarSummary;
+  days: BatchCalendarDayCell[];
+}
+
+export interface UpsertBatchCalendarExceptionRequest {
+  date: string;
+  status: BatchCalendarExceptionStatus;
+  reason?: string;
 }

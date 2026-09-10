@@ -8,6 +8,7 @@ type FakeAttendance = {
   branchId: string;
   batchId: string;
   batchCourseId: string;
+  batchTimingId?: string | null;
   studentId: string;
   facultyId: string | null;
   date: Date;
@@ -242,6 +243,9 @@ describe('BranchAttendanceService session integrity', () => {
             id: 'enr-1',
             studentId: studentAkshay,
             status: 'ACTIVE',
+            admissionDate: new Date('2026-08-01T00:00:00.000Z'),
+            joiningDate: null,
+            createdAt: new Date('2026-08-01T00:00:00.000Z'),
             student: {
               id: studentAkshay,
               firstName: 'Akshay',
@@ -264,7 +268,12 @@ describe('BranchAttendanceService session integrity', () => {
                 branchCode: 'BR001',
               },
             },
-            batchTiming: null,
+            batchTimingId: 'timing-1',
+            batchTiming: {
+              id: 'timing-1',
+              name: 'Morning Offline',
+              mode: 'OFFLINE',
+            },
           };
         }),
       },
@@ -309,6 +318,8 @@ describe('BranchAttendanceService session integrity', () => {
                 return false;
               if (where.studentId && row.studentId !== where.studentId) return false;
               if (where.studentId?.in && !where.studentId.in.includes(row.studentId))
+                return false;
+              if (where.batchTimingId && row.batchTimingId !== where.batchTimingId)
                 return false;
               if (where.date?.gte && row.date < where.date.gte) return false;
               if (where.date?.lte && row.date > where.date.lte) return false;
@@ -399,7 +410,68 @@ describe('BranchAttendanceService session integrity', () => {
       $transaction: jest.fn(async (fn: any) => fn(prisma)),
     };
 
-    service = new BranchAttendanceService(prisma, access);
+    service = new BranchAttendanceService(prisma, access, {
+      getCalendarDayStatus: jest.fn(async () => ({
+        dayType: 'WORKING',
+        isAttendanceAllowed: true,
+        blockMessage: null,
+        reason: null,
+      })),
+      listWorkingDays: jest.fn(
+        async (
+          _batchId: string,
+          _mode: string,
+          from?: string,
+          to?: string,
+        ) => {
+          if (from && to && from <= '2026-08-29' && to >= '2026-08-29') {
+            return { dateKeys: ['2026-08-29'] };
+          }
+          return { dateKeys: [] };
+        },
+      ),
+      summarizeDateRange: jest.fn(
+        async (
+          _batchId: string,
+          _mode: string,
+          from?: string,
+          to?: string,
+        ) => {
+          const workingDayKeys: string[] = [];
+          const candidates = ['2026-08-27', '2026-08-28', '2026-08-29'];
+          for (const dateKey of candidates) {
+            if (from && dateKey < from) continue;
+            if (to && dateKey > to) continue;
+            workingDayKeys.push(dateKey);
+          }
+          if (
+            from &&
+            to &&
+            from <= '2026-08-29' &&
+            to >= '2026-08-29' &&
+            !workingDayKeys.length
+          ) {
+            workingDayKeys.push('2026-08-29');
+          }
+          return {
+            workingDayKeys,
+            workingDays: workingDayKeys.length,
+            sundays: 0,
+            nonWorkingDays: 0,
+            holidays: 0,
+            totalCalendarDays: workingDayKeys.length,
+          };
+        },
+      ),
+      getModeCalendarSummary: jest.fn(async () => ({
+        totalCalendarDays: 63,
+        workingDays: 3,
+        sundays: 0,
+        nonWorkingDays: 0,
+        holidays: 0,
+        completedPassedDays: 1,
+      })),
+    } as any);
   });
 
   it('creates present attendance for session 1', async () => {
@@ -620,23 +692,97 @@ describe('BranchAttendanceService session integrity', () => {
       date: '2026-08-29',
       status: AttendanceStatus.ABSENT,
     });
+    for (const row of store) {
+      row.batchTimingId = 'timing-1';
+    }
 
     const detail = await service.getStudentBatchAttendanceDetail(
       makeUser(),
       morningBatchId,
       studentAkshay,
+      { from: '2026-08-29', to: '2026-08-29' },
     );
 
-    expect(detail.summary.sessionsConducted).toBe(1);
-    expect(detail.summary.present).toBe(1);
-    expect(detail.summary.absent).toBe(1);
-    expect(detail.summary.ratioLabel).toBe('1 / 1');
-    expect(detail.summary.percentage).toBe(100);
+    expect(detail.summary.calendar.workingDays).toBe(3);
+    expect(detail.summary.calendar.totalCalendarDays).toBe(63);
+    expect(detail.summary.attendance.totalSessions).toBe(1);
+    expect(detail.summary.attendance.present).toBe(1);
+    expect(detail.summary.attendance.absent).toBe(0);
+    expect(detail.summary.attendance.ratioLabel).toBe('1 / 1');
+    expect(detail.summary.attendance.percentage).toBe(100);
     expect(detail.history).toHaveLength(2);
     expect(detail.history[0].markedAt).toBeTruthy();
     expect(detail.monthly[0]?.monthKey).toBe('2026-08');
     expect(detail.branch.id).toBe(branchId);
     expect(detail.batch.id).toBe(morningBatchId);
+  });
+
+  it('returns month-scoped summary across all working days and attendance dates', async () => {
+    const mark = async (date: string, status: AttendanceStatus) => {
+      await service.upsertAttendance(makeUser(), {
+        batchId: morningBatchId,
+        batchCourseId: session1Id,
+        studentId: studentAkshay,
+        date,
+        status,
+      });
+    };
+
+    await mark('2026-08-27', AttendanceStatus.PRESENT);
+    await mark('2026-08-28', AttendanceStatus.ABSENT);
+    await mark('2026-08-29', AttendanceStatus.LATE);
+    for (const row of store) {
+      row.batchTimingId = 'timing-1';
+    }
+
+    const detail = await service.getStudentBatchAttendanceDetail(
+      makeUser(),
+      morningBatchId,
+      studentAkshay,
+      { from: '2026-08-01', to: '2026-08-31' },
+    );
+
+    expect(detail.summary.calendar.workingDays).toBe(3);
+    expect(detail.summary.calendar.holidays).toBe(0);
+    expect(detail.summary.calendar.sundays).toBe(0);
+    expect(detail.summary.calendar.nonWorkingDays).toBe(0);
+    expect(detail.summary.attendance.totalSessions).toBe(3);
+    expect(detail.summary.attendance.present).toBe(1);
+    expect(detail.summary.attendance.absent).toBe(1);
+    expect(detail.summary.attendance.late).toBe(1);
+    expect(detail.summary.attendance.attended).toBe(2);
+    expect(detail.summary.attendance.ratioLabel).toBe('2 / 3');
+    expect(detail.summary.attendance.percentage).toBe(66.67);
+  });
+
+  it('keeps calendar working days separate from attendance sessions taken', async () => {
+    const mark = async (date: string, status: AttendanceStatus) => {
+      await service.upsertAttendance(makeUser(), {
+        batchId: morningBatchId,
+        batchCourseId: session1Id,
+        studentId: studentAkshay,
+        date,
+        status,
+      });
+    };
+
+    await mark('2026-08-27', AttendanceStatus.PRESENT);
+    await mark('2026-08-28', AttendanceStatus.ABSENT);
+    for (const row of store) {
+      row.batchTimingId = 'timing-1';
+    }
+
+    const detail = await service.getStudentBatchAttendanceDetail(
+      makeUser(),
+      morningBatchId,
+      studentAkshay,
+      { from: '2026-08-01', to: '2026-08-31' },
+    );
+
+    expect(detail.summary.calendar.workingDays).toBe(3);
+    expect(detail.summary.attendance.totalSessions).toBe(2);
+    expect(detail.summary.attendance.ratioLabel).toBe('1 / 2');
+    expect(detail.summary.attendance.percentage).toBe(50);
   });
 
   it('blocks student attendance detail when not enrolled in batch', async () => {

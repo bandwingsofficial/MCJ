@@ -7,7 +7,10 @@ import { ChevronRight } from "lucide-react";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { AttendanceCalendarView } from "@/src/features/branch-ops/components/attendance/attendance-calendar-view";
 import { AttendanceSummaryPanel } from "@/src/features/branch-ops/components/attendance/attendance-summary-panel";
-import type { StudentBatchAttendanceDetail } from "@/src/features/branch-ops/types";
+import type {
+  BatchCalendarDayType,
+  StudentBatchAttendanceDetail,
+} from "@/src/features/branch-ops/types";
 import {
   attendanceStatusVariant,
   formatAttendanceDisplayDate,
@@ -55,6 +58,9 @@ export function AttendanceDetailsPage({
   );
   const [calendarData, setCalendarData] =
     useState<StudentBatchAttendanceDetail | null>(null);
+  const [calendarDayTypes, setCalendarDayTypes] = useState<
+    Map<string, BatchCalendarDayType>
+  >(new Map());
 
   const [statusFilter, setStatusFilter] = useState("");
   const [calendarMonth, setCalendarMonth] = useState(initialCalendarMonth);
@@ -73,9 +79,8 @@ export function AttendanceDetailsPage({
     return {
       from: range.from,
       to: range.to,
-      ...(statusFilter ? { status: statusFilter } : {}),
     };
-  }, [calendarMonth, statusFilter]);
+  }, [calendarMonth]);
 
   const loadTable = useCallback(async () => {
     setLoading(true);
@@ -109,12 +114,29 @@ export function AttendanceDetailsPage({
         calendarQueryParams,
       );
       setCalendarData(result);
+
+      const mode = result.batchTiming?.mode;
+      if (mode) {
+        const calendarView = await branchOpsApi.batchCalendarView(batchId, mode, {
+          month: calendarMonth,
+        });
+        const dayTypeMap = new Map<string, BatchCalendarDayType>();
+        for (const day of calendarView.days) {
+          if (day.inMonth) {
+            dayTypeMap.set(day.dateKey, day.dayType);
+          }
+        }
+        setCalendarDayTypes(dayTypeMap);
+      } else {
+        setCalendarDayTypes(new Map());
+      }
     } catch {
       setCalendarData(null);
+      setCalendarDayTypes(new Map());
     } finally {
       setCalendarLoading(false);
     }
-  }, [batchId, studentId, calendarQueryParams]);
+  }, [batchId, studentId, calendarQueryParams, calendarMonth]);
 
   useEffect(() => {
     void loadTable();
@@ -227,6 +249,7 @@ export function AttendanceDetailsPage({
                 data={calendarViewData}
                 monthKey={calendarMonth}
                 loading={calendarLoading}
+                calendarDayTypes={calendarDayTypes}
                 onMonthChange={(monthKey) => {
                   setCalendarMonth(monthKey);
                   setSelectedDateKey(null);
@@ -240,19 +263,24 @@ export function AttendanceDetailsPage({
           </Card>
           <AttendanceSummaryPanel
             summary={
+              tableData?.summary ??
               calendarViewData?.summary ?? {
-                workingDays: null,
-                attendanceDates: 0,
-                sessionsConducted: 0,
-                present: 0,
-                absent: 0,
-                late: 0,
-                leave: 0,
-                attended: 0,
-                percentage: null,
-                ratioLabel: null,
-                hasAttendance: false,
-                totalRecords: 0,
+                calendar: {
+                  workingDays: 0,
+                  sundays: 0,
+                  holidays: 0,
+                  nonWorkingDays: 0,
+                  totalCalendarDays: 0,
+                },
+                attendance: {
+                  totalSessions: 0,
+                  attended: 0,
+                  present: 0,
+                  absent: 0,
+                  late: 0,
+                  percentage: null,
+                  ratioLabel: null,
+                },
               }
             }
           />

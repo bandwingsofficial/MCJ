@@ -17,6 +17,7 @@ import type { BatchCourseAssignmentRecord } from '@modules/batch/application/bat
 import { ensureBatchSelectableForAssignment } from '@modules/batch/domain/utils/batch-selection.util';
 import { resolveBatchApiStatus } from '@modules/batch/domain/utils/batch-lifecycle-status.util';
 import { BatchStatus } from '@modules/batch/domain/enums/batch-status.enum';
+import { BatchCalendarService } from '@modules/batch/application/batch-calendar/batch-calendar.service';
 import { PrismaBatchCourseRepository } from '@modules/batch/infrastructure/repositories/prisma-batch-course.repository';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BranchOperationsAccessService } from './branch-operations-access.service';
@@ -125,6 +126,7 @@ export class BranchBatchOpsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly access: BranchOperationsAccessService,
+    private readonly batchCalendar: BatchCalendarService,
   ) {
     this.batchCourseRepo = new PrismaBatchCourseRepository(prisma);
   }
@@ -1632,5 +1634,103 @@ export class BranchBatchOpsService {
       total,
       percentage: total > 0 ? Math.round((attended / total) * 100) : 0,
     };
+  }
+
+  async listBatchCalendarSummaries(user: BranchAuthUser, batchId: string) {
+    await this.access.assertFacultyCanAccessBatch(user, batchId);
+    await this.access.assertBatchInBranch(batchId, user.branchId);
+    return this.batchCalendar.listModeSummaries(batchId);
+  }
+
+  async getBatchCalendarView(
+    user: BranchAuthUser,
+    batchId: string,
+    mode: string,
+    month?: string,
+  ) {
+    await this.access.assertFacultyCanAccessBatch(user, batchId);
+    await this.access.assertBatchInBranch(batchId, user.branchId);
+    return this.batchCalendar.getCalendarView(batchId, mode, month);
+  }
+
+  async listBatchCalendarWorkingDays(
+    user: BranchAuthUser,
+    batchId: string,
+    mode: string,
+    from?: string,
+    to?: string,
+  ) {
+    await this.access.assertFacultyCanAccessBatch(user, batchId);
+    await this.access.assertBatchInBranch(batchId, user.branchId);
+    return this.batchCalendar.listWorkingDays(batchId, mode, from, to);
+  }
+
+  async upsertBatchCalendarException(
+    user: BranchAuthUser,
+    batchId: string,
+    mode: string,
+    payload: {
+      date: string;
+      status: 'HOLIDAY' | 'NON_WORKING' | 'WORKING';
+      reason?: string;
+    },
+  ) {
+    if (!this.access.isManager(user) && !this.access.isFaculty(user)) {
+      throw new ForbiddenException('Role access denied');
+    }
+    await this.access.assertFacultyCanAccessBatch(user, batchId);
+    await this.access.assertBatchInBranch(batchId, user.branchId);
+
+    const result = await this.batchCalendar.upsertException({
+      batchId,
+      modeParam: mode,
+      date: payload.date,
+      status: payload.status,
+      reason: payload.reason,
+      actorId: user.sub,
+    });
+
+    await this.access.log({
+      user,
+      action: 'BATCH_CALENDAR_EXCEPTION_UPSERTED',
+      resourceType: 'Batch',
+      resourceId: batchId,
+      metadata: {
+        mode,
+        date: payload.date,
+        status: payload.status,
+      },
+    });
+
+    return result;
+  }
+
+  async deleteBatchCalendarException(
+    user: BranchAuthUser,
+    batchId: string,
+    mode: string,
+    date: string,
+  ) {
+    if (!this.access.isManager(user) && !this.access.isFaculty(user)) {
+      throw new ForbiddenException('Role access denied');
+    }
+    await this.access.assertFacultyCanAccessBatch(user, batchId);
+    await this.access.assertBatchInBranch(batchId, user.branchId);
+
+    const result = await this.batchCalendar.deleteException({
+      batchId,
+      modeParam: mode,
+      date,
+    });
+
+    await this.access.log({
+      user,
+      action: 'BATCH_CALENDAR_EXCEPTION_REMOVED',
+      resourceType: 'Batch',
+      resourceId: batchId,
+      metadata: { mode, date },
+    });
+
+    return result;
   }
 }

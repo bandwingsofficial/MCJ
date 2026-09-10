@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { PermissionsGuard } from '@common/guards/permissions.guard';
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
+import { BatchModule } from '../batch/batch.module';
 import { BranchUserModule } from '../branch-user/branch-user.module';
 import { JobApplicationModule } from '../job-application/job-application.module';
 
@@ -16,7 +17,7 @@ import { BranchStaffService } from './application/branch-staff.service';
 import { BranchOperationsController } from './presentation/controllers/branch-operations.controller';
 
 @Module({
-  imports: [PrismaModule, BranchUserModule, JobApplicationModule],
+  imports: [PrismaModule, BatchModule, BranchUserModule, JobApplicationModule],
   controllers: [BranchOperationsController],
   providers: [
     PermissionsGuard,

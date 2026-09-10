@@ -24,3 +24,7 @@ export function batchTimingManagePath(
 ): string {
   return `/batches/${batchId}/timings/${batchTimingId}/manage`;
 }
+
+export function batchCalendarPath(batchId: string, mode: BatchMode): string {
+  return `/batches/${batchId}/calendar/${mode.toLowerCase()}`;
+}

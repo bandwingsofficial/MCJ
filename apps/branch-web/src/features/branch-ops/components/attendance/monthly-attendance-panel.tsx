@@ -21,7 +21,6 @@ import {
   buildMonthlyStudentRows,
   currentMonthlyAttendanceLabel,
   currentMonthlyAttendanceRange,
-  extractSessionDates,
   formatMonthlyAttendancePercentage,
   type MonthlyAttendanceStudentRow,
 } from "@/src/features/branch-ops/utils/monthly-attendance.utils";
@@ -120,6 +119,7 @@ export function MonthlyAttendancePanel({
 
   const [students, setStudents] = useState<BatchStudentItem[]>([]);
   const [records, setRecords] = useState<AttendanceItem[]>([]);
+  const [sessionDates, setSessionDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -171,9 +171,10 @@ export function MonthlyAttendancePanel({
   }, [mode]);
 
   useEffect(() => {
-    if (!batchId || !batchTimingId) {
+    if (!batchId || !batchTimingId || !mode) {
       setStudents([]);
       setRecords([]);
+      setSessionDates([]);
       setError(null);
       return;
     }
@@ -190,8 +191,12 @@ export function MonthlyAttendancePanel({
         from: monthRange.from,
         to: monthRange.to,
       }),
+      branchOpsApi.batchCalendarWorkingDays(batchId, mode, {
+        from: monthRange.from,
+        to: monthRange.to,
+      }),
     ])
-      .then(([batchStudents, attendanceRecords]) => {
+      .then(([batchStudents, attendanceRecords, calendarWorkingDays]) => {
         if (cancelled) return;
         setStudents(
           batchStudents.filter(
@@ -201,6 +206,7 @@ export function MonthlyAttendancePanel({
           ),
         );
         setRecords(attendanceRecords);
+        setSessionDates(calendarWorkingDays.dateKeys);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -212,6 +218,7 @@ export function MonthlyAttendancePanel({
         setError(message ?? "Unable to load monthly attendance.");
         setStudents([]);
         setRecords([]);
+        setSessionDates([]);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -220,9 +227,7 @@ export function MonthlyAttendancePanel({
     return () => {
       cancelled = true;
     };
-  }, [batchId, batchTimingId, monthRange.from, monthRange.to]);
-
-  const sessionDates = useMemo(() => extractSessionDates(records), [records]);
+  }, [batchId, batchTimingId, mode, monthRange.from, monthRange.to]);
 
   const studentInputs = useMemo(
     () =>
@@ -267,8 +272,8 @@ export function MonthlyAttendancePanel({
       <div>
         <p className="text-sm font-semibold text-[#102A56]">Monthly Attendance</p>
         <p className="mt-1 text-sm text-slate-500">
-          Student-wise attendance for {monthLabel}. Only actual saved attendance
-          sessions are counted.
+          Student-wise attendance for {monthLabel}. Working sessions follow the
+          batch calendar for the selected learning mode.
         </p>
       </div>
 

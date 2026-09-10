@@ -17,6 +17,7 @@ import type {
 import { BatchManageDetailsPanel } from "./batch-manage-details-panel";
 import { BatchManageOverviewPanel } from "./batch-manage-overview-panel";
 import { BatchManageTimingsPanel } from "./batch-manage-timings-panel";
+import { BatchManageCalendarPanel } from "./batch-manage-calendar-panel";
 
 interface Props {
   batch: Batch;
@@ -27,7 +28,7 @@ interface Props {
   editDisabled?: boolean;
 }
 
-export type BatchManageTabKey = "overview" | "details" | "timings";
+export type BatchManageTabKey = "overview" | "details" | "timings" | "calendar";
 
 export const BATCH_MANAGE_TABS: {
   value: BatchManageTabKey;
@@ -36,6 +37,7 @@ export const BATCH_MANAGE_TABS: {
   { value: "overview", label: "Overview" },
   { value: "details", label: "Batch Details" },
   { value: "timings", label: "Batch Timings" },
+  { value: "calendar", label: "Calendar Management" },
 ];
 
 export function BatchManageWorkspace({
@@ -87,6 +89,10 @@ export function BatchManageWorkspace({
 
       <TabsContent value="timings">
         <BatchManageTimingsPanel batch={batch} />
+      </TabsContent>
+
+      <TabsContent value="calendar">
+        <BatchManageCalendarPanel batchId={batch.id} />
       </TabsContent>
     </Tabs>
   );

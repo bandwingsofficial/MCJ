@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AttendanceStatus, EnrollmentStatus, Prisma } from '@prisma/client';
+import { AttendanceStatus, CourseMode, EnrollmentStatus, Prisma } from '@prisma/client';
 
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
@@ -11,6 +11,12 @@ import type { BranchAuthUser } from '@common/decorators/current-branch-user.deco
 import {
   ensureBatchSelectableForAssignment,
 } from '@modules/batch/domain/utils/batch-selection.util';
+import { BatchCalendarService } from '@modules/batch/application/batch-calendar/batch-calendar.service';
+import {
+  dateFromDateKey,
+  dateKeyFromDate,
+  todayDateKey,
+} from '@modules/batch/application/batch-calendar/batch-calendar.util';
 import { BatchStatus } from '@modules/batch/domain/enums/batch-status.enum';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BranchOperationsAccessService } from './branch-operations-access.service';
@@ -29,7 +35,6 @@ import {
 import {
   applyStatusCount,
   buildAttendanceAnalyticsStats,
-  buildPresentOnlyPercentage,
   emptyStatusCounts,
   monthKeyFromDate,
   monthLabelFromKey,
@@ -118,6 +123,7 @@ export class BranchAttendanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly access: BranchOperationsAccessService,
+    private readonly batchCalendar: BatchCalendarService,
   ) {}
 
   async listSessions(user: BranchAuthUser, batchId: string) {
@@ -314,6 +320,12 @@ export class BranchAttendanceService {
       students.map((student) => student.status),
     );
 
+    const calendar = await this.batchCalendar.getCalendarDayStatus(
+      input.batchId,
+      context.timing.mode,
+      input.date,
+    );
+
     return {
       date: input.date,
       branch: context.branch,
@@ -323,6 +335,7 @@ export class BranchAttendanceService {
       students,
       summary,
       hasExisting: existing.length > 0,
+      calendar,
     };
   }
 
@@ -488,6 +501,12 @@ export class BranchAttendanceService {
         'Student is not enrolled in the selected batch timing',
       );
     }
+
+    await this.assertCalendarAllowsAttendance(
+      input.batchId,
+      context.timing.mode,
+      input.date,
+    );
 
     const date = this.parseDate(input.date);
     const punchIn = input.punchIn ? new Date(input.punchIn) : undefined;
@@ -734,6 +753,13 @@ export class BranchAttendanceService {
       input.batchTimingId!,
       { forWrite: true },
     );
+
+    await this.assertCalendarAllowsAttendance(
+      input.batchId,
+      context.timing.mode,
+      input.date,
+    );
+
     const date = this.parseDate(input.date);
 
     const enrollments = await this.prisma.enrollment.findMany({
@@ -1258,6 +1284,8 @@ export class BranchAttendanceService {
         id: true,
         name: true,
         code: true,
+        startDate: true,
+        endDate: true,
         branch: {
           select: { id: true, branchName: true, branchCode: true },
         },
@@ -1286,7 +1314,13 @@ export class BranchAttendanceService {
       };
     }
 
-    const [enrollmentGroups, statusGroups, sessionGroups] = await Promise.all([
+    const statsRange = this.resolveStatsDateRange({
+      enrollmentStartKey: dateKeyFromDate(batch.startDate),
+      batchStartDate: batch.startDate,
+      batchEndDate: batch.endDate,
+    });
+
+    const [enrollmentGroups, attendanceRows] = await Promise.all([
       this.prisma.enrollment.groupBy({
         by: ['batchTimingId'],
         where: {
@@ -1299,21 +1333,16 @@ export class BranchAttendanceService {
         },
         _count: { _all: true },
       }),
-      this.prisma.attendance.groupBy({
-        by: ['batchTimingId', 'status'],
+      this.prisma.attendance.findMany({
         where: {
           batchId,
           branchId: user.branchId,
           batchTimingId: { in: timingIds },
         },
-        _count: { _all: true },
-      }),
-      this.prisma.attendance.groupBy({
-        by: ['batchTimingId', 'date'],
-        where: {
-          batchId,
-          branchId: user.branchId,
-          batchTimingId: { in: timingIds },
+        select: {
+          batchTimingId: true,
+          date: true,
+          status: true,
         },
       }),
     ]);
@@ -1325,51 +1354,67 @@ export class BranchAttendanceService {
       }
     }
 
-    const countsByTiming = new Map<string, AttendanceStatusCounts>();
-    for (const group of statusGroups) {
-      if (!group.batchTimingId) continue;
-      const current =
-        countsByTiming.get(group.batchTimingId) ?? emptyStatusCounts();
-      applyStatusCount(current, group.status, group._count._all);
-      countsByTiming.set(group.batchTimingId, current);
-    }
+    const workingDaysByTiming = new Map<string, Set<string>>();
+    await Promise.all(
+      batch.timings.map(async (timing) => {
+        const dateKeys = await this.listApplicableWorkingDayKeys({
+          batchId,
+          mode: timing.mode,
+          from: statsRange.from,
+          to: statsRange.to,
+          enrollmentStartKey: statsRange.from,
+        });
+        workingDaysByTiming.set(timing.id, new Set(dateKeys));
+      }),
+    );
 
-    const sessionsByTiming = new Map<string, number>();
-    for (const group of sessionGroups) {
-      if (!group.batchTimingId) continue;
-      sessionsByTiming.set(
-        group.batchTimingId,
-        (sessionsByTiming.get(group.batchTimingId) ?? 0) + 1,
-      );
+    const countsByTiming = new Map<string, AttendanceStatusCounts>();
+    for (const row of attendanceRows) {
+      if (!row.batchTimingId) continue;
+      const workingSet = workingDaysByTiming.get(row.batchTimingId);
+      if (!workingSet) continue;
+      const dateKey = row.date.toISOString().slice(0, 10);
+      if (!workingSet.has(dateKey)) continue;
+      const current =
+        countsByTiming.get(row.batchTimingId) ?? emptyStatusCounts();
+      applyStatusCount(current, row.status);
+      countsByTiming.set(row.batchTimingId, current);
     }
 
     const modeOrder = ['OFFLINE', 'ONLINE', 'RECORDED'] as const;
-    const modes = modeOrder
-      .map((mode) => ({
-        mode,
-        timings: batch.timings
-          .filter((timing) => timing.mode === mode)
-          .map((timing) => {
-            const counts =
-              countsByTiming.get(timing.id) ?? emptyStatusCounts();
-            return {
-              id: timing.id,
-              name: timing.name,
-              mode: timing.mode,
-              enrolledStudents: enrolledByTiming.get(timing.id) ?? 0,
-              sessionsConducted: sessionsByTiming.get(timing.id) ?? 0,
-              present: counts.present,
-              absent: counts.absent,
-              late: counts.late,
-              totalRecords: counts.total,
-              percentage: buildPresentOnlyPercentage(
-                counts.present,
-                counts.total,
-              ),
-            };
-          }),
-      }))
-      .filter((section) => section.timings.length > 0);
+    const modes = (
+      await Promise.all(
+        modeOrder.map(async (mode) => ({
+          mode,
+          timings: await Promise.all(
+            batch.timings
+              .filter((timing) => timing.mode === mode)
+              .map(async (timing) => {
+                const workingSet = workingDaysByTiming.get(timing.id);
+                const counts =
+                  countsByTiming.get(timing.id) ?? emptyStatusCounts();
+                const sessionsConducted = workingSet?.size ?? 0;
+                const stats = buildAttendanceAnalyticsStats(
+                  counts,
+                  sessionsConducted,
+                );
+                return {
+                  id: timing.id,
+                  name: timing.name,
+                  mode: timing.mode,
+                  enrolledStudents: enrolledByTiming.get(timing.id) ?? 0,
+                  sessionsConducted: stats.conductedSessions,
+                  present: stats.present,
+                  absent: stats.absent,
+                  late: stats.late,
+                  totalRecords: stats.total,
+                  percentage: stats.percentage ?? 0,
+                };
+              }),
+          ),
+        })),
+      )
+    ).filter((section) => section.timings.length > 0);
 
     return {
       batch: { id: batch.id, name: batch.name, code: batch.code },
@@ -1386,71 +1431,79 @@ export class BranchAttendanceService {
     batchId: string,
     batchTimingId: string,
   ) {
-    await this.resolveTimingContext(user, batchId, batchTimingId, {
+    const context = await this.resolveTimingContext(user, batchId, batchTimingId, {
       forWrite: false,
     });
 
-    const [enrollments, conductedGroups, statusGroups, lastAttendanceRows] =
-      await Promise.all([
-        this.prisma.enrollment.findMany({
-          where: facultyBatchTimingStudentWhere(
-            batchId,
-            batchTimingId,
-            user.branchId,
-          ),
-          include: {
-            student: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                studentCode: true,
-                status: true,
-              },
+    const batch = await this.prisma.batch.findFirst({
+      where: { id: batchId, isDeleted: false },
+      select: { startDate: true, endDate: true },
+    });
+
+    if (!batch) {
+      throw new NotFoundException('Batch not found');
+    }
+
+    const statsRange = this.resolveStatsDateRange({
+      enrollmentStartKey: dateKeyFromDate(batch.startDate),
+      batchStartDate: batch.startDate,
+      batchEndDate: batch.endDate,
+    });
+
+    const modeWorkingDays = await this.listApplicableWorkingDayKeys({
+      batchId,
+      mode: context.timing.mode,
+      from: statsRange.from,
+      to: statsRange.to,
+      enrollmentStartKey: statsRange.from,
+    });
+
+    const [enrollments, attendanceRows, lastAttendanceRows] = await Promise.all([
+      this.prisma.enrollment.findMany({
+        where: facultyBatchTimingStudentWhere(
+          batchId,
+          batchTimingId,
+          user.branchId,
+        ),
+        include: {
+          student: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              studentCode: true,
+              status: true,
             },
           },
-          orderBy: { createdAt: 'desc' },
-        }),
-        this.prisma.attendance.groupBy({
-          by: ['date'],
-          where: {
-            batchId,
-            batchTimingId,
-            branchId: user.branchId,
-          },
-        }),
-        this.prisma.attendance.groupBy({
-          by: ['studentId', 'status'],
-          where: {
-            batchId,
-            batchTimingId,
-            branchId: user.branchId,
-          },
-          _count: { _all: true },
-        }),
-        this.prisma.attendance.findMany({
-          where: {
-            batchId,
-            batchTimingId,
-            branchId: user.branchId,
-          },
-          orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
-          select: {
-            studentId: true,
-            date: true,
-            status: true,
-          },
-        }),
-      ]);
-
-    const conductedSessions = conductedGroups.length;
-    const countsByStudent = new Map<string, AttendanceStatusCounts>();
-    for (const group of statusGroups) {
-      const current =
-        countsByStudent.get(group.studentId) ?? emptyStatusCounts();
-      applyStatusCount(current, group.status, group._count._all);
-      countsByStudent.set(group.studentId, current);
-    }
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.attendance.findMany({
+        where: {
+          batchId,
+          batchTimingId,
+          branchId: user.branchId,
+        },
+        select: {
+          studentId: true,
+          date: true,
+          status: true,
+        },
+      }),
+      this.prisma.attendance.findMany({
+        where: {
+          batchId,
+          batchTimingId,
+          branchId: user.branchId,
+        },
+        orderBy: [{ date: 'desc' }, { updatedAt: 'desc' }],
+        select: {
+          studentId: true,
+          date: true,
+          status: true,
+        },
+      }),
+    ]);
 
     const lastByStudent = new Map<
       string,
@@ -1466,8 +1519,24 @@ export class BranchAttendanceService {
     }
 
     const students = enrollments.map((enrollment) => {
-      const counts =
-        countsByStudent.get(enrollment.student.id) ?? emptyStatusCounts();
+      const enrollmentStartKey = this.enrollmentDateKey(enrollment);
+      const applicableWorkingDays = modeWorkingDays.filter(
+        (dateKey) => dateKey >= enrollmentStartKey,
+      );
+      const applicableWorkingSet = new Set(applicableWorkingDays);
+
+      const counts = emptyStatusCounts();
+      for (const row of attendanceRows) {
+        if (row.studentId !== enrollment.student.id) continue;
+        const dateKey = row.date.toISOString().slice(0, 10);
+        if (!applicableWorkingSet.has(dateKey)) continue;
+        applyStatusCount(counts, row.status);
+      }
+
+      const stats = buildAttendanceAnalyticsStats(
+        counts,
+        applicableWorkingDays.length,
+      );
       const name = [enrollment.student.firstName, enrollment.student.lastName]
         .filter(Boolean)
         .join(' ');
@@ -1482,14 +1551,14 @@ export class BranchAttendanceService {
         studentCode: enrollment.student.studentCode,
         status: enrollment.student.status,
         enrollmentStatus: enrollment.status,
-        present: counts.present,
-        absent: counts.absent,
-        late: counts.late,
-        leave: counts.leave,
-        totalRecords: counts.total,
-        percentage: buildPresentOnlyPercentage(counts.present, counts.total),
-        conductedSessions,
-        hasAttendance: counts.total > 0,
+        present: stats.present,
+        absent: stats.absent,
+        late: stats.late,
+        leave: stats.leave,
+        totalRecords: stats.total,
+        percentage: stats.percentage ?? 0,
+        conductedSessions: stats.conductedSessions,
+        hasAttendance: stats.hasAttendance,
         lastAttendanceDate: last?.date ?? null,
         lastAttendanceStatus: last?.status ?? null,
       };
@@ -1550,25 +1619,19 @@ export class BranchAttendanceService {
       throw new NotFoundException('Student is not enrolled in this batch');
     }
 
-    const dateFilter = this.buildDateFilter(query.from, query.to);
     const sessionFilter: Prisma.AttendanceWhereInput = {
       batchId,
       branchId: user.branchId,
       ...(enrollment.batchTimingId
         ? { batchTimingId: enrollment.batchTimingId }
         : {}),
-      ...(dateFilter ? { date: dateFilter } : {}),
       ...(query.batchCourseId ? { batchCourseId: query.batchCourseId } : {}),
       ...(query.courseId
         ? { batchCourse: { courseId: query.courseId, isDeleted: false } }
         : {}),
     };
 
-    const [conductedGroups, allStudentRows, assignments] = await Promise.all([
-      this.prisma.attendance.groupBy({
-        by: ['date'],
-        where: sessionFilter,
-      }),
+    const [allStudentRows, assignments] = await Promise.all([
       this.prisma.attendance.findMany({
         where: {
           ...sessionFilter,
@@ -1608,21 +1671,68 @@ export class BranchAttendanceService {
       }),
     ]);
 
-    const conductedSessions = conductedGroups.length;
-    const historyRows =
-      query.status != null
-        ? allStudentRows.filter((row) => row.status === query.status)
-        : allStudentRows;
+    const enrollmentStartKey = this.enrollmentDateKey(enrollment);
+    const enrollmentMode = enrollment.batchTiming?.mode ?? null;
+    const statsRange = this.resolveStatsDateRange({
+      queryFrom: query.from,
+      queryTo: query.to,
+      enrollmentStartKey,
+      batchStartDate: enrollment.batch.startDate,
+      batchEndDate: enrollment.batch.endDate,
+    });
 
-    const counts = emptyStatusCounts();
-    for (const row of historyRows) {
-      applyStatusCount(counts, row.status);
+    let applicableWorkingDays: string[] = [];
+    let calendarSummary = {
+      workingDays: 0,
+      sundays: 0,
+      holidays: 0,
+      nonWorkingDays: 0,
+      totalCalendarDays: 0,
+    };
+
+    if (enrollmentMode != null) {
+      const batchPeriodSummary = await this.batchCalendar.getModeCalendarSummary(
+        batchId,
+        enrollmentMode,
+      );
+      calendarSummary = {
+        workingDays: batchPeriodSummary.workingDays,
+        sundays: batchPeriodSummary.sundays,
+        holidays: batchPeriodSummary.holidays,
+        nonWorkingDays: batchPeriodSummary.nonWorkingDays,
+        totalCalendarDays: batchPeriodSummary.totalCalendarDays,
+      };
+
+      applicableWorkingDays = await this.listApplicableWorkingDayKeys({
+        batchId,
+        mode: enrollmentMode,
+        from: statsRange.from,
+        to: statsRange.to,
+        enrollmentStartKey: statsRange.from,
+        includeFuture: false,
+      });
     }
-    const stats = buildAttendanceAnalyticsStats(counts, conductedSessions);
 
-    const attendanceDateKeys = new Set(
-      historyRows.map((row) => row.date.toISOString().slice(0, 10)),
-    );
+    const applicableWorkingSet = new Set(applicableWorkingDays);
+
+    const historyRows = allStudentRows.filter((row) => {
+      const dateKey = dateKeyFromDate(row.date);
+      if (query.from && dateKey < query.from.slice(0, 10)) return false;
+      if (query.to && dateKey > query.to.slice(0, 10)) return false;
+      if (query.status != null && row.status !== query.status) return false;
+      return true;
+    });
+
+    const attendanceStats = this.buildSessionSummaryFromRows(allStudentRows);
+
+    const statusByWorkingDate = new Map<string, AttendanceStatus>();
+    for (const row of allStudentRows) {
+      const dateKey = dateKeyFromDate(row.date);
+      if (!applicableWorkingSet.has(dateKey)) continue;
+      if (!statusByWorkingDate.has(dateKey)) {
+        statusByWorkingDate.set(dateKey, row.status);
+      }
+    }
 
     const history = historyRows.map((row) => {
       const courseTitle = row.batchCourse.course.title;
@@ -1670,29 +1780,27 @@ export class BranchAttendanceService {
       };
     });
 
-    const conductedByMonth = new Map<string, Set<string>>();
-    for (const group of conductedGroups) {
-      const key = monthKeyFromDate(group.date);
-      const set = conductedByMonth.get(key) ?? new Set<string>();
-      set.add(group.date.toISOString().slice(0, 10));
-      conductedByMonth.set(key, set);
+    const workingDaysByMonth = new Map<string, number>();
+    for (const dateKey of applicableWorkingDays) {
+      const key = monthKeyFromDate(dateFromDateKey(dateKey));
+      workingDaysByMonth.set(key, (workingDaysByMonth.get(key) ?? 0) + 1);
     }
 
     const countsByMonth = new Map<string, AttendanceStatusCounts>();
-    for (const row of historyRows) {
-      const key = monthKeyFromDate(row.date);
+    for (const [dateKey, status] of statusByWorkingDate.entries()) {
+      const key = monthKeyFromDate(dateFromDateKey(dateKey));
       const current = countsByMonth.get(key) ?? emptyStatusCounts();
-      applyStatusCount(current, row.status);
+      applyStatusCount(current, status);
       countsByMonth.set(key, current);
     }
 
     const monthKeys = Array.from(
-      new Set([...conductedByMonth.keys(), ...countsByMonth.keys()]),
+      new Set([...workingDaysByMonth.keys(), ...countsByMonth.keys()]),
     ).sort((a, b) => b.localeCompare(a));
 
     const monthly = monthKeys.map((key) => {
       const monthCounts = countsByMonth.get(key) ?? emptyStatusCounts();
-      const monthConducted = conductedByMonth.get(key)?.size ?? 0;
+      const monthConducted = workingDaysByMonth.get(key) ?? 0;
       const monthStats = buildAttendanceAnalyticsStats(
         monthCounts,
         monthConducted,
@@ -1759,22 +1867,49 @@ export class BranchAttendanceService {
         }),
       ),
       summary: {
-        workingDays: null,
-        attendanceDates: attendanceDateKeys.size,
-        sessionsConducted: stats.conductedSessions,
-        present: stats.present,
-        absent: stats.absent,
-        late: stats.late,
-        leave: stats.leave,
-        attended: stats.attended,
-        percentage: stats.percentage,
-        ratioLabel: stats.ratioLabel,
-        hasAttendance: stats.hasAttendance,
-        totalRecords: stats.total,
+        calendar: calendarSummary,
+        attendance: {
+          totalSessions: attendanceStats.conductedSessions,
+          attended: attendanceStats.attended,
+          present: attendanceStats.present,
+          absent: attendanceStats.absent,
+          late: attendanceStats.late,
+          percentage: attendanceStats.percentage,
+          ratioLabel: attendanceStats.ratioLabel,
+        },
       },
       monthly,
       history,
     };
+  }
+
+  private buildSessionSummaryFromRows(
+    rows: Array<{ date: Date; status: AttendanceStatus }>,
+  ) {
+    const statusBySessionDate = new Map<string, AttendanceStatus>();
+    for (const row of rows) {
+      if (
+        row.status !== AttendanceStatus.PRESENT &&
+        row.status !== AttendanceStatus.ABSENT &&
+        row.status !== AttendanceStatus.LATE
+      ) {
+        continue;
+      }
+      const dateKey = dateKeyFromDate(row.date);
+      if (!statusBySessionDate.has(dateKey)) {
+        statusBySessionDate.set(dateKey, row.status);
+      }
+    }
+
+    const sessionCounts = emptyStatusCounts();
+    for (const status of statusBySessionDate.values()) {
+      applyStatusCount(sessionCounts, status);
+    }
+
+    return buildAttendanceAnalyticsStats(
+      sessionCounts,
+      statusBySessionDate.size,
+    );
   }
 
   private buildDateFilter(
@@ -1786,6 +1921,89 @@ export class BranchAttendanceService {
     if (from) filter.gte = parseDateOnly(from);
     if (to) filter.lte = parseDateOnly(to);
     return filter;
+  }
+
+  private enrollmentDateKey(enrollment: {
+    admissionDate: Date | null;
+    joiningDate: Date | null;
+    createdAt: Date;
+  }): string {
+    const source =
+      enrollment.admissionDate ??
+      enrollment.joiningDate ??
+      enrollment.createdAt;
+    return dateKeyFromDate(source);
+  }
+
+  private resolveStatsDateRange(params: {
+    queryFrom?: string;
+    queryTo?: string;
+    enrollmentStartKey: string;
+    batchStartDate: Date;
+    batchEndDate: Date | null;
+  }): { from: string; to: string } {
+    const todayKey = todayDateKey();
+    const batchStartKey = dateKeyFromDate(params.batchStartDate);
+    const batchEndKey = params.batchEndDate
+      ? dateKeyFromDate(params.batchEndDate)
+      : todayKey;
+    const upperBound = batchEndKey < todayKey ? batchEndKey : todayKey;
+    const applicableStartKey =
+      params.enrollmentStartKey > batchStartKey
+        ? params.enrollmentStartKey
+        : batchStartKey;
+
+    if (params.queryFrom && params.queryTo) {
+      const queryFrom = params.queryFrom.slice(0, 10);
+      const queryTo = params.queryTo.slice(0, 10);
+      const from =
+        queryFrom > applicableStartKey ? queryFrom : applicableStartKey;
+      const cappedTo = queryTo > upperBound ? upperBound : queryTo;
+      if (cappedTo < from) {
+        return { from, to: from };
+      }
+      return { from, to: cappedTo };
+    }
+
+    if (upperBound < applicableStartKey) {
+      return { from: applicableStartKey, to: applicableStartKey };
+    }
+    return { from: applicableStartKey, to: upperBound };
+  }
+
+  private async listApplicableWorkingDayKeys(params: {
+    batchId: string;
+    mode: CourseMode;
+    from: string;
+    to: string;
+    enrollmentStartKey: string;
+    includeFuture?: boolean;
+  }): Promise<string[]> {
+    const { dateKeys } = await this.batchCalendar.listWorkingDays(
+      params.batchId,
+      params.mode,
+      params.from,
+      params.to,
+      params.includeFuture ?? false,
+    );
+    return dateKeys.filter((dateKey) => dateKey >= params.enrollmentStartKey);
+  }
+
+  private async assertCalendarAllowsAttendance(
+    batchId: string,
+    mode: CourseMode,
+    date: string,
+  ): Promise<void> {
+    const status = await this.batchCalendar.getCalendarDayStatus(
+      batchId,
+      mode,
+      date,
+    );
+    if (!status.isAttendanceAllowed) {
+      throw new BadRequestException(
+        status.blockMessage ?? 'Attendance is not available for this date.',
+      );
+    }
   }
 
   private countWorkingDays(

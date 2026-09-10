@@ -63,6 +63,7 @@ import { PrismaBatchTemplateRepository } from './infrastructure/repositories/pri
 import { AdminBatchController } from './presentation/controllers/admin-batch.controller';
 import { AdminBatchTemplateController } from './presentation/controllers/admin-batch-template.controller';
 import { BatchController } from './presentation/controllers/batch.controller';
+import { BatchCalendarService } from './application/batch-calendar/batch-calendar.service';
 
 import { BRANCH_TOKENS } from '../branch/branch.tokens';
 import { BranchModule } from '../branch/branch.module';
@@ -87,6 +88,7 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
 
   providers: [
     BatchDomainService,
+    BatchCalendarService,
     SuperAdminGuard,
 
     {
@@ -514,6 +516,6 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
     },
   ],
 
-  exports: [BATCH_TOKENS.BATCH_REPOSITORY],
+  exports: [BATCH_TOKENS.BATCH_REPOSITORY, BatchCalendarService],
 })
 export class BatchModule {}

@@ -414,3 +414,76 @@ export interface BatchResponse extends ApiSuccessResponse<Batch> {}
 
 /** @deprecated Use BatchListResponse */
 export interface BatchListLegacyResponse extends ApiSuccessResponse<Batch[]> {}
+
+export type BatchCalendarDayType =
+  | "WORKING"
+  | "SUNDAY"
+  | "NON_WORKING"
+  | "HOLIDAY"
+  | "OUTSIDE_PERIOD"
+  | "FUTURE";
+
+export type BatchCalendarExceptionStatus =
+  | "HOLIDAY"
+  | "NON_WORKING"
+  | "WORKING";
+
+export interface BatchCalendarSummary {
+  totalCalendarDays: number;
+  workingDays: number;
+  sundays: number;
+  nonWorkingDays: number;
+  holidays: number;
+  completedPassedDays: number;
+}
+
+export interface BatchCalendarModeSummaryItem {
+  mode: BatchMode;
+  modeLabel: string;
+  scheduleLabel: string;
+  startDate: string;
+  endDate: string | null;
+  summary: BatchCalendarSummary;
+}
+
+export interface BatchCalendarSummariesResponse {
+  batchId: string;
+  batchName: string;
+  batchCode: string;
+  items: BatchCalendarModeSummaryItem[];
+}
+
+export interface BatchCalendarDayCell {
+  dateKey: string;
+  day: number;
+  inMonth: boolean;
+  dayType: BatchCalendarDayType;
+  reason?: string | null;
+  isEditable: boolean;
+  hasException: boolean;
+}
+
+export interface BatchCalendarViewResponse {
+  batch: {
+    id: string;
+    name: string;
+    code: string;
+    startDate: string;
+    endDate: string | null;
+  };
+  mode: BatchMode;
+  modeLabel: string;
+  scheduleLabel: string;
+  monthKey: string;
+  monthLabel: string;
+  previousMonthKey: string;
+  nextMonthKey: string;
+  summary: BatchCalendarSummary;
+  days: BatchCalendarDayCell[];
+}
+
+export interface UpsertBatchCalendarExceptionRequest {
+  date: string;
+  status: BatchCalendarExceptionStatus;
+  reason?: string;
+}

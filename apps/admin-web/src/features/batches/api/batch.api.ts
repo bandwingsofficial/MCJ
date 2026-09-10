@@ -20,6 +20,9 @@ import type {
   SuggestBatchCodeResponse,
   UpdateBatchRequest,
   UpdateBatchTimingRequest,
+  BatchCalendarSummariesResponse,
+  BatchCalendarViewResponse,
+  UpsertBatchCalendarExceptionRequest,
 } from "@/src/features/batches/types/batch.types";
 import { buildBatchListQueryParams } from "@/src/features/batches/utils/batch-list.utils";
 
@@ -244,6 +247,70 @@ export const batchApi = {
     const response = await apiClient.delete<ApiSuccessResponse<null>>(
       `/admin/batches/${batchId}/courses/${assignmentId}`,
     );
+
+    return response.data;
+  },
+
+  async getBatchCalendarSummaries(batchId: string) {
+    const response = await apiClient.get<
+      ApiSuccessResponse<BatchCalendarSummariesResponse>
+    >(`/admin/batches/${batchId}/calendar`);
+
+    return response.data;
+  },
+
+  async getBatchCalendarView(
+    batchId: string,
+    mode: string,
+    params?: { month?: string },
+  ) {
+    const response = await apiClient.get<
+      ApiSuccessResponse<BatchCalendarViewResponse>
+    >(`/admin/batches/${batchId}/calendar/${mode}`, { params });
+
+    return response.data;
+  },
+
+  async getBatchCalendarWorkingDays(
+    batchId: string,
+    mode: string,
+    params?: { from?: string; to?: string },
+  ) {
+    const response = await apiClient.get<
+      ApiSuccessResponse<{ dateKeys: string[] }>
+    >(`/admin/batches/${batchId}/calendar/${mode}/working-days`, { params });
+
+    return response.data;
+  },
+
+  async upsertBatchCalendarException(
+    batchId: string,
+    mode: string,
+    payload: UpsertBatchCalendarExceptionRequest,
+  ) {
+    const response = await apiClient.put<
+      ApiSuccessResponse<{
+        exception: UpsertBatchCalendarExceptionRequest;
+        summary: BatchCalendarViewResponse["summary"];
+        day: BatchCalendarViewResponse["days"][number] | undefined;
+      }>
+    >(`/admin/batches/${batchId}/calendar/${mode}/exceptions`, payload);
+
+    return response.data;
+  },
+
+  async deleteBatchCalendarException(
+    batchId: string,
+    mode: string,
+    date: string,
+  ) {
+    const response = await apiClient.delete<
+      ApiSuccessResponse<{
+        dateKey: string;
+        summary: BatchCalendarViewResponse["summary"];
+        day: BatchCalendarViewResponse["days"][number] | undefined;
+      }>
+    >(`/admin/batches/${batchId}/calendar/${mode}/exceptions/${date}`);
 
     return response.data;
   },

@@ -164,6 +164,11 @@ export function TakeAttendanceModal({
   }, [sheetQuery.data]);
 
   const students: AttendanceSheetStudent[] = sheetQuery.data?.students ?? [];
+  const calendar = sheetQuery.data?.calendar;
+  const attendanceBlocked = Boolean(calendar && !calendar.isAttendanceAllowed);
+  const attendanceBlockMessage =
+    calendar?.blockMessage ??
+    "Attendance is not available for the selected date.";
 
   const summary = useMemo(() => {
     const values = Object.values(statuses);
@@ -193,6 +198,10 @@ export function TakeAttendanceModal({
     }
     if (!batchTimingId) {
       appToast.error("Please select a batch timing.");
+      return;
+    }
+    if (attendanceBlocked) {
+      appToast.error(attendanceBlockMessage);
       return;
     }
     if (!students.length) {
@@ -250,6 +259,7 @@ export function TakeAttendanceModal({
             disabled={
               saving ||
               !selectionComplete ||
+              attendanceBlocked ||
               !students.length ||
               summary.unmarked > 0
             }
@@ -387,6 +397,16 @@ export function TakeAttendanceModal({
             <p className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">
               No admitted students are assigned to this batch timing.
             </p>
+          ) : attendanceBlocked ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-950">
+              <p className="font-semibold">Attendance unavailable</p>
+              <p className="mt-1">{attendanceBlockMessage}</p>
+              {calendar?.reason ? (
+                <p className="mt-2 text-xs text-amber-800">
+                  Reason: {calendar.reason}
+                </p>
+              ) : null}
+            </div>
           ) : (
             <>
               {sheetQuery.data?.hasExisting ? (

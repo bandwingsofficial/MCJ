@@ -67,7 +67,7 @@ describe('attendance analytics', () => {
     };
     const stats = buildAttendanceAnalyticsStats(counts, 3);
     expect(stats.ratioLabel).toBe('2 / 3');
-    expect(stats.percentage).toBe(66.7);
+    expect(stats.percentage).toBe(66.67);
   });
 
   it('14 present + 1 late of 18 conducted = 15 / 18 (Present+Late rule)', () => {
@@ -83,7 +83,7 @@ describe('attendance analytics', () => {
     );
     expect(stats.attended).toBe(15);
     expect(stats.ratioLabel).toBe('15 / 18');
-    expect(stats.percentage).toBe(83.3);
+    expect(stats.percentage).toBe(83.33);
   });
 
   it('after ABSENT → PRESENT refreshes to 16 / 18 when Late still counts', () => {
@@ -99,6 +99,6 @@ describe('attendance analytics', () => {
     );
     expect(after.attended).toBe(16);
     expect(after.ratioLabel).toBe('16 / 18');
-    expect(after.percentage).toBe(88.9);
+    expect(after.percentage).toBe(88.89);
   });
 });

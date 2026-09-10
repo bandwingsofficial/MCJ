@@ -1,7 +1,7 @@
 import type { BatchMode } from "./batch-mode.utils";
 import { isBatchMode } from "./batch-mode.utils";
 
-export type BatchManageTabKey = "overview" | "course" | "details" | "timings";
+export type BatchManageTabKey = "overview" | "course" | "details" | "timings" | "calendar";
 
 export const BATCH_MANAGE_DEFAULT_TAB: BatchManageTabKey = "overview";
 
@@ -23,4 +23,8 @@ export function batchTimingManagePath(
   batchTimingId: string,
 ): string {
   return `/batches/${batchId}/timings/${batchTimingId}/manage`;
+}
+
+export function batchCalendarPath(batchId: string, mode: BatchMode): string {
+  return `/batches/${batchId}/calendar/${mode.toLowerCase()}`;
 }

@@ -19,6 +19,7 @@ import { BatchManageCoursePanel } from "./batch-manage-course-panel";
 import { BatchManageDetailsPanel } from "./batch-manage-details-panel";
 import { BatchManageOverviewPanel } from "./batch-manage-overview-panel";
 import { BatchManageTimingsPanel } from "./batch-manage-timings-panel";
+import { BatchManageCalendarPanel } from "./batch-manage-calendar-panel";
 
 export type { BatchManageTabKey };
 
@@ -36,6 +37,7 @@ export const BATCH_MANAGE_TABS: {
   { value: "course", label: "Course" },
   { value: "details", label: "Batch Details" },
   { value: "timings", label: "Batch Timings" },
+  { value: "calendar", label: "Calendar Management" },
 ];
 
 const TAB_CLASS =
@@ -79,6 +81,10 @@ export function BatchManageWorkspace({
 
       <TabsContent value="timings">
         <BatchManageTimingsPanel batch={batch} />
+      </TabsContent>
+
+      <TabsContent value="calendar">
+        <BatchManageCalendarPanel batchId={batch.id} />
       </TabsContent>
     </Tabs>
   );

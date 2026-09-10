@@ -16,6 +16,9 @@ import type {
   BatchTimingStudentAttendanceRow,
   BatchCourseContent,
   BatchListItem,
+  BatchCalendarSummariesResponse,
+  BatchCalendarViewResponse,
+  UpsertBatchCalendarExceptionRequest,
   BatchStudentItem,
   BranchUserItem,
   DashboardData,
@@ -42,6 +45,62 @@ export const branchOpsApi = {
 
   batch: (id: string) =>
     unwrap<BatchListItem>(apiClient.get(`/branch/batches/${id}`)),
+
+  batchCalendarSummaries: (batchId: string) =>
+    unwrap<BatchCalendarSummariesResponse>(
+      apiClient.get(`/branch/batches/${batchId}/calendar`),
+    ),
+
+  batchCalendarView: (
+    batchId: string,
+    mode: string,
+    params?: { month?: string },
+  ) =>
+    unwrap<BatchCalendarViewResponse>(
+      apiClient.get(`/branch/batches/${batchId}/calendar/${mode}`, { params }),
+    ),
+
+  batchCalendarWorkingDays: (
+    batchId: string,
+    mode: string,
+    params?: { from?: string; to?: string },
+  ) =>
+    unwrap<{ dateKeys: string[] }>(
+      apiClient.get(`/branch/batches/${batchId}/calendar/${mode}/working-days`, {
+        params,
+      }),
+    ),
+
+  upsertBatchCalendarException: (
+    batchId: string,
+    mode: string,
+    payload: UpsertBatchCalendarExceptionRequest,
+  ) =>
+    unwrap<{
+      exception: UpsertBatchCalendarExceptionRequest;
+      summary: BatchCalendarViewResponse["summary"];
+      day: BatchCalendarViewResponse["days"][number] | undefined;
+    }>(
+      apiClient.put(
+        `/branch/batches/${batchId}/calendar/${mode}/exceptions`,
+        payload,
+      ),
+    ),
+
+  deleteBatchCalendarException: (
+    batchId: string,
+    mode: string,
+    date: string,
+  ) =>
+    unwrap<{
+      dateKey: string;
+      summary: BatchCalendarViewResponse["summary"];
+      day: BatchCalendarViewResponse["days"][number] | undefined;
+    }>(
+      apiClient.delete(
+        `/branch/batches/${batchId}/calendar/${mode}/exceptions/${date}`,
+      ),
+    ),
 
   batchCourse: (id: string) =>
     unwrap<BatchCourseContent>(apiClient.get(`/branch/batches/${id}/course`)),

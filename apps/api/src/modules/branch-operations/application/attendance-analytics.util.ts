@@ -46,7 +46,7 @@ export function buildAttendanceAnalyticsStats(
     ...counts,
     attended,
     conductedSessions: safeConducted,
-    percentage: Math.round((attended / safeConducted) * 1000) / 10,
+    percentage: Math.round((attended / safeConducted) * 10000) / 100,
     ratioLabel: `${attended} / ${safeConducted}`,
     hasAttendance: true,
   };

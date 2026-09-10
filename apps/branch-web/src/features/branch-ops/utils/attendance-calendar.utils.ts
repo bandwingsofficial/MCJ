@@ -1,16 +1,13 @@
 /** Calendar helpers for student attendance details. */
 
-const DAY_INDEX: Record<string, number> = {
-  SUNDAY: 0,
-  MONDAY: 1,
-  TUESDAY: 2,
-  WEDNESDAY: 3,
-  THURSDAY: 4,
-  FRIDAY: 5,
-  SATURDAY: 6,
-};
+import type { BatchCalendarDayType } from "@/src/features/branch-ops/types";
 
 export type AttendanceCalendarStatus = "PRESENT" | "ABSENT" | "LATE";
+
+export type AttendanceCalendarDayType =
+  | AttendanceCalendarStatus
+  | BatchCalendarDayType
+  | "NO_ATTENDANCE";
 
 export interface AttendanceCalendarSessionRecord {
   id: string;
@@ -23,7 +20,7 @@ export interface AttendanceCalendarDay {
   dateKey: string;
   day: number;
   inMonth: boolean;
-  isWorkingDay: boolean;
+  dayType: AttendanceCalendarDayType;
   inBatchRange: boolean;
   sessions: AttendanceCalendarSessionRecord[];
 }
@@ -80,22 +77,6 @@ export function initialCalendarMonth(): string {
   return currentMonthKey();
 }
 
-function isWorkingDay(
-  dateKey: string,
-  daysOfWeek: string[],
-): boolean {
-  if (!daysOfWeek.length) return false;
-  const allowed = new Set(
-    daysOfWeek
-      .map((day) => DAY_INDEX[day])
-      .filter((value) => value !== undefined),
-  );
-  if (!allowed.size) return false;
-  const [year, month, day] = dateKey.split("-").map(Number);
-  const weekday = new Date(Date.UTC(year, (month || 1) - 1, day || 1)).getUTCDay();
-  return allowed.has(weekday);
-}
-
 function isInBatchRange(
   dateKey: string,
   startDate?: string | null,
@@ -108,9 +89,23 @@ function isInBatchRange(
   return true;
 }
 
+function resolveAttendanceDayType(
+  calendarDayType: BatchCalendarDayType | undefined,
+  attendanceStatus: AttendanceCalendarStatus | null,
+): AttendanceCalendarDayType {
+  if (
+    attendanceStatus === "PRESENT" ||
+    attendanceStatus === "ABSENT" ||
+    attendanceStatus === "LATE"
+  ) {
+    return attendanceStatus;
+  }
+
+  return calendarDayType ?? "OUTSIDE_PERIOD";
+}
+
 export function buildAttendanceCalendarDays(params: {
   monthKey: string;
-  daysOfWeek: string[];
   startDate?: string | null;
   endDate?: string | null;
   history: Array<{
@@ -120,11 +115,11 @@ export function buildAttendanceCalendarDays(params: {
     session: { label: string };
     course: { title: string };
   }>;
+  calendarDayTypes?: Map<string, BatchCalendarDayType>;
 }): AttendanceCalendarDay[] {
-  const { monthKey, daysOfWeek, startDate, endDate, history } = params;
+  const { monthKey, startDate, endDate, history, calendarDayTypes } = params;
   const { year, month } = parseMonthKey(monthKey);
   const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
 
   const mondayBasedIndex = (firstOfMonth.getUTCDay() + 6) % 7;
   const gridStart = new Date(Date.UTC(year, month - 1, 1 - mondayBasedIndex));
@@ -152,14 +147,17 @@ export function buildAttendanceCalendarDays(params: {
     const dateKey = toDateKey(cursor);
     const day = cursor.getUTCDate();
     const inMonth = cursor.getUTCMonth() === month - 1;
+    const sessions = sessionsByDate.get(dateKey) ?? [];
+    const attendanceStatus = resolveCalendarDayStatus(sessions);
+    const calendarDayType = calendarDayTypes?.get(dateKey);
 
     cells.push({
       dateKey,
       day,
       inMonth,
-      isWorkingDay: isWorkingDay(dateKey, daysOfWeek),
+      dayType: resolveAttendanceDayType(calendarDayType, attendanceStatus),
       inBatchRange: isInBatchRange(dateKey, startDate, endDate),
-      sessions: sessionsByDate.get(dateKey) ?? [],
+      sessions,
     });
   }
 
@@ -182,18 +180,53 @@ export function resolveCalendarDayStatus(
 }
 
 export function calendarDayCellClass(
-  status: AttendanceCalendarStatus | null,
+  dayType: AttendanceCalendarDayType,
 ): string {
-  if (status === "PRESENT") {
-    return "border-emerald-200 bg-emerald-100 text-emerald-950";
+  switch (dayType) {
+    case "PRESENT":
+      return "border-emerald-200 bg-emerald-100 text-emerald-950";
+    case "ABSENT":
+      return "border-red-200 bg-red-100 text-red-950";
+    case "LATE":
+      return "border-amber-200 bg-amber-100 text-amber-950";
+    case "WORKING":
+      return "border-emerald-200 bg-emerald-50 text-emerald-900";
+    case "FUTURE":
+      return "border-sky-200 bg-sky-50 text-sky-950";
+    case "SUNDAY":
+      return "border-violet-200 bg-violet-50 text-violet-950";
+    case "NON_WORKING":
+      return "border-slate-200 bg-slate-100 text-slate-600";
+    case "HOLIDAY":
+      return "border-amber-200 bg-amber-50 text-amber-950";
+    case "OUTSIDE_PERIOD":
+    default:
+      return "border-slate-100 bg-slate-50 text-slate-400";
   }
-  if (status === "ABSENT") {
-    return "border-red-200 bg-red-100 text-red-950";
+}
+
+export function calendarDayLabel(dayType: AttendanceCalendarDayType): string {
+  switch (dayType) {
+    case "PRESENT":
+      return "Present";
+    case "ABSENT":
+      return "Absent";
+    case "LATE":
+      return "Late";
+    case "WORKING":
+      return "Working Day";
+    case "FUTURE":
+      return "Future";
+    case "SUNDAY":
+      return "Sunday";
+    case "NON_WORKING":
+      return "Non-Working Day";
+    case "HOLIDAY":
+      return "Holiday";
+    case "OUTSIDE_PERIOD":
+    default:
+      return "Outside Period";
   }
-  if (status === "LATE") {
-    return "border-amber-200 bg-amber-100 text-amber-950";
-  }
-  return "border-slate-100 bg-white text-slate-500";
 }
 
 export function summarizeDaySessions(sessions: AttendanceCalendarSessionRecord[]) {
