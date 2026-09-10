@@ -349,9 +349,7 @@ export function buildCalendarMonthGrid(params: {
     });
     const reason = exceptionMap.get(dateKey)?.reason ?? null;
     const hasException = exceptionMap.has(dateKey);
-    const isEditable =
-      dayType !== 'OUTSIDE_PERIOD' &&
-      dayType !== 'SUNDAY';
+    const isEditable = dayType !== 'OUTSIDE_PERIOD';
 
     cells.push({
       dateKey,

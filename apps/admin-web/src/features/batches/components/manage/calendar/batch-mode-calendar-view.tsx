@@ -1,12 +1,12 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 
 import type { BatchCalendarDayCell } from "@/src/features/batches/types/batch.types";
 import {
   BATCH_CALENDAR_LEGEND,
+  batchCalendarCellDisplayLabel,
   batchCalendarDayCellClass,
-  batchCalendarDayLabel,
 } from "@/src/features/batches/utils/batch-calendar-display.utils";
 import { Button } from "@/src/shared/components/ui/button";
 import { cn } from "@/src/shared/lib/cn";
@@ -99,48 +99,87 @@ export function BatchModeCalendarView({
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-1">
-            {days.map((day) => {
-              const isSelected = selectedDateKey === day.dateKey;
-              const clickable = day.inMonth && day.isEditable;
-
-              return (
-                <button
-                  key={day.dateKey}
-                  type="button"
-                  disabled={!clickable}
-                  onClick={() => {
-                    if (clickable) onSelectDate(day.dateKey);
-                  }}
-                  className={cn(
-                    "min-h-[4.5rem] rounded-lg border p-1 text-left transition",
-                    day.inMonth
-                      ? batchCalendarDayCellClass(day.dayType)
-                      : "border-transparent bg-transparent text-transparent",
-                    clickable && "hover:ring-2 hover:ring-[#2563EB]/40",
-                    isSelected && "ring-2 ring-[#2563EB]",
-                    !clickable && day.inMonth && "cursor-default",
-                  )}
-                >
-                  {day.inMonth ? (
-                    <>
-                      <div className="text-sm font-semibold">{day.day}</div>
-                      <div className="mt-1 text-[10px] leading-tight">
-                        {batchCalendarDayLabel(day.dayType)}
-                      </div>
-                      {day.reason ? (
-                        <div className="mt-1 line-clamp-2 text-[10px] opacity-80">
-                          {day.reason}
-                        </div>
-                      ) : null}
-                    </>
-                  ) : null}
-                </button>
-              );
-            })}
+          <div className="grid grid-cols-7 gap-1.5">
+            {days.map((day) => (
+              <CalendarDayCell
+                key={day.dateKey}
+                day={day}
+                selected={selectedDateKey === day.dateKey}
+                onSelect={() => onSelectDate(day.dateKey)}
+              />
+            ))}
           </div>
         </>
       )}
     </div>
+  );
+}
+
+function CalendarDayCell({
+  day,
+  selected,
+  onSelect,
+}: {
+  day: BatchCalendarDayCell;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const clickable = day.inMonth && day.isEditable;
+  const { primary, secondary } = batchCalendarCellDisplayLabel(
+    day.dayType,
+    day.reason,
+  );
+
+  if (!day.inMonth) {
+    return (
+      <div
+        aria-hidden
+        className="min-h-[5.25rem] rounded-xl border border-transparent bg-transparent"
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={!clickable}
+      onClick={() => {
+        if (clickable) onSelect();
+      }}
+      aria-label={
+        secondary
+          ? `${day.day}, ${primary}, ${secondary}`
+          : `${day.day}, ${primary}`
+      }
+      className={cn(
+        "group relative flex min-h-[5.25rem] flex-col rounded-xl border px-2 py-2 text-left shadow-sm transition-all",
+        batchCalendarDayCellClass(day.dayType),
+        clickable &&
+          "cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:ring-2 hover:ring-[#2563EB]/30",
+        selected && "ring-2 ring-[#2563EB] ring-offset-1",
+        !clickable && "cursor-default opacity-80",
+      )}
+    >
+      {clickable ? (
+        <span
+          className="absolute right-1.5 top-1.5 inline-flex h-5 w-5 items-center justify-center rounded-md bg-white/80 text-slate-500 opacity-70 shadow-sm transition group-hover:opacity-100 group-hover:text-[#2563EB]"
+          aria-hidden
+        >
+          <Pencil className="h-3 w-3" />
+        </span>
+      ) : null}
+
+      <span className="pr-5 text-base font-semibold leading-none">{day.day}</span>
+
+      <span className="mt-2 line-clamp-2 text-[10px] font-semibold uppercase tracking-wide leading-tight">
+        {primary}
+      </span>
+
+      {secondary ? (
+        <span className="mt-1 line-clamp-2 text-[10px] font-medium leading-tight opacity-90">
+          {secondary}
+        </span>
+      ) : null}
+    </button>
   );
 }

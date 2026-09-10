@@ -65,6 +65,11 @@ export function BatchCalendarDateDialog({
       setReason("");
       return;
     }
+    if (day.dayType === "SUNDAY") {
+      setStatus("WORKING");
+      setReason("");
+      return;
+    }
     setStatus("WORKING");
     setReason("");
   }, [day]);

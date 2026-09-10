@@ -38,12 +38,37 @@ export function formatBatchCalendarDayName(dateKey: string): string {
   return DAY_NAMES[weekday] ?? "—";
 }
 
+export function resolveBatchCalendarDisplayDayType(
+  dayType: BatchCalendarDayType,
+): BatchCalendarDayType {
+  if (dayType === "FUTURE") {
+    return "WORKING";
+  }
+
+  return dayType;
+}
+
+export function batchCalendarCellDisplayLabel(
+  dayType: BatchCalendarDayType,
+  reason?: string | null,
+): { primary: string; secondary?: string } {
+  const displayType = resolveBatchCalendarDisplayDayType(dayType);
+
+  if (displayType === "HOLIDAY") {
+    const trimmed = reason?.trim();
+    return {
+      primary: "Holiday",
+      secondary: trimmed || undefined,
+    };
+  }
+
+  return { primary: batchCalendarDayLabel(displayType) };
+}
+
 export function batchCalendarDayCellClass(dayType: BatchCalendarDayType): string {
-  switch (dayType) {
+  switch (resolveBatchCalendarDisplayDayType(dayType)) {
     case "WORKING":
       return "border-emerald-200 bg-emerald-50 text-emerald-950";
-    case "FUTURE":
-      return "border-sky-200 bg-sky-50 text-sky-950";
     case "SUNDAY":
       return "border-violet-200 bg-violet-50 text-violet-950";
     case "NON_WORKING":
@@ -57,11 +82,9 @@ export function batchCalendarDayCellClass(dayType: BatchCalendarDayType): string
 }
 
 export function batchCalendarDayLabel(dayType: BatchCalendarDayType): string {
-  switch (dayType) {
+  switch (resolveBatchCalendarDisplayDayType(dayType)) {
     case "WORKING":
       return "Working Day";
-    case "FUTURE":
-      return "Future";
     case "SUNDAY":
       return "Sunday";
     case "NON_WORKING":
@@ -82,7 +105,6 @@ export const BATCH_CALENDAR_LEGEND: Array<{
   { dayType: "SUNDAY", label: "Sunday" },
   { dayType: "NON_WORKING", label: "Non-Working Day" },
   { dayType: "HOLIDAY", label: "Holiday" },
-  { dayType: "FUTURE", label: "Future" },
   { dayType: "OUTSIDE_PERIOD", label: "Outside Period" },
 ];
 

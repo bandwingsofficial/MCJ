@@ -135,19 +135,27 @@ export function BatchModeCalendarPage({ batchId, modeParam }: Props) {
         </div>
       </div>
 
-      <BatchCalendarSummaryPanel summary={data.summary} />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <div className="min-w-0 flex-[4] lg:basis-[80%]">
+          <BatchModeCalendarView
+            monthLabel={data.monthLabel}
+            days={data.days}
+            loading={loading}
+            selectedDateKey={selectedDateKey}
+            onSelectDate={setSelectedDateKey}
+            onPreviousMonth={() => reloadMonth(data.previousMonthKey)}
+            onNextMonth={() => reloadMonth(data.nextMonthKey)}
+            showToday={data.monthKey !== currentMonthKey()}
+            onToday={() => reloadMonth(currentMonthKey())}
+          />
+        </div>
 
-      <BatchModeCalendarView
-        monthLabel={data.monthLabel}
-        days={data.days}
-        loading={loading}
-        selectedDateKey={selectedDateKey}
-        onSelectDate={setSelectedDateKey}
-        onPreviousMonth={() => reloadMonth(data.previousMonthKey)}
-        onNextMonth={() => reloadMonth(data.nextMonthKey)}
-        showToday={data.monthKey !== currentMonthKey()}
-        onToday={() => reloadMonth(currentMonthKey())}
-      />
+        <aside className="min-w-0 flex-1 lg:basis-[20%] lg:min-w-[11rem]">
+          <div className="lg:[&_.grid]:grid-cols-1">
+            <BatchCalendarSummaryPanel summary={data.summary} />
+          </div>
+        </aside>
+      </div>
 
       <BatchCalendarDateDialog
         open={selectedDateKey != null}

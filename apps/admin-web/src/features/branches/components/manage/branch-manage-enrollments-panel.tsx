@@ -26,7 +26,7 @@ import { enrollmentService } from "@/src/features/enrollments/services/enrollmen
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { canUnenrollEnrollment } from "@/src/features/enrollments/utils/current-enrollment";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
-import { studentManagePath } from "@/src/features/students/utils/student-manage.routes";
+import { enrollmentManagePath } from "@/src/features/enrollments/utils/enrollment-manage.routes";
 
 const PAGE_SIZE = 10;
 
@@ -152,12 +152,12 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
                     }
                   />
                 ) : null}
-                {enrollment.student?.id ? (
+                {enrollment.id ? (
                   <BranchIconAction
                     icon={Eye}
                     label="View student"
                     onClick={() =>
-                      router.push(studentManagePath(enrollment.student.id))
+                      router.push(enrollmentManagePath(enrollment.id))
                     }
                   />
                 ) : null}
