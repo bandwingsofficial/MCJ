@@ -1,9 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
+import { Activity } from "lucide-react";
 
+import { BRANCH_TABLE_CARD_CLASS } from "@/src/features/branches/components/manage/branch-manage-layout.constants";
+import {
+  BranchManageTableShell,
+  TABLE_CELL_CLASS,
+} from "@/src/features/branches/components/manage/branch-manage-table-shell";
 import { Card } from "@/src/shared/components/ui/card";
-
 import type { Student } from "@/src/features/students/types/student.types";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
 import { formatStudentName } from "@/src/features/students/utils/student-overview.utils";
@@ -12,23 +17,11 @@ interface Props {
   student: Student;
 }
 
-function ActivityItem({
-  title,
-  description,
-  date,
-}: {
-  title: string;
-  description: string;
-  date: string;
-}) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/40 px-4 py-3">
-      <p className="text-sm font-medium text-[#102A56]">{title}</p>
-      <p className="mt-1 text-sm text-slate-600">{description}</p>
-      <p className="mt-2 text-xs text-slate-500">{date}</p>
-    </div>
-  );
-}
+const ACTIVITY_COLUMNS = [
+  { key: "event", label: "Event" },
+  { key: "description", label: "Description" },
+  { key: "date", label: "Date", className: "w-40" },
+];
 
 export function StudentManageActivityPanel({ student }: Props) {
   const studentName = formatStudentName(student.firstName, student.lastName);
@@ -66,25 +59,42 @@ export function StudentManageActivityPanel({ student }: Props) {
   );
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-base font-semibold text-[#102A56]">Activity</h2>
-        <p className="text-sm text-[#647A9B]">
+    <div className="space-y-3">
+      <div className="min-w-0">
+        <h2 className="text-[22px] font-bold tracking-tight text-[#102A56] sm:text-[26px]">
+          Activity
+        </h2>
+        <p className="text-xs text-[#647A9B] sm:text-[13px]">
           Recent activity for {student.studentCode}
         </p>
       </div>
 
-      <Card className="rounded-2xl border border-slate-200/80 p-5 shadow-sm">
-        <div className="space-y-3">
+      <Card className={BRANCH_TABLE_CARD_CLASS}>
+        <BranchManageTableShell
+          columns={ACTIVITY_COLUMNS}
+          isEmpty={items.length === 0}
+          emptyTitle="No activity recorded"
+          emptyDescription="Activity events for this student will appear here."
+          emptyIcon={Activity}
+          embedded
+        >
           {items.map((item) => (
-            <ActivityItem
+            <tr
               key={item.key}
-              title={item.title}
-              description={item.description}
-              date={item.date}
-            />
+              className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
+            >
+              <td className={`${TABLE_CELL_CLASS} font-medium text-[#102A56]`}>
+                {item.title}
+              </td>
+              <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                {item.description}
+              </td>
+              <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                {item.date}
+              </td>
+            </tr>
           ))}
-        </div>
+        </BranchManageTableShell>
       </Card>
     </div>
   );

@@ -8,15 +8,21 @@ interface Props {
 
 const VALID_TABS = new Set<TabKey>([
   "overview",
-  "enrollments",
-  "attendance",
-  "assessments",
   "documents",
+  "placement",
   "activity",
 ]);
 
+const REMOVED_TABS = new Set([
+  "enrollments",
+  "attendance",
+  "assessments",
+  "payments",
+  "reports",
+]);
+
 function resolveTab(tab?: string): TabKey | undefined {
-  if (!tab) {
+  if (!tab || REMOVED_TABS.has(tab)) {
     return undefined;
   }
 

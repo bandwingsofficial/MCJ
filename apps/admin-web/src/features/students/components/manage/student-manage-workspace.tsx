@@ -1,5 +1,13 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
+import {
+  Activity,
+  Briefcase,
+  FileText,
+  LayoutDashboard,
+} from "lucide-react";
+
 import {
   Tabs,
   TabsContent,
@@ -11,37 +19,32 @@ import type { Student } from "@/src/features/students/types/student.types";
 import { STUDENT_MANAGE_DEFAULT_TAB } from "@/src/features/students/utils/student-manage.routes";
 
 import { StudentManageActivityPanel } from "./student-manage-activity-panel";
-import { StudentManageAssessmentsPanel } from "./student-manage-assessments-panel";
-import { StudentManageAttendancePanel } from "./student-manage-attendance-panel";
 import { StudentManageDocumentsPanel } from "./student-manage-documents-panel";
-import { StudentManageEnrollmentsPanel } from "./student-manage-enrollments-panel";
 import { StudentManageOverviewPanel } from "./student-manage-overview-panel";
+import { StudentManagePlacementPanel } from "./student-manage-placement-panel";
 
 interface Props {
   student: Student;
   activeTab?: TabKey;
   overviewRefreshKey?: number;
   onTabChange?: (tab: TabKey) => void;
-  onStudentRefresh?: () => Promise<void>;
   onDocumentsChanged?: () => void;
-  onEnrollmentMutation?: () => Promise<void>;
 }
 
-export type TabKey =
-  | "overview"
-  | "enrollments"
-  | "attendance"
-  | "assessments"
-  | "documents"
-  | "activity";
+export type TabKey = "overview" | "documents" | "placement" | "activity";
 
-const TAB_ITEMS: ReadonlyArray<[TabKey, string]> = [
-  ["overview", "Overview"],
-  ["enrollments", "Enrollments"],
-  ["attendance", "Attendance"],
-  ["assessments", "Assessments"],
-  ["documents", "Documents"],
-  ["activity", "Activity"],
+const TAB_CLASS =
+  "inline-flex items-center rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
+
+const TAB_ITEMS: ReadonlyArray<{
+  value: TabKey;
+  label: string;
+  icon: LucideIcon;
+}> = [
+  { value: "overview", label: "Overview", icon: LayoutDashboard },
+  { value: "documents", label: "Documents", icon: FileText },
+  { value: "placement", label: "Placement", icon: Briefcase },
+  { value: "activity", label: "Activity", icon: Activity },
 ];
 
 export function StudentManageWorkspace({
@@ -49,9 +52,7 @@ export function StudentManageWorkspace({
   activeTab = STUDENT_MANAGE_DEFAULT_TAB,
   overviewRefreshKey = 0,
   onTabChange,
-  onStudentRefresh,
   onDocumentsChanged,
-  onEnrollmentMutation,
 }: Props) {
   return (
     <Tabs
@@ -61,12 +62,9 @@ export function StudentManageWorkspace({
       }}
     >
       <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
-        {TAB_ITEMS.map(([value, label]) => (
-          <TabsTrigger
-            key={value}
-            value={value}
-            className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none"
-          >
+        {TAB_ITEMS.map(({ value, label, icon: Icon }) => (
+          <TabsTrigger key={value} value={value} className={TAB_CLASS}>
+            <Icon className="mr-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
             {label}
           </TabsTrigger>
         ))}
@@ -80,35 +78,16 @@ export function StudentManageWorkspace({
         />
       </TabsContent>
 
-      <TabsContent value="enrollments">
-        <StudentManageEnrollmentsPanel
-          student={student}
-          refreshKey={overviewRefreshKey}
-          onStudentRefresh={onStudentRefresh}
-          onEnrollmentMutation={onEnrollmentMutation}
-        />
-      </TabsContent>
-
-      <TabsContent value="attendance">
-        <StudentManageAttendancePanel
-          student={student}
-          refreshKey={overviewRefreshKey}
-        />
-      </TabsContent>
-
-      <TabsContent value="assessments">
-        <StudentManageAssessmentsPanel
-          student={student}
-          refreshKey={overviewRefreshKey}
-        />
-      </TabsContent>
-
       <TabsContent value="documents">
         <StudentManageDocumentsPanel
           student={student}
           refreshKey={overviewRefreshKey}
           onDocumentsChanged={onDocumentsChanged}
         />
+      </TabsContent>
+
+      <TabsContent value="placement">
+        <StudentManagePlacementPanel student={student} />
       </TabsContent>
 
       <TabsContent value="activity">

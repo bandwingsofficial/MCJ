@@ -13,6 +13,7 @@ export interface OverviewMetricItem {
   icon: LucideIcon;
   iconClass: string;
   bgClass: string;
+  cardClass: string;
   isText?: boolean;
 }
 
@@ -21,69 +22,85 @@ interface Props {
   isLoading?: boolean;
 }
 
+const METRIC_CARD_HEIGHT = "h-[5.5rem]";
+
 function MetricCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 space-y-2">
-          <Skeleton className="h-3 w-20" />
-          <Skeleton className="h-8 w-14" />
-          <Skeleton className="h-3 w-24" />
+    <div
+      className={cn(
+        METRIC_CARD_HEIGHT,
+        "min-w-[9.5rem] flex-1 shrink-0 rounded-xl border border-[#E1EBF5] bg-gradient-to-br from-[#F8FBFF] to-white p-3 shadow-sm",
+      )}
+    >
+      <div className="flex h-full items-center justify-between gap-2">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <Skeleton className="h-2.5 w-16" />
+          <Skeleton className="h-6 w-10" />
         </div>
-        <Skeleton className="h-11 w-11 shrink-0 rounded-xl" />
+        <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
       </div>
     </div>
   );
 }
 
 export function StudentOverviewMetricGrid({ metrics, isLoading }: Props) {
+  const rowClassName =
+    "flex w-full min-w-[56rem] flex-nowrap items-stretch gap-2.5";
+
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        {metrics.map((metric) => (
-          <MetricCardSkeleton key={metric.key} />
-        ))}
+      <div className="-mx-0.5 overflow-x-auto pb-0.5">
+        <div className={rowClassName}>
+          {metrics.map((metric) => (
+            <MetricCardSkeleton key={metric.key} />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-      {metrics.map((metric) => {
-        const Icon = metric.icon;
+    <div className="-mx-0.5 overflow-x-auto pb-0.5">
+      <div className={rowClassName}>
+        {metrics.map((metric) => {
+          const Icon = metric.icon;
 
-        return (
-          <div
-            key={metric.key}
-            className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-slate-500">
-                  {metric.label}
-                </p>
-                <p
+          return (
+            <div
+              key={metric.key}
+              className={cn(
+                METRIC_CARD_HEIGHT,
+                "min-w-[9.5rem] flex-1 shrink-0 rounded-xl border p-3 shadow-sm transition-shadow hover:shadow-md",
+                metric.cardClass,
+              )}
+            >
+              <div className="flex h-full items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
+                    {metric.label}
+                  </p>
+                  <p
+                    className={cn(
+                      "mt-0.5 font-semibold tabular-nums leading-none tracking-tight text-[#102A56]",
+                      metric.isText ? "text-lg" : "text-2xl",
+                    )}
+                  >
+                    {metric.value}
+                  </p>
+                </div>
+                <div
                   className={cn(
-                    "mt-1 font-semibold tabular-nums tracking-tight text-[#102A56]",
-                    metric.isText ? "text-lg" : "text-3xl",
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ring-1",
+                    metric.bgClass,
                   )}
                 >
-                  {metric.value}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">{metric.hint}</p>
-              </div>
-              <div
-                className={cn(
-                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
-                  metric.bgClass,
-                )}
-              >
-                <Icon className={cn("h-5 w-5", metric.iconClass)} />
+                  <Icon className={cn("h-4 w-4", metric.iconClass)} />
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

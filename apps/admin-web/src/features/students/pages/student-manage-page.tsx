@@ -33,22 +33,30 @@ interface Props {
 
 const TAB_LABELS: Record<TabKey, string> = {
   overview: "Overview",
-  enrollments: "Enrollments",
-  attendance: "Attendance",
-  assessments: "Assessments",
   documents: "Documents",
+  placement: "Placement",
   activity: "Activity",
 };
 
+const REMOVED_TABS = new Set([
+  "enrollments",
+  "attendance",
+  "assessments",
+  "payments",
+  "reports",
+]);
+
 const VALID_TABS = new Set<TabKey>(Object.keys(TAB_LABELS) as TabKey[]);
 
-function resolveInitialTab(initialTab?: TabKey | "payments" | "reports"): TabKey {
-  if (initialTab === "payments" || initialTab === "reports") {
+function resolveInitialTab(
+  initialTab?: TabKey | string,
+): TabKey {
+  if (!initialTab || REMOVED_TABS.has(initialTab)) {
     return STUDENT_MANAGE_DEFAULT_TAB;
   }
 
-  if (initialTab && VALID_TABS.has(initialTab)) {
-    return initialTab;
+  if (VALID_TABS.has(initialTab as TabKey)) {
+    return initialTab as TabKey;
   }
 
   return STUDENT_MANAGE_DEFAULT_TAB;
@@ -142,9 +150,7 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
         activeTab={activeTab}
         overviewRefreshKey={overviewRefreshKey}
         onTabChange={handleTabChange}
-        onStudentRefresh={handleStudentDataRefresh}
         onDocumentsChanged={bumpOverviewRefresh}
-        onEnrollmentMutation={handleStudentDataRefresh}
       />
 
       <UpdateStudentModal
