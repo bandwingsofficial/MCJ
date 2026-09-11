@@ -1,31 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 import { batchApi } from "@/src/features/batches/api/batch.api";
 import { BatchCalendarDateDialog } from "@/src/features/batches/components/manage/calendar/batch-calendar-date-dialog";
+import { BatchCalendarPageHeader } from "@/src/features/batches/components/manage/calendar/batch-calendar-page-header";
 import { BatchCalendarSummaryPanel } from "@/src/features/batches/components/manage/calendar/batch-calendar-summary-panel";
 import { BatchModeCalendarView } from "@/src/features/batches/components/manage/calendar/batch-mode-calendar-view";
 import type { BatchCalendarViewResponse } from "@/src/features/batches/types/batch.types";
+import { parseBatchModeParam } from "@/src/features/batches/utils/batch-manage.routes";
 import {
-  batchManagePath,
-  parseBatchModeParam,
-} from "@/src/features/batches/utils/batch-manage.routes";
-import {
-  formatBatchCalendarDate,
+  currentCalendarMonthKey,
   initialCalendarMonthKey,
 } from "@/src/features/batches/utils/batch-calendar-display.utils";
+import { BatchManageEmptyState } from "@/src/features/batches/components/manage/batch-manage-section";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
-
-function currentMonthKey(): string {
-  const today = new Date();
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-}
 
 interface Props {
   batchId: string;
@@ -82,19 +75,43 @@ export function BatchModeCalendarPage({ batchId, modeParam }: Props) {
     data?.days.find((day) => day.dateKey === selectedDateKey) ?? null;
 
   if (!mode) {
-    return <ErrorState description="Invalid learning mode." />;
+    return (
+      <ErrorState
+        title="Invalid Learning Mode"
+        description="The calendar route must include a valid learning mode: offline, online, or recorded."
+      />
+    );
   }
 
   if (loading && !data) {
-    return <Loader />;
+    return (
+      <div className="mx-auto min-h-full max-w-6xl space-y-4 px-4 py-5 sm:px-6">
+        <Loader />
+      </div>
+    );
   }
 
   if (error && !data) {
-    return <ErrorState description={error} />;
+    return (
+      <div className="mx-auto min-h-full max-w-6xl space-y-4 px-4 py-5 sm:px-6">
+        <ErrorState
+          title="Unable to Load Calendar"
+          description={error}
+        />
+      </div>
+    );
   }
 
   if (!data) {
-    return <ErrorState description="Calendar not available." />;
+    return (
+      <div className="mx-auto min-h-full max-w-6xl space-y-4 px-4 py-5 sm:px-6">
+        <BatchManageEmptyState
+          icon={CalendarDays}
+          title="Calendar Not Available"
+          description="No calendar data could be loaded for this batch and learning mode."
+        />
+      </div>
+    );
   }
 
   const reloadMonth = async (nextMonthKey: string) => {
@@ -113,30 +130,20 @@ export function BatchModeCalendarPage({ batchId, modeParam }: Props) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link
-            href={batchManagePath(batchId)}
-            className="inline-flex items-center gap-1 text-sm font-medium text-[#2563EB] hover:underline"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Batch Management
-          </Link>
-          <h1 className="mt-2 text-xl font-semibold text-[#102A56]">
-            {data.batch.name} · {data.modeLabel}
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {data.scheduleLabel} · {formatBatchCalendarDate(data.batch.startDate)}
-            {data.batch.endDate
-              ? ` – ${formatBatchCalendarDate(data.batch.endDate)}`
-              : ""}
-          </p>
-        </div>
-      </div>
+    <div className="mx-auto min-h-full max-w-6xl space-y-4 px-4 py-5 sm:px-6">
+      <BatchCalendarPageHeader
+        batchId={batchId}
+        batchName={data.batch.name}
+        batchCode={data.batch.code}
+        mode={data.mode}
+        modeLabel={data.modeLabel}
+        scheduleLabel={data.scheduleLabel}
+        startDate={data.batch.startDate}
+        endDate={data.batch.endDate}
+      />
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        <div className="min-w-0 flex-[4] lg:basis-[80%]">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
+        <div className="min-w-0 flex-1">
           <BatchModeCalendarView
             monthLabel={data.monthLabel}
             days={data.days}
@@ -145,15 +152,16 @@ export function BatchModeCalendarPage({ batchId, modeParam }: Props) {
             onSelectDate={setSelectedDateKey}
             onPreviousMonth={() => reloadMonth(data.previousMonthKey)}
             onNextMonth={() => reloadMonth(data.nextMonthKey)}
-            showToday={data.monthKey !== currentMonthKey()}
-            onToday={() => reloadMonth(currentMonthKey())}
+            showToday={data.monthKey !== currentCalendarMonthKey()}
+            onToday={() => reloadMonth(currentCalendarMonthKey())}
           />
         </div>
 
-        <aside className="min-w-0 flex-1 lg:basis-[20%] lg:min-w-[11rem]">
-          <div className="lg:[&_.grid]:grid-cols-1">
-            <BatchCalendarSummaryPanel summary={data.summary} />
-          </div>
+        <aside className="min-w-0 xl:w-[22rem] xl:shrink-0">
+          <BatchCalendarSummaryPanel
+            summary={data.summary}
+            modeLabel={data.modeLabel}
+          />
         </aside>
       </div>
 

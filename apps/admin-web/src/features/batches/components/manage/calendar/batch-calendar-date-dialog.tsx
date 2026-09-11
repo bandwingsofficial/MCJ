@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { CalendarDays } from "lucide-react";
 
 import type {
   BatchCalendarDayCell,
   BatchCalendarExceptionStatus,
 } from "@/src/features/batches/types/batch.types";
 import {
+  batchCalendarDayCellClass,
   batchCalendarDayLabel,
   formatBatchCalendarDate,
   formatBatchCalendarDayName,
@@ -17,6 +19,7 @@ import { Label } from "@/src/shared/components/ui/label";
 import { Modal } from "@/src/shared/components/ui/model";
 import { Button } from "@/src/shared/components/ui/button";
 import { AppSelect } from "@/src/shared/components/ui/select";
+import { cn } from "@/src/shared/lib/cn";
 
 const STATUS_OPTIONS: Array<{
   value: BatchCalendarExceptionStatus;
@@ -38,6 +41,23 @@ interface Props {
     reason?: string;
   }) => Promise<void>;
   onRestoreDefault: () => Promise<void>;
+}
+
+function DialogField({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/60 px-3 py-2">
+      <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
+        {label}
+      </dt>
+      <dd className="mt-0.5 text-sm font-medium text-[#102A56]">{value}</dd>
+    </div>
+  );
 }
 
 export function BatchCalendarDateDialog({
@@ -88,7 +108,7 @@ export function BatchCalendarDateDialog({
         onClose={onClose}
         contentClassName="max-w-xl"
         footer={
-          <>
+          <div className="flex w-full flex-wrap items-center justify-end gap-2">
             {hasException ? (
               <Button
                 type="button"
@@ -99,12 +119,19 @@ export function BatchCalendarDateDialog({
                 Restore Default
               </Button>
             ) : null}
-            <Button type="button" variant="outline" disabled={saving} onClick={onClose}>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={saving}
+              onClick={onClose}
+            >
               Cancel
             </Button>
             <Button
               type="button"
+              variant="primary"
               disabled={saving || (status === "HOLIDAY" && !reason.trim())}
+              loading={saving}
               onClick={() =>
                 onSave({
                   status,
@@ -112,39 +139,52 @@ export function BatchCalendarDateDialog({
                 })
               }
             >
-              {saving ? "Saving..." : "Save Changes"}
+              Save Changes
             </Button>
-          </>
+          </div>
         }
       >
         <div className="space-y-4">
-          <p className="text-sm text-slate-500">
-            {modeLabel} · {formatBatchCalendarDate(day.dateKey)}
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label>Date</Label>
-              <p className="mt-1 text-sm font-medium text-[#102A56]">
-                {formatBatchCalendarDate(day.dateKey)}
-              </p>
-            </div>
-            <div>
-              <Label>Day</Label>
-              <p className="mt-1 text-sm font-medium text-[#102A56]">
-                {formatBatchCalendarDayName(day.dateKey)}
-              </p>
-            </div>
-            <div>
-              <Label>Learning Mode</Label>
-              <p className="mt-1 text-sm font-medium text-[#102A56]">{modeLabel}</p>
-            </div>
-            <div>
-              <Label>Current Status</Label>
-              <p className="mt-1 text-sm font-medium text-[#102A56]">
-                {batchCalendarDayLabel(day.dayType)}
-              </p>
-            </div>
+          <div className="rounded-xl border border-[#E1EBF5] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-4 py-3">
+            <p className="text-sm font-medium text-[#102A56]">
+              {modeLabel} · {formatBatchCalendarDate(day.dateKey)}
+            </p>
+            <p className="mt-0.5 text-xs text-[#647A9B]">
+              Changes apply only to this learning mode&apos;s calendar for this
+              batch.
+            </p>
           </div>
+
+          <div
+            className={cn(
+              "rounded-xl border px-3 py-3 shadow-sm",
+              batchCalendarDayCellClass(day.dayType),
+            )}
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-wide opacity-80">
+              Current Status
+            </p>
+            <p className="mt-1 text-sm font-semibold">
+              {batchCalendarDayLabel(day.dayType)}
+              {day.reason?.trim() ? ` · ${day.reason.trim()}` : ""}
+            </p>
+          </div>
+
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <DialogField
+              label="Date"
+              value={formatBatchCalendarDate(day.dateKey)}
+            />
+            <DialogField
+              label="Day"
+              value={formatBatchCalendarDayName(day.dateKey)}
+            />
+            <DialogField label="Learning Mode" value={modeLabel} />
+            <DialogField
+              label="Exception Saved"
+              value={hasException ? "Yes" : "No"}
+            />
+          </dl>
 
           <div>
             <Label htmlFor="calendar-status">Mark As</Label>
@@ -179,7 +219,7 @@ export function BatchCalendarDateDialog({
       <ConfirmDialog
         open={confirmRestoreOpen}
         title="Restore default day?"
-        description="This removes the saved calendar exception for this date and restores the default schedule rule."
+        description="This removes the saved calendar exception for this date and restores the default schedule rule. Historical attendance records are not affected."
         loading={saving}
         confirmLabel="Restore"
         confirmVariant="danger"
