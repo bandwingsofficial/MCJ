@@ -44,39 +44,43 @@ export function ModuleContentSection({
   children,
 }: Props) {
   return (
-    <Card className="overflow-hidden border-slate-200 bg-white p-0 shadow-sm">
-      <div className="border-b border-slate-200 px-4 py-3">
-        <h2 className="mb-3 text-sm font-semibold text-[#102A56]">{title}</h2>
-
+    <Card className="overflow-hidden rounded-xl border-[#E1EBF5] p-0 shadow-sm">
+      <div className="border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-4 py-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-            <SearchInput
-              value={search}
-              onChange={onSearchChange}
-              placeholder={searchPlaceholder}
-              className="!h-10 max-w-xl rounded-lg !py-2 pl-9 text-[15px]"
-            />
+          <h2 className="text-base font-semibold text-[#102A56]">{title}</h2>
+
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto lg:shrink-0">
+            <div className="w-full sm:w-[240px]">
+              <SearchInput
+                value={search}
+                onChange={onSearchChange}
+                placeholder={searchPlaceholder}
+                className="h-9 rounded-lg !py-1.5 pl-9 text-sm"
+              />
+            </div>
+
             {showStatusFilter && onStatusChange ? (
-              <div className="w-full sm:w-48">
+              <div className="w-full sm:w-[160px]">
                 <AppSelect
                   value={status}
+                  triggerClassName="h-9 rounded-lg px-2.5 text-sm"
                   onValueChange={onStatusChange}
                   options={statusOptions}
                 />
               </div>
             ) : null}
-          </div>
 
-          <Button
-            type="button"
-            size="sm"
-            disabled={actionDisabled}
-            className="h-10 shrink-0 self-start lg:self-auto"
-            onClick={onAction}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            {actionLabel}
-          </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={actionDisabled}
+              className="h-9 shrink-0 border-0 bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] px-4 text-sm font-semibold text-white shadow-[0_3px_10px_rgba(37,99,235,0.25)] hover:from-[#0284C7] hover:to-[#1D4ED8]"
+              onClick={onAction}
+            >
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              {actionLabel}
+            </Button>
+          </div>
         </div>
       </div>
 

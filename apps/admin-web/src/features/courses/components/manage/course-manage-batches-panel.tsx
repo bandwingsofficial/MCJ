@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Eye, Pencil, Plus } from "lucide-react";
+import { Pencil, Settings2 } from "lucide-react";
 
-import { Card } from "@/src/shared/components/ui/card";
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { SearchInput } from "@/src/shared/components/ui/search-input";
 import { AppSelect } from "@/src/shared/components/ui/select";
+import { Tooltip } from "@/src/shared/components/ui/tooltip";
 import { appToast } from "@/src/shared/components/ui/toast";
 
 import { BatchModeBadge } from "@/src/features/batches/components/BatchModeBadge";
@@ -35,8 +34,15 @@ import {
   getBatchDisplayStatus,
   uniqueSelectOptions,
 } from "@/src/features/batches/utils/batch-select.utils";
+import { batchManagePath } from "@/src/features/batches/utils/batch-manage.routes";
+import { formatBatchEnrollmentCapacityLabel } from "@/src/features/batches/utils/batch-timing.utils";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { cn } from "@/src/shared/lib/cn";
+
+const iconButtonClass =
+  "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40";
+
+const iconClass = "h-[15px] w-[14px] stroke-[2]";
 
 interface Props {
   courseId: string;
@@ -99,98 +105,104 @@ export function CourseManageBatchesPanel({ courseId }: Props) {
   }, [loadBatches]);
 
   return (
-    <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <div className="w-full sm:min-w-[200px] sm:flex-1 sm:max-w-xs">
-            <SearchInput
-              value={search}
-              placeholder="Search batches..."
-              onChange={setSearch}
-            />
+    <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
+      <div className="border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-4 py-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-[#102A56]">Batches</h2>
+            <p className="mt-0.5 text-sm text-[#647A9B]">
+              Batches linked to this course.
+            </p>
           </div>
+          <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto">
+            <div className="w-full sm:min-w-[200px] sm:flex-1 sm:max-w-xs">
+              <SearchInput
+                value={search}
+                placeholder="Search batches..."
+                className="h-9 rounded-lg !py-1.5 pl-9 text-sm"
+                onChange={setSearch}
+              />
+            </div>
 
-          <div className="w-full sm:w-[200px]">
-            <AppSelect
-              value={mode ?? BATCH_SELECT_ALL}
-              triggerClassName="h-10 rounded-lg px-3 text-sm"
-              onValueChange={(value) =>
-                setMode(
-                  value === BATCH_SELECT_ALL
-                    ? undefined
-                    : (value as BatchMode),
-                )
-              }
-              options={modeOptions}
-            />
-          </div>
+            <div className="w-full sm:w-[200px]">
+              <AppSelect
+                value={mode ?? BATCH_SELECT_ALL}
+                triggerClassName="h-9 rounded-lg px-2.5 text-sm"
+                onValueChange={(value) =>
+                  setMode(
+                    value === BATCH_SELECT_ALL
+                      ? undefined
+                      : (value as BatchMode),
+                  )
+                }
+                options={modeOptions}
+              />
+            </div>
 
-          <div className="w-full sm:w-[160px]">
-            <AppSelect
-              value={statusFilterValue}
-              triggerClassName="h-10 rounded-lg px-3 text-sm"
-              onValueChange={(value) => {
-                const next = applyBatchStatusFilter(
-                  {},
-                  value as BatchStatusFilterValue | typeof BATCH_SELECT_ALL,
-                );
-                setStatus(next.status);
-              }}
-              options={statusOptions}
-            />
+            <div className="w-full sm:w-[160px]">
+              <AppSelect
+                value={statusFilterValue}
+                triggerClassName="h-9 rounded-lg px-2.5 text-sm"
+                onValueChange={(value) => {
+                  const next = applyBatchStatusFilter(
+                    {},
+                    value as BatchStatusFilterValue | typeof BATCH_SELECT_ALL,
+                  );
+                  setStatus(next.status);
+                }}
+                options={statusOptions}
+              />
+            </div>
           </div>
         </div>
-
-        <Link
-          href="/batches/create"
-          className="inline-flex h-9 shrink-0 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
-          Create Batch
-        </Link>
       </div>
 
+      <div className="p-4">
       {isLoading ? (
         <p className="py-8 text-center text-sm text-[#647A9B]">
           Loading batches...
         </p>
       ) : batches.length === 0 ? (
-        <EmptyState
-          title="No batches for this course"
-          description="Create a batch linked to this course to schedule live classes."
-        />
+        <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-4 text-center">
+          <h3 className="text-base font-semibold text-[#102A56]">
+            No batches for this course
+          </h3>
+          <p className="mt-1 max-w-md text-sm text-[#647A9B]">
+            No batches are linked to this course yet.
+          </p>
+        </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
-          <table className="w-full min-w-[960px]">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className="overflow-x-auto rounded-xl border border-[#E1EBF5]">
+          <table className="w-full min-w-[960px] border-collapse text-sm">
+            <thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]">
+              <tr>
+                <th className="!px-4 !py-3 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
                   Batch
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <th className="!px-4 !py-3 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
                   Mode
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <th className="!px-4 !py-3 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
                   Price
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <th className="!px-4 !py-3 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
                   Branch
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <th className="!px-4 !py-3 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
                   Schedule
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <th className="!px-4 !py-3 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <th className="!px-4 !py-3 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
                   Enrollment
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Actions
+                <th className="w-[6.75rem] !px-8 !py-3 text-right text-[11px] font-semibold tracking-wide text-slate-500">
+                  Management
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-slate-100">
               {batches.map((batch) => {
                 const displayStatus = getBatchDisplayStatus(batch);
                 const isLifecycleBlocked =
@@ -208,7 +220,7 @@ export function CourseManageBatchesPanel({ courseId }: Props) {
                         : "hover:bg-slate-50",
                     )}
                   >
-                    <td className="px-4 py-3">
+                    <td className="!px-4 !py-3 align-middle">
                       <p
                         className={cn(
                           "truncate text-sm font-medium",
@@ -225,12 +237,12 @@ export function CourseManageBatchesPanel({ courseId }: Props) {
                         </p>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="!px-4 !py-3 align-middle">
                       <BatchModeBadge mode={batch.mode} />
                     </td>
                     <td
                       className={cn(
-                        "px-4 py-3 text-sm tabular-nums",
+                        "!px-4 !py-3 align-middle text-sm tabular-nums",
                         isLifecycleBlocked
                           ? "text-slate-400"
                           : "text-slate-700",
@@ -240,7 +252,7 @@ export function CourseManageBatchesPanel({ courseId }: Props) {
                     </td>
                     <td
                       className={cn(
-                        "truncate px-4 py-3 text-sm",
+                        "truncate !px-4 !py-3 align-middle text-sm",
                         isLifecycleBlocked
                           ? "text-slate-400"
                           : "text-slate-700",
@@ -248,7 +260,7 @@ export function CourseManageBatchesPanel({ courseId }: Props) {
                     >
                       {batch.branch?.branchName ?? "—"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="!px-4 !py-3 align-middle">
                       <div className="flex min-w-0 flex-col gap-0.5 leading-snug">
                         <span
                           className={cn(
@@ -278,7 +290,7 @@ export function CourseManageBatchesPanel({ courseId }: Props) {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="!px-4 !py-3 align-middle">
                       <BatchStatusBadge
                         displayStatus={displayStatus}
                         status={batch.status}
@@ -292,31 +304,34 @@ export function CourseManageBatchesPanel({ courseId }: Props) {
                     </td>
                     <td
                       className={cn(
-                        "px-4 py-3 text-sm tabular-nums",
+                        "!px-4 !py-3 align-middle text-sm tabular-nums",
                         isLifecycleBlocked
                           ? "text-slate-400"
                           : "text-slate-700",
                       )}
                     >
-                      {batch.enrolledCount}/{batch.capacity}
+                      {formatBatchEnrollmentCapacityLabel(batch)}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="inline-flex items-center justify-end gap-2">
-                        <Link
-                          href={`/batches/${batch.id}/manage`}
-                          className="inline-flex items-center gap-1 text-sm font-medium text-[#2563EB] hover:underline"
-                        >
-                          <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                          Manage
-                        </Link>
-                        <Link
-                          href={`/batches/${batch.id}/manage`}
-                          className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:underline"
-                          title="Edit in manage workspace"
-                        >
-                          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                          Edit
-                        </Link>
+                    <td className="!px-8 !py-3 text-right align-middle">
+                      <div className="flex items-center justify-end gap-2">
+                        <Tooltip content="Edit batch">
+                          <Link
+                            href={`/batches/${batch.id}/edit`}
+                            aria-label="Edit batch"
+                            className={`${iconButtonClass} text-blue-900`}
+                          >
+                            <Pencil className={iconClass} />
+                          </Link>
+                        </Tooltip>
+                        <Tooltip content="Manage batch">
+                          <Link
+                            href={batchManagePath(batch.id)}
+                            aria-label="Manage batch"
+                            className={`${iconButtonClass} text-blue-900`}
+                          >
+                            <Settings2 className={iconClass} />
+                          </Link>
+                        </Tooltip>
                       </div>
                     </td>
                   </tr>
@@ -326,6 +341,7 @@ export function CourseManageBatchesPanel({ courseId }: Props) {
           </table>
         </div>
       )}
-    </Card>
+      </div>
+    </div>
   );
 }

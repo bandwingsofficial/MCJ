@@ -7,6 +7,7 @@ import { GripVertical } from "lucide-react";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { formatContentOrderNumber } from "@/src/shared/utils/content-order";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { cn } from "@/src/shared/lib/cn";
 
 export interface ModuleContentRow {
   id: string;
@@ -33,6 +34,7 @@ interface Props<T extends ModuleContentRow> {
   reorderDisabled?: boolean;
   actionsDisabled?: boolean;
   showReorderColumn?: boolean;
+  variant?: "default" | "management";
   onReorder?: (payload: {
     rowId: string;
     newPosition: number;
@@ -51,6 +53,7 @@ export function ModuleContentTable<T extends ModuleContentRow>({
   reorderDisabled = false,
   actionsDisabled = false,
   showReorderColumn = true,
+  variant = "default",
   onReorder,
   renderActions,
 }: Props<T>) {
@@ -125,42 +128,85 @@ export function ModuleContentTable<T extends ModuleContentRow>({
     columns.length + (showReorderColumn && onReorder ? 1 : 0) + 1;
 
   const isTrulyEmpty = (sourceCount ?? localRows.length) === 0;
+  const isManagement = variant === "management";
+
+  const tableClassName = isManagement
+    ? "w-full min-w-full border-collapse text-sm"
+    : "min-w-full border-collapse";
+
+  const theadClassName = isManagement
+    ? "sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]"
+    : "sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]";
+
+  const headerCellClassName = isManagement
+    ? "!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]"
+    : "px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500";
+
+  const actionsHeaderClassName = isManagement
+    ? "w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500"
+    : "px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500";
+
+  const reorderHeaderClassName = isManagement ? "w-8 !px-4 !py-4" : "w-[4.5rem] px-3 py-3";
+
+  const bodyCellClassName = isManagement ? "!px-4 !py-4 align-middle" : "px-3 py-3 align-middle";
+
+  const actionsCellClassName = isManagement
+    ? "!px-8 !py-4 align-middle"
+    : "px-2 py-3 align-middle";
+
+  const reorderCellClassName = isManagement
+    ? "w-8 !px-4 !py-4 align-middle"
+    : "w-[4.5rem] whitespace-nowrap px-3 py-3 align-middle";
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full border-collapse">
-        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
+    <div className={isManagement ? "w-full overflow-x-auto" : "overflow-x-auto"}>
+      <table className={tableClassName}>
+        <thead className={theadClassName}>
           <tr>
             {showReorderColumn && onReorder ? (
-              <th className="w-[4.5rem] px-3 py-3">
+              <th className={reorderHeaderClassName}>
                 <span className="sr-only">Order</span>
               </th>
             ) : null}
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={`px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 ${
-                  column.headerClassName ?? ""
-                }`}
+                className={cn(headerCellClassName, column.headerClassName)}
               >
                 {column.header}
               </th>
             ))}
-            <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Actions
-            </th>
+            <th className={actionsHeaderClassName}>Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
           {localRows.length === 0 ? (
             <tr>
-              <td colSpan={totalColumns} className="px-4 py-10 text-center">
-                <p className="text-sm font-medium text-slate-700">
-                  {isTrulyEmpty ? emptyTitle : emptySearchDescription}
-                </p>
-                <p className="mt-1 text-sm text-[#647A9B]">
-                  {isTrulyEmpty ? emptyDescription : ""}
-                </p>
+              <td
+                colSpan={totalColumns}
+                className={isManagement ? "!px-4 !py-4 align-middle" : "px-4 py-10 text-center"}
+              >
+                {isManagement ? (
+                  <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-4 text-center">
+                    <h3 className="text-base font-semibold">
+                      {emptyTitle}
+                    </h3>
+                    <p className="mt-1 max-w-md text-sm text-[#647A9B]">
+                      {isTrulyEmpty
+                        ? emptyDescription
+                        : emptySearchDescription}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-slate-700">
+                      {isTrulyEmpty ? emptyTitle : emptySearchDescription}
+                    </p>
+                    <p className="mt-1 text-sm text-[#647A9B]">
+                      {isTrulyEmpty ? emptyDescription : ""}
+                    </p>
+                  </>
+                )}
               </td>
             </tr>
           ) : (
@@ -192,20 +238,36 @@ export function ModuleContentTable<T extends ModuleContentRow>({
                     setDragId(null);
                     setDropTargetId(null);
                   }}
-                  className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${
-                    dragId === row.id ? "opacity-60" : ""
-                  } ${dropTargetId === row.id ? "bg-slate-50" : ""}`}
+                  className={cn(
+                    "border-b border-slate-100 transition-colors hover:bg-slate-50",
+                    dragId === row.id && "opacity-60",
+                    dropTargetId === row.id &&
+                      (isManagement ? "bg-blue-50/60" : "bg-slate-50"),
+                  )}
                 >
                   {showReorderColumn && onReorder ? (
-                    <td className="w-[4.5rem] whitespace-nowrap px-3 py-3 align-middle">
-                      <div className="flex items-center gap-2 text-slate-400">
+                    <td className={reorderCellClassName}>
+                      <div
+                        className={cn(
+                          "flex items-center gap-2 text-slate-400",
+                          !isManagement && "gap-2",
+                        )}
+                      >
                         {rowDraggable ? (
                           <GripVertical
-                            className="h-4 w-4 cursor-grab active:cursor-grabbing"
+                            className={cn(
+                              "cursor-grab active:cursor-grabbing",
+                              isManagement ? "h-3.5 w-3.5" : "h-4 w-4",
+                            )}
                             aria-label="Drag to reorder"
                           />
                         ) : (
-                          <span className="inline-block h-4 w-4" />
+                          <span
+                            className={cn(
+                              "inline-block",
+                              isManagement ? "w-3.5" : "h-4 w-4",
+                            )}
+                          />
                         )}
                         <span className="text-xs font-semibold tabular-nums text-slate-500">
                           {orderLabel}
@@ -216,12 +278,12 @@ export function ModuleContentTable<T extends ModuleContentRow>({
                   {columns.map((column) => (
                     <td
                       key={column.key}
-                      className={`px-3 py-3 align-middle ${column.className ?? ""}`}
+                      className={cn(bodyCellClassName, column.className)}
                     >
                       {column.render(row)}
                     </td>
                   ))}
-                  <td className="px-2 py-3 align-middle">
+                  <td className={actionsCellClassName}>
                     <div className="flex items-center justify-end">
                       {renderActions(row)}
                     </div>

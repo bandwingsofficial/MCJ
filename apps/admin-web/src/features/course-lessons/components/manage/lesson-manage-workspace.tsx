@@ -1,6 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  ClipboardList,
+  FileQuestion,
+  FileText,
+  LayoutDashboard,
+  Radio,
+  Video,
+} from "lucide-react";
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
@@ -32,6 +41,22 @@ export type LessonManageTab =
   | "resources"
   | "quizzes"
   | "assignments";
+
+const TAB_CLASS =
+  "inline-flex items-center rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
+
+const TAB_ITEMS: ReadonlyArray<{
+  value: LessonManageTab;
+  label: string;
+  icon: LucideIcon;
+}> = [
+  { value: "overview", label: "Overview", icon: LayoutDashboard },
+  { value: "videos", label: "Self-Paced Videos", icon: Video },
+  { value: "live", label: "Live Recorded Videos", icon: Radio },
+  { value: "resources", label: "Resources", icon: FileText },
+  { value: "quizzes", label: "Quizzes", icon: FileQuestion },
+  { value: "assignments", label: "Assignments", icon: ClipboardList },
+];
 
 interface Props {
   courseId: string;
@@ -86,21 +111,9 @@ export function LessonManageWorkspace({
         onValueChange={(value) => setTab(value as LessonManageTab)}
       >
         <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
-          {(
-            [
-              ["overview", "Overview"],
-              ["videos", "Self-Paced Videos"],
-              ["live", "Live Recorded Videos"],
-              ["resources", "Resources"],
-              ["quizzes", "Quizzes"],
-              ["assignments", "Assignments"],
-            ] as const
-          ).map(([value, label]) => (
-            <TabsTrigger
-              key={value}
-              value={value}
-              className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none"
-            >
+          {TAB_ITEMS.map(({ value, label, icon: Icon }) => (
+            <TabsTrigger key={value} value={value} className={TAB_CLASS}>
+              <Icon className="mr-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
               {label}
             </TabsTrigger>
           ))}

@@ -8,12 +8,12 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Button } from "@/src/shared/components/ui/button";
+import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
-const iconBtnClass =
-  "h-10 w-10 shrink-0 rounded-lg p-0";
+const iconButtonClass =
+  "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40";
 
-const iconClass = "h-[1.35rem] w-[1.35rem]";
+const iconClass = "h-[15px] w-[14px] stroke-[2]";
 
 interface Props {
   isArchived: boolean;
@@ -38,122 +38,122 @@ export function ModuleContentActions({
 }: Props) {
   if (isArchived) {
     return (
-      <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+      <div className="flex items-center justify-end gap-2">
         {onActivate ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={disabled}
-            onClick={onActivate}
-            title="Activate"
-            aria-label="Activate"
-            className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
-          >
-            <CircleCheck className={iconClass} />
-          </Button>
+          <Tooltip content="Activate">
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onActivate}
+              aria-label="Activate"
+              className={`${iconButtonClass} text-green-800`}
+            >
+              <CircleCheck className={iconClass} />
+            </button>
+          </Tooltip>
         ) : null}
 
         {onEdit ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={disabled}
-            onClick={onEdit}
-            title="Edit"
-            aria-label="Edit"
-            className={`${iconBtnClass} text-slate-700 hover:bg-slate-100`}
-          >
-            <Pencil className={iconClass} />
-          </Button>
+          <Tooltip content="Edit">
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onEdit}
+              aria-label="Edit"
+              className={`${iconButtonClass} text-blue-900`}
+            >
+              <Pencil className={iconClass} />
+            </button>
+          </Tooltip>
         ) : null}
 
         {onDelete ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={disabled}
-            onClick={onDelete}
-            title="Delete"
-            aria-label="Delete"
-            className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
-          >
-            <Trash2 className={iconClass} />
-          </Button>
+          <Tooltip content="Delete">
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onDelete}
+              aria-label="Delete"
+              className={`${iconButtonClass} text-red-800`}
+            >
+              <Trash2 className={iconClass} />
+            </button>
+          </Tooltip>
         ) : null}
 
         {showManage && onManage ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={disabled}
-            onClick={onManage}
-            title="Manage"
-            aria-label="Manage"
-            className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
-          >
-            <Settings2 className={iconClass} />
-          </Button>
+          <Tooltip content="Manage">
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onManage}
+              aria-label="Manage"
+              className={`${iconButtonClass} text-blue-900`}
+            >
+              <Settings2 className={iconClass} />
+            </button>
+          </Tooltip>
         ) : null}
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+    <div className="flex items-center justify-end gap-2">
       {onDeactivate ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={onDeactivate}
-          title="Deactivate"
-          aria-label="Deactivate"
-          className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
-        >
-          <Power className={iconClass} />
-        </Button>
+        <Tooltip content="Deactivate">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onDeactivate}
+            aria-label="Deactivate"
+            className={`${iconButtonClass} text-orange-700`}
+          >
+            <Power className={iconClass} />
+          </button>
+        </Tooltip>
       ) : null}
 
       {onEdit ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={onEdit}
-          title="Edit"
-          aria-label="Edit"
-          className={`${iconBtnClass} text-slate-700 hover:bg-slate-100`}
-        >
-          <Pencil className={iconClass} />
-        </Button>
+        <Tooltip content="Edit">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onEdit}
+            aria-label="Edit"
+            className={`${iconButtonClass} text-blue-900`}
+          >
+            <Pencil className={iconClass} />
+          </button>
+        </Tooltip>
       ) : null}
 
       {onDelete ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={onDelete}
-          title="Delete"
-          aria-label="Delete"
-          className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
-        >
-          <Trash2 className={iconClass} />
-        </Button>
+        <Tooltip content="Delete">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onDelete}
+            aria-label="Delete"
+            className={`${iconButtonClass} text-red-800`}
+          >
+            <Trash2 className={iconClass} />
+          </button>
+        </Tooltip>
       ) : null}
 
       {showManage && onManage ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={onManage}
-          title="Manage"
-          aria-label="Manage"
-          className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
-        >
-          <Settings2 className={iconClass} />
-        </Button>
+        <Tooltip content="Manage">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onManage}
+            aria-label="Manage"
+            className={`${iconButtonClass} text-blue-900`}
+          >
+            <Settings2 className={iconClass} />
+          </button>
+        </Tooltip>
       ) : null}
     </div>
   );

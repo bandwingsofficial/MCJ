@@ -133,6 +133,7 @@ export function ModuleResourcesTab({
         }}
       >
         <ModuleContentTable<ResourceTableRow>
+          variant="management"
           rows={pagedRows}
           sourceCount={sourceRows.length}
           orderOffset={orderOffset}
@@ -174,8 +175,9 @@ export function ModuleResourcesTab({
               ),
             },
           ]}
-          emptyTitle="No resources found"
+          emptyTitle="No Resources Found"
           emptyDescription="Add a resource to this lesson."
+          emptySearchDescription="Create your first resource or adjust your filters."
           renderActions={(row) => (
             <ModuleContentActions
               isArchived={row.isArchived}
@@ -199,15 +201,13 @@ export function ModuleResourcesTab({
           )}
         />
 
-        <div className="border-t border-slate-100 px-4 py-3">
-          <ModuleContentPagination
-            page={page}
-            pageSize={pageSize}
-            total={filteredRows.length}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-          />
-        </div>
+        <ModuleContentPagination
+          page={page}
+          pageSize={pageSize}
+          total={filteredRows.length}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       </ModuleContentSection>
 
       <CourseResourceForm
@@ -408,6 +408,7 @@ export function ModuleQuizzesTab({
         }}
       >
         <ModuleContentTable<QuizTableRow>
+          variant="management"
           rows={pagedRows}
           sourceCount={sourceRows.length}
           orderOffset={orderOffset}
@@ -438,14 +439,16 @@ export function ModuleQuizzesTab({
                   variant={
                     row.quiz.status === "PUBLISHED" ? "success" : "default"
                   }
+                  className="px-2 py-0 text-[11px] font-semibold leading-5"
                 >
                   {row.quiz.status === "PUBLISHED" ? "Published" : "Draft"}
                 </Badge>
               ),
             },
           ]}
-          emptyTitle="No quizzes found"
+          emptyTitle="No Quizzes Found"
           emptyDescription="Create a quiz for this lesson."
+          emptySearchDescription="Create your first quiz or adjust your filters."
           renderActions={(row) => (
             <ModuleContentActions
               isArchived={row.isArchived}
@@ -471,15 +474,13 @@ export function ModuleQuizzesTab({
           )}
         />
 
-        <div className="border-t border-slate-100 px-4 py-3">
-          <ModuleContentPagination
-            page={page}
-            pageSize={pageSize}
-            total={filteredRows.length}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-          />
-        </div>
+        <ModuleContentPagination
+          page={page}
+          pageSize={pageSize}
+          total={filteredRows.length}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       </ModuleContentSection>
 
       <Modal
@@ -625,6 +626,7 @@ export function ModuleAssignmentsTab({
       onAction={() => {}}
     >
       <ModuleContentTable<{ id: string; displayOrder: number }>
+        variant="management"
         rows={[]}
         sourceCount={0}
         showReorderColumn={false}
@@ -645,8 +647,9 @@ export function ModuleAssignmentsTab({
             render: () => null,
           },
         ]}
-        emptyTitle="No assignments found"
+        emptyTitle="No Assignments Found"
         emptyDescription={emptyDescription}
+        emptySearchDescription="Create your first assignment or adjust your filters."
         renderActions={() => null}
       />
     </ModuleContentSection>

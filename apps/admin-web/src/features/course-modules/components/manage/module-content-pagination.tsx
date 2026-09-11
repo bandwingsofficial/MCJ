@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 
-import { Pagination } from "@/src/shared/components/ui/pagination";
+import { CategoryPagination } from "@/src/features/categories/components/category-pagination";
 
 interface Props {
   page: number;
@@ -30,15 +30,16 @@ export function ModuleContentPagination({
   }
 
   return (
-    <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-[#647A9B]">
-        Showing {from}–{to} of {total}
-      </p>
-      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-        <label className="flex items-center gap-2 text-sm text-slate-600">
-          Rows per page
+    <div className="flex flex-col gap-1.5 border-t border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#647A9B] sm:text-sm">
+        <span>
+          Showing {from}–{to} of {total}
+        </span>
+
+        <label className="flex items-center gap-1.5">
+          <span className="whitespace-nowrap">Rows per page</span>
           <select
-            className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-sm"
+            className="h-7 rounded-md border border-[#DCE8F5] bg-white px-1.5 text-xs text-[#102A56] sm:text-sm"
             value={pageSize}
             onChange={(event) => {
               onPageSizeChange(Number(event.target.value));
@@ -52,12 +53,13 @@ export function ModuleContentPagination({
             ))}
           </select>
         </label>
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
       </div>
+
+      <CategoryPagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+      />
     </div>
   );
 }

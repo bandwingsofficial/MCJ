@@ -21,7 +21,8 @@ interface SummaryMetric {
   value: number;
   icon: LucideIcon;
   iconClass: string;
-  bgClass: string;
+  iconBgClass: string;
+  cardClass: string;
 }
 
 interface Props {
@@ -29,15 +30,22 @@ interface Props {
   isLoading?: boolean;
 }
 
+const METRIC_CARD_HEIGHT = "h-[5.5rem]";
+
 function MetricCardSkeleton() {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 space-y-2">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-8 w-14" />
+    <div
+      className={cn(
+        METRIC_CARD_HEIGHT,
+        "min-w-[9.5rem] flex-1 shrink-0 rounded-xl border border-[#E1EBF5] bg-gradient-to-br from-[#F8FBFF] to-white p-3 shadow-sm",
+      )}
+    >
+      <div className="flex h-full items-center justify-between gap-2">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <Skeleton className="h-2.5 w-16" />
+          <Skeleton className="h-6 w-10" />
         </div>
-        <Skeleton className="h-11 w-11 shrink-0 rounded-xl" />
+        <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
       </div>
     </div>
   );
@@ -51,7 +59,9 @@ export function CourseOverviewMetricCards({ stats, isLoading }: Props) {
       value: stats.modules,
       icon: Layers,
       iconClass: "text-[#2563EB]",
-      bgClass: "bg-blue-50",
+      iconBgClass: "bg-blue-50/90 ring-blue-100/80",
+      cardClass:
+        "border-[#C7D9F5] bg-gradient-to-br from-[#F8FBFF] via-[#F3F8FF] to-[#EAF2FB]",
     },
     {
       key: "lessons",
@@ -59,15 +69,19 @@ export function CourseOverviewMetricCards({ stats, isLoading }: Props) {
       value: stats.lessons,
       icon: BookOpen,
       iconClass: "text-violet-600",
-      bgClass: "bg-violet-50",
+      iconBgClass: "bg-violet-50/90 ring-violet-100/80",
+      cardClass:
+        "border-violet-200/80 bg-gradient-to-br from-violet-50/70 via-violet-50/40 to-[#FAF8FF]",
     },
     {
       key: "resources",
       label: "Total Resources",
       value: stats.resources,
       icon: FileText,
-      iconClass: "text-amber-600",
-      bgClass: "bg-amber-50",
+      iconClass: "text-amber-700",
+      iconBgClass: "bg-amber-50/90 ring-amber-100/80",
+      cardClass:
+        "border-amber-200/70 bg-gradient-to-br from-amber-50/60 via-[#FFFBF5] to-[#FFF8ED]",
     },
     {
       key: "live-videos",
@@ -75,7 +89,9 @@ export function CourseOverviewMetricCards({ stats, isLoading }: Props) {
       value: stats.liveRecordedVideos,
       icon: Radio,
       iconClass: "text-rose-600",
-      bgClass: "bg-rose-50",
+      iconBgClass: "bg-rose-50/90 ring-rose-100/80",
+      cardClass:
+        "border-rose-200/70 bg-gradient-to-br from-rose-50/50 via-[#FFF7F8] to-[#FFF1F3]",
     },
     {
       key: "recorded-videos",
@@ -83,7 +99,9 @@ export function CourseOverviewMetricCards({ stats, isLoading }: Props) {
       value: stats.selfPacedVideos,
       icon: Video,
       iconClass: "text-sky-600",
-      bgClass: "bg-sky-50",
+      iconBgClass: "bg-sky-50/90 ring-sky-100/80",
+      cardClass:
+        "border-sky-200/70 bg-gradient-to-br from-sky-50/60 via-[#F7FBFF] to-[#EFF8FF]",
     },
     {
       key: "quizzes",
@@ -91,51 +109,64 @@ export function CourseOverviewMetricCards({ stats, isLoading }: Props) {
       value: stats.quizzes,
       icon: FileQuestion,
       iconClass: "text-emerald-600",
-      bgClass: "bg-emerald-50",
+      iconBgClass: "bg-emerald-50/90 ring-emerald-100/80",
+      cardClass:
+        "border-emerald-200/70 bg-gradient-to-br from-emerald-50/50 via-[#F6FDF9] to-[#EDFAF3]",
     },
   ];
 
+  const rowClassName =
+    "flex w-full min-w-[56rem] flex-nowrap items-stretch gap-2.5";
+
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        {metrics.map((metric) => (
-          <MetricCardSkeleton key={metric.key} />
-        ))}
+      <div className="-mx-0.5 overflow-x-auto pb-0.5">
+        <div className={rowClassName}>
+          {metrics.map((metric) => (
+            <MetricCardSkeleton key={metric.key} />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-      {metrics.map((metric) => {
-        const Icon = metric.icon;
+    <div className="-mx-0.5 overflow-x-auto pb-0.5">
+      <div className={rowClassName}>
+        {metrics.map((metric) => {
+          const Icon = metric.icon;
 
-        return (
-          <div
-            key={metric.key}
-            className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-slate-500">
-                  {metric.label}
-                </p>
-                <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-[#102A56]">
-                  {metric.value}
-                </p>
-              </div>
-              <div
-                className={cn(
-                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
-                  metric.bgClass,
-                )}
-              >
-                <Icon className={cn("h-5 w-5", metric.iconClass)} />
+          return (
+            <div
+              key={metric.key}
+              className={cn(
+                METRIC_CARD_HEIGHT,
+                "min-w-[9.5rem] flex-1 shrink-0 rounded-xl border p-3 shadow-sm transition-shadow hover:shadow-md",
+                metric.cardClass,
+              )}
+            >
+              <div className="flex h-full items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
+                    {metric.label}
+                  </p>
+                  <p className="mt-0.5 text-2xl font-semibold tabular-nums leading-none tracking-tight text-[#102A56]">
+                    {metric.value}
+                  </p>
+                </div>
+                <div
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ring-1",
+                    metric.iconBgClass,
+                  )}
+                >
+                  <Icon className={cn("h-4 w-4", metric.iconClass)} />
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

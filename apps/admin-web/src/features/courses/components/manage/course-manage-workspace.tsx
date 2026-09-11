@@ -1,5 +1,13 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
+import {
+  HelpCircle,
+  Layers,
+  LayoutDashboard,
+  Users,
+} from "lucide-react";
+
 import {
   Tabs,
   TabsContent,
@@ -32,11 +40,18 @@ interface Props {
 
 export type TabKey = "overview" | "modules" | "batches" | "faq";
 
-const TAB_ITEMS: readonly [TabKey, string][] = [
-  ["overview", "Overview"],
-  ["modules", "Modules"],
-  ["batches", "Batches"],
-  ["faq", "FAQ"],
+const TAB_CLASS =
+  "inline-flex items-center rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
+
+const TAB_ITEMS: ReadonlyArray<{
+  value: TabKey;
+  label: string;
+  icon: LucideIcon;
+}> = [
+  { value: "overview", label: "Overview", icon: LayoutDashboard },
+  { value: "modules", label: "Modules", icon: Layers },
+  { value: "batches", label: "Batches", icon: Users },
+  { value: "faq", label: "FAQ", icon: HelpCircle },
 ];
 
 export function CourseManageWorkspace({
@@ -60,12 +75,9 @@ export function CourseManageWorkspace({
       }}
     >
       <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
-        {TAB_ITEMS.map(([value, label]) => (
-          <TabsTrigger
-            key={value}
-            value={value}
-            className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none"
-          >
+        {TAB_ITEMS.map(({ value, label, icon: Icon }) => (
+          <TabsTrigger key={value} value={value} className={TAB_CLASS}>
+            <Icon className="mr-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
             {label}
           </TabsTrigger>
         ))}

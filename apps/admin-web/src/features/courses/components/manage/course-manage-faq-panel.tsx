@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
-import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
@@ -136,8 +135,8 @@ export function CourseManageFaqPanel({ courseId, disabled = false }: Props) {
 
   return (
     <>
-      <Card className="overflow-hidden p-0">
-        <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-base font-semibold text-[#102A56]">FAQ</h2>
             <p className="mt-0.5 text-sm text-[#647A9B]">
@@ -149,7 +148,7 @@ export function CourseManageFaqPanel({ courseId, disabled = false }: Props) {
             type="button"
             size="sm"
             disabled={actionsDisabled}
-            className="shrink-0"
+            className="h-9 shrink-0 border-0 bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] px-4 text-sm font-semibold text-white shadow-[0_3px_10px_rgba(37,99,235,0.25)] hover:from-[#0284C7] hover:to-[#1D4ED8]"
             onClick={() => {
               setEditTarget(null);
               setFormOpen(true);
@@ -174,16 +173,16 @@ export function CourseManageFaqPanel({ courseId, disabled = false }: Props) {
           <SkeletonTable rows={5} />
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse">
-              <thead className="sticky top-0 z-10 border-b border-slate-200 bg-[#F6F9FD]">
+            <table className="min-w-full border-collapse text-sm">
+              <thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]">
                 <tr>
-                  <th className="w-10 px-2 py-3">
+                  <th className="w-10 !px-2 !py-3">
                     <span className="sr-only">Reorder</span>
                   </th>
                   {["Question", "Answer", "Actions"].map((label) => (
                     <th
                       key={label}
-                      className={`px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 ${
+                      className={`!px-4 !py-3 text-left text-[11px] font-semibold tracking-wide text-[#526581] ${
                         label === "Actions" ? "text-right" : ""
                       }`}
                     >
@@ -195,13 +194,15 @@ export function CourseManageFaqPanel({ courseId, disabled = false }: Props) {
               <tbody className="divide-y divide-slate-100">
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-10 text-center">
-                      <p className="text-sm font-medium text-slate-700">
-                        No FAQs found
-                      </p>
-                      <p className="mt-1 text-sm text-[#647A9B]">
-                        Create your first FAQ for this course.
-                      </p>
+                    <td colSpan={4} className="!px-4 !py-4 align-middle">
+                      <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-4 text-center">
+                        <h3 className="text-base font-semibold text-[#102A56]">
+                          No FAQs found
+                        </h3>
+                        <p className="mt-1 max-w-md text-sm text-[#647A9B]">
+                          Create your first FAQ for this course.
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -230,28 +231,28 @@ export function CourseManageFaqPanel({ courseId, disabled = false }: Props) {
                           setDragId(null);
                           setDropTargetId(null);
                         }}
-                        className={`border-b border-slate-100 transition-colors hover:bg-slate-50 ${
+                        className={`border-b border-slate-100 bg-white transition-colors hover:bg-slate-50 ${
                           dragId === faq.id ? "opacity-60" : ""
                         } ${dropTargetId === faq.id ? "bg-slate-50" : ""}`}
                       >
-                        <td className="w-10 px-2 py-3 align-top">
+                        <td className="w-10 !px-2 !py-3 align-top">
                           {draggable ? (
                             <GripVertical className="h-4 w-4 cursor-grab text-slate-400 active:cursor-grabbing" />
                           ) : (
                             <span className="inline-block h-4 w-4" />
                           )}
                         </td>
-                        <td className="max-w-xs px-3 py-3 align-top">
+                        <td className="max-w-xs !px-4 !py-3 align-top">
                           <p className="text-sm font-medium text-[#102A56]">
                             {faq.question}
                           </p>
                         </td>
-                        <td className="max-w-xl px-3 py-3 align-top">
+                        <td className="max-w-xl !px-4 !py-3 align-top">
                           <p className="line-clamp-3 text-sm text-slate-700">
                             {faq.answer}
                           </p>
                         </td>
-                        <td className="px-2 py-3 align-top">
+                        <td className="!px-4 !py-3 align-top">
                           <div className="flex items-center justify-end gap-0.5 whitespace-nowrap">
                             <Button
                               type="button"
@@ -290,7 +291,7 @@ export function CourseManageFaqPanel({ courseId, disabled = false }: Props) {
             </table>
           </div>
         )}
-      </Card>
+      </div>
 
       <CourseFaqFormModal
         open={formOpen}

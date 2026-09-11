@@ -1,20 +1,33 @@
 "use client";
 
 import { Badge } from "@/src/shared/components/ui/badge";
+import { cn } from "@/src/shared/lib/cn";
 
 interface Props {
   isPreview: boolean;
 }
 
+const compactClass =
+  "inline-flex items-center rounded-full px-2 py-0 text-[11px] font-semibold leading-5";
+
 export function LessonPreviewAccessBadge({ isPreview }: Props) {
+  if (isPreview) {
+    return (
+      <Badge variant="success" className={compactClass}>
+        Unlocked
+      </Badge>
+    );
+  }
+
   return (
-    <Badge
-      variant={isPreview ? "success" : "default"}
-      className="gap-1 px-2.5 py-0.5 text-sm font-normal"
+    <span
+      className={cn(
+        compactClass,
+        "border border-[#C7D9F5] bg-[#EFF4FA] text-[#526581] ring-1 ring-[#DCE8F5]/80",
+      )}
     >
-      <span aria-hidden>{isPreview ? "🔓" : "🔒"}</span>
-      {isPreview ? "Unlocked" : "Locked"}
-    </Badge>
+      Locked
+    </span>
   );
 }
 

@@ -141,6 +141,7 @@ export function ModuleLiveRecordedVideosTab({
         }}
       >
         <ModuleContentTable<VideoRow>
+          variant="management"
           rows={pagedRows}
           sourceCount={sourceRows.length}
           orderOffset={orderOffset}
@@ -184,8 +185,9 @@ export function ModuleLiveRecordedVideosTab({
               ),
             },
           ]}
-          emptyTitle="No live recorded videos found"
+          emptyTitle="No Live Recorded Videos Found"
           emptyDescription="Create a live recorded video for this lesson."
+          emptySearchDescription="Create your first video or adjust your filters."
           renderActions={(row) => (
             <ModuleContentActions
               isArchived={row.isArchived}
@@ -209,15 +211,13 @@ export function ModuleLiveRecordedVideosTab({
           )}
         />
 
-        <div className="border-t border-slate-100 px-4 py-3">
-          <ModuleContentPagination
-            page={page}
-            pageSize={pageSize}
-            total={filteredRows.length}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-          />
-        </div>
+        <ModuleContentPagination
+          page={page}
+          pageSize={pageSize}
+          total={filteredRows.length}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       </ModuleContentSection>
 
       <ModuleLiveRecordedVideoForm

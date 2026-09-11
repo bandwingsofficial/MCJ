@@ -124,6 +124,7 @@ export function ModuleVideosTab({
         }}
       >
         <ModuleContentTable<VideoRow>
+          variant="management"
           rows={pagedRows}
           sourceCount={sourceRows.length}
           orderOffset={orderOffset}
@@ -172,8 +173,9 @@ export function ModuleVideosTab({
               ),
             },
           ]}
-          emptyTitle="No self-paced videos found"
+          emptyTitle="No Self-Paced Videos Found"
           emptyDescription="Create a self-paced video for this lesson."
+          emptySearchDescription="Create your first video or adjust your filters."
           renderActions={(row) => (
             <ModuleContentActions
               isArchived={row.isArchived}
@@ -197,15 +199,13 @@ export function ModuleVideosTab({
           )}
         />
 
-        <div className="border-t border-slate-100 px-4 py-3">
-          <ModuleContentPagination
-            page={page}
-            pageSize={pageSize}
-            total={filteredRows.length}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-          />
-        </div>
+        <ModuleContentPagination
+          page={page}
+          pageSize={pageSize}
+          total={filteredRows.length}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       </ModuleContentSection>
 
       <ModuleVideoForm
