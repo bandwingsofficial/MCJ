@@ -3,14 +3,17 @@
 import { useEffect, useRef } from "react";
 
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
+import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import { JobApplicationActions } from "@/src/features/job-applications/components/JobApplicationActions";
+import { JobApplicationInterviewStatusBadge } from "@/src/features/job-applications/components/JobApplicationInterviewStatusBadge";
 import { JobApplicationStatusBadge } from "@/src/features/job-applications/components/JobApplicationStatusBadge";
 import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
 import {
   getApplicantEmail,
   getApplicantName,
   getApplicantPhone,
+  getStudentCode,
 } from "@/src/features/job-applications/types/job-application.types";
 
 interface JobApplicationTableProps {
@@ -37,7 +40,7 @@ export function JobApplicationTable({
   onReject,
 }: JobApplicationTableProps) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
-  const columnCount = 9;
+  const columnCount = 11;
   const visibleIds = applications.map((application) => application.id);
   const selectedVisibleCount = visibleIds.filter((id) =>
     selectedIds.includes(id),
@@ -94,6 +97,9 @@ export function JobApplicationTable({
               />
             </th>
             <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Student ID
+            </th>
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Candidate
             </th>
             <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
@@ -102,7 +108,7 @@ export function JobApplicationTable({
             <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Company
             </th>
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+            <th className="max-w-[9rem] !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Email
             </th>
             <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
@@ -111,8 +117,11 @@ export function JobApplicationTable({
             <th className="whitespace-nowrap !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Applied Date
             </th>
-            <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Status
+            <th className="w-28 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Application Status
+            </th>
+            <th className="w-32 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Interview Status
             </th>
             <th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
               Actions
@@ -150,11 +159,13 @@ export function JobApplicationTable({
                   />
                 </td>
                 <td className="!px-4 !py-4 align-middle">
+                  <p className="font-mono text-sm font-medium text-[#2563D9]">
+                    {getStudentCode(application)}
+                  </p>
+                </td>
+                <td className="!px-4 !py-4 align-middle">
                   <p className="text-sm font-medium leading-snug text-[#102A56]">
                     {getApplicantName(application)}
-                  </p>
-                  <p className="truncate text-xs text-[#647A9B]">
-                    {getApplicantEmail(application)}
                   </p>
                 </td>
                 <td className="!px-4 !py-4 align-middle">
@@ -170,8 +181,20 @@ export function JobApplicationTable({
                 <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
                   {application.job?.companyName ?? "—"}
                 </td>
-                <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
-                  {getApplicantEmail(application)}
+                <td className="max-w-[9rem] !px-4 !py-4 align-middle text-sm text-slate-700">
+                  {(() => {
+                    const email = getApplicantEmail(application);
+
+                    if (email === "—") {
+                      return email;
+                    }
+
+                    return (
+                      <Tooltip content={email}>
+                        <span className="block truncate">{email}</span>
+                      </Tooltip>
+                    );
+                  })()}
                 </td>
                 <td className="whitespace-nowrap !px-4 !py-4 align-middle text-sm text-slate-700">
                   {getApplicantPhone(application)}
@@ -185,6 +208,11 @@ export function JobApplicationTable({
                 </td>
                 <td className="!px-4 !py-4 align-middle">
                   <JobApplicationStatusBadge status={application.status} />
+                </td>
+                <td className="!px-4 !py-4 align-middle">
+                  <JobApplicationInterviewStatusBadge
+                    status={application.interviewStatus ?? "NOT_YET"}
+                  />
                 </td>
                 <td
                   className="!px-8 !py-4 text-right align-middle"

@@ -90,12 +90,19 @@ export class AdminJobApplicationController {
 
   @Get()
   async list(@Query() query: ListJobApplicationsQueryDto) {
+    const appliedTo = query.appliedTo
+      ? new Date(`${query.appliedTo}T23:59:59.999Z`)
+      : undefined;
+
     const result = await this.listJobApplicationsHandler.execute(
       new ListJobApplicationsQuery(
         query.jobId,
         query.studentId,
         query.status,
+        query.interviewStatus,
         query.search,
+        query.appliedFrom ? new Date(`${query.appliedFrom}T00:00:00.000Z`) : undefined,
+        appliedTo,
         query.includeDeleted,
         query.skip,
         query.take,

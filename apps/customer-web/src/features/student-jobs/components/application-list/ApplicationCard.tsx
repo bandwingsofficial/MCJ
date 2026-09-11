@@ -4,6 +4,7 @@ import { Card } from "@/src/shared/components/ui/card";
 import { Button } from "@/src/shared/components/ui/button";
 
 import { ApplicationStatusBadge } from "@/src/features/student-jobs/components/application-list/ApplicationStatusBadge";
+import { ApplicationInterviewStatusBadge } from "@/src/features/student-jobs/components/application-list/ApplicationInterviewStatusBadge";
 
 import type {
   JobApplication,
@@ -48,8 +49,10 @@ export function ApplicationCard({
 
         <p>
           <strong>Expected Salary</strong>
-          {" : "}₹
-          {application.expectedSalary.toLocaleString()}
+          {" : "}
+          {application.expectedSalary != null
+            ? `₹${application.expectedSalary.toLocaleString()}`
+            : "Not specified"}
         </p>
 
         <p>
@@ -64,6 +67,14 @@ export function ApplicationCard({
           {new Date(
             application.createdAt,
           ).toLocaleDateString()}
+        </p>
+
+        <p>
+          <strong>Interview Status</strong>
+          {" : "}
+          <ApplicationInterviewStatusBadge
+            status={application.interviewStatus ?? "NOT_YET"}
+          />
         </p>
       </div>
 

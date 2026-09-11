@@ -7,6 +7,14 @@ export type JobApplicationStatus =
   | "PLACED"
   | "REJECTED";
 
+export type JobApplicationInterviewStatus =
+  | "NOT_YET"
+  | "INTERVIEW_SCHEDULED"
+  | "INTERVIEWED"
+  | "SELECTED"
+  | "REJECTED"
+  | "PLACED";
+
 export interface JobSummary {
   id: string;
   title: string;
@@ -44,6 +52,34 @@ export interface JobApplicationResume {
   size: number;
 }
 
+export interface JobApplicationStudent {
+  id: string;
+  studentCode: string;
+  firstName: string;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  gender: string | null;
+  dateOfBirth: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  postalCode: string | null;
+  qualification: string | null;
+  collegeName: string | null;
+  specialization: string | null;
+  passingYear: number | null;
+  parentName: string | null;
+  parentPhone: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  notes: string | null;
+  status: string;
+  jobStatus: string | null;
+}
+
 export interface JobApplication {
   id: string;
   jobId: string;
@@ -60,10 +96,13 @@ export interface JobApplication {
   expectedSalary: number | null;
   remarks: string | null;
   status: JobApplicationStatus;
+  interviewStatus: JobApplicationInterviewStatus;
   isDeleted: boolean;
   deletedAt: string | null;
   job: JobSummary;
   user: JobApplicationUser | null;
+  student: JobApplicationStudent | null;
+  resolvedStudentCode?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -101,6 +140,19 @@ export interface RestoreJobApplicationResponse {
 }
 
 export function getApplicantName(application: JobApplication): string {
+  if (application.student) {
+    const fromStudent = [
+      application.student.firstName,
+      application.student.lastName,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    if (fromStudent) {
+      return fromStudent;
+    }
+  }
+
   if (application.user?.name?.trim()) {
     return application.user.name.trim();
   }
@@ -120,14 +172,24 @@ export function getApplicantName(application: JobApplication): string {
 
 export function getApplicantEmail(application: JobApplication): string {
   return (
+    application.student?.email ||
     application.user?.email ||
     application.applicantEmail ||
     "—"
   );
 }
 
+export function getStudentCode(application: JobApplication): string {
+  return (
+    application.student?.studentCode ??
+    application.resolvedStudentCode ??
+    "—"
+  );
+}
+
 export function getApplicantPhone(application: JobApplication): string {
   return (
+    application.student?.phone ||
     application.user?.phone ||
     application.applicantPhone ||
     "—"
@@ -152,6 +214,21 @@ export function toJobApplicationStatus(
   }
 
   return undefined;
+}
+
+export function getInterviewStatusLabel(
+  status: JobApplicationInterviewStatus,
+): string {
+  const labels: Record<JobApplicationInterviewStatus, string> = {
+    NOT_YET: "Not Yet",
+    INTERVIEW_SCHEDULED: "Interview Scheduled",
+    INTERVIEWED: "Interviewed",
+    SELECTED: "Selected",
+    REJECTED: "Rejected",
+    PLACED: "Placed",
+  };
+
+  return labels[status];
 }
 
 export function getOnboardingStatusLabel(status: JobApplicationStatus): string {

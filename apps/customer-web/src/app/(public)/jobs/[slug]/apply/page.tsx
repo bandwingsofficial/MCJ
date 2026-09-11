@@ -1,4 +1,4 @@
-import { PublicJobApplyPage } from "@/src/features/jobs/pages/PublicJobApplyPage";
+import { JobApplyPage } from "@/src/features/jobs/pages/JobApplyPage";
 
 interface Props {
   params: Promise<{
@@ -8,5 +8,5 @@ interface Props {
 
 export default async function PublicJobApplyRoute({ params }: Props) {
   const { slug } = await params;
-  return <PublicJobApplyPage slug={slug} />;
+  return <JobApplyPage slug={slug} />;
 }

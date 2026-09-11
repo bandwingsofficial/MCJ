@@ -1,13 +1,13 @@
 "use client";
 
-import type { ApplicationStatusCounts } from "@/src/features/job-applications/hooks/useJobApplications";
-import type { OnboardingStatusFilter } from "@/src/features/job-applications/types/job-application.types";
+import type { ApplicationStatusCounts, ApplicationStatusFilter } from "@/src/features/job-applications/hooks/useJobApplications";
+import { JOB_APPLICATION_FILTER_ALL } from "@/src/features/job-applications/constants/job-application-filters.constants";
 
 interface ApplicationStatusTabsProps {
-  activeStatus: OnboardingStatusFilter;
+  activeStatus: ApplicationStatusFilter;
   counts: ApplicationStatusCounts;
   disabled?: boolean;
-  onChange: (status: OnboardingStatusFilter) => void;
+  onChange: (status: ApplicationStatusFilter) => void;
 }
 
 export function ApplicationStatusTabs({
@@ -17,7 +17,7 @@ export function ApplicationStatusTabs({
   onChange,
 }: ApplicationStatusTabsProps) {
   const tabs: {
-    value: OnboardingStatusFilter;
+    value: Exclude<ApplicationStatusFilter, typeof JOB_APPLICATION_FILTER_ALL>;
     label: string;
     count: number;
   }[] = [
@@ -29,7 +29,9 @@ export function ApplicationStatusTabs({
   return (
     <div className="flex flex-wrap gap-1.5 border-b border-slate-200 pb-2">
       {tabs.map((tab) => {
-        const isActive = activeStatus === tab.value;
+        const isActive =
+          activeStatus !== JOB_APPLICATION_FILTER_ALL &&
+          activeStatus === tab.value;
 
         return (
           <button

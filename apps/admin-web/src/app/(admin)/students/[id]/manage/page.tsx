@@ -9,7 +9,7 @@ interface Props {
 const VALID_TABS = new Set<TabKey>([
   "overview",
   "documents",
-  "placement",
+  "job-applications",
   "activity",
 ]);
 
@@ -19,11 +19,20 @@ const REMOVED_TABS = new Set([
   "assessments",
   "payments",
   "reports",
+  "placement",
 ]);
 
+const LEGACY_TAB_ALIASES: Record<string, TabKey> = {
+  placement: "job-applications",
+};
+
 function resolveTab(tab?: string): TabKey | undefined {
-  if (!tab || REMOVED_TABS.has(tab)) {
+  if (!tab) {
     return undefined;
+  }
+
+  if (REMOVED_TABS.has(tab)) {
+    return LEGACY_TAB_ALIASES[tab];
   }
 
   return VALID_TABS.has(tab as TabKey) ? (tab as TabKey) : undefined;

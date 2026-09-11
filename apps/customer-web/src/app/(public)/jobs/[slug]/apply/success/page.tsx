@@ -4,13 +4,18 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
 import { Loader } from "@/src/shared/components/ui/loader";
-import { PublicJobApplySuccess } from "@/src/features/jobs/pages/PublicJobApplyPage";
+import { JobApplySuccess } from "@/src/features/jobs/pages/JobApplyPage";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const applicationNumber = searchParams.get("number") ?? "";
   const jobTitle = searchParams.get("title") ?? "this position";
+  const companyName = searchParams.get("company") ?? "—";
   const appliedAt = searchParams.get("date") ?? undefined;
+  const studentId = searchParams.get("studentId") ?? "";
+  const studentName = searchParams.get("studentName") ?? "";
+  const resumeSubmitted = searchParams.get("resume") === "yes";
+  const slug = searchParams.get("slug") ?? undefined;
 
   if (!applicationNumber) {
     return (
@@ -21,15 +26,20 @@ function SuccessContent() {
   }
 
   return (
-    <PublicJobApplySuccess
+    <JobApplySuccess
       jobTitle={jobTitle}
+      companyName={companyName}
       applicationNumber={applicationNumber}
+      studentId={studentId}
+      studentName={studentName}
       appliedAt={appliedAt}
+      resumeSubmitted={resumeSubmitted}
+      slug={slug}
     />
   );
 }
 
-export default function PublicJobApplySuccessPage() {
+export default function JobApplySuccessPage() {
   return (
     <Suspense
       fallback={

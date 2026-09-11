@@ -2,16 +2,23 @@ import { apiClient } from "@/src/core/api/axios";
 
 import type {
   DeleteJobApplicationResponse,
+  JobApplicationInterviewStatus,
   JobApplicationListResponse,
   JobApplicationResponse,
   JobApplicationStatus,
   RestoreJobApplicationResponse,
   UpdateJobApplicationStatusRequest,
 } from "@/src/features/job-applications/types/job-application.types";
+import { enrichJobApplicationStudentCodes } from "@/src/features/job-applications/utils/resolve-job-application-student-code.utils";
 
 export interface JobApplicationListQuery {
   search?: string;
   status?: JobApplicationStatus;
+  interviewStatus?: JobApplicationInterviewStatus;
+  jobId?: string;
+  appliedFrom?: string;
+  appliedTo?: string;
+  studentId?: string;
   skip?: number;
   take?: number;
 }
@@ -24,6 +31,11 @@ class JobApplicationService {
         params: {
           search: params?.search || undefined,
           status: params?.status,
+          interviewStatus: params?.interviewStatus || undefined,
+          jobId: params?.jobId || undefined,
+          appliedFrom: params?.appliedFrom || undefined,
+          appliedTo: params?.appliedTo || undefined,
+          studentId: params?.studentId || undefined,
           skip: params?.skip,
           take: params?.take,
         },
@@ -31,7 +43,9 @@ class JobApplicationService {
     );
 
     return {
-      items: Array.isArray(data.data) ? data.data : [],
+      items: await enrichJobApplicationStudentCodes(
+        Array.isArray(data.data) ? data.data : [],
+      ),
       total:
         typeof data.meta?.total === "number"
           ? data.meta.total
@@ -44,7 +58,14 @@ class JobApplicationService {
       `/admin/job-applications/${id}`,
     );
 
-    return data;
+    const [application] = await enrichJobApplicationStudentCodes(
+      data.data ? [data.data] : [],
+    );
+
+    return {
+      ...data,
+      data: application ?? data.data,
+    };
   }
 
   async updateStatus(

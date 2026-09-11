@@ -10,15 +10,16 @@ import { appToast } from "@/src/shared/components/ui/toast";
 
 import { ApplicationStatusTabs } from "@/src/features/job-applications/components/ApplicationStatusTabs";
 import { JobApplicationDetailsDialog } from "@/src/features/job-applications/components/JobApplicationDetailsDialog";
+import { JobApplicationsFilterBar } from "@/src/features/job-applications/components/JobApplicationsFilterBar";
 import { JobApplicationTable } from "@/src/features/job-applications/components/JobApplicationTable";
 import type {
   ApplicationStatusCounts,
+  ApplicationStatusFilter,
   JobApplicationFilters,
 } from "@/src/features/job-applications/hooks/useJobApplications";
 import { jobApplicationService } from "@/src/features/job-applications/services/job-application.service";
 import type {
   JobApplication,
-  OnboardingStatusFilter,
 } from "@/src/features/job-applications/types/job-application.types";
 import { getEmptyApplicationsMessage } from "@/src/features/job-applications/utils/job-application-display.utils";
 
@@ -120,8 +121,8 @@ export function JobApplicationsWorkspace({
         ...filters,
         status:
           confirmAction === "approve"
-            ? ("ACCEPTED" as OnboardingStatusFilter)
-            : ("REJECTED" as OnboardingStatusFilter),
+            ? ("ACCEPTED" as ApplicationStatusFilter)
+            : ("REJECTED" as ApplicationStatusFilter),
         page: 1,
       });
 
@@ -140,6 +141,13 @@ export function JobApplicationsWorkspace({
   return (
     <>
       <div className="space-y-3">
+        <JobApplicationsFilterBar
+          filters={filters}
+          isLoading={isInitialLoading}
+          disabled={isActing || isFetching || actionsDisabled}
+          onFiltersChange={setFilters}
+        />
+
         <ApplicationStatusTabs
           activeStatus={filters.status}
           counts={statusCounts}

@@ -3,7 +3,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
-  Briefcase,
+  ClipboardList,
   FileText,
   LayoutDashboard,
 } from "lucide-react";
@@ -21,7 +21,7 @@ import { STUDENT_MANAGE_DEFAULT_TAB } from "@/src/features/students/utils/studen
 import { StudentManageActivityPanel } from "./student-manage-activity-panel";
 import { StudentManageDocumentsPanel } from "./student-manage-documents-panel";
 import { StudentManageOverviewPanel } from "./student-manage-overview-panel";
-import { StudentManagePlacementPanel } from "./student-manage-placement-panel";
+import { StudentManageJobApplicationsPanel } from "./student-manage-job-applications-panel";
 
 interface Props {
   student: Student;
@@ -31,7 +31,7 @@ interface Props {
   onDocumentsChanged?: () => void;
 }
 
-export type TabKey = "overview" | "documents" | "placement" | "activity";
+export type TabKey = "overview" | "documents" | "job-applications" | "activity";
 
 const TAB_CLASS =
   "inline-flex items-center rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
@@ -43,7 +43,7 @@ const TAB_ITEMS: ReadonlyArray<{
 }> = [
   { value: "overview", label: "Overview", icon: LayoutDashboard },
   { value: "documents", label: "Documents", icon: FileText },
-  { value: "placement", label: "Placement", icon: Briefcase },
+  { value: "job-applications", label: "Job Applications", icon: ClipboardList },
   { value: "activity", label: "Activity", icon: Activity },
 ];
 
@@ -86,8 +86,8 @@ export function StudentManageWorkspace({
         />
       </TabsContent>
 
-      <TabsContent value="placement">
-        <StudentManagePlacementPanel student={student} />
+      <TabsContent value="job-applications">
+        <StudentManageJobApplicationsPanel student={student} />
       </TabsContent>
 
       <TabsContent value="activity">

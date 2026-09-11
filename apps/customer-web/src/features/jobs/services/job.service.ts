@@ -3,8 +3,10 @@ import type {
   CompanyJobOnboardingValues,
   CompanyJobSubmitResult,
 } from "@/src/features/jobs/schemas/company-job-onboarding.schema";
-import type { PublicJobApplicationResult } from "@/src/features/jobs/schemas/public-job-application.schema";
+import type { JobApplicationSubmitResult } from "@/src/features/jobs/schemas/job-application-student.schema";
+import type { JobApplicationStudentFormValues } from "@/src/features/jobs/schemas/job-application-student.schema";
 import type { PublicJobApplicationFormValues } from "@/src/features/jobs/schemas/public-job-application.schema";
+import type { PublicJobApplicationResult } from "@/src/features/jobs/schemas/public-job-application.schema";
 
 class JobService {
   async getJobs() {
@@ -35,6 +37,38 @@ class JobService {
     formData.append("resume", resume);
 
     const response = await jobApi.applyPublic(slug, formData);
+    return response.data.data;
+  }
+
+  async applyWithStudent(
+    slug: string,
+    values: JobApplicationStudentFormValues,
+    resume: File,
+  ): Promise<JobApplicationSubmitResult> {
+    const formData = new FormData();
+    formData.append("firstName", values.firstName);
+    if (values.lastName?.trim()) {
+      formData.append("lastName", values.lastName.trim());
+    }
+    formData.append("email", values.email);
+    formData.append("phone", values.phone);
+    formData.append("gender", values.gender);
+    formData.append("dateOfBirth", values.dateOfBirth);
+    formData.append("addressLine1", values.addressLine1);
+    if (values.addressLine2?.trim()) {
+      formData.append("addressLine2", values.addressLine2.trim());
+    }
+    formData.append("city", values.city);
+    formData.append("state", values.state);
+    formData.append("country", values.country);
+    formData.append("postalCode", values.postalCode);
+    formData.append("qualification", values.qualification);
+    formData.append("collegeName", values.collegeName);
+    formData.append("specialization", values.specialization);
+    formData.append("passingYear", String(values.passingYear));
+    formData.append("resume", resume);
+
+    const response = await jobApi.applyWithStudent(slug, formData);
     return response.data.data;
   }
 

@@ -4,6 +4,7 @@ import {
 } from '@prisma/client';
 
 import { JobApplication } from '../../domain/entities/job-application.entity';
+import { JobApplicationInterviewStatus } from '../../domain/enums/job-application-interview-status.enum';
 import { JobApplicationStatus } from '../../domain/enums/job-application-status.enum';
 
 export class JobApplicationMapper {
@@ -29,6 +30,8 @@ export class JobApplicationMapper {
       remarks: record.remarks,
       createdBy: record.createdBy,
       status: record.status as JobApplicationStatus,
+      interviewStatus:
+        record.interviewStatus as JobApplicationInterviewStatus,
       updatedBy: record.updatedBy,
       isDeleted: record.isDeleted,
       deletedAt: record.deletedAt,
@@ -57,6 +60,7 @@ export class JobApplicationMapper {
       expectedSalary: application.expectedSalary,
       remarks: application.remarks,
       status: application.status,
+      interviewStatus: application.interviewStatus,
       createdBy: application.createdBy,
       updatedBy: application.updatedBy,
       isDeleted: application.isDeleted,

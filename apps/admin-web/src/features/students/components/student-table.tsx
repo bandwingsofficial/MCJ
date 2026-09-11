@@ -6,7 +6,9 @@ import { Checkbox } from "@/src/shared/components/ui/checkbox";
 
 import type { StudentListItem } from "@/src/features/students/types/student.types";
 import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.utils";
+import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
+import { StudentJobStatusBadge } from "./StudentJobStatusBadge";
 import { StudentStatusBadge } from "./StudentStatusBadge";
 import { StudentRowActionsMenu } from "./student-row-actions-menu";
 
@@ -50,7 +52,7 @@ export function StudentTable({
   const safeSelectedIds = selectedStudentIds ?? [];
   const selectionEnabled = Boolean(onSelectionChange);
   const visibleIds = students.map((student) => student.id);
-  const columnCount = selectionEnabled ? 7 : 6;
+  const columnCount = selectionEnabled ? 8 : 7;
   const selectedVisibleCount = visibleIds.filter((id) =>
     safeSelectedIds.includes(id),
   ).length;
@@ -120,7 +122,7 @@ export function StudentTable({
             <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Student
             </th>
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+            <th className="max-w-[9rem] !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Email
             </th>
             <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
@@ -128,6 +130,9 @@ export function StudentTable({
             </th>
             <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Status
+            </th>
+            <th className="w-28 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Job Status
             </th>
             <th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
               Actions
@@ -182,8 +187,14 @@ export function StudentTable({
                     {formatStudentName(student)}
                   </td>
 
-                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
-                    {student.email ?? "—"}
+                  <td className="max-w-[9rem] !px-4 !py-4 align-middle text-sm text-slate-700">
+                    {student.email ? (
+                      <Tooltip content={student.email}>
+                        <span className="block truncate">{student.email}</span>
+                      </Tooltip>
+                    ) : (
+                      "—"
+                    )}
                   </td>
 
                   <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
@@ -196,6 +207,10 @@ export function StudentTable({
                       isActive={student.isActive}
                       isDeleted={isArchived}
                     />
+                  </td>
+
+                  <td className="!px-4 !py-4 align-middle">
+                    <StudentJobStatusBadge jobStatus={student.jobStatus} />
                   </td>
 
                   <td className="!px-8 !py-4 text-right align-middle">

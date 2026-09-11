@@ -115,9 +115,13 @@ export class PrismaStudentRepository implements StudentRepository {
     email: string,
     includeDeleted = false,
   ): Promise<Student | null> {
+    const normalizedEmail = email.trim().toLowerCase();
     const record = await this.prisma.student.findFirst({
       where: {
-        email,
+        email: {
+          equals: normalizedEmail,
+          mode: 'insensitive',
+        },
         ...(includeDeleted ? {} : { isDeleted: false }),
       },
     });

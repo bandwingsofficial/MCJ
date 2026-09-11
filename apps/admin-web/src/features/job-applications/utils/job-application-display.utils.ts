@@ -89,9 +89,19 @@ export function getApplicationNoticePeriod(
   return parsed.noticePeriod || "—";
 }
 
+import type { ApplicationStatusFilter } from "@/src/features/job-applications/hooks/useJobApplications";
+import { JOB_APPLICATION_FILTER_ALL } from "@/src/features/job-applications/constants/job-application-filters.constants";
+
 export function getEmptyApplicationsMessage(
-  status: "PENDING" | "ACCEPTED" | "REJECTED",
+  status: ApplicationStatusFilter,
 ): { title: string; description: string } {
+  if (status === JOB_APPLICATION_FILTER_ALL) {
+    return {
+      title: "No applications found",
+      description: "Try adjusting your search or filter criteria.",
+    };
+  }
+
   switch (status) {
     case "ACCEPTED":
       return {

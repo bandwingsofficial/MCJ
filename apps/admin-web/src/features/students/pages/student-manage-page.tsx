@@ -34,7 +34,7 @@ interface Props {
 const TAB_LABELS: Record<TabKey, string> = {
   overview: "Overview",
   documents: "Documents",
-  placement: "Placement",
+  "job-applications": "Job Applications",
   activity: "Activity",
 };
 
@@ -44,15 +44,25 @@ const REMOVED_TABS = new Set([
   "assessments",
   "payments",
   "reports",
+  "placement",
 ]);
+
+const LEGACY_TAB_ALIASES: Record<string, TabKey> = {
+  placement: "job-applications",
+};
 
 const VALID_TABS = new Set<TabKey>(Object.keys(TAB_LABELS) as TabKey[]);
 
 function resolveInitialTab(
   initialTab?: TabKey | string,
 ): TabKey {
-  if (!initialTab || REMOVED_TABS.has(initialTab)) {
+  if (!initialTab) {
     return STUDENT_MANAGE_DEFAULT_TAB;
+  }
+
+  if (REMOVED_TABS.has(initialTab)) {
+    const alias = LEGACY_TAB_ALIASES[initialTab];
+    return alias ?? STUDENT_MANAGE_DEFAULT_TAB;
   }
 
   if (VALID_TABS.has(initialTab as TabKey)) {
@@ -83,6 +93,12 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
   useEffect(() => {
     setActiveTab(resolveInitialTab(initialTab));
   }, [initialTab]);
+
+  useEffect(() => {
+    if (initialTab === "placement") {
+      router.replace(studentManageTabPath(studentId, "job-applications"));
+    }
+  }, [initialTab, router, studentId]);
 
   const refreshStudentData = useCallback(async () => {
     await refetch();

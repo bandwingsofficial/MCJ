@@ -877,6 +877,7 @@ model Student {
   branchId              String?
   notes                 String?
   status                StudentStatus    @default(LEAD)
+  jobStatus             StudentJobStatus?
   createdBy             String?
   updatedBy             String?
   isDeleted             Boolean          @default(false)
@@ -1129,6 +1130,7 @@ model JobApplication {
   expectedSalary       Decimal?             @db.Decimal(12, 2)
   remarks              String?
   status               JobApplicationStatus @default(APPLIED)
+  interviewStatus      JobApplicationInterviewStatus @default(NOT_YET)
   createdBy            String?
   updatedBy            String?
   isDeleted            Boolean              @default(false)
@@ -1691,6 +1693,10 @@ enum StudentStatus {
   PLACED
 }
 
+enum StudentJobStatus {
+  JOB_APPLIED
+}
+
 enum StudentDocumentType {
   MARKS_CARD
   AADHAAR
@@ -1786,6 +1792,15 @@ enum JobApplicationStatus {
   SHORTLISTED
   ASSESSMENT
   INTERVIEW
+  SELECTED
+  REJECTED
+  PLACED
+}
+
+enum JobApplicationInterviewStatus {
+  NOT_YET
+  INTERVIEW_SCHEDULED
+  INTERVIEWED
   SELECTED
   REJECTED
   PLACED

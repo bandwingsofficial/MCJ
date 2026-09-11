@@ -10,6 +10,8 @@ export type StudentStatus =
   | "DROPPED"
   | "PLACED";
 
+export type StudentJobStatus = "JOB_APPLIED";
+
 export type StudentDocumentType =
   | "MARKS_CARD"
   | "AADHAAR"
@@ -49,6 +51,7 @@ export interface Student {
   branchId?: string | null;
   notes: string | null;
   status: StudentStatus;
+  jobStatus: StudentJobStatus | null;
   isActive: boolean;
   isDeleted: boolean;
   deletedAt: string | null;

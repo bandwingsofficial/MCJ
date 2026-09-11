@@ -1,39 +1,27 @@
--- Course mode: replace HYBRID with RECORDED
+-- Course mode + qualifications (enum-safe, idempotent)
+-- NOTE: PostgreSQL cannot use a newly added enum value in the same
+-- transaction. Data backfill for HYBRID -> RECORDED lives in the next
+-- migration: 20260824140001_course_mode_hybrid_backfill.
+
 ALTER TYPE "CourseMode" ADD VALUE IF NOT EXISTS 'RECORDED';
 
-UPDATE "Batch"
-SET "mode" = 'RECORDED'::"CourseMode"
-WHERE "mode" = 'HYBRID';
-
-UPDATE "Course" AS c
-SET "mode" = COALESCE(
-  (
-    SELECT ARRAY_AGG(
-      CASE
-        WHEN value::text = 'HYBRID' THEN 'RECORDED'::"CourseMode"
-        ELSE value
-      END
-    )
-    FROM unnest(c."mode") AS value
-  ),
-  ARRAY[]::"CourseMode"[]
-)
-WHERE 'HYBRID' = ANY(c."mode");
-
--- CourseQualification enum + column
-CREATE TYPE "CourseQualification" AS ENUM (
-  'B_COM',
-  'M_COM',
-  'BBA',
-  'MBA',
-  'BCA',
-  'MCA',
-  'CA',
-  'CA_FOUNDATION',
-  'CMA',
-  'CS',
-  'ACCA'
-);
+DO $$ BEGIN
+  CREATE TYPE "CourseQualification" AS ENUM (
+    'B_COM',
+    'M_COM',
+    'BBA',
+    'MBA',
+    'BCA',
+    'MCA',
+    'CA',
+    'CA_FOUNDATION',
+    'CMA',
+    'CS',
+    'ACCA'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 ALTER TABLE "Course"
-ADD COLUMN "minimumQualifications" "CourseQualification"[] NOT NULL DEFAULT ARRAY[]::"CourseQualification"[];
+ADD COLUMN IF NOT EXISTS "minimumQualifications" "CourseQualification"[] NOT NULL DEFAULT ARRAY[]::"CourseQualification"[];

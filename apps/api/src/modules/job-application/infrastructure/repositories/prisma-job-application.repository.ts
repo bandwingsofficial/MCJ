@@ -167,6 +167,16 @@ export class PrismaJobApplicationRepository
     });
   }
 
+  async updateStudentId(
+    applicationId: string,
+    studentId: string,
+  ): Promise<void> {
+    await this.prisma.jobApplication.update({
+      where: { id: applicationId },
+      data: { studentId },
+    });
+  }
+
   private buildWhere(
     filters: JobApplicationListFilters,
   ): Prisma.JobApplicationWhereInput {
@@ -186,6 +196,17 @@ export class PrismaJobApplicationRepository
 
     if (filters.status) {
       where.status = filters.status;
+    }
+
+    if (filters.interviewStatus) {
+      where.interviewStatus = filters.interviewStatus;
+    }
+
+    if (filters.appliedFrom || filters.appliedTo) {
+      where.createdAt = {
+        ...(filters.appliedFrom ? { gte: filters.appliedFrom } : {}),
+        ...(filters.appliedTo ? { lte: filters.appliedTo } : {}),
+      };
     }
 
     if (filters.search?.trim()) {
@@ -243,6 +264,14 @@ export class PrismaJobApplicationRepository
         {
           Student: {
             phone: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
+          Student: {
+            studentCode: {
               contains: search,
               mode: 'insensitive',
             },

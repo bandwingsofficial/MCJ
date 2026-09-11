@@ -2,6 +2,7 @@ import type {
   ApplicationStatus,
   ApplicationStudentSummary,
 } from "@/src/features/student-jobs/types/apply-job.types";
+import type { JobApplicationInterviewStatus } from "@/src/features/student-jobs/constants/interview-status.constants";
 
 export interface JobApplication {
   id: string;
@@ -16,11 +17,13 @@ export interface JobApplication {
 
   currentLocation: string;
 
-  expectedSalary: number;
+  expectedSalary: number | null;
 
   remarks: string;
 
   status: ApplicationStatus;
+
+  interviewStatus?: JobApplicationInterviewStatus;
 
   isDeleted: boolean;
 

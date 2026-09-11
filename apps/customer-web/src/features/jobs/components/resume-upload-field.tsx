@@ -20,6 +20,7 @@ interface ResumeUploadFieldProps {
   file: File | null;
   error?: string | null;
   disabled?: boolean;
+  pdfOnly?: boolean;
   onFileSelect: (file: File | null) => void;
 }
 
@@ -27,6 +28,7 @@ export function ResumeUploadField({
   file,
   error,
   disabled = false,
+  pdfOnly = false,
   onFileSelect,
 }: ResumeUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -106,7 +108,9 @@ export function ResumeUploadField({
               Drag & drop your resume here
             </p>
             <p className="mt-1 text-sm text-[#647A9B]">or click to browse</p>
-            <p className="mt-2 text-xs text-slate-400">PDF, DOC, DOCX</p>
+            <p className="mt-2 text-xs text-slate-400">
+              {pdfOnly ? "PDF only" : "PDF, DOC, DOCX"}
+            </p>
           </>
         )}
       </div>
@@ -118,7 +122,11 @@ export function ResumeUploadField({
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        accept={
+          pdfOnly
+            ? ".pdf,application/pdf"
+            : ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        }
         className="sr-only"
         disabled={disabled}
         onChange={(event) => {

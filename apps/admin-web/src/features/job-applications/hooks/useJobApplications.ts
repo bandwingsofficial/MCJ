@@ -2,19 +2,31 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import {
+  DEFAULT_JOB_APPLICATION_FILTERS,
+  JOB_APPLICATION_FILTER_ALL,
+} from "@/src/features/job-applications/constants/job-application-filters.constants";
 import { DEFAULT_APPLICATION_PAGE_SIZE } from "@/src/features/job-applications/constants/job-application.constants";
 import { jobApplicationService } from "@/src/features/job-applications/services/job-application.service";
 import type {
   JobApplication,
+  JobApplicationInterviewStatus,
   OnboardingStatusFilter,
 } from "@/src/features/job-applications/types/job-application.types";
 import { toJobApplicationStatus } from "@/src/features/job-applications/types/job-application.types";
+import type { JobApplicationListQuery } from "@/src/features/job-applications/services/job-application.service";
 
 const SEARCH_DEBOUNCE_MS = 400;
 
+export type ApplicationStatusFilter = OnboardingStatusFilter | "ALL";
+
 export interface JobApplicationFilters {
   search: string;
-  status: OnboardingStatusFilter;
+  status: ApplicationStatusFilter;
+  jobId?: string;
+  interviewStatus?: JobApplicationInterviewStatus;
+  appliedFrom?: string;
+  appliedTo?: string;
   page: number;
   pageSize: number;
 }
@@ -40,10 +52,29 @@ interface UseJobApplicationsReturn {
   refetch: () => Promise<void>;
 }
 
+function buildListQuery(
+  filters: JobApplicationFilters,
+  debouncedSearch: string,
+  overrides?: Partial<JobApplicationListQuery>,
+): JobApplicationListQuery {
+  return {
+    search: debouncedSearch || undefined,
+    jobId: filters.jobId || undefined,
+    interviewStatus: filters.interviewStatus || undefined,
+    appliedFrom: filters.appliedFrom || undefined,
+    appliedTo: filters.appliedTo || undefined,
+    status:
+      filters.status === JOB_APPLICATION_FILTER_ALL
+        ? undefined
+        : toJobApplicationStatus(filters.status as OnboardingStatusFilter),
+    skip: overrides?.skip,
+    take: overrides?.take,
+    ...overrides,
+  };
+}
+
 export const useJobApplications = (): UseJobApplicationsReturn => {
-  const [jobApplications, setJobApplications] = useState<JobApplication[]>(
-    [],
-  );
+  const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
   const [total, setTotal] = useState(0);
   const [catalogTotal, setCatalogTotal] = useState(0);
   const [statusCounts, setStatusCounts] = useState<ApplicationStatusCounts>({
@@ -55,9 +86,7 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFiltersState] = useState<JobApplicationFilters>({
-    search: "",
-    status: "PENDING",
-    page: 1,
+    ...DEFAULT_JOB_APPLICATION_FILTERS,
     pageSize: DEFAULT_APPLICATION_PAGE_SIZE,
   });
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -70,10 +99,22 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
     setFiltersState((prev) => {
       const statusChanged = next.status !== prev.status;
       const pageSizeChanged = next.pageSize !== prev.pageSize;
+      const jobChanged = next.jobId !== prev.jobId;
+      const interviewChanged = next.interviewStatus !== prev.interviewStatus;
+      const fromChanged = next.appliedFrom !== prev.appliedFrom;
+      const toChanged = next.appliedTo !== prev.appliedTo;
 
       return {
         ...next,
-        page: statusChanged || pageSizeChanged ? 1 : next.page,
+        page:
+          statusChanged ||
+          pageSizeChanged ||
+          jobChanged ||
+          interviewChanged ||
+          fromChanged ||
+          toChanged
+            ? 1
+            : next.page,
       };
     });
   }, []);
@@ -115,28 +156,28 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
 
       const page = filters.page ?? 1;
       const pageSize = filters.pageSize ?? DEFAULT_APPLICATION_PAGE_SIZE;
+      const baseQuery = buildListQuery(filters, debouncedSearch);
 
       const [response, pending, approved, rejected] = await Promise.all([
         jobApplicationService.getJobApplications({
-          search: debouncedSearch || undefined,
-          status: toJobApplicationStatus(filters.status),
+          ...baseQuery,
           skip: (page - 1) * pageSize,
           take: pageSize,
         }),
         jobApplicationService.getJobApplications({
-          search: debouncedSearch || undefined,
+          ...buildListQuery(filters, debouncedSearch),
           status: "APPLIED",
           skip: 0,
           take: 1,
         }),
         jobApplicationService.getJobApplications({
-          search: debouncedSearch || undefined,
+          ...buildListQuery(filters, debouncedSearch),
           status: "SELECTED",
           skip: 0,
           take: 1,
         }),
         jobApplicationService.getJobApplications({
-          search: debouncedSearch || undefined,
+          ...buildListQuery(filters, debouncedSearch),
           status: "REJECTED",
           skip: 0,
           take: 1,
@@ -174,7 +215,16 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
         setIsFetching(false);
       }
     }
-  }, [debouncedSearch, filters.page, filters.pageSize, filters.status]);
+  }, [
+    debouncedSearch,
+    filters.appliedFrom,
+    filters.appliedTo,
+    filters.interviewStatus,
+    filters.jobId,
+    filters.page,
+    filters.pageSize,
+    filters.status,
+  ]);
 
   useEffect(() => {
     void fetchJobApplications();

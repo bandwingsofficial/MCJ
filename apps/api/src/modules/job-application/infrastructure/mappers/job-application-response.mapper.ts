@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 
+import { JobApplicationInterviewStatus } from '../../domain/enums/job-application-interview-status.enum';
 import { JobApplicationStatus } from '../../domain/enums/job-application-status.enum';
 import type {
   JobApplicationDetailView,
@@ -39,10 +40,13 @@ export class JobApplicationResponseMapper {
         : null,
       remarks: record.remarks,
       status: record.status as JobApplicationStatus,
+      interviewStatus:
+        record.interviewStatus as JobApplicationInterviewStatus,
       isDeleted: record.isDeleted,
       deletedAt: record.deletedAt,
       job: this.toJob(record.job),
       user: this.toUser(record),
+      student: this.toStudent(record.Student),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     };
@@ -122,6 +126,42 @@ export class JobApplicationResponseMapper {
       city: student.city,
       state: student.state,
       country: student.country,
+    };
+  }
+
+  private static toStudent(
+    student: JobApplicationWithRelations['Student'],
+  ): JobApplicationDetailView['student'] {
+    if (!student) {
+      return null;
+    }
+
+    return {
+      id: student.id,
+      studentCode: student.studentCode,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      email: student.email,
+      phone: student.phone,
+      gender: student.gender,
+      dateOfBirth: student.dateOfBirth,
+      addressLine1: student.addressLine1,
+      addressLine2: student.addressLine2,
+      city: student.city,
+      state: student.state,
+      country: student.country,
+      postalCode: student.postalCode,
+      qualification: student.qualification,
+      collegeName: student.collegeName,
+      specialization: student.specialization,
+      passingYear: student.passingYear,
+      parentName: student.parentName,
+      parentPhone: student.parentPhone,
+      emergencyContactName: student.emergencyContactName,
+      emergencyContactPhone: student.emergencyContactPhone,
+      notes: student.notes,
+      status: student.status,
+      jobStatus: student.jobStatus,
     };
   }
 }

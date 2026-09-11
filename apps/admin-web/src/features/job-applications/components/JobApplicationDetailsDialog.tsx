@@ -17,6 +17,7 @@ import {
   getApplicantEmail,
   getApplicantName,
   getApplicantPhone,
+  getStudentCode,
 } from "@/src/features/job-applications/types/job-application.types";
 import {
   getApplicationCompany,
@@ -214,6 +215,10 @@ export function JobApplicationDetailsDialog({
 
           <Section title="Candidate Information">
             <div className="grid gap-4 md:grid-cols-2">
+              <Info
+                label="Student ID"
+                value={getStudentCode(current)}
+              />
               <Info label="Name" value={getApplicantName(current)} />
               <Info label="Email" value={getApplicantEmail(current)} />
               <Info label="Phone" value={getApplicantPhone(current)} />
@@ -223,6 +228,82 @@ export function JobApplicationDetailsDialog({
               />
             </div>
           </Section>
+
+          {current.student ? (
+            <Section title="Student Profile">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Info
+                  label="Gender"
+                  value={current.student.gender?.replaceAll("_", " ") ?? "—"}
+                />
+                <Info
+                  label="Date of Birth"
+                  value={
+                    current.student.dateOfBirth
+                      ? new Date(current.student.dateOfBirth).toLocaleDateString(
+                          "en-IN",
+                        )
+                      : "—"
+                  }
+                />
+                <Info
+                  label="Address"
+                  value={
+                    [
+                      current.student.addressLine1,
+                      current.student.addressLine2,
+                      current.student.city,
+                      current.student.state,
+                      current.student.postalCode,
+                      current.student.country,
+                    ]
+                      .filter(Boolean)
+                      .join(", ") || "—"
+                  }
+                />
+                <Info
+                  label="Qualification"
+                  value={current.student.qualification ?? "—"}
+                />
+                <Info
+                  label="College"
+                  value={current.student.collegeName ?? "—"}
+                />
+                <Info
+                  label="Specialization"
+                  value={current.student.specialization ?? "—"}
+                />
+                <Info
+                  label="Passing Year"
+                  value={
+                    current.student.passingYear == null
+                      ? "—"
+                      : String(current.student.passingYear)
+                  }
+                />
+                <Info
+                  label="Parent / Guardian"
+                  value={current.student.parentName ?? "—"}
+                />
+                <Info
+                  label="Parent Phone"
+                  value={current.student.parentPhone ?? "—"}
+                />
+                <Info
+                  label="Student Status"
+                  value={current.student.status?.replaceAll("_", " ") ?? "—"}
+                />
+                <Info
+                  label="Job Status"
+                  value={
+                    current.student.jobStatus?.replaceAll("_", " ") ??
+                    "—"
+                  }
+                />
+                <Info label="Notes" value={current.student.notes ?? "—"} />
+              </div>
+            </Section>
+          ) : null}
 
           <Section title="Professional Information">
             <div className="grid gap-4 md:grid-cols-2">

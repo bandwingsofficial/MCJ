@@ -5,6 +5,7 @@ import {
 
 import { Student } from '../../domain/entities/student.entity';
 import { StudentGender } from '../../domain/enums/student-gender.enum';
+import { StudentJobStatus } from '../../domain/enums/student-job-status.enum';
 import { StudentStatus } from '../../domain/enums/student-status.enum';
 
 export class StudentMapper {
@@ -39,7 +40,9 @@ export class StudentMapper {
       branchId: record.branchId,
       notes: record.notes,
       isActive: record.isActive,
-      status: record.status as StudentStatus,      createdBy: record.createdBy,
+      status: record.status as StudentStatus,
+      jobStatus: (record.jobStatus as StudentJobStatus | null) ?? null,
+      createdBy: record.createdBy,
       updatedBy: record.updatedBy,
       isDeleted: record.isDeleted,
       deletedAt: record.deletedAt,
@@ -84,7 +87,9 @@ export class StudentMapper {
       branchId: student.branchId,
       notes: student.notes,
       isActive: student.isActive,
-      status: student.status,      createdBy: student.createdBy,
+      status: student.status,
+      jobStatus: student.jobStatus,
+      createdBy: student.createdBy,
       updatedBy: student.updatedBy,
       isDeleted: student.isDeleted,
       deletedAt: student.deletedAt,

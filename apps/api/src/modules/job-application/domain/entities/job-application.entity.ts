@@ -1,3 +1,4 @@
+import { JobApplicationInterviewStatus } from '../enums/job-application-interview-status.enum';
 import { JobApplicationStatus } from '../enums/job-application-status.enum';
 
 export class JobApplication {
@@ -17,6 +18,7 @@ export class JobApplication {
     public expectedSalary: number | null,
     public remarks: string | null,
     public status: JobApplicationStatus,
+    public interviewStatus: JobApplicationInterviewStatus,
     public readonly createdBy: string | null,
     public updatedBy: string | null,
     public isDeleted: boolean,
@@ -43,6 +45,7 @@ export class JobApplication {
       params.expectedSalary ?? null,
       params.remarks ?? null,
       JobApplicationStatus.APPLIED,
+      JobApplicationInterviewStatus.NOT_YET,
       params.createdBy ?? null,
       null,
       false,
@@ -72,6 +75,7 @@ export class JobApplication {
       params.expectedSalary,
       params.remarks,
       params.status,
+      params.interviewStatus,
       params.createdBy,
       params.updatedBy,
       params.isDeleted,
@@ -166,6 +170,7 @@ export interface JobApplicationUpdateParams {
 export interface JobApplicationReconstituteParams
   extends Required<JobApplicationCreateParams> {
   status: JobApplicationStatus;
+  interviewStatus: JobApplicationInterviewStatus;
   updatedBy: string | null;
   isDeleted: boolean;
   deletedAt: Date | null;

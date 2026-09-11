@@ -1,4 +1,5 @@
 import { JobApplication } from '../entities/job-application.entity';
+import { JobApplicationInterviewStatus } from '../enums/job-application-interview-status.enum';
 import { JobApplicationStatus } from '../enums/job-application-status.enum';
 
 export interface JobApplicationJobView {
@@ -33,6 +34,34 @@ export interface JobApplicationUserView {
   profile: JobApplicationUserProfileView | null;
 }
 
+export interface JobApplicationStudentView {
+  id: string;
+  studentCode: string;
+  firstName: string;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  gender: string | null;
+  dateOfBirth: Date | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  postalCode: string | null;
+  qualification: string | null;
+  collegeName: string | null;
+  specialization: string | null;
+  passingYear: number | null;
+  parentName: string | null;
+  parentPhone: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  notes: string | null;
+  status: string;
+  jobStatus: string | null;
+}
+
 export interface JobApplicationDetailView {
   id: string;
   jobId: string;
@@ -49,10 +78,13 @@ export interface JobApplicationDetailView {
   expectedSalary: number | null;
   remarks: string | null;
   status: JobApplicationStatus;
+  interviewStatus: JobApplicationInterviewStatus;
   isDeleted: boolean;
   deletedAt: Date | null;
   job: JobApplicationJobView;
   user: JobApplicationUserView | null;
+  student: JobApplicationStudentView | null;
+  resolvedStudentCode?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,7 +93,10 @@ export interface JobApplicationListFilters {
   jobId?: string;
   studentId?: string;
   status?: JobApplicationStatus;
+  interviewStatus?: JobApplicationInterviewStatus;
   search?: string;
+  appliedFrom?: Date;
+  appliedTo?: Date;
   includeDeleted?: boolean;
   skip?: number;
   take?: number;
@@ -104,6 +139,11 @@ export interface JobApplicationRepository {
     studentId: string,
     includeDeleted?: boolean,
   ): Promise<JobApplicationDetailView[]>;
+
+  updateStudentId(
+    applicationId: string,
+    studentId: string,
+  ): Promise<void>;
 
   deletePermanent(id: string): Promise<void>;
 }

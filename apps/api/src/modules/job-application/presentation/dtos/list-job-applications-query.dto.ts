@@ -1,8 +1,9 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsDateString, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { PaginationQueryDto } from '@common/pagination/pagination-query.dto';
+import { JobApplicationInterviewStatus } from '../../domain/enums/job-application-interview-status.enum';
 import { JobApplicationStatus } from '../../domain/enums/job-application-status.enum';
 
 const toBoolean = (value: unknown) =>
@@ -24,10 +25,25 @@ export class ListJobApplicationsQueryDto extends PaginationQueryDto {
   @IsEnum(JobApplicationStatus)
   status?: JobApplicationStatus;
 
+  @ApiPropertyOptional({ enum: JobApplicationInterviewStatus })
+  @IsOptional()
+  @IsEnum(JobApplicationInterviewStatus)
+  interviewStatus?: JobApplicationInterviewStatus;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  appliedFrom?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  appliedTo?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
