@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 
+import { useOptionalStudentPortalNavigation } from "@/src/features/student/context/StudentPortalNavigationProvider";
 import { studentProfileService } from "@/src/features/student/services";
 
 import type {
@@ -20,74 +21,89 @@ export function useStudentProfile(
   options?: UseStudentProfileOptions,
 ) {
   const enabled = options?.enabled ?? true;
+  const portalContext = useOptionalStudentPortalNavigation();
 
   const [
-    profile,
-    setProfile,
+    standaloneProfile,
+    setStandaloneProfile,
   ] = useState<StudentProfile | null>(
     null,
   );
 
   const [
-    isLoading,
-    setIsLoading,
-  ] = useState(enabled);
+    standaloneLoading,
+    setStandaloneLoading,
+  ] = useState(
+    enabled && !portalContext,
+  );
 
   const [
-    error,
-    setError,
+    standaloneError,
+    setStandaloneError,
   ] = useState<string | null>(
     null,
   );
 
-  const fetchProfile = useCallback(async () => {
+  const fetchStandaloneProfile = useCallback(async () => {
     try {
-      setIsLoading(true);
+      setStandaloneLoading(true);
 
       const data =
-        await studentProfileService.getProfile();
+        await studentProfileService.getProfileOrNull();
 
-      setProfile(data);
-
-      setError(null);
+      setStandaloneProfile(data);
+      setStandaloneError(null);
     } catch (fetchError) {
-      if (
-        fetchError instanceof Error &&
-        fetchError.message ===
-          "Student not found"
-      ) {
-        setProfile(null);
-        setError(null);
-        return;
-      }
-
-      setProfile(null);
-
-      setError(
+      setStandaloneProfile(null);
+      setStandaloneError(
         fetchError instanceof Error
           ? fetchError.message
           : "Failed to fetch student profile.",
       );
     } finally {
-      setIsLoading(false);
+      setStandaloneLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (!enabled) {
-      setProfile(null);
-      setError(null);
-      setIsLoading(false);
+    if (portalContext || !enabled) {
+      setStandaloneProfile(null);
+      setStandaloneError(null);
+      setStandaloneLoading(false);
       return;
     }
 
-    void fetchProfile();
-  }, [enabled, fetchProfile]);
+    void fetchStandaloneProfile();
+  }, [enabled, fetchStandaloneProfile, portalContext]);
+
+  if (portalContext) {
+    if (!enabled) {
+      return {
+        profile: null,
+        isLoading: false,
+        error: null,
+        refetch: portalContext.refetch,
+      };
+    }
+
+    return {
+      profile: portalContext.studentProfile,
+      isLoading: portalContext.isLoading,
+      error: portalContext.error,
+      refetch: portalContext.refetch,
+    };
+  }
 
   return {
-    profile,
-    isLoading,
-    error,
-    refetch: fetchProfile,
+    profile: standaloneProfile,
+    isLoading: standaloneLoading,
+    error: standaloneError,
+    refetch: fetchStandaloneProfile,
   };
+}
+
+export function useStudentProfileMutationRefetch() {
+  const portalContext = useOptionalStudentPortalNavigation();
+
+  return portalContext?.refetch;
 }

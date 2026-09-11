@@ -17,7 +17,7 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
 import type { EnrollmentRepository } from '../enrollment/domain/repositories/enrollment.repository';
 import { STUDENT_TOKENS } from '../student/student.tokens';
 import { StudentModule } from '../student/student.module';
-import type { StudentRepository } from '../student/domain/repositories/student.repository';
+import { ResolveAuthenticatedStudentService } from '../student/domain/services/resolve-authenticated-student.service';
 
 import { GetStudentPortalAccessHandler } from './application/get-student-portal-access/get-student-portal-access.handler';
 import { ListStudentCoursesHandler } from './application/list-student-courses/list-student-courses.handler';
@@ -59,7 +59,21 @@ import { STUDENT_PORTAL_TOKENS } from './student-portal.tokens';
   ],
 
   providers: [
-    CourseAccessService,
+    {
+      provide: CourseAccessService,
+      useFactory: (
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
+        enrollmentRepo: EnrollmentRepository,
+      ) =>
+        new CourseAccessService(
+          resolveAuthenticatedStudent,
+          enrollmentRepo,
+        ),
+      inject: [
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
+        ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+      ],
+    },
     {
       provide: STUDENT_PORTAL_TOKENS.LESSON_PROGRESS_REPOSITORY,
       useFactory: (prisma: PrismaService) =>
@@ -69,15 +83,15 @@ import { STUDENT_PORTAL_TOKENS } from './student-portal.tokens';
     {
       provide: GetStudentPortalAccessHandler,
       useFactory: (
-        studentRepo: StudentRepository,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
         enrollmentRepo: EnrollmentRepository,
       ) =>
         new GetStudentPortalAccessHandler(
-          studentRepo,
+          resolveAuthenticatedStudent,
           enrollmentRepo,
         ),
       inject: [
-        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
       ],
     },

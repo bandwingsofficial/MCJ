@@ -7,6 +7,8 @@ import type { JobApplicationInterviewStatus } from "@/src/features/student-jobs/
 export interface JobApplication {
   id: string;
 
+  applicationNumber?: string;
+
   jobId: string;
 
   studentId: string;
@@ -21,7 +23,7 @@ export interface JobApplication {
 
   remarks: string;
 
-  status: ApplicationStatus;
+  status: ApplicationStatus | string;
 
   interviewStatus?: JobApplicationInterviewStatus;
 

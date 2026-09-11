@@ -29,7 +29,7 @@ export class StudentPortalController {
   async getAccess(@CurrentUser() user: AuthUser) {
     const result =
       await this.getStudentPortalAccessHandler.execute(
-        new GetStudentPortalAccessQuery(user.sub),
+        new GetStudentPortalAccessQuery(user.sub, user.email),
       );
 
     return {

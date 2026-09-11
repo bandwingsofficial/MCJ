@@ -3,12 +3,19 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { User, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
+import {
+  User,
+  LogOut,
+  LayoutDashboard,
+  ChevronDown,
+  BriefcaseBusiness,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { AUTH_ROUTES } from "@/src/features/auth/constants/auth.constants";
 import { useLogout } from "@/src/features/auth/hooks/use-logout";
+import { useStudentPortalNavigation } from "@/src/features/student/context/StudentPortalNavigationProvider";
 
 const navItems = [
   { name: "Home", href: "/" },
@@ -19,11 +26,32 @@ const navItems = [
   { name: "Contact Us", href: "/contact" },
 ];
 
+function AccountDropdownItem({
+  label,
+  icon: Icon,
+  onClick,
+}: {
+  label: string;
+  icon: typeof User;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="group flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-gray-700 rounded-xl transition-all duration-200 hover:bg-orange-50 hover:text-orange-600 hover:pl-4"
+    >
+      <Icon className="w-4 h-4 text-gray-400 transition-colors duration-200 group-hover:text-orange-500" />
+      {label}
+    </button>
+  );
+}
+
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logoutMutation = useLogout();
+  const navigation = useStudentPortalNavigation();
 
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -49,6 +77,16 @@ export function Header() {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const showMyApplications =
+    !navigation.isLoading && navigation.showMyApplications;
+  const showMyCourses =
+    !navigation.isLoading && navigation.showMyCourses;
+
+  const navigateFromDropdown = (href: string) => {
+    router.push(href);
+    setOpen(false);
   };
 
   return (
@@ -125,7 +163,7 @@ export function Header() {
           {user && (
             <div className="flex items-center gap-4">
               <button
-                onClick={() => router.push("/student")}
+                onClick={() => router.push("/student/profile")}
                 className="group flex items-center gap-2 px-4 py-2.5 border border-gray-200 bg-gray-50/50 text-gray-700 font-semibold rounded-xl text-sm transition-all duration-300 hover:bg-white hover:border-orange-300 hover:text-orange-600 hover:shadow-md hover:shadow-orange-100 active:scale-95"
               >
                 <LayoutDashboard className="w-4 h-4 text-gray-500 transition-all duration-300 group-hover:text-orange-500 group-hover:rotate-[-8deg]" />
@@ -156,30 +194,36 @@ export function Header() {
                       </div>
                     </div>
 
-                    <div className="mt-1.5">
-                      <button
-                        onClick={() => {
-                          router.push("/student/my-learning");
-                          setOpen(false);
-                        }}
-                        className="group flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-gray-700 rounded-xl transition-all duration-200 hover:bg-orange-50 hover:text-orange-600 hover:pl-4"
-                      >
-                        <LayoutDashboard className="w-4 h-4 text-gray-400 transition-colors duration-200 group-hover:text-orange-500" />
-                        My Learning
-                      </button>
-                    </div>
+                    <div className="mt-1.5 space-y-0.5">
+                      {navigation.showProfile ? (
+                        <AccountDropdownItem
+                          label="Profile"
+                          icon={User}
+                          onClick={() =>
+                            navigateFromDropdown("/student/profile")
+                          }
+                        />
+                      ) : null}
 
-                    <div className="mt-1.5">
-                      <button
-                        onClick={() => {
-                          router.push("/student");
-                          setOpen(false);
-                        }}
-                        className="group flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-gray-700 rounded-xl transition-all duration-200 hover:bg-orange-50 hover:text-orange-600 hover:pl-4"
-                      >
-                        <LayoutDashboard className="w-4 h-4 text-gray-400 transition-colors duration-200 group-hover:text-orange-500" />
-                        Dashboard
-                      </button>
+                      {showMyApplications ? (
+                        <AccountDropdownItem
+                          label="My Applications"
+                          icon={BriefcaseBusiness}
+                          onClick={() =>
+                            navigateFromDropdown("/student/applications")
+                          }
+                        />
+                      ) : null}
+
+                      {showMyCourses ? (
+                        <AccountDropdownItem
+                          label="My Courses"
+                          icon={LayoutDashboard}
+                          onClick={() =>
+                            navigateFromDropdown("/student/my-learning")
+                          }
+                        />
+                      ) : null}
                     </div>
 
                     <div className="mt-1 pt-1 border-t border-gray-50">

@@ -2,6 +2,7 @@
 
 import { Calendar, Mail, Pencil, Phone, User, UserRound } from "lucide-react";
 
+import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
 
@@ -16,6 +17,8 @@ export function StudentProfileHeader({
   profile,
   onEdit,
 }: StudentProfileHeaderProps) {
+  const authUser = useAuthStore((state) => state.user);
+
   return (
     <Card className="animate-fade-up border-0 shadow-sm ring-1 ring-border/50">
       <div className="p-5 sm:p-6">
@@ -26,23 +29,25 @@ export function StudentProfileHeader({
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-                {profile ? `${profile.firstName} ${profile.lastName}` : "Student Profile"}
+                {profile
+                  ? `${profile.firstName} ${profile.lastName}`
+                  : authUser?.name ?? "Account Profile"}
               </h1>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {profile
                   ? profile.studentCode
-                  : "Manage your personal, educational and guardian information."}
+                  : "You are signed in. Create a student profile to apply for courses and jobs."}
               </p>
             </div>
           </div>
 
           <Button onClick={onEdit} className="gap-2 self-start sm:self-auto">
             <Pencil className="h-4 w-4" />
-            {profile ? "Update Profile" : "Create Profile"}
+            {profile ? "Update Profile" : "Create Student Profile"}
           </Button>
         </div>
 
-        {profile && (
+        {profile ? (
           <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <InfoItem
               icon={<User className="h-3.5 w-3.5" />}
@@ -79,7 +84,25 @@ export function StudentProfileHeader({
               }
             />
           </div>
-        )}
+        ) : authUser ? (
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <InfoItem
+              icon={<User className="h-3.5 w-3.5" />}
+              label="Account Name"
+              value={authUser.name}
+            />
+            <InfoItem
+              icon={<Mail className="h-3.5 w-3.5" />}
+              label="Account Email"
+              value={authUser.email}
+            />
+            <InfoItem
+              icon={<Phone className="h-3.5 w-3.5" />}
+              label="Account Phone"
+              value={authUser.phone}
+            />
+          </div>
+        ) : null}
       </div>
     </Card>
   );

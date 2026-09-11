@@ -20,8 +20,8 @@ export function StudentSidebarItem({
   // Exact match for the dashboard root, prefix match for nested routes
   // so e.g. /student/profile/edit still highlights "Profile".
   const isActive =
-    href === "/student"
-      ? pathname === href
+    href === "/student/dashboard"
+      ? pathname === href || pathname === "/student"
       : pathname === href || pathname?.startsWith(`${href}/`);
 
   return (

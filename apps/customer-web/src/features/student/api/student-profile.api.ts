@@ -3,6 +3,7 @@ import { apiClient } from "@/src/core/api/axios";
 import type { ApiResponse } from "@/src/core/types/api-response.types";
 
 import type {
+  CreateStudentProfilePayload,
   CreateStudentProfileRequest,
   StudentProfile,
   UpdateStudentProfileRequest,
@@ -16,7 +17,7 @@ export const studentProfileApi = {
   },
 
   createProfile(
-    data: CreateStudentProfileRequest,
+    data: CreateStudentProfilePayload | CreateStudentProfileRequest,
   ) {
     return apiClient.post<
       ApiResponse<StudentProfile>

@@ -99,6 +99,17 @@ export interface CreateStudentProfileRequest {
   notes?: string;
 }
 
+export type CreateStudentProfilePayload = {
+  firstName: string;
+  email: string;
+  phone: string;
+} & Partial<
+  Omit<
+    CreateStudentProfileRequest,
+    "firstName" | "email" | "phone"
+  >
+>;
+
 export interface UpdateStudentProfileRequest {
   qualification?: string;
 

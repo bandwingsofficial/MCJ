@@ -2,10 +2,10 @@
 
 import {
   BriefcaseBusiness,
-  LayoutDashboard,
   User,
 } from "lucide-react";
 
+import { useStudentPortalNavigation } from "@/src/features/student/context/StudentPortalNavigationProvider";
 import { StudentSidebarItem } from "./StudentSidebarItem";
 
 /**
@@ -28,6 +28,8 @@ import { StudentSidebarItem } from "./StudentSidebarItem";
  */
 
 export function StudentSidebar() {
+  const navigation = useStudentPortalNavigation();
+
   return (
     <>
       <style>{`
@@ -195,12 +197,27 @@ export function StudentSidebar() {
 
         <nav className="stu-nav">
           <div className="stu-section-label">Core</div>
-          <StudentSidebarItem href="/student" icon={LayoutDashboard} label="Dashboard" />
-          <StudentSidebarItem href="/student/profile" icon={User} label="Profile" />
-          <StudentSidebarItem href="/student/applications" icon={BriefcaseBusiness} label="My Applications" />
-          <StudentSidebarItem href="/student/placement" icon={BriefcaseBusiness} label="Placement" />
-          <StudentSidebarItem href="/student/enrollments" icon={BriefcaseBusiness} label="My Enrollment" />
-          <StudentSidebarItem href="/student/my-learning" icon={BriefcaseBusiness} label="My Learnings" />
+          {navigation.showProfile ? (
+            <StudentSidebarItem
+              href="/student/profile"
+              icon={User}
+              label="Profile"
+            />
+          ) : null}
+          {navigation.showMyApplications ? (
+            <StudentSidebarItem
+              href="/student/applications"
+              icon={BriefcaseBusiness}
+              label="My Applications"
+            />
+          ) : null}
+          {navigation.showMyCourses ? (
+            <StudentSidebarItem
+              href="/student/my-learning"
+              icon={BriefcaseBusiness}
+              label="My Courses"
+            />
+          ) : null}
         </nav>
 
         <div className="stu-sidebar-footer">

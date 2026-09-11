@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-status.enum';
 import type { EnrollmentRepository } from '@modules/enrollment/domain/repositories/enrollment.repository';
 import { StudentStatus } from '@modules/student/domain/enums/student-status.enum';
-import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
+import { ResolveAuthenticatedStudentService } from '@modules/student/domain/services/resolve-authenticated-student.service';
 
 import {
   StudentPortalEnrollmentNotAdmittedException,
@@ -22,23 +22,23 @@ export class GetStudentPortalAccessHandler {
   );
 
   constructor(
-    private readonly studentRepo: StudentRepository,
+    private readonly resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
     private readonly enrollmentRepo: EnrollmentRepository,
   ) {}
 
   async execute(
     query: GetStudentPortalAccessQuery,
   ): Promise<StudentPortalAccessResult> {
-    // Step 1 — resolve the student profile from the authenticated user.
-    const student = await this.studentRepo.findByUserId(
-      query.userId,
-    );
+    const student =
+      await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
+        query.userId,
+        query.email,
+      );
 
     if (!student) {
       throw new StudentPortalStudentNotFoundException();
     }
 
-    // Step 2 — the student must have at least one enrollment.
     const enrollments =
       await this.enrollmentRepo.findDetailsByStudentId(student.id);
 
@@ -46,8 +46,6 @@ export class GetStudentPortalAccessHandler {
       throw new StudentPortalEnrollmentNotFoundException();
     }
 
-    // Step 3 — portal access depends only on academic admission state.
-    // Payment/financial status must never block access.
     if (student.status !== StudentStatus.ADMITTED) {
       throw new StudentPortalStudentNotAdmittedException();
     }

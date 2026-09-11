@@ -10,6 +10,7 @@ import { StudentModule } from '../student/student.module';
 import { STUDENT_TOKENS } from '../student/student.tokens';
 import type { StudentRepository } from '../student/domain/repositories/student.repository';
 import { StudentDomainService } from '../student/domain/services/student-domain.service';
+import { ResolveAuthenticatedStudentService } from '../student/domain/services/resolve-authenticated-student.service';
 import { JobModule } from '../job/job.module';
 import { JOB_TOKENS } from '../job/job.tokens';
 import type { JobRepository } from '../job/domain/repositories/job.repository';
@@ -205,32 +206,32 @@ import { StudentJobApplicationController } from './presentation/controllers/stud
       provide: ListMyJobApplicationsHandler,
       useFactory: (
         applicationRepo: JobApplicationRepository,
-        studentRepo: StudentRepository,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
       ) =>
         new ListMyJobApplicationsHandler(
           applicationRepo,
-          studentRepo,
+          resolveAuthenticatedStudent,
         ),
       inject: [
         JOB_APPLICATION_TOKENS.JOB_APPLICATION_REPOSITORY,
-        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
       ],
     },
     {
       provide: GetMyJobApplicationHandler,
       useFactory: (
         applicationRepo: JobApplicationRepository,
-        studentRepo: StudentRepository,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
         domainService: JobApplicationDomainService,
       ) =>
         new GetMyJobApplicationHandler(
           applicationRepo,
-          studentRepo,
+          resolveAuthenticatedStudent,
           domainService,
         ),
       inject: [
         JOB_APPLICATION_TOKENS.JOB_APPLICATION_REPOSITORY,
-        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
         JobApplicationDomainService,
       ],
     },

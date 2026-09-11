@@ -1,8 +1,13 @@
 import { AxiosError } from "axios";
 
 import { studentProfileApi } from "@/src/features/student/api";
+import {
+  isStudentNotFoundError,
+  StudentNotFoundError,
+} from "@/src/features/student/errors/student-not-found.error";
 
 import type {
+  CreateStudentProfilePayload,
   CreateStudentProfileRequest,
   StudentProfile,
   UpdateStudentProfileRequest,
@@ -20,8 +25,20 @@ class StudentProfileService {
     }
   }
 
+  async getProfileOrNull(): Promise<StudentProfile | null> {
+    try {
+      return await this.getProfile();
+    } catch (error) {
+      if (isStudentNotFoundError(error)) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
   async createProfile(
-    payload: CreateStudentProfileRequest,
+    payload: CreateStudentProfilePayload | CreateStudentProfileRequest,
   ): Promise<StudentProfile> {
     try {
       const response =
@@ -56,9 +73,20 @@ class StudentProfileService {
     if (
       error instanceof AxiosError
     ) {
+      const status =
+        error.response?.status;
+
       const message =
         error.response?.data
           ?.message;
+
+      if (status === 404) {
+        return new StudentNotFoundError(
+          typeof message === "string"
+            ? message
+            : undefined,
+        );
+      }
 
       if (
         typeof message ===
@@ -69,9 +97,7 @@ class StudentProfileService {
         );
       }
 
-      switch (
-        error.response?.status
-      ) {
+      switch (status) {
         case 400:
           return new Error(
             "Invalid request.",
@@ -85,11 +111,6 @@ class StudentProfileService {
         case 403:
           return new Error(
             "You are not authorized to perform this action.",
-          );
-
-        case 404:
-          return new Error(
-            "Student profile not found.",
           );
 
         case 409:

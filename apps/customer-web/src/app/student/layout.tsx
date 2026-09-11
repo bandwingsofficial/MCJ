@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Header } from "@/src/shared/components/header/header";
 import { Footer } from "@/src/shared/components/footer/footer";
 import { StudentSidebar } from "@/src/features/student";
+import { StudentPortalAccessControl } from "@/src/features/student/components/StudentPortalAccessControl";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 
 interface StudentLayoutProps {
@@ -51,7 +52,9 @@ export default function StudentLayout({
 
         <main className="w-full flex-1">
           <div className="mx-auto w-full max-w-7xl p-4 md:p-6 lg:p-8">
-            {children}
+            <StudentPortalAccessControl>
+              {children}
+            </StudentPortalAccessControl>
           </div>
         </main>
       </div>

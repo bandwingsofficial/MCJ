@@ -112,7 +112,7 @@ export function JobApplyPage({ slug }: JobApplyPageProps) {
       firstName: "",
       lastName: "",
       email: user?.email ?? "",
-      phone: "",
+      phone: user?.phone ?? "",
       gender: "MALE",
       dateOfBirth: "",
       addressLine1: "",
@@ -140,7 +140,11 @@ export function JobApplyPage({ slug }: JobApplyPageProps) {
     if (user?.email) {
       setValue("email", user.email);
     }
-  }, [setValue, user?.email]);
+
+    if (user?.phone) {
+      setValue("phone", user.phone);
+    }
+  }, [setValue, user?.email, user?.phone]);
 
   const acceptingApplications = useMemo(
     () => (job ? isJobAcceptingApplications(job) : false),
@@ -249,6 +253,7 @@ export function JobApplyPage({ slug }: JobApplyPageProps) {
                   );
 
                   const params = new URLSearchParams({
+                    id: result.id,
                     number: result.applicationNumber,
                     title: result.job?.title ?? job.title,
                     company: result.job?.companyName ?? job.companyName,
@@ -287,8 +292,6 @@ export function JobApplyPage({ slug }: JobApplyPageProps) {
                       {[
                         { label: "First Name", id: "firstName", required: true },
                         { label: "Last Name", id: "lastName", required: false },
-                        { label: "Email", id: "email", required: true },
-                        { label: "Phone Number", id: "phone", required: true },
                       ].map((field) => (
                         <div key={field.id}>
                           <Label required={field.required}>{field.label}</Label>
@@ -305,6 +308,36 @@ export function JobApplyPage({ slug }: JobApplyPageProps) {
                               ]?.message
                             }
                           />
+                        </div>
+                      ))}
+                      {(
+                        [
+                          {
+                            label: "Email",
+                            id: "email",
+                            required: true,
+                            type: "email",
+                          },
+                          {
+                            label: "Phone Number",
+                            id: "phone",
+                            required: true,
+                            type: "tel",
+                          },
+                        ] as const
+                      ).map((field) => (
+                        <div key={field.id}>
+                          <Label required={field.required}>{field.label}</Label>
+                          <input type="hidden" {...register(field.id)} />
+                          <Input
+                            type={field.type}
+                            value={watch(field.id) ?? ""}
+                            readOnly
+                            disabled
+                            tabIndex={-1}
+                            placeholder={`Enter ${field.label.toLowerCase()}`}
+                          />
+                          <FormError message={errors[field.id]?.message} />
                         </div>
                       ))}
                       <div>
@@ -457,6 +490,8 @@ export function JobApplySuccess({
   appliedAt,
   resumeSubmitted,
   slug,
+  applicationStatus,
+  isLoadingStatus = false,
 }: {
   jobTitle: string;
   companyName: string;
@@ -466,6 +501,8 @@ export function JobApplySuccess({
   appliedAt?: string;
   resumeSubmitted: boolean;
   slug?: string;
+  applicationStatus?: string | null;
+  isLoadingStatus?: boolean;
 }) {
   const appliedDate = appliedAt ? new Date(appliedAt) : null;
   const dateLabel =
@@ -476,6 +513,12 @@ export function JobApplySuccess({
           year: "numeric",
         })
       : null;
+  const statusLabel = isLoadingStatus
+    ? "Loading..."
+    : applicationStatus ?? "—";
+  const statusHighlight =
+    !isLoadingStatus &&
+    (applicationStatus === "Pending" || !applicationStatus);
 
   return (
     <div className="bg-[#F4F8FD] px-4 py-10 sm:py-16">
@@ -496,7 +539,11 @@ export function JobApplySuccess({
               Application Status
             </h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <StatusItem label="Status" value="Pending" highlight />
+              <StatusItem
+                label="Status"
+                value={statusLabel}
+                highlight={statusHighlight}
+              />
               <StatusItem
                 label="Resume"
                 value={resumeSubmitted ? "Submitted" : "Not uploaded"}

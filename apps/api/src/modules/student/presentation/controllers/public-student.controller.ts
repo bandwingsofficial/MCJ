@@ -91,7 +91,7 @@ export class PublicStudentController {
   })
   async getMyProfile(@CurrentUser() user: AuthUser) {
     const result = await this.getMyStudentHandler.execute(
-      new GetMyStudentQuery(user.sub),
+      new GetMyStudentQuery(user.sub, user.email),
     );
 
     return {

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { studentProfileService } from "@/src/features/student/services";
 
 import type {
+  CreateStudentProfilePayload,
   CreateStudentProfileRequest,
 } from "@/src/features/student/types";
 
@@ -23,7 +24,9 @@ export function useCreateStudentProfile() {
 
   const createProfile =
     async (
-      payload: CreateStudentProfileRequest,
+      payload:
+        | CreateStudentProfilePayload
+        | CreateStudentProfileRequest,
     ) => {
       try {
         setIsSubmitting(true);

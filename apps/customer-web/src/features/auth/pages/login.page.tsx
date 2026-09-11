@@ -25,7 +25,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace(redirectTo ?? "/student");
+      router.replace(redirectTo ?? "/");
     }
   }, [isAuthenticated, redirectTo, router]);
 

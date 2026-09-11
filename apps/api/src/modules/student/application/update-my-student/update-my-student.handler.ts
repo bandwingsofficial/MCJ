@@ -1,4 +1,5 @@
 import type { StudentRepository } from '../../domain/repositories/student.repository';
+import { ResolveAuthenticatedStudentService } from '../../domain/services/resolve-authenticated-student.service';
 import { StudentDomainService } from '../../domain/services/student-domain.service';
 import { GetMyStudentResult } from '../get-my-student/get-my-student.result';
 
@@ -8,13 +9,16 @@ export class UpdateMyStudentHandler {
   constructor(
     private readonly studentRepo: StudentRepository,
     private readonly domainService: StudentDomainService,
+    private readonly resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
   ) {}
 
   async execute(
     command: UpdateMyStudentCommand,
   ): Promise<GetMyStudentResult> {
     const student = await this.domainService.ensureExists(
-      await this.studentRepo.findByCreatedBy(command.userId),
+      await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
+        command.userId,
+      ),
     );
 
     student.update({

@@ -12,6 +12,7 @@ import { Student } from '../../domain/entities/student.entity';
 import { StudentStatus } from '../../domain/enums/student-status.enum';
 import type { StudentRepository } from '../../domain/repositories/student.repository';
 import { StudentDomainService } from '../../domain/services/student-domain.service';
+import { ResolveAuthenticatedStudentService } from '../../domain/services/resolve-authenticated-student.service';
 import { GetMyStudentResult } from '../get-my-student/get-my-student.result';
 import {
   extractPersonalFieldsFromProfile,
@@ -36,6 +37,7 @@ export class CreateStudentByPublicHandler {
     private readonly profileRepo: ProfileRepository,
     private readonly domainService: StudentDomainService,
     private readonly createProfileHandler: CreateProfileHandler,
+    private readonly resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
   ) {}
 
   async execute(
@@ -79,7 +81,10 @@ export class CreateStudentByPublicHandler {
     }
 
     const existingStudent =
-      await this.studentRepo.findByCreatedBy(userId);
+      await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
+        userId,
+        command.email,
+      );
 
     if (existingStudent) {
       return {

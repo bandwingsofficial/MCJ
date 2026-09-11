@@ -2,19 +2,22 @@ import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-st
 import type { EnrollmentDetailView } from '@modules/enrollment/domain/repositories/enrollment.repository';
 import type { EnrollmentRepository } from '@modules/enrollment/domain/repositories/enrollment.repository';
 import type { Student } from '@modules/student/domain/entities/student.entity';
-import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
+import { ResolveAuthenticatedStudentService } from '@modules/student/domain/services/resolve-authenticated-student.service';
 
 import { CourseAccessDeniedException } from '../errors/course-access.exception';
 import { StudentPortalStudentNotFoundException } from '../errors/student-portal-business.exception';
 
 export class CourseAccessService {
   constructor(
-    private readonly studentRepo: StudentRepository,
+    private readonly resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
     private readonly enrollmentRepo: EnrollmentRepository,
   ) {}
 
   async resolveStudentFromUserId(userId: string): Promise<Student> {
-    const student = await this.studentRepo.findByUserId(userId);
+    const student =
+      await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
+        userId,
+      );
 
     if (!student) {
       throw new StudentPortalStudentNotFoundException();
@@ -34,7 +37,10 @@ export class CourseAccessService {
       return { isEnrolled: null, isAdmitted: null };
     }
 
-    const student = await this.studentRepo.findByUserId(userId);
+    const student =
+      await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
+        userId,
+      );
 
     if (!student) {
       return { isEnrolled: false, isAdmitted: false };

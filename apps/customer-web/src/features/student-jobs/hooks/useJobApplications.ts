@@ -6,11 +6,13 @@ import {
   useState,
 } from "react";
 
-import { studentJobService } from "@/src/features/student-jobs/services";
+import { useRefetchOnWindowFocus } from "@/src/features/student-jobs/hooks/useRefetchOnWindowFocus";
 
 import type {
   JobApplication,
 } from "@/src/features/student-jobs/types";
+
+import { studentJobService } from "@/src/features/student-jobs/services";
 
 interface UseJobApplicationsReturn {
   applications: JobApplication[];
@@ -63,6 +65,8 @@ export function useJobApplications(): UseJobApplicationsReturn {
   useEffect(() => {
     void fetchApplications();
   }, [fetchApplications]);
+
+  useRefetchOnWindowFocus(fetchApplications);
 
   return {
     applications,

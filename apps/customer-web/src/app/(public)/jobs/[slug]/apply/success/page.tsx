@@ -5,9 +5,11 @@ import { Suspense } from "react";
 
 import { Loader } from "@/src/shared/components/ui/loader";
 import { JobApplySuccess } from "@/src/features/jobs/pages/JobApplyPage";
+import { useSyncedJobApplicationStatus } from "@/src/features/student-jobs/hooks/useSyncedJobApplicationStatus";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
+  const applicationId = searchParams.get("id");
   const applicationNumber = searchParams.get("number") ?? "";
   const jobTitle = searchParams.get("title") ?? "this position";
   const companyName = searchParams.get("company") ?? "—";
@@ -16,6 +18,13 @@ function SuccessContent() {
   const studentName = searchParams.get("studentName") ?? "";
   const resumeSubmitted = searchParams.get("resume") === "yes";
   const slug = searchParams.get("slug") ?? undefined;
+
+  const { statusLabel, isLoading: isLoadingStatus } =
+    useSyncedJobApplicationStatus({
+      applicationId,
+      applicationNumber,
+      enabled: Boolean(applicationId || applicationNumber),
+    });
 
   if (!applicationNumber) {
     return (
@@ -35,6 +44,8 @@ function SuccessContent() {
       appliedAt={appliedAt}
       resumeSubmitted={resumeSubmitted}
       slug={slug}
+      applicationStatus={statusLabel}
+      isLoadingStatus={isLoadingStatus}
     />
   );
 }

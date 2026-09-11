@@ -11,7 +11,7 @@ import { StudentStatus } from '../enums/student-status.enum';
 export class Student {
   private constructor(
     public readonly id: string,
-    public readonly userId: string,
+    public userId: string,
     public firstName: StudentName,
     public lastName: StudentName | null,
     public email: Email,
@@ -149,8 +149,20 @@ export class Student {
     if (params.notes !== undefined) this.notes = sanitizeText(params.notes, 4000);
     if (params.status !== undefined) this.status = params.status;
     if (params.jobStatus !== undefined) this.jobStatus = params.jobStatus;
+    if (params.userId !== undefined) this.userId = params.userId;
 
     this.updatedBy = params.updatedBy ?? this.updatedBy;    this.touch();
+  }
+
+  linkToAuthenticatedUser(userId: string, updatedBy?: string | null) {
+    if (this.userId === userId) {
+      return false;
+    }
+
+    this.userId = userId;
+    this.updatedBy = updatedBy ?? this.updatedBy;
+    this.touch();
+    return true;
   }
 
   activate(updatedBy?: string | null) {

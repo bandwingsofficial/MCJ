@@ -43,7 +43,7 @@ export function useLogin(redirectTo?: string) {
       const destination =
         redirectTo && redirectTo.startsWith("/")
           ? redirectTo
-          : "/student";
+          : "/";
 
       router.push(destination);
     },

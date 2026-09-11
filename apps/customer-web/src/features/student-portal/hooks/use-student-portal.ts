@@ -89,19 +89,11 @@ export function useStudentPortal(): UseStudentPortalReturn {
          */
         if (
           status === 404 &&
-          message ===
-            "Student profile not found."
+          (message === "Student profile not found." ||
+            message === "Student could not be found.")
         ) {
-          appToast.info(
-            "Please create your student profile to continue.",
-          );
-
           setIsLoading(
             false,
-          );
-
-          router.replace(
-            "/student/profile",
           );
 
           return;

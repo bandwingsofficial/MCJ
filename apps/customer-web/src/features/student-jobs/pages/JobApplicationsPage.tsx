@@ -31,7 +31,7 @@ export function JobApplicationsPage() {
     application: JobApplication,
   ) => {
     router.push(
-      `/student/jobs/applications/${application.id}`,
+      `/student/applications/${application.id}`,
     );
   };
 

@@ -46,6 +46,7 @@ import { UpdateStudentDocumentHandler } from './application/update-student-docum
 import type { StudentDocumentRepository } from './domain/repositories/student-document.repository';
 import type { StudentRepository } from './domain/repositories/student.repository';
 import { StudentDomainService } from './domain/services/student-domain.service';
+import { ResolveAuthenticatedStudentService } from './domain/services/resolve-authenticated-student.service';
 import { PrismaStudentDocumentRepository } from './infrastructure/repositories/prisma-student-document.repository';
 import { PrismaStudentRepository } from './infrastructure/repositories/prisma-student.repository';
 import { AdminStudentController } from './presentation/controllers/admin-student.controller';
@@ -85,6 +86,22 @@ import { PublicStudentController } from './presentation/controllers/public-stude
     },
 
     {
+      provide: STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
+      useFactory: (
+        studentRepo: StudentRepository,
+        prisma: PrismaService,
+      ) =>
+        new ResolveAuthenticatedStudentService(
+          studentRepo,
+          prisma,
+        ),
+      inject: [
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        PrismaService,
+      ],
+    },
+
+    {
       provide: CreateStudentHandler,
       useFactory: (
         studentRepo: StudentRepository,
@@ -120,6 +137,7 @@ import { PublicStudentController } from './presentation/controllers/public-stude
         profileRepo: ProfileRepository,
         domainService: StudentDomainService,
         createProfileHandler: CreateProfileHandler,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
       ) =>
         new CreateStudentByPublicHandler(
           studentRepo,
@@ -127,6 +145,7 @@ import { PublicStudentController } from './presentation/controllers/public-stude
           profileRepo,
           domainService,
           createProfileHandler,
+          resolveAuthenticatedStudent,
         ),
       inject: [
         STUDENT_TOKENS.STUDENT_REPOSITORY,
@@ -134,6 +153,7 @@ import { PublicStudentController } from './presentation/controllers/public-stude
         PROFILE_TOKENS.PROFILE_REPOSITORY,
         StudentDomainService,
         CreateProfileHandler,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
       ],
     },
 
@@ -156,16 +176,16 @@ import { PublicStudentController } from './presentation/controllers/public-stude
     {
       provide: GetMyStudentHandler,
       useFactory: (
-        studentRepo: StudentRepository,
         domainService: StudentDomainService,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
       ) =>
         new GetMyStudentHandler(
-          studentRepo,
           domainService,
+          resolveAuthenticatedStudent,
         ),
       inject: [
-        STUDENT_TOKENS.STUDENT_REPOSITORY,
         StudentDomainService,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
       ],
     },
 
@@ -174,14 +194,17 @@ import { PublicStudentController } from './presentation/controllers/public-stude
       useFactory: (
         studentRepo: StudentRepository,
         domainService: StudentDomainService,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
       ) =>
         new UpdateMyStudentHandler(
           studentRepo,
           domainService,
+          resolveAuthenticatedStudent,
         ),
       inject: [
         STUDENT_TOKENS.STUDENT_REPOSITORY,
         StudentDomainService,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
       ],
     },
 
@@ -453,6 +476,7 @@ import { PublicStudentController } from './presentation/controllers/public-stude
 
   exports: [
     STUDENT_TOKENS.STUDENT_REPOSITORY,
+    STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
     StudentDomainService,
     SyncStudentFromProfileHandler,
   ],
