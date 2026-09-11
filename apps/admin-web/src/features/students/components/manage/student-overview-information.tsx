@@ -23,6 +23,8 @@ import { cn } from "@/src/shared/lib/cn";
 
 interface Props {
   student: Student;
+  infoGridClassName?: string;
+  sectionGridClassName?: string;
 }
 
 function InfoBlock({
@@ -71,10 +73,12 @@ function SectionCard({
   title,
   description,
   children,
+  gridClassName = "sm:grid-cols-2",
 }: {
   title: string;
   description?: string;
   children: React.ReactNode;
+  gridClassName?: string;
 }) {
   return (
     <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
@@ -84,7 +88,7 @@ function SectionCard({
           <p className="mt-0.5 text-sm text-[#647A9B]">{description}</p>
         ) : null}
       </div>
-      <div className="grid gap-3 p-4 sm:grid-cols-2">{children}</div>
+      <div className={cn("grid gap-3 p-4", gridClassName)}>{children}</div>
     </div>
   );
 }
@@ -113,7 +117,11 @@ function hasText(value?: string | null) {
   return Boolean(value?.trim());
 }
 
-export function StudentOverviewInformation({ student }: Props) {
+export function StudentOverviewInformation({
+  student,
+  infoGridClassName = "sm:grid-cols-2 xl:grid-cols-3",
+  sectionGridClassName = "sm:grid-cols-2",
+}: Props) {
   const isArchived = Boolean(student.deletedAt || student.isDeleted);
   const fullName = formatStudentName(student.firstName, student.lastName);
 
@@ -185,7 +193,7 @@ export function StudentOverviewInformation({ student }: Props) {
           </div>
         </div>
 
-        <div className="grid gap-3 border-t border-[#E8F0FA] p-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className={cn("grid gap-3 border-t border-[#E8F0FA] p-4", infoGridClassName)}>
           <InfoBlock
             label="Student ID"
             value={
@@ -261,6 +269,7 @@ export function StudentOverviewInformation({ student }: Props) {
         <SectionCard
           title="Education"
           description="Academic background and specialization."
+          gridClassName={sectionGridClassName}
         >
           {hasText(student.qualification) ? (
             <InfoBlock
@@ -302,7 +311,11 @@ export function StudentOverviewInformation({ student }: Props) {
       ) : null}
 
       {hasAddress ? (
-        <SectionCard title="Address" description="Residential address details.">
+        <SectionCard
+          title="Address"
+          description="Residential address details."
+          gridClassName={sectionGridClassName}
+        >
           <InfoBlock
             label="Full Address"
             value={addressParts.join(", ")}
@@ -318,6 +331,7 @@ export function StudentOverviewInformation({ student }: Props) {
         <SectionCard
           title="Parent / Guardian"
           description="Primary parent or guardian contact."
+          gridClassName={sectionGridClassName}
         >
           {hasText(student.parentName) ? (
             <InfoBlock

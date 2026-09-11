@@ -2,8 +2,6 @@
 
 import { BookOpen, CalendarDays, CreditCard, GraduationCap } from "lucide-react";
 
-import { Card } from "@/src/shared/components/ui/card";
-
 import { EnrollmentDetailItem } from "@/src/features/enrollments/components/manage/enrollment-detail-item";
 import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/table/EnrollmentStatusBadge";
 import { PaymentStatusBadge } from "@/src/features/enrollments/components/table/PaymentStatusBadge";
@@ -46,7 +44,9 @@ export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
       value: formatCurrency(totalFee),
       icon: GraduationCap,
       iconClass: "text-emerald-600",
-      bgClass: "bg-emerald-50",
+      bgClass: "bg-emerald-50/90 ring-emerald-100/80",
+      cardClass:
+        "border-emerald-200/70 bg-gradient-to-br from-emerald-50/50 via-[#F6FDF9] to-[#EDFAF3]",
       isText: true,
     },
     {
@@ -56,7 +56,9 @@ export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
       value: formatCurrency(enrollment.paidAmount),
       icon: CreditCard,
       iconClass: "text-rose-600",
-      bgClass: "bg-rose-50",
+      bgClass: "bg-rose-50/90 ring-rose-100/80",
+      cardClass:
+        "border-rose-200/70 bg-gradient-to-br from-rose-50/50 via-[#FFF7F8] to-[#FFF1F3]",
       isText: true,
     },
     {
@@ -66,7 +68,9 @@ export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
       value: formatCurrency(enrollment.dueAmount),
       icon: CalendarDays,
       iconClass: "text-amber-600",
-      bgClass: "bg-amber-50",
+      bgClass: "bg-amber-50/90 ring-amber-100/80",
+      cardClass:
+        "border-amber-200/70 bg-gradient-to-br from-amber-50/60 via-[#FFFBF5] to-[#FFF8ED]",
       isText: true,
     },
     {
@@ -76,25 +80,37 @@ export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
       value: formatEnrollmentOverviewCourseTitle(enrollment),
       icon: BookOpen,
       iconClass: "text-[#2563EB]",
-      bgClass: "bg-blue-50",
+      bgClass: "bg-blue-50/90 ring-blue-100/80",
+      cardClass:
+        "border-[#C7D9F5] bg-gradient-to-br from-[#F8FBFF] via-[#F3F8FF] to-[#EAF2FB]",
       isText: true,
     },
   ];
 
   return (
-    <div className="space-y-6">
-      <StudentOverviewMetricGrid metrics={metrics} />
+    <div className="space-y-4">
+      <StudentOverviewMetricGrid
+        metrics={metrics}
+        layout="grid-four"
+      />
 
-      <Card className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-base font-semibold text-[#102A56]">
-            Enrollment Information
-          </h2>
-          <EnrollmentStatusBadge status={enrollment.status} />
-          <PaymentStatusBadge status={enrollment.paymentStatus} />
+      <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
+        <div className="flex flex-col gap-2 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-[#102A56]">
+              Enrollment Information
+            </h2>
+            <p className="mt-0.5 text-sm text-[#647A9B]">
+              Core enrollment, batch and payment details.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <EnrollmentStatusBadge status={enrollment.status} />
+            <PaymentStatusBadge status={enrollment.paymentStatus} />
+          </div>
         </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <EnrollmentDetailItem
             label="Enrollment Number"
             value={enrollment.enrollmentNumber}
@@ -168,7 +184,7 @@ export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
             value={formatCurrency(enrollment.dueAmount)}
           />
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

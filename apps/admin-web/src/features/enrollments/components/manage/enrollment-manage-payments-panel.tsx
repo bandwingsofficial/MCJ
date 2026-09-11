@@ -1,14 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
-import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
+import { BRANCH_PRIMARY_BUTTON_CLASS } from "@/src/features/branches/components/manage/branch-manage-layout.constants";
+import { BranchManagePaginationFooter } from "@/src/features/branches/components/manage/branch-manage-pagination-footer";
+import {
+  BranchManageTableShell,
+  TABLE_CELL_CLASS,
+} from "@/src/features/branches/components/manage/branch-manage-table-shell";
+import { Badge } from "@/src/shared/components/ui/badge";
 import { CreateEnrollmentPaymentModal } from "@/src/features/enrollments/components/manage/create-enrollment-payment-modal";
 import { EnrollmentDetailItem } from "@/src/features/enrollments/components/manage/enrollment-detail-item";
 import { PaymentStatusBadge } from "@/src/features/enrollments/components/table/PaymentStatusBadge";
@@ -18,9 +24,39 @@ import { paymentService } from "@/src/features/payments/services/payment.service
 import type { PaymentSummary } from "@/src/features/payments/types/payment.types";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
 
+const PAYMENT_COLUMNS = [
+  { key: "number", label: "Payment No" },
+  { key: "date", label: "Date" },
+  { key: "method", label: "Method" },
+  { key: "amount", label: "Amount" },
+  { key: "status", label: "Status" },
+];
+
+const DEFAULT_PAGE_SIZE = 10;
+
 interface Props {
   enrollment: Enrollment;
   onEnrollmentRefresh?: () => Promise<void>;
+}
+
+function PaymentRecordStatusBadge({ status }: { status: string }) {
+  if (status === "SUCCESS") {
+    return <Badge variant="success">Paid</Badge>;
+  }
+
+  if (status === "PENDING") {
+    return <Badge variant="warning">Pending</Badge>;
+  }
+
+  if (status === "FAILED") {
+    return <Badge variant="danger">Failed</Badge>;
+  }
+
+  if (status === "REFUNDED") {
+    return <Badge variant="info">Refunded</Badge>;
+  }
+
+  return <Badge>{status}</Badge>;
 }
 
 export function EnrollmentManagePaymentsPanel({
@@ -30,6 +66,8 @@ export function EnrollmentManagePaymentsPanel({
   const [payments, setPayments] = useState<PaymentSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const remaining = Math.max(0, enrollment.dueAmount ?? 0);
 
@@ -56,27 +94,52 @@ export function EnrollmentManagePaymentsPanel({
     void load();
   }, [enrollment.id]);
 
+  const total = payments.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const to = total === 0 ? 0 : Math.min(safePage * pageSize, total);
+
+  const paginatedPayments = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return payments.slice(start, start + pageSize);
+  }, [payments, safePage, pageSize]);
+
   return (
-    <div className="space-y-6">
-      <Card className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-semibold text-[#102A56]">
-              Payment Summary
-            </h2>
-            <PaymentStatusBadge status={enrollment.paymentStatus} />
-          </div>
-          <Button
-            type="button"
-            disabled={remaining <= 0}
-            className="h-[52px] rounded-[14px] px-5 font-semibold"
-            onClick={() => setIsCreateOpen(true)}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Create Payment
-          </Button>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-[22px] font-bold tracking-tight text-[#102A56] sm:text-[26px]">
+            Payments
+          </h2>
+          <p className="text-xs text-[#647A9B] sm:text-[13px]">
+            Payment summary and history for {enrollment.enrollmentNumber}
+          </p>
         </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <Button
+          type="button"
+          disabled={remaining <= 0}
+          className={BRANCH_PRIMARY_BUTTON_CLASS}
+          onClick={() => setIsCreateOpen(true)}
+        >
+          <Plus className="mr-1.5 h-4 w-4 shrink-0" />
+          Create Payment
+        </Button>
+      </div>
+
+      <Card className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
+        <div className="flex flex-col gap-2 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-[#102A56]">
+              Payment Summary
+            </h3>
+            <p className="mt-0.5 text-sm text-[#647A9B]">
+              Current fee status for this enrollment.
+            </p>
+          </div>
+          <PaymentStatusBadge status={enrollment.paymentStatus} />
+        </div>
+        <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
           <EnrollmentDetailItem
             label="Total Fee"
             value={formatCurrency(enrollment.finalAmount || enrollment.feeAmount)}
@@ -92,71 +155,62 @@ export function EnrollmentManagePaymentsPanel({
         </div>
       </Card>
 
-      <Card className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-0 shadow-sm">
-        <div className="border-b border-slate-200 px-5 py-4">
-          <h2 className="text-base font-semibold text-[#102A56]">
+      <Card className="min-w-0 overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
+        <div className="border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-4 py-3">
+          <h3 className="text-base font-semibold text-[#102A56]">
             Payment History
-          </h2>
+          </h3>
+          <p className="mt-0.5 text-sm text-[#647A9B]">
+            Recorded payments for this enrollment.
+          </p>
         </div>
-        {isLoading ? (
-          <div className="space-y-3 p-5">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={index} className="h-16 w-full rounded-xl" />
-            ))}
-          </div>
-        ) : payments.length === 0 ? (
-          <div className="px-5 py-12 text-center">
-            <p className="text-sm font-medium text-[#102A56]">No data yet</p>
-            <p className="mt-1 text-sm text-[#647A9B]">
-              Payments recorded for this enrollment will appear here.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse">
-              <thead className="border-b border-slate-200 bg-[#F6F9FD]">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Payment No
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Date
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Method
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Amount
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {payments.map((payment) => (
-                  <tr key={payment.id} className="bg-white hover:bg-slate-50">
-                    <td className="px-4 py-3 font-mono text-sm text-slate-700">
-                      {payment.paymentNumber}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-700">
-                      {formatStudentDate(payment.paidAt ?? payment.createdAt)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-700">
-                      {payment.paymentMethod}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-medium text-[#102A56]">
-                      {formatCurrency(payment.amount)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-700">
-                      {payment.paymentStatus}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+
+        <BranchManageTableShell
+          columns={PAYMENT_COLUMNS}
+          isLoading={isLoading}
+          isEmpty={!isLoading && total === 0}
+          emptyTitle="No payments recorded"
+          emptyDescription="Payments recorded for this enrollment will appear here."
+          embedded
+        >
+          {paginatedPayments.map((payment) => (
+            <tr
+              key={payment.id}
+              className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
+            >
+              <td className={`${TABLE_CELL_CLASS} font-mono text-[#102A56]`}>
+                {payment.paymentNumber}
+              </td>
+              <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                {formatStudentDate(payment.paidAt ?? payment.createdAt)}
+              </td>
+              <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                {payment.paymentMethod}
+              </td>
+              <td className={`${TABLE_CELL_CLASS} font-medium text-[#102A56]`}>
+                {formatCurrency(payment.amount)}
+              </td>
+              <td className={TABLE_CELL_CLASS}>
+                <PaymentRecordStatusBadge status={payment.paymentStatus} />
+              </td>
+            </tr>
+          ))}
+        </BranchManageTableShell>
+
+        <BranchManagePaginationFooter
+          from={from}
+          to={to}
+          total={total}
+          page={safePage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          disabled={isLoading}
+          onPageChange={setPage}
+          onPageSizeChange={(nextPageSize) => {
+            setPageSize(nextPageSize);
+            setPage(1);
+          }}
+        />
       </Card>
 
       <CreateEnrollmentPaymentModal

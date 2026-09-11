@@ -27,7 +27,7 @@ export function EnrollmentManageHeader({ enrollment, activeSection }: Props) {
     <div className="space-y-3">
       <nav
         aria-label="Breadcrumb"
-        className="flex flex-wrap items-center gap-1.5 text-sm"
+        className="flex flex-wrap items-center gap-1 text-xs"
       >
         <Link
           href="/enrollments"
@@ -35,46 +35,77 @@ export function EnrollmentManageHeader({ enrollment, activeSection }: Props) {
         >
           Enrollments
         </Link>
-        <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden="true" />
+        <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
         <span className="font-medium text-slate-700">
           {enrollment.enrollmentNumber}
         </span>
-        <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden="true" />
-        <span className="text-[#102A56]">Management</span>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+        <span className="font-medium text-[#102A56]">Management</span>
         {activeSection ? (
           <>
-            <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden="true" />
+            <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
             <span className="font-medium text-slate-700">{activeSection}</span>
           </>
         ) : null}
       </nav>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="truncate text-2xl font-bold tracking-tight text-[#102A56]">
-            {studentName || "Enrollment"}
-          </h1>
-          <p className="mt-1.5 text-sm leading-6 text-slate-500">
-            {[
-              enrollment.enrollmentNumber,
-              enrollment.branch?.branchName,
-              enrollment.batch?.name,
-              formatEnrollmentOverviewContextLabel(enrollment),
-              enrollment.course?.title,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <EnrollmentStatusBadge status={enrollment.status} />
-            <PaymentStatusBadge status={enrollment.paymentStatus} />
-          </div>
-          {isHistorical ? (
-            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-              This enrollment is historical and read-only. Create a new
-              enrollment to place the student in another batch.
+      <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
+        <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-start gap-2">
+              <h1 className="min-w-0 text-xl font-bold tracking-tight text-[#102A56] sm:text-2xl">
+                {studentName || "Enrollment"}
+              </h1>
+              <EnrollmentStatusBadge status={enrollment.status} />
+              <PaymentStatusBadge status={enrollment.paymentStatus} />
+            </div>
+
+            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/60 px-3 py-2">
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
+                  Enrollment Number
+                </dt>
+                <dd className="mt-0.5 font-mono text-sm font-medium text-[#102A56]">
+                  {enrollment.enrollmentNumber}
+                </dd>
+              </div>
+              <div className="rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/60 px-3 py-2">
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
+                  Branch
+                </dt>
+                <dd className="mt-0.5 text-sm font-medium text-[#102A56]">
+                  {enrollment.branch?.branchName ?? "—"}
+                </dd>
+              </div>
+              <div className="rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/60 px-3 py-2">
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
+                  Batch
+                </dt>
+                <dd className="mt-0.5 text-sm font-medium text-[#102A56]">
+                  {enrollment.batch?.name ?? "—"}
+                </dd>
+              </div>
+              <div className="rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/60 px-3 py-2">
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
+                  Course
+                </dt>
+                <dd className="mt-0.5 truncate text-sm font-medium text-[#102A56]">
+                  {enrollment.course?.title ?? "—"}
+                </dd>
+              </div>
+            </dl>
+
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              {formatEnrollmentOverviewContextLabel(enrollment)}
             </p>
-          ) : null}
+
+            {isHistorical ? (
+              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                This enrollment is historical and read-only. Create a new
+                enrollment to place the student in another batch.
+              </p>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>

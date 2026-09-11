@@ -58,8 +58,12 @@ export function EnrollmentManageStudentPanel({ enrollment }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      <StudentOverviewInformation student={student} />
+    <div className="space-y-4">
+      <StudentOverviewInformation
+        student={student}
+        infoGridClassName="sm:grid-cols-2 lg:grid-cols-3"
+        sectionGridClassName="sm:grid-cols-2 lg:grid-cols-3"
+      />
       <StudentManageDocumentsPanel student={student} />
     </div>
   );

@@ -25,6 +25,38 @@ import { cn } from "@/src/shared/lib/cn";
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+function AttendanceCalendarLegend() {
+  return (
+    <div>
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
+        Legend
+      </p>
+      <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600">
+        <li className="flex items-center gap-2">
+          <span className="h-4 w-4 rounded-md bg-emerald-100 ring-1 ring-emerald-200" />
+          Present / Working Day
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="h-4 w-4 rounded-md bg-red-100 ring-1 ring-red-200" />
+          Absent
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="h-4 w-4 rounded-md bg-amber-100 ring-1 ring-amber-200" />
+          Late / Holiday
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="h-4 w-4 rounded-md bg-violet-50 ring-1 ring-violet-200" />
+          Sunday
+        </li>
+        <li className="flex items-center gap-2">
+          <span className="h-4 w-4 rounded-md bg-slate-100 ring-1 ring-slate-200" />
+          Non-Working / Future / Outside Period
+        </li>
+      </ul>
+    </div>
+  );
+}
+
 interface Props {
   data: EnrollmentAttendanceDetail;
   monthKey: string;
@@ -108,6 +140,8 @@ export function AttendanceCalendarView({
           </button>
         ) : null}
       </div>
+
+      <AttendanceCalendarLegend />
 
       {loading ? (
         <p className="py-6 text-center text-sm text-slate-500">

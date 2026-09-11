@@ -1,5 +1,17 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  ClipboardList,
+  CreditCard,
+  GraduationCap,
+  LayoutDashboard,
+  Layers,
+  User,
+} from "lucide-react";
+
 import {
   Tabs,
   TabsContent,
@@ -27,14 +39,21 @@ interface Props {
   onEnrollmentRefresh?: () => Promise<void>;
 }
 
-const TAB_ITEMS: ReadonlyArray<[EnrollmentManageTabKey, string]> = [
-  ["overview", "Overview"],
-  ["student", "Student"],
-  ["course", "Course"],
-  ["batch", "Batch"],
-  ["payments", "Payments"],
-  ["attendance", "Attendance"],
-  ["progress", "Progress"],
+const TAB_CLASS =
+  "inline-flex items-center rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
+
+const TAB_ITEMS: ReadonlyArray<{
+  value: EnrollmentManageTabKey;
+  label: string;
+  icon: LucideIcon;
+}> = [
+  { value: "overview", label: "Overview", icon: LayoutDashboard },
+  { value: "student", label: "Student", icon: User },
+  { value: "course", label: "Course", icon: BookOpen },
+  { value: "batch", label: "Batch", icon: Layers },
+  { value: "payments", label: "Payments", icon: CreditCard },
+  { value: "attendance", label: "Attendance", icon: CalendarDays },
+  { value: "progress", label: "Progress", icon: ClipboardList },
 ];
 
 export function EnrollmentManageWorkspace({
@@ -51,12 +70,9 @@ export function EnrollmentManageWorkspace({
       }}
     >
       <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
-        {TAB_ITEMS.map(([value, label]) => (
-          <TabsTrigger
-            key={value}
-            value={value}
-            className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none"
-          >
+        {TAB_ITEMS.map(({ value, label, icon: Icon }) => (
+          <TabsTrigger key={value} value={value} className={TAB_CLASS}>
+            <Icon className="mr-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
             {label}
           </TabsTrigger>
         ))}

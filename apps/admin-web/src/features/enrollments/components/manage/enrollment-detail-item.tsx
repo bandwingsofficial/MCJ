@@ -8,9 +8,11 @@ export function EnrollmentDetailItem({
   value: string;
 }) {
   return (
-    <div>
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="mt-0.5 text-sm font-medium text-[#102A56]">{value}</p>
+    <div className="rounded-xl border border-[#E8F0FA] bg-white p-3 shadow-[0_1px_4px_rgba(16,42,86,0.04)]">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-medium text-[#102A56]">{value}</p>
     </div>
   );
 }
