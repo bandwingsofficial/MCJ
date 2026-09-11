@@ -13,8 +13,16 @@ import type {
   JobOnboardingStatusFilter,
   JobStatus,
 } from "@/src/features/jobs/types/job.types";
+import { isJobExpired } from "@/src/features/jobs/types/job.types";
 
 const SEARCH_DEBOUNCE_MS = 400;
+const CATALOG_EXPIRY_FETCH_LIMIT = 5000;
+
+export type JobCatalogExpiryMode = "exclude-expired" | "expired-only";
+
+export interface UseJobsOptions {
+  expiryMode?: JobCatalogExpiryMode;
+}
 
 function hasActiveJobFilters(filters: JobFilters): boolean {
   return Boolean((filters.search ?? "").trim() || filters.status);
@@ -44,6 +52,21 @@ function toCatalogQuery(filters: JobFilters, search: string): JobListQuery {
   return query;
 }
 
+function filterJobsByExpiry(
+  jobs: Job[],
+  expiryMode?: JobCatalogExpiryMode,
+): Job[] {
+  if (expiryMode === "exclude-expired") {
+    return jobs.filter((job) => !isJobExpired(job));
+  }
+
+  if (expiryMode === "expired-only") {
+    return jobs.filter((job) => isJobExpired(job));
+  }
+
+  return jobs;
+}
+
 function toOnboardingStatus(
   filter: JobOnboardingStatusFilter,
 ): JobStatus | undefined {
@@ -71,7 +94,8 @@ interface UseJobsReturn {
   refetch: () => Promise<void>;
 }
 
-export const useJobs = (): UseJobsReturn => {
+export const useJobs = (options?: UseJobsOptions): UseJobsReturn => {
+  const expiryMode = options?.expiryMode;
   const [jobs, setJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
   const [catalogTotal, setCatalogTotal] = useState(0);
@@ -137,19 +161,35 @@ export const useJobs = (): UseJobsReturn => {
         setIsFetching(true);
       }
 
-      const response = await jobService.getJobs(
-        toCatalogQuery(filters, debouncedSearch),
-      );
+      const query = toCatalogQuery(filters, debouncedSearch);
+
+      if (expiryMode) {
+        query.skip = 0;
+        query.take = CATALOG_EXPIRY_FETCH_LIMIT;
+      }
+
+      const response = await jobService.getJobs(query);
 
       if (requestId !== requestIdRef.current) {
         return;
       }
 
-      setJobs(response.items);
-      setTotal(response.total);
+      const filteredItems = filterJobsByExpiry(response.items, expiryMode);
+
+      if (expiryMode) {
+        const page = filters.page ?? 1;
+        const pageSize = filters.pageSize ?? DEFAULT_JOB_PAGE_SIZE;
+        const start = (page - 1) * pageSize;
+
+        setJobs(filteredItems.slice(start, start + pageSize));
+        setTotal(filteredItems.length);
+      } else {
+        setJobs(filteredItems);
+        setTotal(response.total);
+      }
 
       if (!hasActiveJobFilters({ ...filters, search: debouncedSearch })) {
-        setCatalogTotal(response.total);
+        setCatalogTotal(expiryMode ? filteredItems.length : response.total);
       }
 
       setError(null);
@@ -166,7 +206,7 @@ export const useJobs = (): UseJobsReturn => {
         setIsFetching(false);
       }
     }
-  }, [debouncedSearch, filters]);
+  }, [debouncedSearch, expiryMode, filters]);
 
   useEffect(() => {
     void fetchJobs();

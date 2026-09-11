@@ -130,6 +130,11 @@ const menu = [
         path: "/jobs",
       },
       {
+        name: "Job Applications",
+        icon: ClipboardList,
+        path: "/job-applications",
+      },
+      {
         name: "Placements",
         icon: FileText,
         path: "/placements",

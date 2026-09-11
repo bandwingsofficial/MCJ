@@ -1,26 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
-import { CategoryPagination } from "@/src/features/categories/components/category-pagination";
-import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { appToast } from "@/src/shared/components/ui/toast";
 
 import { JobDialog } from "@/src/features/jobs/components/JobDialog";
 import {
-  JobBulkActionsToolbar,
   type BulkJobAction,
 } from "@/src/features/jobs/components/job-bulk-actions-toolbar";
 import { JobSummaryHeader } from "@/src/features/jobs/components/job-summary-header";
 import type { JobsModuleTab } from "@/src/features/jobs/components/job-summary-header";
-import { JobTable } from "@/src/features/jobs/components/JobTable";
+import { JobsCatalogPanel } from "@/src/features/jobs/components/jobs-catalog-panel";
 import { JobViewDrawer } from "@/src/features/jobs/components/JobViewDrawer";
-import { JobsApplicationsPanel } from "@/src/features/jobs/components/JobsApplicationsPanel";
 import { JobsOnboardingPanel } from "@/src/features/jobs/components/JobsOnboardingPanel";
-import { DEFAULT_JOB_PAGE_SIZE } from "@/src/features/jobs/constants/job.constants";
 import { useBulkJobActions } from "@/src/features/jobs/hooks/use-bulk-job-actions";
 import { useJobOnboarding, useJobs } from "@/src/features/jobs/hooks/useJobs";
 import { jobService } from "@/src/features/jobs/services/job.service";
@@ -46,8 +41,8 @@ function resolveTab(value: string | null): JobsModuleTab {
     return "onboarding";
   }
 
-  if (value === "applications") {
-    return "applications";
+  if (value === "expired") {
+    return "expired";
   }
 
   return "jobs";
@@ -57,6 +52,14 @@ export function JobsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = resolveTab(searchParams.get("tab"));
+
+  const activeCatalog = useJobs({ expiryMode: "exclude-expired" });
+  const expiredCatalog = useJobs({ expiryMode: "expired-only" });
+  const onboarding = useJobOnboarding();
+  const applications = useJobApplications();
+
+  const catalog =
+    tab === "expired" ? expiredCatalog : activeCatalog;
 
   const {
     jobs,
@@ -68,10 +71,7 @@ export function JobsPage() {
     filters,
     setFilters,
     refetch,
-  } = useJobs();
-
-  const onboarding = useJobOnboarding();
-  const applications = useJobApplications();
+  } = catalog;
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkConfirmAction, setBulkConfirmAction] =
@@ -99,24 +99,28 @@ export function JobsPage() {
   const bulkActionLoading = isBulkPending;
   const actionLoading = isActing || isSubmitting || bulkActionLoading;
 
-  const page = filters.page ?? 1;
-  const pageSize = filters.pageSize ?? DEFAULT_JOB_PAGE_SIZE;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
-  const to = Math.min(page * pageSize, total);
+  useEffect(() => {
+    if (searchParams.get("tab") === "applications") {
+      router.replace("/job-applications");
+    }
+  }, [router, searchParams]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [tab, filters.page, filters.pageSize, filters.status, filters.search]);
 
   const headerLoading =
-    tab === "jobs"
+    tab === "jobs" || tab === "expired"
       ? isInitialLoading
-      : tab === "onboarding"
-        ? onboarding.isInitialLoading
-        : applications.isInitialLoading;
+      : onboarding.isInitialLoading;
+
   const headerSearch =
-    tab === "jobs"
-      ? filters.search
-      : tab === "onboarding"
-        ? onboarding.filters.search
-        : applications.filters.search;
+    tab === "onboarding"
+      ? onboarding.filters.search
+      : filters.search;
+
+  const headerTotal =
+    tab === "expired" ? expiredCatalog.catalogTotal : activeCatalog.catalogTotal;
 
   const confirmCopy = useMemo(() => {
     switch (confirmAction) {
@@ -222,9 +226,9 @@ export function JobsPage() {
     }
   }, [bulkConfirmAction, eligibleBulkIds.length]);
 
-  useEffect(() => {
-    setSelectedIds([]);
-  }, [filters.page, filters.pageSize, filters.status, filters.search]);
+  const refreshCatalogs = async () => {
+    await Promise.all([activeCatalog.refetch(), expiredCatalog.refetch()]);
+  };
 
   const handleBulkConfirm = async () => {
     if (!bulkConfirmAction || eligibleBulkIds.length === 0) {
@@ -310,7 +314,7 @@ export function JobsPage() {
     if (result) {
       setSelectedIds([]);
       setBulkConfirmAction(null);
-      await refetch();
+      await refreshCatalogs();
     }
   };
 
@@ -320,8 +324,8 @@ export function JobsPage() {
       return;
     }
 
-    if (nextTab === "applications") {
-      router.replace("/jobs?tab=applications");
+    if (nextTab === "expired") {
+      router.replace("/jobs?tab=expired");
       return;
     }
 
@@ -352,7 +356,7 @@ export function JobsPage() {
 
       setConfirmAction(null);
       setSelectedJob(undefined);
-      await refetch();
+      await refreshCatalogs();
     } catch (err) {
       appToast.error(err instanceof Error ? err.message : "Action failed.");
     } finally {
@@ -393,7 +397,7 @@ export function JobsPage() {
 
       setDialogOpen(false);
       setEditingJob(undefined);
-      await refetch();
+      await refreshCatalogs();
     } catch (err) {
       appToast.error(
         err instanceof Error ? err.message : "Unable to save job.",
@@ -403,14 +407,51 @@ export function JobsPage() {
     }
   };
 
+  const catalogPanelProps = {
+    jobs,
+    total,
+    isInitialLoading,
+    isFetching,
+    error,
+    filters,
+    setFilters,
+    refetch,
+    selectedIds,
+    onSelectionChange: setSelectedIds,
+    actionLoading,
+    onBulkAction: setBulkConfirmAction,
+    onView: setViewJob,
+    onEdit: (job: Job) => {
+      setDialogMode("edit");
+      setEditingJob(job);
+      setDialogOpen(true);
+    },
+    onActivate: (job: Job) => {
+      setSelectedJob(job);
+      setConfirmAction("activate");
+    },
+    onDeactivate: (job: Job) => {
+      setSelectedJob(job);
+      setConfirmAction("deactivate");
+    },
+    onArchive: (job: Job) => {
+      setSelectedJob(job);
+      setConfirmAction("archive");
+    },
+    onRestore: (job: Job) => {
+      setSelectedJob(job);
+      setConfirmAction("restore");
+    },
+  };
+
   return (
     <div className="space-y-3">
       <JobSummaryHeader
         tab={tab}
         onTabChange={setTab}
-        total={catalogTotal}
+        total={headerTotal}
         pendingOnboardingCount={onboarding.pendingCount}
-        pendingApplicationCount={applications.pendingCount}
+        expiredCount={expiredCatalog.catalogTotal}
         isLoading={headerLoading}
         createDisabled={actionLoading}
         onCreate={() => {
@@ -436,15 +477,12 @@ export function JobsPage() {
             return;
           }
 
-          if (tab === "applications") {
-            applications.setFilters({ ...applications.filters, search });
-            return;
-          }
-
-          setFilters({ ...filters, search });
+          setFilters({ ...filters, search, page: 1 });
         }}
         jobStatus={filters.status}
-        onJobStatusChange={(status) => setFilters({ ...filters, status })}
+        onJobStatusChange={(status) =>
+          setFilters({ ...filters, status, page: 1 })
+        }
         onboardingStatus={onboarding.filters.status}
         onOnboardingStatusChange={(status) =>
           onboarding.setFilters({ ...onboarding.filters, status })
@@ -473,13 +511,9 @@ export function JobsPage() {
             ? "application is"
             : "applications are"}{" "}
           pending review.{" "}
-          <button
-            type="button"
-            className="font-semibold underline"
-            onClick={() => setTab("applications")}
-          >
+          <Link href="/job-applications" className="font-semibold underline">
             Review
-          </button>
+          </Link>
         </div>
       ) : null}
 
@@ -493,123 +527,12 @@ export function JobsPage() {
           filters={onboarding.filters}
           setFilters={onboarding.setFilters}
           refetch={onboarding.refetch}
-          onCatalogRefresh={refetch}
+          onCatalogRefresh={refreshCatalogs}
           actionsDisabled={isActing || isSubmitting}
         />
-      ) : tab === "applications" ? (
-        <JobsApplicationsPanel
-          applications={applications.jobApplications}
-          total={applications.total}
-          statusCounts={applications.statusCounts}
-          isInitialLoading={applications.isInitialLoading}
-          isFetching={applications.isFetching}
-          error={applications.error}
-          filters={applications.filters}
-          setFilters={applications.setFilters}
-          refetch={applications.refetch}
-          actionsDisabled={isActing}
-        />
-      ) : (
-          <Card className="overflow-hidden rounded-xl border-[#E1EBF5] p-0 shadow-sm">
-            {isInitialLoading ? (
-              <SkeletonTable rows={8} />
-            ) : (
-              <>
-                <JobBulkActionsToolbar
-                  jobs={jobs}
-                  selectedJobIds={selectedIds}
-                  disabled={actionLoading || isFetching}
-                  onAction={setBulkConfirmAction}
-                />
-
-                {error ? (
-                  <div className="border-b border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
-                    {error}{" "}
-                    <button
-                      type="button"
-                      className="font-medium underline"
-                      onClick={() => {
-                        void refetch();
-                      }}
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ) : null}
-
-                <div aria-busy={isFetching} className="relative">
-                  {isFetching ? (
-                    <span className="sr-only">Updating jobs</span>
-                  ) : null}
-                  <JobTable
-                    jobs={jobs}
-                    selectedJobIds={selectedIds}
-                    onSelectionChange={setSelectedIds}
-                    actionsDisabled={actionLoading || isFetching}
-                    selectionDisabled={actionLoading || isFetching}
-                    onView={setViewJob}
-                    onEdit={(job) => {
-                      setDialogMode("edit");
-                      setEditingJob(job);
-                      setDialogOpen(true);
-                    }}
-                    onActivate={(job) => {
-                      setSelectedJob(job);
-                      setConfirmAction("activate");
-                    }}
-                    onDeactivate={(job) => {
-                      setSelectedJob(job);
-                      setConfirmAction("deactivate");
-                    }}
-                    onArchive={(job) => {
-                      setSelectedJob(job);
-                      setConfirmAction("archive");
-                    }}
-                    onRestore={(job) => {
-                      setSelectedJob(job);
-                      setConfirmAction("restore");
-                    }}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5 border-t border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#647A9B] sm:text-sm">
-                    <span>
-                      Showing {from}–{to} of {total}
-                    </span>
-                    <label className="flex items-center gap-1.5">
-                      <span className="whitespace-nowrap">Rows per page</span>
-                      <select
-                        className="h-7 rounded-md border border-[#DCE8F5] bg-white px-1.5 text-xs text-[#102A56] sm:text-sm"
-                        value={pageSize}
-                        disabled={actionLoading}
-                        onChange={(event) =>
-                          setFilters({
-                            ...filters,
-                            pageSize: Number(event.target.value),
-                          })
-                        }
-                      >
-                        {[10, 20, 50, 100].map((size) => (
-                          <option key={size} value={size}>
-                            {size}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                  <CategoryPagination
-                    page={page}
-                    totalPages={totalPages}
-                    onPageChange={(nextPage) =>
-                      setFilters({ ...filters, page: nextPage })
-                    }
-                  />
-                </div>
-              </>
-            )}
-          </Card>
-      )}
+      ) : tab === "jobs" || tab === "expired" ? (
+        <JobsCatalogPanel {...catalogPanelProps} />
+      ) : null}
 
       <JobDialog
         open={dialogOpen}

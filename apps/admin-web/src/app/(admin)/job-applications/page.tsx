@@ -1,5 +1,11 @@
-import { redirect } from "next/navigation";
+import { Suspense } from "react";
 
-export default function Page() {
-  redirect("/jobs?tab=applications");
+import { JobApplicationsPage } from "@/src/features/job-applications/pages/job-applications-page";
+
+export default function JobApplicationsRoutePage() {
+  return (
+    <Suspense fallback={null}>
+      <JobApplicationsPage />
+    </Suspense>
+  );
 }

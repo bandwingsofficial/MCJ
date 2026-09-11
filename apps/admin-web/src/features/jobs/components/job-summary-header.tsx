@@ -22,14 +22,14 @@ import type {
   JobOnboardingStatusFilter,
 } from "@/src/features/jobs/types/job.types";
 
-export type JobsModuleTab = "jobs" | "onboarding" | "applications";
+export type JobsModuleTab = "jobs" | "onboarding" | "expired";
 
 interface JobSummaryHeaderProps {
   tab: JobsModuleTab;
   onTabChange: (tab: JobsModuleTab) => void;
   total: number;
   pendingOnboardingCount?: number;
-  pendingApplicationCount?: number;
+  expiredCount?: number;
   isLoading?: boolean;
   onCreate: () => void;
   onCopyOnboardingLink?: () => void;
@@ -47,7 +47,7 @@ export function JobSummaryHeader({
   onTabChange,
   total,
   pendingOnboardingCount = 0,
-  pendingApplicationCount = 0,
+  expiredCount = 0,
   isLoading = false,
   onCreate,
   onCopyOnboardingLink,
@@ -61,13 +61,13 @@ export function JobSummaryHeader({
 }: JobSummaryHeaderProps) {
   const isJobs = tab === "jobs";
   const isOnboarding = tab === "onboarding";
+  const isExpired = tab === "expired";
 
-  const searchPlaceholder =
-    isJobs
-      ? "Search jobs..."
-      : isOnboarding
-        ? "Search submissions..."
-        : "Search applications...";
+  const searchPlaceholder = isJobs
+    ? "Search jobs..."
+    : isOnboarding
+      ? "Search submissions..."
+      : "Search expired jobs...";
 
   return (
     <header className="space-y-2.5 px-1 py-1">
@@ -115,7 +115,7 @@ export function JobSummaryHeader({
               <Skeleton className="h-9 w-full rounded-lg sm:w-[280px]" />
               {!isJobs && isOnboarding ? (
                 <Skeleton className="h-9 w-full rounded-lg sm:w-[140px]" />
-              ) : isJobs ? (
+              ) : isJobs || isExpired ? (
                 <Skeleton className="h-9 w-full rounded-lg sm:w-[140px]" />
               ) : null}
               {isJobs ? (
@@ -127,7 +127,7 @@ export function JobSummaryHeader({
           ) : (
             <>
               <div
-                className={`w-full ${isJobs || isOnboarding ? "sm:w-[280px]" : "sm:max-w-xl"}`}
+                className={`w-full ${isJobs || isOnboarding || isExpired ? "sm:w-[280px]" : "sm:max-w-xl"}`}
               >
                 <SearchInput
                   value={search}
@@ -137,7 +137,7 @@ export function JobSummaryHeader({
                 />
               </div>
 
-              {isJobs ? (
+              {isJobs || isExpired ? (
                 <div className="w-full sm:w-[140px]">
                   <AppSelect
                     value={jobStatus ?? "ALL"}
@@ -218,13 +218,13 @@ export function JobSummaryHeader({
             ) : null}
           </TabsTrigger>
           <TabsTrigger
-            value="applications"
+            value="expired"
             className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none"
           >
-            Applications
-            {pendingApplicationCount > 0 ? (
-              <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
-                {pendingApplicationCount}
+            Expired
+            {expiredCount > 0 ? (
+              <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700">
+                {expiredCount}
               </span>
             ) : null}
           </TabsTrigger>

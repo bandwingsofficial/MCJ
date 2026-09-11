@@ -22,7 +22,7 @@ import type {
 } from "@/src/features/job-applications/types/job-application.types";
 import { getEmptyApplicationsMessage } from "@/src/features/job-applications/utils/job-application-display.utils";
 
-interface JobsApplicationsPanelProps {
+interface JobApplicationsWorkspaceProps {
   applications: JobApplication[];
   total: number;
   statusCounts: ApplicationStatusCounts;
@@ -35,7 +35,7 @@ interface JobsApplicationsPanelProps {
   actionsDisabled?: boolean;
 }
 
-export function JobsApplicationsPanel({
+export function JobApplicationsWorkspace({
   applications,
   total,
   statusCounts,
@@ -46,7 +46,7 @@ export function JobsApplicationsPanel({
   setFilters,
   refetch,
   actionsDisabled = false,
-}: JobsApplicationsPanelProps) {
+}: JobApplicationsWorkspaceProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedApplication, setSelectedApplication] =
     useState<JobApplication | null>(null);

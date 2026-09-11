@@ -9,6 +9,7 @@ export * from "./components/JobApplicationSkeleton";
 export * from "./components/JobApplicationStatusBadge";
 export * from "./components/JobApplicationStatusDialog";
 export * from "./components/JobApplicationTable";
+export * from "./components/JobApplicationsWorkspace";
 
 export * from "./constants/job-application.constants";
 

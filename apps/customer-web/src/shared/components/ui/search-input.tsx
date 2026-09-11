@@ -6,15 +6,15 @@ import { Input } from "@/src/shared/components/ui/input";
 
 interface SearchInputProps {
   value: string;
-
   placeholder?: string;
-
+  className?: string;
   onChange: (value: string) => void;
 }
 
 export function SearchInput({
   value,
   placeholder = "Search...",
+  className,
   onChange,
 }: SearchInputProps) {
   return (
@@ -26,7 +26,7 @@ export function SearchInput({
       <Input
         value={value}
         placeholder={placeholder}
-        className="pl-10"
+        className={className ?? "pl-10"}
         onChange={(e) =>
           onChange(e.target.value)
         }
