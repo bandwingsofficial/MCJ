@@ -1,4 +1,4 @@
-import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-status.enum';
+import { isValidLearningEnrollmentStatus } from '@modules/enrollment/domain/learning-enrollment-access';
 import type { EnrollmentRepository } from '@modules/enrollment/domain/repositories/enrollment.repository';
 
 import { CourseAccessService } from '../../domain/services/course-access.service';
@@ -24,9 +24,8 @@ export class ListStudentCoursesHandler {
       await this.enrollmentRepo.findDetailsByStudentId(student.id);
 
     return enrollments
-      .filter(
-        (enrollment) =>
-          enrollment.status === EnrollmentStatus.ADMITTED,
+      .filter((enrollment) =>
+        isValidLearningEnrollmentStatus(enrollment.status),
       )
       .map(
         (enrollment) =>

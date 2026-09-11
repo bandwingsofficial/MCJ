@@ -96,7 +96,9 @@ export class PublicStudentController {
 
     return {
       success: true,
-      message: 'Student profile fetched successfully',
+      message: result
+        ? 'Student profile fetched successfully'
+        : 'No student profile',
       data: result,
     };
   }

@@ -1,5 +1,6 @@
 import type { Student } from '../../domain/entities/student.entity';
 import { StudentGender } from '../../domain/enums/student-gender.enum';
+import { StudentJobStatus } from '../../domain/enums/student-job-status.enum';
 import { StudentStatus } from '../../domain/enums/student-status.enum';
 
 export class GetMyStudentResult {
@@ -28,6 +29,7 @@ export class GetMyStudentResult {
     public readonly emergencyContactPhone: string | null,
     public readonly notes: string | null,
     public readonly status: StudentStatus,
+    public readonly jobStatus: StudentJobStatus | null,
     public readonly isActive: boolean,
   ) {}
 
@@ -57,6 +59,7 @@ export class GetMyStudentResult {
       student.emergencyContactPhone.getValue(),
       student.notes,
       student.status,
+      student.jobStatus,
       student.isActive,
     );
   }

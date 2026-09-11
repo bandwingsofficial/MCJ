@@ -116,26 +116,27 @@ export class CreateStudentHandler {
   }
 
   /**
-   * Admin-created students need their own User row (1:1 Student.userId).
-   * Never reuse the admin's userId — that caused unique-constraint 500s.
+   * Admin-created students need a User row (Student.userId is required),
+   * but must NOT occupy the student's real email/phone on User.
+   * Those remain on Student so the person can later register on
+   * customer-web with the same email and be linked by identity match.
    */
   private async createLinkedUserAccount(
     command: CreateStudentCommand,
   ): Promise<string> {
-    const userId = randomUUID();
-    const displayName = [command.firstName, command.lastName]
-      .filter(Boolean)
-      .join(' ')
-      .trim();
     const email =
-      command.email?.trim().toLowerCase() ||
-      `student-${userId.replace(/-/g, '')}@students.local`;
-    const phone = command.phone?.replace(/[\s-]/g, '').trim() || null;
+      command.email?.trim().toLowerCase() || null;
 
-    if (command.email?.trim()) {
+    if (email) {
       const existingEmail = await this.prisma.user.findFirst({
-        where: { email, deletedAt: null },
-        select: { id: true, role: true },
+        where: {
+          email: {
+            equals: email,
+            mode: 'insensitive',
+          },
+          deletedAt: null,
+        },
+        select: { id: true },
       });
 
       if (existingEmail) {
@@ -144,48 +145,25 @@ export class CreateStudentHandler {
           true,
         );
 
-        if (!linkedStudent && existingEmail.role === Role.STUDENT) {
+        if (!linkedStudent) {
           return existingEmail.id;
         }
 
         throw new BaseException(
           ERROR_CODES.STUDENT_EMAIL_EXISTS,
-          linkedStudent
-            ? 'A student with this email already exists. Use a different email address.'
-            : 'This email address is already registered. Use a different email address.',
+          'A student with this email already exists. Use a different email address.',
           409,
           { field: 'email' },
         );
       }
     }
 
-    if (phone) {
-      const existingPhone = await this.prisma.user.findFirst({
-        where: { phone, deletedAt: null },
-        select: { id: true, role: true },
-      });
-
-      if (existingPhone) {
-        const linkedStudent = await this.studentRepo.findByUserId(
-          existingPhone.id,
-          true,
-        );
-
-        if (!linkedStudent && existingPhone.role === Role.STUDENT) {
-          return existingPhone.id;
-        }
-
-        throw new BaseException(
-          ERROR_CODES.STUDENT_PHONE_EXISTS,
-          linkedStudent
-            ? 'A student with this phone number already exists. Use a different phone number.'
-            : 'This phone number is already registered. Use a different phone number.',
-          409,
-          { field: 'phone' },
-        );
-      }
-    }
-
+    const userId = randomUUID();
+    const displayName = [command.firstName, command.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const placeholderEmail = `student-${userId.replace(/-/g, '')}@students.local`;
     const passwordHash = await this.passwordHasher.hash(
       randomBytes(32).toString('hex'),
     );
@@ -195,34 +173,22 @@ export class CreateStudentHandler {
         data: {
           id: userId,
           name: displayName || 'Student',
-          email,
-          phone,
+          email: placeholderEmail,
+          phone: null,
           passwordHash,
           role: Role.STUDENT,
         },
       });
     } catch (error) {
-      // Unique races on User email/phone
       if (
         error &&
         typeof error === 'object' &&
         'code' in error &&
         (error as { code?: string }).code === 'P2002'
       ) {
-        const target = String(
-          (error as { meta?: { target?: unknown } }).meta?.target ?? '',
-        ).toLowerCase();
-        if (target.includes('phone')) {
-          throw new BaseException(
-            ERROR_CODES.STUDENT_PHONE_EXISTS,
-            'This phone number is already registered. Use a different phone number.',
-            409,
-            { field: 'phone' },
-          );
-        }
         throw new BaseException(
           ERROR_CODES.STUDENT_EMAIL_EXISTS,
-          'This email address is already registered. Use a different email address.',
+          'A student with this email already exists. Use a different email address.',
           409,
           { field: 'email' },
         );

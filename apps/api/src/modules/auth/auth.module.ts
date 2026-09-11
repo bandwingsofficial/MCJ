@@ -227,7 +227,14 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
         userRepo: UserRepository,
         auditRepo: AuditLogRepository,
         passwordHasher: PasswordHasherPort,
-      ) => new RegisterUserHandler(userRepo, auditRepo, passwordHasher),
+        prisma: PrismaService,
+      ) =>
+        new RegisterUserHandler(
+          userRepo,
+          auditRepo,
+          passwordHasher,
+          prisma,
+        ),
 
       inject: [
         AUTH_TOKENS.USER_REPOSITORY,
@@ -235,6 +242,8 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
         AUTH_TOKENS.AUDIT_LOG_REPOSITORY,
 
         AUTH_TOKENS.PASSWORD_HASHER,
+
+        PrismaService,
       ],
     },
 

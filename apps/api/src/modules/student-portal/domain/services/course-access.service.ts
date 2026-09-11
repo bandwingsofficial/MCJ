@@ -1,7 +1,8 @@
-import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-status.enum';
+import { isValidLearningEnrollmentStatus } from '@modules/enrollment/domain/learning-enrollment-access';
 import type { EnrollmentDetailView } from '@modules/enrollment/domain/repositories/enrollment.repository';
 import type { EnrollmentRepository } from '@modules/enrollment/domain/repositories/enrollment.repository';
 import type { Student } from '@modules/student/domain/entities/student.entity';
+import { StudentStatus } from '@modules/student/domain/enums/student-status.enum';
 import { ResolveAuthenticatedStudentService } from '@modules/student/domain/services/resolve-authenticated-student.service';
 
 import { CourseAccessDeniedException } from '../errors/course-access.exception';
@@ -56,16 +57,14 @@ export class CourseAccessService {
       return { isEnrolled: false, isAdmitted: false };
     }
 
-    const admitted = courseEnrollments.some(
-      (enrollment) =>
-        enrollment.status === EnrollmentStatus.ADMITTED ||
-        enrollment.status === EnrollmentStatus.ACTIVE ||
-        enrollment.status === EnrollmentStatus.COMPLETED,
+    const admitted = courseEnrollments.some((enrollment) =>
+      isValidLearningEnrollmentStatus(enrollment.status),
     );
 
     return {
       isEnrolled: admitted,
-      isAdmitted: admitted,
+      isAdmitted:
+        admitted && student.status === StudentStatus.ADMITTED,
     };
   }
 
@@ -74,6 +73,11 @@ export class CourseAccessService {
     courseId: string,
   ): Promise<EnrollmentDetailView> {
     const student = await this.resolveStudentFromUserId(userId);
+
+    if (student.status !== StudentStatus.ADMITTED) {
+      throw new CourseAccessDeniedException();
+    }
+
     const enrollment =
       await this.enrollmentRepo.findAdmittedByStudentAndCourse(
         student.id,

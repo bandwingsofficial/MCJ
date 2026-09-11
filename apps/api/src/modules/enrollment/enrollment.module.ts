@@ -29,6 +29,7 @@ import { PaymentDomainService } from '../payment/domain/services/payment-domain.
 import { STUDENT_TOKENS } from '../student/student.tokens';
 import { StudentModule } from '../student/student.module';
 import type { StudentRepository } from '../student/domain/repositories/student.repository';
+import { ResolveAuthenticatedStudentService } from '../student/domain/services/resolve-authenticated-student.service';
 import { ENROLLMENT_TOKENS } from './enrollment.tokens';
 import { ApproveEnrollmentHandler } from './application/approve-enrollment/approve-enrollment.handler';
 import { CreateEnrollmentHandler } from './application/create-enrollment/create-enrollment.handler';
@@ -177,6 +178,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         courseRepo: CourseRepository,
         batchRepo: BatchRepository,
         domainService: EnrollmentDomainService,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
       ) =>
         new CreatePublicEnrollmentHandler(
           enrollmentRepo,
@@ -186,6 +188,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
           courseRepo,
           batchRepo,
           domainService,
+          resolveAuthenticatedStudent,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
@@ -195,6 +198,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         COURSE_TOKENS.COURSE_REPOSITORY,
         BATCH_TOKENS.BATCH_REPOSITORY,
         EnrollmentDomainService,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
       ],
     },
 
@@ -280,12 +284,15 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
       provide: GetMyEnrollmentHandler,
       useFactory: (
         enrollmentRepo: EnrollmentRepository,
-        studentRepo: StudentRepository,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
       ) =>
-        new GetMyEnrollmentHandler(enrollmentRepo, studentRepo),
+        new GetMyEnrollmentHandler(
+          enrollmentRepo,
+          resolveAuthenticatedStudent,
+        ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
-        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
       ],
     },
 
@@ -293,17 +300,17 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
       provide: GetMyEnrollmentByIdHandler,
       useFactory: (
         enrollmentRepo: EnrollmentRepository,
-        studentRepo: StudentRepository,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
         domainService: EnrollmentDomainService,
       ) =>
         new GetMyEnrollmentByIdHandler(
           enrollmentRepo,
-          studentRepo,
+          resolveAuthenticatedStudent,
           domainService,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
-        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
         EnrollmentDomainService,
       ],
     },

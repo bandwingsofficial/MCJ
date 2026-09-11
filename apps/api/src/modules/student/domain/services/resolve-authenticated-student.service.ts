@@ -5,6 +5,8 @@ import { PrismaService } from '../../../../infrastructure/prisma/prisma.service'
 import type { Student } from '../entities/student.entity';
 import type { StudentRepository } from '../repositories/student.repository';
 
+const PLACEHOLDER_STUDENT_EMAIL_SUFFIX = '@students.local';
+
 @Injectable()
 export class ResolveAuthenticatedStudentService {
   private readonly logger = new Logger(
@@ -26,33 +28,47 @@ export class ResolveAuthenticatedStudentService {
       return linkedStudent;
     }
 
-    const normalizedEmail = await this.resolveEmail(userId, email);
+    const emails = await this.resolveLookupEmails(userId, email);
 
-    if (!normalizedEmail) {
-      return null;
+    for (const candidate of emails) {
+      const studentByEmail =
+        await this.studentRepo.findByEmail(candidate);
+
+      if (!studentByEmail) {
+        continue;
+      }
+
+      await this.syncUserRelationship(studentByEmail, userId);
+
+      return studentByEmail;
     }
 
-    const studentByEmail =
-      await this.studentRepo.findByEmail(normalizedEmail);
-
-    if (!studentByEmail) {
-      return null;
-    }
-
-    await this.syncUserRelationship(studentByEmail, userId);
-
-    return studentByEmail;
+    return null;
   }
 
-  private async resolveEmail(
+  private async resolveLookupEmails(
     userId: string,
     email?: string | null,
-  ): Promise<string | null> {
-    const fromPayload = this.normalizeEmail(email);
+  ): Promise<string[]> {
+    const emails: string[] = [];
+    const seen = new Set<string>();
 
-    if (fromPayload) {
-      return fromPayload;
-    }
+    const add = (value?: string | null) => {
+      const normalized = this.normalizeEmail(value);
+
+      if (
+        !normalized ||
+        seen.has(normalized) ||
+        normalized.endsWith(PLACEHOLDER_STUDENT_EMAIL_SUFFIX)
+      ) {
+        return;
+      }
+
+      seen.add(normalized);
+      emails.push(normalized);
+    };
+
+    add(email);
 
     const user = await this.prisma.user.findFirst({
       where: {
@@ -64,7 +80,9 @@ export class ResolveAuthenticatedStudentService {
       },
     });
 
-    return this.normalizeEmail(user?.email);
+    add(user?.email);
+
+    return emails;
   }
 
   private normalizeEmail(email?: string | null): string | null {

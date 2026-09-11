@@ -3,7 +3,7 @@ import { BaseException } from '@common/exceptions/base.exception';
 import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
 import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-status.enum';
 import type { EnrollmentRepository } from '@modules/enrollment/domain/repositories/enrollment.repository';
-import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
+import { ResolveAuthenticatedStudentService } from '@modules/student/domain/services/resolve-authenticated-student.service';
 
 import { CourseStatus } from '../../domain/enums/course-status.enum';
 import type { CourseRepository } from '../../domain/repositories/course.repository';
@@ -28,7 +28,7 @@ export class GetCourseBySlugHandler {
     private readonly branchRepo: BranchRepository,
     private readonly categoryRepo: CategoryRepository,
     private readonly hierarchyService: CourseHierarchyService,
-    private readonly studentRepo: StudentRepository,
+    private readonly resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
     private readonly enrollmentRepo: EnrollmentRepository,
   ) {}
 
@@ -122,7 +122,8 @@ export class GetCourseBySlugHandler {
       return { isEnrolled: null, isAdmitted: null };
     }
 
-    const student = await this.studentRepo.findByUserId(userId);
+    const student =
+      await this.resolveAuthenticatedStudent.findByAuthenticatedUser(userId);
 
     if (!student) {
       return { isEnrolled: false, isAdmitted: false };

@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 
-import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-status.enum';
+import { isValidLearningEnrollmentStatus } from '@modules/enrollment/domain/learning-enrollment-access';
 import type { EnrollmentRepository } from '@modules/enrollment/domain/repositories/enrollment.repository';
 import { StudentStatus } from '@modules/student/domain/enums/student-status.enum';
 import { ResolveAuthenticatedStudentService } from '@modules/student/domain/services/resolve-authenticated-student.service';
@@ -51,11 +51,11 @@ export class GetStudentPortalAccessHandler {
     }
 
     const enrollment =
-      enrollments.find(
-        (item) => item.status === EnrollmentStatus.ADMITTED,
+      enrollments.find((item) =>
+        isValidLearningEnrollmentStatus(item.status),
       ) ?? enrollments[0];
 
-    if (enrollment.status !== EnrollmentStatus.ADMITTED) {
+    if (!isValidLearningEnrollmentStatus(enrollment.status)) {
       throw new StudentPortalEnrollmentNotAdmittedException();
     }
 

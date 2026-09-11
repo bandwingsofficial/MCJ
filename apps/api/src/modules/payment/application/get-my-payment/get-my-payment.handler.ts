@@ -1,6 +1,6 @@
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
-import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
+import { ResolveAuthenticatedStudentService } from '@modules/student/domain/services/resolve-authenticated-student.service';
 
 import type { PaymentRepository } from '../../domain/repositories/payment.repository';
 import { PaymentDomainService } from '../../domain/services/payment-domain.service';
@@ -11,16 +11,17 @@ import { GetMyPaymentQuery } from './get-my-payment.query';
 export class GetMyPaymentHandler {
   constructor(
     private readonly paymentRepo: PaymentRepository,
-    private readonly studentRepo: StudentRepository,
+    private readonly resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
     private readonly domainService: PaymentDomainService,
   ) {}
 
   async execute(
     query: GetMyPaymentQuery,
   ): Promise<GetPaymentResult> {
-    const student = await this.studentRepo.findByCreatedBy(
-      query.userId,
-    );
+    const student =
+      await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
+        query.userId,
+      );
 
     if (!student) {
       throw new BaseException(

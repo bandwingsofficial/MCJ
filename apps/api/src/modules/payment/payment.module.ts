@@ -14,7 +14,7 @@ import { EnrollmentModule } from '../enrollment/enrollment.module';
 import type { EnrollmentRepository } from '../enrollment/domain/repositories/enrollment.repository';
 import { STUDENT_TOKENS } from '../student/student.tokens';
 import { StudentModule } from '../student/student.module';
-import type { StudentRepository } from '../student/domain/repositories/student.repository';
+import { ResolveAuthenticatedStudentService } from '../student/domain/services/resolve-authenticated-student.service';
 
 import { PAYMENT_TOKENS } from './payment.tokens';
 import { CreateManualPaymentHandler } from './application/create-manual-payment/create-manual-payment.handler';
@@ -78,21 +78,21 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
       useFactory: (
         paymentRepo: PaymentRepository,
         enrollmentRepo: EnrollmentRepository,
-        studentRepo: StudentRepository,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
         gateway: PaymentGatewayPort,
         domainService: PaymentDomainService,
       ) =>
         new CreatePaymentOrderHandler(
           paymentRepo,
           enrollmentRepo,
-          studentRepo,
+          resolveAuthenticatedStudent,
           gateway,
           domainService,
         ),
       inject: [
         PAYMENT_TOKENS.PAYMENT_REPOSITORY,
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
-        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
         PAYMENT_TOKENS.PAYMENT_GATEWAY,
         PaymentDomainService,
       ],
@@ -102,21 +102,21 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
       provide: VerifyPaymentHandler,
       useFactory: (
         paymentRepo: PaymentRepository,
-        studentRepo: StudentRepository,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
         gateway: PaymentGatewayPort,
         domainService: PaymentDomainService,
         enrollmentSync: PaymentEnrollmentSyncService,
       ) =>
         new VerifyPaymentHandler(
           paymentRepo,
-          studentRepo,
+          resolveAuthenticatedStudent,
           gateway,
           domainService,
           enrollmentSync,
         ),
       inject: [
         PAYMENT_TOKENS.PAYMENT_REPOSITORY,
-        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
         PAYMENT_TOKENS.PAYMENT_GATEWAY,
         PaymentDomainService,
         PaymentEnrollmentSyncService,
@@ -146,11 +146,15 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
       provide: GetMyPaymentsHandler,
       useFactory: (
         paymentRepo: PaymentRepository,
-        studentRepo: StudentRepository,
-      ) => new GetMyPaymentsHandler(paymentRepo, studentRepo),
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
+      ) =>
+        new GetMyPaymentsHandler(
+          paymentRepo,
+          resolveAuthenticatedStudent,
+        ),
       inject: [
         PAYMENT_TOKENS.PAYMENT_REPOSITORY,
-        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
       ],
     },
 
@@ -158,17 +162,17 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
       provide: GetMyPaymentHandler,
       useFactory: (
         paymentRepo: PaymentRepository,
-        studentRepo: StudentRepository,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
         domainService: PaymentDomainService,
       ) =>
         new GetMyPaymentHandler(
           paymentRepo,
-          studentRepo,
+          resolveAuthenticatedStudent,
           domainService,
         ),
       inject: [
         PAYMENT_TOKENS.PAYMENT_REPOSITORY,
-        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
         PaymentDomainService,
       ],
     },

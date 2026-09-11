@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
-import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
+import { ResolveAuthenticatedStudentService } from '@modules/student/domain/services/resolve-authenticated-student.service';
 
 import { PaymentAccessDeniedException } from '../../domain/errors/payment-business.exception';
 import { InvalidPaymentSignatureException } from '../../domain/errors/payment-business.exception';
@@ -21,7 +21,7 @@ export class VerifyPaymentHandler {
 
   constructor(
     private readonly paymentRepo: PaymentRepository,
-    private readonly studentRepo: StudentRepository,
+    private readonly resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
     private readonly gateway: PaymentGatewayPort,
     private readonly domainService: PaymentDomainService,
     private readonly enrollmentSync: PaymentEnrollmentSyncService,
@@ -30,9 +30,10 @@ export class VerifyPaymentHandler {
   async execute(
     command: VerifyPaymentCommand,
   ): Promise<GetPaymentResult> {
-    const student = await this.studentRepo.findByCreatedBy(
-      command.userId,
-    );
+    const student =
+      await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
+        command.userId,
+      );
 
     if (!student) {
       throw new BaseException(

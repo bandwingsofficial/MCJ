@@ -16,7 +16,7 @@ import { ENROLLMENT_TOKENS } from '../enrollment/enrollment.tokens';
 import type { EnrollmentRepository } from '../enrollment/domain/repositories/enrollment.repository';
 import { StudentModule } from '../student/student.module';
 import { STUDENT_TOKENS } from '../student/student.tokens';
-import type { StudentRepository } from '../student/domain/repositories/student.repository';
+import { ResolveAuthenticatedStudentService } from '../student/domain/services/resolve-authenticated-student.service';
 
 import { COURSE_TOKENS } from './course.tokens';
 import { BulkDeleteCoursesHandler } from './application/bulk-delete-courses/bulk-delete-courses.handler';
@@ -156,7 +156,7 @@ import { BranchModule } from '../branch/branch.module';
         branchRepo: BranchRepository,
         categoryRepo: CategoryRepository,
         hierarchyService: CourseHierarchyService,
-        studentRepo: StudentRepository,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
         enrollmentRepo: EnrollmentRepository,
       ) =>
         new GetCourseHandler(
@@ -165,7 +165,7 @@ import { BranchModule } from '../branch/branch.module';
           branchRepo,
           categoryRepo,
           hierarchyService,
-          studentRepo,
+          resolveAuthenticatedStudent,
           enrollmentRepo,
         ),
       inject: [
@@ -174,7 +174,7 @@ import { BranchModule } from '../branch/branch.module';
         BRANCH_TOKENS.BRANCH_REPOSITORY,
         CATEGORY_TOKENS.CATEGORY_REPOSITORY,
         CourseHierarchyService,
-        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
       ],
     },
@@ -187,7 +187,7 @@ import { BranchModule } from '../branch/branch.module';
         branchRepo: BranchRepository,
         categoryRepo: CategoryRepository,
         hierarchyService: CourseHierarchyService,
-        studentRepo: StudentRepository,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
         enrollmentRepo: EnrollmentRepository,
       ) =>
         new GetCourseBySlugHandler(
@@ -196,7 +196,7 @@ import { BranchModule } from '../branch/branch.module';
           branchRepo,
           categoryRepo,
           hierarchyService,
-          studentRepo,
+          resolveAuthenticatedStudent,
           enrollmentRepo,
         ),
       inject: [
@@ -205,7 +205,7 @@ import { BranchModule } from '../branch/branch.module';
         BRANCH_TOKENS.BRANCH_REPOSITORY,
         CATEGORY_TOKENS.CATEGORY_REPOSITORY,
         CourseHierarchyService,
-        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
       ],
     },

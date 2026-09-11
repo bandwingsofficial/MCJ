@@ -4,7 +4,7 @@ import { Logger } from '@nestjs/common';
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
 import type { EnrollmentRepository } from '@modules/enrollment/domain/repositories/enrollment.repository';
-import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
+import { ResolveAuthenticatedStudentService } from '@modules/student/domain/services/resolve-authenticated-student.service';
 
 import { Payment } from '../../domain/entities/payment.entity';
 import { PaymentGateway } from '../../domain/enums/payment-gateway.enum';
@@ -26,7 +26,7 @@ export class CreatePaymentOrderHandler {
   constructor(
     private readonly paymentRepo: PaymentRepository,
     private readonly enrollmentRepo: EnrollmentRepository,
-    private readonly studentRepo: StudentRepository,
+    private readonly resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
     private readonly gateway: PaymentGatewayPort,
     private readonly domainService: PaymentDomainService,
   ) {}
@@ -34,9 +34,10 @@ export class CreatePaymentOrderHandler {
   async execute(
     command: CreatePaymentOrderCommand,
   ): Promise<CreatePaymentOrderResult> {
-    const student = await this.studentRepo.findByCreatedBy(
-      command.userId,
-    );
+    const student =
+      await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
+        command.userId,
+      );
 
     if (!student) {
       throw new BaseException(

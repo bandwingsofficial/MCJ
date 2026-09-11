@@ -162,29 +162,29 @@ import { PublicStudentController } from './presentation/controllers/public-stude
       useFactory: (
         studentRepo: StudentRepository,
         domainService: StudentDomainService,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
       ) =>
         new SyncStudentFromProfileHandler(
           studentRepo,
           domainService,
+          resolveAuthenticatedStudent,
         ),
       inject: [
         STUDENT_TOKENS.STUDENT_REPOSITORY,
         StudentDomainService,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
       ],
     },
 
     {
       provide: GetMyStudentHandler,
       useFactory: (
-        domainService: StudentDomainService,
         resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
       ) =>
         new GetMyStudentHandler(
-          domainService,
           resolveAuthenticatedStudent,
         ),
       inject: [
-        StudentDomainService,
         STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
       ],
     },

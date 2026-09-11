@@ -6,15 +6,13 @@ import { StudentCourseCard } from "@/src/features/student-course/components/card
 import { CourseError } from "@/src/features/student-course/components/states/CourseError";
 import { CourseSkeleton } from "@/src/features/student-course/components/states/CourseSkeleton";
 import { EmptyCourses } from "@/src/features/student-course/components/states/EmptyCourses";
-
-const ACTIVE_STATUSES = new Set(["PENDING", "ADMITTED"]);
+import { isValidLearningEnrollmentStatus } from "@/src/features/student/services/student-access";
 
 export function StudentCoursesPage() {
   const { enrollments, isLoading, error, refetch } = useMyEnrollments();
 
-  const learningEnrollments = enrollments.filter(
-    (enrollment) =>
-      ACTIVE_STATUSES.has(enrollment.status) && enrollment.isActive,
+  const learningEnrollments = enrollments.filter((enrollment) =>
+    isValidLearningEnrollmentStatus(enrollment.status),
   );
 
   if (isLoading) {

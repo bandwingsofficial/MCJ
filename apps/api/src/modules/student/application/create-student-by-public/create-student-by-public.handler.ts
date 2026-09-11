@@ -80,11 +80,17 @@ export class CreateStudentByPublicHandler {
       );
     }
 
+    const personal = extractPersonalFieldsFromProfile(profile);
+
     const existingStudent =
-      await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
+      (await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
         userId,
         command.email,
-      );
+      )) ??
+      (await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
+        userId,
+        personal.email,
+      ));
 
     if (existingStudent) {
       return {
@@ -92,8 +98,6 @@ export class CreateStudentByPublicHandler {
         alreadyExists: true,
       };
     }
-
-    const personal = extractPersonalFieldsFromProfile(profile);
 
     await this.domainService.ensureEmailIsAvailable(
       this.studentRepo,

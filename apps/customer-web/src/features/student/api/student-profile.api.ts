@@ -12,7 +12,7 @@ import type {
 export const studentProfileApi = {
   getProfile() {
     return apiClient.get<
-      ApiResponse<StudentProfile>
+      ApiResponse<StudentProfile | null>
     >("/students/me");
   },
 

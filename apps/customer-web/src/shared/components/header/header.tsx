@@ -118,6 +118,10 @@ export function Header() {
 
         <nav className="hidden md:flex items-center gap-8 h-full">
           {navItems.map((item) => {
+            if (item.protected && !showMyCourses) {
+              return null;
+            }
+
             const isActive = pathname === item.href;
 
             return (

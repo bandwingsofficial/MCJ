@@ -8,6 +8,7 @@ import type { BranchRepository } from '@modules/branch/domain/repositories/branc
 import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
+import { ResolveAuthenticatedStudentService } from '@modules/student/domain/services/resolve-authenticated-student.service';
 
 import { Enrollment } from '../../domain/entities/enrollment.entity';
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
@@ -32,15 +33,17 @@ export class CreatePublicEnrollmentHandler {
     private readonly courseRepo: CourseRepository,
     private readonly batchRepo: BatchRepository,
     private readonly domainService: EnrollmentDomainService,
+    private readonly resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
   ) {}
 
   async execute(
     command: CreatePublicEnrollmentCommand,
   ): Promise<GetEnrollmentResult> {
     // The logged-in user already owns a Student profile; never create one.
-    const student = await this.studentRepo.findByCreatedBy(
-      command.userId,
-    );
+    const student =
+      await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
+        command.userId,
+      );
 
     if (!student) {
       throw new BaseException(

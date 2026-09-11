@@ -159,7 +159,9 @@ export class PrismaEnrollmentRepository
       where: {
         studentId,
         courseId,
-        status: 'ADMITTED',
+        status: {
+          in: ['ADMITTED', 'ACTIVE'],
+        },
         ...(includeDeleted ? {} : { isDeleted: false }),
       },
       include: enrollmentDetailInclude,

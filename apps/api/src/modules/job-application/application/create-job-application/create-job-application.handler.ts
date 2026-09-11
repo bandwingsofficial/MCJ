@@ -3,12 +3,12 @@ import { Logger } from '@nestjs/common';
 
 import type { JobRepository } from '@modules/job/domain/repositories/job.repository';
 import { JobDomainService } from '@modules/job/domain/services/job-domain.service';
-import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
 import { UploadDomainService } from '@modules/uploads/domain/services/upload-domain.service';
 
 import { JobApplication } from '../../domain/entities/job-application.entity';
 import type { JobApplicationRepository } from '../../domain/repositories/job-application.repository';
 import { JobApplicationDomainService } from '../../domain/services/job-application-domain.service';
+import { ResolveAuthenticatedStudentService } from '@modules/student/domain/services/resolve-authenticated-student.service';
 import { StudentPortalStudentNotFoundException } from '@modules/student-portal/domain/errors/student-portal-business.exception';
 
 import { GetJobApplicationResult } from '../get-job-application/get-job-application.result';
@@ -22,7 +22,7 @@ export class CreateJobApplicationHandler {
   constructor(
     private readonly applicationRepo: JobApplicationRepository,
     private readonly jobRepo: JobRepository,
-    private readonly studentRepo: StudentRepository,
+    private readonly resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
     private readonly jobDomainService: JobDomainService,
     private readonly domainService: JobApplicationDomainService,
     private readonly uploadDomainService: UploadDomainService,
@@ -37,10 +37,10 @@ export class CreateJobApplicationHandler {
 
     this.jobDomainService.ensureAcceptingApplications(job);
 
-    // Resolve authenticated User -> Student
-    const student = await this.studentRepo.findByUserId(
-      command.userId,
-    );
+    const student =
+      await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
+        command.userId,
+      );
 
     if (!student) {
       throw new StudentPortalStudentNotFoundException();

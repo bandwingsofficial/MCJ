@@ -52,6 +52,8 @@ export interface StudentProfile {
 
   status: string;
 
+  jobStatus: string | null;
+
   isActive: boolean;
 }
 

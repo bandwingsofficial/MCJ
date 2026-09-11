@@ -35,6 +35,8 @@ import {
 import { jobService } from "@/src/features/jobs/services/job.service";
 import type { Job } from "@/src/features/jobs/types/job.types";
 import { isJobAcceptingApplications } from "@/src/features/jobs/types/job.types";
+import { useStudentPortalNavigation } from "@/src/features/student/context/StudentPortalNavigationProvider";
+import type { StudentProfile } from "@/src/features/student/types";
 
 interface JobApplyPageProps {
   slug: string;
@@ -64,6 +66,41 @@ function useAuthSessionReady() {
   };
 }
 
+function toDateInputValue(value?: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  return value.slice(0, 10);
+}
+
+function buildJobApplicationPrefill(input: {
+  email?: string | null;
+  phone?: string | null;
+  studentProfile: StudentProfile | null;
+}): JobApplicationStudentFormValues {
+  const profile = input.studentProfile;
+
+  return {
+    firstName: profile?.firstName ?? "",
+    lastName: profile?.lastName ?? "",
+    email: profile?.email || input.email || "",
+    phone: profile?.phone || input.phone || "",
+    gender: profile?.gender ?? "MALE",
+    dateOfBirth: toDateInputValue(profile?.dateOfBirth),
+    addressLine1: profile?.addressLine1 ?? "",
+    addressLine2: profile?.addressLine2 ?? "",
+    city: profile?.city ?? "",
+    state: profile?.state ?? "",
+    country: profile?.country || "India",
+    postalCode: profile?.postalCode ?? "",
+    qualification: profile?.qualification ?? "",
+    collegeName: profile?.collegeName ?? "",
+    specialization: profile?.specialization ?? "",
+    passingYear: profile?.passingYear || new Date().getFullYear(),
+  };
+}
+
 function employmentLabel(type: string) {
   return type.replaceAll("_", " ");
 }
@@ -86,6 +123,8 @@ function salaryLabel(job: Job) {
 export function JobApplyPage({ slug }: JobApplyPageProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const { studentProfile, refetch: refetchStudentState } =
+    useStudentPortalNavigation();
   const { authReady, isAuthenticated } = useAuthSessionReady();
   const { job, isLoading, error, refetch } = useJob(slug);
   const [resume, setResume] = useState<File | null>(null);
@@ -108,43 +147,31 @@ export function JobApplyPage({ slug }: JobApplyPageProps) {
 
   const form = useForm<JobApplicationStudentFormValues>({
     resolver: zodResolver(jobApplicationStudentSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: user?.email ?? "",
-      phone: user?.phone ?? "",
-      gender: "MALE",
-      dateOfBirth: "",
-      addressLine1: "",
-      addressLine2: "",
-      city: "",
-      state: "",
-      country: "India",
-      postalCode: "",
-      qualification: "",
-      collegeName: "",
-      specialization: "",
-      passingYear: new Date().getFullYear(),
-    },
+    defaultValues: buildJobApplicationPrefill({
+      email: user?.email,
+      phone: user?.phone,
+      studentProfile,
+    }),
   });
 
   const {
     register,
     setValue,
+    reset,
     watch,
     handleSubmit,
     formState: { errors },
   } = form;
 
   useEffect(() => {
-    if (user?.email) {
-      setValue("email", user.email);
-    }
-
-    if (user?.phone) {
-      setValue("phone", user.phone);
-    }
-  }, [setValue, user?.email, user?.phone]);
+    reset(
+      buildJobApplicationPrefill({
+        email: user?.email,
+        phone: user?.phone,
+        studentProfile,
+      }),
+    );
+  }, [reset, studentProfile, user?.email, user?.phone]);
 
   const acceptingApplications = useMemo(
     () => (job ? isJobAcceptingApplications(job) : false),
@@ -251,6 +278,8 @@ export function JobApplyPage({ slug }: JobApplyPageProps) {
                     values,
                     resume,
                   );
+
+                  void refetchStudentState();
 
                   const params = new URLSearchParams({
                     id: result.id,

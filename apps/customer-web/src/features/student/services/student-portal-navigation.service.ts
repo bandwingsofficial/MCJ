@@ -1,6 +1,7 @@
 import { AxiosError } from "axios";
 
 import { studentPortalService } from "@/src/features/student-portal/services/student-portal.service";
+import { isAdmittedStudentStatus } from "@/src/features/student/services/student-access";
 import { studentProfileService } from "@/src/features/student/services";
 
 import type { StudentPortalAccess } from "@/src/features/student-portal/types/student-portal.types";
@@ -29,17 +30,16 @@ async function loadPortalAccess(): Promise<StudentPortalAccess | null> {
       }
     }
 
-    return null;
+    throw error;
   }
 }
 
 export async function resolveStudentPortalNavigation(): Promise<StudentPortalNavigationState> {
   const profile = await studentProfileService.getProfileOrNull();
 
-  const portalAccess =
-    profile?.status === "ADMITTED"
-      ? await loadPortalAccess()
-      : null;
+  const portalAccess = isAdmittedStudentStatus(profile?.status)
+    ? await loadPortalAccess()
+    : null;
 
   return buildStudentPortalNavigationState({
     profile,

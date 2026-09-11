@@ -1,4 +1,4 @@
-import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
+import { ResolveAuthenticatedStudentService } from '@modules/student/domain/services/resolve-authenticated-student.service';
 
 import type {
   PaymentListFilters,
@@ -11,15 +11,16 @@ import { GetMyPaymentsQuery } from './get-my-payments.query';
 export class GetMyPaymentsHandler {
   constructor(
     private readonly paymentRepo: PaymentRepository,
-    private readonly studentRepo: StudentRepository,
+    private readonly resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
   ) {}
 
   async execute(
     query: GetMyPaymentsQuery,
   ): Promise<ListPaymentsResult> {
-    const student = await this.studentRepo.findByCreatedBy(
-      query.userId,
-    );
+    const student =
+      await this.resolveAuthenticatedStudent.findByAuthenticatedUser(
+        query.userId,
+      );
 
     if (!student) {
       return new ListPaymentsResult([], 0, query.skip ?? 0, 0);

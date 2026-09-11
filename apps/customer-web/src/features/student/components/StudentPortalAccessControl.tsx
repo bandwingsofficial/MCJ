@@ -47,24 +47,27 @@ export function StudentPortalAccessControl({
   const pathname = usePathname();
   const router = useRouter();
   const navigation = useStudentPortalNavigation();
+  const isCurrentState =
+    !navigation.isLoading &&
+    navigation.resolvedPathname === pathname;
+
+  const redirectPath = !isCurrentState
+    ? null
+    : getRedirectPath({
+        pathname,
+        showMyApplications: navigation.showMyApplications,
+        showMyCourses: navigation.showMyCourses,
+      });
 
   useEffect(() => {
-    if (navigation.isLoading) {
+    if (!redirectPath || redirectPath === pathname) {
       return;
     }
 
-    const redirectPath = getRedirectPath({
-      pathname,
-      showMyApplications: navigation.showMyApplications,
-      showMyCourses: navigation.showMyCourses,
-    });
+    router.replace(redirectPath);
+  }, [pathname, redirectPath, router]);
 
-    if (redirectPath && redirectPath !== pathname) {
-      router.replace(redirectPath);
-    }
-  }, [navigation, pathname, router]);
-
-  if (navigation.isLoading) {
+  if (!isCurrentState || (redirectPath && redirectPath !== pathname)) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <Loader />
