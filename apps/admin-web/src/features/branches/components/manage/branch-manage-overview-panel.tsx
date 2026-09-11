@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { BookOpen, Layers, Tag, UserCheck } from "lucide-react";
 
-import { Card } from "@/src/shared/components/ui/card";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
@@ -12,6 +12,7 @@ import type { BranchSummaryCounts } from "@/src/features/branches/hooks/use-bran
 import { BranchStatusBadge } from "@/src/features/branches/components/branch-status-badge";
 import { BranchOverviewSectionHeader } from "@/src/features/branches/components/manage/branch-overview-section-header";
 import { BranchManageCardGrid } from "@/src/features/branches/components/manage/branch-manage-card-grid";
+import { BranchManageSection } from "@/src/features/branches/components/manage/branch-manage-section";
 import { BranchBatchOverviewCard } from "@/src/features/branches/components/manage/branch-batch-overview-card";
 import { BranchBatchOverviewMetrics } from "@/src/features/branches/components/manage/branch-batch-overview-metrics";
 import { BranchSummaryModuleCard } from "@/src/features/branches/components/manage/branch-summary-module-card";
@@ -65,9 +66,11 @@ function OverviewField({
   value: ReactNode;
 }) {
   return (
-    <div>
-      <dt className="text-xs text-slate-500">{label}</dt>
-      <dd className="text-sm font-medium text-[#102A56]">{value}</dd>
+    <div className="rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/60 px-3 py-2">
+      <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
+        {label}
+      </dt>
+      <dd className="mt-0.5 text-sm font-medium text-[#102A56]">{value}</dd>
     </div>
   );
 }
@@ -215,17 +218,16 @@ export function BranchManageOverviewPanel({
   const enrolledCount = summary?.enrollments ?? enrollments.length;
 
   return (
-    <div className="space-y-4">
-      <Card className="rounded-xl border border-slate-200/80 p-4 shadow-sm">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Branch Information
-        </h2>
-
-        <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+    <div className="space-y-3">
+      <BranchManageSection
+        title="Branch Information"
+        description="Core branch profile and contact details."
+      >
+        <dl className="grid gap-3 sm:grid-cols-2">
           <OverviewField label="Branch Name" value={branch.branchName} />
           <OverviewField label="Branch Code" value={branch.branchCode} />
-          <OverviewField label="Email" value={branch.email ?? ""} />
-          <OverviewField label="Phone" value={branch.phone ?? ""} />
+          <OverviewField label="Email" value={branch.email ?? "—"} />
+          <OverviewField label="Phone" value={branch.phone ?? "—"} />
           {address ? (
             <div className="sm:col-span-2">
               <OverviewField label="Address" value={address} />
@@ -249,11 +251,14 @@ export function BranchManageOverviewPanel({
             </div>
           ) : null}
         </dl>
-      </Card>
+      </BranchManageSection>
 
-      <Card className="rounded-xl border border-slate-200/80 p-5 shadow-sm">
+      <BranchManageSection
+        title="Branch Batches"
+        description="Parent batches and timings assigned to this branch."
+      >
         <BranchOverviewSectionHeader
-          title="Branch Batches"
+          actionsOnly
           onViewAll={() => onNavigateToTab("batches")}
           actionLabel="Assign Batch"
           onAction={() => onNavigateToTab("batches", { assign: true })}
@@ -265,7 +270,7 @@ export function BranchManageOverviewPanel({
           isLoading={previewLoading}
         />
 
-        <div className="mt-5 border-t border-slate-100 pt-4">
+        <div className="mt-3 border-t border-slate-100 pt-3">
           <p className="text-sm text-[#647A9B]">
             {previewLoading
               ? "Loading batch summary…"
@@ -273,13 +278,14 @@ export function BranchManageOverviewPanel({
           </p>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-3">
           <BranchManageCardGrid
             isLoading={previewLoading}
             isEmpty={!previewLoading && previewBatches.length === 0}
             emptyMessage="No Batches Yet"
             emptyDescription="Assign batches to this branch to manage schedules and enrollments."
-            columnsClassName="grid grid-cols-1 gap-4 xl:grid-cols-2"
+            emptyIcon={Layers}
+            columnsClassName="grid grid-cols-1 gap-3 xl:grid-cols-2"
             skeletonCount={2}
           >
             {previewBatches.map((batch) => (
@@ -287,12 +293,15 @@ export function BranchManageOverviewPanel({
             ))}
           </BranchManageCardGrid>
         </div>
-      </Card>
+      </BranchManageSection>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <Card className="rounded-xl border border-slate-200/80 p-4 shadow-sm">
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+        <BranchManageSection
+          title={`Categories (${summaryLoading ? "…" : categoryCount})`}
+          description="Categories assigned to this branch."
+        >
           <BranchOverviewSectionHeader
-            title={`Categories (${summaryLoading ? "…" : categoryCount})`}
+            actionsOnly
             onViewAll={() => onNavigateToTab("categories")}
             actionLabel="Assign Category"
             onAction={() => onNavigateToTab("categories", { assign: true })}
@@ -304,6 +313,7 @@ export function BranchManageOverviewPanel({
             isEmpty={!previewLoading && categories.length === 0}
             emptyMessage="No Categories Yet"
             emptyDescription="Assign categories to organize branch courses."
+            emptyIcon={Tag}
             columnsClassName="grid grid-cols-1 gap-3"
             skeletonCount={2}
           >
@@ -324,11 +334,14 @@ export function BranchManageOverviewPanel({
               />
             ))}
           </BranchManageCardGrid>
-        </Card>
+        </BranchManageSection>
 
-        <Card className="rounded-xl border border-slate-200/80 p-4 shadow-sm">
+        <BranchManageSection
+          title={`Courses (${summaryLoading ? "…" : courseCount})`}
+          description="Courses available at this branch."
+        >
           <BranchOverviewSectionHeader
-            title={`Courses (${summaryLoading ? "…" : courseCount})`}
+            actionsOnly
             onViewAll={() => onNavigateToTab("courses")}
             actionLabel="Assign Course"
             onAction={() => onNavigateToTab("courses", { assign: true })}
@@ -340,6 +353,7 @@ export function BranchManageOverviewPanel({
             isEmpty={!previewLoading && courses.length === 0}
             emptyMessage="No Courses Yet"
             emptyDescription="Assign courses available at this branch."
+            emptyIcon={BookOpen}
             columnsClassName="grid grid-cols-1 gap-3"
             skeletonCount={2}
           >
@@ -353,13 +367,17 @@ export function BranchManageOverviewPanel({
               />
             ))}
           </BranchManageCardGrid>
-        </Card>
+        </BranchManageSection>
       </div>
 
-      <Card className="rounded-xl border border-slate-200/80 p-4 shadow-sm">
+      <BranchManageSection
+        title={`Students Enrolled (${summaryLoading ? "…" : enrolledCount})`}
+        description="Current enrollments linked to this branch."
+      >
         <BranchOverviewSectionHeader
-          title={`Students Enrolled (${summaryLoading ? "…" : enrolledCount})`}
+          actionsOnly
           onViewAll={() => onNavigateToTab("students")}
+          showAction={false}
         />
 
         <BranchManageCardGrid
@@ -367,6 +385,7 @@ export function BranchManageOverviewPanel({
           isEmpty={!previewLoading && enrollments.length === 0}
           emptyMessage="No Students Enrolled Yet"
           emptyDescription="Students enrolled in this branch through the Enrollment module will appear here."
+          emptyIcon={UserCheck}
           columnsClassName="grid grid-cols-1 gap-3 lg:grid-cols-2"
           skeletonCount={2}
         >
@@ -377,7 +396,7 @@ export function BranchManageOverviewPanel({
             />
           ))}
         </BranchManageCardGrid>
-      </Card>
+      </BranchManageSection>
     </div>
   );
 }

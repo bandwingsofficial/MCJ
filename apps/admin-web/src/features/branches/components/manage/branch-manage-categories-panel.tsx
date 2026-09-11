@@ -1,11 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Link2Off } from "lucide-react";
+import { Link2Off, Tag } from "lucide-react";
 
-import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
-import { Badge } from "@/src/shared/components/ui/badge";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
@@ -15,10 +13,21 @@ import {
   type AssignableItem,
 } from "@/src/features/branches/components/manage/assign-entities-modal";
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
-import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
+import {
+  TABLE_CELL_CLASS,
+  BranchManageTableShell,
+} from "@/src/features/branches/components/manage/branch-manage-table-shell";
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
+import {
+  BRANCH_TAB_COUNT_CLASS,
+  BRANCH_TAB_HEADER_CLASS,
+  BRANCH_TAB_HEADER_ROW_CLASS,
+  BRANCH_TAB_TITLE_CLASS,
+  BRANCH_TABLE_CARD_CLASS,
+} from "@/src/features/branches/components/manage/branch-manage-layout.constants";
 import { categoryService } from "@/src/features/categories/services/category.service";
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
+import { CategoryStatusBadge } from "@/src/features/categories/components/category-status-badge";
 
 interface Props {
   branchId: string;
@@ -187,64 +196,84 @@ export function BranchManageCategoriesPanel({
 
   return (
     <>
-      <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-        <div className="mb-3">
-          <h2 className="text-lg font-semibold text-[#102A56]">Categories</h2>
-        </div>
-        <BranchSectionToolbar
-          search={search}
-          onSearchChange={setSearch}
-          searchPlaceholder="Search categories..."
-          assignLabel="Assign Category"
-          onAssign={() => {
-            void openAssign();
-          }}
-          assignDisabled={assignmentsDisabled}
-        />
+      <div className="space-y-3">
+        <header className={BRANCH_TAB_HEADER_CLASS}>
+          <div className={BRANCH_TAB_HEADER_ROW_CLASS}>
+            <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
+              <h2 className={BRANCH_TAB_TITLE_CLASS}>Categories</h2>
+              <span className={BRANCH_TAB_COUNT_CLASS}>
+                Total Categories:
+                <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
+                  {isLoading ? "—" : categories.length}
+                </span>
+              </span>
+            </div>
 
-        <BranchManageTableShell
-          columns={[
-            { key: "category", label: "Category" },
-            { key: "status", label: "Status", className: "w-[8rem]" },
-            {
-              key: "actions",
-              label: "Actions",
-              className: "w-[4.5rem] text-right",
-            },
-          ]}
-          isLoading={isLoading}
-          isEmpty={!isLoading && categories.length === 0}
-          emptyMessage="No categories assigned yet"
-          emptyDescription="Assign categories to this branch to get started."
-        >
-          {categories.map((item) => (
-            <tr key={item.id} className="hover:bg-slate-50">
-              <td className="truncate px-4 py-3 text-sm font-medium text-[#102A56]">
-                {item.name}
-              </td>
-              <td className="px-4 py-3">
-                <Badge variant="success" className="px-2.5 py-0.5 text-sm">
-                  Assigned
-                </Badge>
-              </td>
-              <td className="px-4 py-3 text-right">
-                <BranchIconAction
-                  icon={Link2Off}
-                  label="Unassign"
-                  destructive
-                  disabled={assignmentsDisabled || unassignLoading}
-                  onClick={() =>
-                    setUnassignTarget({
-                      id: item.id,
-                      label: item.name,
-                    })
-                  }
-                />
-              </td>
-            </tr>
-          ))}
-        </BranchManageTableShell>
-      </Card>
+            <BranchSectionToolbar
+              search={search}
+              onSearchChange={setSearch}
+              searchPlaceholder="Search categories..."
+              assignLabel="Assign Category"
+              onAssign={() => {
+                void openAssign();
+              }}
+              assignDisabled={assignmentsDisabled}
+            />
+          </div>
+        </header>
+
+        <div className={BRANCH_TABLE_CARD_CLASS}>
+          <BranchManageTableShell
+            embedded
+            columns={[
+              { key: "category", label: "Category" },
+              { key: "status", label: "Status", className: "w-[8rem]" },
+              {
+                key: "actions",
+                label: "Actions",
+                className: "w-[6.75rem] text-right",
+              },
+            ]}
+            isLoading={isLoading}
+            isEmpty={!isLoading && categories.length === 0}
+            emptyTitle="No Categories Assigned Yet"
+            emptyDescription="Assign categories to this branch to get started."
+            emptyIcon={Tag}
+          >
+            {categories.map((item) => (
+              <tr
+                key={item.id}
+                className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
+              >
+                <td className={`${TABLE_CELL_CLASS} font-medium text-[#102A56]`}>
+                  <span className="block truncate" title={item.name}>
+                    {item.name}
+                  </span>
+                </td>
+                <td className={TABLE_CELL_CLASS}>
+                  <CategoryStatusBadge status={item.status} />
+                </td>
+                <td className={TABLE_CELL_CLASS}>
+                  <div className="flex items-center justify-end gap-2">
+                    <BranchIconAction
+                      icon={Link2Off}
+                      label="Unassign"
+                      destructive
+                      disabled={assignmentsDisabled || unassignLoading}
+                      onClick={() =>
+                        setUnassignTarget({
+                          id: item.id,
+                          label: item.name,
+                        })
+                      }
+                    />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </BranchManageTableShell>
+        </div>
+      </div>
 
       <AssignEntitiesModal
         open={assignOpen}

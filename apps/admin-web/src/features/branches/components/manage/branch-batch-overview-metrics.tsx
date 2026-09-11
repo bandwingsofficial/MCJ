@@ -20,78 +20,88 @@ import type { BranchBatchOverviewStats } from "@/src/features/branches/utils/bra
 interface MetricConfig {
   key: keyof BranchBatchOverviewStats;
   label: string;
-  hint: string;
   icon: LucideIcon;
   iconClass: string;
-  bgClass: string;
+  iconBgClass: string;
+  cardClass: string;
 }
 
 const METRICS: MetricConfig[] = [
   {
     key: "totalBatches",
     label: "Total Batches",
-    hint: "Parent batches at this branch",
     icon: Layers,
     iconClass: "text-[#2563EB]",
-    bgClass: "bg-blue-50",
+    iconBgClass: "bg-blue-50/90 ring-blue-100/80",
+    cardClass:
+      "border-[#C7D9F5] bg-gradient-to-br from-[#F8FBFF] via-[#F3F8FF] to-[#EAF2FB]",
   },
   {
     key: "totalStudents",
     label: "Total Students",
-    hint: "Across all batch timings",
     icon: Users,
     iconClass: "text-emerald-600",
-    bgClass: "bg-emerald-50",
+    iconBgClass: "bg-emerald-50/90 ring-emerald-100/80",
+    cardClass:
+      "border-emerald-200/70 bg-gradient-to-br from-emerald-50/50 via-[#F6FDF9] to-[#EDFAF3]",
   },
   {
     key: "offlineBatches",
-    label: "Offline / Classroom Batches",
-    hint: "Parent batches with offline timings",
+    label: "Offline / Classroom",
     icon: School,
     iconClass: "text-violet-600",
-    bgClass: "bg-violet-50",
+    iconBgClass: "bg-violet-50/90 ring-violet-100/80",
+    cardClass:
+      "border-violet-200/80 bg-gradient-to-br from-violet-50/70 via-violet-50/40 to-[#FAF8FF]",
   },
   {
     key: "onlineBatches",
     label: "Online Batches",
-    hint: "Parent batches with online timings",
     icon: Monitor,
     iconClass: "text-sky-600",
-    bgClass: "bg-sky-50",
+    iconBgClass: "bg-sky-50/90 ring-sky-100/80",
+    cardClass:
+      "border-sky-200/70 bg-gradient-to-br from-sky-50/60 via-[#F7FBFF] to-[#EFF8FF]",
   },
   {
     key: "recordedBatches",
-    label: "Self-Paced / Pre-Recorded Batches",
-    hint: "Parent batches with self-paced timings",
+    label: "Self-Paced / Recorded",
     icon: PlayCircle,
-    iconClass: "text-amber-600",
-    bgClass: "bg-amber-50",
+    iconClass: "text-amber-700",
+    iconBgClass: "bg-amber-50/90 ring-amber-100/80",
+    cardClass:
+      "border-amber-200/70 bg-gradient-to-br from-amber-50/60 via-[#FFFBF5] to-[#FFF8ED]",
   },
   {
     key: "activeUpcomingBatches",
-    label: "Active / Upcoming Batches",
-    hint: "Scheduled to start",
+    label: "Active / Upcoming",
     icon: CalendarClock,
     iconClass: "text-indigo-600",
-    bgClass: "bg-indigo-50",
+    iconBgClass: "bg-indigo-50/90 ring-indigo-100/80",
+    cardClass:
+      "border-indigo-200/70 bg-gradient-to-br from-indigo-50/50 via-[#F7F8FF] to-[#EEF2FF]",
   },
   {
     key: "ongoingBatches",
     label: "Ongoing Batches",
-    hint: "Currently in progress",
     icon: Activity,
     iconClass: "text-teal-600",
-    bgClass: "bg-teal-50",
+    iconBgClass: "bg-teal-50/90 ring-teal-100/80",
+    cardClass:
+      "border-teal-200/70 bg-gradient-to-br from-teal-50/50 via-[#F6FDFA] to-[#EDFAF7]",
   },
   {
     key: "expiredBatches",
     label: "Expired Batches",
-    hint: "Completed or expired",
     icon: History,
     iconClass: "text-slate-600",
-    bgClass: "bg-slate-100",
+    iconBgClass: "bg-slate-100/90 ring-slate-200/80",
+    cardClass:
+      "border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-slate-50/80",
   },
 ];
+
+const METRIC_CARD_HEIGHT = "h-[5.5rem]";
 
 interface Props {
   stats: BranchBatchOverviewStats;
@@ -100,14 +110,18 @@ interface Props {
 
 function MetricCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 space-y-2">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-8 w-12" />
-          <Skeleton className="h-3 w-28" />
+    <div
+      className={cn(
+        METRIC_CARD_HEIGHT,
+        "rounded-xl border border-[#E1EBF5] bg-gradient-to-br from-[#F8FBFF] to-white p-3 shadow-sm",
+      )}
+    >
+      <div className="flex h-full items-center justify-between gap-2">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <Skeleton className="h-2.5 w-16" />
+          <Skeleton className="h-6 w-10" />
         </div>
-        <Skeleton className="h-11 w-11 shrink-0 rounded-xl" />
+        <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
       </div>
     </div>
   );
@@ -116,7 +130,7 @@ function MetricCardSkeleton() {
 export function BranchBatchOverviewMetrics({ stats, isLoading }: Props) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4">
         {METRICS.map((metric) => (
           <MetricCardSkeleton key={metric.key} />
         ))}
@@ -125,32 +139,35 @@ export function BranchBatchOverviewMetrics({ stats, isLoading }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4">
       {METRICS.map((metric) => {
         const Icon = metric.icon;
 
         return (
           <div
             key={metric.key}
-            className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+            className={cn(
+              METRIC_CARD_HEIGHT,
+              "rounded-xl border p-3 shadow-sm transition-shadow hover:shadow-md",
+              metric.cardClass,
+            )}
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-medium leading-snug text-slate-500">
+            <div className="flex h-full items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-[#647A9B]">
                   {metric.label}
                 </p>
-                <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-[#102A56]">
+                <p className="mt-0.5 text-2xl font-semibold tabular-nums leading-none tracking-tight text-[#102A56]">
                   {stats[metric.key]}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">{metric.hint}</p>
               </div>
               <div
                 className={cn(
-                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
-                  metric.bgClass,
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ring-1",
+                  metric.iconBgClass,
                 )}
               >
-                <Icon className={cn("h-5 w-5", metric.iconClass)} />
+                <Icon className={cn("h-4 w-4", metric.iconClass)} aria-hidden="true" />
               </div>
             </div>
           </div>

@@ -251,7 +251,7 @@ export function BranchManageStudentsPanel({
           ]}
           isLoading={isLoading}
           isEmpty={!isLoading && students.length === 0}
-          emptyMessage="No students assigned yet"
+          emptyTitle="No students assigned yet"
           emptyDescription="Assign students to this branch to get started."
         >
           {students.map((student) => (

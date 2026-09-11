@@ -1,8 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  LayoutDashboard,
+  Layers,
+  Tag,
+  UserCheck,
+  Users,
+} from "lucide-react";
 
-import { Card } from "@/src/shared/components/ui/card";
 import {
   Tabs,
   TabsContent,
@@ -19,6 +28,7 @@ import { BranchManageCoursesPanel } from "./branch-manage-courses-panel";
 import { BranchManageEnrollmentsPanel } from "./branch-manage-enrollments-panel";
 import { BranchManageUsersPanel } from "./branch-manage-users-panel";
 import { BranchManageOverviewPanel } from "./branch-manage-overview-panel";
+import { BranchManageEmptyState } from "./branch-manage-section";
 import type { BranchManageTabKey } from "./branch-manage-tab.types";
 
 interface Props {
@@ -29,7 +39,22 @@ interface Props {
   onTabChange?: (tab: BranchManageTabKey) => void;
 }
 
-type TabKey = BranchManageTabKey;
+const TAB_CLASS =
+  "inline-flex items-center rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
+
+const TAB_ITEMS: ReadonlyArray<{
+  value: BranchManageTabKey;
+  label: string;
+  icon: LucideIcon;
+}> = [
+  { value: "overview", label: "Overview", icon: LayoutDashboard },
+  { value: "users", label: "Users", icon: Users },
+  { value: "batches", label: "Batches", icon: Layers },
+  { value: "categories", label: "Categories", icon: Tag },
+  { value: "courses", label: "Courses", icon: BookOpen },
+  { value: "students", label: "Enrolled Students", icon: UserCheck },
+  { value: "reports", label: "Reports", icon: BarChart3 },
+];
 
 export function BranchManageWorkspace({
   branch,
@@ -41,13 +66,13 @@ export function BranchManageWorkspace({
   const branchId = branch.id;
   const isArchived = Boolean(branch.deletedAt);
   const assignmentsDisabled = isArchived || branch.status !== "ACTIVE";
-  const [tab, setTab] = useState<TabKey>("overview");
-  const [assignOnMountTab, setAssignOnMountTab] = useState<TabKey | null>(
+  const [tab, setTab] = useState<BranchManageTabKey>("overview");
+  const [assignOnMountTab, setAssignOnMountTab] = useState<BranchManageTabKey | null>(
     null,
   );
 
   const navigateToTab = (
-    nextTab: TabKey,
+    nextTab: BranchManageTabKey,
     options?: { assign?: boolean },
   ) => {
     setTab(nextTab);
@@ -58,7 +83,7 @@ export function BranchManageWorkspace({
     }
   };
 
-  const clearAssignOnMount = (currentTab: TabKey) => {
+  const clearAssignOnMount = (currentTab: BranchManageTabKey) => {
     setAssignOnMountTab((previous) =>
       previous === currentTab ? null : previous,
     );
@@ -68,34 +93,21 @@ export function BranchManageWorkspace({
     <Tabs
       value={tab}
       onValueChange={(value) => {
-        const nextTab = value as TabKey;
+        const nextTab = value as BranchManageTabKey;
         setTab(nextTab);
         onTabChange?.(nextTab);
       }}
     >
       <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
-        {(
-          [
-            ["overview", "Overview"],
-            ["users", "Users"],
-            ["batches", "Batches"],
-            ["categories", "Categories"],
-            ["courses", "Courses"],
-            ["students", "Enrolled Students"],
-            ["reports", "Reports"],
-          ] as const
-        ).map(([value, label]) => (
-          <TabsTrigger
-            key={value}
-            value={value}
-            className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none"
-          >
+        {TAB_ITEMS.map(({ value, label, icon: Icon }) => (
+          <TabsTrigger key={value} value={value} className={TAB_CLASS}>
+            <Icon className="mr-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
             {label}
           </TabsTrigger>
         ))}
       </TabsList>
 
-      <TabsContent value="overview" className="space-y-3">
+      <TabsContent value="overview">
         <BranchManageOverviewPanel
           branch={branch}
           summary={summary}
@@ -105,7 +117,7 @@ export function BranchManageWorkspace({
         />
       </TabsContent>
 
-      <TabsContent value="users" className="space-y-3">
+      <TabsContent value="users">
         <BranchManageUsersPanel
           branchId={branchId}
           branchName={branch.branchName}
@@ -145,18 +157,20 @@ export function BranchManageWorkspace({
       </TabsContent>
 
       <TabsContent value="students">
-        <BranchManageEnrollmentsPanel branchId={branchId} />
+        <BranchManageEnrollmentsPanel
+          branchId={branchId}
+          disabled={assignmentsDisabled}
+        />
       </TabsContent>
 
       <TabsContent value="reports">
-        <Card className="rounded-xl border border-slate-200 p-6 shadow-sm">
-          <p className="text-sm font-medium text-slate-700">
-            Reports coming soon
-          </p>
-          <p className="mt-1 text-sm text-[#647A9B]">
-            Branch-level reporting will be available in a future update.
-          </p>
-        </Card>
+        <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-3 shadow-sm">
+          <BranchManageEmptyState
+          icon={BarChart3}
+          title="Reports Coming Soon"
+          description="Branch-level reporting will be available in a future update."
+          />
+        </div>
       </TabsContent>
     </Tabs>
   );

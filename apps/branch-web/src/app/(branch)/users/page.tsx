@@ -147,41 +147,39 @@ export default function BranchUsersPage() {
   return (
     <div className="space-y-3">
       <header className="px-1 py-1">
-        <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-          <div className="min-w-0 space-y-1">
-            <nav
-              aria-label="Breadcrumb"
-              className="flex items-center gap-1 text-xs"
-            >
-              <Link
-                href="/dashboard"
-                className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
-              >
-                Branch Manager
-              </Link>
-              <ChevronRight
-                className="h-3.5 w-3.5 text-slate-400"
-                aria-hidden="true"
-              />
-              <span aria-current="page" className="font-medium text-[#102A56]">
-                Users
-              </span>
-            </nav>
+        <nav
+          aria-label="Breadcrumb"
+          className="mb-1 flex items-center gap-1 text-xs"
+        >
+          <Link
+            href="/dashboard"
+            className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
+          >
+            Branch Manager
+          </Link>
+          <ChevronRight
+            className="h-3.5 w-3.5 text-slate-400"
+            aria-hidden="true"
+          />
+          <span aria-current="page" className="font-medium text-[#102A56]">
+            Users
+          </span>
+        </nav>
 
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-              <h1 className="text-[22px] font-bold tracking-tight text-[#102A56] sm:text-[26px]">
-                Users
-              </h1>
-              <span className="text-xs text-[#647A9B] sm:text-[13px]">
-                Total Users:
-                <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
-                  {query.loading ? "—" : total}
-                </span>
+        <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:gap-4">
+          <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
+            <h1 className="text-[22px] font-bold tracking-tight text-[#102A56] sm:text-[26px]">
+              Users
+            </h1>
+            <span className="text-xs text-[#647A9B] sm:text-[13px]">
+              Total Users:
+              <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
+                {query.loading ? "—" : total}
               </span>
-            </div>
+            </span>
           </div>
 
-          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto lg:shrink-0">
+          <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center lg:ml-auto lg:w-auto lg:flex-1 lg:justify-end">
             <div className="w-full sm:w-[280px]">
               <SearchInput
                 value={search}
@@ -199,7 +197,7 @@ export default function BranchUsersPage() {
                   setPage(1);
                 }}
                 options={[
-                  { label: "All Role", value: "ALL" },
+                  { label: "All Roles", value: "ALL" },
                   { label: "Faculty", value: "FACULTY" },
                   { label: "Interviewer", value: "INTERVIEWER" },
                 ]}
@@ -228,7 +226,7 @@ export default function BranchUsersPage() {
                 setCreateOpen(true);
               }}
             >
-              <Plus className="mr-1 h-4 w-4" />
+              <Plus className="mr-1 h-4 w-4" aria-hidden="true" />
               Create User
             </Button>
           </div>
@@ -236,15 +234,24 @@ export default function BranchUsersPage() {
       </header>
 
       {query.loading ? (
-        <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
+        <div className="min-w-0 overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
           <SkeletonTable rows={8} />
         </div>
       ) : query.error ? (
         <ErrorState description={query.error} onRetry={query.reload} />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
-          <div className="w-full overflow-x-auto">
-            <table className="w-full min-w-full border-collapse text-sm">
+        <div className="min-w-0 overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
+          <div className="w-full min-w-0 overflow-x-auto">
+            <table className="w-full table-fixed border-collapse text-sm">
+              <colgroup>
+                <col className="w-9" />
+                <col className="w-[18%]" />
+                <col className="w-[24%]" />
+                <col className="w-[14%]" />
+                <col className="w-[12%]" />
+                <col className="w-24" />
+                <col className="w-[8.5rem]" />
+              </colgroup>
               <thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]">
                 <tr>
                   <th className="w-9 !px-6 !py-4 text-left">
@@ -276,7 +283,7 @@ export default function BranchUsersPage() {
                   <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
                     Status
                   </th>
-                  <th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
+                  <th className="w-[8.5rem] !px-4 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
                     Actions
                   </th>
                 </tr>
@@ -315,7 +322,7 @@ export default function BranchUsersPage() {
                         key={user.id}
                         className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
                       >
-                        <td className="!px-6 !py-4 align-middle">
+                        <td className="w-9 !px-6 !py-4 align-middle">
                           <Checkbox
                             checked={selected.includes(user.id)}
                             onCheckedChange={(checked) =>
@@ -328,20 +335,27 @@ export default function BranchUsersPage() {
                           />
                         </td>
                         <td className="!px-4 !py-4 align-middle">
-                          <div className="flex items-center gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
                             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8F1FF] text-xs font-semibold text-[#2563EB]">
                               {initials || "U"}
                             </span>
-                            <span className="text-sm font-medium leading-snug text-[#102A56]">
+                            <span
+                              className="truncate text-sm font-medium leading-snug text-[#102A56]"
+                              title={name}
+                            >
                               {name}
                             </span>
                           </div>
                         </td>
                         <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
-                          {user.email}
+                          <span className="block truncate" title={user.email}>
+                            {user.email}
+                          </span>
                         </td>
                         <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
-                          {user.phone || "—"}
+                          <span className="block truncate" title={user.phone || undefined}>
+                            {user.phone || "—"}
+                          </span>
                         </td>
                         <td className="!px-4 !py-4 align-middle">
                           <RoleBadge role={user.role} />
@@ -349,7 +363,7 @@ export default function BranchUsersPage() {
                         <td className="!px-4 !py-4 align-middle">
                           <UserStatusBadge isActive={user.isActive} />
                         </td>
-                        <td className="!px-8 !py-4 text-right align-middle">
+                        <td className="!px-4 !py-4 align-middle">
                           <div className="flex items-center justify-end gap-2">
                             <Tooltip
                               content={

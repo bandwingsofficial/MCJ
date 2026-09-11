@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CircleCheck,
   KeyRound,
   Pencil,
   Power,
@@ -8,32 +9,24 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Button } from "@/src/shared/components/ui/button";
+import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { BranchUserListItem } from "@/src/features/branch-users/types/branch-user.types";
 
-const iconBtnClass =
-  "h-10 w-10 shrink-0 rounded-lg p-0";
+const iconButtonClass =
+  "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40";
 
-const iconClass = "h-[1.35rem] w-[1.35rem]";
+const iconClass = "h-[15px] w-[14px] stroke-[2]";
 
 interface Props {
   branchUser: BranchUserListItem;
-
   disabled?: boolean;
-
   onEdit: (branchUser: BranchUserListItem) => void;
-
   onActivate: (branchUser: BranchUserListItem) => void;
-
   onDeactivate: (branchUser: BranchUserListItem) => void;
-
   onDelete: (branchUser: BranchUserListItem) => void;
-
   onResetPassword: (branchUser: BranchUserListItem) => void;
-
   onRestore: (branchUser: BranchUserListItem) => void;
-
   onPermanentDelete: (branchUser: BranchUserListItem) => void;
 }
 
@@ -52,97 +45,93 @@ export function BranchUserActions({
 
   if (isDeleted) {
     return (
-      <div className="flex items-center justify-end gap-1 whitespace-nowrap">
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={() => onRestore(branchUser)}
-          title="Restore user"
-          aria-label="Restore user"
-          className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
-        >
-          <RotateCcw className={iconClass} />
-        </Button>
+      <div className="flex items-center justify-end gap-2">
+        <Tooltip content="Restore user">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onRestore(branchUser)}
+            aria-label="Restore user"
+            className={`${iconButtonClass} text-green-800`}
+          >
+            <RotateCcw className={iconClass} />
+          </button>
+        </Tooltip>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={() => onPermanentDelete(branchUser)}
-          title="Permanently delete user"
-          aria-label="Permanently delete user"
-          className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
-        >
-          <Trash2 className={iconClass} />
-        </Button>
+        <Tooltip content="Permanently delete user">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onPermanentDelete(branchUser)}
+            aria-label="Permanently delete user"
+            className={`${iconButtonClass} text-red-800`}
+          >
+            <Trash2 className={iconClass} />
+          </button>
+        </Tooltip>
       </div>
     );
   }
 
+  const isActive = branchUser.isActive;
+
   return (
-    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
-      {branchUser.isActive ? (
-        <Button
-          variant="ghost"
-          size="sm"
+    <div className="flex items-center justify-end gap-2">
+      <Tooltip
+        content={isActive ? "Deactivate user" : "Activate user"}
+      >
+        <button
+          type="button"
           disabled={disabled}
-          onClick={() => onDeactivate(branchUser)}
-          title="Deactivate user"
-          aria-label="Deactivate user"
-          className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
+          onClick={() =>
+            isActive ? onDeactivate(branchUser) : onActivate(branchUser)
+          }
+          aria-label={isActive ? "Deactivate user" : "Activate user"}
+          className={`${iconButtonClass} text-orange-700`}
         >
-          <Power className={iconClass} />
-        </Button>
-      ) : (
-        <Button
-          variant="ghost"
-          size="sm"
+          {isActive ? (
+            <Power className={iconClass} />
+          ) : (
+            <CircleCheck className={iconClass} />
+          )}
+        </button>
+      </Tooltip>
+
+      <Tooltip content="Edit user">
+        <button
+          type="button"
           disabled={disabled}
-          onClick={() => onActivate(branchUser)}
-          title="Activate user"
-          aria-label="Activate user"
-          className={`${iconBtnClass} text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700`}
+          onClick={() => onEdit(branchUser)}
+          aria-label="Edit user"
+          className={`${iconButtonClass} text-blue-900`}
         >
-          <Power className={iconClass} />
-        </Button>
-      )}
+          <Pencil className={iconClass} />
+        </button>
+      </Tooltip>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled={disabled}
-        onClick={() => onEdit(branchUser)}
-        title="Edit user"
-        aria-label="Edit user"
-        className={`${iconBtnClass} text-slate-700 hover:bg-slate-100`}
-      >
-        <Pencil className={iconClass} />
-      </Button>
+      <Tooltip content="Delete user">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onDelete(branchUser)}
+          aria-label="Delete user"
+          className={`${iconButtonClass} text-red-800`}
+        >
+          <Trash2 className={iconClass} />
+        </button>
+      </Tooltip>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled={disabled}
-        onClick={() => onDelete(branchUser)}
-        title="Delete user"
-        aria-label="Delete user"
-        className={`${iconBtnClass} text-red-600 hover:bg-red-50 hover:text-red-700`}
-      >
-        <Trash2 className={iconClass} />
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled={disabled}
-        onClick={() => onResetPassword(branchUser)}
-        title="Reset password"
-        aria-label="Reset password"
-        className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
-      >
-        <KeyRound className={iconClass} />
-      </Button>
+      <Tooltip content="Reset password">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onResetPassword(branchUser)}
+          aria-label="Reset password"
+          className={`${iconButtonClass} text-green-800`}
+        >
+          <KeyRound className={iconClass} />
+        </button>
+      </Tooltip>
     </div>
   );
 }

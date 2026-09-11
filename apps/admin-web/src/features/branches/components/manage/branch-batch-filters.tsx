@@ -3,111 +3,56 @@
 import { SearchInput } from "@/src/shared/components/ui/search-input";
 import { AppSelect } from "@/src/shared/components/ui/select";
 
-import { FILTER_BATCH_MODES } from "@/src/features/batches/constants/batch.constants";
 import type {
   BatchFilters,
-  BatchMode,
+  BatchLifecycleStatus,
 } from "@/src/features/batches/types/batch.types";
-import {
-  applyBatchStatusFilter,
-  getBatchStatusFilterValue,
-  type BatchStatusFilterValue,
-} from "@/src/features/batches/utils/batch-list.utils";
-import {
-  BATCH_SELECT_ALL,
-  uniqueSelectOptions,
-} from "@/src/features/batches/utils/batch-select.utils";
+import { BATCH_SELECT_ALL } from "@/src/features/batches/utils/batch-select.utils";
 
-interface CategoryOption {
-  id: string;
-  name: string;
-}
+import {
+  BRANCH_COMPACT_SEARCH_CLASS,
+  BRANCH_COMPACT_SELECT_CLASS,
+} from "./branch-manage-layout.constants";
+
+const STATUS_OPTIONS = [
+  { label: "All", value: BATCH_SELECT_ALL },
+  { label: "Ongoing", value: "ONGOING" },
+  { label: "Expired", value: "EXPIRED" },
+] as const;
 
 interface Props {
   filters: BatchFilters;
-  categories: CategoryOption[];
   onChange: (filters: BatchFilters) => void;
 }
 
-export function BranchBatchFiltersBar({
-  filters,
-  categories,
-  onChange,
-}: Props) {
-  const statusFilterValue = getBatchStatusFilterValue(filters);
-
-  const modeOptions = uniqueSelectOptions([
-    { label: "All Modes", value: BATCH_SELECT_ALL },
-    ...FILTER_BATCH_MODES,
-  ]);
-
-  const categoryOptions = uniqueSelectOptions([
-    { label: "All Categories", value: BATCH_SELECT_ALL },
-    ...categories.map((category) => ({
-      label: category.name,
-      value: category.id,
-    })),
-  ]);
-
-  const statusOptions = uniqueSelectOptions([
-    { label: "All Status", value: BATCH_SELECT_ALL },
-    { label: "Active", value: "ACTIVE" },
-    { label: "Inactive", value: "INACTIVE" },
-    { label: "Archived", value: "ARCHIVED" },
-  ]);
+export function BranchBatchFiltersBar({ filters, onChange }: Props) {
+  const statusValue = filters.batchStatus ?? BATCH_SELECT_ALL;
 
   return (
-    <div className="flex w-full flex-col gap-3 lg:flex-row lg:items-center">
-      <div className="min-w-0 flex-1">
+    <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:flex-1 lg:justify-end">
+      <div className="w-full sm:w-[220px]">
         <SearchInput
           value={filters.search ?? ""}
           placeholder="Search batches..."
-          className="h-[46px] rounded-xl !py-2 pl-9 text-[15px]"
+          className={BRANCH_COMPACT_SEARCH_CLASS}
           onChange={(value) => onChange({ ...filters, search: value })}
         />
       </div>
 
-      <div className="w-full shrink-0 sm:w-44">
+      <div className="w-full sm:w-[140px]">
         <AppSelect
-          value={filters.mode ?? BATCH_SELECT_ALL}
-          triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
+          value={statusValue}
+          triggerClassName={BRANCH_COMPACT_SELECT_CLASS}
           onValueChange={(value) =>
             onChange({
               ...filters,
-              mode: value === BATCH_SELECT_ALL ? undefined : (value as BatchMode),
+              batchStatus:
+                value === BATCH_SELECT_ALL
+                  ? undefined
+                  : (value as BatchLifecycleStatus),
             })
           }
-          options={modeOptions}
-        />
-      </div>
-
-      <div className="w-full shrink-0 sm:w-48">
-        <AppSelect
-          value={filters.categoryId ?? BATCH_SELECT_ALL}
-          triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
-          onValueChange={(value) =>
-            onChange({
-              ...filters,
-              categoryId: value === BATCH_SELECT_ALL ? undefined : value,
-            })
-          }
-          options={categoryOptions}
-        />
-      </div>
-
-      <div className="w-full shrink-0 sm:w-44">
-        <AppSelect
-          value={statusFilterValue}
-          triggerClassName="h-[46px] rounded-xl px-3 text-[15px]"
-          onValueChange={(value) =>
-            onChange(
-              applyBatchStatusFilter(
-                filters,
-                value as BatchStatusFilterValue | typeof BATCH_SELECT_ALL,
-              ),
-            )
-          }
-          options={statusOptions}
+          options={[...STATUS_OPTIONS]}
         />
       </div>
     </div>

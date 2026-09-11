@@ -1,10 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Eye, Link2Off, Plus } from "lucide-react";
+import { Eye, Layers, Link2Off, Plus } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
-import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
@@ -15,7 +14,15 @@ import {
 } from "@/src/features/branches/components/manage/assign-entities-modal";
 import { BranchBatchFiltersBar } from "@/src/features/branches/components/manage/branch-batch-filters";
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
-import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
+import {
+  TABLE_CELL_CLASS,
+  BranchManageTableShell,
+} from "@/src/features/branches/components/manage/branch-manage-table-shell";
+import {
+  BRANCH_PRIMARY_BUTTON_CLASS,
+  BRANCH_TAB_COUNT_CLASS,
+  BRANCH_TABLE_CARD_CLASS,
+} from "@/src/features/branches/components/manage/branch-manage-layout.constants";
 import {
   assignBatchToBranch,
   unassignBatchFromBranch,
@@ -30,8 +37,6 @@ import {
   isBatchSelectableForAssignment,
 } from "@/src/features/batches/utils/batch-select.utils";
 import { getBatchTimingsCount } from "@/src/features/batches/utils/batch-timing.utils";
-import { categoryService } from "@/src/features/categories/services/category.service";
-import type { CategoryListItem } from "@/src/features/categories/types/category.types";
 import { cn } from "@/src/shared/lib/cn";
 
 interface Props {
@@ -51,12 +56,8 @@ export function BranchManageBatchesPanel({
 }: Props) {
   const [filters, setFilters] = useState<BatchFilters>({
     search: "",
-    includeDeleted: false,
   });
   const [batches, setBatches] = useState<Batch[]>([]);
-  const [categoryOptions, setCategoryOptions] = useState<CategoryListItem[]>(
-    [],
-  );
   const [isLoading, setIsLoading] = useState(true);
 
   const [assignOpen, setAssignOpen] = useState(false);
@@ -73,22 +74,6 @@ export function BranchManageBatchesPanel({
   } | null>(null);
   const [unassignLoading, setUnassignLoading] = useState(false);
 
-  const loadCategories = useCallback(async () => {
-    try {
-      const categoryResponse = await categoryService.getCategories({
-        search: "",
-        status: "ACTIVE",
-        page: 1,
-        pageSize: 100,
-      });
-      setCategoryOptions(
-        (categoryResponse.data ?? []).filter((item) => !item.isDeleted),
-      );
-    } catch {
-      setCategoryOptions([]);
-    }
-  }, []);
-
   const loadData = useCallback(async () => {
     if (!branchId) {
       setBatches([]);
@@ -101,10 +86,7 @@ export function BranchManageBatchesPanel({
       const batchResponse = await batchService.getBatches({
         search: filters.search,
         branchId,
-        mode: filters.mode,
-        categoryId: filters.categoryId,
-        status: filters.status,
-        includeDeleted: filters.status === "ARCHIVED",
+        batchStatus: filters.batchStatus,
         page: 1,
         pageSize: 100,
       });
@@ -118,10 +100,6 @@ export function BranchManageBatchesPanel({
       setIsLoading(false);
     }
   }, [branchId, filters]);
-
-  useEffect(() => {
-    void loadCategories();
-  }, [loadCategories]);
 
   useEffect(() => {
     void loadData();
@@ -256,142 +234,164 @@ export function BranchManageBatchesPanel({
 
   return (
     <>
-      <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-semibold text-[#102A56]">Batches</h2>
-          <Button
-            type="button"
-            size="sm"
-            disabled={assignmentsDisabled}
-            onClick={() => {
-              void openAssign();
-            }}
-          >
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Assign Batch
-          </Button>
-        </div>
+      <div className="space-y-3">
+        <div className={BRANCH_TABLE_CARD_CLASS}>
+          <div className="border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-4 py-2.5">
+            <div className="flex flex-col gap-2.5 xl:flex-row xl:items-center xl:gap-3">
+              <div className="shrink-0">
+                <h2 className="text-base font-semibold text-[#102A56]">Batches</h2>
+                <p className="mt-0.5 text-sm text-[#647A9B]">
+                  Parent batches assigned to this branch.
+                  {!isLoading ? (
+                    <span className={`${BRANCH_TAB_COUNT_CLASS} ml-2`}>
+                      Total:
+                      <span className="ml-1 font-semibold tabular-nums">
+                        {batches.length}
+                      </span>
+                    </span>
+                  ) : null}
+                </p>
+              </div>
 
-        <div className="mb-3">
-          <BranchBatchFiltersBar
-            filters={filters}
-            categories={categoryOptions}
-            onChange={setFilters}
-          />
-        </div>
+              <BranchBatchFiltersBar
+                filters={filters}
+                onChange={setFilters}
+              />
 
-        <BranchManageTableShell
-          columns={[
-            { key: "batch", label: "Batch Name" },
-            { key: "course", label: "Course" },
-            { key: "schedule", label: "Schedule" },
-            { key: "status", label: "Status", className: "w-[8rem]" },
-            {
-              key: "actions",
-              label: "Actions",
-              className: "w-[6.5rem] text-right",
-            },
-          ]}
-          isLoading={isLoading}
-          isEmpty={!isLoading && batches.length === 0}
-          emptyMessage="No Batches Yet"
-          emptyDescription="Assign batches to this branch to get started."
-        >
-          {batches.map((batch) => {
-            const displayStatus = getBatchDisplayStatus(batch);
-            const isLifecycleBlocked =
-              displayStatus.key === "COMPLETED" ||
-              displayStatus.key === "EXPIRED" ||
-              displayStatus.key === "CANCELLED" ||
-              displayStatus.key === "ARCHIVED";
-            const scheduleRange = formatBatchDateRange(
-              batch.startDate,
-              batch.endDate,
-            ).replace(" – ", " → ");
-            const timingsCount = getBatchTimingsCount(batch);
-            const timingsLabel = `${timingsCount} Batch Timing${
-              timingsCount === 1 ? "" : "s"
-            }`;
-
-            return (
-              <tr
-                key={batch.id}
-                className={cn(
-                  isLifecycleBlocked
-                    ? "bg-slate-100/80 text-slate-500"
-                    : "hover:bg-slate-50",
-                )}
+              <Button
+                type="button"
+                disabled={assignmentsDisabled}
+                onClick={() => {
+                  void openAssign();
+                }}
+                className={BRANCH_PRIMARY_BUTTON_CLASS}
               >
-                <td className="px-4 py-3">
-                  <p
+                <Plus className="mr-1 h-4 w-4" aria-hidden="true" />
+                Assign Batch
+              </Button>
+            </div>
+          </div>
+
+          <BranchManageTableShell
+            embedded
+            columns={[
+              { key: "batch", label: "Batch Name" },
+              { key: "course", label: "Course" },
+              { key: "schedule", label: "Schedule" },
+              { key: "status", label: "Status", className: "w-[8rem]" },
+              {
+                key: "actions",
+                label: "Actions",
+                className: "w-[6.75rem] text-right",
+              },
+            ]}
+            isLoading={isLoading}
+            isEmpty={!isLoading && batches.length === 0}
+            emptyTitle="No Batches Assigned Yet"
+            emptyDescription="Assign batches to this branch to get started."
+            emptyIcon={Layers}
+          >
+            {batches.map((batch) => {
+              const displayStatus = getBatchDisplayStatus(batch);
+              const isLifecycleBlocked =
+                displayStatus.key === "COMPLETED" ||
+                displayStatus.key === "EXPIRED" ||
+                displayStatus.key === "CANCELLED" ||
+                displayStatus.key === "ARCHIVED";
+              const scheduleRange = formatBatchDateRange(
+                batch.startDate,
+                batch.endDate,
+              ).replace(" – ", " → ");
+              const timingsCount = getBatchTimingsCount(batch);
+              const timingsLabel = `${timingsCount} Batch Timing${
+                timingsCount === 1 ? "" : "s"
+              }`;
+
+              return (
+                <tr
+                  key={batch.id}
+                  className={cn(
+                    "border-b border-slate-100 transition-colors",
+                    isLifecycleBlocked
+                      ? "bg-slate-100/80 text-slate-500"
+                      : "bg-white hover:bg-slate-50",
+                  )}
+                >
+                  <td className={TABLE_CELL_CLASS}>
+                    <p
+                      className={cn(
+                        "truncate font-medium",
+                        isLifecycleBlocked ? "text-slate-500" : "text-[#102A56]",
+                      )}
+                      title={batch.name}
+                    >
+                      {batch.name}
+                    </p>
+                    {batch.code ? (
+                      <p className="truncate font-mono text-xs text-slate-500">
+                        {batch.code}
+                      </p>
+                    ) : null}
+                  </td>
+                  <td
                     className={cn(
-                      "truncate text-sm font-medium",
-                      isLifecycleBlocked ? "text-slate-500" : "text-[#102A56]",
+                      TABLE_CELL_CLASS,
+                      isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
                     )}
                   >
-                    {batch.name}
-                  </p>
-                  {batch.code ? (
-                    <p className="truncate font-mono text-xs text-slate-500">
-                      {batch.code}
-                    </p>
-                  ) : null}
-                </td>
-                <td
-                  className={cn(
-                    "truncate px-4 py-3 text-sm",
-                    isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
-                  )}
-                >
-                  {batch.course?.title?.trim() || "No course assigned"}
-                </td>
-                <td
-                  className={cn(
-                    "min-w-0 px-4 py-3 text-sm",
-                    isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
-                  )}
-                >
-                  <div className="flex min-w-0 flex-col gap-0.5 leading-snug">
-                    <span className="truncate">{scheduleRange}</span>
-                    <span className="truncate text-xs text-[#647A9B]">
-                      {timingsLabel}
+                    <span className="block truncate">
+                      {batch.course?.title?.trim() || "No course assigned"}
                     </span>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <BatchStatusBadge
-                    displayStatus={displayStatus}
-                    status={batch.status}
-                    isActive={batch.isActive}
-                    isDeleted={Boolean(batch.isDeleted || batch.deletedAt)}
-                  />
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="inline-flex items-center justify-end gap-1">
-                    <BranchIconAction
-                      icon={Eye}
-                      label="View batch"
-                      href={`/batches/${batch.id}/manage`}
+                  </td>
+                  <td
+                    className={cn(
+                      TABLE_CELL_CLASS,
+                      isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
+                    )}
+                  >
+                    <div className="flex min-w-0 flex-col gap-0.5 leading-snug">
+                      <span className="truncate">{scheduleRange}</span>
+                      <span className="truncate text-xs text-[#647A9B]">
+                        {timingsLabel}
+                      </span>
+                    </div>
+                  </td>
+                  <td className={TABLE_CELL_CLASS}>
+                    <BatchStatusBadge
+                      displayStatus={displayStatus}
+                      status={batch.status}
+                      isActive={batch.isActive}
+                      isDeleted={Boolean(batch.isDeleted || batch.deletedAt)}
                     />
-                    <BranchIconAction
-                      icon={Link2Off}
-                      label="Unassign"
-                      destructive
-                      disabled={assignmentsDisabled || unassignLoading}
-                      onClick={() =>
-                        setUnassignTarget({
-                          id: batch.id,
-                          label: batch.name,
-                        })
-                      }
-                    />
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </BranchManageTableShell>
-      </Card>
+                  </td>
+                  <td className={TABLE_CELL_CLASS}>
+                    <div className="flex items-center justify-end gap-2">
+                      <BranchIconAction
+                        icon={Eye}
+                        label="View batch"
+                        primary
+                        href={`/batches/${batch.id}/manage`}
+                      />
+                      <BranchIconAction
+                        icon={Link2Off}
+                        label="Unassign"
+                        destructive
+                        disabled={assignmentsDisabled || unassignLoading}
+                        onClick={() =>
+                          setUnassignTarget({
+                            id: batch.id,
+                            label: batch.name,
+                          })
+                        }
+                      />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </BranchManageTableShell>
+        </div>
+      </div>
 
       <AssignEntitiesModal
         open={assignOpen}

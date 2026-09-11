@@ -1,20 +1,25 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
-import { Pagination } from "@/src/shared/components/ui/pagination";
-import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
+import { CategoryPagination } from "@/src/features/categories/components/category-pagination";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
+import { SearchInput } from "@/src/shared/components/ui/search-input";
+import { AppSelect } from "@/src/shared/components/ui/select";
+import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 
-import { BranchUserFiltersBar } from "@/src/features/branch-users/components/branch-user-filters";
 import { BranchUserTable } from "@/src/features/branch-users/components/branch-user-table";
 import { CreateBranchUserModal } from "@/src/features/branch-users/components/create-branch-user-modal";
 import { UpdateBranchUserModal } from "@/src/features/branch-users/components/update-branch-user-modal";
 import { ResetPasswordDialog } from "@/src/features/branch-users/components/reset-password-dialog";
+import {
+  BRANCH_USER_ROLE_OPTIONS,
+  BRANCH_USER_STATUS_OPTIONS,
+} from "@/src/features/branch-users/constants/branch-user.constants";
 
 import { useBranchUsers } from "@/src/features/branch-users/hooks/use-branch-users";
 import { useActivateBranchUser } from "@/src/features/branch-users/hooks/use-activate-branch-user";
@@ -23,7 +28,10 @@ import { useDeleteBranchUser } from "@/src/features/branch-users/hooks/use-delet
 import { useRestoreBranchUser } from "@/src/features/branch-users/hooks/use-restore-branch-user";
 import { usePermanentDeleteBranchUser } from "@/src/features/branch-users/hooks/use-permanent-delete-branch-user";
 
-import type { BranchUserListItem } from "@/src/features/branch-users/types/branch-user.types";
+import type {
+  BranchUserFilters,
+  BranchUserListItem,
+} from "@/src/features/branch-users/types/branch-user.types";
 
 type StatusConfirmAction = "activate" | "deactivate";
 
@@ -130,11 +138,11 @@ export function BranchManageUsersPanel({
     Boolean(filters.role) ||
     Boolean(filters.status);
 
-  if (isInitialLoading) {
-    return <SkeletonTable rows={8} />;
-  }
+  const updateFilters = (next: BranchUserFilters) => {
+    setFilters(next);
+  };
 
-  if (error && branchUsers.length === 0) {
+  if (error && branchUsers.length === 0 && !isInitialLoading) {
     return (
       <ErrorState
         title="Failed to load users"
@@ -149,126 +157,184 @@ export function BranchManageUsersPanel({
   return (
     <>
       <div className="space-y-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-[#102A56]">
-              Users
-            </h2>
-            <p className="mt-0.5 text-sm text-[#647A9B]">
-              Manage users for {branchName}
-            </p>
-          </div>
-
-          <Button
-            onClick={() => setIsCreateOpen(true)}
-            disabled={tableDisabled}
-            className="h-9 rounded-lg px-4"
-          >
-            Create User
-          </Button>
-        </div>
-
-        <Card className="overflow-hidden p-0 shadow-sm">
-          <div className="border-b border-slate-200 px-3 py-2.5">
-            <BranchUserFiltersBar
-              filters={filters}
-              onChange={setFilters}
-            />
-          </div>
-
-          {error ? (
-            <div className="border-b border-red-100 bg-red-50 px-3.5 py-2 text-sm text-red-700">
-              {error}{" "}
-              <button
-                type="button"
-                className="font-medium underline"
-                onClick={() => {
-                  void refetch();
-                }}
-              >
-                Retry
-              </button>
-            </div>
-          ) : null}
-
-          <div aria-busy={isLoading} className="relative overflow-x-auto">
-            {branchUsers.length === 0 ? (
-              <EmptyState
-                title="No Users Found"
-                description={
-                  hasActiveFilters
-                    ? "No users match the current filters."
-                    : "This branch does not have any users yet."
-                }
-              />
-            ) : (
-              <BranchUserTable
-                branchUsers={branchUsers}
-                actionsDisabled={tableDisabled}
-                onEdit={setEditUser}
-                onActivate={(branchUser) =>
-                  setStatusTarget({
-                    user: branchUser,
-                    action: "activate",
-                  })
-                }
-                onDeactivate={(branchUser) =>
-                  setStatusTarget({
-                    user: branchUser,
-                    action: "deactivate",
-                  })
-                }
-                onDelete={setDeleteTarget}
-                onResetPassword={setResetPasswordUser}
-                onRestore={setRestoreTarget}
-                onPermanentDelete={setPermanentDeleteTarget}
-              />
-            )}
-          </div>
-
-          {count > 0 ? (
-            <div className="flex min-h-[3.25rem] flex-col gap-2 border-t border-slate-200 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] text-[#647A9B]">
-                <span className="leading-9">
-                  Showing {from}–{to} of {count}
+        <header className="px-1 py-1">
+          <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:gap-4">
+            <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
+              <h2 className="text-[22px] font-bold tracking-tight text-[#102A56] sm:text-[26px]">
+                Users
+              </h2>
+              <span className="text-xs text-[#647A9B] sm:text-[13px]">
+                Total Users:
+                <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
+                  {isInitialLoading ? "—" : count}
                 </span>
+              </span>
+            </div>
 
-                <label className="flex items-center gap-2 leading-9">
-                  <span className="whitespace-nowrap">
-                    Rows per page
-                  </span>
-                  <select
-                    className="h-9 rounded-xl border border-[#DCE8F5] bg-white px-2 text-[15px] text-[#102A56]"
-                    value={filters.pageSize}
-                    disabled={tableDisabled}
-                    onChange={(event) =>
-                      setFilters({
-                        ...filters,
-                        pageSize: Number(event.target.value),
-                      })
-                    }
-                  >
-                    {[10, 20, 50, 100].map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+            <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center lg:ml-auto lg:w-auto lg:flex-1 lg:justify-end">
+              <div className="w-full sm:w-[280px]">
+                <SearchInput
+                  value={filters.search}
+                  placeholder="Search users..."
+                  className="h-9 rounded-lg !py-1.5 pl-9 text-sm"
+                  onChange={(value) =>
+                    updateFilters({
+                      ...filters,
+                      search: value,
+                      page: 1,
+                    })
+                  }
+                />
               </div>
 
-              <Pagination
-                page={filters.page}
-                totalPages={totalPages}
-                onPageChange={(page) =>
-                  setFilters({
-                    ...filters,
-                    page,
-                  })
-                }
-              />
+              <div className="w-full sm:w-[140px]">
+                <AppSelect
+                  value={filters.role ?? "ALL"}
+                  triggerClassName="h-9 rounded-lg px-2.5 text-sm"
+                  onValueChange={(value) =>
+                    updateFilters({
+                      ...filters,
+                      role:
+                        value === "ALL"
+                          ? undefined
+                          : (value as BranchUserFilters["role"]),
+                      page: 1,
+                    })
+                  }
+                  options={[
+                    { label: "All Roles", value: "ALL" },
+                    ...BRANCH_USER_ROLE_OPTIONS,
+                  ]}
+                />
+              </div>
+
+              <div className="w-full sm:w-[140px]">
+                <AppSelect
+                  value={filters.status ?? "ALL"}
+                  triggerClassName="h-9 rounded-lg px-2.5 text-sm"
+                  onValueChange={(value) =>
+                    updateFilters({
+                      ...filters,
+                      status:
+                        value === "ALL"
+                          ? undefined
+                          : (value as BranchUserFilters["status"]),
+                      page: 1,
+                    })
+                  }
+                  options={[...BRANCH_USER_STATUS_OPTIONS]}
+                />
+              </div>
+
+              <Button
+                type="button"
+                onClick={() => setIsCreateOpen(true)}
+                disabled={tableDisabled}
+                className="h-11 w-full shrink-0 border-0 bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] px-6 text-sm font-semibold text-white shadow-[0_3px_10px_rgba(37,99,235,0.25)] transition-all hover:from-[#0284C7] hover:to-[#1D4ED8] hover:shadow-[0_4px_12px_rgba(37,99,235,0.3)] disabled:opacity-50 sm:w-auto"
+              >
+                <Plus className="mr-1 h-4 w-4" aria-hidden="true" />
+                Create User
+              </Button>
             </div>
-          ) : null}
+          </div>
+        </header>
+
+        <Card className="min-w-0 overflow-hidden rounded-xl border-[#E1EBF5] p-0 shadow-sm">
+          {isInitialLoading ? (
+            <SkeletonTable rows={10} />
+          ) : (
+            <>
+              {error ? (
+                <div className="border-b border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  {error}{" "}
+                  <button
+                    type="button"
+                    className="font-medium underline"
+                    onClick={() => {
+                      void refetch();
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : null}
+
+              <div aria-busy={isLoading} className="relative min-w-0">
+                {isLoading ? (
+                  <span className="sr-only">Updating users</span>
+                ) : null}
+
+                <BranchUserTable
+                  branchUsers={branchUsers}
+                  actionsDisabled={tableDisabled}
+                  emptyTitle="No Users Found"
+                  emptyDescription={
+                    hasActiveFilters
+                      ? "No users match the current filters."
+                      : "This branch does not have any users yet."
+                  }
+                  onEdit={setEditUser}
+                  onActivate={(branchUser) =>
+                    setStatusTarget({
+                      user: branchUser,
+                      action: "activate",
+                    })
+                  }
+                  onDeactivate={(branchUser) =>
+                    setStatusTarget({
+                      user: branchUser,
+                      action: "deactivate",
+                    })
+                  }
+                  onDelete={setDeleteTarget}
+                  onResetPassword={setResetPasswordUser}
+                  onRestore={setRestoreTarget}
+                  onPermanentDelete={setPermanentDeleteTarget}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5 border-t border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#647A9B] sm:text-sm">
+                  <span>
+                    Showing {from}–{to} of {count}
+                  </span>
+
+                  <label className="flex items-center gap-1.5">
+                    <span className="whitespace-nowrap">Rows per page</span>
+                    <select
+                      className="h-7 rounded-md border border-[#DCE8F5] bg-white px-1.5 text-xs text-[#102A56] sm:text-sm"
+                      value={filters.pageSize}
+                      disabled={tableDisabled}
+                      onChange={(event) =>
+                        updateFilters({
+                          ...filters,
+                          pageSize: Number(event.target.value),
+                          page: 1,
+                        })
+                      }
+                    >
+                      {[10, 20, 50, 100].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <CategoryPagination
+                  page={filters.page}
+                  totalPages={totalPages}
+                  onPageChange={(page) =>
+                    updateFilters({
+                      ...filters,
+                      page,
+                    })
+                  }
+                />
+              </div>
+            </>
+          )}
         </Card>
       </div>
 

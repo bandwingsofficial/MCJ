@@ -2,16 +2,25 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, UserMinus } from "lucide-react";
+import { Eye, UserCheck, UserMinus } from "lucide-react";
 
-import { Card } from "@/src/shared/components/ui/card";
-import { Pagination } from "@/src/shared/components/ui/pagination";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
-import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
+import {
+  TABLE_CELL_CLASS,
+  BranchManageTableShell,
+} from "@/src/features/branches/components/manage/branch-manage-table-shell";
+import { BranchManagePaginationFooter } from "@/src/features/branches/components/manage/branch-manage-pagination-footer";
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
+import {
+  BRANCH_TAB_COUNT_CLASS,
+  BRANCH_TAB_HEADER_CLASS,
+  BRANCH_TAB_HEADER_ROW_CLASS,
+  BRANCH_TAB_TITLE_CLASS,
+  BRANCH_TABLE_CARD_CLASS,
+} from "@/src/features/branches/components/manage/branch-manage-layout.constants";
 import {
   formatBatchLabel,
   formatPersonName,
@@ -32,6 +41,7 @@ const PAGE_SIZE = 10;
 
 interface Props {
   branchId: string;
+  disabled?: boolean;
 }
 
 function formatStudentName(enrollment: Enrollment): string {
@@ -41,7 +51,10 @@ function formatStudentName(enrollment: Enrollment): string {
   );
 }
 
-export function BranchManageEnrollmentsPanel({ branchId }: Props) {
+export function BranchManageEnrollmentsPanel({
+  branchId,
+  disabled = false,
+}: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -84,98 +97,130 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
   }, [search]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(page * PAGE_SIZE, total);
 
   return (
-    <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-      <div className="mb-3">
-        <h2 className="text-lg font-semibold text-[#102A56]">
-          Enrolled Students
-        </h2>
-      </div>
-      <BranchSectionToolbar
-        search={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Search enrolled students..."
-      />
+    <>
+      <div className="space-y-3">
+        <header className={BRANCH_TAB_HEADER_CLASS}>
+          <div className={BRANCH_TAB_HEADER_ROW_CLASS}>
+            <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
+              <h2 className={BRANCH_TAB_TITLE_CLASS}>Enrolled Students</h2>
+              <span className={BRANCH_TAB_COUNT_CLASS}>
+                Total Enrolled:
+                <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
+                  {isLoading ? "—" : total}
+                </span>
+              </span>
+            </div>
 
-      <BranchManageTableShell
-        columns={[
-          { key: "code", label: "Student Code", className: "w-[10rem]" },
-          { key: "name", label: "Student Name" },
-          { key: "batch", label: "Batch" },
-          { key: "status", label: "Status", className: "w-[9rem]" },
-          {
-            key: "actions",
-            label: "Actions",
-            className: "w-[7rem] text-right",
-          },
-        ]}
-        isLoading={isLoading}
-        isEmpty={!isLoading && enrollments.length === 0}
-        emptyMessage="No students enrolled yet"
-        emptyDescription="Students enrolled in this branch through the Enrollment module will appear here."
-      >
-        {enrollments.map((enrollment) => (
-          <tr key={enrollment.id} className="hover:bg-slate-50">
-            <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-slate-700">
-              {enrollment.student?.studentCode ?? ""}
-            </td>
-            <td className="truncate px-4 py-3 text-sm font-medium text-[#102A56]">
-              {formatStudentName(enrollment)}
-            </td>
-            <td className="truncate px-4 py-3 text-sm text-slate-700">
-              {enrollment.batch?.name
-                ? formatBatchLabel(
-                    enrollment.batch.name,
-                    enrollment.batch.code,
-                  )
-                : ""}
-            </td>
-            <td className="whitespace-nowrap px-4 py-3">
-              <EnrollmentStatusBadge status={enrollment.status} />
-            </td>
-            <td className="px-4 py-3 text-right">
-              <div className="flex items-center justify-end gap-1">
-                {canUnenrollEnrollment(enrollment) ? (
-                  <BranchIconAction
-                    icon={UserMinus}
-                    label="Unenroll student"
-                    destructive
-                    onClick={() =>
-                      setUnenrollTarget({
-                        enrollmentId: enrollment.id,
-                        studentName: formatStudentName(enrollment),
-                        branchName: enrollment.branch?.branchName ?? undefined,
-                        batchName: enrollment.batch?.name ?? undefined,
-                        courseTitle: enrollment.course?.title ?? undefined,
-                      })
-                    }
-                  />
-                ) : null}
-                {enrollment.id ? (
-                  <BranchIconAction
-                    icon={Eye}
-                    label="View student"
-                    onClick={() =>
-                      router.push(enrollmentManagePath(enrollment.id))
-                    }
-                  />
-                ) : null}
-              </div>
-            </td>
-          </tr>
-        ))}
-      </BranchManageTableShell>
+            <BranchSectionToolbar
+              search={search}
+              onSearchChange={setSearch}
+              searchPlaceholder="Search enrolled students..."
+            />
+          </div>
+        </header>
 
-      {!isLoading && enrollments.length > 0 ? (
-        <div className="mt-4">
-          <Pagination
-            page={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-          />
+        <div className={BRANCH_TABLE_CARD_CLASS}>
+          <BranchManageTableShell
+            embedded
+            columns={[
+              { key: "code", label: "Student Code", className: "w-[10rem]" },
+              { key: "name", label: "Student Name" },
+              { key: "batch", label: "Batch" },
+              { key: "status", label: "Status", className: "w-[9rem]" },
+              {
+                key: "actions",
+                label: "Actions",
+                className: "w-[6.75rem] text-right",
+              },
+            ]}
+            isLoading={isLoading}
+            isEmpty={!isLoading && enrollments.length === 0}
+            emptyTitle="No Students Enrolled Yet"
+            emptyDescription="Students enrolled in this branch through the Enrollment module will appear here."
+            emptyIcon={UserCheck}
+          >
+            {enrollments.map((enrollment) => (
+              <tr
+                key={enrollment.id}
+                className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
+              >
+                <td className={`${TABLE_CELL_CLASS} font-mono text-slate-700`}>
+                  {enrollment.student?.studentCode ?? ""}
+                </td>
+                <td className={`${TABLE_CELL_CLASS} font-medium text-[#102A56]`}>
+                  <span className="block truncate">
+                    {formatStudentName(enrollment)}
+                  </span>
+                </td>
+                <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                  <span className="block truncate">
+                    {enrollment.batch?.name
+                      ? formatBatchLabel(
+                          enrollment.batch.name,
+                          enrollment.batch.code,
+                        )
+                      : ""}
+                  </span>
+                </td>
+                <td className={TABLE_CELL_CLASS}>
+                  <EnrollmentStatusBadge status={enrollment.status} />
+                </td>
+                <td className={TABLE_CELL_CLASS}>
+                  <div className="flex items-center justify-end gap-2">
+                    {canUnenrollEnrollment(enrollment) ? (
+                      <BranchIconAction
+                        icon={UserMinus}
+                        label="Unenroll student"
+                        destructive
+                        disabled={disabled || isUnenrolling}
+                        onClick={() =>
+                          setUnenrollTarget({
+                            enrollmentId: enrollment.id,
+                            studentName: formatStudentName(enrollment),
+                            branchName:
+                              enrollment.branch?.branchName ?? undefined,
+                            batchName: enrollment.batch?.name ?? undefined,
+                            courseTitle: enrollment.course?.title ?? undefined,
+                          })
+                        }
+                      />
+                    ) : null}
+                    {enrollment.id ? (
+                      <BranchIconAction
+                        icon={Eye}
+                        label="View enrollment"
+                        primary
+                        onClick={() =>
+                          router.push(enrollmentManagePath(enrollment.id))
+                        }
+                      />
+                    ) : null}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </BranchManageTableShell>
+
+          {!isLoading ? (
+            <BranchManagePaginationFooter
+              from={from}
+              to={to}
+              total={total}
+              page={page}
+              pageSize={PAGE_SIZE}
+              totalPages={totalPages}
+              disabled={disabled || isUnenrolling}
+              showPageSizeSelector={false}
+              onPageChange={setPage}
+              onPageSizeChange={() => undefined}
+            />
+          ) : null}
         </div>
-      ) : null}
+      </div>
 
       <UnenrollEnrollmentDialog
         open={Boolean(unenrollTarget)}
@@ -196,6 +241,6 @@ export function BranchManageEnrollmentsPanel({ branchId }: Props) {
           }
         }}
       />
-    </Card>
+    </>
   );
 }

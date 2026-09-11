@@ -1,11 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Link2Off } from "lucide-react";
+import { BookOpen, Link2Off } from "lucide-react";
 
-import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
-import { Badge } from "@/src/shared/components/ui/badge";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
@@ -14,12 +12,23 @@ import {
   type AssignableItem,
 } from "@/src/features/branches/components/manage/assign-entities-modal";
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
-import { BranchManageTableShell } from "@/src/features/branches/components/manage/branch-manage-table-shell";
+import {
+  TABLE_CELL_CLASS,
+  BranchManageTableShell,
+} from "@/src/features/branches/components/manage/branch-manage-table-shell";
 import { BranchSectionToolbar } from "@/src/features/branches/components/manage/branch-section-toolbar";
+import {
+  BRANCH_TAB_COUNT_CLASS,
+  BRANCH_TAB_HEADER_CLASS,
+  BRANCH_TAB_HEADER_ROW_CLASS,
+  BRANCH_TAB_TITLE_CLASS,
+  BRANCH_TABLE_CARD_CLASS,
+} from "@/src/features/branches/components/manage/branch-manage-layout.constants";
 import { branchService } from "@/src/features/branches/services/branch.service";
 import { BRANCH_COURSE_TRAINER_UNASSIGNED_LABEL } from "@/src/features/branches/utils/branch-display.utils";
 import { courseService } from "@/src/features/courses/services/course.service";
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
+import { CourseStatusBadge } from "@/src/features/courses/components/course-status-badge";
 import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
 import { trainerService } from "@/src/features/trainers/services/trainer.service";
 
@@ -229,76 +238,104 @@ export function BranchManageCoursesPanel({
 
   return (
     <>
-      <Card className="rounded-xl border border-slate-200 p-4 shadow-sm">
-        <div className="mb-3">
-          <h2 className="text-lg font-semibold text-[#102A56]">Courses</h2>
-        </div>
-        <BranchSectionToolbar
-          search={search}
-          onSearchChange={setSearch}
-          searchPlaceholder="Search courses..."
-          assignLabel="Assign Course"
-          onAssign={() => {
-            void openAssign();
-          }}
-          assignDisabled={assignmentsDisabled}
-        />
+      <div className="space-y-3">
+        <header className={BRANCH_TAB_HEADER_CLASS}>
+          <div className={BRANCH_TAB_HEADER_ROW_CLASS}>
+            <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
+              <h2 className={BRANCH_TAB_TITLE_CLASS}>Courses</h2>
+              <span className={BRANCH_TAB_COUNT_CLASS}>
+                Total Courses:
+                <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
+                  {isLoading ? "—" : courses.length}
+                </span>
+              </span>
+            </div>
 
-        <BranchManageTableShell
-          columns={[
-            { key: "course", label: "Course" },
-            { key: "code", label: "Course Code", className: "w-[9rem]" },
-            { key: "category", label: "Category" },
-            { key: "trainer", label: "Trainer" },
-            { key: "status", label: "Status", className: "w-[8rem]" },
-            {
-              key: "actions",
-              label: "Actions",
-              className: "w-[5.5rem] text-right",
-            },
-          ]}
-          isLoading={isLoading}
-          isEmpty={!isLoading && courses.length === 0}
-          emptyMessage="No courses assigned yet"
-          emptyDescription="Assign courses to this branch to get started."
-        >
-          {courses.map((course) => (
-            <tr key={course.id} className="hover:bg-slate-50">
-              <td className="truncate px-4 py-3 text-sm font-medium text-[#102A56]">
-                {course.title}
-              </td>
-              <td className="whitespace-nowrap px-4 py-3 font-mono text-sm text-slate-700">
-                {course.code ?? ""}
-              </td>
-              <td className="truncate px-4 py-3 text-sm text-slate-700">
-                {getCourseCategoryDisplayName(course)}
-              </td>
-              <td className="truncate px-4 py-3 text-sm text-slate-700">
-                {course.trainerLabel}
-              </td>
-              <td className="px-4 py-3">
-                <Badge variant="success" className="px-2.5 py-0.5 text-sm">
-                  Assigned
-                </Badge>
-              </td>
-              <td className="px-4 py-3 text-right">
-                <BranchIconAction
-                  icon={Link2Off}
-                  label="Unassign"
-                  destructive
-                  disabled={assignmentsDisabled || unassignLoading}
-                  onClick={() =>
-                    setUnassignTarget({
-                      id: course.id,
-                      label: course.title,
-                    })
-                  }
-                />
-              </td>
-            </tr>
-          ))}
-        </BranchManageTableShell>
-      </Card>
+            <BranchSectionToolbar
+              search={search}
+              onSearchChange={setSearch}
+              searchPlaceholder="Search courses..."
+              assignLabel="Assign Course"
+              onAssign={() => {
+                void openAssign();
+              }}
+              assignDisabled={assignmentsDisabled}
+            />
+          </div>
+        </header>
+
+        <div className={BRANCH_TABLE_CARD_CLASS}>
+          <BranchManageTableShell
+            embedded
+            columns={[
+              { key: "course", label: "Course" },
+              { key: "code", label: "Course Code", className: "w-[9rem]" },
+              { key: "category", label: "Category" },
+              { key: "trainer", label: "Trainer" },
+              { key: "status", label: "Status", className: "w-[8rem]" },
+              {
+                key: "actions",
+                label: "Actions",
+                className: "w-[6.75rem] text-right",
+              },
+            ]}
+            isLoading={isLoading}
+            isEmpty={!isLoading && courses.length === 0}
+            emptyTitle="No Courses Assigned Yet"
+            emptyDescription="Assign courses to this branch to get started."
+            emptyIcon={BookOpen}
+          >
+            {courses.map((course) => (
+              <tr
+                key={course.id}
+                className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
+              >
+                <td className={`${TABLE_CELL_CLASS} font-medium text-[#102A56]`}>
+                  <span className="block truncate" title={course.title}>
+                    {course.title}
+                  </span>
+                </td>
+                <td className={`${TABLE_CELL_CLASS} font-mono text-slate-700`}>
+                  {course.code ?? ""}
+                </td>
+                <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                  <span className="block truncate">
+                    {getCourseCategoryDisplayName(course)}
+                  </span>
+                </td>
+                <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                  <span className="block truncate" title={course.trainerLabel}>
+                    {course.trainerLabel}
+                  </span>
+                </td>
+                <td className={TABLE_CELL_CLASS}>
+                  <CourseStatusBadge
+                    status={course.status}
+                    deletedAt={course.deletedAt}
+                    isDeleted={course.isDeleted}
+                  />
+                </td>
+                <td className={TABLE_CELL_CLASS}>
+                  <div className="flex items-center justify-end gap-2">
+                    <BranchIconAction
+                      icon={Link2Off}
+                      label="Unassign"
+                      destructive
+                      disabled={assignmentsDisabled || unassignLoading}
+                      onClick={() =>
+                        setUnassignTarget({
+                          id: course.id,
+                          label: course.title,
+                        })
+                      }
+                    />
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </BranchManageTableShell>
+        </div>
+      </div>
 
       <AssignEntitiesModal
         open={assignOpen}
