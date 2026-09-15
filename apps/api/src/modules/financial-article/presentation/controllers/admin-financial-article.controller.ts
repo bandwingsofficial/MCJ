@@ -95,6 +95,8 @@ export class AdminFinancialArticleController {
         query.status,
         query.search,
         query.includeDeleted,
+        query.isDeleted,
+        query.isActive,
         false,
         query.skip,
         query.take,
@@ -104,7 +106,12 @@ export class AdminFinancialArticleController {
     return {
       success: true,
       message: 'Financial articles fetched successfully',
-      data: result,
+      data: result.items,
+      meta: {
+        total: result.total,
+        skip: query.skip,
+        take: query.take,
+      },
     };
   }
 

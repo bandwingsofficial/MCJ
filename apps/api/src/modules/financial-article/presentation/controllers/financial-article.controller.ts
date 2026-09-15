@@ -23,6 +23,8 @@ export class FinancialArticleController {
         undefined,
         query.search,
         false,
+        undefined,
+        undefined,
         true,
         query.skip,
         query.take,
@@ -32,7 +34,12 @@ export class FinancialArticleController {
     return {
       success: true,
       message: 'Financial articles fetched successfully',
-      data: result,
+      data: result.items,
+      meta: {
+        total: result.total,
+        skip: query.skip,
+        take: query.take,
+      },
     };
   }
 

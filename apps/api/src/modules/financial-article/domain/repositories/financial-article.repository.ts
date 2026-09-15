@@ -51,6 +51,8 @@ export interface FinancialArticleListFilters {
   status?: FinancialArticleStatus;
   search?: string;
   includeDeleted?: boolean;
+  isDeleted?: boolean;
+  isActive?: boolean;
   onlyPublished?: boolean;
   skip?: number;
   take?: number;
@@ -77,6 +79,7 @@ export interface FinancialArticleRepository {
   findMany(
     filters?: FinancialArticleListFilters,
   ): Promise<FinancialArticleDetailView[]>;
+  count(filters?: FinancialArticleListFilters): Promise<number>;
   findPublished(
     filters?: FinancialArticleListFilters,
   ): Promise<FinancialArticleDetailView[]>;

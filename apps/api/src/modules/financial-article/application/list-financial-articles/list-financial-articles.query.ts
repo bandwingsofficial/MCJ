@@ -6,6 +6,8 @@ export class ListFinancialArticlesQuery {
     public readonly status?: FinancialArticleStatus,
     public readonly search?: string,
     public readonly includeDeleted?: boolean,
+    public readonly isDeleted?: boolean,
+    public readonly isActive?: boolean,
     public readonly onlyPublished?: boolean,
     public readonly skip?: number,
     public readonly take?: number,

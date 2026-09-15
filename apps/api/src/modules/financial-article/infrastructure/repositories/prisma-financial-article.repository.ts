@@ -114,6 +114,12 @@ export class PrismaFinancialArticleRepository
     return FinancialArticleResponseMapper.toDetailList(records);
   }
 
+  async count(filters: FinancialArticleListFilters = {}): Promise<number> {
+    return this.prisma.financialArticle.count({
+      where: this.buildWhere(filters),
+    });
+  }
+
   async findPublished(
     filters: FinancialArticleListFilters = {},
   ): Promise<FinancialArticleDetailView[]> {
@@ -265,8 +271,14 @@ export class PrismaFinancialArticleRepository
   ): Prisma.FinancialArticleWhereInput {
     const where: Prisma.FinancialArticleWhereInput = {};
 
-    if (!filters.includeDeleted) {
+    if (filters.isDeleted !== undefined) {
+      where.isDeleted = filters.isDeleted;
+    } else if (!filters.includeDeleted) {
       where.isDeleted = false;
+    }
+
+    if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
     }
 
     if (filters.categoryId) {

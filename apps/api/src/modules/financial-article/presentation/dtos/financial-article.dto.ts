@@ -179,6 +179,36 @@ export class ListFinancialArticlesQueryDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === true || value === 'true') {
+      return true;
+    }
+
+    if (value === false || value === 'false') {
+      return false;
+    }
+
+    return undefined;
+  })
+  isDeleted?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === true || value === 'true') {
+      return true;
+    }
+
+    if (value === false || value === 'false') {
+      return false;
+    }
+
+    return undefined;
+  })
+  isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @Transform(({ value }) =>
     value !== undefined && value !== null && value !== ''
       ? Number(value)
