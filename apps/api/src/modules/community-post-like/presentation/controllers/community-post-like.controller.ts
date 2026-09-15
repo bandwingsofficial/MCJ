@@ -49,6 +49,11 @@ export class CommunityPostLikeController {
     const result = await this.listLikesHandler.execute(
       new ListCommunityPostLikesQuery(id),
     );
-    return { success: true, message: 'Likes fetched successfully', data: result };
+    return {
+      success: true,
+      message: 'Likes fetched successfully',
+      data: result.items,
+      meta: { total: result.total },
+    };
   }
 }

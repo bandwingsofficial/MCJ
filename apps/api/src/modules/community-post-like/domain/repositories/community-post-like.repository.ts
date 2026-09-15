@@ -25,5 +25,9 @@ export interface CommunityPostLikeRepository {
     postId: string,
     userId: string,
   ): Promise<boolean>;
-  findViewsByPostId(postId: string): Promise<CommunityPostLikeView[]>;
+  findViewsByPostId(
+    postId: string,
+    options?: { skip?: number; take?: number },
+  ): Promise<CommunityPostLikeView[]>;
+  countByPostId(postId: string): Promise<number>;
 }

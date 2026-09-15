@@ -53,6 +53,12 @@ export class PrismaCommunityPostRepository
     return records.map((record) => CommunityPostMapper.toDomain(record));
   }
 
+  async count(filters: CommunityPostListFilters = {}): Promise<number> {
+    return this.prisma.communityPost.count({
+      where: this.buildWhere(filters),
+    });
+  }
+
   async findPublished(
     filters: CommunityPostListFilters = {},
   ): Promise<CommunityPost[]> {
@@ -187,8 +193,14 @@ export class PrismaCommunityPostRepository
   ): Prisma.CommunityPostWhereInput {
     const where: Prisma.CommunityPostWhereInput = {};
 
-    if (!filters.includeDeleted) {
+    if (filters.isDeleted !== undefined) {
+      where.isDeleted = filters.isDeleted;
+    } else if (!filters.includeDeleted) {
       where.isDeleted = false;
+    }
+
+    if (filters.isActive !== undefined) {
+      where.isActive = filters.isActive;
     }
 
     if (filters.onlyPublished) {
@@ -199,6 +211,10 @@ export class PrismaCommunityPostRepository
 
     if (filters.status) {
       where.status = filters.status;
+    }
+
+    if (filters.type) {
+      where.type = filters.type;
     }
 
     if (filters.search?.trim()) {

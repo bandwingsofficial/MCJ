@@ -16,6 +16,9 @@ export const useRestoreComment = () => {
       void queryClient.invalidateQueries({
         queryKey: communityApi.all,
       });
+      void queryClient.invalidateQueries({
+        queryKey: communityApi.details(),
+      });
     },
   });
 };

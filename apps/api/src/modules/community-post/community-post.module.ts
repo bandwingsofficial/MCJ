@@ -7,6 +7,7 @@ import { AuthModule } from '../auth/auth.module';
 import { UploadsModule } from '../uploads/uploads.module';
 import { UploadDomainService } from '../uploads/domain/services/upload-domain.service';
 import { CommunityPostCommentModule } from '../community-post-comment/community-post-comment.module';
+import { CommunityPostLikeModule } from '../community-post-like/community-post-like.module';
 import { COMMUNITY_POST_COMMENT_TOKENS } from '../community-post-comment/community-post-comment.tokens';
 import type { CommunityPostCommentRepository } from '../community-post-comment/domain/repositories/community-post-comment.repository';
 
@@ -33,6 +34,7 @@ import { CommunityPostController } from './presentation/controllers/community-po
     AuthModule,
     UploadsModule,
     forwardRef(() => CommunityPostCommentModule),
+    forwardRef(() => CommunityPostLikeModule),
   ],
   controllers: [AdminCommunityPostController, CommunityPostController],
   providers: [

@@ -47,6 +47,7 @@ export class CreateCommunityPostHandler {
       thumbnailUrl: command.thumbnailUrl,
       hashtags: command.hashtags,
       mentions: command.mentions,
+      authorName: command.authorName,
       location: command.location,
       status: command.status,
       createdBy: command.createdBy,

@@ -1376,6 +1376,7 @@ model CommunityPost {
   thumbnailUrl String?
   hashtags     String[]
   mentions     String[]
+  authorName   String                 @default("MCJ Community")
   location     String?
   viewCount    Int                    @default(0)
   likeCount    Int                    @default(0)

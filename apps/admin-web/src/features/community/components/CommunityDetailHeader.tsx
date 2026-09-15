@@ -9,9 +9,8 @@ import {
   CommunityTypeBadge,
 } from "./CommunityTypeBadge";
 
-import type {
-  CommunityPost,
-} from "@/src/features/community/types/community.types";
+import type { CommunityPost } from "@/src/features/community/types/community.types";
+import { getCommunityManagementStatus } from "@/src/features/community/utils/community-display.utils";
 
 interface CommunityDetailHeaderProps {
   post: CommunityPost;
@@ -23,7 +22,7 @@ export function CommunityDetailHeader({
   return (
     <PageHeader
       title="Community Post"
-      description={post.caption}
+      description={post.caption ?? undefined}
       actions={
         <div className="flex items-center gap-2">
           <CommunityTypeBadge
@@ -31,7 +30,7 @@ export function CommunityDetailHeader({
           />
 
           <CommunityStatusBadge
-            status={post.status}
+            status={getCommunityManagementStatus(post)}
           />
         </div>
       }

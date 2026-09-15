@@ -1,25 +1,12 @@
-export * from "./useActivateCommunityPost";
+export * from "./use-community-posts";
+export * from "./use-community-actions";
+export * from "./use-community-post-likes";
+export * from "./use-create-community-post";
+export * from "./use-update-community-post";
 
 export * from "./useBlockComment";
-
-export * from "./useCommunityPost";
-
-export * from "./useCommunityPosts";
-
-export * from "./useCreateCommunityPost";
-
-export * from "./useDeactivateCommunityPost";
-
+export * from "./useUnblockComment";
 export * from "./useDeleteComment";
-
-export * from "./useDeleteCommunityPost";
-
-export * from "./usePermanentDeleteCommunityPost";
-
 export * from "./useRestoreComment";
 
-export * from "./useRestoreCommunityPost";
-
-export * from "./useUnblockComment";
-
-export * from "./useUpdateCommunityPost";
+export { useCommunityPost } from "./useCommunityPost";

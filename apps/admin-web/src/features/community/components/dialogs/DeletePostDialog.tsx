@@ -1,59 +1,46 @@
 "use client";
 
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
-import { appToast } from "@/src/shared/components/ui/toast";
 
-import { useDeleteCommunityPost } from "@/src/features/community/hooks";
+import { useDeleteCommunityPost } from "@/src/features/community/hooks/use-community-actions";
 
 interface DeletePostDialogProps {
   open: boolean;
-
   postId: string | null;
-
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 export function DeletePostDialog({
   open,
   postId,
   onClose,
+  onSuccess,
 }: DeletePostDialogProps) {
-  const deleteMutation =
-    useDeleteCommunityPost();
+  const { deleteCommunityPost, isLoading } = useDeleteCommunityPost();
 
-  const handleConfirm =
-    async () => {
-      if (!postId) {
-        return;
-      }
+  const handleConfirm = async () => {
+    if (!postId) {
+      return;
+    }
 
-      await appToast.promise(
-        deleteMutation.mutateAsync(
-          postId,
-        ),
-        {
-          loading:
-            "Deleting post...",
+    const success = await deleteCommunityPost(postId);
 
-          success:
-            "Post deleted successfully.",
-
-          error:
-            "Failed to delete post.",
-        },
-      );
-
+    if (success) {
+      onSuccess?.();
       onClose();
-    };
+    }
+  };
 
   return (
     <ConfirmDialog
       open={open}
       title="Delete Community Post"
       description="Are you sure you want to delete this community post?"
-      onConfirm={
-        handleConfirm
-      }
+      confirmLabel="Archive"
+      confirmVariant="danger"
+      loading={isLoading}
+      onConfirm={handleConfirm}
       onCancel={onClose}
     />
   );

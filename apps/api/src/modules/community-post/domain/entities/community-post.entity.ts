@@ -16,6 +16,7 @@ export class CommunityPost {
     public thumbnailUrl: MediaUrl,
     public hashtags: string[],
     public mentions: string[],
+    public authorName: string,
     public location: Location,
     public viewCount: number,
     public likeCount: number,
@@ -42,6 +43,7 @@ export class CommunityPost {
       MediaUrl.create(params.thumbnailUrl),
       Hashtag.createMany(params.hashtags),
       Mention.createMany(params.mentions),
+      params.authorName?.trim() || "MCJ Community",
       Location.create(params.location),
       0,
       0,
@@ -71,6 +73,7 @@ export class CommunityPost {
       MediaUrl.create(params.thumbnailUrl),
       params.hashtags,
       params.mentions,
+      params.authorName?.trim() || "MCJ Community",
       Location.create(params.location),
       params.viewCount,
       params.likeCount,
@@ -107,6 +110,9 @@ export class CommunityPost {
     }
     if (params.mentions !== undefined) {
       this.mentions = Mention.createMany(params.mentions);
+    }
+    if (params.authorName !== undefined) {
+      this.authorName = params.authorName?.trim() || "MCJ Community";
     }
     if (params.location !== undefined) {
       this.location = Location.create(params.location);
@@ -166,6 +172,7 @@ export interface CommunityPostCreateParams {
   thumbnailUrl?: string | null;
   hashtags?: string[];
   mentions?: string[];
+  authorName?: string | null;
   location?: string | null;
   status?: CommunityPostStatus;
   isActive?: boolean;

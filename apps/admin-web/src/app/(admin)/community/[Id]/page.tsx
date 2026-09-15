@@ -1,19 +1,13 @@
-import {
-  CommunityDetailsPage,
-} from "@/src/features/community/pages/CommunityDetailsPage";
+import { redirect } from "next/navigation";
 
-interface PageProps {
-  params: {
-    id: string;
-  };
+interface Props {
+  params: Promise<{
+    Id: string;
+  }>;
 }
 
-export default function Page({
-  params,
-}: PageProps) {
-  return (
-    <CommunityDetailsPage
-      postId={params.id}
-    />
-  );
+export default async function LegacyCommunityDetailRoute({ params }: Props) {
+  const { Id } = await params;
+
+  redirect(`/community/${Id}/manage`);
 }

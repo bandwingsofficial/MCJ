@@ -16,6 +16,9 @@ export const useDeleteComment = () => {
       void queryClient.invalidateQueries({
         queryKey: communityApi.all,
       });
+      void queryClient.invalidateQueries({
+        queryKey: communityApi.details(),
+      });
     },
   });
 };

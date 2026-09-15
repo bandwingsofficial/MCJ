@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
@@ -18,7 +18,7 @@ import { PrismaCommunityPostLikeRepository } from './infrastructure/repositories
 import { CommunityPostLikeController } from './presentation/controllers/community-post-like.controller';
 
 @Module({
-  imports: [PrismaModule, AuthModule, CommunityPostModule],
+  imports: [PrismaModule, AuthModule, forwardRef(() => CommunityPostModule)],
   controllers: [CommunityPostLikeController],
   providers: [
     CommunityPostLikeDomainService,
@@ -79,6 +79,7 @@ import { CommunityPostLikeController } from './presentation/controllers/communit
   exports: [
     COMMUNITY_POST_LIKE_TOKENS.COMMUNITY_POST_LIKE_REPOSITORY,
     CommunityPostLikeDomainService,
+    ListCommunityPostLikesHandler,
   ],
 })
 export class CommunityPostLikeModule {}

@@ -62,15 +62,26 @@ export class PrismaCommunityPostLikeRepository
     return Boolean(record);
   }
 
-  async findViewsByPostId(postId: string): Promise<CommunityPostLikeView[]> {
+  async findViewsByPostId(
+    postId: string,
+    options?: { skip?: number; take?: number },
+  ): Promise<CommunityPostLikeView[]> {
     const records = await this.prisma.communityPostLike.findMany({
       where: { postId, isDeleted: false },
       include: communityPostLikeUserInclude,
       orderBy: { createdAt: 'desc' },
+      skip: options?.skip,
+      take: options?.take,
     });
 
     return records.map((record) =>
       CommunityPostLikeResponseMapper.toView(record),
     );
+  }
+
+  async countByPostId(postId: string): Promise<number> {
+    return this.prisma.communityPostLike.count({
+      where: { postId, isDeleted: false },
+    });
   }
 }

@@ -1,18 +1,13 @@
 "use client";
 
-import type {
-  CommunityPost,
-} from "@/src/features/community/types/community.types";
+import type { CommunityPostListItem } from "@/src/features/community/types/community.types";
 
 import { CommunityEmpty } from "./CommunityEmpty";
 import { CommunityPostCard } from "./CommunityPostCard";
 
 interface CommunityPostGridProps {
-  posts: CommunityPost[];
-
-  onPostClick?: (
-    post: CommunityPost,
-  ) => void;
+  posts: CommunityPostListItem[];
+  onPostClick?: (post: CommunityPostListItem) => void;
 }
 
 export function CommunityPostGrid({
@@ -29,7 +24,13 @@ export function CommunityPostGrid({
         <CommunityPostCard
           key={post.id}
           post={post}
-          onClick={onPostClick}
+          onManage={onPostClick}
+          onEdit={onPostClick ?? (() => undefined)}
+          onActivate={onPostClick ?? (() => undefined)}
+          onDeactivate={onPostClick ?? (() => undefined)}
+          onDelete={onPostClick ?? (() => undefined)}
+          onRestore={onPostClick ?? (() => undefined)}
+          onPermanentDelete={onPostClick ?? (() => undefined)}
         />
       ))}
     </div>

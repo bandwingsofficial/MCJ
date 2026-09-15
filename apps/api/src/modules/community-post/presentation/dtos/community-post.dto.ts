@@ -45,6 +45,12 @@ export class CreateCommunityPostDto {
   @IsString({ each: true })
   mentions?: string[];
 
+  @ApiPropertyOptional({ default: 'MCJ Community' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  authorName?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -104,16 +110,69 @@ export class UpdateCommunityPostDto {
 export class ListCommunityPostsQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined ? Number(value) : undefined))
-  skip?: number;
+  @IsEnum(CommunityPostStatus)
+  status?: CommunityPostStatus;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ enum: CommunityPostType })
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined ? Number(value) : undefined))
-  take?: number;
+  @IsEnum(CommunityPostType)
+  type?: CommunityPostType;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  includeDeleted?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === true || value === 'true') {
+      return true;
+    }
+
+    if (value === false || value === 'false') {
+      return false;
+    }
+
+    return undefined;
+  })
+  isDeleted?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === true || value === 'true') {
+      return true;
+    }
+
+    if (value === false || value === 'false') {
+      return false;
+    }
+
+    return undefined;
+  })
+  isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(({ value }) =>
+    value !== undefined && value !== null && value !== ''
+      ? Number(value)
+      : undefined,
+  )
+  skip?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(({ value }) =>
+    value !== undefined && value !== null && value !== ''
+      ? Number(value)
+      : undefined,
+  )
+  take?: number;
 }

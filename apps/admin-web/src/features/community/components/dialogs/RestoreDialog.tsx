@@ -1,61 +1,45 @@
 "use client";
 
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
-import { appToast } from "@/src/shared/components/ui/toast";
 
-import {
-  useRestoreCommunityPost,
-} from "@/src/features/community/hooks";
+import { useRestoreCommunityPost } from "@/src/features/community/hooks/use-community-actions";
 
 interface RestoreDialogProps {
   open: boolean;
-
   postId: string | null;
-
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 export function RestoreDialog({
   open,
   postId,
   onClose,
+  onSuccess,
 }: RestoreDialogProps) {
-  const restoreMutation =
-    useRestoreCommunityPost();
+  const { restoreCommunityPost, isLoading } = useRestoreCommunityPost();
 
-  const handleConfirm =
-    async () => {
-      if (!postId) {
-        return;
-      }
+  const handleConfirm = async () => {
+    if (!postId) {
+      return;
+    }
 
-      await appToast.promise(
-        restoreMutation.mutateAsync(
-          postId,
-        ),
-        {
-          loading:
-            "Restoring post...",
+    const success = await restoreCommunityPost(postId);
 
-          success:
-            "Post restored successfully.",
-
-          error:
-            "Failed to restore post.",
-        },
-      );
-
+    if (success) {
+      onSuccess?.();
       onClose();
-    };
+    }
+  };
 
   return (
     <ConfirmDialog
       open={open}
       title="Restore Community Post"
-      description="Restore this deleted community post?"
-      onConfirm={
-        handleConfirm
-      }
+      description="Are you sure you want to restore this community post?"
+      confirmLabel="Restore"
+      loading={isLoading}
+      onConfirm={handleConfirm}
       onCancel={onClose}
     />
   );

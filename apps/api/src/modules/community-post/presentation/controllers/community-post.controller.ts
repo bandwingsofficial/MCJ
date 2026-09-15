@@ -24,9 +24,29 @@ export class CommunityPostController {
   @Get()
   async list(@Query() query: ListCommunityPostsQueryDto) {
     const result = await this.listHandler.execute(
-      new ListCommunityPostsQuery(undefined, query.search, false, true, query.skip, query.take),
+      new ListCommunityPostsQuery(
+        undefined,
+        undefined,
+        query.search,
+        false,
+        undefined,
+        undefined,
+        true,
+        query.skip,
+        query.take,
+      ),
     );
-    return { success: true, message: 'Posts fetched successfully', data: result };
+
+    return {
+      success: true,
+      message: 'Posts fetched successfully',
+      data: result.items,
+      meta: {
+        total: result.total,
+        skip: query.skip,
+        take: query.take,
+      },
+    };
   }
 
   @Post(':id/view')

@@ -9,6 +9,7 @@ export class CreateCommunityPostCommand {
     public readonly thumbnailUrl?: string | null,
     public readonly hashtags?: string[],
     public readonly mentions?: string[],
+    public readonly authorName?: string | null,
     public readonly location?: string | null,
     public readonly status?: CommunityPostStatus,
     public readonly createdBy?: string,

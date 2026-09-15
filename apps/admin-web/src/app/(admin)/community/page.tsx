@@ -1,7 +1,5 @@
-import {
-  CommunityListPage,
-} from "@/src/features/community/pages/CommunityListPage";
+import { CommunityPage } from "@/src/features/community/pages/community-page";
 
 export default function Page() {
-  return <CommunityListPage />;
+  return <CommunityPage />;
 }

@@ -31,7 +31,7 @@ export function CommunityMediaPreview({
   return (
     <img
       src={post.mediaUrl}
-      alt={post.caption}
+      alt={post.caption ?? "Community post media"}
       className="w-full rounded-lg border object-cover"
     />
   );

@@ -15,6 +15,8 @@ import { CurrentUser } from '@common/decorators/current-user.decorator';
 import type { AuthUser } from '@common/decorators/current-user.decorator';
 import { SuperAdminGuard } from '@common/guards/super-admin.guard';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
+import { ListCommunityPostLikesHandler } from '@modules/community-post-like/application/list-community-post-likes/list-community-post-likes.handler';
+import { ListCommunityPostLikesQuery } from '@modules/community-post-like/application/list-community-post-likes/list-community-post-likes.query';
 
 import { CreateCommunityPostCommand } from '../../application/create-community-post/create-community-post.command';
 import { CreateCommunityPostHandler } from '../../application/create-community-post/create-community-post.handler';
@@ -54,6 +56,7 @@ export class AdminCommunityPostController {
     private readonly restoreHandler: RestoreCommunityPostHandler,
     private readonly permanentDeleteHandler: PermanentDeleteCommunityPostHandler,
     private readonly activationHandler: UpdateCommunityPostActivationHandler,
+    private readonly listLikesHandler: ListCommunityPostLikesHandler,
   ) {}
 
   @Post()
@@ -69,6 +72,7 @@ export class AdminCommunityPostController {
         dto.thumbnailUrl,
         dto.hashtags,
         dto.mentions,
+        dto.authorName,
         dto.location,
         dto.status,
         user?.sub,
@@ -80,9 +84,56 @@ export class AdminCommunityPostController {
   @Get()
   async list(@Query() query: ListCommunityPostsQueryDto) {
     const result = await this.listHandler.execute(
-      new ListCommunityPostsQuery(undefined, query.search, true, false, query.skip, query.take),
+      new ListCommunityPostsQuery(
+        query.status,
+        query.type,
+        query.search,
+        query.includeDeleted ?? false,
+        query.isDeleted,
+        query.isActive,
+        false,
+        query.skip,
+        query.take,
+      ),
     );
-    return { success: true, message: 'Posts fetched successfully', data: result };
+
+    return {
+      success: true,
+      message: 'Posts fetched successfully',
+      data: result.items,
+      meta: {
+        total: result.total,
+        skip: query.skip,
+        take: query.take,
+      },
+    };
+  }
+
+  @Get(':id/likes')
+  async listLikes(
+    @Param('id') id: string,
+    @Query('skip') skip?: number,
+    @Query('take') take?: number,
+  ) {
+    const result = await this.listLikesHandler.execute(
+      new ListCommunityPostLikesQuery(
+        id,
+        skip !== undefined ? Number(skip) : undefined,
+        take !== undefined ? Number(take) : undefined,
+        true,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Likes fetched successfully',
+      data: result.items,
+      meta: {
+        total: result.total,
+        skip,
+        take,
+      },
+    };
   }
 
   @Get(':id')
