@@ -20,13 +20,9 @@ import {
   GitBranch,
   BookOpen,
   Boxes,
-  WifiOff,
-  Globe,
-  Video,
   MessageSquare,
   Newspaper,
   Briefcase,
-  FileText,
   ClipboardList,
   Settings,
   LogOut,
@@ -92,26 +88,6 @@ const menu = [
     ],
   },
   {
-    section: "MANAGEMENT",
-    items: [
-      {
-        name: "Offline Management",
-        icon: WifiOff,
-        path: "/offline",
-      },
-      {
-        name: "Online Management",
-        icon: Globe,
-        path: "/online",
-      },
-      {
-        name: "Recorded Management",
-        icon: Video,
-        path: "/recorded",
-      },
-    ],
-  },
-  {
     section: "ECOSYSTEM",
     items: [
       {
@@ -133,11 +109,6 @@ const menu = [
         name: "Job Applications",
         icon: ClipboardList,
         path: "/job-applications",
-      },
-      {
-        name: "Placements",
-        icon: FileText,
-        path: "/placements",
       },
       {
         name: "Settings",

@@ -23,6 +23,26 @@ export interface JobApplicationListQuery {
   take?: number;
 }
 
+function resolveJobApplicationListTotal(
+  response: JobApplicationListResponse,
+  itemsLength: number,
+): number {
+  const metaTotal = response.meta?.total;
+
+  if (typeof metaTotal === "number" && Number.isFinite(metaTotal)) {
+    return metaTotal;
+  }
+
+  if (typeof metaTotal === "string" && metaTotal.trim() !== "") {
+    const parsed = Number(metaTotal);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return itemsLength;
+}
+
 class JobApplicationService {
   async getJobApplications(params?: JobApplicationListQuery) {
     const { data } = await apiClient.get<JobApplicationListResponse>(
@@ -42,14 +62,11 @@ class JobApplicationService {
       },
     );
 
+    const items = Array.isArray(data.data) ? data.data : [];
+
     return {
-      items: await enrichJobApplicationStudentCodes(
-        Array.isArray(data.data) ? data.data : [],
-      ),
-      total:
-        typeof data.meta?.total === "number"
-          ? data.meta.total
-          : data.data?.length ?? 0,
+      items: await enrichJobApplicationStudentCodes(items),
+      total: resolveJobApplicationListTotal(data, items.length),
     };
   }
 

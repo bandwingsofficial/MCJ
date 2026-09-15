@@ -13,6 +13,8 @@ interface ApiResponse<T> {
   message?: string;
 
   data?: T;
+
+  meta?: unknown;
 }
 
 @Injectable()
@@ -40,6 +42,10 @@ export class ResponseInterceptor<T>
             typedResponse.data !== undefined
               ? typedResponse.data
               : null,
+
+          ...(typedResponse.meta !== undefined
+            ? { meta: typedResponse.meta }
+            : {}),
         };
       }),
     );

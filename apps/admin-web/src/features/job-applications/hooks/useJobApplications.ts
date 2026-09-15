@@ -73,6 +73,18 @@ function buildListQuery(
   };
 }
 
+async function fetchGlobalStatusTotal(
+  status: JobApplicationListQuery["status"],
+): Promise<number> {
+  const response = await jobApplicationService.getJobApplications({
+    status,
+    skip: 0,
+    take: 1,
+  });
+
+  return response.total;
+}
+
 export const useJobApplications = (): UseJobApplicationsReturn => {
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
   const [total, setTotal] = useState(0);
@@ -158,31 +170,18 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
       const pageSize = filters.pageSize ?? DEFAULT_APPLICATION_PAGE_SIZE;
       const baseQuery = buildListQuery(filters, debouncedSearch);
 
-      const [response, pending, approved, rejected] = await Promise.all([
-        jobApplicationService.getJobApplications({
-          ...baseQuery,
-          skip: (page - 1) * pageSize,
-          take: pageSize,
-        }),
-        jobApplicationService.getJobApplications({
-          ...buildListQuery(filters, debouncedSearch),
-          status: "APPLIED",
-          skip: 0,
-          take: 1,
-        }),
-        jobApplicationService.getJobApplications({
-          ...buildListQuery(filters, debouncedSearch),
-          status: "SELECTED",
-          skip: 0,
-          take: 1,
-        }),
-        jobApplicationService.getJobApplications({
-          ...buildListQuery(filters, debouncedSearch),
-          status: "REJECTED",
-          skip: 0,
-          take: 1,
-        }),
-      ]);
+      const [response, pendingTotal, selectedTotal, placedTotal, rejectedTotal] =
+        await Promise.all([
+          jobApplicationService.getJobApplications({
+            ...baseQuery,
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+          }),
+          fetchGlobalStatusTotal("APPLIED"),
+          fetchGlobalStatusTotal("SELECTED"),
+          fetchGlobalStatusTotal("PLACED"),
+          fetchGlobalStatusTotal("REJECTED"),
+        ]);
 
       if (requestId !== requestIdRef.current) {
         return;
@@ -190,12 +189,14 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
 
       setJobApplications(response.items);
       setTotal(response.total);
+      const approvedTotal = selectedTotal + placedTotal;
+
       setStatusCounts({
-        pending: pending.total,
-        approved: approved.total,
-        rejected: rejected.total,
+        pending: pendingTotal,
+        approved: approvedTotal,
+        rejected: rejectedTotal,
       });
-      setCatalogTotal(pending.total + approved.total + rejected.total);
+      setCatalogTotal(pendingTotal + approvedTotal + rejectedTotal);
 
       setError(null);
       hasLoadedRef.current = true;
