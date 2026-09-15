@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   BookOpen,
+  GraduationCap,
   LayoutDashboard,
   Layers,
   Tag,
@@ -25,6 +26,7 @@ import type { BranchSummaryCounts } from "@/src/features/branches/hooks/use-bran
 import { BranchManageBatchesPanel } from "./branch-manage-batches-panel";
 import { BranchManageCategoriesPanel } from "./branch-manage-categories-panel";
 import { BranchManageCoursesPanel } from "./branch-manage-courses-panel";
+import { BranchManageTrainersPanel } from "./branch-manage-trainers-panel";
 import { BranchManageEnrollmentsPanel } from "./branch-manage-enrollments-panel";
 import { BranchManageUsersPanel } from "./branch-manage-users-panel";
 import { BranchManageOverviewPanel } from "./branch-manage-overview-panel";
@@ -52,6 +54,7 @@ const TAB_ITEMS: ReadonlyArray<{
   { value: "batches", label: "Batches", icon: Layers },
   { value: "categories", label: "Categories", icon: Tag },
   { value: "courses", label: "Courses", icon: BookOpen },
+  { value: "trainers", label: "Trainers", icon: GraduationCap },
   { value: "students", label: "Enrolled Students", icon: UserCheck },
   { value: "reports", label: "Reports", icon: BarChart3 },
 ];
@@ -142,6 +145,14 @@ export function BranchManageWorkspace({
           assignmentsDisabled={assignmentsDisabled}
           assignOnMount={assignOnMountTab === "courses"}
           onAssignOnMountHandled={() => clearAssignOnMount("courses")}
+          onSummaryRefresh={onSummaryRefresh}
+        />
+      </TabsContent>
+
+      <TabsContent value="trainers">
+        <BranchManageTrainersPanel
+          branchId={branchId}
+          assignmentsDisabled={assignmentsDisabled}
           onSummaryRefresh={onSummaryRefresh}
         />
       </TabsContent>

@@ -28,6 +28,7 @@ const TAB_LABELS: Record<string, string> = {
   users: "Users",
   categories: "Categories",
   courses: "Courses",
+  trainers: "Trainers",
   batches: "Batches",
   students: "Enrolled Students",
   reports: "Reports",
