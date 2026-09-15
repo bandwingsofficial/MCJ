@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /**
- * Next.js 16 / Turbopack does not always register a nested static segment
- * under a dynamic folder (`/branches/[branchId]/manage` and
- * `/batches/[id]/timings/[timingId]/manage` 404 even when `manage/page.tsx`
- * exists). Rewrite those public URLs onto the parent dynamic route pages.
+ * Next.js 16 / Turbopack does not always register nested routes under a
+ * dynamic folder (for example `/branches/[branchId]/manage`,
+ * `/batches/[id]/timings/[timingId]/manage`, and course module management
+ * URLs under `/courses/[id]/manage/modules/...`). Rewrite those public URLs
+ * onto route pages Turbopack reliably registers.
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
