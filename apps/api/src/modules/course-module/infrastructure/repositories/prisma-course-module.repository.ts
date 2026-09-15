@@ -248,6 +248,18 @@ export class PrismaCourseModuleRepository
             deletedBy: deletedBy ?? null,
           },
         });
+
+        await tx.courseQuiz.updateMany({
+          where: {
+            lessonId: { in: lessonIds },
+            isDeleted: false,
+          },
+          data: {
+            isDeleted: true,
+            deletedAt: now,
+            updatedBy: deletedBy ?? null,
+          },
+        });
       }
 
       await tx.courseLesson.updateMany({
@@ -280,6 +292,17 @@ export class PrismaCourseModuleRepository
             isDeleted: false,
             deletedAt: null,
             deletedBy: null,
+          },
+        });
+
+        await tx.courseQuiz.updateMany({
+          where: {
+            lessonId: { in: lessonIds },
+            isDeleted: true,
+          },
+          data: {
+            isDeleted: false,
+            deletedAt: null,
           },
         });
       }

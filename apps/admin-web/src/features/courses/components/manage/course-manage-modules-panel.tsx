@@ -28,6 +28,7 @@ import type { CourseModule } from "@/src/features/course-modules/types/course-mo
 import type { CourseDetails } from "@/src/features/courses/types/course.types";
 import {
   getModuleContentCounts,
+  hasAuthoritativeModuleCounts,
 } from "@/src/features/courses/utils/course-content-stats.util";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { formatContentOrderNumber } from "@/src/shared/utils/content-order";
@@ -74,6 +75,21 @@ export function CourseManageModulesPanel({
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const [isReordering, setIsReordering] = useState(false);
   const reorderInFlightRef = useRef(false);
+  const courseStatsKey = [
+    course.moduleCount ?? 0,
+    course.lessonCount ?? 0,
+    course.resourceCount ?? 0,
+    course.quizCount ?? 0,
+  ].join(":");
+  const previousCourseStatsKey = useRef(courseStatsKey);
+
+  useEffect(() => {
+    if (previousCourseStatsKey.current === courseStatsKey) {
+      return;
+    }
+    previousCourseStatsKey.current = courseStatsKey;
+    void refetch();
+  }, [courseStatsKey, refetch]);
 
   const moduleTreeById = useMemo(() => {
     return new Map(
@@ -205,14 +221,11 @@ export function CourseManageModulesPanel({
           <div className="space-y-2">
             {rows.map((module, index) => {
               const treeModule = moduleTreeById.get(module.id);
-              const counts = treeModule
-                ? getModuleContentCounts(treeModule)
-                : {
-                    lessons: 0,
-                    resources: 0,
-                    quizzes: 0,
-                    assignments: 0,
-                  };
+              const counts = getModuleContentCounts(
+                hasAuthoritativeModuleCounts(module)
+                  ? module
+                  : (treeModule ?? module),
+              );
               const draggable =
                 !actionsDisabled &&
                 !module.isDeleted &&
@@ -392,12 +405,11 @@ export function CourseManageModulesPanel({
         moduleTitle={selectedModule?.title}
         contentCounts={
           selectedModule
-            ? (() => {
-                const treeModule = moduleTreeById.get(selectedModule.id);
-                return treeModule
-                  ? getModuleContentCounts(treeModule)
-                  : undefined;
-              })()
+            ? getModuleContentCounts(
+                hasAuthoritativeModuleCounts(selectedModule)
+                  ? selectedModule
+                  : (moduleTreeById.get(selectedModule.id) ?? selectedModule),
+              )
             : undefined
         }
         loading={isDeleting}

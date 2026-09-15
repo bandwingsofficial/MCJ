@@ -2,6 +2,7 @@ import type { CourseModuleRepository } from '../../domain/repositories/course-mo
 import { CourseModuleDomainService } from '../../domain/services/course-module-domain.service';
 import { CourseModuleResponseMapper } from '../../infrastructure/mappers/course-module-response.mapper';
 import { CourseModuleResult } from '../course-module.result';
+import { CourseHierarchyService } from '../../../course/infrastructure/services/course-hierarchy.service';
 
 import { DeactivateCourseModuleCommand } from './deactivate-course-module.command';
 
@@ -9,6 +10,7 @@ export class DeactivateCourseModuleHandler {
   constructor(
     private readonly courseModuleRepo: CourseModuleRepository,
     private readonly domainService: CourseModuleDomainService,
+    private readonly hierarchyService: CourseHierarchyService,
   ) {}
 
   async execute(
@@ -18,7 +20,10 @@ export class DeactivateCourseModuleHandler {
     const module = await this.domainService.ensureExists(record);
 
     if (module.isDeleted) {
-      return CourseModuleResponseMapper.toResult(module);
+      return CourseModuleResponseMapper.toResultWithCounts(
+        module,
+        this.hierarchyService,
+      );
     }
 
     const deactivatedDisplayOrder = module.displayOrder;
@@ -37,6 +42,9 @@ export class DeactivateCourseModuleHandler {
       command.deactivatedBy,
     );
 
-    return CourseModuleResponseMapper.toResult(module);
+    return CourseModuleResponseMapper.toResultWithCounts(
+      module,
+      this.hierarchyService,
+    );
   }
 }

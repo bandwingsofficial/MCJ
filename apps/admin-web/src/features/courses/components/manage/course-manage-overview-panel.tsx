@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FileText } from "lucide-react";
 
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
@@ -25,6 +25,7 @@ import type {
 import {
   computeCourseContentStats,
   getModuleContentCounts,
+  hasAuthoritativeModuleCounts,
 } from "@/src/features/courses/utils/course-content-stats.util";
 
 interface Props {
@@ -101,6 +102,22 @@ export function CourseManageOverviewPanel({
     includeDeleted: false,
   });
 
+  const courseStatsKey = [
+    course.moduleCount ?? 0,
+    course.lessonCount ?? 0,
+    course.resourceCount ?? 0,
+    course.quizCount ?? 0,
+  ].join(":");
+  const previousCourseStatsKey = useRef(courseStatsKey);
+
+  useEffect(() => {
+    if (previousCourseStatsKey.current === courseStatsKey) {
+      return;
+    }
+    previousCourseStatsKey.current = courseStatsKey;
+    void refetch();
+  }, [courseStatsKey, refetch]);
+
   const { deleteCourseModule, isSubmitting: isDeletingModule } =
     useDeleteCourseModule();
 
@@ -153,12 +170,11 @@ export function CourseManageOverviewPanel({
   }, [course.modules]);
 
   const getModuleCounts = (module: CourseModule) => {
-    const tree = moduleTreeById.get(module.id);
-    if (tree) {
-      return getModuleContentCounts(tree);
-    }
-
-    return { lessons: 0, resources: 0, quizzes: 0, assignments: 0 };
+    return getModuleContentCounts(
+      hasAuthoritativeModuleCounts(module)
+        ? module
+        : (moduleTreeById.get(module.id) ?? module),
+    );
   };
 
   const handleDeleteModule = async () => {

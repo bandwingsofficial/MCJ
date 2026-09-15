@@ -219,24 +219,72 @@ export class PrismaCourseLessonRepository
     lessonId: string,
     deletedBy?: string | null,
   ): Promise<void> {
-    await this.prisma.courseResource.updateMany({
-      where: { lessonId, isDeleted: false },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedBy: deletedBy ?? null,
-      },
+    const now = new Date();
+
+    await this.prisma.$transaction(async (tx) => {
+      const descendants = await tx.courseLesson.findMany({
+        where: { parentLessonId: lessonId, isDeleted: false },
+        select: { id: true },
+      });
+      const descendantIds = descendants.map((lesson) => lesson.id);
+      const lessonIds = [lessonId, ...descendantIds];
+
+      await tx.courseResource.updateMany({
+        where: { lessonId: { in: lessonIds }, isDeleted: false },
+        data: {
+          isDeleted: true,
+          deletedAt: now,
+          deletedBy: deletedBy ?? null,
+        },
+      });
+
+      await tx.courseQuiz.updateMany({
+        where: { lessonId: { in: lessonIds }, isDeleted: false },
+        data: {
+          isDeleted: true,
+          deletedAt: now,
+          updatedBy: deletedBy ?? null,
+        },
+      });
+
+      if (descendantIds.length) {
+        await tx.courseLesson.updateMany({
+          where: { id: { in: descendantIds }, isDeleted: false },
+          data: {
+            isDeleted: true,
+            deletedAt: now,
+            deletedBy: deletedBy ?? null,
+          },
+        });
+      }
     });
   }
 
   async cascadeRestore(lessonId: string): Promise<void> {
-    await this.prisma.courseResource.updateMany({
-      where: { lessonId, isDeleted: true },
-      data: {
-        isDeleted: false,
-        deletedAt: null,
-        deletedBy: null,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      const descendants = await tx.courseLesson.findMany({
+        where: { parentLessonId: lessonId, isDeleted: true },
+        select: { id: true },
+      });
+      const descendantIds = descendants.map((lesson) => lesson.id);
+      const lessonIds = [lessonId, ...descendantIds];
+
+      await tx.courseResource.updateMany({
+        where: { lessonId: { in: lessonIds }, isDeleted: true },
+        data: { isDeleted: false, deletedAt: null, deletedBy: null },
+      });
+
+      await tx.courseQuiz.updateMany({
+        where: { lessonId: { in: lessonIds }, isDeleted: true },
+        data: { isDeleted: false, deletedAt: null },
+      });
+
+      if (descendantIds.length) {
+        await tx.courseLesson.updateMany({
+          where: { id: { in: descendantIds }, isDeleted: true },
+          data: { isDeleted: false, deletedAt: null, deletedBy: null },
+        });
+      }
     });
   }
 

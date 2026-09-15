@@ -108,6 +108,10 @@ export class GetCourseBySlugHandler {
       publicView: !query.includeProtectedContent,
       category,
       categoryName: category?.name ?? null,
+      resourceCount: counts.resourceCount,
+      quizCount: counts.quizCount,
+      selfPacedVideoCount: counts.selfPacedVideoCount,
+      liveRecordedVideoCount: counts.liveRecordedVideoCount,
     });
   }
 

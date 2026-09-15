@@ -36,6 +36,18 @@ export interface CourseModule {
   createdAt: string;
 
   updatedAt: string;
+
+  lessonCount?: number;
+
+  resourceCount?: number;
+
+  quizCount?: number;
+
+  assignmentCount?: number;
+
+  selfPacedVideoCount?: number;
+
+  liveRecordedVideoCount?: number;
 }
 
 export type CourseModuleListItem =

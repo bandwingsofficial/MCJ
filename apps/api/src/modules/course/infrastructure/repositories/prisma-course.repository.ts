@@ -333,6 +333,8 @@ if (course.branchIds.length) {
       this.prisma.courseLesson.count({
         where: {
           isDeleted: false,
+          parentLessonId: null,
+          contentType: 'LESSON',
           module: {
             courseId,
             isDeleted: false,

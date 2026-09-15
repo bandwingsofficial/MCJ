@@ -7,6 +7,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { AuthModule } from '../auth/auth.module';
 import { COURSE_TOKENS } from '../course/course.tokens';
 import { CourseModule } from '../course/course.module';
+import { CourseHierarchyService } from '../course/infrastructure/services/course-hierarchy.service';
 import type { CourseRepository } from '../course/domain/repositories/course.repository';
 
 import { COURSE_MODULE_TOKENS } from './course-module.tokens';
@@ -67,14 +68,17 @@ import { CourseModuleController } from './presentation/controllers/course-module
       useFactory: (
         courseModuleRepo: CourseModuleRepository,
         domainService: CourseModuleDomainService,
+        hierarchyService: CourseHierarchyService,
       ) =>
         new UpdateCourseModuleHandler(
           courseModuleRepo,
           domainService,
+          hierarchyService,
         ),
       inject: [
         COURSE_MODULE_TOKENS.COURSE_MODULE_REPOSITORY,
         CourseModuleDomainService,
+        CourseHierarchyService,
       ],
     },
 
@@ -82,8 +86,16 @@ import { CourseModuleController } from './presentation/controllers/course-module
       provide: ListCourseModulesHandler,
       useFactory: (
         courseModuleRepo: CourseModuleRepository,
-      ) => new ListCourseModulesHandler(courseModuleRepo),
-      inject: [COURSE_MODULE_TOKENS.COURSE_MODULE_REPOSITORY],
+        hierarchyService: CourseHierarchyService,
+      ) =>
+        new ListCourseModulesHandler(
+          courseModuleRepo,
+          hierarchyService,
+        ),
+      inject: [
+        COURSE_MODULE_TOKENS.COURSE_MODULE_REPOSITORY,
+        CourseHierarchyService,
+      ],
     },
 
     {
@@ -91,14 +103,17 @@ import { CourseModuleController } from './presentation/controllers/course-module
       useFactory: (
         courseModuleRepo: CourseModuleRepository,
         domainService: CourseModuleDomainService,
+        hierarchyService: CourseHierarchyService,
       ) =>
         new GetCourseModuleHandler(
           courseModuleRepo,
           domainService,
+          hierarchyService,
         ),
       inject: [
         COURSE_MODULE_TOKENS.COURSE_MODULE_REPOSITORY,
         CourseModuleDomainService,
+        CourseHierarchyService,
       ],
     },
 
@@ -123,14 +138,17 @@ import { CourseModuleController } from './presentation/controllers/course-module
       useFactory: (
         courseModuleRepo: CourseModuleRepository,
         domainService: CourseModuleDomainService,
+        hierarchyService: CourseHierarchyService,
       ) =>
         new DeactivateCourseModuleHandler(
           courseModuleRepo,
           domainService,
+          hierarchyService,
         ),
       inject: [
         COURSE_MODULE_TOKENS.COURSE_MODULE_REPOSITORY,
         CourseModuleDomainService,
+        CourseHierarchyService,
       ],
     },
 
@@ -139,14 +157,17 @@ import { CourseModuleController } from './presentation/controllers/course-module
       useFactory: (
         courseModuleRepo: CourseModuleRepository,
         domainService: CourseModuleDomainService,
+        hierarchyService: CourseHierarchyService,
       ) =>
         new RestoreCourseModuleHandler(
           courseModuleRepo,
           domainService,
+          hierarchyService,
         ),
       inject: [
         COURSE_MODULE_TOKENS.COURSE_MODULE_REPOSITORY,
         CourseModuleDomainService,
+        CourseHierarchyService,
       ],
     },
 
@@ -155,14 +176,17 @@ import { CourseModuleController } from './presentation/controllers/course-module
       useFactory: (
         courseModuleRepo: CourseModuleRepository,
         domainService: CourseModuleDomainService,
+        hierarchyService: CourseHierarchyService,
       ) =>
         new MoveCourseModuleHandler(
           courseModuleRepo,
           domainService,
+          hierarchyService,
         ),
       inject: [
         COURSE_MODULE_TOKENS.COURSE_MODULE_REPOSITORY,
         CourseModuleDomainService,
+        CourseHierarchyService,
       ],
     },
   ],

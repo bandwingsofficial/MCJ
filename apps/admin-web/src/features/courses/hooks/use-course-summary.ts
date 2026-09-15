@@ -23,7 +23,9 @@ export function useCourseSummary(courseId?: string) {
     }
 
     try {
-      setIsLoading(true);
+      if (!summary) {
+        setIsLoading(true);
+      }
       setError(null);
       const response =
         await courseService.getCourseSummary(courseId);

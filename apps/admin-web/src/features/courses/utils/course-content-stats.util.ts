@@ -28,10 +28,44 @@ export interface CourseContentStats {
   assignments: number;
 }
 
+interface ModuleCountSource {
+  id?: string;
+  lessonCount?: number;
+  resourceCount?: number;
+  quizCount?: number;
+  assignmentCount?: number;
+  selfPacedVideoCount?: number;
+  liveRecordedVideoCount?: number;
+  lessons?: CourseLessonTree[];
+}
+
+export function hasAuthoritativeModuleCounts(
+  module: ModuleCountSource | null | undefined,
+): module is ModuleCountSource & { lessonCount: number; resourceCount: number } {
+  return (
+    typeof module?.lessonCount === "number" &&
+    typeof module?.resourceCount === "number"
+  );
+}
+
 export function getModuleContentCounts(
-  module: CourseModuleTree,
+  module: ModuleCountSource,
 ): ModuleContentCounts {
-  const lessons = module.lessons ?? [];
+  if (hasAuthoritativeModuleCounts(module)) {
+    return {
+      lessons: module.lessonCount,
+      resources: module.resourceCount,
+      quizzes: module.quizCount ?? 0,
+      assignments: module.assignmentCount ?? 0,
+    };
+  }
+
+  return getModuleContentCountsFromLessons(module.lessons ?? []);
+}
+
+export function getModuleContentCountsFromLessons(
+  lessons: CourseLessonTree[],
+): ModuleContentCounts {
   let resources = 0;
   let quizzes = 0;
   let displayLessons = 0;
@@ -40,11 +74,17 @@ export function getModuleContentCounts(
     resources += lesson.resources?.length ?? 0;
     if (lesson.quiz) {
       quizzes += 1;
+    }
+
+    if (lesson.parentLessonId) {
       continue;
     }
-    if (!isResourceOnlyLesson(lesson)) {
-      displayLessons += 1;
+
+    if (isSelfPacedVideoLesson(lesson) || isLiveRecordedVideoLesson(lesson)) {
+      continue;
     }
+
+    displayLessons += 1;
   }
 
   return {
@@ -58,8 +98,18 @@ export function getModuleContentCounts(
 export function isResourceOnlyLesson(lesson: {
   videoUrl?: string | null;
   description?: string | null;
+  contentType?: CourseLessonTree["contentType"];
+  parentLessonId?: string | null;
   resources?: CourseLessonTree["resources"];
 }): boolean {
+  if (lesson.parentLessonId) {
+    return false;
+  }
+
+  if (lesson.contentType && lesson.contentType !== "LESSON") {
+    return false;
+  }
+
   const hasResources = (lesson.resources?.length ?? 0) > 0;
   const hasVideo = Boolean(lesson.videoUrl?.trim());
   const hasDescription = Boolean(lesson.description?.trim());
@@ -84,26 +134,32 @@ export function computeCourseContentStats(
     resources += counts.resources;
     quizzes += counts.quizzes;
 
-    for (const lesson of module.lessons ?? []) {
-      if (isSelfPacedVideoLesson(lesson)) {
-        selfPacedVideos += 1;
-      }
-      if (isLiveRecordedVideoLesson(lesson)) {
-        liveRecordedVideos += 1;
+    if (
+      typeof module.selfPacedVideoCount === "number" &&
+      typeof module.liveRecordedVideoCount === "number"
+    ) {
+      selfPacedVideos += module.selfPacedVideoCount;
+      liveRecordedVideos += module.liveRecordedVideoCount;
+    } else {
+      for (const lesson of module.lessons ?? []) {
+        if (isSelfPacedVideoLesson(lesson)) {
+          selfPacedVideos += 1;
+        }
+        if (isLiveRecordedVideoLesson(lesson)) {
+          liveRecordedVideos += 1;
+        }
       }
     }
   }
 
-  const courseMaterials = course?.materials?.length ?? 0;
-
   return {
-    modules: summary?.modules ?? course?.moduleCount ?? modules.length,
-    lessons: summary?.lessons ?? lessons,
-    selfPacedVideos,
-    liveRecordedVideos,
-    liveLessons: liveRecordedVideos,
-    resources: resources + courseMaterials,
-    quizzes: summary?.quizzes ?? quizzes,
+    modules: course?.moduleCount ?? summary?.modules ?? modules.length,
+    lessons: course?.lessonCount ?? lessons,
+    selfPacedVideos: course?.selfPacedVideoCount ?? selfPacedVideos,
+    liveRecordedVideos: course?.liveRecordedVideoCount ?? liveRecordedVideos,
+    liveLessons: course?.liveRecordedVideoCount ?? liveRecordedVideos,
+    resources: course?.resourceCount ?? resources,
+    quizzes: course?.quizCount ?? summary?.quizzes ?? quizzes,
     assignments: 0,
   };
 }

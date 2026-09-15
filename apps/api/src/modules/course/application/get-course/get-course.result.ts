@@ -116,6 +116,8 @@ export class CourseLessonTreeResult {
     public readonly isPreview: boolean,
     public readonly resources: CourseResourceTreeResult[],
     public readonly quiz: CourseLessonQuizTreeResult | null,
+    public readonly description: string | null = null,
+    public readonly parentLessonId: string | null = null,
   ) {}
 }
 
@@ -127,6 +129,12 @@ export class CourseModuleTreeResult {
     public readonly keySkills: string[],
     public readonly displayOrder: number,
     public readonly lessons: CourseLessonTreeResult[],
+    public readonly lessonCount: number = 0,
+    public readonly resourceCount: number = 0,
+    public readonly quizCount: number = 0,
+    public readonly assignmentCount: number = 0,
+    public readonly selfPacedVideoCount: number = 0,
+    public readonly liveRecordedVideoCount: number = 0,
   ) {}
 }
 
@@ -175,6 +183,10 @@ export class GetCourseResult {
     public readonly updatedAt: Date,
     public readonly categoryName?: string | null,
     public readonly trainers: CourseTrainerResult[] = [],
+    public readonly resourceCount: number = 0,
+    public readonly quizCount: number = 0,
+    public readonly selfPacedVideoCount: number = 0,
+    public readonly liveRecordedVideoCount: number = 0,
   ) {}
 
   static fromEntity(
@@ -192,6 +204,10 @@ export class GetCourseResult {
       categoryName?: string | null;
       category?: CourseCategoryResult | null;
       trainers?: CourseTrainerResult[];
+      resourceCount?: number;
+      quizCount?: number;
+      selfPacedVideoCount?: number;
+      liveRecordedVideoCount?: number;
     } = {},
   ): GetCourseResult {
     const publicView = options.publicView ?? false;
@@ -281,6 +297,10 @@ export class GetCourseResult {
       course.updatedAt,
       options.categoryName,
       options.trainers ?? [],
+      options.resourceCount ?? 0,
+      options.quizCount ?? 0,
+      options.selfPacedVideoCount ?? 0,
+      options.liveRecordedVideoCount ?? 0,
     );
   }
 }

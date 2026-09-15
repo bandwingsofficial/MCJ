@@ -15,5 +15,11 @@ export class CourseModuleResult {
     public readonly deletedAt: Date | null,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
+    public readonly lessonCount: number = 0,
+    public readonly resourceCount: number = 0,
+    public readonly quizCount: number = 0,
+    public readonly assignmentCount: number = 0,
+    public readonly selfPacedVideoCount: number = 0,
+    public readonly liveRecordedVideoCount: number = 0,
   ) {}
 }

@@ -153,6 +153,10 @@ export interface CourseLessonTree {
   resources: CourseResourceTree[];
 
   quiz?: CourseLessonQuizTree | null;
+
+  description?: string | null;
+
+  parentLessonId?: string | null;
 }
 
 export interface CourseModuleTree {
@@ -167,6 +171,18 @@ export interface CourseModuleTree {
   displayOrder: number;
 
   lessons: CourseLessonTree[];
+
+  lessonCount?: number;
+
+  resourceCount?: number;
+
+  quizCount?: number;
+
+  assignmentCount?: number;
+
+  selfPacedVideoCount?: number;
+
+  liveRecordedVideoCount?: number;
 }
 
 export interface CourseTrainer {
@@ -206,6 +222,14 @@ export interface CourseDetails
   lessonCount?: number;
 
   previewLessonCount?: number;
+
+  resourceCount?: number;
+
+  quizCount?: number;
+
+  selfPacedVideoCount?: number;
+
+  liveRecordedVideoCount?: number;
 }
 
 export interface CourseListItem {

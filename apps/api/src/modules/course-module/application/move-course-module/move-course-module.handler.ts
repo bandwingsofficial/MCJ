@@ -4,6 +4,7 @@ import type { CourseModuleRepository } from '../../domain/repositories/course-mo
 import { CourseModuleDomainService } from '../../domain/services/course-module-domain.service';
 import { CourseModuleResponseMapper } from '../../infrastructure/mappers/course-module-response.mapper';
 import { CourseModuleResult } from '../course-module.result';
+import { CourseHierarchyService } from '../../../course/infrastructure/services/course-hierarchy.service';
 
 import { MoveCourseModuleCommand } from './move-course-module.command';
 
@@ -11,6 +12,7 @@ export class MoveCourseModuleHandler {
   constructor(
     private readonly courseModuleRepo: CourseModuleRepository,
     private readonly domainService: CourseModuleDomainService,
+    private readonly hierarchyService: CourseHierarchyService,
   ) {}
 
   async execute(
@@ -43,10 +45,11 @@ export class MoveCourseModuleHandler {
       command.updatedBy,
     );
 
-    return CourseModuleResponseMapper.toResult(
+    return CourseModuleResponseMapper.toResultWithCounts(
       await this.domainService.ensureExists(
         await this.courseModuleRepo.findById(command.id),
       ),
+      this.hierarchyService,
     );
   }
 }

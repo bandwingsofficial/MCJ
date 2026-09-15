@@ -131,6 +131,10 @@ export class GetCourseHandler {
       category,
       categoryName: category?.name ?? null,
       trainers,
+      resourceCount: counts.resourceCount,
+      quizCount: counts.quizCount,
+      selfPacedVideoCount: counts.selfPacedVideoCount,
+      liveRecordedVideoCount: counts.liveRecordedVideoCount,
     });
   }
 

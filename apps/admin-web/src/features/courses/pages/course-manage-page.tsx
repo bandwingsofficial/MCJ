@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -76,6 +76,23 @@ export function CourseManagePage({ courseId }: Props) {
   const refreshCourseData = useCallback(async () => {
     await Promise.all([refetch(), refetchSummary()]);
   }, [refetch, refetchSummary]);
+
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
+      void refreshCourseData();
+    };
+
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [refreshCourseData]);
 
   const returnToOverview = useCallback(async () => {
     setActiveTab(COURSE_MANAGE_DEFAULT_TAB);

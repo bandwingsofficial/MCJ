@@ -41,13 +41,15 @@ export const useCourse = (
     );
 
   const fetchCourse =
-    useCallback(async () => {
+    useCallback(async (silent = false) => {
       if (!courseId) {
         return;
       }
 
       try {
-        setIsLoading(true);
+        if (!silent) {
+          setIsLoading(true);
+        }
 
         setError(null);
 
@@ -67,7 +69,9 @@ export const useCourse = (
 
         setError(message);
       } finally {
-        setIsLoading(false);
+        if (!silent) {
+          setIsLoading(false);
+        }
       }
     }, [courseId]);
 
@@ -83,7 +87,7 @@ export const useCourse = (
     course,
     isLoading,
     error,
-    refetch: fetchCourse,
+    refetch: () => fetchCourse(true),
     setCourseData,
   };
 };

@@ -44,10 +44,10 @@ export class GetStudentCourseProgressHandler {
 
     return new StudentCourseProgressResult(
       query.courseId,
-      counts.lessonCount,
+      counts.progressLessonCount,
       completedLessons,
-      counts.lessonCount
-        ? Math.round((completedLessons / counts.lessonCount) * 100)
+      counts.progressLessonCount
+        ? Math.round((completedLessons / counts.progressLessonCount) * 100)
         : 0,
       progressRecords.map(
         (item) =>
@@ -140,16 +140,16 @@ export class GetStudentCourseCompletionHandler {
     const completedLessons = progressRecords.filter(
       (item) => item.isCompleted,
     ).length;
-    const completionPercentage = counts.lessonCount
-      ? Math.round((completedLessons / counts.lessonCount) * 100)
+    const completionPercentage = counts.progressLessonCount
+      ? Math.round((completedLessons / counts.progressLessonCount) * 100)
       : 0;
     const isCourseCompleted =
-      counts.lessonCount > 0 &&
-      completedLessons === counts.lessonCount;
+      counts.progressLessonCount > 0 &&
+      completedLessons === counts.progressLessonCount;
 
     return new StudentCourseCompletionResult(
       query.courseId,
-      counts.lessonCount,
+      counts.progressLessonCount,
       completedLessons,
       completionPercentage,
       isCourseCompleted,

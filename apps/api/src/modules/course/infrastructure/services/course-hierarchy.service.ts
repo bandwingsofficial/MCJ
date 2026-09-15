@@ -11,12 +11,15 @@ import {
   CourseResourcePreviewResult,
   CourseResourceTreeResult,
 } from '../../application/get-course/get-course.result';
+import {
+  accumulateLessonIntoCounts,
+  emptyModuleContentCounts,
+  sumModuleContentCounts,
+  type CourseContentCounts,
+  type ModuleContentCounts,
+} from '../../domain/services/course-content-counts';
 
-export interface CourseContentCounts {
-  moduleCount: number;
-  lessonCount: number;
-  previewLessonCount: number;
-}
+export type { CourseContentCounts, ModuleContentCounts };
 
 @Injectable()
 export class CourseHierarchyService {
@@ -43,13 +46,71 @@ export class CourseHierarchyService {
   ): Promise<CourseContentCounts> {
     const modules = await this.loadModules(courseId);
     const lessons = modules.flatMap((module) => module.lessons);
+    const totals = sumModuleContentCounts(
+      modules.map((module) => this.countsFromLessons(module.lessons)),
+    );
 
     return {
+      ...totals,
       moduleCount: modules.length,
-      lessonCount: lessons.length,
+      progressLessonCount: lessons.length,
       previewLessonCount: lessons.filter((lesson) => lesson.isPreview)
         .length,
     };
+  }
+
+  async getModuleCountsByIds(
+    moduleIds: string[],
+  ): Promise<Map<string, ModuleContentCounts>> {
+    const countsByModuleId = new Map<string, ModuleContentCounts>();
+
+    for (const moduleId of moduleIds) {
+      countsByModuleId.set(moduleId, emptyModuleContentCounts());
+    }
+
+    if (!moduleIds.length) {
+      return countsByModuleId;
+    }
+
+    const lessons = await this.prisma.courseLesson.findMany({
+      where: {
+        moduleId: { in: moduleIds },
+        isDeleted: false,
+      },
+      select: {
+        moduleId: true,
+        parentLessonId: true,
+        contentType: true,
+        _count: {
+          select: {
+            resources: {
+              where: { isDeleted: false },
+            },
+          },
+        },
+        quiz: {
+          where: { isDeleted: false },
+          select: { id: true },
+        },
+      },
+    });
+
+    for (const lesson of lessons) {
+      const counts = countsByModuleId.get(lesson.moduleId);
+
+      if (!counts) {
+        continue;
+      }
+
+      accumulateLessonIntoCounts(counts, {
+        parentLessonId: lesson.parentLessonId,
+        contentType: lesson.contentType,
+        resourceCount: lesson._count.resources,
+        hasQuiz: Boolean(lesson.quiz),
+      });
+    }
+
+    return countsByModuleId;
   }
 
   async getPreviewLesson(
@@ -256,6 +317,15 @@ export class CourseHierarchyService {
             deletedBy: deletedBy ?? null,
           },
         });
+
+        await tx.courseQuiz.updateMany({
+          where: { lessonId: { in: lessonIds }, isDeleted: false },
+          data: {
+            isDeleted: true,
+            deletedAt: now,
+            updatedBy: deletedBy ?? null,
+          },
+        });
       }
 
       await tx.courseLesson.updateMany({
@@ -303,6 +373,11 @@ export class CourseHierarchyService {
           where: { lessonId: { in: lessonIds }, isDeleted: true },
           data: { isDeleted: false, deletedAt: null, deletedBy: null },
         });
+
+        await tx.courseQuiz.updateMany({
+          where: { lessonId: { in: lessonIds }, isDeleted: true },
+          data: { isDeleted: false, deletedAt: null },
+        });
       }
 
       await tx.courseLesson.updateMany({
@@ -349,6 +424,8 @@ export class CourseHierarchyService {
   private toFullModule(
     module: Awaited<ReturnType<CourseHierarchyService['loadModules']>>[number],
   ): CourseModuleTreeResult {
+    const counts = this.countsFromLessons(module.lessons);
+
     return new CourseModuleTreeResult(
       module.id,
       module.title,
@@ -358,6 +435,12 @@ export class CourseHierarchyService {
       module.lessons
         .filter((lesson) => !lesson.parentLessonId)
         .map((lesson) => this.toFullLesson(lesson)),
+      counts.lessonCount,
+      counts.resourceCount,
+      counts.quizCount,
+      counts.assignmentCount,
+      counts.selfPacedVideoCount,
+      counts.liveRecordedVideoCount,
     );
   }
 
@@ -419,6 +502,27 @@ export class CourseHierarchyService {
           ),
       ),
       quiz,
+      lesson.description,
+      lesson.parentLessonId,
     );
+  }
+
+  private countsFromLessons(
+    lessons: Awaited<
+      ReturnType<CourseHierarchyService['loadModules']>
+    >[number]['lessons'],
+  ): ModuleContentCounts {
+    const counts = emptyModuleContentCounts();
+
+    for (const lesson of lessons) {
+      accumulateLessonIntoCounts(counts, {
+        parentLessonId: lesson.parentLessonId,
+        contentType: lesson.contentType,
+        resourceCount: lesson.resources.length,
+        hasQuiz: Boolean(lesson.quiz),
+      });
+    }
+
+    return counts;
   }
 }

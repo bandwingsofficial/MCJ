@@ -74,9 +74,6 @@ export class GetStudentCourseHandler {
     const completedLessons = progressRecords.filter(
       (item) => item.isCompleted,
     ).length;
-    const completionPercentage = counts.lessonCount
-      ? Math.round((completedLessons / counts.lessonCount) * 100)
-      : 0;
 
     return {
       course: GetCourseResult.fromEntity(course, branches, {
@@ -88,12 +85,18 @@ export class GetStudentCourseHandler {
         isEnrolled: true,
         isAdmitted: true,
         publicView: false,
+        resourceCount: counts.resourceCount,
+        quizCount: counts.quizCount,
+        selfPacedVideoCount: counts.selfPacedVideoCount,
+        liveRecordedVideoCount: counts.liveRecordedVideoCount,
       }),
       progress: new StudentCourseProgressResult(
         course.id,
-        counts.lessonCount,
+        counts.progressLessonCount,
         completedLessons,
-        completionPercentage,
+        counts.progressLessonCount
+          ? Math.round((completedLessons / counts.progressLessonCount) * 100)
+          : 0,
         progressRecords.map(
           (item) =>
             new StudentCourseProgressItemResult(

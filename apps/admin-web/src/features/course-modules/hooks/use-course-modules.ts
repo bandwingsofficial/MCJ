@@ -61,9 +61,11 @@ export const useCourseModules =
       );
 
     const fetchModules =
-      useCallback(async () => {
+      useCallback(async (silent = false) => {
         try {
-          setIsLoading(true);
+          if (!silent) {
+            setIsLoading(true);
+          }
 
           setError(null);
 
@@ -83,13 +85,20 @@ export const useCourseModules =
 
           setError(message);
         } finally {
-          setIsLoading(false);
+          if (!silent) {
+            setIsLoading(false);
+          }
         }
       }, [filters]);
 
     useEffect(() => {
       void fetchModules();
     }, [fetchModules]);
+
+    const refetch = useCallback(
+      () => fetchModules(true),
+      [fetchModules],
+    );
 
     return {
       modules,
@@ -102,7 +111,6 @@ export const useCourseModules =
 
       setFilters,
 
-      refetch:
-        fetchModules,
+      refetch,
     };
   };

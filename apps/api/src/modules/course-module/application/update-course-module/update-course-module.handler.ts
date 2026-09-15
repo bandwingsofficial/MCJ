@@ -4,6 +4,7 @@ import type { CourseModuleRepository } from '../../domain/repositories/course-mo
 import { CourseModuleDomainService } from '../../domain/services/course-module-domain.service';
 import { CourseModuleResponseMapper } from '../../infrastructure/mappers/course-module-response.mapper';
 import { CourseModuleResult } from '../course-module.result';
+import { CourseHierarchyService } from '../../../course/infrastructure/services/course-hierarchy.service';
 
 import { UpdateCourseModuleCommand } from './update-course-module.command';
 
@@ -11,6 +12,7 @@ export class UpdateCourseModuleHandler {
   constructor(
     private readonly courseModuleRepo: CourseModuleRepository,
     private readonly domainService: CourseModuleDomainService,
+    private readonly hierarchyService: CourseHierarchyService,
   ) {}
 
   async execute(
@@ -46,6 +48,9 @@ export class UpdateCourseModuleHandler {
 
     await this.courseModuleRepo.save(module);
 
-    return CourseModuleResponseMapper.toResult(module);
+    return CourseModuleResponseMapper.toResultWithCounts(
+      module,
+      this.hierarchyService,
+    );
   }
 }
