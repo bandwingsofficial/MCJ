@@ -13,6 +13,7 @@ export class BranchMapper {
 
       branchName: record.branchName,
       branchCode: record.branchCode,
+      slug: record.slug,
 
       email: record.email,
       phone: record.phone,
@@ -52,6 +53,8 @@ export class BranchMapper {
       branchName: branch.branchName.getValue(),
 
       branchCode: branch.branchCode.getValue(),
+
+      slug: branch.slug,
 
       email: branch.email?.getValue() ?? null,
 

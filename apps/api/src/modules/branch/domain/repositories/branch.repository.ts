@@ -58,6 +58,12 @@ export interface BranchRepository {
 
   findById(id: string): Promise<Branch | null>;
 
+  findBySlug(slug: string): Promise<Branch | null>;
+
+  findBySlugIncludingDeleted(
+    slug: string,
+  ): Promise<Branch | null>;
+
   findByBranchCode(
     branchCode: string,
   ): Promise<Branch | null>;
@@ -75,6 +81,10 @@ export interface BranchRepository {
 
   findByIdIncludingDeleted(
     id: string,
+  ): Promise<Branch | null>;
+
+  findByIdOrSlugIncludingDeleted(
+    identifier: string,
   ): Promise<Branch | null>;
 
   existsById(id: string): Promise<boolean>;

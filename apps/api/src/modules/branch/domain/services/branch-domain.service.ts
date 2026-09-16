@@ -7,6 +7,10 @@ import { ERROR_CODES } from '@common/constants/error-codes';
 
 import { BranchStatus } from '../enums/branch-status.enum';
 
+import { Slug } from '@common/value-objects/slug.vo';
+
+import type { BranchRepository } from '../repositories/branch.repository';
+
 export class BranchDomainService {
   // =====================
   // 🔥 CROSS-ENTITY / POLICY LOGIC
@@ -100,6 +104,32 @@ export class BranchDomainService {
           branchId: branch.id,
         },
       );
+    }
+  }
+
+  async generateUniqueSlug(
+    branchRepo: BranchRepository,
+    branchName: string,
+    excludeId?: string,
+  ): Promise<string> {
+    const base =
+      Slug.fromName(branchName).getValue() ||
+      Slug.fromName('branch').getValue();
+
+    let candidate = base;
+    let suffix = 2;
+
+    while (true) {
+      const existing = await branchRepo.findBySlugIncludingDeleted(
+        candidate,
+      );
+
+      if (!existing || existing.id === excludeId) {
+        return candidate;
+      }
+
+      candidate = `${base}-${suffix}`;
+      suffix += 1;
     }
   }
 

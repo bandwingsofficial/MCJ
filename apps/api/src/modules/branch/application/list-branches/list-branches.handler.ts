@@ -47,6 +47,7 @@ export class ListBranchesHandler {
           branch.id,
           branch.branchName.getValue(),
           branch.branchCode.getValue(),
+          branch.slug,
           branch.email?.getValue() ?? null,
           branch.phone?.getValue() ?? null,
           branch.city,

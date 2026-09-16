@@ -17,8 +17,10 @@ export function formatBranchAddress(branch: PublicBranch): string {
     .join(", ");
 }
 
-export function getBranchDetailPath(branch: Pick<PublicBranch, "id">): string {
-  return `/branches/${branch.id}`;
+export function getBranchDetailPath(
+  branch: Pick<PublicBranch, "slug">,
+): string {
+  return `/branches/${branch.slug}`;
 }
 
 export function getGoogleMapsSearchUrl(branch: PublicBranch): string {

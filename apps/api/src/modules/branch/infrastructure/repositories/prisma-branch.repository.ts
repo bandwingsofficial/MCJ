@@ -203,6 +203,39 @@ export class PrismaBranchRepository
       : null;
   }
 
+  async findBySlug(slug: string): Promise<Branch | null> {
+    const normalized = slug.trim().toLowerCase();
+
+    if (!normalized) {
+      return null;
+    }
+
+    const record = await this.prisma.branch.findFirst({
+      where: {
+        slug: normalized,
+        deletedAt: null,
+      },
+    });
+
+    return record ? BranchMapper.toDomain(record) : null;
+  }
+
+  async findBySlugIncludingDeleted(
+    slug: string,
+  ): Promise<Branch | null> {
+    const normalized = slug.trim().toLowerCase();
+
+    if (!normalized) {
+      return null;
+    }
+
+    const record = await this.prisma.branch.findFirst({
+      where: { slug: normalized },
+    });
+
+    return record ? BranchMapper.toDomain(record) : null;
+  }
+
   async findByBranchCode(
   branchCode: string,
 ): Promise<Branch | null> {
@@ -294,6 +327,32 @@ export class PrismaBranchRepository
     ? BranchMapper.toDomain(record)
     : null;
 }
+
+  async findByIdOrSlugIncludingDeleted(
+    identifier: string,
+  ): Promise<Branch | null> {
+    const trimmed = identifier.trim();
+
+    if (!trimmed) {
+      return null;
+    }
+
+    const byId = await this.prisma.branch.findUnique({
+      where: { id: trimmed },
+    });
+
+    if (byId) {
+      return BranchMapper.toDomain(byId);
+    }
+
+    const bySlug = await this.prisma.branch.findFirst({
+      where: {
+        slug: trimmed.toLowerCase(),
+      },
+    });
+
+    return bySlug ? BranchMapper.toDomain(bySlug) : null;
+  }
 
   // =====================
   // ✅ EXISTS

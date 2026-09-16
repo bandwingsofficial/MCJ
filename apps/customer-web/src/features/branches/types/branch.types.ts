@@ -4,6 +4,7 @@ export interface PublicBranch {
   id: string;
   branchName: string;
   branchCode: string;
+  slug: string;
   email?: string | null;
   phone?: string | null;
   addressLine1?: string | null;

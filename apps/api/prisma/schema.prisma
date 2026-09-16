@@ -132,6 +132,7 @@ model Branch {
   id             String           @id @default(uuid())
   branchName     String
   branchCode     String           @unique
+  slug           String          @unique
   email          String?
   phone          String?
   addressLine1   String?
@@ -166,6 +167,7 @@ model Branch {
 
   @@index([branchName])
   @@index([branchCode])
+  @@index([slug])
   @@index([status])
   @@index([deletedAt])
   @@index([status, deletedAt])

@@ -15,6 +15,8 @@ export class Branch {
 
     public branchCode: BranchCode,
 
+    public slug: string,
+
     public email: BranchEmail | null,
     public phone: BranchPhone | null,
 
@@ -50,6 +52,7 @@ export class Branch {
 
     branchName: string;
     branchCode: string;
+    slug: string;
 
     email?: string;
     phone?: string;
@@ -81,6 +84,8 @@ export class Branch {
       BranchName.create(params.branchName),
 
       BranchCode.create(params.branchCode),
+
+      params.slug,
 
       params.email
         ? BranchEmail.create(params.email)
@@ -123,6 +128,7 @@ export class Branch {
 
     branchName: string;
     branchCode: string;
+    slug: string;
 
     email: string | null;
     phone: string | null;
@@ -159,6 +165,8 @@ export class Branch {
       BranchName.create(params.branchName),
 
       BranchCode.create(params.branchCode),
+
+      params.slug,
 
       params.email
         ? BranchEmail.create(params.email)

@@ -12,7 +12,7 @@ export const branchApi = {
     });
   },
 
-  getBranch(id: string) {
-    return apiClient.get<GetBranchResponse>(`/branches/${id}`);
+  getBranch(slugOrId: string) {
+    return apiClient.get<GetBranchResponse>(`/branches/${slugOrId}`);
   },
 };

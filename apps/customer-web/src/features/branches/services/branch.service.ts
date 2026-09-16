@@ -7,8 +7,8 @@ class BranchService {
     return response.data.data ?? [];
   }
 
-  async getBranch(id: string): Promise<PublicBranch> {
-    const response = await branchApi.getBranch(id);
+  async getBranch(slugOrId: string): Promise<PublicBranch> {
+    const response = await branchApi.getBranch(slugOrId);
     return response.data.data;
   }
 }

@@ -11,6 +11,7 @@ function mapPublicBranch(branch: {
   id: string;
   branchName: string;
   branchCode: string;
+  slug: string;
   email?: string | null;
   phone?: string | null;
   addressLine1?: string | null;
@@ -29,6 +30,7 @@ function mapPublicBranch(branch: {
     id: branch.id,
     branchName: branch.branchName,
     branchCode: branch.branchCode,
+    slug: branch.slug,
     email: branch.email ?? null,
     phone: branch.phone ?? null,
     addressLine1: branch.addressLine1 ?? null,

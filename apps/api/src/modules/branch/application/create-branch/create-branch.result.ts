@@ -10,6 +10,8 @@ export class CreateBranchResult {
 
     public readonly branchCode: string,
 
+    public readonly slug: string,
+
     public readonly email: string | null,
     public readonly phone: string | null,
 

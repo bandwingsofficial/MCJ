@@ -118,12 +118,19 @@ export class CreateBranchHandler {
         thumbnailUrl = upload.url;
       }
 
+      const slug = await this.domainService.generateUniqueSlug(
+        this.branchRepo,
+        command.branchName,
+      );
+
       const branch = Branch.create({
         id: branchId,
 
         branchName: command.branchName,
 
         branchCode: normalizedCode,
+
+        slug,
 
         email: command.email,
         phone: command.phone,
@@ -178,6 +185,8 @@ export class CreateBranchHandler {
         branch.branchName.getValue(),
 
         branch.branchCode.getValue(),
+
+        branch.slug,
 
         branch.email?.getValue() ?? null,
 

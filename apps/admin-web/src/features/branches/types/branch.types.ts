@@ -38,6 +38,8 @@ export interface Branch {
 
   thumbnailUrl: string | null;
 
+  slug: string;
+
   deletedAt?: string | null;
 
   createdAt: string;
@@ -65,6 +67,8 @@ export interface BranchListItem {
   country: string | null;
 
   status: BranchStatus;
+
+  slug: string;
 
   thumbnailUrl: string | null;
 

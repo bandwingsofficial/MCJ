@@ -14,34 +14,24 @@ export function useBranch(branchId: string | undefined) {
 }
 
 export function useBranchBySlugOrId(slugOrId: string | undefined) {
-  const branchesQuery = useQuery({
-    queryKey: ["branches", "all"],
-    queryFn: () => branchService.getBranches(),
-    staleTime: 1000 * 60 * 5,
+  const branchQuery = useQuery({
+    queryKey: ["branch", slugOrId],
+    queryFn: () => branchService.getBranch(slugOrId!),
     enabled: Boolean(slugOrId),
+    staleTime: 1000 * 60 * 5,
+    retry: false,
   });
 
-  const matchedBranch =
-    branchesQuery.data?.find(
-      (branch) =>
-        branch.id === slugOrId ||
-        branch.branchCode.toLowerCase() === slugOrId?.toLowerCase(),
-    ) ?? null;
-
-  const branchQuery = useBranch(matchedBranch?.id);
-
   return {
-    branch: branchQuery.data ?? matchedBranch,
-    isLoading: branchesQuery.isLoading || branchQuery.isLoading,
-    isError: branchesQuery.isError || branchQuery.isError,
+    branch: branchQuery.data ?? null,
+    isLoading: branchQuery.isLoading,
+    isError: branchQuery.isError,
     refetch: () => {
-      void branchesQuery.refetch();
       void branchQuery.refetch();
     },
     notFound:
-      !branchesQuery.isLoading &&
       !branchQuery.isLoading &&
-      !matchedBranch &&
-      !branchQuery.data,
+      !branchQuery.isFetching &&
+      (branchQuery.isError || !branchQuery.data),
   };
 }
