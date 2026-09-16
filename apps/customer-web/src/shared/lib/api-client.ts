@@ -13,6 +13,7 @@ import axios, {
 
 import { tokenStorage } from "@/src/core/storage/token-storage";
 import { refreshAccessToken } from "@/src/core/interceptors/refresh.interceptor";
+import { redirectToLoginIfNeeded } from "@/src/features/auth/utils/auth-session.utils";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -70,11 +71,7 @@ apiClient.interceptors.response.use(
 
       return apiClient(originalRequest);
     } catch (refreshError) {
-      tokenStorage.clear();
-
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
+      redirectToLoginIfNeeded();
 
       return Promise.reject(refreshError);
     }

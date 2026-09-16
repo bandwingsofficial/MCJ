@@ -7,7 +7,7 @@ import Link from "next/link";
 import { AuthCard } from "@/src/features/auth/components/auth-card";
 import { AuthPageWrapper } from "@/src/features/auth/components/auth-page-wrapper";
 import { LoginForm } from "@/src/features/auth/components/login-form";
-import { useAuthStore } from "@/src/features/auth/store/auth.store";
+import { useAuthSessionReady } from "@/src/features/auth/hooks/use-auth-session";
 
 function getSafeRedirect(value: string | null): string | undefined {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
@@ -21,15 +21,17 @@ export function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = getSafeRedirect(searchParams.get("redirect"));
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { authReady, hasSession } = useAuthSessionReady();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      router.replace(redirectTo ?? "/");
+    if (!authReady || !hasSession) {
+      return;
     }
-  }, [isAuthenticated, redirectTo, router]);
 
-  if (isAuthenticated) {
+    router.replace(redirectTo ?? "/");
+  }, [authReady, hasSession, redirectTo, router]);
+
+  if (!authReady || hasSession) {
     return null;
   }
 

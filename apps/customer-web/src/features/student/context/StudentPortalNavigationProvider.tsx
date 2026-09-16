@@ -12,6 +12,7 @@ import {
 import { usePathname } from "next/navigation";
 
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
+import { tokenStorage } from "@/src/core/storage/token-storage";
 import { resolveStudentPortalNavigation } from "@/src/features/student/services/student-portal-navigation.service";
 import {
   STUDENT_PORTAL_DEFAULT_NAVIGATION,
@@ -43,7 +44,7 @@ export function StudentPortalNavigationProvider({
 
   const refetch = useCallback(
     async (mode: "full" | "silent" = "silent") => {
-      if (!user) {
+      if (!user || !tokenStorage.getAccessToken()) {
         setNavigation({
           ...STUDENT_PORTAL_DEFAULT_NAVIGATION,
           isLoading: false,
@@ -86,7 +87,7 @@ export function StudentPortalNavigationProvider({
   }, [refetch]);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !tokenStorage.getAccessToken()) {
       return;
     }
 

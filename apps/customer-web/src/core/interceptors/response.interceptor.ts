@@ -4,9 +4,9 @@ import {
 } from "axios";
 
 import { apiClient } from "@/src/core/api/axios";
-import { tokenStorage } from "@/src/core/storage/token-storage";
 
 import { refreshAccessToken } from "@/src/core/interceptors/refresh.interceptor";
+import { redirectToLoginIfNeeded } from "@/src/features/auth/utils/auth-session.utils";
 
 import type { ApiErrorResponse } from "@/src/core/types/api-error.types";
 
@@ -45,15 +45,7 @@ export async function responseErrorInterceptor(
     code === "SESSION_REVOKED" ||
     code === "SESSION_EXPIRED"
   ) {
-    tokenStorage.clear();
-
-    if (
-      typeof window !==
-      "undefined"
-    ) {
-      window.location.href =
-        "/login";
-    }
+    redirectToLoginIfNeeded();
 
     return Promise.reject(error);
   }
@@ -64,15 +56,7 @@ export async function responseErrorInterceptor(
     code === "INVALID_TOKEN" &&
     status !== 401
   ) {
-    tokenStorage.clear();
-
-    if (
-      typeof window !==
-      "undefined"
-    ) {
-      window.location.href =
-        "/login";
-    }
+    redirectToLoginIfNeeded();
 
     return Promise.reject(error);
   }
@@ -94,15 +78,7 @@ export async function responseErrorInterceptor(
         originalRequest
       );
     } catch (refreshError) {
-      tokenStorage.clear();
-
-      if (
-        typeof window !==
-        "undefined"
-      ) {
-        window.location.href =
-          "/login";
-      }
+      redirectToLoginIfNeeded();
 
       return Promise.reject(
         refreshError
