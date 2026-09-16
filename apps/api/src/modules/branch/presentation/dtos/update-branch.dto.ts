@@ -6,8 +6,10 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -82,4 +84,9 @@ export class UpdateBranchDto {
   @IsString()
   @MaxLength(500)
   description?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsUUID()
+  thumbnailFileId?: string | null;
 }

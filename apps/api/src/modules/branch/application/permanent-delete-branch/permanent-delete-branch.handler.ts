@@ -6,6 +6,7 @@ import { BaseException } from '@common/exceptions/base.exception';
 
 import type { BranchRepository } from '../../domain/repositories/branch.repository';
 import { BranchDomainService } from '../../domain/services/branch-domain.service';
+import { UploadDomainService } from '@/modules/uploads/domain/services/upload-domain.service';
 import { BRANCH_TOKENS } from '../../branch.tokens';
 
 import { ValidationError } from '../errors/validation.error';
@@ -45,6 +46,8 @@ export class PermanentDeleteBranchHandler {
     private readonly branchRepo: BranchRepository,
 
     private readonly domainService: BranchDomainService,
+
+    private readonly uploadDomainService: UploadDomainService,
   ) {}
 
   async execute(
@@ -118,6 +121,7 @@ export class PermanentDeleteBranchHandler {
       }
 
       const displayOrder = branch.displayOrder;
+      const thumbnailFileId = branch.thumbnailFileId;
 
       try {
         await this.branchRepo.deletePermanent(branch.id);
@@ -134,6 +138,14 @@ export class PermanentDeleteBranchHandler {
 
       if (displayOrder != null) {
         await this.branchRepo.closeDisplayOrderGap(displayOrder);
+      }
+
+      if (thumbnailFileId) {
+        try {
+          await this.uploadDomainService.softDelete(thumbnailFileId);
+        } catch {
+          // Branch row is already removed; ignore upload cleanup failure.
+        }
       }
 
       return new PermanentDeleteBranchResult(branch.id, true);

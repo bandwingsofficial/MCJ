@@ -1,6 +1,7 @@
 import { AxiosError } from "axios";
 
 import { branchApi } from "@/src/features/branches/api/branch.api";
+import { apiClient } from "@/src/core/api/axios";
 
 import {
   BranchFilters,
@@ -215,6 +216,27 @@ class BranchService {
     } catch (error) {
       throw this.handleError(error);
     }
+  }
+
+  async uploadBranchImage(file: File) {
+    const formData = new FormData();
+
+    formData.append("file", file);
+    formData.append("folder", "branches");
+    formData.append("fileName", file.name);
+
+    const response = await apiClient.post(
+      "/admin/uploads",
+      formData,
+      {
+        headers: {
+          "Content-Type": undefined,
+        },
+        transformRequest: [(data) => data],
+      },
+    );
+
+    return response.data;
   }
 
   private handleError(error: unknown): Error {

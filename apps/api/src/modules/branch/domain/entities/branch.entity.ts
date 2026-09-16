@@ -34,6 +34,9 @@ export class Branch {
 
     public description: string | null,
 
+    public thumbnailFileId: string | null,
+    public thumbnailUrl: string | null,
+
     public displayOrder: number | null,
 
     public deletedAt: Date | null,
@@ -66,6 +69,9 @@ export class Branch {
     status?: BranchStatus;
 
     description?: string;
+
+    thumbnailFileId?: string | null;
+    thumbnailUrl?: string | null;
 
     displayOrder?: number | null;
   }): Branch {
@@ -100,6 +106,9 @@ export class Branch {
 
       params.description?.trim() ?? null,
 
+      params.thumbnailFileId ?? null,
+      params.thumbnailUrl ?? null,
+
       params.displayOrder ?? null,
 
       null,
@@ -133,6 +142,9 @@ export class Branch {
     status: BranchStatus;
 
     description: string | null;
+
+    thumbnailFileId: string | null;
+    thumbnailUrl: string | null;
 
     displayOrder: number | null;
 
@@ -171,6 +183,9 @@ export class Branch {
       params.status,
 
       params.description,
+
+      params.thumbnailFileId,
+      params.thumbnailUrl,
 
       params.displayOrder,
 
@@ -234,6 +249,21 @@ export class Branch {
 
   changeDescription(description: string | null) {
     this.description = description?.trim() ?? null;
+    this.touch();
+  }
+
+  updateThumbnail(params: {
+    thumbnailFileId?: string | null;
+    thumbnailUrl?: string | null;
+  }) {
+    if (params.thumbnailFileId !== undefined) {
+      this.thumbnailFileId = params.thumbnailFileId;
+    }
+
+    if (params.thumbnailUrl !== undefined) {
+      this.thumbnailUrl = params.thumbnailUrl;
+    }
+
     this.touch();
   }
 

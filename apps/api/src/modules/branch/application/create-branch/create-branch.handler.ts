@@ -12,6 +12,7 @@ import { Branch } from '../../domain/entities/branch.entity';
 import { BranchCode } from '../../domain/value-objects/branch-code.vo';
 import { BranchDomainService } from '../../domain/services/branch-domain.service';
 import { BranchStatus } from '../../domain/enums/branch-status.enum';
+import { UploadDomainService } from '@/modules/uploads/domain/services/upload-domain.service';
 
 import { BaseException } from '@common/exceptions/base.exception';
 import { ERROR_CODES } from '@common/constants/error-codes';
@@ -20,6 +21,9 @@ import { ValidationError } from '../errors/validation.error';
 
 import { BRANCH_TOKENS } from '../../branch.tokens';
 import { Prisma } from '@prisma/client';
+
+const BRANCH_UPLOAD_FOLDER = 'branches';
+const BRANCH_THUMBNAIL_FILE_NAME = 'thumbnail';
 
 export class CreateBranchHandler {
   private readonly logger = new Logger(
@@ -31,6 +35,8 @@ export class CreateBranchHandler {
     private readonly branchRepo: BranchRepository,
 
     private readonly domainService: BranchDomainService,
+
+    private readonly uploadDomainService: UploadDomainService,
   ) {}
 
   async execute(
@@ -96,8 +102,24 @@ export class CreateBranchHandler {
       // 3️⃣ CREATE ENTITY
       // =====================
 
+      const branchId = randomUUID();
+      let thumbnailFileId: string | null = null;
+      let thumbnailUrl: string | null = null;
+
+      if (command.thumbnailFileId) {
+        const upload = await this.uploadDomainService.attachToEntity({
+          uploadId: command.thumbnailFileId,
+          folder: BRANCH_UPLOAD_FOLDER,
+          entityId: branchId,
+          fileName: BRANCH_THUMBNAIL_FILE_NAME,
+        });
+
+        thumbnailFileId = upload.id;
+        thumbnailUrl = upload.url;
+      }
+
       const branch = Branch.create({
-        id: randomUUID(),
+        id: branchId,
 
         branchName: command.branchName,
 
@@ -129,6 +151,9 @@ export class CreateBranchHandler {
 
         description:
           command.description,
+
+        thumbnailFileId,
+        thumbnailUrl,
 
         displayOrder,
       });
@@ -177,6 +202,8 @@ export class CreateBranchHandler {
         branch.status,
 
         branch.description,
+
+        branch.thumbnailUrl,
 
         branch.createdAt,
 

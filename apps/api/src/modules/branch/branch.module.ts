@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { UploadsModule } from '../uploads/uploads.module';
+import { UploadDomainService } from '../uploads/domain/services/upload-domain.service';
 
 import { BranchController } from './presentation/controllers/branch.controller';
 import { BranchCourseController } from './presentation/controllers/branch-course.controller';
@@ -35,7 +37,7 @@ import { PrismaBranchRepository } from './infrastructure/repositories/prisma-bra
 import { BRANCH_TOKENS } from './branch.tokens';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, UploadsModule],
 
   controllers: [
     BranchController,
@@ -58,14 +60,17 @@ import { BRANCH_TOKENS } from './branch.tokens';
       useFactory: (
         branchRepo: BranchRepository,
         domainService: BranchDomainService,
+        uploadDomainService: UploadDomainService,
       ) =>
         new CreateBranchHandler(
           branchRepo,
           domainService,
+          uploadDomainService,
         ),
       inject: [
         BRANCH_TOKENS.BRANCH_REPOSITORY,
         BranchDomainService,
+        UploadDomainService,
       ],
     },
 
@@ -115,14 +120,17 @@ import { BRANCH_TOKENS } from './branch.tokens';
       useFactory: (
         branchRepo: BranchRepository,
         domainService: BranchDomainService,
+        uploadDomainService: UploadDomainService,
       ) =>
         new UpdateBranchHandler(
           branchRepo,
           domainService,
+          uploadDomainService,
         ),
       inject: [
         BRANCH_TOKENS.BRANCH_REPOSITORY,
         BranchDomainService,
+        UploadDomainService,
       ],
     },
 
@@ -177,14 +185,17 @@ import { BRANCH_TOKENS } from './branch.tokens';
       useFactory: (
         branchRepo: BranchRepository,
         domainService: BranchDomainService,
+        uploadDomainService: UploadDomainService,
       ) =>
         new PermanentDeleteBranchHandler(
           branchRepo,
           domainService,
+          uploadDomainService,
         ),
       inject: [
         BRANCH_TOKENS.BRANCH_REPOSITORY,
         BranchDomainService,
+        UploadDomainService,
       ],
     },
 
@@ -240,9 +251,18 @@ import { BRANCH_TOKENS } from './branch.tokens';
 
     {
       provide: BulkPermanentDeleteBranchesHandler,
-      useFactory: (branchRepo: BranchRepository) =>
-        new BulkPermanentDeleteBranchesHandler(branchRepo),
-      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+      useFactory: (
+        branchRepo: BranchRepository,
+        uploadDomainService: UploadDomainService,
+      ) =>
+        new BulkPermanentDeleteBranchesHandler(
+          branchRepo,
+          uploadDomainService,
+        ),
+      inject: [
+        BRANCH_TOKENS.BRANCH_REPOSITORY,
+        UploadDomainService,
+      ],
     },
 
     {

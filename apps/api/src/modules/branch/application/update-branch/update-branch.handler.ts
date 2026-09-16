@@ -7,6 +7,7 @@ import type { BranchRepository } from '../../domain/repositories/branch.reposito
 
 import { BranchCode } from '../../domain/value-objects/branch-code.vo';
 import { BranchDomainService } from '../../domain/services/branch-domain.service';
+import { UploadDomainService } from '@/modules/uploads/domain/services/upload-domain.service';
 
 import { BaseException } from '@common/exceptions/base.exception';
 import { ERROR_CODES } from '@common/constants/error-codes';
@@ -16,6 +17,9 @@ import { ValidationError } from '../errors/validation.error';
 import { BRANCH_TOKENS } from '../../branch.tokens';
 import { Prisma } from '@prisma/client';
 
+const BRANCH_UPLOAD_FOLDER = 'branches';
+const BRANCH_THUMBNAIL_FILE_NAME = 'thumbnail';
+
 export class UpdateBranchHandler {
   private readonly logger = new Logger(UpdateBranchHandler.name);
 
@@ -24,6 +28,8 @@ export class UpdateBranchHandler {
     private readonly branchRepo: BranchRepository,
 
     private readonly domainService: BranchDomainService,
+
+    private readonly uploadDomainService: UploadDomainService,
   ) {}
 
   async execute(command: UpdateBranchCommand): Promise<UpdateBranchResult> {
@@ -121,6 +127,36 @@ export class UpdateBranchHandler {
         branch.changeDescription(command.description);
       }
 
+      if (
+        command.thumbnailFileId !== undefined &&
+        command.thumbnailFileId !== branch.thumbnailFileId
+      ) {
+        if (command.thumbnailFileId) {
+          const upload =
+            await this.uploadDomainService.replaceLinkedUpload({
+              previousUploadId: branch.thumbnailFileId,
+              nextUploadId: command.thumbnailFileId,
+              folder: BRANCH_UPLOAD_FOLDER,
+              entityId: branch.id,
+              fileName: BRANCH_THUMBNAIL_FILE_NAME,
+            });
+
+          branch.updateThumbnail({
+            thumbnailFileId: upload.id,
+            thumbnailUrl: upload.url,
+          });
+        } else {
+          if (branch.thumbnailFileId) {
+            await this.uploadDomainService.softDelete(branch.thumbnailFileId);
+          }
+
+          branch.updateThumbnail({
+            thumbnailFileId: null,
+            thumbnailUrl: null,
+          });
+        }
+      }
+
       await this.branchRepo.save(branch);
 
       this.logger.log(`Branch updated: ${branch.id}`);
@@ -141,6 +177,7 @@ export class UpdateBranchHandler {
         branch.longitude,
         branch.status,
         branch.description,
+        branch.thumbnailUrl,
         branch.createdAt,
         branch.updatedAt,
       );

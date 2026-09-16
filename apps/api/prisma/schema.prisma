@@ -144,6 +144,8 @@ model Branch {
   longitude      Float?
   status         BranchStatus     @default(ACTIVE)
   description    String?
+  thumbnailFileId String?
+  thumbnailUrl   String?
   displayOrder   Int?
   deletedAt      DateTime?
   createdAt      DateTime         @default(now())
@@ -159,6 +161,7 @@ model Branch {
   assessments    AcademicAssessment[]
   interviews     Interview[]
   activityLogs   BranchActivityLog[]
+  thumbnailUpload Upload?           @relation("BranchThumbnailUpload", fields: [thumbnailFileId], references: [id], onDelete: SetNull)
 
   @@index([branchName])
   @@index([branchCode])
@@ -235,6 +238,7 @@ model Upload {
   createdAt                  DateTime           @default(now())
   updatedAt                  DateTime           @updatedAt
   categoryThumbnails         Category[]         @relation("CategoryThumbnailUpload")
+  branchThumbnails           Branch[]           @relation("BranchThumbnailUpload")
   communityPostMedia         CommunityPost[]    @relation("CommunityPostMedia")
   communityPostGalleryMedia  CommunityPostMedia[]
   communityPostPrimaryMedia  CommunityPost[]    @relation("CommunityPostPrimaryMedia")

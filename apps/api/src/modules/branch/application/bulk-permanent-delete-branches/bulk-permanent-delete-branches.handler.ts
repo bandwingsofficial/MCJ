@@ -5,6 +5,7 @@ import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
 
 import type { BranchRepository } from '../../domain/repositories/branch.repository';
+import { UploadDomainService } from '@/modules/uploads/domain/services/upload-domain.service';
 import { BRANCH_TOKENS } from '../../branch.tokens';
 
 import { ValidationError } from '../errors/validation.error';
@@ -45,6 +46,8 @@ export class BulkPermanentDeleteBranchesHandler {
   constructor(
     @Inject(BRANCH_TOKENS.BRANCH_REPOSITORY)
     private readonly branchRepo: BranchRepository,
+
+    private readonly uploadDomainService: UploadDomainService,
   ) {}
 
   async execute(
@@ -101,6 +104,7 @@ export class BulkPermanentDeleteBranchesHandler {
         }
 
         const displayOrder = branch.displayOrder;
+        const thumbnailFileId = branch.thumbnailFileId;
 
         try {
           await this.branchRepo.deletePermanent(branch.id);
@@ -109,6 +113,14 @@ export class BulkPermanentDeleteBranchesHandler {
             await this.branchRepo.closeDisplayOrderGap(
               displayOrder,
             );
+          }
+
+          if (thumbnailFileId) {
+            try {
+              await this.uploadDomainService.softDelete(thumbnailFileId);
+            } catch {
+              // Branch row is already removed; ignore upload cleanup failure.
+            }
           }
 
           itemResults.push({

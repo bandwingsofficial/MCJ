@@ -64,6 +64,7 @@ export class GetBranchHandler {
         branch.longitude,
         branch.status,
         branch.description,
+        branch.thumbnailUrl,
         branch.deletedAt,
         branch.createdAt,
         branch.updatedAt,

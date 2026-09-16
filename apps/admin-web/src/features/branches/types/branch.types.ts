@@ -36,6 +36,8 @@ export interface Branch {
 
   description: string | null;
 
+  thumbnailUrl: string | null;
+
   deletedAt?: string | null;
 
   createdAt: string;
@@ -99,6 +101,8 @@ export interface CreateBranchRequest {
   longitude: number;
 
   description?: string;
+
+  thumbnailFileId?: string;
 }
 
 export interface UpdateBranchRequest {
@@ -127,6 +131,8 @@ export interface UpdateBranchRequest {
   latitude?: number;
 
   longitude?: number;
+
+  thumbnailFileId?: string | null;
 }
 
 export interface UpdateBranchStatusRequest {

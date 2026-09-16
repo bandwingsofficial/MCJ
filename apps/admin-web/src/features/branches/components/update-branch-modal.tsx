@@ -13,6 +13,8 @@ import { useUpdateBranch } from "@/src/features/branches/hooks/use-update-branch
 
 import { CreateBranchFormValues } from "@/src/features/branches/schemas/branch.schema";
 
+import { branchService } from "@/src/features/branches/services/branch.service";
+
 interface UpdateBranchModalProps {
   open: boolean;
 
@@ -26,7 +28,8 @@ interface UpdateBranchModalProps {
 }
 
 function toUpdatePayload(
-  values: CreateBranchFormValues
+  values: CreateBranchFormValues,
+  thumbnailFileId?: string | null,
 ): UpdateBranchRequest {
   return {
     branchName: values.branchName.trim(),
@@ -46,6 +49,7 @@ function toUpdatePayload(
     description: values.description?.trim()
       ? values.description.trim()
       : undefined,
+    thumbnailFileId,
   };
 }
 
@@ -63,13 +67,24 @@ export function UpdateBranchModal({
   }
 
   const handleSubmit = async (
-    values: CreateBranchFormValues
+    values: CreateBranchFormValues,
+    image: File | null,
+    removeImage: boolean,
   ) => {
     if (!branch) {
       return;
     }
 
-    const payload = toUpdatePayload(values);
+    let thumbnailFileId: string | null | undefined;
+
+    if (image) {
+      const uploadResponse = await branchService.uploadBranchImage(image);
+      thumbnailFileId = uploadResponse.data.fileId;
+    } else if (removeImage) {
+      thumbnailFileId = null;
+    }
+
+    const payload = toUpdatePayload(values, thumbnailFileId);
     const updated = await updateBranch(branch.id, payload);
     try {
       await onSuccess(updated);
@@ -102,6 +117,7 @@ export function UpdateBranchModal({
             latitude: branch.latitude ?? 0,
             longitude: branch.longitude ?? 0,
             description: branch.description ?? "",
+            thumbnailUrl: branch.thumbnailUrl,
           }}
           submitLabel="Update Branch"
           isSubmitting={isPending}

@@ -32,5 +32,7 @@ export class CreateBranchCommand {
 
     // 🧠 extras
     public readonly description?: string,
+
+    public readonly thumbnailFileId?: string,
   ) {}
 }

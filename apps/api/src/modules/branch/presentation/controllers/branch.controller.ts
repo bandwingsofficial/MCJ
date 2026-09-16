@@ -116,6 +116,7 @@ export class BranchController {
           dto.longitude,
           dto.status,
           dto.description,
+          dto.thumbnailFileId,
         ),
       );
 
@@ -343,6 +344,7 @@ export class BranchController {
           dto.longitude,
           dto.status,
           dto.description,
+          dto.thumbnailFileId,
         ),
       );
 

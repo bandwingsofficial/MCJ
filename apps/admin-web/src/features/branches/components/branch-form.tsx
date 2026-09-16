@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from "react";
 
+import Image from "next/image";
+
 import { useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,12 +21,15 @@ import {
   FileText,
   Globe,
   Hash,
+  ImageIcon,
   Mail,
   Map,
   MapPin,
   MapPinned,
   Phone,
   Tag,
+  Upload,
+  X,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,8 +51,16 @@ import {
 } from "@/src/features/branches/schemas/branch.schema";
 
 import { branchService } from "@/src/features/branches/services/branch.service";
+import { mapBranchApiError } from "@/src/features/branches/utils/branch-form-errors";
 
 const AVAILABILITY_DEBOUNCE_MS = 400;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ACCEPTED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+];
 
 function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
   return (
@@ -108,7 +121,9 @@ type SyncFieldName = Exclude<
 >;
 
 interface BranchFormProps {
-  defaultValues?: Partial<CreateBranchFormValues>;
+  defaultValues?: Partial<CreateBranchFormValues> & {
+    thumbnailUrl?: string | null;
+  };
 
   /** When set, form is edit mode — do not auto-regenerate code from name. */
   excludeId?: string;
@@ -118,7 +133,9 @@ interface BranchFormProps {
   submitLabel: string;
 
   onSubmit: (
-    values: CreateBranchFormValues
+    values: CreateBranchFormValues,
+    image: File | null,
+    removeImage: boolean,
   ) => Promise<void>;
 }
 
@@ -131,6 +148,7 @@ export function BranchForm({
 }: BranchFormProps) {
   const isEdit = Boolean(excludeId);
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const suggestRequestIdRef = useRef(0);
   const nameCheckIdRef = useRef(0);
   const codeCheckIdRef = useRef(0);
@@ -155,6 +173,16 @@ export function BranchForm({
   const [codeAsyncError, setCodeAsyncError] = useState<
     string | null
   >(null);
+
+  const [imageTouched, setImageTouched] = useState(isEdit);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    defaultValues?.thumbnailUrl ?? null,
+  );
+  const [removeImage, setRemoveImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [imageBroken, setImageBroken] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const {
     register,
@@ -218,6 +246,12 @@ export function BranchForm({
     setNameAsyncError(null);
     setCodeAvailable(null);
     setCodeAsyncError(null);
+    setPreviewUrl(defaultValues?.thumbnailUrl ?? null);
+    setSelectedImage(null);
+    setRemoveImage(false);
+    setImageBroken(false);
+    setImageError(null);
+    setImageTouched(true);
   }, [
     excludeId,
     defaultValues?.branchName,
@@ -233,9 +267,24 @@ export function BranchForm({
     defaultValues?.latitude,
     defaultValues?.longitude,
     defaultValues?.description,
+    defaultValues?.thumbnailUrl,
     isEdit,
     reset,
   ]);
+
+  useEffect(() => {
+    if (!selectedImage) {
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(selectedImage);
+    setPreviewUrl(objectUrl);
+    setImageBroken(false);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [selectedImage]);
 
   // Auto-generate branch code on create (MCJB001, MCJB002, …).
   useEffect(() => {
@@ -371,8 +420,15 @@ export function BranchForm({
   }, [branchCode, excludeId, codeTouched]);
 
   const applyConflictFromError = (error: unknown) => {
-    const message =
-      error instanceof Error ? error.message : "";
+    const mapped = mapBranchApiError(error);
+
+    if (mapped.image) {
+      setImageTouched(true);
+      setImageError(mapped.image);
+      return;
+    }
+
+    const message = mapped.root ?? (error instanceof Error ? error.message : "");
     const lower = message.toLowerCase();
 
     if (
@@ -504,9 +560,61 @@ export function BranchForm({
   const latField = syncField("latitude");
   const lngField = syncField("longitude");
 
+  const hasImage =
+    Boolean(selectedImage) ||
+    (Boolean(previewUrl) && !removeImage && !imageBroken);
+
+  const imageState: FieldVisualState = !imageTouched
+    ? "neutral"
+    : imageError || !hasImage
+      ? "invalid"
+      : "valid";
+
+  const validateAndSetFile = (file: File | null) => {
+    setImageTouched(true);
+    setImageError(null);
+
+    if (!file) {
+      return;
+    }
+
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setImageError("Only JPEG, PNG, WebP, or GIF images are allowed.");
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      setImageError("Image must be 5MB or smaller.");
+      return;
+    }
+
+    setSelectedImage(file);
+    setRemoveImage(false);
+  };
+
+  const clearImage = () => {
+    setImageTouched(true);
+    setSelectedImage(null);
+    setPreviewUrl(null);
+    setRemoveImage(true);
+    setImageBroken(false);
+    setImageError(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <form
       onSubmit={handleSubmit(async (formValues) => {
+        setImageTouched(true);
+
+        if (!hasImage) {
+          setImageError("Branch image is required.");
+          return;
+        }
+
         if (
           nameChecking ||
           codeChecking ||
@@ -563,16 +671,21 @@ export function BranchForm({
         }
 
         try {
-          await onSubmit({
-            ...formValues,
-            branchName: trimmedName,
-            branchCode: trimmedCode,
-          });
+          await onSubmit(
+            {
+              ...formValues,
+              branchName: trimmedName,
+              branchCode: trimmedCode,
+            },
+            selectedImage,
+            removeImage,
+          );
         } catch (error) {
           applyConflictFromError(error);
         }
       })}
       className="space-y-5"
+      noValidate
     >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <IconField
@@ -776,6 +889,112 @@ export function BranchForm({
         <FormError
           message={errors.description?.message}
         />
+      </div>
+
+      <div className="min-w-0">
+        <Label required>Branch Image</Label>
+
+        {previewUrl && !removeImage && !imageBroken ? (
+          <div className="mb-3 flex items-start gap-3">
+            <Image
+              src={previewUrl}
+              alt="Branch preview"
+              width={112}
+              height={112}
+              className={`h-28 w-28 rounded-lg border object-cover ${
+                imageState === "invalid"
+                  ? "border-red-300"
+                  : imageState === "valid"
+                    ? "border-emerald-400"
+                    : "border-slate-200"
+              }`}
+              onError={() => setImageBroken(true)}
+            />
+
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isSubmitting}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Replace Image
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isSubmitting}
+                onClick={clearImage}
+              >
+                <X className="mr-1 h-4 w-4" />
+                Remove Image
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div
+            className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-8 text-center transition ${
+              isDragging
+                ? "border-blue-400 bg-blue-50/40"
+                : imageState === "invalid"
+                  ? "border-red-300 bg-red-50/30"
+                  : imageState === "valid"
+                    ? "border-emerald-400 bg-emerald-50/30"
+                    : "border-slate-300 bg-white hover:border-slate-400"
+            }`}
+            onClick={() => !isSubmitting && fileInputRef.current?.click()}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setIsDragging(false);
+              if (isSubmitting) {
+                return;
+              }
+              validateAndSetFile(event.dataTransfer.files?.[0] ?? null);
+            }}
+          >
+            {imageBroken ? (
+              <ImageIcon className="h-8 w-8 text-slate-400" />
+            ) : (
+              <Upload className="h-8 w-8 text-slate-400" />
+            )}
+
+            <p className="text-sm text-slate-600">
+              Drag & drop image or choose image
+            </p>
+            <p className="text-xs text-slate-400">
+              JPEG, PNG, WebP, GIF up to 5MB
+            </p>
+          </div>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPTED_TYPES.join(",")}
+          className="hidden"
+          disabled={isSubmitting}
+          onChange={(event) => {
+            validateAndSetFile(event.target.files?.[0] ?? null);
+          }}
+        />
+
+        <div className="mt-1 min-h-[1.25rem]">
+          {imageState === "invalid" && imageError ? (
+            <p role="alert" className="text-sm text-red-500">
+              {imageError}
+            </p>
+          ) : imageState === "valid" ? (
+            <p className="text-xs text-emerald-600">Image ready</p>
+          ) : null}
+        </div>
       </div>
 
       <Button

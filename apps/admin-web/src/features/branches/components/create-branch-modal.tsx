@@ -10,6 +10,8 @@ import {
   CreateBranchFormValues,
 } from "@/src/features/branches/schemas/branch.schema";
 
+import { branchService } from "@/src/features/branches/services/branch.service";
+
 interface CreateBranchModalProps {
   open: boolean;
 
@@ -29,9 +31,20 @@ export function CreateBranchModal({
   } = useCreateBranch();
 
   const handleSubmit = async (
-    values: CreateBranchFormValues
+    values: CreateBranchFormValues,
+    image: File | null,
   ) => {
-    await createBranch(values);
+    let thumbnailFileId: string | undefined;
+
+    if (image) {
+      const uploadResponse = await branchService.uploadBranchImage(image);
+      thumbnailFileId = uploadResponse.data.fileId;
+    }
+
+    await createBranch({
+      ...values,
+      thumbnailFileId,
+    });
     onSuccess();
     onClose();
   };
@@ -46,7 +59,9 @@ export function CreateBranchModal({
         key={open ? "create-branch-open" : "create-branch-closed"}
         submitLabel="Create Branch"
         isSubmitting={isPending}
-        onSubmit={handleSubmit}
+        onSubmit={async (values, image) => {
+          await handleSubmit(values, image);
+        }}
       />
     </Modal>
   );

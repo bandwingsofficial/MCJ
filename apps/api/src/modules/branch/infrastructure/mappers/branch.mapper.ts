@@ -33,6 +33,9 @@ export class BranchMapper {
 
       description: record.description,
 
+      thumbnailFileId: record.thumbnailFileId,
+      thumbnailUrl: record.thumbnailUrl,
+
       displayOrder: record.displayOrder ?? null,
 
       deletedAt: record.deletedAt,
@@ -70,6 +73,9 @@ export class BranchMapper {
       status: branch.status,
 
       description: branch.description,
+
+      thumbnailFileId: branch.thumbnailFileId,
+      thumbnailUrl: branch.thumbnailUrl,
 
       displayOrder: branch.displayOrder,
 

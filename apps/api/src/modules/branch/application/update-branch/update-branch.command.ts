@@ -26,5 +26,7 @@ export class UpdateBranchCommand {
     public readonly status?: BranchStatus,
 
     public readonly description?: string | null,
+
+    public readonly thumbnailFileId?: string | null,
   ) {}
 }
