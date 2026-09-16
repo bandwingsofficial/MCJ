@@ -66,6 +66,8 @@ export interface BranchListItem {
 
   status: BranchStatus;
 
+  thumbnailUrl: string | null;
+
   displayOrder?: number | null;
 
   deletedAt?: string | null;

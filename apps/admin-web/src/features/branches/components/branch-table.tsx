@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import Image from "next/image";
+
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
 
 import type { BranchListItem } from "@/src/features/branches/types/branch.types";
@@ -59,7 +61,7 @@ export function BranchTable({
   const someVisibleSelected =
     selectedVisibleCount > 0 && !allVisibleSelected;
 
-  const columnCount = selectionEnabled ? 7 : 6;
+  const columnCount = selectionEnabled ? 8 : 7;
 
   useEffect(() => {
     setRows(branches);
@@ -121,6 +123,9 @@ export function BranchTable({
               </th>
             ) : null}
 
+            <th className="w-12 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Image
+            </th>
             <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Code
             </th>
@@ -181,6 +186,22 @@ export function BranchTable({
                       />
                     </td>
                   ) : null}
+
+                  <td className="w-12 !px-4 !py-4 align-middle">
+                    {branch.thumbnailUrl ? (
+                      <Image
+                        src={branch.thumbnailUrl}
+                        alt={branch.branchName}
+                        width={36}
+                        height={36}
+                        className="h-9 w-9 rounded-md border border-slate-200 object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-9 w-9 items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-[9px] font-medium uppercase tracking-wide text-slate-400">
+                        N/A
+                      </div>
+                    )}
+                  </td>
 
                   <td className="!px-4 !py-4 align-middle font-mono text-sm text-slate-700">
                     {branch.branchCode}

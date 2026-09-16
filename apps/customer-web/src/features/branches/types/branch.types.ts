@@ -16,6 +16,7 @@ export interface PublicBranch {
   longitude?: number | null;
   description?: string | null;
   status: string;
+  thumbnailUrl?: string | null;
 }
 
 export interface GetBranchesResponse {

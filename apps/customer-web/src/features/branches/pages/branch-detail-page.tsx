@@ -331,7 +331,7 @@ export function BranchDetailPage({ branchSlugOrId }: Props) {
   const [facilityIndex, setFacilityIndex] = useState(0);
 
   const courses = coursesQuery.data ?? [];
-  const heroImage = courses.find((course) => course.thumbnailUrl)?.thumbnailUrl;
+  const heroImage = branch?.thumbnailUrl ?? null;
   const courseSlugById = useMemo(
     () => new Map(courses.map((course) => [course.id, course.slug])),
     [courses],

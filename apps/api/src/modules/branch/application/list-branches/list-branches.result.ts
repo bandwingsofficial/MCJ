@@ -18,6 +18,8 @@ export class ListBranchItemResult {
 
     public readonly status: BranchStatus,
 
+    public readonly thumbnailUrl: string | null,
+
     public readonly displayOrder: number | null,
 
     public readonly deletedAt: Date | null,

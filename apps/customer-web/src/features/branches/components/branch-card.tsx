@@ -14,10 +14,10 @@ import {
 
 interface BranchCardProps {
   branch: PublicBranch;
-  imageUrl?: string | null;
 }
 
-export function BranchCard({ branch, imageUrl }: BranchCardProps) {
+export function BranchCard({ branch }: BranchCardProps) {
+  const imageUrl = branch.thumbnailUrl;
   return (
     <Link href={getBranchDetailPath(branch)}>
       <Card className="group h-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#2563EB]/30 hover:shadow-md">

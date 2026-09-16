@@ -54,6 +54,7 @@ export class ListBranchesHandler {
           branch.country,
           branch.postalCode,
           branch.status,
+          branch.thumbnailUrl,
           branch.displayOrder,
           branch.deletedAt,
           branch.createdAt,

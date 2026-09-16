@@ -23,6 +23,7 @@ function mapPublicBranch(branch: {
   longitude?: number | null;
   description?: string | null;
   status: BranchStatus;
+  thumbnailUrl?: string | null;
 }) {
   return {
     id: branch.id,
@@ -40,6 +41,7 @@ function mapPublicBranch(branch: {
     longitude: branch.longitude ?? null,
     description: branch.description ?? null,
     status: branch.status,
+    thumbnailUrl: branch.thumbnailUrl ?? null,
   };
 }
 
