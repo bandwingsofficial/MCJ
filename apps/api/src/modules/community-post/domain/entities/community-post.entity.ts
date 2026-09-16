@@ -5,6 +5,7 @@ import { Hashtag } from '../value-objects/hashtag.vo';
 import { Location } from '../value-objects/location.vo';
 import { MediaUrl } from '../value-objects/media-url.vo';
 import { Mention } from '../value-objects/mention.vo';
+import { CommunityPostMedia } from './community-post-media.entity';
 
 export class CommunityPost {
   private constructor(
@@ -14,6 +15,8 @@ export class CommunityPost {
     public mediaFileId: string | null,
     public mediaUrl: MediaUrl,
     public thumbnailUrl: MediaUrl,
+    public primaryMediaFileId: string | null,
+    public mediaItems: CommunityPostMedia[],
     public hashtags: string[],
     public mentions: string[],
     public authorName: string,
@@ -41,6 +44,8 @@ export class CommunityPost {
       params.mediaFileId ?? null,
       MediaUrl.create(params.mediaUrl),
       MediaUrl.create(params.thumbnailUrl),
+      params.primaryMediaFileId ?? null,
+      params.mediaItems ?? [],
       Hashtag.createMany(params.hashtags),
       Mention.createMany(params.mentions),
       params.authorName?.trim() || "MCJ Community",
@@ -71,6 +76,8 @@ export class CommunityPost {
       params.mediaFileId,
       MediaUrl.create(params.mediaUrl),
       MediaUrl.create(params.thumbnailUrl),
+      params.primaryMediaFileId,
+      params.mediaItems ?? [],
       params.hashtags,
       params.mentions,
       params.authorName?.trim() || "MCJ Community",
@@ -104,6 +111,12 @@ export class CommunityPost {
     }
     if (params.thumbnailUrl !== undefined) {
       this.thumbnailUrl = MediaUrl.create(params.thumbnailUrl);
+    }
+    if (params.primaryMediaFileId !== undefined) {
+      this.primaryMediaFileId = params.primaryMediaFileId;
+    }
+    if (params.mediaItems !== undefined) {
+      this.mediaItems = params.mediaItems;
     }
     if (params.hashtags !== undefined) {
       this.hashtags = Hashtag.createMany(params.hashtags);
@@ -170,6 +183,8 @@ export interface CommunityPostCreateParams {
   mediaFileId?: string | null;
   mediaUrl?: string | null;
   thumbnailUrl?: string | null;
+  primaryMediaFileId?: string | null;
+  mediaItems?: CommunityPostMedia[];
   hashtags?: string[];
   mentions?: string[];
   authorName?: string | null;
@@ -188,13 +203,20 @@ export interface CommunityPostReconstituteParams
   extends Required<
     Omit<
       CommunityPostCreateParams,
-      'caption' | 'mediaFileId' | 'mediaUrl' | 'thumbnailUrl' | 'location'
+      | 'caption'
+      | 'mediaFileId'
+      | 'mediaUrl'
+      | 'thumbnailUrl'
+      | 'location'
+      | 'mediaItems'
     >
   > {
   caption: string | null;
   mediaFileId: string | null;
   mediaUrl: string | null;
   thumbnailUrl: string | null;
+  primaryMediaFileId: string | null;
+  mediaItems: CommunityPostMedia[];
   location: string | null;
   viewCount: number;
   likeCount: number;

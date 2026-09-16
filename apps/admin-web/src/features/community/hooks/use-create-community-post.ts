@@ -8,14 +8,18 @@ import { appToast } from "@/src/shared/components/ui/toast";
 
 import { communityService } from "@/src/features/community/services/community.service";
 import { mapCommunityApiError } from "@/src/features/community/utils/community-form-errors";
+import {
+  buildCommunityMediaPayload,
+  deriveCommunityPostTypeFromMedia,
+  type CommunityMediaFormItem,
+} from "@/src/features/community/utils/community-media.utils";
 
 import type { CommunityFormValues } from "@/src/features/community/schemas/community.schema";
 import type { CreateCommunityPostRequest } from "@/src/features/community/types/community.types";
 import type { CommunityFormFieldErrors } from "@/src/features/community/utils/community-form-errors";
 
 export interface CommunityUploadFiles {
-  media?: File | null;
-  removeMedia?: boolean;
+  mediaItems: CommunityMediaFormItem[];
 }
 
 interface UseCreateCommunityPostReturn {
@@ -29,16 +33,50 @@ interface UseCreateCommunityPostReturn {
   clearFieldErrors: () => void;
 }
 
+async function uploadMediaItems(
+  items: CommunityMediaFormItem[],
+): Promise<CommunityMediaFormItem[]> {
+  return Promise.all(
+    items.map(async (item) => {
+      if (item.fileId || !item.file) {
+        return item;
+      }
+
+      try {
+        const uploadResponse = await communityService.uploadMedia(item.file);
+        return {
+          ...item,
+          fileId: uploadResponse.data.fileId,
+          url: uploadResponse.data.url,
+          previewUrl: uploadResponse.data.url,
+          file: null,
+          isUploading: false,
+          uploadError: null,
+        };
+      } catch (error) {
+        return {
+          ...item,
+          isUploading: false,
+          uploadError:
+            error instanceof Error ? error.message : "Upload failed",
+        };
+      }
+    }),
+  );
+}
+
 function toCreateRequest(
   values: CommunityFormValues,
+  mediaItems: CommunityMediaFormItem[],
 ): CreateCommunityPostRequest {
   return {
-    type: values.type,
+    type: deriveCommunityPostTypeFromMedia(mediaItems),
     caption: values.caption.trim(),
     authorName: values.authorName.trim(),
     hashtags: values.hashtags.length > 0 ? values.hashtags : undefined,
     location: values.location?.trim() || undefined,
     status: values.status,
+    media: buildCommunityMediaPayload(mediaItems),
   };
 }
 
@@ -57,18 +95,20 @@ export const useCreateCommunityPost = (
       setIsLoading(true);
       setFieldErrors({});
 
-      const payload = toCreateRequest(values);
-
-      if (files?.media) {
-        const uploadResponse = await communityService.uploadMedia(
-          files.media,
-        );
-        payload.mediaFileId = uploadResponse.data.fileId;
-      } else if (!files?.removeMedia) {
-        setFieldErrors({ media: "Media file is required" });
+      const mediaItems = files?.mediaItems ?? [];
+      if (mediaItems.length === 0) {
+        setFieldErrors({ media: "At least one media item is required" });
         return false;
       }
 
+      const uploadedItems = await uploadMediaItems(mediaItems);
+      const failedUpload = uploadedItems.find((item) => item.uploadError);
+      if (failedUpload?.uploadError) {
+        setFieldErrors({ media: failedUpload.uploadError });
+        return false;
+      }
+
+      const payload = toCreateRequest(values, uploadedItems);
       const response = await communityService.createCommunityPost(payload);
       appToast.success(response.message);
       onSuccess?.();

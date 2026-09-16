@@ -4,12 +4,13 @@ import { Logger } from '@nestjs/common';
 import { UploadDomainService } from '@modules/uploads/domain/services/upload-domain.service';
 
 import { CommunityPost } from '../../domain/entities/community-post.entity';
+import { CommunityPostType } from '../../domain/enums/community-post-type.enum';
 import type { CommunityPostRepository } from '../../domain/repositories/community-post.repository';
 import { GetCommunityPostResult } from '../get-community-post/get-community-post.result';
+import {
+  resolveCommunityPostMediaCollection,
+} from '../shared/community-post-media-sync';
 import { CreateCommunityPostCommand } from './create-community-post.command';
-
-const COMMUNITY_UPLOAD_FOLDER = 'community';
-const COMMUNITY_MEDIA_FILE_NAME = 'media';
 
 export class CreateCommunityPostHandler {
   private readonly logger = new Logger(CreateCommunityPostHandler.name);
@@ -23,28 +24,35 @@ export class CreateCommunityPostHandler {
     command: CreateCommunityPostCommand,
   ): Promise<GetCommunityPostResult> {
     const postId = randomUUID();
-    let mediaFileId: string | null = null;
-    let mediaUrl: string | null = null;
+    const mediaInputs = command.media ?? [];
 
-    if (command.mediaFileId) {
-      const upload = await this.uploadDomainService.attachToEntity({
-        uploadId: command.mediaFileId,
-        folder: COMMUNITY_UPLOAD_FOLDER,
-        entityId: postId,
-        fileName: COMMUNITY_MEDIA_FILE_NAME,
+    if (!mediaInputs.length && command.mediaFileId) {
+      mediaInputs.push({
+        fileId: command.mediaFileId,
+        mediaType: command.type ?? CommunityPostType.IMAGE,
+        displayOrder: 0,
+        isPrimary: (command.type ?? CommunityPostType.IMAGE) === CommunityPostType.IMAGE,
       });
-
-      mediaFileId = upload.id;
-      mediaUrl = upload.url;
     }
+
+    const resolvedMedia = mediaInputs.length
+      ? await resolveCommunityPostMediaCollection({
+          postId,
+          mediaInputs,
+          uploadDomainService: this.uploadDomainService,
+          updatedBy: command.createdBy,
+        })
+      : null;
 
     const post = CommunityPost.create({
       id: postId,
-      type: command.type,
+      type: resolvedMedia?.type ?? command.type ?? CommunityPostType.IMAGE,
       caption: command.caption,
-      mediaFileId,
-      mediaUrl,
-      thumbnailUrl: command.thumbnailUrl,
+      mediaFileId: resolvedMedia?.mediaFileId ?? null,
+      mediaUrl: resolvedMedia?.mediaUrl ?? null,
+      thumbnailUrl: resolvedMedia?.thumbnailUrl ?? command.thumbnailUrl,
+      primaryMediaFileId: resolvedMedia?.primaryMediaFileId ?? null,
+      mediaItems: resolvedMedia?.mediaItems ?? [],
       hashtags: command.hashtags,
       mentions: command.mentions,
       authorName: command.authorName,

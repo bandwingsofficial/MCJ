@@ -32,6 +32,16 @@ export interface CommunityPostLike {
   createdAt: string;
 }
 
+export interface CommunityPostMediaItem {
+  id: string;
+  fileId: string;
+  mediaType: CommunityPostType;
+  url: string | null;
+  mimeType?: string | null;
+  displayOrder: number | null;
+  isPrimary: boolean;
+}
+
 export interface CommunityPostListItem {
   id: string;
   type: CommunityPostType;
@@ -39,6 +49,8 @@ export interface CommunityPostListItem {
   mediaFileId: string | null;
   mediaUrl: string | null;
   thumbnailUrl: string | null;
+  primaryMediaFileId?: string | null;
+  media?: CommunityPostMediaItem[];
   hashtags: string[];
   mentions: string[];
   authorName: string;
@@ -79,9 +91,16 @@ export interface CommunityListMeta {
 }
 
 export interface CreateCommunityPostRequest {
-  type: CommunityPostType;
+  type?: CommunityPostType;
   caption?: string;
   mediaFileId?: string;
+  media?: Array<{
+    id?: string;
+    fileId: string;
+    mediaType: CommunityPostType;
+    displayOrder?: number;
+    isPrimary?: boolean;
+  }>;
   thumbnailUrl?: string;
   hashtags?: string[];
   mentions?: string[];
@@ -94,6 +113,13 @@ export interface UpdateCommunityPostRequest {
   type?: CommunityPostType;
   caption?: string;
   mediaFileId?: string | null;
+  media?: Array<{
+    id?: string;
+    fileId: string;
+    mediaType: CommunityPostType;
+    displayOrder?: number;
+    isPrimary?: boolean;
+  }>;
   thumbnailUrl?: string | null;
   hashtags?: string[];
   mentions?: string[];

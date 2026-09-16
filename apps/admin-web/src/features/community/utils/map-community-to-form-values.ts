@@ -6,7 +6,6 @@ export function mapCommunityToFormValues(
   post: CommunityPostDetails,
 ): CommunityFormValues {
   return {
-    type: post.type,
     caption: post.caption ?? "",
     authorName: post.authorName ?? DEFAULT_COMMUNITY_AUTHOR_LABEL,
     hashtags: post.hashtags ?? [],

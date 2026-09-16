@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   Bookmark,
+  ChevronLeft,
+  ChevronRight,
   Heart,
   MessageCircle,
   MoreHorizontal,
@@ -11,31 +13,95 @@ import {
 } from "lucide-react";
 
 import { Avatar } from "@/src/shared/components/ui/avatar";
+import { Button } from "@/src/shared/components/ui/button";
+import { cn } from "@/src/shared/lib/cn";
 
 import { DEFAULT_COMMUNITY_AUTHOR_LABEL } from "@/src/features/community/constants/community.constants";
+import type { CommunityMediaFormItem } from "@/src/features/community/utils/community-media.utils";
+import {
+  getPrimaryMediaPreviewUrl,
+  reorderCommunityMediaItems,
+} from "@/src/features/community/utils/community-media.utils";
 
 import type { CommunityPostType } from "@/src/features/community/types/community.types";
+
+interface PreviewMediaItem {
+  clientId: string;
+  mediaType: CommunityPostType;
+  previewUrl?: string | null;
+  url?: string | null;
+  file?: File | null;
+  isPrimary?: boolean;
+}
 
 interface Props {
   type: CommunityPostType;
   caption: string;
   authorName?: string;
+  mediaItems?: CommunityMediaFormItem[] | PreviewMediaItem[];
   mediaUrl?: string | null;
   mediaFile?: File | null;
   hashtags?: string[];
   location?: string;
 }
 
+function resolvePreviewUrl(item: PreviewMediaItem): string | null {
+  if (item.file) {
+    return null;
+  }
+
+  return item.previewUrl ?? item.url ?? null;
+}
+
+function MediaSlide({
+  item,
+  objectUrl,
+}: {
+  item: PreviewMediaItem;
+  objectUrl: string | null;
+}) {
+  const src = objectUrl ?? resolvePreviewUrl(item);
+
+  if (!src) {
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-[#647A9B]">
+        Upload media to preview
+      </div>
+    );
+  }
+
+  if (item.mediaType === "VIDEO") {
+    return (
+      <video
+        src={src}
+        controls
+        className="h-full w-full object-cover"
+      />
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt="Post preview"
+      className="h-full w-full object-cover"
+    />
+  );
+}
+
 export function CommunityPostPreview({
   type,
   caption,
   authorName,
+  mediaItems = [],
   mediaUrl,
   mediaFile,
   hashtags = [],
   location,
 }: Props) {
-  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [objectUrls, setObjectUrls] = useState<Record<string, string>>({});
+
   const displayName = authorName?.trim() || DEFAULT_COMMUNITY_AUTHOR_LABEL;
   const avatarFallback = displayName
     .split(/\s+/)
@@ -44,21 +110,74 @@ export function CommunityPostPreview({
     .slice(0, 2)
     .toUpperCase();
 
-  useEffect(() => {
-    if (!mediaFile) {
-      setLocalPreview(null);
-      return;
+  const normalizedItems = useMemo(() => {
+    if (mediaItems.length > 0) {
+      return reorderCommunityMediaItems(
+        mediaItems.map((item, index) => ({
+          clientId: item.clientId,
+          mediaType: item.mediaType,
+          previewUrl: item.previewUrl,
+          url: item.url,
+          file: item.file,
+          displayOrder: "displayOrder" in item ? item.displayOrder : index,
+          isPrimary: ("isPrimary" in item ? item.isPrimary : false) ?? false,
+        })),
+      );
     }
 
-    const objectUrl = URL.createObjectURL(mediaFile);
-    setLocalPreview(objectUrl);
+    if (mediaFile || mediaUrl) {
+      return [
+        {
+          clientId: "legacy-media",
+          mediaType: type,
+          previewUrl: mediaUrl,
+          url: mediaUrl,
+          file: mediaFile,
+          displayOrder: 0,
+          isPrimary: type === "IMAGE",
+        },
+      ];
+    }
+
+    return [];
+  }, [mediaFile, mediaItems, mediaUrl, type]);
+
+  useEffect(() => {
+    const nextUrls: Record<string, string> = {};
+
+    normalizedItems.forEach((item) => {
+      if (item.file) {
+        nextUrls[item.clientId] = URL.createObjectURL(item.file);
+      }
+    });
+
+    setObjectUrls(nextUrls);
 
     return () => {
-      URL.revokeObjectURL(objectUrl);
+      Object.values(nextUrls).forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
     };
-  }, [mediaFile]);
+  }, [normalizedItems]);
 
-  const previewSrc = localPreview ?? mediaUrl ?? null;
+  useEffect(() => {
+    if (activeIndex >= normalizedItems.length) {
+      setActiveIndex(Math.max(normalizedItems.length - 1, 0));
+    }
+  }, [activeIndex, normalizedItems.length]);
+
+  const activeItem = normalizedItems[activeIndex] ?? null;
+  const coverUrl = getPrimaryMediaPreviewUrl(
+    normalizedItems.map((item) => ({
+      ...item,
+      clientId: item.clientId,
+      mediaType: item.mediaType,
+      previewUrl: objectUrls[item.clientId] ?? item.previewUrl ?? item.url,
+      url: item.url,
+      displayOrder: item.displayOrder,
+      isPrimary: item.isPrimary,
+    })),
+  );
 
   const captionWithHashtags = [
     caption.trim(),
@@ -86,27 +205,67 @@ export function CommunityPostPreview({
         <MoreHorizontal className="h-4 w-4 text-[#647A9B]" aria-hidden="true" />
       </div>
 
-      <div className="aspect-square bg-[#F8FBFF]">
-        {previewSrc ? (
-          type === "VIDEO" ? (
-            <video
-              src={previewSrc}
-              controls
-              className="h-full w-full object-cover"
+      <div className="relative aspect-square bg-[#F8FBFF]">
+        {activeItem ? (
+          <>
+            <MediaSlide
+              item={activeItem}
+              objectUrl={objectUrls[activeItem.clientId] ?? null}
             />
-          ) : (
-            <img
-              src={previewSrc}
-              alt="Post preview"
-              className="h-full w-full object-cover"
-            />
-          )
+            {normalizedItems.length > 1 ? (
+              <>
+                <div className="absolute inset-x-0 top-2 flex justify-center gap-1">
+                  {normalizedItems.map((item, index) => (
+                    <span
+                      key={item.clientId}
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        index === activeIndex
+                          ? "bg-white"
+                          : "bg-white/50",
+                      )}
+                    />
+                  ))}
+                </div>
+                <div className="absolute inset-y-0 left-0 flex items-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="ml-2 h-8 w-8 rounded-full bg-white/90 p-0"
+                    disabled={activeIndex === 0}
+                    onClick={() => setActiveIndex((current) => current - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="absolute inset-y-0 right-0 flex items-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mr-2 h-8 w-8 rounded-full bg-white/90 p-0"
+                    disabled={activeIndex >= normalizedItems.length - 1}
+                    onClick={() => setActiveIndex((current) => current + 1)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </>
+            ) : null}
+          </>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-[#647A9B]">
             Upload media to preview
           </div>
         )}
       </div>
+
+      {coverUrl && normalizedItems.some((item) => item.isPrimary) ? (
+        <p className="border-b border-[#EEF4FB] px-3 py-2 text-[11px] text-[#647A9B]">
+          Primary image is used as the cover thumbnail.
+        </p>
+      ) : null}
 
       <div className="space-y-2 px-3 py-2.5">
         <div className="flex items-center justify-between text-[#102A56]">

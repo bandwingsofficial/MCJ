@@ -7,7 +7,6 @@ import {
 } from "@/src/features/community/constants/community.constants";
 
 export const communitySchema = z.object({
-  type: z.enum(["IMAGE", "VIDEO"]),
   caption: z
     .string()
     .trim()
@@ -38,7 +37,6 @@ export const communitySchema = z.object({
 export type CommunityFormValues = z.infer<typeof communitySchema>;
 
 export const defaultCommunityFormValues: CommunityFormValues = {
-  type: "IMAGE",
   caption: "",
   authorName: DEFAULT_COMMUNITY_AUTHOR_LABEL,
   hashtags: [],

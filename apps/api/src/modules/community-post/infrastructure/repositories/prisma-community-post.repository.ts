@@ -19,10 +19,31 @@ export class PrismaCommunityPostRepository
   async save(post: CommunityPost): Promise<void> {
     const data = CommunityPostMapper.toPersistence(post);
 
-    await this.prisma.communityPost.upsert({
-      where: { id: post.id },
-      create: data,
-      update: data,
+    await this.prisma.$transaction(async (tx) => {
+      await tx.communityPost.upsert({
+        where: { id: post.id },
+        create: data,
+        update: data,
+      });
+
+      await tx.communityPostMedia.deleteMany({
+        where: { postId: post.id },
+      });
+
+      if (post.mediaItems.length) {
+        await tx.communityPostMedia.createMany({
+          data: post.mediaItems.map((item) => ({
+            id: item.id,
+            postId: item.postId,
+            fileId: item.fileId,
+            mediaType: item.mediaType,
+            displayOrder: item.displayOrder,
+            isPrimary: item.isPrimary,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+          })),
+        });
+      }
     });
   }
 
@@ -35,6 +56,7 @@ export class PrismaCommunityPostRepository
         id,
         ...(includeDeleted ? {} : { isDeleted: false }),
       },
+      include: this.includeMedia(),
     });
 
     return record ? CommunityPostMapper.toDomain(record) : null;
@@ -48,6 +70,7 @@ export class PrismaCommunityPostRepository
       skip: filters.skip,
       take: filters.take,
       orderBy: { createdAt: 'desc' },
+      include: this.includeMedia(),
     });
 
     return records.map((record) => CommunityPostMapper.toDomain(record));
@@ -178,6 +201,9 @@ export class PrismaCommunityPostRepository
 
   async permanentDeleteCascade(id: string): Promise<void> {
     await this.prisma.$transaction([
+      this.prisma.communityPostMedia.deleteMany({
+        where: { postId: id },
+      }),
       this.prisma.communityPostComment.deleteMany({
         where: { postId: id },
       }),
@@ -186,6 +212,17 @@ export class PrismaCommunityPostRepository
       }),
       this.prisma.communityPost.delete({ where: { id } }),
     ]);
+  }
+
+  private includeMedia() {
+    return {
+      mediaItems: {
+        include: {
+          upload: true,
+        },
+        orderBy: [{ displayOrder: 'asc' as const }, { createdAt: 'asc' as const }],
+      },
+    };
   }
 
   private buildWhere(

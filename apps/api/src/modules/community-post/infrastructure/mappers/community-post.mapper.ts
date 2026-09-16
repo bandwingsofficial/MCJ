@@ -1,11 +1,24 @@
-import { CommunityPost as PrismaCommunityPost } from '@prisma/client';
+import {
+  CommunityPostMedia as PrismaCommunityPostMedia,
+  CommunityPost as PrismaCommunityPost,
+  Upload,
+} from '@prisma/client';
 
+import { CommunityPostMedia } from '../../domain/entities/community-post-media.entity';
 import { CommunityPost } from '../../domain/entities/community-post.entity';
 import { CommunityPostStatus } from '../../domain/enums/community-post-status.enum';
 import { CommunityPostType } from '../../domain/enums/community-post-type.enum';
 
+export type CommunityPostWithMedia = PrismaCommunityPost & {
+  mediaItems?: Array<
+    PrismaCommunityPostMedia & {
+      upload?: Upload | null;
+    }
+  >;
+};
+
 export class CommunityPostMapper {
-  static toDomain(record: PrismaCommunityPost): CommunityPost {
+  static toDomain(record: CommunityPostWithMedia): CommunityPost {
     return CommunityPost.reconstitute({
       id: record.id,
       type: record.type as CommunityPostType,
@@ -13,6 +26,19 @@ export class CommunityPostMapper {
       mediaFileId: record.mediaFileId,
       mediaUrl: record.mediaUrl,
       thumbnailUrl: record.thumbnailUrl,
+      primaryMediaFileId: record.primaryMediaFileId,
+      mediaItems: (record.mediaItems ?? []).map((item) =>
+        CommunityPostMedia.create({
+          id: item.id,
+          postId: item.postId,
+          fileId: item.fileId,
+          mediaType: item.mediaType as CommunityPostType,
+          displayOrder: item.displayOrder,
+          isPrimary: item.isPrimary,
+          url: item.upload?.url ?? null,
+          mimeType: item.upload?.mimeType ?? null,
+        }),
+      ),
       hashtags: record.hashtags,
       mentions: record.mentions,
       authorName: record.authorName,
@@ -41,6 +67,7 @@ export class CommunityPostMapper {
       mediaFileId: post.mediaFileId,
       mediaUrl: post.mediaUrl.getValue(),
       thumbnailUrl: post.thumbnailUrl.getValue(),
+      primaryMediaFileId: post.primaryMediaFileId,
       hashtags: post.hashtags,
       mentions: post.mentions,
       authorName: post.authorName,

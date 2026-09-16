@@ -33,12 +33,7 @@ export function EditCommunityPostModal({
       return;
     }
 
-    const success = await updateCommunityPost(
-      post.id,
-      values,
-      { mediaFileId: post.mediaFileId },
-      files,
-    );
+    const success = await updateCommunityPost(post.id, values, files);
 
     if (success) {
       onSuccess();

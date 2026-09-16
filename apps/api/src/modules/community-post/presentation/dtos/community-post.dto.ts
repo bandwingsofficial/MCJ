@@ -1,21 +1,50 @@
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
+  IsInt,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { CommunityPostStatus } from '../../domain/enums/community-post-status.enum';
 import { CommunityPostType } from '../../domain/enums/community-post-type.enum';
 
-export class CreateCommunityPostDto {
+export class CommunityPostMediaItemDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
+  @ApiProperty()
+  @IsUUID()
+  fileId!: string;
+
   @ApiProperty({ enum: CommunityPostType })
   @IsEnum(CommunityPostType)
-  type!: CommunityPostType;
+  mediaType!: CommunityPostType;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  displayOrder?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isPrimary?: boolean;
+}
+
+export class CreateCommunityPostDto {
+  @ApiPropertyOptional({ enum: CommunityPostType })
+  @IsOptional()
+  @IsEnum(CommunityPostType)
+  type?: CommunityPostType;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -27,6 +56,13 @@ export class CreateCommunityPostDto {
   @IsOptional()
   @IsUUID()
   mediaFileId?: string;
+
+  @ApiPropertyOptional({ type: [CommunityPostMediaItemDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CommunityPostMediaItemDto)
+  media?: CommunityPostMediaItemDto[];
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -78,6 +114,13 @@ export class UpdateCommunityPostDto {
   @IsOptional()
   @IsUUID()
   mediaFileId?: string;
+
+  @ApiPropertyOptional({ type: [CommunityPostMediaItemDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CommunityPostMediaItemDto)
+  media?: CommunityPostMediaItemDto[];
 
   @ApiPropertyOptional()
   @IsOptional()

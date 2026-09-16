@@ -3,6 +3,9 @@ import { UploadDomainService } from '@modules/uploads/domain/services/upload-dom
 import type { CommunityPostRepository } from '../../domain/repositories/community-post.repository';
 import { CommunityPostDomainService } from '../../domain/services/community-post-domain.service';
 import {
+  collectCommunityPostMediaFileIds,
+} from '../shared/community-post-media-sync';
+import {
   PermanentDeleteCommunityPostCommand,
   PermanentDeleteCommunityPostResult,
 } from './permanent-delete-community-post.command';
@@ -23,13 +26,24 @@ export class PermanentDeleteCommunityPostHandler {
 
     this.domainService.ensureDeleted(post);
 
-    const mediaFileId = post.mediaFileId;
+    const mediaFileIds = collectCommunityPostMediaFileIds(post.mediaItems);
+    if (post.mediaFileId && !mediaFileIds.includes(post.mediaFileId)) {
+      mediaFileIds.push(post.mediaFileId);
+    }
+    if (
+      post.primaryMediaFileId &&
+      !mediaFileIds.includes(post.primaryMediaFileId)
+    ) {
+      mediaFileIds.push(post.primaryMediaFileId);
+    }
 
     await this.postRepo.permanentDeleteCascade(command.id);
 
-    if (mediaFileId) {
-      await this.uploadDomainService.permanentDelete(mediaFileId);
-    }
+    await Promise.all(
+      mediaFileIds.map((fileId) =>
+        this.uploadDomainService.permanentDelete(fileId),
+      ),
+    );
 
     return new PermanentDeleteCommunityPostResult(command.id, true);
   }

@@ -9,8 +9,6 @@ import { ImageIcon, MapPin, Type, User } from "lucide-react";
 import { Button } from "@/src/shared/components/ui/button";
 import { Input } from "@/src/shared/components/ui/input";
 import { Textarea } from "@/src/shared/components/ui/textarea";
-import { ImageUploadField } from "@/src/shared/components/ui/image-upload-field";
-import { VideoUploadField } from "@/src/shared/components/ui/video-upload-field";
 import {
   ValidatedField,
   validatedFieldInputClass,
@@ -19,10 +17,10 @@ import {
 import { cn } from "@/src/shared/lib/cn";
 
 import { CommunityPostPreview } from "@/src/features/community/components/community-post-preview";
+import { CommunityMediaCollectionField } from "@/src/features/community/components/form/CommunityMediaCollectionField";
 import { CommunityHashtagInput } from "./CommunityHashtagInput";
 import { CommunityMentionInput } from "./CommunityMentionInput";
 import { CommunityStatusSelect } from "./CommunityStatusSelect";
-import { CommunityTypeSelect } from "./CommunityTypeSelect";
 
 import {
   communitySchema,
@@ -40,13 +38,11 @@ import type { CommunityPostDetails } from "@/src/features/community/types/commun
 import type { CommunityFormFieldErrors } from "@/src/features/community/utils/community-form-errors";
 import type { CommunityUploadFiles } from "@/src/features/community/hooks/use-create-community-post";
 import { mapCommunityToFormValues } from "@/src/features/community/utils/map-community-to-form-values";
-
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-const ACCEPTED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-];
+import {
+  deriveCommunityPostTypeFromMedia,
+  mapExistingPostMediaToFormItems,
+  type CommunityMediaFormItem,
+} from "@/src/features/community/utils/community-media.utils";
 
 interface CommunityFormProps {
   mode?: "create" | "edit";
@@ -72,18 +68,6 @@ function getFieldState(error?: string, value?: string): FieldVisualState {
   return "neutral";
 }
 
-function validateImageFile(file: File): string | null {
-  if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-    return "Only PNG, JPG, JPEG, and WEBP images are allowed";
-  }
-
-  if (file.size > MAX_IMAGE_BYTES) {
-    return "Image must be 10 MB or smaller";
-  }
-
-  return null;
-}
-
 export function CommunityForm({
   mode = "create",
   initialData,
@@ -92,8 +76,7 @@ export function CommunityForm({
   onSubmit,
   onCancel,
 }: CommunityFormProps) {
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [removeMedia, setRemoveMedia] = useState(false);
+  const [mediaItems, setMediaItems] = useState<CommunityMediaFormItem[]>([]);
   const isCreateMode = mode === "create";
 
   const {
@@ -111,17 +94,14 @@ export function CommunityForm({
   useEffect(() => {
     if (!initialData) {
       reset(defaultCommunityFormValues);
-      setMediaFile(null);
-      setRemoveMedia(false);
+      setMediaItems([]);
       return;
     }
 
     reset(mapCommunityToFormValues(initialData));
-    setMediaFile(null);
-    setRemoveMedia(false);
+    setMediaItems(mapExistingPostMediaToFormItems(initialData));
   }, [initialData, reset]);
 
-  const type = watch("type");
   const caption = watch("caption");
   const authorName = watch("authorName");
   const hashtags = watch("hashtags");
@@ -133,18 +113,14 @@ export function CommunityForm({
   const fieldError = (field: keyof CommunityFormValues) =>
     errors[field]?.message ?? externalErrors[field as keyof typeof externalErrors];
 
-  const mediaPreviewUrl = useMemo(() => {
-    if (removeMedia) {
-      return null;
-    }
-
-    return initialData?.mediaUrl ?? null;
-  }, [initialData?.mediaUrl, removeMedia]);
+  const previewType = useMemo(
+    () => deriveCommunityPostTypeFromMedia(mediaItems),
+    [mediaItems],
+  );
 
   const submitHandler = async (values: CommunityFormValues) => {
     await onSubmit(values, {
-      media: mediaFile,
-      removeMedia,
+      mediaItems,
     });
   };
 
@@ -201,84 +177,41 @@ export function CommunityForm({
 
   const mediaField = (
     <ValidatedField
-      label={type === "VIDEO" ? "Video" : "Image"}
+      label="Media"
       required={mode === "create"}
       errorMessage={externalErrors.media}
       state={getFieldState(
         externalErrors.media,
-        mediaFile || mediaPreviewUrl ? "selected" : undefined,
+        mediaItems.length > 0 ? "selected" : undefined,
       )}
     >
-      {type === "VIDEO" ? (
-        <VideoUploadField
-          file={mediaFile}
-          uploadedUrl={mediaPreviewUrl}
-          disabled={isSubmitting}
-          error={externalErrors.media}
-          onFileSelect={(file) => {
-            setMediaFile(file);
-            setRemoveMedia(false);
-          }}
-        />
-      ) : (
-        <ImageUploadField
-          file={mediaFile}
-          previewUrl={mediaPreviewUrl}
-          disabled={isSubmitting}
-          error={externalErrors.media}
-          entityLabel="community post"
-          accept="image/png,image/jpeg,image/webp"
-          hint="PNG, JPG, JPEG, WEBP up to 10 MB"
-          validateFile={validateImageFile}
-          onFileSelect={(file) => {
-            setMediaFile(file);
-            setRemoveMedia(false);
-          }}
-          onRemove={() => {
-            setMediaFile(null);
-            setRemoveMedia(true);
-          }}
-        />
-      )}
+      <CommunityMediaCollectionField
+        items={mediaItems}
+        disabled={isSubmitting}
+        error={externalErrors.media}
+        onChange={setMediaItems}
+      />
     </ValidatedField>
   );
 
-  const typeStatusFields = (
-    <div className="grid gap-5 md:grid-cols-2">
-      <ValidatedField
-        label="Post Type"
-        required
-        errorMessage={fieldError("type")}
-        state={getFieldState(fieldError("type"), type)}
-      >
-        <CommunityTypeSelect
-          value={type}
-          onValueChange={(value) =>
-            setValue("type", value as "IMAGE" | "VIDEO", {
-              shouldValidate: true,
-            })
-          }
-        />
-      </ValidatedField>
-
-      <ValidatedField
-        label="Status"
-        required
-        errorMessage={fieldError("status")}
-        state={getFieldState(fieldError("status"), status)}
-      >
-        <CommunityStatusSelect
-          value={status}
-          onValueChange={(value) =>
-            setValue(
-              "status",
-              value as "DRAFT" | "PUBLISHED" | "ARCHIVED",
-              { shouldValidate: true },
-            )
-          }
-        />
-      </ValidatedField>
-    </div>
+  const statusField = (
+    <ValidatedField
+      label="Status"
+      required
+      errorMessage={fieldError("status")}
+      state={getFieldState(fieldError("status"), status)}
+    >
+      <CommunityStatusSelect
+        value={status}
+        onValueChange={(value) =>
+          setValue(
+            "status",
+            value as "DRAFT" | "PUBLISHED" | "ARCHIVED",
+            { shouldValidate: true },
+          )
+        }
+      />
+    </ValidatedField>
   );
 
   const locationField = (
@@ -340,7 +273,7 @@ export function CommunityForm({
             {mediaField}
             {captionField}
             {communityNameField}
-            {typeStatusFields}
+            {statusField}
             {locationField}
             <CommunityHashtagInput
               value={hashtags}
@@ -351,9 +284,9 @@ export function CommunityForm({
           </>
         ) : (
           <>
-            {captionField}
             {mediaField}
-            {typeStatusFields}
+            {captionField}
+            {statusField}
             {locationField}
             <CommunityHashtagInput
               value={hashtags}
@@ -394,11 +327,10 @@ export function CommunityForm({
           Live Preview
         </div>
         <CommunityPostPreview
-          type={type}
+          type={previewType}
           caption={caption}
           authorName={isCreateMode ? authorName : initialData?.authorName}
-          mediaUrl={mediaPreviewUrl}
-          mediaFile={mediaFile}
+          mediaItems={mediaItems}
           hashtags={hashtags}
           location={location}
         />

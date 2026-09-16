@@ -56,6 +56,10 @@ export function mapCommunityApiError(
     mapped.authorName = fieldErrors.authorName[0];
   }
 
+  if (fieldErrors.media?.[0]) {
+    mapped.media = fieldErrors.media[0];
+  }
+
   if (fieldErrors.mediaFileId?.[0]) {
     mapped.media = fieldErrors.mediaFileId[0];
   }

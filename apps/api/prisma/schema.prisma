@@ -236,6 +236,8 @@ model Upload {
   updatedAt                  DateTime           @updatedAt
   categoryThumbnails         Category[]         @relation("CategoryThumbnailUpload")
   communityPostMedia         CommunityPost[]    @relation("CommunityPostMedia")
+  communityPostGalleryMedia  CommunityPostMedia[]
+  communityPostPrimaryMedia  CommunityPost[]    @relation("CommunityPostPrimaryMedia")
   courseThumbnails           Course[]           @relation("CourseThumbnail")
   courseImages               CourseImage[]
   courseMaterials            CourseMaterial[]
@@ -1368,38 +1370,59 @@ model FinancialArticle {
 }
 
 model CommunityPost {
-  id           String                 @id @default(uuid())
-  type         CommunityPostType
-  caption      String?
-  mediaFileId  String?
-  mediaUrl     String?
-  thumbnailUrl String?
-  hashtags     String[]
-  mentions     String[]
-  authorName   String                 @default("MCJ Community")
-  location     String?
-  viewCount    Int                    @default(0)
-  likeCount    Int                    @default(0)
-  commentCount Int                    @default(0)
-  shareCount   Int                    @default(0)
-  status       CommunityPostStatus    @default(DRAFT)
-  isActive     Boolean                @default(true)
-  createdBy    String?
-  updatedBy    String?
-  isDeleted    Boolean                @default(false)
-  deletedAt    DateTime?
-  deletedBy    String?
-  createdAt    DateTime               @default(now())
-  updatedAt    DateTime               @updatedAt
-  mediaUpload  Upload?                @relation("CommunityPostMedia", fields: [mediaFileId], references: [id], onDelete: SetNull)
-  comments     CommunityPostComment[]
-  likes        CommunityPostLike[]
+  id                 String                 @id @default(uuid())
+  type               CommunityPostType
+  caption            String?
+  mediaFileId        String?
+  mediaUrl           String?
+  thumbnailUrl       String?
+  primaryMediaFileId String?
+  hashtags           String[]
+  mentions           String[]
+  authorName         String                 @default("MCJ Community")
+  location           String?
+  viewCount          Int                    @default(0)
+  likeCount          Int                    @default(0)
+  commentCount       Int                    @default(0)
+  shareCount         Int                    @default(0)
+  status             CommunityPostStatus    @default(DRAFT)
+  isActive           Boolean                @default(true)
+  createdBy          String?
+  updatedBy          String?
+  isDeleted          Boolean                @default(false)
+  deletedAt          DateTime?
+  deletedBy          String?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  mediaUpload        Upload?                @relation("CommunityPostMedia", fields: [mediaFileId], references: [id], onDelete: SetNull)
+  primaryMediaUpload Upload?                @relation("CommunityPostPrimaryMedia", fields: [primaryMediaFileId], references: [id], onDelete: SetNull)
+  mediaItems         CommunityPostMedia[]
+  comments           CommunityPostComment[]
+  likes              CommunityPostLike[]
 
   @@index([status])
   @@index([isActive])
   @@index([isDeleted])
   @@index([status, isActive, isDeleted])
   @@index([createdAt])
+}
+
+model CommunityPostMedia {
+  id           String              @id @default(uuid())
+  postId       String
+  fileId       String
+  mediaType    CommunityPostType
+  displayOrder Int?
+  isPrimary    Boolean             @default(false)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  post         CommunityPost       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  upload       Upload              @relation(fields: [fileId], references: [id], onDelete: Restrict)
+
+  @@unique([postId, fileId])
+  @@index([postId])
+  @@index([fileId])
+  @@index([postId, isPrimary])
 }
 
 model CommunityPostLike {

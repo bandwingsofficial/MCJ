@@ -3,6 +3,18 @@ import { CommunityPostStatus } from '../../domain/enums/community-post-status.en
 import { CommunityPost } from '../../domain/entities/community-post.entity';
 import type { CommunityPostCommentView } from '@modules/community-post-comment/domain/repositories/community-post-comment.repository';
 
+export class CommunityPostMediaResult {
+  constructor(
+    public readonly id: string,
+    public readonly fileId: string,
+    public readonly mediaType: CommunityPostType,
+    public readonly url: string | null,
+    public readonly mimeType: string | null,
+    public readonly displayOrder: number | null,
+    public readonly isPrimary: boolean,
+  ) {}
+}
+
 export class GetCommunityPostResult {
   constructor(
     public readonly id: string,
@@ -11,6 +23,8 @@ export class GetCommunityPostResult {
     public readonly mediaFileId: string | null,
     public readonly mediaUrl: string | null,
     public readonly thumbnailUrl: string | null,
+    public readonly primaryMediaFileId: string | null,
+    public readonly media: CommunityPostMediaResult[],
     public readonly hashtags: string[],
     public readonly mentions: string[],
     public readonly authorName: string,
@@ -32,6 +46,24 @@ export class GetCommunityPostResult {
     post: CommunityPost,
     comments: CommunityPostCommentView[] = [],
   ): GetCommunityPostResult {
+    const media = [...post.mediaItems]
+      .sort(
+        (left, right) =>
+          (left.displayOrder ?? 0) - (right.displayOrder ?? 0),
+      )
+      .map(
+        (item) =>
+          new CommunityPostMediaResult(
+            item.id,
+            item.fileId,
+            item.mediaType,
+            item.url,
+            item.mimeType,
+            item.displayOrder,
+            item.isPrimary,
+          ),
+      );
+
     return new GetCommunityPostResult(
       post.id,
       post.type,
@@ -39,6 +71,8 @@ export class GetCommunityPostResult {
       post.mediaFileId,
       post.mediaUrl.getValue(),
       post.thumbnailUrl.getValue(),
+      post.primaryMediaFileId,
+      media,
       post.hashtags,
       post.mentions,
       post.authorName,
