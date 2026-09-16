@@ -11,6 +11,7 @@ import type {
   StudentLessonQuizDto,
   StudentProfileDto,
   StudentQuizSubmitResultDto,
+  StudentQuizValidateAnswerDto,
 } from "@/src/features/learning/types/learning.types";
 
 import { isValidLearningEnrollmentStatus } from "@/src/features/access/utils/student-access";
@@ -112,6 +113,22 @@ class LearningService {
     const response = await learningApi.submitLessonQuiz(courseId, lessonId, {
       answers,
     });
+    return response.data.data;
+  }
+
+  async validateLessonQuizAnswer(
+    courseId: string,
+    lessonId: string,
+    payload: {
+      questionId: string;
+      selectedOptionIds: string[];
+    },
+  ): Promise<StudentQuizValidateAnswerDto> {
+    const response = await learningApi.validateLessonQuizAnswer(
+      courseId,
+      lessonId,
+      payload,
+    );
     return response.data.data;
   }
 }

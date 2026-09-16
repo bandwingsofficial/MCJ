@@ -52,5 +52,29 @@ export class StudentQuizSubmitResult {
     public readonly percentage: number,
     public readonly passed: boolean,
     public readonly lessonMarkedComplete: boolean,
+    public readonly questionResults: StudentQuizQuestionBreakdownResult[] = [],
+  ) {}
+}
+
+export class StudentQuizQuestionBreakdownResult {
+  constructor(
+    public readonly questionId: string,
+    public readonly correct: boolean,
+    public readonly correctOptionIds: string[],
+    public readonly selectedOptionIds: string[],
+    public readonly earnedPoints: number,
+    public readonly points: number,
+    public readonly explanation: string | null,
+  ) {}
+}
+
+export class StudentQuizValidateAnswerResult {
+  constructor(
+    public readonly questionId: string,
+    public readonly correct: boolean,
+    public readonly correctOptionIds: string[],
+    public readonly explanation: string | null,
+    public readonly earnedPoints: number,
+    public readonly points: number,
   ) {}
 }

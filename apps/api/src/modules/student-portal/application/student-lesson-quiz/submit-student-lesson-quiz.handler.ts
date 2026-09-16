@@ -7,7 +7,10 @@ import { PrismaService } from '../../../../infrastructure/prisma/prisma.service'
 
 import type { LessonProgressRepository } from '../../domain/repositories/lesson-progress.repository';
 import { CourseAccessService } from '../../domain/services/course-access.service';
-import { StudentQuizSubmitResult } from './student-lesson-quiz.result';
+import {
+  StudentQuizQuestionBreakdownResult,
+  StudentQuizSubmitResult,
+} from './student-lesson-quiz.result';
 
 type SubmitAnswer = {
   questionId: string;
@@ -87,6 +90,7 @@ export class SubmitStudentLessonQuizHandler {
       string,
       { selectedOptionIds: string[]; correct: boolean; earnedPoints: number }
     > = {};
+    const questionResults: StudentQuizQuestionBreakdownResult[] = [];
 
     for (const question of quiz.questions) {
       totalPoints += question.points;
@@ -109,6 +113,17 @@ export class SubmitStudentLessonQuizHandler {
         correct: isCorrect,
         earnedPoints,
       };
+      questionResults.push(
+        new StudentQuizQuestionBreakdownResult(
+          question.id,
+          isCorrect,
+          correctOptionIds,
+          selectedOptionIds,
+          earnedPoints,
+          question.points,
+          question.explanation,
+        ),
+      );
     }
 
     const percentage =
@@ -150,6 +165,7 @@ export class SubmitStudentLessonQuizHandler {
       percentage,
       passed,
       lessonMarkedComplete,
+      questionResults,
     );
   }
 }

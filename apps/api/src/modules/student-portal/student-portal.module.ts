@@ -34,6 +34,7 @@ import {
 } from './application/student-course-progress/student-course-progress.handler';
 import { GetStudentLessonQuizHandler } from './application/student-lesson-quiz/get-student-lesson-quiz.handler';
 import { SubmitStudentLessonQuizHandler } from './application/student-lesson-quiz/submit-student-lesson-quiz.handler';
+import { CheckStudentLessonQuizAnswerHandler } from './application/student-lesson-quiz/check-student-lesson-quiz-answer.handler';
 import { CourseAccessService } from './domain/services/course-access.service';
 import type { LessonProgressRepository } from './domain/repositories/lesson-progress.repository';
 import { PrismaLessonProgressRepository } from './infrastructure/repositories/prisma-lesson-progress.repository';
@@ -266,6 +267,20 @@ import { STUDENT_PORTAL_TOKENS } from './student-portal.tokens';
         STUDENT_PORTAL_TOKENS.LESSON_PROGRESS_REPOSITORY,
         PrismaService,
       ],
+    },
+    {
+      provide: CheckStudentLessonQuizAnswerHandler,
+      useFactory: (
+        courseAccessService: CourseAccessService,
+        hierarchyService: CourseHierarchyService,
+        prisma: PrismaService,
+      ) =>
+        new CheckStudentLessonQuizAnswerHandler(
+          courseAccessService,
+          hierarchyService,
+          prisma,
+        ),
+      inject: [CourseAccessService, CourseHierarchyService, PrismaService],
     },
   ],
 })

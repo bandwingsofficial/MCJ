@@ -84,3 +84,12 @@ export function useSubmitLessonQuiz(courseId: string, lessonId: string) {
     },
   });
 }
+
+export function useValidateLessonQuizAnswer(courseId: string, lessonId: string) {
+  return useMutation({
+    mutationFn: (payload: {
+      questionId: string;
+      selectedOptionIds: string[];
+    }) => learningService.validateLessonQuizAnswer(courseId, lessonId, payload),
+  });
+}

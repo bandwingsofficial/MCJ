@@ -197,6 +197,26 @@ export interface StudentQuizSubmitResultDto {
   percentage: number;
   passed: boolean;
   lessonMarkedComplete: boolean;
+  questionResults?: StudentQuizQuestionBreakdownDto[];
+}
+
+export interface StudentQuizQuestionBreakdownDto {
+  questionId: string;
+  correct: boolean;
+  correctOptionIds: string[];
+  selectedOptionIds: string[];
+  earnedPoints: number;
+  points: number;
+  explanation: string | null;
+}
+
+export interface StudentQuizValidateAnswerDto {
+  questionId: string;
+  correct: boolean;
+  correctOptionIds: string[];
+  explanation: string | null;
+  earnedPoints: number;
+  points: number;
 }
 
 export interface LessonDetailPayloadDto {
@@ -270,3 +290,5 @@ export type ResourceDownloadResponse = ApiResponse<{
 }>;
 export type StudentLessonQuizResponse = ApiResponse<StudentLessonQuizDto>;
 export type StudentQuizSubmitResponse = ApiResponse<StudentQuizSubmitResultDto>;
+export type StudentQuizValidateAnswerResponse =
+  ApiResponse<StudentQuizValidateAnswerDto>;

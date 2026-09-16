@@ -33,6 +33,7 @@ import {
 } from '../../application/student-course-progress/student-course-progress.handler';
 import { GetStudentLessonQuizHandler } from '../../application/student-lesson-quiz/get-student-lesson-quiz.handler';
 import { SubmitStudentLessonQuizHandler } from '../../application/student-lesson-quiz/submit-student-lesson-quiz.handler';
+import { CheckStudentLessonQuizAnswerHandler } from '../../application/student-lesson-quiz/check-student-lesson-quiz-answer.handler';
 
 @ApiTags('Student Courses')
 @ApiBearerAuth()
@@ -50,6 +51,7 @@ export class StudentCourseController {
     private readonly downloadStudentResourceHandler: DownloadStudentResourceHandler,
     private readonly getStudentLessonQuizHandler: GetStudentLessonQuizHandler,
     private readonly submitStudentLessonQuizHandler: SubmitStudentLessonQuizHandler,
+    private readonly checkStudentLessonQuizAnswerHandler: CheckStudentLessonQuizAnswerHandler,
   ) {}
 
   @Get()
@@ -203,6 +205,32 @@ export class StudentCourseController {
     return {
       success: true,
       message: 'Quiz submitted successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':courseId/lessons/:lessonId/quiz/validate-answer')
+  async validateLessonQuizAnswer(
+    @CurrentUser() user: AuthUser,
+    @Param('courseId') courseId: string,
+    @Param('lessonId') lessonId: string,
+    @Body()
+    body: {
+      questionId: string;
+      selectedOptionIds: string[];
+    },
+  ) {
+    const result = await this.checkStudentLessonQuizAnswerHandler.execute({
+      userId: user.sub,
+      courseId,
+      lessonId,
+      questionId: body.questionId,
+      selectedOptionIds: body.selectedOptionIds ?? [],
+    });
+
+    return {
+      success: true,
+      message: 'Quiz answer validated successfully',
       data: result,
     };
   }

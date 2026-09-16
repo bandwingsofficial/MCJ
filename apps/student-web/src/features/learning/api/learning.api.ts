@@ -12,6 +12,7 @@ import type {
   StudentLessonQuizResponse,
   StudentProfileResponse,
   StudentQuizSubmitResponse,
+  StudentQuizValidateAnswerResponse,
 } from "@/src/features/learning/types/learning.types";
 
 export const learningApi = {
@@ -93,6 +94,20 @@ export const learningApi = {
   ) {
     return apiClient.patch<StudentQuizSubmitResponse>(
       `/student/courses/${courseId}/lessons/${lessonId}/quiz/submit`,
+      payload,
+    );
+  },
+
+  validateLessonQuizAnswer(
+    courseId: string,
+    lessonId: string,
+    payload: {
+      questionId: string;
+      selectedOptionIds: string[];
+    },
+  ) {
+    return apiClient.patch<StudentQuizValidateAnswerResponse>(
+      `/student/courses/${courseId}/lessons/${lessonId}/quiz/validate-answer`,
       payload,
     );
   },
