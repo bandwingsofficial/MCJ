@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { ImageIcon, MapPin, Type, User } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
@@ -19,7 +19,6 @@ import { cn } from "@/src/shared/lib/cn";
 import { CommunityPostPreview } from "@/src/features/community/components/community-post-preview";
 import { CommunityMediaCollectionField } from "@/src/features/community/components/form/CommunityMediaCollectionField";
 import { CommunityHashtagInput } from "./CommunityHashtagInput";
-import { CommunityMentionInput } from "./CommunityMentionInput";
 import { CommunityStatusSelect } from "./CommunityStatusSelect";
 
 import {
@@ -85,6 +84,7 @@ export function CommunityForm({
     reset,
     setValue,
     watch,
+    control,
     formState: { errors },
   } = useForm<CommunityFormValues>({
     resolver: zodResolver(communitySchema),
@@ -92,20 +92,21 @@ export function CommunityForm({
   });
 
   useEffect(() => {
-    if (!initialData) {
-      reset(defaultCommunityFormValues);
-      setMediaItems([]);
+    if (mode === "edit" && initialData) {
+      reset(mapCommunityToFormValues(initialData));
+      setMediaItems(mapExistingPostMediaToFormItems(initialData));
       return;
     }
 
-    reset(mapCommunityToFormValues(initialData));
-    setMediaItems(mapExistingPostMediaToFormItems(initialData));
-  }, [initialData, reset]);
+    if (mode === "create") {
+      reset(defaultCommunityFormValues);
+      setMediaItems([]);
+    }
+  }, [initialData, mode, reset]);
 
   const caption = watch("caption");
   const authorName = watch("authorName");
   const hashtags = watch("hashtags");
-  const mentions = watch("mentions");
   const status = watch("status");
   const location = watch("location");
 
@@ -201,15 +202,15 @@ export function CommunityForm({
       errorMessage={fieldError("status")}
       state={getFieldState(fieldError("status"), status)}
     >
-      <CommunityStatusSelect
-        value={status}
-        onValueChange={(value) =>
-          setValue(
-            "status",
-            value as "DRAFT" | "PUBLISHED" | "ARCHIVED",
-            { shouldValidate: true },
-          )
-        }
+      <Controller
+        control={control}
+        name="status"
+        render={({ field }) => (
+          <CommunityStatusSelect
+            value={field.value}
+            onValueChange={field.onChange}
+          />
+        )}
       />
     </ValidatedField>
   );
@@ -292,12 +293,6 @@ export function CommunityForm({
               value={hashtags}
               onChange={(next) =>
                 setValue("hashtags", next, { shouldValidate: true })
-              }
-            />
-            <CommunityMentionInput
-              value={mentions}
-              onChange={(next) =>
-                setValue("mentions", next, { shouldValidate: true })
               }
             />
           </>

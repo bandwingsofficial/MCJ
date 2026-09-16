@@ -51,7 +51,7 @@ export function ApplicationJobInfo({
 
           <p>
             ₹
-            {application.expectedSalary.toLocaleString()}
+            {application.expectedSalary?.toLocaleString() ?? "—"}
           </p>
         </div>
       </div>

@@ -29,29 +29,31 @@ export class ReplaceFileHandler {
     const upload = await this.uploadDomainService.ensureActive(command.id);
 
     this.validationService.validate(command.file);
-    this.validationService.validateContent(
-      command.file.buffer,
-      command.file.mimetype.toLowerCase(),
+
+    const mimeType = command.file.mimetype.trim().toLowerCase();
+    const isVideo = this.validationService.isVideoMimeType(mimeType);
+    const isPassthrough =
+      this.validationService.isPassthroughMimeType(mimeType);
+
+    if (!isVideo) {
+      this.validationService.validateContent(
+        command.file.buffer,
+        mimeType,
+      );
+    }
+
+    const sanitizedStoredName = this.validationService.sanitizeStoredName(
+      upload.storedName.getValue(),
+      mimeType,
     );
-
-    const isPdf =
-      command.file.mimetype.toLowerCase() === 'application/pdf';
-
-    const sanitizedStoredName = isPdf
-      ? this.validationService.sanitizeDocumentName(
-          upload.storedName.getValue(),
-        )
-      : this.validationService.sanitizeFileName(
-          upload.storedName.getValue(),
-        );
 
     this.logger.log(`Replace started: ${upload.objectKey.getValue()}`);
 
-    const processed = isPdf
+    const processed = isPassthrough
       ? {
           buffer: command.file.buffer,
-          mimeType: 'application/pdf',
-          extension: 'pdf',
+          mimeType,
+          extension: this.extensionFromMime(mimeType, sanitizedStoredName),
           storedName: sanitizedStoredName,
           size: command.file.size,
           width: null as number | null,
@@ -92,4 +94,50 @@ export class ReplaceFileHandler {
 
     return UploadFileResult.fromUpload(upload) as ReplaceFileResult;
   }
+
+  private extensionFromMime(
+    mimeType: string,
+    storedName: string,
+  ): string {
+    const storedExtension = storedName.includes('.')
+      ? storedName.split('.').pop()?.toLowerCase()
+      : null;
+
+    if (storedExtension) {
+      return storedExtension;
+    }
+
+    if (isPdfMimeType(mimeType)) {
+      return 'pdf';
+    }
+
+    if (mimeType === 'application/msword') {
+      return 'doc';
+    }
+
+    if (
+      mimeType ===
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      return 'docx';
+    }
+
+    if (mimeType === 'video/webm') {
+      return 'webm';
+    }
+
+    if (mimeType === 'video/quicktime') {
+      return 'mov';
+    }
+
+    if (mimeType.startsWith('video/')) {
+      return 'mp4';
+    }
+
+    return 'bin';
+  }
+}
+
+function isPdfMimeType(mimeType: string): boolean {
+  return mimeType === 'application/pdf';
 }

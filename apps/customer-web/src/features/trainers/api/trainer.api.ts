@@ -13,6 +13,7 @@ export interface TrainerListResult {
 
 export interface TrainerFilters {
   branchId?: string;
+  courseId?: string;
   search?: string;
   isFeatured?: boolean;
   skip?: number;

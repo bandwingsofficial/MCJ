@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import { isBatchBlockedForSelection } from "@/src/features/enrollments/utils/enrollment-batch.utils";
 import { getCourses } from "@/src/features/courses/services/course.service";
-import { trainerService } from "@/src/features/trainers/services/trainer.service";
+import { loadBranchAssignedTrainers } from "@/src/features/branches/utils/branch-trainer.utils";
 
 export function useBranchCourses(branchId: string | undefined) {
   return useQuery({
@@ -28,7 +28,7 @@ export function useBranchBatches(branchId: string | undefined) {
 export function useBranchTrainers(branchId: string | undefined) {
   return useQuery({
     queryKey: ["branch-trainers", branchId],
-    queryFn: () => trainerService.getTrainers({ branchId, take: 100 }),
+    queryFn: () => loadBranchAssignedTrainers(branchId!),
     enabled: Boolean(branchId),
     staleTime: 1000 * 60 * 5,
   });

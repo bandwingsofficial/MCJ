@@ -17,16 +17,19 @@ export function HomeStatsSection() {
     <section className="bg-white py-10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {(isLoading ? Array.from({ length: 4 }) : stats).map((item, index) => (
+          {(isLoading
+            ? Array.from({ length: 4 }, () => ({ label: "Loading", value: "—" }))
+            : stats
+          ).map((item, index) => (
             <div
               key={index}
               className="rounded-2xl border border-slate-100 bg-[#F8FBFF] px-4 py-5 text-center"
             >
               <p className="text-2xl font-bold text-[#0B1F3A] sm:text-3xl">
-                {isLoading ? "—" : item.value}
+                {item.value}
               </p>
               <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-500 sm:text-sm">
-                {isLoading ? "Loading" : item.label}
+                {item.label}
               </p>
             </div>
           ))}

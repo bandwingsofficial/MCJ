@@ -34,11 +34,8 @@ export class UploadFileHandler {
 
     const mimeType = command.file.mimetype.trim().toLowerCase();
     const isPdf = mimeType === 'application/pdf';
-    const isDocument =
-      isPdf ||
-      mimeType === 'application/msword' ||
-      mimeType ===
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const isPassthrough =
+      this.validationService.isPassthroughMimeType(mimeType);
 
     if (isPdf) {
       this.validationService.validateContent(
@@ -47,12 +44,11 @@ export class UploadFileHandler {
       );
     }
 
-    const sanitizedStoredName = isDocument
-      ? this.validationService.sanitizeDocumentName(
-          command.fileName,
-          mimeType,
-        )
-      : this.validationService.sanitizeFileName(command.fileName);
+    const sanitizedStoredName =
+      this.validationService.sanitizeStoredName(
+        command.fileName,
+        mimeType,
+      );
 
     const objectKey = this.objectKeyService
       .generateObjectKey({
@@ -67,11 +63,11 @@ export class UploadFileHandler {
       `Upload started: ${objectKey} by ${command.createdBy ?? 'system'}`,
     );
 
-    const processed = isDocument
+    const processed = isPassthrough
       ? {
           buffer: command.file.buffer,
           mimeType,
-          extension: this.extensionFromMime(mimeType),
+          extension: this.extensionFromMime(mimeType, sanitizedStoredName),
           storedName: sanitizedStoredName,
           size: command.file.size,
           width: null as number | null,
@@ -135,7 +131,18 @@ export class UploadFileHandler {
     return UploadFileResult.fromUpload(upload);
   }
 
-  private extensionFromMime(mimeType: string): string {
+  private extensionFromMime(
+    mimeType: string,
+    storedName: string,
+  ): string {
+    const storedExtension = storedName.includes('.')
+      ? storedName.split('.').pop()?.toLowerCase()
+      : null;
+
+    if (storedExtension) {
+      return storedExtension;
+    }
+
     if (mimeType === 'application/msword') {
       return 'doc';
     }
@@ -149,6 +156,18 @@ export class UploadFileHandler {
 
     if (mimeType === 'application/pdf') {
       return 'pdf';
+    }
+
+    if (mimeType === 'video/webm') {
+      return 'webm';
+    }
+
+    if (mimeType === 'video/quicktime') {
+      return 'mov';
+    }
+
+    if (mimeType.startsWith('video/')) {
+      return 'mp4';
     }
 
     return 'bin';

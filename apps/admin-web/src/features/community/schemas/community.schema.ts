@@ -21,7 +21,6 @@ export const communitySchema = z.object({
     .min(1, "Community name is required")
     .max(120, "Community name cannot exceed 120 characters"),
   hashtags: z.array(z.string().trim().min(1)),
-  mentions: z.array(z.string().trim().min(1)),
   location: z
     .string()
     .trim()
@@ -40,7 +39,6 @@ export const defaultCommunityFormValues: CommunityFormValues = {
   caption: "",
   authorName: DEFAULT_COMMUNITY_AUTHOR_LABEL,
   hashtags: [],
-  mentions: [],
   location: "",
   status: "DRAFT",
 };

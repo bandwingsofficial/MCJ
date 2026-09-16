@@ -72,17 +72,42 @@ export class UploadValidationService {
     }
   }
 
+  isVideoMimeType(mimeType: string): boolean {
+    return mimeType.trim().toLowerCase().startsWith('video/');
+  }
+
+  isDocumentMimeType(mimeType: string): boolean {
+    const normalized = mimeType.trim().toLowerCase();
+
+    return (
+      normalized === 'application/pdf' ||
+      normalized === 'application/msword' ||
+      normalized ===
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    );
+  }
+
+  isPassthroughMimeType(mimeType: string): boolean {
+    const normalized = mimeType.trim().toLowerCase();
+
+    return (
+      this.isDocumentMimeType(normalized) ||
+      this.isVideoMimeType(normalized)
+    );
+  }
+
   sanitizeStoredName(
     fileName: string,
     mimeType: string,
   ): string {
-    if (
-      mimeType === 'application/pdf' ||
-      mimeType === 'application/msword' ||
-      mimeType ===
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ) {
-      return this.sanitizeDocumentName(fileName, mimeType);
+    const normalized = mimeType.trim().toLowerCase();
+
+    if (this.isDocumentMimeType(normalized)) {
+      return this.sanitizeDocumentName(fileName, normalized);
+    }
+
+    if (this.isVideoMimeType(normalized)) {
+      return this.sanitizeVideoName(fileName, normalized);
     }
 
     return this.sanitizeFileName(fileName);
@@ -102,6 +127,35 @@ export class UploadValidationService {
     }
 
     return `${baseName}.webp`;
+  }
+
+  sanitizeVideoName(fileName: string, mimeType: string): string {
+    const baseName = fileName
+      .replace(/\.[^/.]+$/, '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    if (!baseName) {
+      throw new InvalidFileException('Invalid file name');
+    }
+
+    const originalExtension = this.extractExtension(fileName);
+    const allowedExtensions = ['mp4', 'webm', 'mov'];
+    const extensionFromMime =
+      mimeType === 'video/webm'
+        ? 'webm'
+        : mimeType === 'video/quicktime'
+          ? 'mov'
+          : 'mp4';
+
+    const extension = allowedExtensions.includes(originalExtension)
+      ? originalExtension
+      : extensionFromMime;
+
+    return `${baseName}.${extension}`;
   }
 
   sanitizeDocumentName(fileName: string, mimeType?: string): string {

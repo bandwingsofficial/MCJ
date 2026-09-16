@@ -72,7 +72,6 @@ function toUpdateRequest(
     type: deriveCommunityPostTypeFromMedia(mediaItems),
     caption: values.caption.trim(),
     hashtags: values.hashtags,
-    mentions: values.mentions,
     location: values.location?.trim() || undefined,
     status: values.status,
     media: buildCommunityMediaPayload(mediaItems),

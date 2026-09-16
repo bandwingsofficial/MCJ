@@ -9,8 +9,7 @@ export function mapCommunityToFormValues(
     caption: post.caption ?? "",
     authorName: post.authorName ?? DEFAULT_COMMUNITY_AUTHOR_LABEL,
     hashtags: post.hashtags ?? [],
-    mentions: post.mentions ?? [],
     location: post.location ?? "",
-    status: post.status,
+    status: post.status ?? "DRAFT",
   };
 }

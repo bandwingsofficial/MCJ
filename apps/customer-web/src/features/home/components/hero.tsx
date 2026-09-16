@@ -60,12 +60,13 @@ export function HeroSection() {
           </div>
 
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {(isLoading ? Array.from({ length: 4 }) : stats).map((item, index) => (
+            {(isLoading
+              ? Array.from({ length: 4 }, () => ({ label: "...", value: "—" }))
+              : stats
+            ).map((item, index) => (
               <div key={index} className="rounded-xl border border-slate-100 bg-white px-3 py-3">
-                <p className="text-lg font-bold text-[#0B1F3A]">
-                  {isLoading ? "—" : item.value}
-                </p>
-                <p className="text-[11px] text-slate-500">{isLoading ? "..." : item.label}</p>
+                <p className="text-lg font-bold text-[#0B1F3A]">{item.value}</p>
+                <p className="text-[11px] text-slate-500">{item.label}</p>
               </div>
             ))}
           </div>

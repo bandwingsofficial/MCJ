@@ -281,6 +281,7 @@ class CommunityService {
           "Content-Type": undefined,
         },
         transformRequest: [(data) => data],
+        timeout: 120000,
       },
     );
 

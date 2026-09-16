@@ -5,14 +5,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  BookOpen,
   ChevronLeft,
   ChevronRight,
+  GraduationCap,
+  Headphones,
   Mail,
   MapPin,
+  Monitor,
   Phone,
+  Sparkles,
+  Users,
 } from "lucide-react";
 import { FaLinkedin } from "react-icons/fa";
 
+import { BranchUpcomingBatchesSection } from "@/src/features/branches/components/branch-upcoming-batches-section";
 import { useBranchBySlugOrId } from "@/src/features/branches/hooks/useBranch";
 import {
   useBranchBatches,
@@ -21,7 +28,6 @@ import {
   useBranchTrainers,
 } from "@/src/features/branches/hooks/useBranchData";
 import type { PublicBranch } from "@/src/features/branches/types/branch.types";
-import { buildBranchBatchRows } from "@/src/features/branches/utils/branch-batch.utils";
 import {
   formatBranchAddress,
   formatBranchLocation,
@@ -80,8 +86,12 @@ function BranchHero({
   statsLoading: boolean;
 }) {
   return (
-    <section className="bg-[#F8FBFF]">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_1fr] lg:px-8">
+    <section className="relative overflow-hidden bg-gradient-to-br from-[#F8FBFF] via-white to-[#F5F3FF]">
+      <div className="pointer-events-none absolute -left-24 top-8 h-80 w-80 rounded-full bg-[#BFDBFE]/35 blur-3xl" />
+      <div className="pointer-events-none absolute right-0 top-0 h-[420px] w-[420px] rounded-full bg-[#DDD6FE]/30 blur-3xl" />
+      <div className="pointer-events-none absolute right-[18%] top-16 h-72 w-72 rounded-full bg-[#93C5FD]/20 blur-[80px]" />
+
+      <div className="relative mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_1fr] lg:px-8">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#2563EB]">
             MCJ Academy
@@ -99,21 +109,18 @@ function BranchHero({
           </p>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {(statsLoading ? Array.from({ length: 3 }) : stats).map(
-              (item, index) => (
-                <div
-                  key={index}
-                  className="rounded-xl border border-slate-100 bg-white px-3 py-3"
-                >
-                  <p className="text-lg font-bold text-[#0B1F3A]">
-                    {statsLoading ? "—" : item.value}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {statsLoading ? "Loading" : item.label}
-                  </p>
-                </div>
-              ),
-            )}
+            {(statsLoading
+              ? Array.from({ length: 3 }, () => ({ label: "Loading", value: "—" }))
+              : stats
+            ).map((item, index) => (
+              <div
+                key={index}
+                className="rounded-xl border border-slate-100 bg-white px-3 py-3"
+              >
+                <p className="text-lg font-bold text-[#0B1F3A]">{item.value}</p>
+                <p className="text-xs text-slate-500">{item.label}</p>
+              </div>
+            ))}
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -131,7 +138,8 @@ function BranchHero({
         </div>
 
         <div className="relative">
-          <div className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-white bg-white shadow-lg">
+          <div className="pointer-events-none absolute -inset-4 rounded-[36px] bg-gradient-to-br from-[#BFDBFE]/50 via-[#E9D5FF]/35 to-transparent blur-2xl" />
+          <div className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_24px_60px_rgba(37,99,235,0.12)]">
             {heroImage ? (
               <Image src={heroImage} alt={branch.branchName} fill className="object-cover" />
             ) : (
@@ -156,14 +164,44 @@ function BranchHero({
 }
 
 function BranchFeatureStrip() {
+  const featureStyles = [
+    { icon: GraduationCap, bg: "bg-[#EFF6FF]", iconBg: "bg-[#DBEAFE]", text: "text-[#2563EB]" },
+    { icon: Monitor, bg: "bg-[#F5F3FF]", iconBg: "bg-[#EDE9FE]", text: "text-[#7C3AED]" },
+    { icon: BookOpen, bg: "bg-[#ECFEFF]", iconBg: "bg-[#CFFAFE]", text: "text-[#0891B2]" },
+    { icon: Headphones, bg: "bg-[#FDF2F8]", iconBg: "bg-[#FCE7F3]", text: "text-[#DB2777]" },
+    { icon: Sparkles, bg: "bg-[#EFF6FF]", iconBg: "bg-[#DBEAFE]", text: "text-[#2563EB]" },
+    { icon: Users, bg: "bg-[#F5F3FF]", iconBg: "bg-[#EDE9FE]", text: "text-[#7C3AED]" },
+  ] as const;
+
   return (
-    <section className="border-y border-slate-100 bg-white py-4">
+    <section className="border-y border-slate-100 bg-white/70 py-4 backdrop-blur-sm">
       <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 px-4 sm:grid-cols-3 lg:grid-cols-6 sm:px-6 lg:px-8">
-        {MCJ_BRANCH_FEATURE_ITEMS.map((item) => (
-          <div key={item} className="rounded-xl bg-[#F8FBFF] px-3 py-3 text-center text-xs font-medium text-[#0B1F3A]">
-            {item}
-          </div>
-        ))}
+        {MCJ_BRANCH_FEATURE_ITEMS.map((item, index) => {
+          const style = featureStyles[index] ?? featureStyles[0];
+          const Icon = style.icon;
+
+          return (
+            <div
+              key={item}
+              className={cn(
+                "rounded-xl border border-white/80 px-3 py-3 text-center shadow-sm",
+                style.bg,
+              )}
+            >
+              <div
+                className={cn(
+                  "mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full",
+                  style.iconBg,
+                )}
+              >
+                <Icon className={cn("h-4 w-4", style.text)} />
+              </div>
+              <p className="text-xs font-medium leading-snug text-[#0B1F3A]">
+                {item}
+              </p>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -299,21 +337,6 @@ export function BranchDetailPage({ branchSlugOrId }: Props) {
     [courses],
   );
 
-  const batchRows = useMemo(() => {
-    return buildBranchBatchRows(batchesQuery.data ?? []).map((row) => {
-      const courseSlug = courseSlugById.get(
-        batchesQuery.data?.find((batch) => batch.id === row.batchId)?.courseId ?? "",
-      );
-      return {
-        ...row,
-        joinHref:
-          courseSlug && row.availabilityTone !== "muted"
-            ? `/courses/${encodeURIComponent(courseSlug)}/enroll?batchId=${row.batchId}&branchId=${branch?.id ?? ""}`
-            : null,
-      };
-    });
-  }, [batchesQuery.data, branch?.id, courseSlugById]);
-
   if (isLoading) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -385,81 +408,12 @@ export function BranchDetailPage({ branchSlugOrId }: Props) {
         </div>
       </section>
 
-      <section className="bg-[#F8FBFF] py-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-6 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2563EB]">
-                Batches
-              </p>
-              <h2 className="text-2xl font-bold text-[#0B1F3A]">
-                Current Batches at {branch.branchName}
-              </h2>
-            </div>
-          </div>
-
-          {batchesQuery.isLoading ? (
-            <Skeleton className="h-48 w-full rounded-2xl" />
-          ) : batchRows.length === 0 ? (
-            <EmptyState
-              title="No active batches"
-              description="New batches will appear here when they are published for this branch."
-            />
-          ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-              <table className="min-w-full text-left text-sm">
-                <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-4 py-3">Course</th>
-                    <th className="px-4 py-3">Batch</th>
-                    <th className="px-4 py-3">Mode</th>
-                    <th className="px-4 py-3">Timing</th>
-                    <th className="px-4 py-3">Days</th>
-                    <th className="px-4 py-3">Start</th>
-                    <th className="px-4 py-3">Seats</th>
-                    <th className="px-4 py-3">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {batchRows.map((row) => (
-                    <tr key={row.id} className="border-b border-slate-100 last:border-0">
-                      <td className="px-4 py-3 font-medium text-[#0B1F3A]">{row.courseTitle}</td>
-                      <td className="px-4 py-3">{row.batchName}</td>
-                      <td className="px-4 py-3">{row.modeLabel}</td>
-                      <td className="px-4 py-3">{row.timingLabel}</td>
-                      <td className="px-4 py-3">{row.daysLabel}</td>
-                      <td className="px-4 py-3">{row.startDateLabel}</td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={cn(
-                            "rounded-full px-2.5 py-1 text-xs font-semibold",
-                            row.availabilityTone === "success" && "bg-emerald-50 text-emerald-700",
-                            row.availabilityTone === "warning" && "bg-amber-50 text-amber-700",
-                            row.availabilityTone === "muted" && "bg-slate-100 text-slate-500",
-                          )}
-                        >
-                          {row.seatsLabel} · {row.availabilityLabel}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        {row.joinHref ? (
-                          <Link href={row.joinHref}>
-                            <Button size="sm" className="rounded-lg bg-[#0B1F3A]">
-                              Join Now
-                            </Button>
-                          </Link>
-                        ) : (
-                          <span className="text-xs text-slate-400">Unavailable</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </section>
+      <BranchUpcomingBatchesSection
+        branchName={branch.branchName}
+        batches={batchesQuery.data ?? []}
+        courseSlugById={courseSlugById}
+        isLoading={batchesQuery.isLoading}
+      />
 
       <section className="py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
