@@ -16,7 +16,10 @@ import type {
   CategoryListMeta,
   BulkCategoryOperationResult,
   CategoryStatus,
+  CategoryListItem,
 } from "@/src/features/categories/types/category.types";
+
+const CATEGORY_LOOKUP_PAGE_SIZE = 100;
 
 /** Reads the authoritative total from list API pagination metadata. */
 export function resolveCategoryListTotal(
@@ -55,7 +58,7 @@ class CategoryService {
       meta?: CategoryListMeta;
     }
   > {
-    const pageSize = Math.min(filters.pageSize, 100);
+    const pageSize = Math.min(filters.pageSize, CATEGORY_LOOKUP_PAGE_SIZE);
     const skip =
       (filters.page - 1) *
       pageSize;
@@ -88,6 +91,47 @@ class CategoryService {
       });
 
     return response.data;
+  }
+
+  async listAllCategories(
+    filters?: Pick<CategoryFilters, "status" | "branchId" | "search">,
+  ): Promise<CategoryListItem[]> {
+    const collected: CategoryListItem[] = [];
+    let page = 1;
+
+    while (true) {
+      const response = await this.getCategories({
+        search: filters?.search ?? "",
+        status: filters?.status,
+        branchId: filters?.branchId,
+        page,
+        pageSize: CATEGORY_LOOKUP_PAGE_SIZE,
+      });
+
+      const items = (response.data ?? []).filter((item) => !item.isDeleted);
+      collected.push(...items);
+
+      if (items.length < CATEGORY_LOOKUP_PAGE_SIZE) {
+        break;
+      }
+
+      page += 1;
+    }
+
+    return collected;
+  }
+
+  async getActiveCategoriesForAssignment() {
+    const categories = await this.listAllCategories({
+      search: "",
+      status: "ACTIVE",
+    });
+
+    return categories.filter(
+      (category) =>
+        String(category.status).toUpperCase() === "ACTIVE" &&
+        !category.isDeleted,
+    );
   }
 
   async getCategory(
