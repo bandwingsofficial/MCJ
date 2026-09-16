@@ -15,8 +15,10 @@ import { getCourseContentMetrics } from "@/src/features/learning/utils/course-me
 import {
   buildProgressMap,
   findContinueLesson,
+  findModuleForLesson,
   getCourseProgressStats,
 } from "@/src/features/learning/utils/progress.utils";
+import { sortModules } from "@/src/features/learning/utils/course-hierarchy.utils";
 import {
   getLessonLearningPath,
 } from "@/src/features/learning/utils/routes.utils";
@@ -62,6 +64,23 @@ export function CourseLearningPage({ courseId }: CourseLearningPageProps) {
         : null,
     [payload, progressMap],
   );
+
+  const defaultExpandedModuleId = useMemo(() => {
+    if (!payload) {
+      return null;
+    }
+
+    if (continueLesson) {
+      return (
+        findModuleForLesson(payload.course.modules, continueLesson.id)?.id ??
+        null
+      );
+    }
+
+    return sortModules(payload.course.modules)[0]?.id ?? null;
+  }, [payload, continueLesson]);
+
+  const activeExpandedModuleId = expandedModuleId ?? defaultExpandedModuleId;
 
   if (courseQuery.isLoading) {
     return (
@@ -165,7 +184,7 @@ export function CourseLearningPage({ courseId }: CourseLearningPageProps) {
             courseId={courseId}
             modules={course.modules}
             progressMap={progressMap}
-            expandedModuleId={expandedModuleId}
+            expandedModuleId={activeExpandedModuleId}
             onToggleModule={(moduleId) =>
               setExpandedModuleId((current) =>
                 current === moduleId ? null : moduleId,

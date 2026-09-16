@@ -30,8 +30,10 @@ export class GetStudentCourseProgressHandler {
       await this.courseAccessService.resolveStudentFromUserId(
         query.userId,
       );
-    const counts = await this.hierarchyService.getCourseCounts(
-      query.courseId,
+    const tree = await this.hierarchyService.getTree(query.courseId);
+    const navigableLessonCount = tree.reduce(
+      (total, module) => total + module.lessons.length,
+      0,
     );
     const progressRecords =
       await this.lessonProgressRepo.findByStudentAndCourse(
@@ -42,12 +44,20 @@ export class GetStudentCourseProgressHandler {
       (item) => item.isCompleted,
     ).length;
 
+    const completedNavigableLessons = tree
+      .flatMap((module) => module.lessons)
+      .filter((lesson) =>
+        progressRecords.some(
+          (item) => item.lessonId === lesson.id && item.isCompleted,
+        ),
+      ).length;
+
     return new StudentCourseProgressResult(
       query.courseId,
-      counts.progressLessonCount,
-      completedLessons,
-      counts.progressLessonCount
-        ? Math.round((completedLessons / counts.progressLessonCount) * 100)
+      navigableLessonCount,
+      completedNavigableLessons,
+      navigableLessonCount
+        ? Math.round((completedNavigableLessons / navigableLessonCount) * 100)
         : 0,
       progressRecords.map(
         (item) =>
@@ -129,28 +139,34 @@ export class GetStudentCourseCompletionHandler {
       await this.courseAccessService.resolveStudentFromUserId(
         query.userId,
       );
-    const counts = await this.hierarchyService.getCourseCounts(
-      query.courseId,
+    const tree = await this.hierarchyService.getTree(query.courseId);
+    const navigableLessonCount = tree.reduce(
+      (total, module) => total + module.lessons.length,
+      0,
     );
     const progressRecords =
       await this.lessonProgressRepo.findByStudentAndCourse(
         student.id,
         query.courseId,
       );
-    const completedLessons = progressRecords.filter(
-      (item) => item.isCompleted,
-    ).length;
-    const completionPercentage = counts.progressLessonCount
-      ? Math.round((completedLessons / counts.progressLessonCount) * 100)
+    const completedNavigableLessons = tree
+      .flatMap((module) => module.lessons)
+      .filter((lesson) =>
+        progressRecords.some(
+          (item) => item.lessonId === lesson.id && item.isCompleted,
+        ),
+      ).length;
+    const completionPercentage = navigableLessonCount
+      ? Math.round((completedNavigableLessons / navigableLessonCount) * 100)
       : 0;
     const isCourseCompleted =
-      counts.progressLessonCount > 0 &&
-      completedLessons === counts.progressLessonCount;
+      navigableLessonCount > 0 &&
+      completedNavigableLessons === navigableLessonCount;
 
     return new StudentCourseCompletionResult(
       query.courseId,
-      counts.progressLessonCount,
-      completedLessons,
+      navigableLessonCount,
+      completedNavigableLessons,
       completionPercentage,
       isCourseCompleted,
       isCourseCompleted,

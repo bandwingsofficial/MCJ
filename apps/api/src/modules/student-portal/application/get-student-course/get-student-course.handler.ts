@@ -71,8 +71,12 @@ export class GetStudentCourseHandler {
         student.id,
         course.id,
       );
-    const completedLessons = progressRecords.filter(
-      (item) => item.isCompleted,
+    const navigableLessons = modules.flatMap((module) => module.lessons);
+    const navigableLessonCount = navigableLessons.length;
+    const completedNavigableLessons = navigableLessons.filter((lesson) =>
+      progressRecords.some(
+        (item) => item.lessonId === lesson.id && item.isCompleted,
+      ),
     ).length;
 
     return {
@@ -92,10 +96,12 @@ export class GetStudentCourseHandler {
       }),
       progress: new StudentCourseProgressResult(
         course.id,
-        counts.progressLessonCount,
-        completedLessons,
-        counts.progressLessonCount
-          ? Math.round((completedLessons / counts.progressLessonCount) * 100)
+        navigableLessonCount,
+        completedNavigableLessons,
+        navigableLessonCount
+          ? Math.round(
+              (completedNavigableLessons / navigableLessonCount) * 100,
+            )
           : 0,
         progressRecords.map(
           (item) =>

@@ -25,9 +25,21 @@ export interface LessonResourceDto {
 export interface LessonQuizDto {
   id: string;
   title: string;
+  description: string | null;
   status: string;
   passingScore: number | null;
   timeLimitMinutes: number | null;
+  questionCount: number;
+}
+
+export interface LessonVideoDto {
+  id: string;
+  title: string;
+  videoUrl: string | null;
+  contentType: string;
+  duration: number | null;
+  displayOrder: number;
+  description: string | null;
 }
 
 export interface LessonLearnItemDto {
@@ -54,6 +66,8 @@ export interface LessonTreeDto {
   quiz: LessonQuizDto | null;
   description: string | null;
   parentLessonId: string | null;
+  selfPacedVideos: LessonVideoDto[];
+  liveRecordedVideos: LessonVideoDto[];
 }
 
 export interface ModuleTreeDto {
@@ -138,6 +152,53 @@ export interface LessonProgressDto {
   completedAt: string | null;
 }
 
+export interface StudentQuizOptionDto {
+  id: string;
+  optionText: string;
+  displayOrder: number;
+}
+
+export interface StudentQuizQuestionDto {
+  id: string;
+  questionText: string;
+  type: string;
+  explanation: string | null;
+  points: number;
+  displayOrder: number;
+  options: StudentQuizOptionDto[];
+}
+
+export interface StudentQuizAttemptSummaryDto {
+  id: string;
+  score: number;
+  totalPoints: number;
+  percentage: number;
+  passed: boolean;
+  createdAt: string;
+}
+
+export interface StudentLessonQuizDto {
+  id: string;
+  lessonId: string;
+  title: string;
+  description: string | null;
+  status: string;
+  passingScore: number | null;
+  timeLimitMinutes: number | null;
+  questionCount: number;
+  questions: StudentQuizQuestionDto[];
+  latestAttempt: StudentQuizAttemptSummaryDto | null;
+}
+
+export interface StudentQuizSubmitResultDto {
+  attemptId: string;
+  score: number;
+  totalPoints: number;
+  percentage: number;
+  passed: boolean;
+  lessonMarkedComplete: boolean;
+}
+
 export interface LessonDetailPayloadDto {
   lesson: LessonTreeDto;
   progress: LessonProgressDto | null;
@@ -207,3 +268,5 @@ export type ResourceDownloadResponse = ApiResponse<{
   title: string;
   fileUrl: string;
 }>;
+export type StudentLessonQuizResponse = ApiResponse<StudentLessonQuizDto>;
+export type StudentQuizSubmitResponse = ApiResponse<StudentQuizSubmitResultDto>;

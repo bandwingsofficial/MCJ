@@ -79,8 +79,10 @@ export function LessonRecordingPage({
 
   const { lesson, progress } = lessonQuery.data;
   const courseTitle = courseQuery.data?.course.title ?? "Course";
+  const backLessonId = lesson.parentLessonId ?? lessonId;
+  const hasVideo = Boolean(lesson.videoUrl);
 
-  if (!lesson.videoUrl) {
+  if (!hasVideo) {
     return (
       <ErrorState
         title="No recording available"
@@ -96,7 +98,7 @@ export function LessonRecordingPage({
     <div className="space-y-6 pb-10">
       <div className="space-y-3">
         <Link
-          href={getLessonLearningPath(courseId, lessonId)}
+          href={getLessonLearningPath(courseId, backLessonId)}
           className="inline-flex items-center text-sm font-medium text-[#2563EB] hover:underline"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -118,6 +120,9 @@ export function LessonRecordingPage({
           <h1 className="mt-2 text-2xl font-bold text-[#0B1F3A]">
             {lesson.title}
           </h1>
+          {lesson.description ? (
+            <p className="mt-2 text-sm text-slate-600">{lesson.description}</p>
+          ) : null}
         </div>
       </div>
 

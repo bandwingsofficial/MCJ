@@ -49,3 +49,38 @@ export function useUpdateWatchedSeconds(courseId: string, lessonId: string) {
     },
   });
 }
+
+export function useSubmitLessonQuiz(courseId: string, lessonId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (
+      answers: Array<{
+        questionId: string;
+        selectedOptionIds: string[];
+      }>,
+    ) => learningService.submitLessonQuiz(courseId, lessonId, answers),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: learningQueryKeys.quiz(courseId, lessonId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: learningQueryKeys.lesson(courseId, lessonId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: learningQueryKeys.course(courseId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: learningQueryKeys.progress(courseId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: learningQueryKeys.completion(courseId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: learningQueryKeys.dashboard,
+        }),
+      ]);
+    },
+  });
+}

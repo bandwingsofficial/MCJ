@@ -32,3 +32,7 @@ export function getLessonRecordingPath(
 ): string {
   return `/student/learning/${courseId}/lessons/${lessonId}/recording`;
 }
+
+export function getLessonQuizPath(courseId: string, lessonId: string): string {
+  return `/student/learning/${courseId}/lessons/${lessonId}/quiz`;
+}

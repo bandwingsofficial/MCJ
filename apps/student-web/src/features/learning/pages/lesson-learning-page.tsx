@@ -9,16 +9,21 @@ import {
 } from "lucide-react";
 
 import {
+  LiveRecordedVideosSection,
   QuizSection,
-  RecordedVideoCard,
+  RecordedVideosSection,
   ResourcesSection,
 } from "@/src/features/learning/components/lesson/lesson-content-cards";
+import { LessonLearnSection } from "@/src/features/learning/components/lesson/lesson-learn-section";
 import { LessonTextContent } from "@/src/features/learning/components/lesson/lesson-content-panels";
+import { LearningProgressBar } from "@/src/features/learning/components/progress/learning-progress-bar";
+import { SyllabusModuleAccordion } from "@/src/features/learning/components/syllabus/syllabus-module-accordion";
 import { LessonTypeIcon } from "@/src/features/learning/components/syllabus/lesson-type-icon";
 import { useMarkLessonComplete } from "@/src/features/learning/hooks/use-learning-mutations";
 import {
   useStudentCourse,
   useStudentLesson,
+  useStudentLessonQuiz,
 } from "@/src/features/learning/hooks/use-learning-queries";
 import {
   formatLessonOrdinal,
@@ -27,7 +32,9 @@ import {
   getModuleOrdinal,
 } from "@/src/features/learning/utils/course-hierarchy.utils";
 import {
+  buildProgressMap,
   findModuleForLesson,
+  getCourseProgressStats,
   getLessonNavigation,
 } from "@/src/features/learning/utils/progress.utils";
 import {
@@ -36,12 +43,19 @@ import {
 } from "@/src/features/learning/utils/routes.utils";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
+import { Card } from "@/src/shared/components/ui/card";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
+
+import type { LessonTreeDto } from "@/src/features/learning/types/learning.types";
 
 interface LessonLearningPageProps {
   courseId: string;
   lessonId: string;
+}
+
+function getPublishedQuiz(lesson: LessonTreeDto) {
+  return lesson.quiz?.status === "PUBLISHED" ? lesson.quiz : null;
 }
 
 export function LessonLearningPage({
@@ -52,6 +66,12 @@ export function LessonLearningPage({
   const courseQuery = useStudentCourse(courseId);
   const completeMutation = useMarkLessonComplete(courseId, lessonId);
 
+  const lesson = lessonQuery.data?.lesson;
+  const publishedQuiz = lesson ? getPublishedQuiz(lesson) : null;
+  const quizQuery = useStudentLessonQuiz(courseId, lessonId, {
+    enabled: Boolean(publishedQuiz),
+  });
+
   const navigation = useMemo(() => {
     const modules = courseQuery.data?.course.modules ?? [];
     return getLessonNavigation(modules, lessonId);
@@ -61,6 +81,22 @@ export function LessonLearningPage({
     const modules = courseQuery.data?.course.modules ?? [];
     return findModuleForLesson(modules, lessonId);
   }, [courseQuery.data?.course.modules, lessonId]);
+
+  const progressMap = useMemo(
+    () => buildProgressMap(courseQuery.data?.progress.items ?? []),
+    [courseQuery.data?.progress.items],
+  );
+
+  const courseStats = useMemo(() => {
+    if (!courseQuery.data) {
+      return null;
+    }
+
+    return getCourseProgressStats(
+      courseQuery.data.course.modules,
+      courseQuery.data.progress,
+    );
+  }, [courseQuery.data]);
 
   const moduleLabel = useMemo(() => {
     const modules = courseQuery.data?.course.modules ?? [];
@@ -85,7 +121,7 @@ export function LessonLearningPage({
     return <Skeleton className="h-[520px] rounded-xl" />;
   }
 
-  if (lessonQuery.isError || !lessonQuery.data) {
+  if (lessonQuery.isError || !lessonQuery.data || !lesson) {
     return (
       <ErrorState
         title="Unable to load lesson"
@@ -97,12 +133,21 @@ export function LessonLearningPage({
     );
   }
 
-  const { lesson, progress } = lessonQuery.data;
+  const { progress } = lessonQuery.data;
   const isCompleted = progress?.isCompleted ?? false;
-  const hasVideo = Boolean(lesson.videoUrl);
+  const hasLearnItems = (lesson.learnItems ?? []).length > 0;
+  const selfPacedVideos = lesson.selfPacedVideos ?? [];
+  const liveRecordedVideos = lesson.liveRecordedVideos ?? [];
+  const hasRecordedVideo =
+    Boolean(lesson.videoUrl) ||
+    selfPacedVideos.some((video) => Boolean(video.videoUrl));
+  const hasLiveRecordedVideos = liveRecordedVideos.some((video) =>
+    Boolean(video.videoUrl),
+  );
   const hasResources = lesson.resources.length > 0;
-  const hasQuiz = Boolean(lesson.quiz);
+  const hasQuiz = Boolean(publishedQuiz);
   const courseTitle = courseQuery.data?.course.title ?? "Course";
+  const latestAttempt = quizQuery.data?.latestAttempt ?? null;
 
   return (
     <div className="space-y-6 pb-24">
@@ -126,12 +171,12 @@ export function LessonLearningPage({
             <div className="mt-2 flex items-center gap-2">
               <LessonTypeIcon
                 contentType={lesson.contentType}
-                hasVideo={hasVideo}
+                hasVideo={hasRecordedVideo || hasLiveRecordedVideos}
                 hasQuiz={hasQuiz}
               />
               {lessonLabel ? (
                 <p className="text-xs uppercase tracking-[0.12em] text-slate-400">
-                  {lessonLabel} · {lesson.contentType}
+                  {lessonLabel} · {lesson.contentType.replace(/_/g, " ")}
                 </p>
               ) : null}
             </div>
@@ -145,38 +190,108 @@ export function LessonLearningPage({
         </div>
       </div>
 
-      <LessonTextContent
-        description={lesson.description}
-        contentType={lesson.contentType}
-        hideEmptyState
-      />
+      {courseStats ? (
+        <Card className="rounded-xl border border-slate-200 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-[#0B1F3A]">Course Progress</p>
+              <p className="text-xs text-slate-500">
+                {courseStats.completedLessons}/{courseStats.totalLessons} lessons
+                completed
+              </p>
+            </div>
+            <p className="text-sm font-semibold text-[#0B1F3A]">
+              {courseStats.percentage}%
+            </p>
+          </div>
+          <LearningProgressBar
+            value={courseStats.percentage}
+            className="mt-3"
+          />
+        </Card>
+      ) : null}
 
-      {(hasVideo || hasResources || hasQuiz) && (
-        <div className="space-y-5">
-          {hasVideo ? (
-            <RecordedVideoCard
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-6">
+          <LessonTextContent
+            description={lesson.description}
+            contentType={lesson.contentType}
+            hideEmptyState
+          />
+
+          {hasLearnItems ? (
+            <LessonLearnSection learnItems={lesson.learnItems ?? []} />
+          ) : null}
+
+          {hasRecordedVideo ? (
+            <RecordedVideosSection
               courseId={courseId}
-              lessonId={lessonId}
+              parentLessonId={lessonId}
+              parentTitle={lesson.title}
+              videoUrl={lesson.videoUrl}
               duration={lesson.duration}
               contentType={lesson.contentType}
+              selfPacedVideos={selfPacedVideos}
+            />
+          ) : null}
+
+          {hasLiveRecordedVideos ? (
+            <LiveRecordedVideosSection
+              courseId={courseId}
+              videos={liveRecordedVideos}
             />
           ) : null}
 
           {hasResources ? (
-            <ResourcesSection
-              resources={lesson.resources}
-              courseId={courseId}
-            />
+            <ResourcesSection resources={lesson.resources} courseId={courseId} />
           ) : null}
 
-          {hasQuiz ? <QuizSection quiz={lesson.quiz} /> : null}
+          {hasQuiz && publishedQuiz ? (
+            <QuizSection
+              courseId={courseId}
+              lessonId={lessonId}
+              quiz={publishedQuiz}
+              latestAttempt={
+                latestAttempt
+                  ? {
+                      percentage: latestAttempt.percentage,
+                      passed: latestAttempt.passed,
+                    }
+                  : null
+              }
+            />
+          ) : null}
         </div>
-      )}
+
+        {courseQuery.data ? (
+          <aside className="space-y-3">
+            <div>
+              <h2 className="text-base font-semibold text-[#0B1F3A]">
+                Course Syllabus
+              </h2>
+              <p className="text-sm text-slate-500">
+                Your current lesson is highlighted below.
+              </p>
+            </div>
+            <SyllabusModuleAccordion
+              courseId={courseId}
+              modules={courseQuery.data.course.modules}
+              progressMap={progressMap}
+              currentLessonId={lessonId}
+              expandedModuleId={module?.id ?? null}
+              onToggleModule={() => undefined}
+              lockExpandedModule
+            />
+          </aside>
+        ) : null}
+      </div>
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           {navigation.previous ? (
-            <Link href={getLessonLearningPath(courseId, navigation.previous.id)}>
+            <Link
+              href={getLessonLearningPath(courseId, navigation.previous.id)}
+            >
               <Button variant="outline" size="sm" className="rounded-lg">
                 <ArrowLeft className="mr-1 h-4 w-4" />
                 Previous
@@ -199,7 +314,10 @@ export function LessonLearningPage({
 
           {navigation.next ? (
             <Link href={getLessonLearningPath(courseId, navigation.next.id)}>
-              <Button size="sm" className="rounded-lg bg-[#0B1F3A] hover:bg-[#102A56]">
+              <Button
+                size="sm"
+                className="rounded-lg bg-[#0B1F3A] hover:bg-[#102A56]"
+              >
                 Next Lesson
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>

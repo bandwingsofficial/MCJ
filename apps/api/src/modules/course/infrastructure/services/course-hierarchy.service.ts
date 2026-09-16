@@ -7,6 +7,7 @@ import {
   CourseLessonPreviewResult,
   CourseLessonQuizTreeResult,
   CourseLessonTreeResult,
+  CourseLessonVideoTreeResult,
   CourseModulePreviewResult,
   CourseModuleTreeResult,
   CourseResourcePreviewResult,
@@ -172,9 +173,15 @@ export class CourseHierarchyService {
               select: {
                 id: true,
                 title: true,
+                description: true,
                 status: true,
                 passingScore: true,
                 timeLimitMinutes: true,
+                _count: {
+                  select: {
+                    questions: true,
+                  },
+                },
               },
             },
           },
@@ -211,9 +218,15 @@ export class CourseHierarchyService {
           select: {
             id: true,
             title: true,
+            description: true,
             status: true,
             passingScore: true,
             timeLimitMinutes: true,
+            _count: {
+              select: {
+                questions: true,
+              },
+            },
           },
         },
       },
@@ -223,7 +236,15 @@ export class CourseHierarchyService {
       return null;
     }
 
-    return this.toFullLesson(lesson);
+    const childLessons = await this.prisma.courseLesson.findMany({
+      where: {
+        parentLessonId: lessonId,
+        isDeleted: false,
+      },
+      orderBy: { displayOrder: 'asc' },
+    });
+
+    return this.toFullLesson(lesson, childLessons);
   }
 
   async lessonBelongsToCourse(
@@ -420,9 +441,15 @@ export class CourseHierarchyService {
               select: {
                 id: true,
                 title: true,
+                description: true,
                 status: true,
                 passingScore: true,
                 timeLimitMinutes: true,
+                _count: {
+                  select: {
+                    questions: true,
+                  },
+                },
               },
             },
           },
@@ -482,16 +509,35 @@ export class CourseHierarchyService {
     lesson: Awaited<
       ReturnType<CourseHierarchyService['loadModules']>
     >[number]['lessons'][number],
+    childLessons: Array<{
+      id: string;
+      title: string;
+      videoUrl: string | null;
+      contentType: string;
+      duration: number | null;
+      displayOrder: number;
+      description: string | null;
+    }> = [],
   ): CourseLessonTreeResult {
     const quiz = lesson.quiz
       ? new CourseLessonQuizTreeResult(
           lesson.quiz.id,
           lesson.quiz.title,
+          lesson.quiz.description ?? null,
           lesson.quiz.status,
           lesson.quiz.passingScore,
           lesson.quiz.timeLimitMinutes,
+          lesson.quiz._count?.questions ?? 0,
         )
       : null;
+
+    const selfPacedVideos = childLessons
+      .filter((item) => item.contentType === 'SELF_PACED_VIDEO')
+      .map((item) => this.toVideoResult(item));
+
+    const liveRecordedVideos = childLessons
+      .filter((item) => item.contentType === 'LIVE_RECORDED_VIDEO')
+      .map((item) => this.toVideoResult(item));
 
     return new CourseLessonTreeResult(
       lesson.id,
@@ -527,6 +573,28 @@ export class CourseHierarchyService {
             item.displayOrder,
           ),
       ),
+      selfPacedVideos,
+      liveRecordedVideos,
+    );
+  }
+
+  private toVideoResult(lesson: {
+    id: string;
+    title: string;
+    videoUrl: string | null;
+    contentType: string;
+    duration: number | null;
+    displayOrder: number;
+    description: string | null;
+  }): CourseLessonVideoTreeResult {
+    return new CourseLessonVideoTreeResult(
+      lesson.id,
+      lesson.title,
+      lesson.videoUrl,
+      lesson.contentType,
+      lesson.duration,
+      lesson.displayOrder,
+      lesson.description,
     );
   }
 

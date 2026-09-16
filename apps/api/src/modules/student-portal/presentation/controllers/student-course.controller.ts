@@ -31,6 +31,8 @@ import {
   GetStudentCourseProgressHandler,
   UpdateLessonProgressHandler,
 } from '../../application/student-course-progress/student-course-progress.handler';
+import { GetStudentLessonQuizHandler } from '../../application/student-lesson-quiz/get-student-lesson-quiz.handler';
+import { SubmitStudentLessonQuizHandler } from '../../application/student-lesson-quiz/submit-student-lesson-quiz.handler';
 
 @ApiTags('Student Courses')
 @ApiBearerAuth()
@@ -46,6 +48,8 @@ export class StudentCourseController {
     private readonly updateLessonProgressHandler: UpdateLessonProgressHandler,
     private readonly getStudentCourseCompletionHandler: GetStudentCourseCompletionHandler,
     private readonly downloadStudentResourceHandler: DownloadStudentResourceHandler,
+    private readonly getStudentLessonQuizHandler: GetStudentLessonQuizHandler,
+    private readonly submitStudentLessonQuizHandler: SubmitStudentLessonQuizHandler,
   ) {}
 
   @Get()
@@ -154,6 +158,52 @@ export class StudentCourseController {
         lessonId: result.lesson.id,
         videoUrl: result.lesson.videoUrl,
       },
+    };
+  }
+
+  @Get(':courseId/lessons/:lessonId/quiz')
+  async getLessonQuiz(
+    @CurrentUser() user: AuthUser,
+    @Param('courseId') courseId: string,
+    @Param('lessonId') lessonId: string,
+  ) {
+    const result = await this.getStudentLessonQuizHandler.execute({
+      userId: user.sub,
+      courseId,
+      lessonId,
+    });
+
+    return {
+      success: true,
+      message: 'Lesson quiz fetched successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':courseId/lessons/:lessonId/quiz/submit')
+  async submitLessonQuiz(
+    @CurrentUser() user: AuthUser,
+    @Param('courseId') courseId: string,
+    @Param('lessonId') lessonId: string,
+    @Body()
+    body: {
+      answers: Array<{
+        questionId: string;
+        selectedOptionIds: string[];
+      }>;
+    },
+  ) {
+    const result = await this.submitStudentLessonQuizHandler.execute({
+      userId: user.sub,
+      courseId,
+      lessonId,
+      answers: body.answers ?? [],
+    });
+
+    return {
+      success: true,
+      message: 'Quiz submitted successfully',
+      data: result,
     };
   }
 

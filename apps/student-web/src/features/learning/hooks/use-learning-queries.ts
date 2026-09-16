@@ -23,6 +23,8 @@ export const learningQueryKeys = {
     ["learning", "course", courseId, "module", moduleId] as const,
   lesson: (courseId: string, lessonId: string) =>
     ["learning", "course", courseId, "lesson", lessonId] as const,
+  quiz: (courseId: string, lessonId: string) =>
+    ["learning", "course", courseId, "lesson", lessonId, "quiz"] as const,
   progress: (courseId: string) =>
     ["learning", "course", courseId, "progress"] as const,
   completion: (courseId: string) =>
@@ -112,6 +114,18 @@ export function useStudentLesson(courseId: string, lessonId: string) {
     queryKey: learningQueryKeys.lesson(courseId, lessonId),
     queryFn: () => learningService.getLesson(courseId, lessonId),
     enabled: Boolean(courseId && lessonId),
+  });
+}
+
+export function useStudentLessonQuiz(
+  courseId: string,
+  lessonId: string,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: learningQueryKeys.quiz(courseId, lessonId),
+    queryFn: () => learningService.getLessonQuiz(courseId, lessonId),
+    enabled: Boolean(courseId && lessonId) && (options?.enabled ?? true),
   });
 }
 

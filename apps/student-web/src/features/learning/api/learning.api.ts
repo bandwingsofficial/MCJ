@@ -9,7 +9,9 @@ import type {
   ResourceDownloadResponse,
   StudentCourseResponse,
   StudentCoursesResponse,
+  StudentLessonQuizResponse,
   StudentProfileResponse,
+  StudentQuizSubmitResponse,
 } from "@/src/features/learning/types/learning.types";
 
 export const learningApi = {
@@ -70,6 +72,28 @@ export const learningApi = {
     return apiClient.get<ResourceDownloadResponse>(
       `/student/resources/${resourceId}/download`,
       { params: { courseId } },
+    );
+  },
+
+  getLessonQuiz(courseId: string, lessonId: string) {
+    return apiClient.get<StudentLessonQuizResponse>(
+      `/student/courses/${courseId}/lessons/${lessonId}/quiz`,
+    );
+  },
+
+  submitLessonQuiz(
+    courseId: string,
+    lessonId: string,
+    payload: {
+      answers: Array<{
+        questionId: string;
+        selectedOptionIds: string[];
+      }>;
+    },
+  ) {
+    return apiClient.patch<StudentQuizSubmitResponse>(
+      `/student/courses/${courseId}/lessons/${lessonId}/quiz/submit`,
+      payload,
     );
   },
 };

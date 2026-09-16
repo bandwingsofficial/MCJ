@@ -8,6 +8,7 @@ import type {
 import {
   flattenOrderedLessons,
   findModuleForLessonOrdered,
+  sortLessons,
   sortModules,
 } from "@/src/features/learning/utils/course-hierarchy.utils";
 
@@ -53,8 +54,9 @@ export function getModuleProgress(
   module: Pick<ModuleTreeDto, "lessons">,
   progressMap: ProgressMap,
 ): ModuleProgressStats {
-  const totalLessons = module.lessons.length;
-  const completedLessons = module.lessons.filter((lesson) =>
+  const lessons = sortLessons(module.lessons);
+  const totalLessons = lessons.length;
+  const completedLessons = lessons.filter((lesson) =>
     isLessonCompleted(progressMap, lesson.id),
   ).length;
   const remainingLessons = Math.max(totalLessons - completedLessons, 0);
@@ -83,10 +85,11 @@ export function getCourseProgressFromModules(
   modules: ModuleTreeDto[],
   progressMap: ProgressMap,
 ): CourseProgressStats {
-  const moduleStats = modules.map((module) =>
+  const orderedModules = sortModules(modules);
+  const moduleStats = orderedModules.map((module) =>
     getModuleProgress(module, progressMap),
   );
-  const totalModules = modules.length;
+  const totalModules = orderedModules.length;
   const completedModules = moduleStats.filter(
     (item) => item.state === "completed",
   ).length;

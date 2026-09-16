@@ -561,6 +561,7 @@ model CourseQuiz {
   updatedAt        DateTime   @updatedAt
   lesson           CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   questions        CourseQuizQuestion[]
+  attempts         LessonQuizAttempt[]
 
   @@index([lessonId])
   @@index([isDeleted])
@@ -937,6 +938,7 @@ model Student {
   payments              Payment[]
   Placement             Placement[]
   lessonProgress        LessonProgress[]
+  lessonQuizAttempts    LessonQuizAttempt[]
   attendances           Attendance[]
   assessments           AcademicAssessment[]
   branch                Branch?          @relation(fields: [branchId], references: [id])
@@ -1054,6 +1056,27 @@ model LessonProgress {
   @@index([studentId, courseId])
   @@index([courseId])
   @@index([lessonId])
+}
+
+model LessonQuizAttempt {
+  id          String     @id @default(uuid())
+  studentId   String
+  courseId    String
+  lessonId    String
+  quizId      String
+  score       Int
+  totalPoints Int
+  percentage  Int
+  passed      Boolean
+  answers     Json
+  createdAt   DateTime   @default(now())
+  student     Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quiz        CourseQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, lessonId])
+  @@index([studentId, quizId])
+  @@index([quizId])
+  @@index([createdAt])
 }
 
 model Payment {

@@ -99,9 +99,23 @@ export class CourseLessonQuizTreeResult {
   constructor(
     public readonly id: string,
     public readonly title: string,
+    public readonly description: string | null,
     public readonly status: string,
     public readonly passingScore: number | null,
     public readonly timeLimitMinutes: number | null,
+    public readonly questionCount: number = 0,
+  ) {}
+}
+
+export class CourseLessonVideoTreeResult {
+  constructor(
+    public readonly id: string,
+    public readonly title: string,
+    public readonly videoUrl: string | null,
+    public readonly contentType: string,
+    public readonly duration: number | null,
+    public readonly displayOrder: number,
+    public readonly description: string | null,
   ) {}
 }
 
@@ -132,6 +146,8 @@ export class CourseLessonTreeResult {
     public readonly description: string | null = null,
     public readonly parentLessonId: string | null = null,
     public readonly learnItems: CourseLearnItemTreeResult[] = [],
+    public readonly selfPacedVideos: CourseLessonVideoTreeResult[] = [],
+    public readonly liveRecordedVideos: CourseLessonVideoTreeResult[] = [],
   ) {}
 }
 

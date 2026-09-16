@@ -8,7 +8,9 @@ import type {
   ModuleTreeDto,
   StudentCoursePayloadDto,
   StudentCourseSummaryDto,
+  StudentLessonQuizDto,
   StudentProfileDto,
+  StudentQuizSubmitResultDto,
 } from "@/src/features/learning/types/learning.types";
 
 import { isValidLearningEnrollmentStatus } from "@/src/features/access/utils/student-access";
@@ -88,6 +90,28 @@ class LearningService {
 
   async downloadResource(resourceId: string, courseId: string) {
     const response = await learningApi.downloadResource(resourceId, courseId);
+    return response.data.data;
+  }
+
+  async getLessonQuiz(
+    courseId: string,
+    lessonId: string,
+  ): Promise<StudentLessonQuizDto> {
+    const response = await learningApi.getLessonQuiz(courseId, lessonId);
+    return response.data.data;
+  }
+
+  async submitLessonQuiz(
+    courseId: string,
+    lessonId: string,
+    answers: Array<{
+      questionId: string;
+      selectedOptionIds: string[];
+    }>,
+  ): Promise<StudentQuizSubmitResultDto> {
+    const response = await learningApi.submitLessonQuiz(courseId, lessonId, {
+      answers,
+    });
     return response.data.data;
   }
 }
