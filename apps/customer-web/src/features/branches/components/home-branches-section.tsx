@@ -1,93 +1,54 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
-import { batchService } from "@/src/features/batches/services/batch.service";
 import { useBranches } from "@/src/features/branches/hooks/useBranches";
 import { BranchCard } from "@/src/features/branches/components/branch-card";
-import { isBatchSelectable } from "@/src/features/enrollments/utils/enrollment-batch.utils";
 
 export function HomeBranchesSection() {
   const router = useRouter();
   const { branches, isLoading, error, refetch } = useBranches();
-  const [offeringBranchIds, setOfferingBranchIds] = useState<Set<string>>();
-  const [offeringsLoading, setOfferingsLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
+  const visibleBranches = useMemo(() => branches.slice(0, 8), [branches]);
 
-    const loadOfferings = async () => {
-      try {
-        setOfferingsLoading(true);
-        const batches = await batchService.getAllBatches();
-        if (cancelled) {
-          return;
-        }
-
-        const ids = new Set(
-          batches
-            .filter(isBatchSelectable)
-            .map((batch) => batch.branchId)
-            .filter((branchId): branchId is string => Boolean(branchId)),
-        );
-        setOfferingBranchIds(ids);
-      } catch {
-        if (!cancelled) {
-          setOfferingBranchIds(undefined);
-        }
-      } finally {
-        if (!cancelled) {
-          setOfferingsLoading(false);
-        }
-      }
-    };
-
-    void loadOfferings();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const visibleBranches = useMemo(() => {
-    const available = offeringBranchIds
-      ? branches.filter((branch) => offeringBranchIds.has(branch.id))
-      : branches;
-
-    return available.slice(0, 3);
-  }, [branches, offeringBranchIds]);
-
-  const showLoading = isLoading || offeringsLoading;
-
-  if (!showLoading && !error && visibleBranches.length === 0) {
+  if (!isLoading && !error && visibleBranches.length === 0) {
     return null;
   }
 
   return (
-    <section className="w-full bg-slate-50/60 py-16">
+    <section className="w-full bg-[#F8FBFF] py-12 sm:py-14">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-3xl font-bold text-slate-900">
-              Available Branches
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2563EB]">
+              Our Branches
+            </p>
+            <h2 className="mt-2 text-3xl font-bold text-[#0B1F3A]">
+              {branches.length > 0
+                ? `${branches.length} Locations Across Bangalore`
+                : "Our Branches"}
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-slate-600">
               Learn at a location convenient for you.
             </p>
           </div>
-          <Button variant="outline" onClick={() => router.push("/branches")}>
-            View All
+          <Button
+            variant="outline"
+            onClick={() => router.push("/branches")}
+            className="rounded-xl"
+          >
+            View on Map →
           </Button>
         </div>
 
-        {showLoading ? (
-          <div className="grid gap-6 md:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={index} className="h-36 rounded-xl" />
+        {isLoading ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-56 rounded-2xl" />
             ))}
           </div>
         ) : null}
@@ -100,8 +61,8 @@ export function HomeBranchesSection() {
           />
         ) : null}
 
-        {!showLoading && !error ? (
-          <div className="grid gap-6 md:grid-cols-3">
+        {!isLoading && !error ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {visibleBranches.map((branch) => (
               <BranchCard key={branch.id} branch={branch} />
             ))}

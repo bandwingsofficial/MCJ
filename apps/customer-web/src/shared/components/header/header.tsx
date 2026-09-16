@@ -4,27 +4,26 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  User,
-  LogOut,
-  LayoutDashboard,
-  ChevronDown,
   BriefcaseBusiness,
+  ChevronDown,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Search,
+  User,
+  X,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { AUTH_ROUTES } from "@/src/features/auth/constants/auth.constants";
 import { useLogout } from "@/src/features/auth/hooks/use-logout";
 import { useStudentPortalNavigation } from "@/src/features/student/context/StudentPortalNavigationProvider";
+import { MCJ_NAV_ITEMS } from "@/src/shared/constants/site.constants";
+import { Button } from "@/src/shared/components/ui/button";
+import { cn } from "@/src/shared/lib/cn";
 
-const navItems = [
-  { name: "Home", href: "/" },
-  { name: "Courses", href: "/courses" },
-  { name: "Categories", href: "/categories" },
-  { name: "Branches", href: "/branches" },
-  { name: "My Learning", href: "/student/my-learning", protected: true },
-  { name: "Contact Us", href: "/contact" },
-];
+import { SiteSearchDialog } from "./site-search-dialog";
 
 function AccountDropdownItem({
   label,
@@ -38,9 +37,9 @@ function AccountDropdownItem({
   return (
     <button
       onClick={onClick}
-      className="group flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-gray-700 rounded-xl transition-all duration-200 hover:bg-orange-50 hover:text-orange-600 hover:pl-4"
+      className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-blue-50 hover:pl-4 hover:text-[#2563EB]"
     >
-      <Icon className="w-4 h-4 text-gray-400 transition-colors duration-200 group-hover:text-orange-500" />
+      <Icon className="h-4 w-4 text-gray-400 transition-colors group-hover:text-[#2563EB]" />
       {label}
     </button>
   );
@@ -54,13 +53,21 @@ export function Header() {
   const navigation = useStudentPortalNavigation();
 
   const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  if (!mounted) {
+    return null;
+  }
 
   const handleProtectedRoute = (href: string) => {
     if (!user) {
@@ -89,126 +96,112 @@ export function Header() {
     setOpen(false);
   };
 
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
+
   return (
-    <header className="w-full bg-white border-b border-gray-100 sticky top-0 z-50 backdrop-blur-md bg-white/95 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)]">
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <Link
-          href="/"
-          className="flex items-center gap-3 group transition-transform duration-200 active:scale-95"
-        >
-          <div className="relative flex items-center justify-center p-1 rounded-xl transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-4deg]">
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-orange-400/0 via-orange-400/0 to-blue-500/0 group-hover:from-orange-400/15 group-hover:to-blue-500/15 blur-md transition-all duration-300" />
+    <>
+      <header className="sticky top-0 z-50 w-full border-b border-slate-100 bg-white/95 backdrop-blur-md">
+        <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="flex shrink-0 items-center gap-3">
             <Image
               src="/logo/MCJ_logo.png"
-              alt="MCJ Logo"
+              alt="MCJ Academy"
               width={42}
               height={42}
               priority
-              style={{
-                width: "auto",
-                height: "auto",
-              }}
-              className="relative z-10 drop-shadow-sm"
+              className="h-10 w-auto"
             />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-gray-900 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text transition-all duration-300 group-hover:from-[#F5A623] group-hover:to-[#2563D9]">
-            MCJ Academy
-          </span>
-        </Link>
+            <span className="text-lg font-bold tracking-tight text-[#0B1F3A] sm:text-xl">
+              MCJ Academy
+            </span>
+          </Link>
 
-        <nav className="hidden md:flex items-center gap-8 h-full">
-          {navItems.map((item) => {
-            if (item.protected && !showMyCourses) {
-              return null;
-            }
-
-            const isActive = pathname === item.href;
-
-            return (
-              <button
-                key={item.name}
-                onClick={() =>
-                  item.protected
-                    ? handleProtectedRoute(item.href)
-                    : router.push(item.href)
-                }
-                className={`group relative flex items-center h-full text-[15px] font-medium tracking-wide transition-all duration-200 outline-none ${
-                  isActive
-                    ? "text-[#2563D9] font-semibold"
-                    : "text-gray-600 hover:text-[#2563D9]"
-                }`}
+          <nav className="hidden items-center gap-6 lg:flex">
+            {MCJ_NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "relative py-2 text-sm font-medium transition-colors",
+                  isActive(item.href)
+                    ? "text-[#2563EB] after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-[#2563EB]"
+                    : "text-slate-600 hover:text-[#0B1F3A]",
+                )}
               >
-                <span className="relative transition-transform duration-200 group-hover:-translate-y-0.5">
-                  {item.name}
-                </span>
-
-                {isActive && (
-                  <span className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-[#2563D9] to-[#1746A2] rounded-t-full shadow-[0_-2px_10px_rgba(37,99,217,0.35)]" />
+                {item.name}
+              </Link>
+            ))}
+            {showMyCourses ? (
+              <button
+                type="button"
+                onClick={() => handleProtectedRoute("/student/my-learning")}
+                className={cn(
+                  "relative py-2 text-sm font-medium transition-colors",
+                  isActive("/student/my-learning")
+                    ? "text-[#2563EB]"
+                    : "text-slate-600 hover:text-[#0B1F3A]",
                 )}
-
-                {!isActive && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[3px] bg-orange-500 rounded-t-full transition-all duration-300 ease-out group-hover:w-full shadow-[0_-2px_10px_rgba(249,115,22,0.35)]" />
-                )}
+              >
+                My Learning
               </button>
-            );
-          })}
-        </nav>
+            ) : null}
+          </nav>
 
-        <div className="flex items-center gap-4">
-          {!user && (
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
-              onClick={() => router.push("/login")}
-              className="relative overflow-hidden px-5 py-2.5 bg-gradient-to-r from-[#2563D9] to-[#1746A2] text-white rounded-xl text-sm font-semibold transition-all duration-300 shadow-sm hover:from-[#1E58C7] hover:to-[#123D94] hover:shadow-lg hover:shadow-[#2563D9]/20 active:scale-95"
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="hidden rounded-xl border border-slate-200 p-2.5 text-slate-600 transition hover:border-[#2563EB]/30 hover:text-[#2563EB] md:inline-flex"
+              aria-label="Search courses"
             >
-              <span className="relative z-10">Login</span>
+              <Search className="h-4 w-4" />
             </button>
-          )}
 
-          {user && (
-            <div className="flex items-center gap-4">
+            {!user ? (
               <button
-                onClick={() => router.push("/student/profile")}
-                className="group flex items-center gap-2 px-4 py-2.5 border border-gray-200 bg-gray-50/50 text-gray-700 font-semibold rounded-xl text-sm transition-all duration-300 hover:bg-white hover:border-orange-300 hover:text-orange-600 hover:shadow-md hover:shadow-orange-100 active:scale-95"
+                type="button"
+                onClick={() => router.push("/login")}
+                className="hidden rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:border-[#2563EB]/30 sm:inline-flex"
               >
-                <LayoutDashboard className="w-4 h-4 text-gray-500 transition-all duration-300 group-hover:text-orange-500 group-hover:rotate-[-8deg]" />
-                Student
+                Login
               </button>
+            ) : null}
 
+            <Link href="/contact" className="hidden sm:inline-flex">
+              <Button className="rounded-xl bg-[#0B1F3A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#102A56]">
+                Enquire Now →
+              </Button>
+            </Link>
+
+            {user ? (
               <div
-                className="relative py-2"
+                className="relative hidden py-2 lg:block"
                 onMouseEnter={() => setOpen(true)}
                 onMouseLeave={() => setOpen(false)}
               >
-                <button className="flex items-center gap-1.5 p-1.5 rounded-full border border-gray-200 bg-white transition-all duration-300 hover:border-blue-300 hover:shadow-md hover:shadow-blue-100 group">
-                  <div className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-50 text-[#2563D9] font-semibold text-sm transition-all duration-300 group-hover:bg-gradient-to-br group-hover:from-[#F5A623] group-hover:to-[#2563D9] group-hover:text-white group-hover:scale-105">
-                    <User className="w-4 h-4" />
+                <button className="group flex items-center gap-1.5 rounded-full border border-slate-200 bg-white p-1.5 transition hover:border-[#2563EB]/30">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-sm font-semibold text-[#2563EB]">
+                    <User className="h-4 w-4" />
                   </div>
-                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 group-hover:text-blue-500 ${open ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 text-slate-400 transition-transform",
+                      open && "rotate-180",
+                    )}
+                  />
                 </button>
 
-                {open && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-100 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="px-3 py-2.5 text-xs font-semibold tracking-wider text-gray-400 uppercase">
-                      Account Status
-                    </div>
-                    <div className="px-3 pb-3 pt-0.5 border-b border-gray-50">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Logged In
-                      </div>
-                    </div>
-
-                    <div className="mt-1.5 space-y-0.5">
+                {open ? (
+                  <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-100 bg-white p-2 shadow-xl">
+                    <div className="space-y-0.5">
                       {navigation.showProfile ? (
                         <AccountDropdownItem
                           label="Profile"
                           icon={User}
-                          onClick={() =>
-                            navigateFromDropdown("/student/profile")
-                          }
+                          onClick={() => navigateFromDropdown("/student/profile")}
                         />
                       ) : null}
-
                       {showMyApplications ? (
                         <AccountDropdownItem
                           label="My Applications"
@@ -218,7 +211,6 @@ export function Header() {
                           }
                         />
                       ) : null}
-
                       {showMyCourses ? (
                         <AccountDropdownItem
                           label="My Courses"
@@ -229,23 +221,86 @@ export function Header() {
                         />
                       ) : null}
                     </div>
-
-                    <div className="mt-1 pt-1 border-t border-gray-50">
+                    <div className="mt-1 border-t border-slate-100 pt-1">
                       <button
+                        type="button"
                         onClick={handleLogout}
-                        className="group flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium text-red-600 rounded-xl transition-all duration-200 hover:bg-red-50 hover:pl-4"
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50"
                       >
-                        <LogOut className="w-4 h-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
+                        <LogOut className="h-4 w-4" />
                         Logout
                       </button>
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
-            </div>
-          )}
+            ) : null}
+
+            <button
+              type="button"
+              className="rounded-xl border border-slate-200 p-2.5 text-slate-700 lg:hidden"
+              onClick={() => setMobileOpen((current) => !current)}
+              aria-label="Toggle menu"
+            >
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
-      </div>
-    </header>
+
+        {mobileOpen ? (
+          <div className="border-t border-slate-100 bg-white px-4 py-4 lg:hidden">
+            <div className="flex flex-col gap-1">
+              {MCJ_NAV_ITEMS.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "rounded-xl px-3 py-2.5 text-sm font-medium",
+                    isActive(item.href)
+                      ? "bg-blue-50 text-[#2563EB]"
+                      : "text-slate-700 hover:bg-slate-50",
+                  )}
+                >
+                  {item.name}
+                </Link>
+              ))}
+              {showMyCourses ? (
+                <button
+                  type="button"
+                  onClick={() => handleProtectedRoute("/student/my-learning")}
+                  className="rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  My Learning
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setSearchOpen(true)}
+                className="rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Search Courses
+              </button>
+              {!user ? (
+                <button
+                  type="button"
+                  onClick={() => router.push("/login")}
+                  className="rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Login
+                </button>
+              ) : null}
+              <Link
+                href="/contact"
+                className="mt-2 inline-flex justify-center rounded-xl bg-[#0B1F3A] px-4 py-2.5 text-sm font-semibold text-white"
+              >
+                Enquire Now →
+              </Link>
+            </div>
+          </div>
+        ) : null}
+      </header>
+
+      <SiteSearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
+    </>
   );
 }

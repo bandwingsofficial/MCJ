@@ -21,6 +21,11 @@ export default function CoursesPage() {
   useEffect(() => {
     const categoryParam = searchParams.get("category");
     const branchParam = searchParams.get("branch");
+    const searchParam = searchParams.get("search");
+
+    if (searchParam) {
+      setSearch(searchParam);
+    }
 
     if (categoryParam && categories.length > 0) {
       const match = categories.find(

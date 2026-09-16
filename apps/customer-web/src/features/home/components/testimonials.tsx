@@ -1,6 +1,7 @@
 "use client";
 
-import { Star, User } from "lucide-react";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, Star, User } from "lucide-react";
 
 const testimonials = [
   {
@@ -36,54 +37,55 @@ const testimonials = [
 ];
 
 export function TestimonialsSection() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const visible = testimonials.slice(activeIndex, activeIndex + 3);
+  const paddedVisible =
+    visible.length >= 3
+      ? visible
+      : [...visible, ...testimonials].slice(0, 3);
+
   return (
-    <section id="testimonials" className="w-full py-10 bg-white relative overflow-hidden">
-      {/* CSS Injection for Seamless Marquee Infinite Scrolling and Pause-on-Hover */}
-      <style jsx global>{`
-        @keyframes marquee {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-        .animate-marquee {
-          animation: marquee 45s linear infinite;
-        }
-        .animate-marquee:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
-
-      {/* Visual Edge Fades - Softens the entry/exit points of the infinite slider */}
-      <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-white to-transparent pointer-events-none z-10" />
-      <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
-
+    <section id="testimonials" className="relative w-full overflow-hidden bg-white py-12">
       <div className="w-full">
         {/* HEADER SECTION */}
-        <div className="text-center max-w-[680px] mx-auto mb-16 px-6">
-          <h2 className="font-serif text-3xl md:text-4xl font-bold text-[#0f2044] leading-tight">
-            Student <span className="text-[#b8922a]">Success Stories</span>
-          </h2>
-          <p className="mt-4 text-[#5a6478] text-[15px] leading-[1.7] font-light">
-            Hear from our students who transformed their careers with MCJ Institute's practical training and placement support.
-          </p>
+        <div className="mb-8 flex items-end justify-between gap-4 px-6">
+          <div className="text-center md:text-left">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2563EB]">
+              Testimonials
+            </p>
+            <h2 className="font-serif text-3xl font-bold text-[#0B1F3A] md:text-4xl">
+              Real Learners. <span className="text-[#2563EB]">Real Success.</span>
+            </h2>
+          </div>
+          <div className="hidden gap-2 sm:flex">
+            <button
+              type="button"
+              className="rounded-full border border-slate-200 p-2"
+              onClick={() =>
+                setActiveIndex(
+                  (current) =>
+                    (current - 1 + testimonials.length) % testimonials.length,
+                )
+              }
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className="rounded-full border border-slate-200 p-2"
+              onClick={() =>
+                setActiveIndex((current) => (current + 1) % testimonials.length)
+              }
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
-        {/* INFINITE SCROLLING CONTAINER TRACK */}
-        <div className="flex overflow-x-hidden w-full py-4 select-none">
-          {/* Dual Render Loop Stream prevents whitespace gaps when data cycles */}
-          <div className="flex gap-[28px] whitespace-nowrap animate-marquee px-4 w-max">
-            {/* Array Pass 1 */}
-            {testimonials.map((t, i) => (
-              <TestimonialCard key={`loop1-${i}`} t={t} />
-            ))}
-            {/* Array Pass 2 (Duplicates for endless wrapping sequence logic) */}
-            {testimonials.map((t, i) => (
-              <TestimonialCard key={`loop2-${i}`} t={t} />
-            ))}
-          </div>
+        <div className="mx-auto grid max-w-7xl gap-5 px-6 md:grid-cols-3">
+          {paddedVisible.map((t, i) => (
+            <TestimonialCard key={`${t.name}-${i}`} t={t} />
+          ))}
         </div>
       </div>
     </section>
@@ -93,7 +95,7 @@ export function TestimonialsSection() {
 // Extracted Simple Card UI Layer with SVG User Profile Icon Fallbacks
 function TestimonialCard({ t }: { t: (typeof testimonials)[0] }) {
   return (
-    <div className="inline-flex flex-col bg-[#fdf8ef] border border-[#e8e0cf] rounded-[16px] px-5 py-[22px] w-[310px] md:w-[350px] h-[310px] justify-between shadow-[0_4px_12px_rgba(15,32,68,0.02)] whitespace-normal transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-[0_16px_48px_rgba(15,32,68,0.08)] hover:-translate-y-1.5 hover:scale-[1.01] hover:border-[#d4a84b] group">
+    <div className="flex h-full flex-col rounded-2xl border border-slate-100 bg-[#F8FBFF] px-5 py-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
       <div className="flex flex-col min-h-0">
         {/* RATING STARS BLOCK */}
         <div className="flex gap-1 mb-4 flex-shrink-0">

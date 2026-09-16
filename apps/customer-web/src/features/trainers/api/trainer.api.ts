@@ -11,11 +11,21 @@ export interface TrainerListResult {
   total: number;
 }
 
+export interface TrainerFilters {
+  branchId?: string;
+  search?: string;
+  isFeatured?: boolean;
+  skip?: number;
+  take?: number;
+}
+
 export const trainerApi = {
-  getTrainers() {
+  getTrainers(filters?: TrainerFilters) {
     return apiClient.get<
       ApiResponse<TrainerListResult>
-    >("/trainers");
+    >("/trainers", {
+      params: filters,
+    });
   },
 
   getTrainer(

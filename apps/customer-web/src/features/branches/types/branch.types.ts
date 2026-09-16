@@ -4,9 +4,17 @@ export interface PublicBranch {
   id: string;
   branchName: string;
   branchCode: string;
+  email?: string | null;
+  phone?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
   city: string | null;
   state: string | null;
   country: string | null;
+  postalCode?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  description?: string | null;
   status: string;
 }
 
@@ -21,6 +29,4 @@ export interface GetBranchesResponse {
   };
 }
 
-export type GetBranchResponse = ApiResponse<
-  PublicBranch & { description?: string | null }
->;
+export type GetBranchResponse = ApiResponse<PublicBranch>;

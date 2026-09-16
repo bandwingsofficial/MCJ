@@ -1,45 +1,28 @@
 "use client";
 
-import { HomeCourses } from "@/src/features/courses/components/home-courses";
+import { FeatureStripSection } from "./components/feature-strip";
 import {
-  HeroSection,
-  WhySection,
-  VisionSection,
-  TestimonialsSection,
-} from "./components";
+  HomeFinalCtaSection,
+  HomeStatsSection,
+  HomeWhyMcjSection,
+} from "./components/home-marketing-sections";
+import { HeroSection } from "./components/hero";
+import { TestimonialsSection } from "./components/testimonials";
 
-import { CTASection } from "./components/cta";
-import { PlacementsSection } from "./components/PlacementsSection";
-
-import { HomeCategoriesSection } from "@/src/features/categories/components/home-categories-section";
+import { HomeCourses } from "@/src/features/courses/components/home-courses";
 import { HomeBranchesSection } from "@/src/features/branches/components/home-branches-section";
-import { useJobs } from "../jobs";
-import { HomeJobs } from "../jobs/components/home-jobs";
 
 export function HomePage() {
-  const { jobs } = useJobs();
-
   return (
     <main className="m-0 w-full p-0">
       <HeroSection />
-
-      <HomeCategoriesSection />
-
+      <FeatureStripSection />
       <HomeCourses />
-
       <HomeBranchesSection />
-
-      <PlacementsSection />
-
-      <VisionSection />
-
-      <WhySection />
-
-      <HomeJobs jobs={jobs} />
-
+      <HomeWhyMcjSection />
+      <HomeStatsSection />
       <TestimonialsSection />
-
-      <CTASection />
+      <HomeFinalCtaSection />
     </main>
   );
 }

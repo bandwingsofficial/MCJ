@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { GetBranchHandler } from '../../application/get-branch/get-branch.handler';
@@ -6,6 +6,42 @@ import { GetBranchQuery } from '../../application/get-branch/get-branch.query';
 import { ListBranchesHandler } from '../../application/list-branches/list-branches.handler';
 import { ListBranchesQuery } from '../../application/list-branches/list-branches.query';
 import { BranchStatus } from '../../domain/enums/branch-status.enum';
+
+function mapPublicBranch(branch: {
+  id: string;
+  branchName: string;
+  branchCode: string;
+  email?: string | null;
+  phone?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  postalCode?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  description?: string | null;
+  status: BranchStatus;
+}) {
+  return {
+    id: branch.id,
+    branchName: branch.branchName,
+    branchCode: branch.branchCode,
+    email: branch.email ?? null,
+    phone: branch.phone ?? null,
+    addressLine1: branch.addressLine1 ?? null,
+    addressLine2: branch.addressLine2 ?? null,
+    city: branch.city,
+    state: branch.state,
+    country: branch.country,
+    postalCode: branch.postalCode ?? null,
+    latitude: branch.latitude ?? null,
+    longitude: branch.longitude ?? null,
+    description: branch.description ?? null,
+    status: branch.status,
+  };
+}
 
 @ApiTags('Branches')
 @Controller('branches')
@@ -41,15 +77,7 @@ export class PublicBranchController {
     return {
       success: true,
       message: 'Branches fetched successfully',
-      data: result.items.map((branch) => ({
-        id: branch.id,
-        branchName: branch.branchName,
-        branchCode: branch.branchCode,
-        city: branch.city,
-        state: branch.state,
-        country: branch.country,
-        status: branch.status,
-      })),
+      data: result.items.map((branch) => mapPublicBranch(branch)),
       meta: {
         total: result.count,
         skip: result.meta.skip,
@@ -64,19 +92,17 @@ export class PublicBranchController {
       new GetBranchQuery(id),
     );
 
+    if (
+      result.status !== BranchStatus.ACTIVE ||
+      result.deletedAt !== null
+    ) {
+      throw new NotFoundException('Branch not found');
+    }
+
     return {
       success: true,
       message: 'Branch fetched successfully',
-      data: {
-        id: result.id,
-        branchName: result.branchName,
-        branchCode: result.branchCode,
-        city: result.city,
-        state: result.state,
-        country: result.country,
-        description: result.description,
-        status: result.status,
-      },
+      data: mapPublicBranch(result),
     };
   }
 }

@@ -51,6 +51,22 @@ export interface BatchTrainer {
   employeeCode: string;
 }
 
+export interface BatchTiming {
+  id: string;
+  batchId: string;
+  name: string;
+  mode: BatchMode;
+  daysOfWeek: DayOfWeek[];
+  startDate: string;
+  endDate: string | null;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  enrolledCount: number;
+  status: BatchStatus;
+  isActive: boolean;
+}
+
 export interface Batch {
   id: string;
 
@@ -85,6 +101,10 @@ export interface Batch {
   enrolledCount: number;
 
   mode: BatchMode;
+
+  timings?: BatchTiming[];
+
+  timingsCount?: number;
 
   classroom: string | null;
 

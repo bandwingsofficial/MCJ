@@ -10,11 +10,11 @@ import type {
 } from "@/src/features/trainers/types/trainer.types";
 
 export const trainerService = {
-  async getTrainers(): Promise<
+  async getTrainers(filters?: Parameters<typeof trainerApi.getTrainers>[0]): Promise<
     Trainer[]
   > {
     const response =
-      await trainerApi.getTrainers();
+      await trainerApi.getTrainers(filters);
 
     return normalizeTrainerList(response.data.data);
   },
