@@ -12,4 +12,8 @@ Object.entries(requiredEnv).forEach(([key, value]) => {
 
 export const env = {
   API_BASE_URL: requiredEnv.API_BASE_URL,
+  CUSTOMER_WEB_URL:
+    process.env.NEXT_PUBLIC_CUSTOMER_WEB_URL ?? "http://localhost:3000",
+  STUDENT_WEB_URL:
+    process.env.NEXT_PUBLIC_STUDENT_WEB_URL ?? "http://localhost:3002",
 } as const;

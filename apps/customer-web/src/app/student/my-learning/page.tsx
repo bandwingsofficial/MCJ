@@ -1,5 +1,5 @@
-import { StudentCoursesPage } from "@/src/features/student-course/pages/StudentCoursesPage";
+import { MyLearningRedirectPage } from "@/src/features/student-course/pages/my-learning-redirect-page";
 
 export default function Page() {
-  return <StudentCoursesPage />;
+  return <MyLearningRedirectPage />;
 }

@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* REMOVE THIS ❌ (CAUSE OF ERROR) */
+/*
+body {
+  @apply bg-white text-gray-900;
+}
+*/
