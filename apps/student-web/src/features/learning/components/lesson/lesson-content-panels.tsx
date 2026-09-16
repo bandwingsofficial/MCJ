@@ -98,18 +98,25 @@ export function LessonVideoPlayer({
 interface LessonResourcesListProps {
   resources: LessonResourceDto[];
   courseId: string;
+  hideEmptyState?: boolean;
 }
 
 interface LessonTextContentProps {
   description: string | null;
   contentType: string;
+  hideEmptyState?: boolean;
 }
 
 export function LessonTextContent({
   description,
   contentType,
+  hideEmptyState = false,
 }: LessonTextContentProps) {
   if (!description?.trim()) {
+    if (hideEmptyState) {
+      return null;
+    }
+
     return (
       <Card className="rounded-xl border border-slate-200 p-8">
         <EmptyState
@@ -132,8 +139,13 @@ export function LessonTextContent({
 export function LessonResourcesList({
   resources,
   courseId,
+  hideEmptyState = false,
 }: LessonResourcesListProps) {
   if (resources.length === 0) {
+    if (hideEmptyState) {
+      return null;
+    }
+
     return (
       <EmptyState
         title="No resources"

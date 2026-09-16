@@ -5,6 +5,12 @@ import type {
   ModuleTreeDto,
 } from "@/src/features/learning/types/learning.types";
 
+import {
+  flattenOrderedLessons,
+  findModuleForLessonOrdered,
+  sortModules,
+} from "@/src/features/learning/utils/course-hierarchy.utils";
+
 export type ProgressMap = Map<string, LessonProgressItemDto>;
 
 export type ModuleCompletionState =
@@ -127,14 +133,7 @@ export function getCourseProgressStats(
 }
 
 export function flattenLessons(modules: ModuleTreeDto[]): LessonTreeDto[] {
-  return modules
-    .slice()
-    .sort((a, b) => a.displayOrder - b.displayOrder)
-    .flatMap((module) =>
-      module.lessons
-        .slice()
-        .sort((a, b) => a.displayOrder - b.displayOrder),
-    );
+  return flattenOrderedLessons(modules);
 }
 
 export function findContinueLesson(
@@ -167,17 +166,19 @@ export function findModuleForLesson(
   modules: ModuleTreeDto[],
   lessonId: string,
 ): ModuleTreeDto | null {
-  return (
-    modules.find((module) =>
-      module.lessons.some((lesson) => lesson.id === lessonId),
-    ) ?? null
-  );
+  return findModuleForLessonOrdered(modules, lessonId);
 }
 
+export function getOrderedModules(modules: ModuleTreeDto[]): ModuleTreeDto[] {
+  return sortModules(modules);
+}
+
+/** @deprecated Use formatModuleOrdinal with getModuleOrdinal instead */
 export function formatModuleLabel(displayOrder: number): string {
-  return `Module ${String(displayOrder + 1).padStart(2, "0")}`;
+  return `Module ${String(displayOrder).padStart(2, "0")}`;
 }
 
+/** @deprecated Use formatLessonOrdinal with getLessonOrdinal instead */
 export function formatLessonLabel(displayOrder: number): string {
-  return `Lesson ${String(displayOrder + 1).padStart(2, "0")}`;
+  return `Lesson ${String(displayOrder).padStart(2, "0")}`;
 }

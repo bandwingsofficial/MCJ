@@ -6,27 +6,28 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  ClipboardList,
 } from "lucide-react";
 
 import {
-  LessonResourcesList,
-  LessonTextContent,
-  LessonVideoPlayer,
-} from "@/src/features/learning/components/lesson/lesson-content-panels";
+  QuizSection,
+  RecordedVideoCard,
+  ResourcesSection,
+} from "@/src/features/learning/components/lesson/lesson-content-cards";
+import { LessonTextContent } from "@/src/features/learning/components/lesson/lesson-content-panels";
 import { LessonTypeIcon } from "@/src/features/learning/components/syllabus/lesson-type-icon";
-import {
-  useMarkLessonComplete,
-  useUpdateWatchedSeconds,
-} from "@/src/features/learning/hooks/use-learning-mutations";
+import { useMarkLessonComplete } from "@/src/features/learning/hooks/use-learning-mutations";
 import {
   useStudentCourse,
   useStudentLesson,
 } from "@/src/features/learning/hooks/use-learning-queries";
 import {
+  formatLessonOrdinal,
+  formatModuleOrdinal,
+  getLessonOrdinal,
+  getModuleOrdinal,
+} from "@/src/features/learning/utils/course-hierarchy.utils";
+import {
   findModuleForLesson,
-  formatLessonLabel,
-  formatModuleLabel,
   getLessonNavigation,
 } from "@/src/features/learning/utils/progress.utils";
 import {
@@ -35,8 +36,6 @@ import {
 } from "@/src/features/learning/utils/routes.utils";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
-import { Card } from "@/src/shared/components/ui/card";
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
@@ -52,7 +51,6 @@ export function LessonLearningPage({
   const lessonQuery = useStudentLesson(courseId, lessonId);
   const courseQuery = useStudentCourse(courseId);
   const completeMutation = useMarkLessonComplete(courseId, lessonId);
-  const watchedMutation = useUpdateWatchedSeconds(courseId, lessonId);
 
   const navigation = useMemo(() => {
     const modules = courseQuery.data?.course.modules ?? [];
@@ -63,6 +61,25 @@ export function LessonLearningPage({
     const modules = courseQuery.data?.course.modules ?? [];
     return findModuleForLesson(modules, lessonId);
   }, [courseQuery.data?.course.modules, lessonId]);
+
+  const moduleLabel = useMemo(() => {
+    const modules = courseQuery.data?.course.modules ?? [];
+    if (!module) {
+      return null;
+    }
+
+    const ordinal = getModuleOrdinal(modules, module.id);
+    return ordinal ? formatModuleOrdinal(ordinal) : null;
+  }, [courseQuery.data?.course.modules, module]);
+
+  const lessonLabel = useMemo(() => {
+    if (!module) {
+      return null;
+    }
+
+    const ordinal = getLessonOrdinal(module, lessonId);
+    return ordinal ? formatLessonOrdinal(ordinal) : null;
+  }, [module, lessonId]);
 
   if (lessonQuery.isLoading || courseQuery.isLoading) {
     return <Skeleton className="h-[520px] rounded-xl" />;
@@ -83,6 +100,8 @@ export function LessonLearningPage({
   const { lesson, progress } = lessonQuery.data;
   const isCompleted = progress?.isCompleted ?? false;
   const hasVideo = Boolean(lesson.videoUrl);
+  const hasResources = lesson.resources.length > 0;
+  const hasQuiz = Boolean(lesson.quiz);
   const courseTitle = courseQuery.data?.course.title ?? "Course";
 
   return (
@@ -99,20 +118,22 @@ export function LessonLearningPage({
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
           <div className="min-w-0">
             <p className="text-xs font-medium text-slate-500">{courseTitle}</p>
-            {module ? (
+            {module && moduleLabel ? (
               <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#2563EB]">
-                {formatModuleLabel(module.displayOrder)} · {module.title}
+                {moduleLabel} · {module.title}
               </p>
             ) : null}
             <div className="mt-2 flex items-center gap-2">
               <LessonTypeIcon
                 contentType={lesson.contentType}
                 hasVideo={hasVideo}
-                hasQuiz={Boolean(lesson.quiz)}
+                hasQuiz={hasQuiz}
               />
-              <p className="text-xs uppercase tracking-[0.12em] text-slate-400">
-                {formatLessonLabel(lesson.displayOrder)} · {lesson.contentType}
-              </p>
+              {lessonLabel ? (
+                <p className="text-xs uppercase tracking-[0.12em] text-slate-400">
+                  {lessonLabel} · {lesson.contentType}
+                </p>
+              ) : null}
             </div>
             <h1 className="mt-2 text-2xl font-bold text-[#0B1F3A]">
               {lesson.title}
@@ -124,72 +145,33 @@ export function LessonLearningPage({
         </div>
       </div>
 
-      {hasVideo ? (
-        <LessonVideoPlayer
-          videoUrl={lesson.videoUrl}
-          watchedSeconds={progress?.watchedSeconds ?? 0}
-          onTimeUpdate={(seconds) => {
-            if (seconds > 0 && seconds % 10 === 0) {
-              watchedMutation.mutate(seconds);
-            }
-          }}
-        />
-      ) : (
-        <LessonTextContent
-          description={lesson.description}
-          contentType={lesson.contentType}
-        />
+      <LessonTextContent
+        description={lesson.description}
+        contentType={lesson.contentType}
+        hideEmptyState
+      />
+
+      {(hasVideo || hasResources || hasQuiz) && (
+        <div className="space-y-5">
+          {hasVideo ? (
+            <RecordedVideoCard
+              courseId={courseId}
+              lessonId={lessonId}
+              duration={lesson.duration}
+              contentType={lesson.contentType}
+            />
+          ) : null}
+
+          {hasResources ? (
+            <ResourcesSection
+              resources={lesson.resources}
+              courseId={courseId}
+            />
+          ) : null}
+
+          {hasQuiz ? <QuizSection quiz={lesson.quiz} /> : null}
+        </div>
       )}
-
-      {hasVideo && lesson.description ? (
-        <Card className="rounded-xl border border-slate-200 p-5">
-          <h2 className="text-base font-semibold text-[#0B1F3A]">
-            About this topic
-          </h2>
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
-            {lesson.description}
-          </p>
-        </Card>
-      ) : null}
-
-      <section className="space-y-3">
-        <h2 className="text-base font-semibold text-[#0B1F3A]">Resources</h2>
-        <LessonResourcesList resources={lesson.resources} courseId={courseId} />
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-base font-semibold text-[#0B1F3A]">Quiz / Practice</h2>
-        {lesson.quiz ? (
-          <Card className="rounded-xl border border-slate-200 p-5">
-            <div className="flex items-start gap-3">
-              <div className="rounded-lg bg-violet-50 p-2 text-violet-600">
-                <ClipboardList className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-[#0B1F3A]">{lesson.quiz.title}</h3>
-                <p className="mt-1 text-sm text-slate-600">
-                  Status: {lesson.quiz.status}
-                  {lesson.quiz.passingScore != null
-                    ? ` · Passing score: ${lesson.quiz.passingScore}%`
-                    : ""}
-                  {lesson.quiz.timeLimitMinutes
-                    ? ` · Time limit: ${lesson.quiz.timeLimitMinutes} min`
-                    : ""}
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  Quiz attempts are not available in the LMS yet. Contact your
-                  trainer if this assessment is required.
-                </p>
-              </div>
-            </div>
-          </Card>
-        ) : (
-          <EmptyState
-            title="No quiz for this topic"
-            description="Quizzes attached to this lesson will appear here."
-          />
-        )}
-      </section>
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">

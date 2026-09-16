@@ -25,3 +25,10 @@ export function getLessonLearningPath(
 ): string {
   return `/student/learning/${courseId}/lessons/${lessonId}`;
 }
+
+export function getLessonRecordingPath(
+  courseId: string,
+  lessonId: string,
+): string {
+  return `/student/learning/${courseId}/lessons/${lessonId}/recording`;
+}
