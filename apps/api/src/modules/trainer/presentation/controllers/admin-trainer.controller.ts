@@ -20,12 +20,6 @@ import type { AuthUser } from '@common/decorators/current-user.decorator';
 import { SuperAdminGuard } from '@common/guards/super-admin.guard';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 
-import { AssignTrainerCoursesCommand } from '../../application/assign-trainer-courses/assign-trainer-courses.command';
-import { AssignTrainerCoursesHandler } from '../../application/assign-trainer-courses/assign-trainer-courses.handler';
-import { AssignTrainerCourseCommand } from '../../application/assign-trainer-course/assign-trainer-course.command';
-import { AssignTrainerCourseHandler } from '../../application/assign-trainer-course/assign-trainer-course.handler';
-import { UnassignTrainerCourseCommand } from '../../application/unassign-trainer-course/unassign-trainer-course.command';
-import { UnassignTrainerCourseHandler } from '../../application/unassign-trainer-course/unassign-trainer-course.handler';
 import { BulkDeleteTrainersCommand } from '../../application/bulk-delete-trainers/bulk-delete-trainers.command';
 import { BulkDeleteTrainersHandler } from '../../application/bulk-delete-trainers/bulk-delete-trainers.handler';
 import { BulkPermanentDeleteTrainersCommand } from '../../application/bulk-permanent-delete-trainers/bulk-permanent-delete-trainers.command';
@@ -55,7 +49,6 @@ import { UpdateTrainerHandler } from '../../application/update-trainer/update-tr
 import { UpdateTrainerStatusCommand } from '../../application/update-trainer-status/update-trainer-status.command';
 import { UpdateTrainerStatusHandler } from '../../application/update-trainer-status/update-trainer-status.handler';
 import { TrainerStatus } from '../../domain/enums/trainer-status.enum';
-import { AssignTrainerCoursesDto } from '../dtos/assign-trainer-courses.dto';
 import { BulkTrainerIdsDto } from '../dtos/bulk-trainer-ids.dto';
 import { BulkUpdateTrainerStatusDto } from '../dtos/bulk-update-trainer-status.dto';
 import { CreateTrainerDto } from '../dtos/create-trainer.dto';
@@ -77,9 +70,6 @@ export class AdminTrainerController {
     private readonly restoreTrainerHandler: RestoreTrainerHandler,
     private readonly permanentDeleteTrainerHandler: PermanentDeleteTrainerHandler,
     private readonly updateTrainerStatusHandler: UpdateTrainerStatusHandler,
-    private readonly assignTrainerCoursesHandler: AssignTrainerCoursesHandler,
-    private readonly assignTrainerCourseHandler: AssignTrainerCourseHandler,
-    private readonly unassignTrainerCourseHandler: UnassignTrainerCourseHandler,
     private readonly suggestTrainerCodeHandler: SuggestTrainerCodeHandler,
     private readonly reorderTrainersHandler: ReorderTrainersHandler,
     private readonly bulkUpdateTrainerStatusHandler: BulkUpdateTrainerStatusHandler,
@@ -272,39 +262,6 @@ export class AdminTrainerController {
     };
   }
 
-  @Post(':id/courses/:courseId')
-  async assignCourse(
-    @Param('id') id: string,
-    @Param('courseId') courseId: string,
-    @CurrentUser() user: AuthUser,
-  ) {
-    const result = await this.assignTrainerCourseHandler.execute(
-      new AssignTrainerCourseCommand(id, courseId, user?.sub),
-    );
-
-    return {
-      success: true,
-      message: 'Trainer assigned to course successfully',
-      data: result,
-    };
-  }
-
-  @Delete(':id/courses/:courseId')
-  async unassignCourse(
-    @Param('id') id: string,
-    @Param('courseId') courseId: string,
-  ) {
-    const result = await this.unassignTrainerCourseHandler.execute(
-      new UnassignTrainerCourseCommand(id, courseId),
-    );
-
-    return {
-      success: true,
-      message: 'Trainer unassigned from course successfully',
-      data: result,
-    };
-  }
-
   @Get(':id')
   async get(@Param('id') id: string) {
     const result = await this.getTrainerHandler.execute(
@@ -433,28 +390,6 @@ export class AdminTrainerController {
     return {
       success: true,
       message: 'Trainer deactivated successfully',
-      data: result,
-    };
-  }
-
-  @Patch(':id/assign-courses')
-  async assignCourses(
-    @Param('id') id: string,
-    @Body() dto: AssignTrainerCoursesDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    const result =
-      await this.assignTrainerCoursesHandler.execute(
-        new AssignTrainerCoursesCommand(
-          id,
-          dto.courseIds,
-          user?.sub,
-        ),
-      );
-
-    return {
-      success: true,
-      message: 'Trainer courses updated successfully',
       data: result,
     };
   }

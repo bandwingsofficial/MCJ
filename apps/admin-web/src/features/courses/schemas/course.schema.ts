@@ -65,8 +65,6 @@ const courseFields = {
     .array(z.enum(COURSE_QUALIFICATIONS))
     .default([]),
 
-  trainerIds: z.array(z.string().uuid()).default([]),
-
   language: z
     .string()
     .trim()

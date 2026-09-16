@@ -341,7 +341,11 @@ export class PrismaTrainerRepository implements TrainerRepository {
     }
 
     if (filters.branchId !== undefined) {
-      where.branchId = filters.branchId;
+      where.branchAssignments = {
+        some: {
+          branchId: filters.branchId,
+        },
+      };
     }
 
     if (filters.courseId) {

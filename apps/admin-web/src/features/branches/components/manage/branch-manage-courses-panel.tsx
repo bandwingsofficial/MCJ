@@ -25,16 +25,10 @@ import {
   BRANCH_TABLE_CARD_CLASS,
 } from "@/src/features/branches/components/manage/branch-manage-layout.constants";
 import { branchService } from "@/src/features/branches/services/branch.service";
-import { BRANCH_COURSE_TRAINER_UNASSIGNED_LABEL } from "@/src/features/branches/utils/branch-display.utils";
 import { courseService } from "@/src/features/courses/services/course.service";
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
 import { CourseStatusBadge } from "@/src/features/courses/components/course-status-badge";
 import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
-import { trainerService } from "@/src/features/trainers/services/trainer.service";
-
-interface CourseRow extends CourseListItem {
-  trainerLabel: string;
-}
 
 interface Props {
   branchId: string;
@@ -42,18 +36,6 @@ interface Props {
   assignOnMount?: boolean;
   onAssignOnMountHandled?: () => void;
   onSummaryRefresh?: () => Promise<void>;
-}
-
-function formatTrainerLabel(
-  trainers: Array<{ firstName?: string | null; lastName?: string | null }>,
-): string {
-  const names = trainers
-    .map((trainer) =>
-      [trainer.firstName, trainer.lastName].filter(Boolean).join(" ").trim(),
-    )
-    .filter(Boolean);
-
-  return names.join(", ");
 }
 
 export function BranchManageCoursesPanel({
@@ -64,7 +46,7 @@ export function BranchManageCoursesPanel({
   onSummaryRefresh,
 }: Props) {
   const [search, setSearch] = useState("");
-  const [courses, setCourses] = useState<CourseRow[]>([]);
+  const [courses, setCourses] = useState<CourseListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [assignOpen, setAssignOpen] = useState(false);
@@ -93,28 +75,7 @@ export function BranchManageCoursesPanel({
       pageSize: 100,
     });
 
-    const items = (courseResponse.data.items ?? []).filter(
-      (item) => !item.isDeleted,
-    );
-
-    return Promise.all(
-      items.map(async (course) => {
-        try {
-          const trainers = await trainerService.getTrainersForCourse(course.id);
-          return {
-            ...course,
-            trainerLabel:
-              formatTrainerLabel(trainers) ||
-              BRANCH_COURSE_TRAINER_UNASSIGNED_LABEL,
-          };
-        } catch {
-          return {
-            ...course,
-            trainerLabel: BRANCH_COURSE_TRAINER_UNASSIGNED_LABEL,
-          };
-        }
-      }),
-    );
+    return (courseResponse.data.items ?? []).filter((item) => !item.isDeleted);
   }, [branchId, search]);
 
   const loadData = useCallback(async () => {
@@ -271,7 +232,6 @@ export function BranchManageCoursesPanel({
               { key: "course", label: "Course" },
               { key: "code", label: "Course Code", className: "w-[9rem]" },
               { key: "category", label: "Category" },
-              { key: "trainer", label: "Trainer" },
               { key: "status", label: "Status", className: "w-[8rem]" },
               {
                 key: "actions",
@@ -301,11 +261,6 @@ export function BranchManageCoursesPanel({
                 <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
                   <span className="block truncate">
                     {getCourseCategoryDisplayName(course)}
-                  </span>
-                </td>
-                <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
-                  <span className="block truncate" title={course.trainerLabel}>
-                    {course.trainerLabel}
                   </span>
                 </td>
                 <td className={TABLE_CELL_CLASS}>

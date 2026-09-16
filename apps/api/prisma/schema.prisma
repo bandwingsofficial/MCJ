@@ -154,6 +154,7 @@ model Branch {
   branchUsers    BranchUser[]
   branchCategories BranchCategory[]
   courseBranches CourseBranch[]
+  branchTrainers BranchTrainer[]
   enrollments    Enrollment[]
   students       Student[]
   trainers       Trainer[]
@@ -611,6 +612,7 @@ model Trainer {
   branch             Branch?         @relation(fields: [branchId], references: [id])
   profileImageUpload Upload?         @relation("TrainerProfileImage", fields: [profileImageFileId], references: [id], onDelete: SetNull)
   courses            TrainerCourse[]
+  branchAssignments  BranchTrainer[]
 
   @@index([firstName])
   @@index([lastName])
@@ -639,6 +641,20 @@ model TrainerCourse {
   @@unique([trainerId, courseId])
   @@index([trainerId])
   @@index([courseId])
+}
+
+model BranchTrainer {
+  id        String   @id @default(uuid())
+  branchId  String
+  trainerId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  trainer   Trainer  @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, trainerId])
+  @@index([branchId])
+  @@index([trainerId])
 }
 
 model Batch {

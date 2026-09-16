@@ -1,4 +1,3 @@
-import { getCourses } from "@/src/features/courses/services/course.service";
 import { trainerService } from "@/src/features/trainers/services/trainer.service";
 import type { Trainer } from "@/src/features/trainers/types/trainer.types";
 
@@ -13,35 +12,26 @@ export async function loadBranchAssignedTrainers(
     return [];
   }
 
-  const courses = await getCourses({ branchId });
   const trainerMap = new Map<string, Trainer>();
+  let skip = 0;
+  const take = 100;
 
-  await Promise.all(
-    courses.map(async (course) => {
-      try {
-        const courseTrainers = await trainerService.getTrainers({
-          courseId: course.id,
-          take: 100,
-        });
-        courseTrainers.filter(isActiveTrainer).forEach((trainer) => {
-          trainerMap.set(trainer.id, trainer);
-        });
-      } catch {
-        // Ignore per-course lookup failures.
-      }
-    }),
-  );
-
-  try {
-    const branchTrainers = await trainerService.getTrainers({
+  while (true) {
+    const trainers = await trainerService.getTrainers({
       branchId,
-      take: 100,
+      take,
+      skip,
     });
-    branchTrainers.filter(isActiveTrainer).forEach((trainer) => {
+
+    trainers.filter(isActiveTrainer).forEach((trainer) => {
       trainerMap.set(trainer.id, trainer);
     });
-  } catch {
-    // Ignore branch lookup failure if course trainers resolved.
+
+    if (trainers.length < take) {
+      break;
+    }
+
+    skip += take;
   }
 
   return Array.from(trainerMap.values()).sort((left, right) =>

@@ -201,6 +201,38 @@ export const branchApi = {
     return response.data;
   },
 
+  async assignTrainers(
+    branchId: string,
+    trainerIds: string[],
+  ) {
+    const response = await apiClient.post<
+      ApiResponse<{
+        branchId: string;
+        assignedCount: number;
+        trainerIds: string[];
+      }>
+    >(`/admin/branches/${branchId}/trainers/assign`, {
+      trainerIds,
+    });
+
+    return response.data;
+  },
+
+  async unassignTrainer(
+    branchId: string,
+    trainerId: string,
+  ) {
+    const response = await apiClient.delete<
+      ApiResponse<{
+        branchId: string;
+        trainerId: string;
+        unassigned: boolean;
+      }>
+    >(`/admin/branches/${branchId}/trainers/${trainerId}`);
+
+    return response.data;
+  },
+
   async restoreBranch(id: string) {
     const response = await apiClient.patch(
       `/admin/branches/${id}/restore`

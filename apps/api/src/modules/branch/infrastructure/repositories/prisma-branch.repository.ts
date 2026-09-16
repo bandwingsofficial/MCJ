@@ -105,7 +105,7 @@ export class PrismaBranchRepository
     ] = await Promise.all([
       this.prisma.branchUser.count({ where: { branchId } }),
       this.prisma.student.count({ where: { branchId } }),
-      this.prisma.trainer.count({ where: { branchId } }),
+      this.prisma.branchTrainer.count({ where: { branchId } }),
       this.prisma.enrollment.count({ where: { branchId } }),
       this.prisma.batch.count({ where: { branchId } }),
       this.prisma.branchCategory.count({
@@ -156,8 +156,11 @@ export class PrismaBranchRepository
       this.prisma.enrollment.count({
         where: { branchId, isDeleted: false },
       }),
-      this.prisma.trainer.count({
-        where: { branchId, isDeleted: false },
+      this.prisma.branchTrainer.count({
+        where: {
+          branchId,
+          trainer: { isDeleted: false },
+        },
       }),
       this.prisma.branchCategory.count({
         where: {
@@ -685,6 +688,55 @@ export class PrismaBranchRepository
   ): Promise<void> {
     await this.prisma.courseBranch.deleteMany({
       where: { branchId, courseId },
+    });
+  }
+
+  async findTrainersByIds(
+    trainerIds: string[],
+  ): Promise<
+    Array<{ id: string; status: string; isDeleted: boolean }>
+  > {
+    const uniqueIds = [...new Set(trainerIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return [];
+    }
+
+    return this.prisma.trainer.findMany({
+      where: { id: { in: uniqueIds } },
+      select: {
+        id: true,
+        status: true,
+        isDeleted: true,
+      },
+    });
+  }
+
+  async assignTrainersToBranch(
+    branchId: string,
+    trainerIds: string[],
+  ): Promise<number> {
+    const uniqueIds = [...new Set(trainerIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return 0;
+    }
+
+    const result = await this.prisma.branchTrainer.createMany({
+      data: uniqueIds.map((trainerId) => ({
+        branchId,
+        trainerId,
+      })),
+      skipDuplicates: true,
+    });
+
+    return result.count;
+  }
+
+  async unassignTrainerFromBranch(
+    branchId: string,
+    trainerId: string,
+  ): Promise<void> {
+    await this.prisma.branchTrainer.deleteMany({
+      where: { branchId, trainerId },
     });
   }
 }

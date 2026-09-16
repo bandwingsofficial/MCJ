@@ -7,10 +7,13 @@ import { UploadDomainService } from '../uploads/domain/services/upload-domain.se
 
 import { BranchController } from './presentation/controllers/branch.controller';
 import { BranchCourseController } from './presentation/controllers/branch-course.controller';
+import { BranchTrainerController } from './presentation/controllers/branch-trainer.controller';
 import { PublicBranchController } from './presentation/controllers/public-branch.controller';
 
 import { AssignCoursesToBranchHandler } from './application/assign-courses-to-branch/assign-courses-to-branch.handler';
+import { AssignTrainersToBranchHandler } from './application/assign-trainers-to-branch/assign-trainers-to-branch.handler';
 import { UnassignCourseFromBranchHandler } from './application/unassign-course-from-branch/unassign-course-from-branch.handler';
+import { UnassignTrainerFromBranchHandler } from './application/unassign-trainer-from-branch/unassign-trainer-from-branch.handler';
 
 import { CreateBranchHandler } from './application/create-branch/create-branch.handler';
 import { DeleteBranchHandler } from './application/delete-branch/delete-branch.handler';
@@ -42,6 +45,7 @@ import { BRANCH_TOKENS } from './branch.tokens';
   controllers: [
     BranchController,
     BranchCourseController,
+    BranchTrainerController,
     PublicBranchController,
   ],
 
@@ -276,6 +280,20 @@ import { BRANCH_TOKENS } from './branch.tokens';
       provide: UnassignCourseFromBranchHandler,
       useFactory: (branchRepo: BranchRepository) =>
         new UnassignCourseFromBranchHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
+
+    {
+      provide: AssignTrainersToBranchHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new AssignTrainersToBranchHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
+
+    {
+      provide: UnassignTrainerFromBranchHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new UnassignTrainerFromBranchHandler(branchRepo),
       inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
     },
   ],

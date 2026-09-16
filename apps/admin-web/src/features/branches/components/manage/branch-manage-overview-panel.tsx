@@ -20,7 +20,6 @@ import { BranchStudentEnrolledCard } from "@/src/features/branches/components/ma
 import type { BranchManageTabKey } from "@/src/features/branches/components/manage/branch-manage-tab.types";
 import {
   formatBranchAddress,
-  formatTrainerNames,
 } from "@/src/features/branches/utils/branch-display.utils";
 import {
   computeBranchBatchOverviewStats,
@@ -36,7 +35,6 @@ import type { Batch } from "@/src/features/batches/types/batch.types";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
-import { trainerService } from "@/src/features/trainers/services/trainer.service";
 
 interface Props {
   branch: Branch;
@@ -47,10 +45,6 @@ interface Props {
     tab: BranchManageTabKey,
     options?: { assign?: boolean },
   ) => void;
-}
-
-interface OverviewCourse extends CourseListItem {
-  trainerLabel: string;
 }
 
 const PREVIEW_LIMIT = 4;
@@ -75,27 +69,6 @@ function OverviewField({
   );
 }
 
-async function loadCourseTrainers(
-  courses: CourseListItem[],
-): Promise<OverviewCourse[]> {
-  return Promise.all(
-    courses.map(async (course) => {
-      try {
-        const trainers = await trainerService.getTrainersForCourse(course.id);
-        return {
-          ...course,
-          trainerLabel: formatTrainerNames(trainers),
-        };
-      } catch {
-        return {
-          ...course,
-          trainerLabel: "",
-        };
-      }
-    }),
-  );
-}
-
 export function BranchManageOverviewPanel({
   branch,
   summary,
@@ -108,7 +81,7 @@ export function BranchManageOverviewPanel({
 
   const [previewLoading, setPreviewLoading] = useState(true);
   const [categories, setCategories] = useState<CategoryListItem[]>([]);
-  const [courses, setCourses] = useState<OverviewCourse[]>([]);
+  const [courses, setCourses] = useState<CourseListItem[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [branchEnrollments, setBranchEnrollments] = useState<Enrollment[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -176,7 +149,7 @@ export function BranchManageOverviewPanel({
         .items;
 
       setCategories(categoryItems);
-      setCourses(await loadCourseTrainers(courseItems));
+      setCourses(courseItems);
       setBatches(batchItems);
       setBranchEnrollments(branchEnrollmentItems);
       setEnrollments(enrollmentItems);
@@ -361,7 +334,6 @@ export function BranchManageOverviewPanel({
               <BranchSummaryModuleCard
                 key={course.id}
                 title={course.title}
-                subtitle={course.trainerLabel || undefined}
                 imageUrl={course.thumbnailUrl}
                 imageAlt={course.title}
               />

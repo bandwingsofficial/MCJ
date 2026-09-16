@@ -3,7 +3,6 @@ import { Logger } from '@nestjs/common';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 import { UploadDomainService } from '@modules/uploads/domain/services/upload-domain.service';
 
-import { TrainerCourse } from '../../domain/entities/trainer-course.entity';
 import { Trainer } from '../../domain/entities/trainer.entity';
 import { TrainerStatus } from '../../domain/enums/trainer-status.enum';
 import type { TrainerRepository } from '../../domain/repositories/trainer.repository';
@@ -65,15 +64,6 @@ export class CreateTrainerHandler {
       employeeCode,
     );
 
-    const courseIds = this.domainService.uniqueCourseIds(
-      command.courseIds,
-    );
-
-    await this.domainService.ensureCoursesExist(
-      this.courseRepo,
-      courseIds,
-    );
-
     const trainerId = randomUUID();
     let profileImageFileId: string | null = null;
     let profileImageUrl: string | null = null;
@@ -122,17 +112,17 @@ export class CreateTrainerHandler {
       status,
       displayOrder,
       joinedAt: command.joinedAt,
-      courses: courseIds.map((courseId) =>
-        TrainerCourse.create({
-          id: randomUUID(),
-          trainerId,
-          courseId,
-        }),
-      ),
+      courses: [],
       createdBy: command.createdBy,
     });
 
     await this.trainerRepo.save(trainer);
+
+    if (command.branchId) {
+      await this.branchRepo.assignTrainersToBranch(command.branchId, [
+        trainerId,
+      ]);
+    }
 
     const savedTrainer = await this.trainerRepo.findById(
       trainer.id,

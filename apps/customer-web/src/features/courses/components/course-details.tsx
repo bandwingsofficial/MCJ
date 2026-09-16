@@ -32,7 +32,7 @@ import {
   formatDuration,
   getCourseLearningOutcomes,
 } from "@/src/features/courses/utils/course-display.utils";
-import { useCourseTrainers } from "@/src/features/trainers/hooks/useCourseTrainers";
+import { useBranchTrainers } from "@/src/features/branches/hooks/useBranchData";
 import type { Trainer } from "@/src/features/trainers/types/trainer.types";
 import { isBatchSelectable } from "@/src/features/enrollments/utils/enrollment-batch.utils";
 
@@ -56,11 +56,11 @@ export function CourseDetails({ course }: CourseDetailsProps) {
   const { data: summary } = useCourseSummary(course.id);
 
   const {
-    data: courseTrainers = [],
+    data: branchTrainers = [],
     isLoading: trainersLoading,
     isError: trainersError,
     refetch: refetchTrainers,
-  } = useCourseTrainers(course.id);
+  } = useBranchTrainers(selectedBranchId);
 
   const selectableCourseBatches = useMemo(
     () => (Array.isArray(courseBatches) ? courseBatches : []).filter(isBatchSelectable),
@@ -110,7 +110,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
   }, [availableBranches, selectedBranchId]);
 
   const safeBatches = branchFilteredBatches;
-  const safeTrainers = Array.isArray(courseTrainers) ? courseTrainers : [];
+  const safeTrainers = Array.isArray(branchTrainers) ? branchTrainers : [];
   const safeModules = Array.isArray(course.previewModules)
     ? course.previewModules
     : [];
@@ -331,6 +331,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                     trainers={safeTrainers}
                     isLoading={trainersLoading}
                     isError={trainersError}
+                    branchSelected={Boolean(selectedBranchId)}
                     onRetry={() => void refetchTrainers()}
                   />
                 ) : null}
@@ -617,14 +618,26 @@ function InstructorContent({
   trainers,
   isLoading,
   isError,
+  branchSelected,
   onRetry,
 }: {
   trainers: Trainer[];
   isLoading: boolean;
   isError: boolean;
+  branchSelected: boolean;
   onRetry: () => void;
 }) {
   const safeTrainers = Array.isArray(trainers) ? trainers : [];
+
+  if (!branchSelected) {
+    return (
+      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+        <p className="text-sm text-slate-600">
+          Select a branch above to view instructors assigned to that location.
+        </p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

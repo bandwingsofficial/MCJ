@@ -30,6 +30,12 @@ export interface BranchBlockingReferences {
   courseBranches: number;
 }
 
+export interface BranchAssignableTrainer {
+  id: string;
+  status: string;
+  isDeleted: boolean;
+}
+
 export interface BranchRepository {
   save(branch: Branch): Promise<void>;
 
@@ -145,5 +151,19 @@ export interface BranchRepository {
   unassignCourseFromBranch(
     branchId: string,
     courseId: string,
+  ): Promise<void>;
+
+  findTrainersByIds(
+    trainerIds: string[],
+  ): Promise<BranchAssignableTrainer[]>;
+
+  assignTrainersToBranch(
+    branchId: string,
+    trainerIds: string[],
+  ): Promise<number>;
+
+  unassignTrainerFromBranch(
+    branchId: string,
+    trainerId: string,
   ): Promise<void>;
 }

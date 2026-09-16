@@ -1,8 +1,25 @@
 import { categoryService } from "@/src/features/categories/services/category.service";
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
+import { courseService } from "@/src/features/courses/services/course.service";
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
 
-import { getBranchCoursesForAssignment } from "@/src/features/branches/utils/branch-trainer-relation.utils";
+export async function getBranchCoursesForAssignment(
+  branchId: string,
+): Promise<CourseListItem[]> {
+  if (!branchId) {
+    return [];
+  }
+
+  const courseResponse = await courseService.getCourses({
+    branchId,
+    page: 1,
+    pageSize: 100,
+  });
+
+  return (courseResponse.data.items ?? []).filter(
+    (course) => !course.isDeleted && course.status === "ACTIVE",
+  );
+}
 
 /**
  * Collect category IDs used by any course linked to the branch

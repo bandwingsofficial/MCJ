@@ -287,23 +287,6 @@ export class UpdateCourseHandler {
         )
       : null;
 
-    if (command.trainerIds !== undefined) {
-      const trainersAssignable = await this.courseRepo.areNewTrainersActive(
-        course.id,
-        command.trainerIds,
-      );
-
-      if (!trainersAssignable) {
-        throw new BaseException(
-          ERROR_CODES.VALIDATION_ERROR,
-          'Only active trainers can be assigned to a course',
-          400,
-        );
-      }
-
-      await this.courseRepo.syncTrainers(course.id, command.trainerIds);
-    }
-
     const trainers = (
       await this.courseRepo.findTrainersByCourseId(course.id)
     ).map(

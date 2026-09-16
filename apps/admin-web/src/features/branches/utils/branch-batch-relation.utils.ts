@@ -2,7 +2,6 @@ import { COURSE_TRAINER_UNASSIGNED_LABEL } from "@/src/features/batches/utils/ba
 import type { Batch } from "@/src/features/batches/types/batch.types";
 import { BATCH_DURATION_TYPES } from "@/src/features/batches/constants/batch.constants";
 import { formatTrainerNames } from "@/src/features/branches/utils/branch-display.utils";
-import { trainerService } from "@/src/features/trainers/services/trainer.service";
 
 export interface BranchBatchRelationMeta {
   courseTitle: string;
@@ -10,40 +9,19 @@ export interface BranchBatchRelationMeta {
   trainerLabel: string;
 }
 
+function formatBatchTrainerLabel(batch: Batch): string {
+  const trainers = batch.trainers ?? [];
+  const label = formatTrainerNames(trainers).trim();
+  return label || COURSE_TRAINER_UNASSIGNED_LABEL;
+}
+
 /**
- * Resolve display fields from Batch → Course → Category / Course trainers.
- * Course trainers are loaded via the existing Course assignment API (not BatchTrainer).
+ * Resolve display fields from batch course/category and batch-level trainers.
  */
 export async function loadBranchBatchRelationMeta(
   batches: Batch[],
 ): Promise<Record<string, BranchBatchRelationMeta>> {
-  const trainersByCourseId = new Map<string, string>();
-
-  const uniqueCourseIds = Array.from(
-    new Set(
-      batches
-        .map((batch) => batch.courseId?.trim() || batch.course?.id?.trim() || "")
-        .filter(Boolean),
-    ),
-  );
-
-  await Promise.all(
-    uniqueCourseIds.map(async (courseId) => {
-      try {
-        const trainers = await trainerService.getTrainersForCourse(courseId);
-        const label = formatTrainerNames(trainers).trim();
-        trainersByCourseId.set(
-          courseId,
-          label || COURSE_TRAINER_UNASSIGNED_LABEL,
-        );
-      } catch {
-        trainersByCourseId.set(courseId, COURSE_TRAINER_UNASSIGNED_LABEL);
-      }
-    }),
-  );
-
   const entries = batches.map((batch) => {
-    const courseId = batch.courseId?.trim() || batch.course?.id?.trim() || "";
     const courseTitle = batch.course?.title?.trim() || "";
     const categoryLabel =
       batch.course?.category?.name?.trim() ||
@@ -55,9 +33,7 @@ export async function loadBranchBatchRelationMeta(
       {
         courseTitle,
         categoryLabel,
-        trainerLabel: courseId
-          ? (trainersByCourseId.get(courseId) ?? COURSE_TRAINER_UNASSIGNED_LABEL)
-          : COURSE_TRAINER_UNASSIGNED_LABEL,
+        trainerLabel: formatBatchTrainerLabel(batch),
       },
     ] as const;
   });

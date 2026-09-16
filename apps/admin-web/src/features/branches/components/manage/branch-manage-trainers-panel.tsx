@@ -9,7 +9,6 @@ import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { CategoryPagination } from "@/src/features/categories/components/category-pagination";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
-import { cn } from "@/src/shared/lib/cn";
 
 import { AssignBranchTrainerModal } from "@/src/features/branches/components/manage/assign-branch-trainer-modal";
 import { BranchIconAction } from "@/src/features/branches/components/manage/branch-icon-action";
@@ -27,19 +26,16 @@ import {
   BRANCH_TABLE_CARD_CLASS,
 } from "@/src/features/branches/components/manage/branch-manage-layout.constants";
 import {
-  collectAssignedTrainerIdsForBranch,
   filterAssignedBranchTrainers,
   formatTrainerDisplayName,
-  getBranchAssignedTrainerIds,
-  isTrainerAssignedViaBranchCourses,
+  loadBranchAssignedTrainerIds,
   loadBranchAssignedTrainers,
 } from "@/src/features/branches/utils/branch-trainer-relation.utils";
+import { branchService } from "@/src/features/branches/services/branch.service";
 import { DEFAULT_TRAINER_PAGE_SIZE } from "@/src/features/trainers/constants/trainer.constants";
 import { TrainerStatusBadge } from "@/src/features/trainers/components/trainer-status-badge";
 import { trainerService } from "@/src/features/trainers/services/trainer.service";
 import type { TrainerListItem } from "@/src/features/trainers/types/trainer.types";
-
-const ALREADY_ASSIGNED_LABEL = "ALREADY ASSIGNED";
 
 interface Props {
   branchId: string;
@@ -57,12 +53,6 @@ export function BranchManageTrainersPanel({
   const [assignedTrainers, setAssignedTrainers] = useState<TrainerListItem[]>(
     [],
   );
-  const [courseAssignedTrainerIds, setCourseAssignedTrainerIds] = useState<
-    Set<string>
-  >(new Set());
-  const [manualBranchTrainerIds, setManualBranchTrainerIds] = useState<
-    Set<string>
-  >(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,20 +86,13 @@ export function BranchManageTrainersPanel({
   }, [filteredTrainers, page, pageSize]);
 
   const assignedTrainerIds = useMemo(
-    () =>
-      collectAssignedTrainerIdsForBranch(
-        assignedTrainers,
-        branchId,
-        courseAssignedTrainerIds,
-      ),
-    [assignedTrainers, branchId, courseAssignedTrainerIds],
+    () => new Set(assignedTrainers.map((trainer) => trainer.id)),
+    [assignedTrainers],
   );
 
   const loadData = useCallback(async () => {
     if (!branchId) {
       setAssignedTrainers([]);
-      setCourseAssignedTrainerIds(new Set());
-      setManualBranchTrainerIds(new Set());
       setIsLoading(false);
       return;
     }
@@ -118,21 +101,12 @@ export function BranchManageTrainersPanel({
     setError(null);
 
     try {
-      const {
-        trainers,
-        courseAssignedTrainerIds: courseTrainerIds,
-        manualBranchTrainerIds: manualTrainerIds,
-      } = await loadBranchAssignedTrainers(branchId);
-
+      const trainers = await loadBranchAssignedTrainers(branchId);
       setAssignedTrainers(trainers);
-      setCourseAssignedTrainerIds(courseTrainerIds);
-      setManualBranchTrainerIds(manualTrainerIds);
     } catch (loadError) {
       const message = getErrorMessage(loadError);
       setError(message);
       setAssignedTrainers([]);
-      setCourseAssignedTrainerIds(new Set());
-      setManualBranchTrainerIds(new Set());
       appToast.error(message);
     } finally {
       setIsLoading(false);
@@ -156,21 +130,13 @@ export function BranchManageTrainersPanel({
   const loadAvailableTrainers = useCallback(async () => {
     setAssignModalLoading(true);
     try {
-      const [
-        {
-          courseAssignedTrainerIds: courseIds,
-          manualBranchTrainerIds: manualIds,
-        },
-        activeTrainers,
-      ] = await Promise.all([
-        loadBranchAssignedTrainers(branchId),
+      const [assignedIds, activeTrainers] = await Promise.all([
+        loadBranchAssignedTrainerIds(branchId),
         trainerService.getActiveTrainersForAssignment(),
       ]);
 
       setAvailableTrainers(activeTrainers);
-      setModalAssignedTrainerIds(
-        Array.from(getBranchAssignedTrainerIds(courseIds, manualIds)),
-      );
+      setModalAssignedTrainerIds(assignedIds);
     } catch (loadError) {
       appToast.error(getErrorMessage(loadError));
       setAssignOpen(false);
@@ -180,14 +146,7 @@ export function BranchManageTrainersPanel({
   }, [branchId]);
 
   const openAssignModal = async () => {
-    setModalAssignedTrainerIds(
-      Array.from(
-        getBranchAssignedTrainerIds(
-          courseAssignedTrainerIds,
-          manualBranchTrainerIds,
-        ),
-      ),
-    );
+    setModalAssignedTrainerIds(assignedTrainers.map((trainer) => trainer.id));
     setAssignOpen(true);
     await loadAvailableTrainers();
   };
@@ -212,11 +171,7 @@ export function BranchManageTrainersPanel({
 
     setAssignSubmitting(true);
     try {
-      await Promise.all(
-        uniqueTrainerIds.map((trainerId) =>
-          trainerService.updateTrainer(trainerId, { branchId }),
-        ),
-      );
+      await branchService.assignTrainers(branchId, uniqueTrainerIds);
       appToast.success(
         uniqueTrainerIds.length === 1
           ? "Trainer assigned successfully"
@@ -237,28 +192,9 @@ export function BranchManageTrainersPanel({
       return;
     }
 
-    if (
-      isTrainerAssignedViaBranchCourses(
-        unassignTarget.id,
-        courseAssignedTrainerIds,
-      )
-    ) {
-      appToast.error(
-        "This trainer is assigned through a course and cannot be unassigned here.",
-      );
-      setUnassignTarget(null);
-      return;
-    }
-
-    if (!manualBranchTrainerIds.has(unassignTarget.id)) {
-      appToast.error("This trainer is not manually assigned to this branch.");
-      setUnassignTarget(null);
-      return;
-    }
-
     setUnassignLoading(true);
     try {
-      await trainerService.updateTrainer(unassignTarget.id, { branchId: null });
+      await branchService.unassignTrainer(branchId, unassignTarget.id);
       appToast.success("Trainer unassigned");
       setUnassignTarget(null);
       await loadData();
@@ -337,22 +273,11 @@ export function BranchManageTrainersPanel({
             {paginatedTrainers.map((trainer) => {
               const displayName =
                 formatTrainerDisplayName(trainer) || "Unnamed trainer";
-              const isCourseAssigned = isTrainerAssignedViaBranchCourses(
-                trainer.id,
-                courseAssignedTrainerIds,
-              );
-              const canUnassign =
-                manualBranchTrainerIds.has(trainer.id) && !isCourseAssigned;
 
               return (
                 <tr
                   key={trainer.id}
-                  className={cn(
-                    "border-b border-slate-100 transition-colors",
-                    isCourseAssigned
-                      ? "cursor-not-allowed bg-slate-50/80 text-slate-500"
-                      : "bg-white hover:bg-slate-50",
-                  )}
+                  className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
                 >
                   <td className={TABLE_CELL_CLASS}>
                     {trainer.profileImageUrl ? (
@@ -361,30 +286,16 @@ export function BranchManageTrainersPanel({
                         alt=""
                         width={44}
                         height={44}
-                        className={cn(
-                          "h-11 w-11 rounded-lg border border-slate-200 object-cover shadow-sm",
-                          isCourseAssigned && "opacity-60",
-                        )}
+                        className="h-11 w-11 rounded-lg border border-slate-200 object-cover shadow-sm"
                       />
                     ) : (
-                      <div
-                        className={cn(
-                          "flex h-11 w-11 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500",
-                          isCourseAssigned && "opacity-60",
-                        )}
-                      >
+                      <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500">
                         {displayName.charAt(0) || "?"}
                       </div>
                     )}
                   </td>
                   <td className={`${TABLE_CELL_CLASS} font-medium text-[#102A56]`}>
-                    <span
-                      className={cn(
-                        "block truncate",
-                        isCourseAssigned && "text-slate-500",
-                      )}
-                      title={displayName}
-                    >
+                    <span className="block truncate" title={displayName}>
                       {displayName}
                     </span>
                     {trainer.employeeCode ? (
@@ -408,23 +319,17 @@ export function BranchManageTrainersPanel({
                   </td>
                   <td className={TABLE_CELL_CLASS}>
                     <div className="flex items-center justify-end">
-                      {isCourseAssigned ? (
-                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                          {ALREADY_ASSIGNED_LABEL}
-                        </span>
-                      ) : canUnassign ? (
-                        <BranchIconAction
-                          icon={Link2Off}
-                          label="Unassign"
-                          destructive
-                          disabled={
-                            assignmentsDisabled ||
-                            unassignLoading ||
-                            assignSubmitting
-                          }
-                          onClick={() => setUnassignTarget(trainer)}
-                        />
-                      ) : null}
+                      <BranchIconAction
+                        icon={Link2Off}
+                        label="Unassign"
+                        destructive
+                        disabled={
+                          assignmentsDisabled ||
+                          unassignLoading ||
+                          assignSubmitting
+                        }
+                        onClick={() => setUnassignTarget(trainer)}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -461,7 +366,7 @@ export function BranchManageTrainersPanel({
       <ConfirmDialog
         open={Boolean(unassignTarget)}
         title="Unassign trainer?"
-        description={`Remove ${formatTrainerDisplayName(unassignTarget ?? { firstName: "this trainer", lastName: null })} from this branch? Course assignments will not be changed.`}
+        description={`Remove ${formatTrainerDisplayName(unassignTarget ?? { firstName: "this trainer", lastName: null })} from this branch? This only removes the branch assignment.`}
         confirmLabel="Unassign"
         loading={unassignLoading}
         onCancel={() => {

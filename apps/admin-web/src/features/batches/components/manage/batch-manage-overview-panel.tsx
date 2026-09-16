@@ -44,7 +44,6 @@ import {
 } from "@/src/features/batches/utils/batch-timing.utils";
 import { categoryService } from "@/src/features/categories/services/category.service";
 import { useCourse } from "@/src/features/courses/hooks/use-course";
-import { useCourseTrainers } from "@/src/features/courses/hooks/use-course-trainers";
 import type { CourseTrainer } from "@/src/features/courses/types/course.types";
 import { TrainerStatusBadge } from "@/src/features/trainers/components/trainer-status-badge";
 import { getTrainerDisplayStatus } from "@/src/features/trainers/utils/trainer-display.utils";
@@ -155,30 +154,24 @@ export function BatchManageOverviewPanel({
 
   const courseId = batch.courseId?.trim() || batch.course?.id || "";
   const { course, isLoading: courseLoading } = useCourse(courseId);
-  const courseHasTrainers = course?.trainers !== undefined;
-  const { trainers: fallbackTrainers, isLoading: fallbackTrainersLoading } =
-    useCourseTrainers(courseHasTrainers ? undefined : courseId || undefined);
 
-  const trainers: CourseTrainer[] = useMemo(() => {
-    if (course?.trainers) {
-      return course.trainers;
-    }
+  const trainers: CourseTrainer[] = useMemo(
+    () =>
+      (batch.trainers ?? []).map((trainer) => ({
+        id: trainer.id,
+        firstName: trainer.firstName,
+        lastName: trainer.lastName,
+        employeeCode: trainer.employeeCode,
+        qualification: trainer.qualification,
+        specialization: trainer.specialization,
+        status: trainer.status ?? "ACTIVE",
+        profileImageUrl: trainer.profileImageUrl,
+        email: trainer.email,
+      })),
+    [batch.trainers],
+  );
 
-    return fallbackTrainers.map((trainer) => ({
-      id: trainer.id,
-      firstName: trainer.firstName,
-      lastName: trainer.lastName,
-      employeeCode: trainer.employeeCode,
-      qualification: trainer.qualification,
-      specialization: trainer.specialization,
-      status: trainer.status,
-      profileImageUrl: trainer.profileImageUrl,
-      email: trainer.email,
-    }));
-  }, [course?.trainers, fallbackTrainers]);
-
-  const trainersLoading =
-    courseLoading || (!courseHasTrainers && fallbackTrainersLoading);
+  const trainersLoading = courseLoading;
 
   const [categorySlug, setCategorySlug] = useState<string | null>(null);
   const [categoryLoading, setCategoryLoading] = useState(false);
@@ -484,7 +477,7 @@ export function BatchManageOverviewPanel({
                 <BatchManageEmptyState
                   icon={UserRound}
                   title="No Trainers Assigned"
-                  description="Trainers will appear here once assigned to the linked course."
+                  description="Trainers will appear here once assigned to this batch."
                 />
               ) : (
                 <div className="space-y-3">
