@@ -19,10 +19,14 @@ export function HeroSection() {
 
   return (
     <section className="relative overflow-hidden bg-[#F8FBFF]">
-      <div className="pointer-events-none absolute -left-20 top-10 h-72 w-72 rounded-full bg-[#E0E7FF]/60 blur-3xl" />
+      {/* Soft blurred background extending fully behind the left content */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-[65%] bg-gradient-to-br from-[#E8F0FF]/80 via-[#F4F6FF]/70 to-transparent blur-2xl" />
+
+      <div className="pointer-events-none absolute -left-20 top-10 h-96 w-96 rounded-full bg-[#E0E7FF]/60 blur-3xl" />
+      <div className="pointer-events-none absolute -left-10 bottom-[-120px] h-96 w-96 rounded-full bg-[#DBEAFE]/50 blur-3xl" />
       <div className="pointer-events-none absolute -right-16 top-0 h-80 w-80 rounded-full bg-[#EDE9FE]/50 blur-3xl" />
 
-      <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-14">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-14">
         <div>
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#BFDBFE] bg-white px-3 py-1.5 text-xs font-semibold text-[#2563EB]">
             <Sparkles className="h-3.5 w-3.5" />
@@ -48,6 +52,7 @@ export function HeroSection() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
+
             <Link href="/about">
               <Button
                 variant="outline"
@@ -61,11 +66,19 @@ export function HeroSection() {
 
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {(isLoading
-              ? Array.from({ length: 4 }, () => ({ label: "...", value: "—" }))
+              ? Array.from({ length: 4 }, () => ({
+                  label: "...",
+                  value: "—",
+                }))
               : stats
             ).map((item, index) => (
-              <div key={index} className="rounded-xl border border-slate-100 bg-white px-3 py-3">
-                <p className="text-lg font-bold text-[#0B1F3A]">{item.value}</p>
+              <div
+                key={index}
+                className="rounded-xl border border-slate-100 bg-white px-3 py-3"
+              >
+                <p className="text-lg font-bold text-[#0B1F3A]">
+                  {item.value}
+                </p>
                 <p className="text-[11px] text-slate-500">{item.label}</p>
               </div>
             ))}
