@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import {
+  CourseLearnItemTreeResult,
   CourseLessonPreviewResult,
   CourseLessonQuizTreeResult,
   CourseLessonTreeResult,
@@ -163,6 +164,9 @@ export class CourseHierarchyService {
               where: { isDeleted: false },
               orderBy: { displayOrder: 'asc' },
             },
+            learnItems: {
+              orderBy: { displayOrder: 'asc' },
+            },
             quiz: {
               where: { isDeleted: false },
               select: {
@@ -197,6 +201,9 @@ export class CourseHierarchyService {
       include: {
         resources: {
           where: { isDeleted: false },
+          orderBy: { displayOrder: 'asc' },
+        },
+        learnItems: {
           orderBy: { displayOrder: 'asc' },
         },
         quiz: {
@@ -405,6 +412,9 @@ export class CourseHierarchyService {
               where: { isDeleted: false },
               orderBy: { displayOrder: 'asc' },
             },
+            learnItems: {
+              orderBy: { displayOrder: 'asc' },
+            },
             quiz: {
               where: { isDeleted: false },
               select: {
@@ -504,6 +514,19 @@ export class CourseHierarchyService {
       quiz,
       lesson.description,
       lesson.parentLessonId,
+      (lesson.learnItems ?? []).map(
+        (item) =>
+          new CourseLearnItemTreeResult(
+            item.id,
+            item.title,
+            item.explanation,
+            item.imageUrl,
+            item.keyLearningPoints,
+            item.finalThoughts,
+            item.summary,
+            item.displayOrder,
+          ),
+      ),
     );
   }
 

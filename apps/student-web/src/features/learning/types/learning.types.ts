@@ -30,6 +30,17 @@ export interface LessonQuizDto {
   timeLimitMinutes: number | null;
 }
 
+export interface LessonLearnItemDto {
+  id: string;
+  title: string;
+  explanation: string;
+  imageUrl: string | null;
+  keyLearningPoints: string | null;
+  finalThoughts: string | null;
+  summary: string | null;
+  displayOrder: number;
+}
+
 export interface LessonTreeDto {
   id: string;
   title: string;
@@ -39,6 +50,7 @@ export interface LessonTreeDto {
   displayOrder: number;
   isPreview: boolean;
   resources: LessonResourceDto[];
+  learnItems: LessonLearnItemDto[];
   quiz: LessonQuizDto | null;
   description: string | null;
   parentLessonId: string | null;

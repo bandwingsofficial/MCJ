@@ -105,6 +105,19 @@ export class CourseLessonQuizTreeResult {
   ) {}
 }
 
+export class CourseLearnItemTreeResult {
+  constructor(
+    public readonly id: string,
+    public readonly title: string,
+    public readonly explanation: string,
+    public readonly imageUrl: string | null,
+    public readonly keyLearningPoints: string | null,
+    public readonly finalThoughts: string | null,
+    public readonly summary: string | null,
+    public readonly displayOrder: number,
+  ) {}
+}
+
 export class CourseLessonTreeResult {
   constructor(
     public readonly id: string,
@@ -118,6 +131,7 @@ export class CourseLessonTreeResult {
     public readonly quiz: CourseLessonQuizTreeResult | null,
     public readonly description: string | null = null,
     public readonly parentLessonId: string | null = null,
+    public readonly learnItems: CourseLearnItemTreeResult[] = [],
   ) {}
 }
 

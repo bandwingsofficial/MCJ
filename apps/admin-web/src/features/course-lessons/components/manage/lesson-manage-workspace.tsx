@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
+  BookOpen,
   ClipboardList,
   FileQuestion,
   FileText,
@@ -29,13 +30,16 @@ import {
   ModuleQuizzesTab,
   ModuleResourcesTab,
 } from "@/src/features/course-modules/components/manage/module-other-tabs";
+import { useCourseLearnItems } from "@/src/features/course-learn-items/hooks";
 import { useLessonContentData } from "@/src/features/course-lessons/hooks/use-lesson-content-data";
 import { getPlainLessonPosition } from "@/src/features/course-lessons/utils/lesson-order.utils";
 import { LessonManageHeader } from "@/src/features/course-lessons/components/manage/lesson-manage-header";
 import { LessonOverviewTab } from "@/src/features/course-lessons/components/manage/lesson-overview-tab";
+import { ModuleLearnTab } from "@/src/features/course-lessons/components/manage/module-learn-tab";
 
 export type LessonManageTab =
   | "overview"
+  | "learn"
   | "videos"
   | "live"
   | "resources"
@@ -51,6 +55,7 @@ const TAB_ITEMS: ReadonlyArray<{
   icon: LucideIcon;
 }> = [
   { value: "overview", label: "Overview", icon: LayoutDashboard },
+  { value: "learn", label: "Learn", icon: BookOpen },
   { value: "videos", label: "Self-Paced Videos", icon: Video },
   { value: "live", label: "Live Recorded Videos", icon: Radio },
   { value: "resources", label: "Resources", icon: FileText },
@@ -88,6 +93,13 @@ export function LessonManageWorkspace({
     refetch,
   } = useLessonContentData(module.id, lesson.id);
 
+  const {
+    items: learnItems,
+    isLoading: isLearnLoading,
+    error: learnError,
+    refetch: refetchLearnItems,
+  } = useCourseLearnItems(lesson.id);
+
   const lessonPosition = getPlainLessonPosition(
     lessons,
     lesson.id,
@@ -119,14 +131,15 @@ export function LessonManageWorkspace({
           ))}
         </TabsList>
 
-        {isLoading ? (
+        {isLoading || isLearnLoading ? (
           <SkeletonTable rows={6} />
-        ) : error ? (
+        ) : error || learnError ? (
           <ErrorState
             title="Failed to load lesson content"
-            description={error}
+            description={error ?? learnError ?? "Unable to load lesson content."}
             onRetry={() => {
               void refetch();
+              void refetchLearnItems();
             }}
           />
         ) : (
@@ -140,6 +153,14 @@ export function LessonManageWorkspace({
                 quizzes={quizzes}
                 selfPacedCount={selfPacedVideos.length}
                 liveRecordedCount={liveRecordedVideos.length}
+              />
+            </TabsContent>
+
+            <TabsContent value="learn">
+              <ModuleLearnTab
+                lessonId={lesson.id}
+                items={learnItems}
+                onRefresh={refetchLearnItems}
               />
             </TabsContent>
 

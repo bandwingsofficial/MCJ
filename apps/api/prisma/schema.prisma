@@ -485,6 +485,7 @@ model CourseLesson {
   parentLesson CourseLesson?    @relation("LessonChildren", fields: [parentLessonId], references: [id], onDelete: Cascade)
   childLessons CourseLesson[]   @relation("LessonChildren")
   resources    CourseResource[]
+  learnItems   CourseLearnItem[]
   quiz         CourseQuiz?
   progress     LessonProgress[]
 
@@ -495,6 +496,27 @@ model CourseLesson {
   @@index([displayOrder])
   @@index([moduleId, isDeleted])
   @@index([isDeleted])
+  @@index([createdAt])
+}
+
+model CourseLearnItem {
+  id                String       @id @default(uuid())
+  lessonId          String
+  title             String
+  explanation       String
+  imageUrl          String?
+  keyLearningPoints String?
+  finalThoughts     String?
+  summary           String?
+  displayOrder      Int          @default(0)
+  createdBy         String?
+  updatedBy         String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  lesson            CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@index([displayOrder])
   @@index([createdAt])
 }
 
