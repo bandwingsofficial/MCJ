@@ -8,6 +8,7 @@ import {
   IsUUID,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -106,15 +107,25 @@ export class UpdateFinancialArticleDto {
   @IsString()
   content?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    description:
+      'Upload file ID from POST /admin/uploads, or null to remove image',
+    nullable: true,
+  })
   @IsOptional()
+  @ValidateIf((_, value) => value !== null)
   @IsUUID()
-  thumbnailFileId?: string;
+  thumbnailFileId?: string | null;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    description:
+      'Upload file ID from POST /admin/uploads, or null to remove image',
+    nullable: true,
+  })
   @IsOptional()
+  @ValidateIf((_, value) => value !== null)
   @IsUUID()
-  bannerFileId?: string;
+  bannerFileId?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()

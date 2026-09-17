@@ -225,10 +225,16 @@ export function FinanceNewsForm({
 
   useEffect(() => {
     setThumbnailPreview(thumbnailPreviewUrl ?? null);
+    setThumbnailFile(null);
+    setThumbnailRemoved(false);
+    setThumbnailError(null);
   }, [thumbnailPreviewUrl]);
 
   useEffect(() => {
     setBannerPreview(bannerPreviewUrl ?? null);
+    setBannerFile(null);
+    setBannerRemoved(false);
+    setBannerError(null);
   }, [bannerPreviewUrl]);
 
   const mergedErrors = {

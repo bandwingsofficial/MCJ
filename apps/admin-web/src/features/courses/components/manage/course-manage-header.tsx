@@ -7,6 +7,7 @@ import { Archive, ChevronRight, Eye, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/src/shared/components/ui/button";
 
 import type { CourseDetails } from "@/src/features/courses/types/course.types";
+import { withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 import { CourseStatusBadge } from "@/src/features/courses/components/course-status-badge";
 import { coursePreviewPath } from "@/src/features/courses/utils/course-manage.routes";
 
@@ -68,7 +69,11 @@ export function CourseManageHeader({
             <div className="shrink-0">
               {course.thumbnailUrl ? (
                 <Image
-                  src={course.thumbnailUrl}
+                  key={`${course.id}-${course.updatedAt}`}
+                  src={withImageCacheBust(
+                    course.thumbnailUrl,
+                    course.updatedAt,
+                  )}
                   alt={course.title}
                   width={80}
                   height={80}

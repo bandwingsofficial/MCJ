@@ -3,6 +3,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
   type FocusEvent,
@@ -53,6 +54,7 @@ import {
   TRAINER_CHAR_LIMITS,
   validateTrainerImageFile,
 } from "@/src/features/trainers/utils/trainer-form-validation";
+import { withProfileImageCacheBust } from "@/src/features/trainers/utils/trainer-image.util";
 import type { TrainerDetails } from "@/src/features/trainers/types/trainer.types";
 
 function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
@@ -151,11 +153,18 @@ export function TrainerForm({
 
   const [skillInput, setSkillInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const selectedImageRef = useRef<File | null>(null);
   const [removeImage, setRemoveImage] = useState(false);
+  const removeImageRef = useRef(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [imageTouched, setImageTouched] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
-    isEdit ? trainer?.profileImageUrl ?? null : null,
+    isEdit && trainer?.profileImageUrl
+      ? withProfileImageCacheBust(
+          trainer.profileImageUrl,
+          trainer.updatedAt,
+        )
+      : null,
   );
   const [suggestedCode, setSuggestedCode] = useState(
     isEdit ? trainer?.employeeCode ?? "" : ""
@@ -194,9 +203,18 @@ export function TrainerForm({
     setEditValidationReady(false);
     reset(mapTrainerToFormValues(trainer));
     setSuggestedCode(trainer.employeeCode ?? "");
-    setPreviewUrl(trainer.profileImageUrl);
+    setPreviewUrl(
+      trainer.profileImageUrl
+        ? withProfileImageCacheBust(
+            trainer.profileImageUrl,
+            trainer.updatedAt,
+          )
+        : null,
+    );
     setSelectedImage(null);
+    selectedImageRef.current = null;
     setRemoveImage(false);
+    removeImageRef.current = false;
     setImageError(null);
     setImageTouched(false);
 
@@ -207,7 +225,7 @@ export function TrainerForm({
     isEdit,
     trainer?.id,
     trainer?.updatedAt,
-    trainer,
+    trainer?.profileImageUrl,
     reset,
     trigger,
   ]);
@@ -278,8 +296,10 @@ export function TrainerForm({
   const handleImageSelect = (file: File | null) => {
     setImageTouched(true);
     setRemoveImage(false);
+    removeImageRef.current = false;
     if (!file) {
       setSelectedImage(null);
+      selectedImageRef.current = null;
       setImageError(null);
       return;
     }
@@ -287,11 +307,13 @@ export function TrainerForm({
     const validationMessage = validateTrainerImageFile(file);
     if (validationMessage) {
       setSelectedImage(null);
+      selectedImageRef.current = null;
       setImageError(validationMessage);
       return;
     }
 
     setImageError(null);
+    selectedImageRef.current = file;
     setSelectedImage(file);
   };
 
@@ -518,7 +540,11 @@ export function TrainerForm({
     <form
       className="space-y-5 bg-white"
       onSubmit={handleSubmit(async (formValues) => {
-        await onSubmit(formValues, selectedImage, removeImage);
+        await onSubmit(
+          formValues,
+          selectedImageRef.current,
+          removeImageRef.current,
+        );
       })}
     >
       <ValidatedField
@@ -539,7 +565,9 @@ export function TrainerForm({
           onRemove={() => {
             setImageTouched(true);
             setSelectedImage(null);
+            selectedImageRef.current = null;
             setRemoveImage(true);
+            removeImageRef.current = true;
             setPreviewUrl(null);
             setImageError(null);
           }}

@@ -10,6 +10,7 @@ import { categoryService } from "@/src/features/categories/services/category.ser
 
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
 import type { CategoryFormValues } from "@/src/features/categories/schemas/category.schema";
+import { getUploadFileId, withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 
 interface Props {
   open: boolean;
@@ -41,7 +42,7 @@ export function EditCategoryModal({
       const uploadResponse =
         await categoryService.uploadCategoryImage(image);
 
-      thumbnailFileId = uploadResponse.data.fileId;
+      thumbnailFileId = getUploadFileId(uploadResponse);
     } else if (removeImage) {
       thumbnailFileId = null;
     }
@@ -69,7 +70,7 @@ export function EditCategoryModal({
       contentClassName="!max-w-xl"
     >
       <CategoryForm
-        key={category.id}
+        key={`${category.id}-${category.updatedAt}`}
         excludeId={category.id}
         submitLabel="Update Category"
         isSubmitting={isLoading}
@@ -78,7 +79,9 @@ export function EditCategoryModal({
           slug: category.slug,
           description: category.description ?? "",
           displayOrder: category.displayOrder ?? undefined,
-          thumbnailUrl: category.thumbnailUrl,
+          thumbnailUrl: category.thumbnailUrl
+            ? withImageCacheBust(category.thumbnailUrl, category.updatedAt)
+            : category.thumbnailUrl,
         }}
         onSubmit={handleSubmit}
       />

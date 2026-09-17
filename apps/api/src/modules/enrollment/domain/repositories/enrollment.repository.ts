@@ -43,6 +43,7 @@ export interface EnrollmentStudentView {
   profileImageUrl: string | null;
   status: string;
   isActive: boolean;
+  updatedAt: Date;
 }
 
 export interface EnrollmentBranchView {
@@ -80,6 +81,7 @@ export interface EnrollmentCourseView {
   status: string;
   averageRating: number;
   totalReviews: number;
+  updatedAt: Date;
   trainers: EnrollmentTrainerView[];
 }
 

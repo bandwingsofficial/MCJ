@@ -14,7 +14,7 @@ import { useUpdateFinanceNews } from "@/src/features/finance-news/hooks/use-upda
 import { financeNewsService } from "@/src/features/finance-news/services/finance-news.service";
 import { mapFinanceNewsToFormValues } from "@/src/features/finance-news/utils/map-finance-news-to-form-values";
 
-import type { FinanceNewsDetails } from "@/src/features/finance-news/types/finance-news.types";
+import { withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 
 interface EditFinanceNewsPageProps {
   newsId: string;
@@ -100,11 +100,19 @@ export function EditFinanceNewsPage({ newsId }: EditFinanceNewsPageProps) {
 
       <Card className="rounded-xl border-[#E1EBF5] p-4 shadow-sm sm:p-6">
         <FinanceNewsForm
-          key={article.id}
+          key={`${article.id}-${article.updatedAt}`}
           mode="edit"
           initialValues={mapFinanceNewsToFormValues(article)}
-          thumbnailPreviewUrl={article.thumbnailUrl}
-          bannerPreviewUrl={article.bannerUrl}
+          thumbnailPreviewUrl={
+            article.thumbnailUrl
+              ? withImageCacheBust(article.thumbnailUrl, article.updatedAt)
+              : null
+          }
+          bannerPreviewUrl={
+            article.bannerUrl
+              ? withImageCacheBust(article.bannerUrl, article.updatedAt)
+              : null
+          }
           isSubmitting={isPending}
           externalErrors={fieldErrors}
           onCancel={() => router.push("/finance-news")}
@@ -112,10 +120,6 @@ export function EditFinanceNewsPage({ newsId }: EditFinanceNewsPageProps) {
             const success = await updateFinanceNews(
               article.id,
               values,
-              {
-                thumbnailFileId: article.thumbnailFileId,
-                bannerFileId: article.bannerFileId,
-              },
               files,
             );
 

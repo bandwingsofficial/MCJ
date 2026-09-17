@@ -11,7 +11,6 @@ interface UseUpdateStudentReturn {
   updateStudent: (
     id: string,
     payload: UpdateStudentRequest,
-    image?: File | null,
   ) => Promise<void>;
 }
 
@@ -21,19 +20,10 @@ export const useUpdateStudent = (): UseUpdateStudentReturn => {
   const updateStudent = async (
     id: string,
     payload: UpdateStudentRequest,
-    image?: File | null,
   ) => {
     try {
       setIsLoading(true);
-
-      const requestPayload: UpdateStudentRequest = { ...payload };
-
-      if (image) {
-        const uploadResponse = await studentService.uploadStudentImage(image);
-        requestPayload.profileImageFileId = uploadResponse.data.fileId;
-      }
-
-      await studentService.updateStudent(id, requestPayload);
+      await studentService.updateStudent(id, payload);
     } finally {
       setIsLoading(false);
     }

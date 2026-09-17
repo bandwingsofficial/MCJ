@@ -10,6 +10,7 @@ import { Checkbox } from "@/src/shared/components/ui/checkbox";
 import type { TrainerListItem } from "@/src/features/trainers/types/trainer.types";
 import { isArchivedTrainer } from "@/src/features/trainers/utils/trainer-bulk.utils";
 import { getTrainerDisplayStatus } from "@/src/features/trainers/utils/trainer-display.utils";
+import { withProfileImageCacheBust } from "@/src/features/trainers/utils/trainer-image.util";
 
 import { TrainerStatusBadge } from "./trainer-status-badge";
 import { TrainerActions } from "./trainer-actions";
@@ -306,7 +307,11 @@ export function TrainerTable({
                   <td className="w-12 !px-4 !py-4 align-middle">
                     {trainer.profileImageUrl ? (
                       <Image
-                        src={trainer.profileImageUrl}
+                        key={`${trainer.id}-${trainer.updatedAt}`}
+                        src={withProfileImageCacheBust(
+                          trainer.profileImageUrl,
+                          trainer.updatedAt,
+                        )}
                         alt={fullName}
                         width={36}
                         height={36}

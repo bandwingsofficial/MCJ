@@ -123,6 +123,7 @@ export class EnrollmentResponseMapper {
       profileImageUrl: student.profileImageUrl,
       status: student.status,
       isActive: student.isActive,
+      updatedAt: student.updatedAt,
     };
   }
 
@@ -163,6 +164,7 @@ export class EnrollmentResponseMapper {
       status: course.status,
       averageRating: course.averageRating,
       totalReviews: course.totalReviews,
+      updatedAt: course.updatedAt,
       trainers: course.trainers.map((link) => this.toTrainer(link.trainer)),
     };
   }

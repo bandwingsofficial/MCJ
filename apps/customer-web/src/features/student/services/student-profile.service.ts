@@ -5,6 +5,7 @@ import {
   isStudentNotFoundError,
   StudentNotFoundError,
 } from "@/src/features/student/errors/student-not-found.error";
+import { syncStudentImageFields } from "@/src/shared/utils/entity-image-sync.util";
 
 import type {
   CreateStudentProfilePayload,
@@ -40,7 +41,9 @@ class StudentProfileService {
       const response =
         await studentProfileApi.getProfile();
 
-      return response.data.data ?? null;
+      const profile = response.data.data ?? null;
+
+      return profile ? syncStudentImageFields(profile) : null;
     } catch (error) {
       const handled = this.handleError(error);
 
@@ -61,7 +64,7 @@ class StudentProfileService {
           payload,
         );
 
-      return response.data.data;
+      return syncStudentImageFields(response.data.data);
     } catch (error) {
       throw this.handleError(error);
     }
@@ -76,7 +79,7 @@ class StudentProfileService {
           payload,
         );
 
-      return response.data.data;
+      return syncStudentImageFields(response.data.data);
     } catch (error) {
       throw this.handleError(error);
     }

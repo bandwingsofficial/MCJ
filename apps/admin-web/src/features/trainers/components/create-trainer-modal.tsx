@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { Modal } from "@/src/shared/components/ui/model";
 
 import { CreateTrainerForm } from "./create-trainer-form";
@@ -14,6 +16,10 @@ import type {
   CreateTrainerRequest,
 } from "@/src/features/trainers/types/trainer.types";
 import { formatJoinedAtForApi } from "@/src/features/trainers/utils/trainer-date.util";
+import { trainerService } from "@/src/features/trainers/services/trainer.service";
+import { getUploadFileId } from "@/src/shared/utils/upload-image.util";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { appToast } from "@/src/shared/components/ui/toast";
 
 interface CreateTrainerModalProps {
   open: boolean;
@@ -22,7 +28,8 @@ interface CreateTrainerModalProps {
 }
 
 function toCreatePayload(
-  values: CreateTrainerFormValues
+  values: CreateTrainerFormValues,
+  profileImageFileId?: string,
 ): CreateTrainerRequest {
   return {
     firstName: values.firstName.trim(),
@@ -60,6 +67,7 @@ function toCreatePayload(
       : undefined,
     isFeatured: values.isFeatured,
     joinedAt: formatJoinedAtForApi(values.joinedAt),
+    profileImageFileId,
   };
 }
 
@@ -69,19 +77,34 @@ export function CreateTrainerModal({
   onSuccess,
 }: CreateTrainerModalProps) {
   const { createTrainer, isPending } = useCreateTrainer();
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const handleSubmit = async (
     values: CreateTrainerFormValues,
     image: File | null
   ) => {
-    const success = await createTrainer(
-      toCreatePayload(values),
-      image
-    );
+    try {
+      let profileImageFileId: string | undefined;
 
-    if (success) {
-      onSuccess();
-      onClose();
+      if (image) {
+        setIsUploadingImage(true);
+
+        try {
+          const uploadResponse = await trainerService.uploadTrainerImage(image);
+          profileImageFileId = getUploadFileId(uploadResponse);
+        } finally {
+          setIsUploadingImage(false);
+        }
+      }
+
+      const success = await createTrainer(toCreatePayload(values, profileImageFileId));
+
+      if (success) {
+        onSuccess();
+        onClose();
+      }
+    } catch (error) {
+      appToast.error(getErrorMessage(error));
     }
   };
 
@@ -95,7 +118,7 @@ export function CreateTrainerModal({
       <CreateTrainerForm
         key={open ? "create-trainer-open" : "create-trainer-closed"}
         submitLabel="Create Trainer"
-        isSubmitting={isPending}
+        isSubmitting={isPending || isUploadingImage}
         onSubmit={handleSubmit}
       />
     </Modal>

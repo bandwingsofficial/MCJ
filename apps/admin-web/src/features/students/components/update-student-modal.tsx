@@ -9,15 +9,10 @@ import {
   getErrorFieldErrors,
   getErrorMessage,
 } from "@/src/core/utils/get-error-message";
-
-import { EditStudentForm } from "@/src/features/students/components/edit-student-form";
-import { useUpdateStudent } from "@/src/features/students/hooks/useUpdateStudent";
-import type { CreateStudentFormValues } from "@/src/features/students/schemas/create-student.schema";
-import type { StudentListItem } from "@/src/features/students/types/student.types";
 import {
-  mapStudentToFormValues,
-  toUpdateStudentRequest,
-} from "@/src/features/students/utils/student-form.utils";
+  getUploadFileId,
+  withImageCacheBust,
+} from "@/src/shared/utils/upload-image.util";
 
 interface UpdateStudentModalProps {
   open: boolean;
@@ -33,6 +28,7 @@ export function UpdateStudentModal({
   onSuccess,
 }: UpdateStudentModalProps) {
   const { updateStudent, isLoading } = useUpdateStudent();
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
 
   const defaultValues = useMemo<CreateStudentFormValues | null>(() => {
@@ -42,6 +38,14 @@ export function UpdateStudentModal({
 
     return mapStudentToFormValues(student);
   }, [student]);
+
+  const profileImageUrl = useMemo(() => {
+    if (!student?.profileImageUrl) {
+      return null;
+    }
+
+    return withImageCacheBust(student.profileImageUrl, student.updatedAt);
+  }, [student?.profileImageUrl, student?.updatedAt]);
 
   const applySubmitError = (error: unknown) => {
     const fieldErrors = getErrorFieldErrors(error);
@@ -80,12 +84,27 @@ export function UpdateStudentModal({
     }
 
     setServerErrors({});
+
     try {
-      await updateStudent(
-        student.id,
-        toUpdateStudentRequest(values),
-        image,
-      );
+      let profileImageFileId: string | null | undefined;
+
+      if (image) {
+        setIsUploadingImage(true);
+
+        try {
+          const uploadResponse = await studentService.uploadStudentImage(image);
+          profileImageFileId = getUploadFileId(uploadResponse);
+        } finally {
+          setIsUploadingImage(false);
+        }
+      }
+
+      const payload: UpdateStudentRequest = {
+        ...toUpdateStudentRequest(values),
+        ...(profileImageFileId !== undefined ? { profileImageFileId } : {}),
+      };
+
+      await updateStudent(student.id, payload);
       appToast.success("Student updated successfully");
       await onSuccess();
       onClose();
@@ -99,7 +118,7 @@ export function UpdateStudentModal({
       open={open}
       title="Edit Student"
       onClose={() => {
-        if (isLoading) {
+        if (isLoading || isUploadingImage) {
           return;
         }
 
@@ -110,14 +129,14 @@ export function UpdateStudentModal({
     >
       {student && defaultValues ? (
         <EditStudentForm
-          key={student.id}
+          key={`${student.id}-${student.updatedAt}`}
           defaultValues={defaultValues}
-          profileImageUrl={student.profileImageUrl}
-          isSubmitting={isLoading}
+          profileImageUrl={profileImageUrl}
+          isSubmitting={isLoading || isUploadingImage}
           serverErrors={serverErrors}
           onSubmit={handleSubmit}
           onCancel={() => {
-            if (isLoading) {
+            if (isLoading || isUploadingImage) {
               return;
             }
 

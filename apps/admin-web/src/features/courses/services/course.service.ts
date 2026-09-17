@@ -3,6 +3,10 @@ import { AxiosError } from "axios";
 import { apiClient } from "@/src/core/api/axios";
 
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import {
+  syncCourseImageFields,
+  syncCourseImageList,
+} from "@/src/shared/utils/entity-image-sync.util";
 
 import type {
   ActivateCourseResponse,
@@ -99,7 +103,10 @@ class CourseService {
         ApiSuccessResponse<CourseDetails>
       >(this.basePath, payload);
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncCourseImageFields(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }
@@ -115,9 +122,14 @@ class CourseService {
         params: buildListParams(filters),
       });
 
+      const normalized = normalizeListResponse(response.data.data);
+
       return {
         ...response.data,
-        data: normalizeListResponse(response.data.data),
+        data: {
+          ...normalized,
+          items: syncCourseImageList(normalized.items ?? []),
+        },
       };
     } catch (error) {
       throw this.handleError(error);
@@ -132,7 +144,10 @@ class CourseService {
         ApiSuccessResponse<CourseDetails>
       >(`${this.basePath}/${id}`);
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncCourseImageFields(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }
@@ -159,7 +174,10 @@ class CourseService {
         ApiSuccessResponse<CourseDetails>
       >(`${this.basePath}/${id}`, payload);
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncCourseImageFields(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }

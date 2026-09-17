@@ -126,6 +126,7 @@ export function CreateStudentForm({
   const [isSuggestingCode, setIsSuggestingCode] = useState(false);
   const [studentId, setStudentId] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const selectedImageRef = useRef<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const {
@@ -304,7 +305,7 @@ export function CreateStudentForm({
   return (
     <form
       onSubmit={handleSubmit(async (formValues) => {
-        await onSubmit(formValues, selectedImage);
+        await onSubmit(formValues, selectedImageRef.current);
       })}
       className="flex min-h-0 flex-1 flex-col"
       autoComplete="off"
@@ -325,6 +326,7 @@ export function CreateStudentForm({
                 disabled={isSubmitting}
                 state={getFieldState("profileImageFileId")}
                 onFileSelect={(file) => {
+                  selectedImageRef.current = file;
                   setSelectedImage(file);
                   if (!file) {
                     setPreviewUrl(null);
@@ -332,6 +334,7 @@ export function CreateStudentForm({
                 }}
                 onRemove={() => {
                   setSelectedImage(null);
+                  selectedImageRef.current = null;
                   setPreviewUrl(null);
                 }}
               />

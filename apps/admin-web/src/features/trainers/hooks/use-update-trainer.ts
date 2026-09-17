@@ -19,7 +19,6 @@ interface UseUpdateTrainerReturn {
   updateTrainer: (
     id: string,
     payload: UpdateTrainerRequest,
-    image?: File | null
   ) => Promise<boolean>;
 }
 
@@ -36,30 +35,14 @@ export const useUpdateTrainer =
       async (
         id: string,
         payload: UpdateTrainerRequest,
-        image?: File | null
       ): Promise<boolean> => {
         try {
           setIsLoading(true);
 
-          const requestPayload: UpdateTrainerRequest =
-            {
-              ...payload,
-            };
-
-          if (image) {
-            const uploadResponse =
-              await trainerService.uploadTrainerImage(
-                image
-              );
-
-            requestPayload.profileImageFileId =
-              uploadResponse.data.fileId;
-          }
-
           const response =
             await trainerService.updateTrainer(
               id,
-              requestPayload
+              payload
             );
 
           appToast.success(

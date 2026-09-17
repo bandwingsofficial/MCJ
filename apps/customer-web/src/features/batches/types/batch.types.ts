@@ -119,6 +119,9 @@ export interface Batch {
   currency?: string;
   isFree?: boolean;
 
+  /** Per-mode pricing from parent batch configuration. */
+  modePricing?: Partial<Record<BatchMode, BatchPricing>> | null;
+
   isFeatured: boolean;
 
   status: BatchStatus;

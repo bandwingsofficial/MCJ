@@ -9,12 +9,17 @@ import {
   getErrorFieldErrors,
   getErrorMessage,
 } from "@/src/core/utils/get-error-message";
+import { getUploadFileId } from "@/src/shared/utils/upload-image.util";
 
 import { CreateStudentForm } from "@/src/features/students/components/create-student-form";
 import { useCreateStudent } from "@/src/features/students/hooks/useCreateStudent";
+import { studentService } from "@/src/features/students/services/student.service";
 import { toCreateStudentRequest } from "@/src/features/students/utils/student-form.utils";
 import type { CreateStudentFormValues } from "@/src/features/students/schemas/create-student.schema";
-import type { Student } from "@/src/features/students/types/student.types";
+import type {
+  CreateStudentRequest,
+  Student,
+} from "@/src/features/students/types/student.types";
 
 interface CreateStudentModalProps {
   open: boolean;
@@ -28,6 +33,7 @@ export function CreateStudentModal({
   onSuccess,
 }: CreateStudentModalProps) {
   const { createStudent, isLoading } = useCreateStudent();
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [serverErrors, setServerErrors] = useState<Record<string, string>>({});
 
   const applySubmitError = (error: unknown) => {
@@ -63,11 +69,22 @@ export function CreateStudentModal({
     image: File | null,
   ) => {
     setServerErrors({});
+
     try {
-      const createdStudent = await createStudent(
-        toCreateStudentRequest(values),
-        image,
-      );
+      const payload: CreateStudentRequest = toCreateStudentRequest(values);
+
+      if (image) {
+        setIsUploadingImage(true);
+
+        try {
+          const uploadResponse = await studentService.uploadStudentImage(image);
+          payload.profileImageFileId = getUploadFileId(uploadResponse);
+        } finally {
+          setIsUploadingImage(false);
+        }
+      }
+
+      const createdStudent = await createStudent(payload);
       appToast.success("Student created successfully");
       await onSuccess(createdStudent);
       onClose();
@@ -81,7 +98,7 @@ export function CreateStudentModal({
       open={open}
       title="Create Student"
       onClose={() => {
-        if (isLoading) {
+        if (isLoading || isUploadingImage) {
           return;
         }
 
@@ -92,11 +109,11 @@ export function CreateStudentModal({
     >
       <CreateStudentForm
         key={open ? "create-student-open" : "create-student-closed"}
-        isSubmitting={isLoading}
+        isSubmitting={isLoading || isUploadingImage}
         serverErrors={serverErrors}
         onSubmit={handleSubmit}
         onCancel={() => {
-          if (isLoading) {
+          if (isLoading || isUploadingImage) {
             return;
           }
 

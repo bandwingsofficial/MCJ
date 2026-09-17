@@ -33,6 +33,7 @@ export class TrainerController {
         true,
         query.skip,
         query.take,
+        query.courseId,
       ),
     );
 

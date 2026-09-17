@@ -6,13 +6,14 @@ import { batchService } from "@/src/features/batches/services/batch.service";
 import { isBatchBlockedForSelection } from "@/src/features/enrollments/utils/enrollment-batch.utils";
 import { getCourses } from "@/src/features/courses/services/course.service";
 import { loadBranchAssignedTrainers } from "@/src/features/branches/utils/branch-trainer.utils";
+import { ENTITY_IMAGE_QUERY_OPTIONS } from "@/src/shared/lib/entity-image-query";
 
 export function useBranchCourses(branchId: string | undefined) {
   return useQuery({
     queryKey: ["branch-courses", branchId],
     queryFn: () => getCourses({ branchId }),
     enabled: Boolean(branchId),
-    staleTime: 1000 * 60 * 5,
+    ...ENTITY_IMAGE_QUERY_OPTIONS,
   });
 }
 
@@ -30,7 +31,7 @@ export function useBranchTrainers(branchId: string | undefined) {
     queryKey: ["branch-trainers", branchId],
     queryFn: () => loadBranchAssignedTrainers(branchId!),
     enabled: Boolean(branchId),
-    staleTime: 1000 * 60 * 5,
+    ...ENTITY_IMAGE_QUERY_OPTIONS,
   });
 }
 

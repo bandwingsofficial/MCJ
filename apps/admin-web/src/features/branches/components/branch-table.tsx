@@ -7,6 +7,7 @@ import Image from "next/image";
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
 
 import type { BranchListItem } from "@/src/features/branches/types/branch.types";
+import { withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 
 import { BranchStatusBadge } from "./branch-status-badge";
 import { BranchActions } from "./branch-actions";
@@ -190,7 +191,11 @@ export function BranchTable({
                   <td className="w-12 !px-4 !py-4 align-middle">
                     {branch.thumbnailUrl ? (
                       <Image
-                        src={branch.thumbnailUrl}
+                        key={`${branch.id}-${branch.updatedAt}`}
+                        src={withImageCacheBust(
+                          branch.thumbnailUrl,
+                          branch.updatedAt,
+                        )}
                         alt={branch.branchName}
                         width={36}
                         height={36}

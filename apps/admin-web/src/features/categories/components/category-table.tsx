@@ -12,6 +12,7 @@ import { CategoryStatusBadge } from "./category-status-badge";
 import { CategoryActions } from "./category-actions";
 
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
+import { withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 
 interface Props {
   categories: CategoryListItem[];
@@ -330,7 +331,11 @@ export function CategoryTable({
                   <td className="w-12 !px-4 !py-4 align-middle">
                     {category.thumbnailUrl ? (
                       <Image
-                        src={category.thumbnailUrl}
+                        key={`${category.id}-${category.updatedAt}`}
+                        src={withImageCacheBust(
+                          category.thumbnailUrl,
+                          category.updatedAt,
+                        )}
                         alt={category.name}
                         width={36}
                         height={36}

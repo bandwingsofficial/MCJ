@@ -11,6 +11,7 @@ import {
 } from "@/src/features/branches/schemas/branch.schema";
 
 import { branchService } from "@/src/features/branches/services/branch.service";
+import { getUploadFileId } from "@/src/shared/utils/upload-image.util";
 
 interface CreateBranchModalProps {
   open: boolean;
@@ -38,7 +39,7 @@ export function CreateBranchModal({
 
     if (image) {
       const uploadResponse = await branchService.uploadBranchImage(image);
-      thumbnailFileId = uploadResponse.data.fileId;
+      thumbnailFileId = getUploadFileId(uploadResponse);
     }
 
     await createBranch({

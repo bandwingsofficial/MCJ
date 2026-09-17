@@ -1,67 +1,32 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
+import { ENTITY_IMAGE_QUERY_OPTIONS } from "@/src/shared/lib/entity-image-query";
 
 import type {
   Enrollment,
 } from "@/src/features/enrollments/types/enrollment.types";
 
 export function useMyEnrollments() {
-  const [
-    enrollments,
-    setEnrollments,
-  ] = useState<
-    Enrollment[]
-  >([]);
-
-  const [
-    isLoading,
-    setIsLoading,
-  ] = useState(true);
-
-  const [
-    error,
-    setError,
-  ] = useState<
-    string | null
-  >(null);
-
-  const fetchEnrollments =
-    async () => {
-      try {
-        setIsLoading(true);
-
-        const data =
-          await enrollmentService.getMyEnrollments();
-
-        setEnrollments(data);
-
-        setError(null);
-      } catch (error) {
-        setError(
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch enrollments",
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-  useEffect(() => {
-    void fetchEnrollments();
-  }, []);
+  const query = useQuery({
+    queryKey: ["my-enrollments"],
+    queryFn: () => enrollmentService.getMyEnrollments(),
+    ...ENTITY_IMAGE_QUERY_OPTIONS,
+  });
 
   return {
-    enrollments,
-    isLoading,
-    error,
-    refetch:
-      fetchEnrollments,
+    enrollments: (query.data ?? []) as Enrollment[],
+    isLoading: query.isLoading,
+    error:
+      query.error instanceof Error
+        ? query.error.message
+        : query.error
+          ? "Failed to fetch enrollments"
+          : null,
+    refetch: async () => {
+      await query.refetch();
+    },
   };
 }

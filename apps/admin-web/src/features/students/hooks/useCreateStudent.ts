@@ -11,33 +11,18 @@ import type {
 interface UseCreateStudentReturn {
   isLoading: boolean;
   isPending: boolean;
-  createStudent: (
-    payload: CreateStudentRequest,
-    image?: File | null,
-  ) => Promise<Student>;
+  createStudent: (payload: CreateStudentRequest) => Promise<Student>;
 }
 
 export const useCreateStudent = (): UseCreateStudentReturn => {
   const [isLoading, setIsLoading] = useState(false);
 
-  const createStudent = async (
-    payload: CreateStudentRequest,
-    image?: File | null,
-  ) => {
+  const createStudent = async (payload: CreateStudentRequest) => {
     setIsLoading(true);
 
     try {
-      const requestPayload: CreateStudentRequest = { ...payload };
-
-      if (image) {
-        const uploadResponse = await studentService.uploadStudentImage(image);
-        requestPayload.profileImageFileId = uploadResponse.data.fileId;
-      }
-
-      const response = await studentService.createStudent(requestPayload);
+      const response = await studentService.createStudent(payload);
       return response.data;
-    } catch (error) {
-      throw error;
     } finally {
       setIsLoading(false);
     }

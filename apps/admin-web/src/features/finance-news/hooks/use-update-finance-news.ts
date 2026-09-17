@@ -5,15 +5,13 @@ import { useState } from "react";
 import { AxiosError } from "axios";
 
 import { appToast } from "@/src/shared/components/ui/toast";
+import { getUploadFileId } from "@/src/shared/utils/upload-image.util";
 
 import { financeNewsService } from "@/src/features/finance-news/services/finance-news.service";
 import { mapFinanceNewsApiError } from "@/src/features/finance-news/utils/finance-news-form-errors";
 
 import type { FinanceNewsFormValues } from "@/src/features/finance-news/schemas/finance-news.schema";
-import type {
-  FinanceNewsDetails,
-  UpdateFinanceNewsRequest,
-} from "@/src/features/finance-news/types/finance-news.types";
+import type { UpdateFinanceNewsRequest } from "@/src/features/finance-news/types/finance-news.types";
 import type { FinanceNewsFormFieldErrors } from "@/src/features/finance-news/utils/finance-news-form-errors";
 
 import { normalizeFinanceNewsSlug } from "@/src/features/finance-news/schemas/finance-news.schema";
@@ -28,10 +26,6 @@ interface UseUpdateFinanceNewsReturn {
   updateFinanceNews: (
     id: string,
     values: FinanceNewsFormValues,
-    existing: Pick<
-      FinanceNewsDetails,
-      "thumbnailFileId" | "bannerFileId"
-    >,
     files?: FinanceNewsUploadFiles,
   ) => Promise<boolean>;
   clearFieldErrors: () => void;
@@ -39,6 +33,8 @@ interface UseUpdateFinanceNewsReturn {
 
 function toUpdateRequest(
   values: FinanceNewsFormValues,
+  thumbnailFileId?: string | null,
+  bannerFileId?: string | null,
 ): UpdateFinanceNewsRequest {
   const slug = values.slug?.trim()
     ? normalizeFinanceNewsSlug(values.slug)
@@ -54,6 +50,8 @@ function toUpdateRequest(
     authorImage: values.authorImage?.trim() || undefined,
     tags: values.tags,
     status: values.status,
+    thumbnailFileId,
+    bannerFileId,
   };
 }
 
@@ -67,39 +65,34 @@ export const useUpdateFinanceNews = (
   const updateFinanceNews = async (
     id: string,
     values: FinanceNewsFormValues,
-    existing: Pick<
-      FinanceNewsDetails,
-      "thumbnailFileId" | "bannerFileId"
-    >,
     files?: FinanceNewsUploadFiles,
   ): Promise<boolean> => {
     try {
       setIsLoading(true);
       setFieldErrors({});
 
-      const payload = toUpdateRequest(values);
+      let thumbnailFileId: string | null | undefined;
+      let bannerFileId: string | null | undefined;
 
       if (files?.thumbnail) {
         const uploadResponse = await financeNewsService.uploadImage(
           files.thumbnail,
         );
-        payload.thumbnailFileId = uploadResponse.data.fileId;
+        thumbnailFileId = getUploadFileId(uploadResponse);
       } else if (files?.removeThumbnail) {
-        payload.thumbnailFileId = null;
-      } else if (existing.thumbnailFileId) {
-        payload.thumbnailFileId = existing.thumbnailFileId;
+        thumbnailFileId = null;
       }
 
       if (files?.banner) {
         const uploadResponse = await financeNewsService.uploadImage(
           files.banner,
         );
-        payload.bannerFileId = uploadResponse.data.fileId;
+        bannerFileId = getUploadFileId(uploadResponse);
       } else if (files?.removeBanner) {
-        payload.bannerFileId = null;
-      } else if (existing.bannerFileId) {
-        payload.bannerFileId = existing.bannerFileId;
+        bannerFileId = null;
       }
+
+      const payload = toUpdateRequest(values, thumbnailFileId, bannerFileId);
 
       const response = await financeNewsService.updateFinanceNews(
         id,

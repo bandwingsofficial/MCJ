@@ -12,6 +12,10 @@ import {
   UpdateBranchRequest,
   UpdateBranchStatusRequest,
 } from "@/src/features/branches/types/branch.types";
+import {
+  syncBranchImageFields,
+  syncBranchImageList,
+} from "@/src/shared/utils/entity-image-sync.util";
 
 const MAX_BRANCH_PAGE_SIZE = 100;
 
@@ -39,7 +43,13 @@ export const branchApi = {
       },
     });
 
-    return response.data;
+    return {
+      ...response.data,
+      data: {
+        ...response.data.data,
+        items: syncBranchImageList(response.data.data.items ?? []),
+      },
+    };
   },
 
   async getBranch(id: string) {
@@ -47,7 +57,10 @@ export const branchApi = {
       ApiResponse<Branch>
     >(`/admin/branches/${id}`);
 
-    return response.data;
+    return {
+      ...response.data,
+      data: syncBranchImageFields(response.data.data),
+    };
   },
 
   async suggestBranchCode(branchName?: string) {
@@ -79,7 +92,10 @@ export const branchApi = {
       ApiResponse<Branch>
     >("/admin/branches", payload);
 
-    return response.data;
+    return {
+      ...response.data,
+      data: syncBranchImageFields(response.data.data),
+    };
   },
 
   async updateBranch(
@@ -90,7 +106,10 @@ export const branchApi = {
       ApiResponse<Branch>
     >(`/admin/branches/${id}`, payload);
 
-    return response.data;
+    return {
+      ...response.data,
+      data: syncBranchImageFields(response.data.data),
+    };
   },
 
   async updateStatus(

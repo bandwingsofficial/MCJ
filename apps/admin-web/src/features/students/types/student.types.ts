@@ -101,9 +101,11 @@ export interface CreateStudentRequest {
   status?: StudentStatus;
 }
 
-export interface UpdateStudentRequest extends CreateStudentRequest {
+export interface UpdateStudentRequest
+  extends Omit<CreateStudentRequest, "profileImageFileId"> {
   studentCode?: string;
   branchId?: string | null;
+  profileImageFileId?: string | null;
 }
 
 export interface StudentListResponse {

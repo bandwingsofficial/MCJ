@@ -3,6 +3,10 @@ import { AxiosError } from "axios";
 import { apiClient } from "@/src/core/api/axios";
 
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import {
+  syncTrainerImageFields,
+  syncTrainerImageList,
+} from "@/src/shared/utils/entity-image-sync.util";
 
 import type {
   ApiSuccessResponse,
@@ -81,9 +85,14 @@ class TrainerService {
         params,
       });
 
+      const normalized = normalizeListResponse(response.data.data);
+
       return {
         ...response.data,
-        data: normalizeListResponse(response.data.data),
+        data: {
+          ...normalized,
+          items: syncTrainerImageList(normalized.items ?? []),
+        },
       };
     } catch (error) {
       throw this.handleError(error);
@@ -96,7 +105,10 @@ class TrainerService {
         ApiSuccessResponse<TrainerDetails>
       >(`${this.basePath}/${id}`);
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncTrainerImageFields(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }
@@ -120,7 +132,10 @@ class TrainerService {
         ApiSuccessResponse<TrainerDetails>
       >(this.basePath, payload);
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncTrainerImageFields(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }
@@ -137,7 +152,10 @@ class TrainerService {
         courseIds,
       });
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncTrainerImageFields(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }
@@ -227,7 +245,10 @@ class TrainerService {
         ApiSuccessResponse<TrainerDetails>
       >(`${this.basePath}/${id}`, payload);
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncTrainerImageFields(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }
@@ -239,7 +260,10 @@ class TrainerService {
         ApiSuccessResponse<TrainerDetails>
       >(`${this.basePath}/${id}/activate`);
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncTrainerImageFields(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }
@@ -251,7 +275,10 @@ class TrainerService {
         ApiSuccessResponse<TrainerDetails>
       >(`${this.basePath}/${id}/deactivate`);
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncTrainerImageFields(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }
@@ -263,7 +290,10 @@ class TrainerService {
         ApiSuccessResponse<TrainerDetails>
       >(`${this.basePath}/${id}/restore`);
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncTrainerImageFields(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }

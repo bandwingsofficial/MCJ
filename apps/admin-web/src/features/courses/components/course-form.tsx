@@ -56,6 +56,8 @@ interface Props {
     thumbnailUrl?: string | null;
     status?: string;
   };
+  /** Stable key used to re-seed edit form without clearing selected image on every render. */
+  formSeedKey?: string;
   categoryOptions: SelectOption[];
   isEdit?: boolean;
   isLoading?: boolean;
@@ -124,6 +126,7 @@ function iconInputClass(
 export function CourseForm({
   courseCode,
   defaultValues,
+  formSeedKey,
   categoryOptions,
   isEdit = false,
   isLoading = false,
@@ -136,7 +139,9 @@ export function CourseForm({
 }: Props) {
   const formRef = useRef<HTMLFormElement | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const selectedImageRef = useRef<File | null>(null);
   const [removeImage, setRemoveImage] = useState(false);
+  const removeImageRef = useRef(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [imageTouched, setImageTouched] = useState(false);
   const [editValidationReady, setEditValidationReady] = useState(false);
@@ -259,7 +264,9 @@ export function CourseForm({
 
     reset(merged);
     setSelectedImage(null);
+    selectedImageRef.current = null;
     setRemoveImage(false);
+    removeImageRef.current = false;
     setImageError(null);
     setImageTouched(false);
     setEditValidationReady(false);
@@ -275,7 +282,7 @@ export function CourseForm({
       };
       setMetaAutoVersion((version) => version + 1);
     }
-  }, [defaultValues, isEdit, reset, syncMetaAutoFlags]);
+  }, [formSeedKey, isEdit, reset, syncMetaAutoFlags]);
 
   useEffect(() => {
     const generated = generateCourseMeta(getMetaSource());
@@ -476,6 +483,7 @@ export function CourseForm({
 
     if (!file) {
       setSelectedImage(null);
+      selectedImageRef.current = null;
       return;
     }
 
@@ -484,12 +492,15 @@ export function CourseForm({
     if (validationMessage) {
       setImageError(validationMessage);
       setSelectedImage(null);
+      selectedImageRef.current = null;
       return;
     }
 
     setImageError(null);
+    selectedImageRef.current = file;
     setSelectedImage(file);
     setRemoveImage(false);
+    removeImageRef.current = false;
   };
 
   const metaTitleRegister = register("metaTitle");
@@ -503,7 +514,11 @@ export function CourseForm({
       className="min-w-0 w-full space-y-4"
       onSubmit={handleSubmit(
         async (data) => {
-          await onSubmit(data, selectedImage, removeImage);
+          await onSubmit(
+            data,
+            selectedImageRef.current,
+            removeImageRef.current,
+          );
         },
         () => {
           focusFirstInvalidField();
@@ -814,7 +829,9 @@ export function CourseForm({
             onRemove={() => {
               setImageTouched(true);
               setSelectedImage(null);
+              selectedImageRef.current = null;
               setRemoveImage(true);
+              removeImageRef.current = true;
               setImageError(null);
             }}
             validateFile={validateCourseImageFile}

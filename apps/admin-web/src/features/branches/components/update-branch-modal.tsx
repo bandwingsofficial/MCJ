@@ -14,6 +14,7 @@ import { useUpdateBranch } from "@/src/features/branches/hooks/use-update-branch
 import { CreateBranchFormValues } from "@/src/features/branches/schemas/branch.schema";
 
 import { branchService } from "@/src/features/branches/services/branch.service";
+import { getUploadFileId, withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 
 interface UpdateBranchModalProps {
   open: boolean;
@@ -79,7 +80,7 @@ export function UpdateBranchModal({
 
     if (image) {
       const uploadResponse = await branchService.uploadBranchImage(image);
-      thumbnailFileId = uploadResponse.data.fileId;
+      thumbnailFileId = getUploadFileId(uploadResponse);
     } else if (removeImage) {
       thumbnailFileId = null;
     }
@@ -117,7 +118,9 @@ export function UpdateBranchModal({
             latitude: branch.latitude ?? 0,
             longitude: branch.longitude ?? 0,
             description: branch.description ?? "",
-            thumbnailUrl: branch.thumbnailUrl,
+            thumbnailUrl: branch.thumbnailUrl
+              ? withImageCacheBust(branch.thumbnailUrl, branch.updatedAt)
+              : branch.thumbnailUrl,
           }}
           submitLabel="Update Branch"
           isSubmitting={isPending}

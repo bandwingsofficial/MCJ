@@ -5,10 +5,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
+  BookOpen,
   CheckCircle2,
   ChevronRight,
+  Clock3,
+  FileText,
   GraduationCap,
+  HelpCircle,
   ImageOff,
+  Layers3,
+  PlayCircle,
 } from "lucide-react";
 
 import { Badge } from "@/src/shared/components/ui/badge";
@@ -21,18 +27,30 @@ import { CourseAvailableBranches } from "@/src/features/courses/components/cours
 import { CourseBatchCards } from "@/src/features/courses/components/course-batch-cards";
 import { CourseCurriculumAccordion } from "@/src/features/courses/components/course-curriculum-accordion";
 import { CourseDetailPricingCard } from "@/src/features/courses/components/course-detail-pricing-card";
+import { CourseFaqAccordion } from "@/src/features/courses/components/course-faq-accordion";
+import { CourseFeesSection } from "@/src/features/courses/components/course-fees-section";
 import { CourseRatingMeta } from "@/src/features/courses/components/course-rating-meta";
-import { useCourseSummary } from "@/src/features/courses/hooks/use-course";
+import { CourseUpcomingBatchesSection } from "@/src/features/courses/components/course-upcoming-batches-section";
+import {
+  useCourseFaqs,
+  useCourseSummary,
+} from "@/src/features/courses/hooks/use-course";
 import type {
   Course,
   CoursePreviewModule,
 } from "@/src/features/courses/types/course.types";
 import {
+  buildCourseFeesByMode,
+  buildCourseUpcomingBatchGroups,
+  collectBatchTrainerIds,
+  isUpcomingBatch,
+} from "@/src/features/courses/utils/course-batch.utils";
+import {
   formatCourseLevel,
   formatDuration,
   getCourseLearningOutcomes,
 } from "@/src/features/courses/utils/course-display.utils";
-import { useBranchTrainers } from "@/src/features/branches/hooks/useBranchData";
+import { useCourseTrainers } from "@/src/features/trainers/hooks/useCourseTrainers";
 import type { Trainer } from "@/src/features/trainers/types/trainer.types";
 import { isBatchSelectable } from "@/src/features/enrollments/utils/enrollment-batch.utils";
 
@@ -41,6 +59,17 @@ interface CourseDetailsProps {
 }
 
 type DetailTab = "overview" | "curriculum" | "instructor" | "faq";
+
+function formatCourseStatus(status: string | null | undefined): string {
+  if (!status) {
+    return "Active";
+  }
+
+  return status
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 export function CourseDetails({ course }: CourseDetailsProps) {
   const router = useRouter();
@@ -54,17 +83,22 @@ export function CourseDetails({ course }: CourseDetailsProps) {
   const { batches: branchBatches, isLoading: branchBatchesLoading } =
     useCourseBatches(course.id, selectedBranchId, Boolean(selectedBranchId));
   const { data: summary } = useCourseSummary(course.id);
-
+  const { data: faqs = [], isLoading: faqsLoading } = useCourseFaqs(course.id);
   const {
-    data: branchTrainers = [],
+    data: courseTrainers = [],
     isLoading: trainersLoading,
     isError: trainersError,
     refetch: refetchTrainers,
-  } = useBranchTrainers(selectedBranchId);
+  } = useCourseTrainers(course.id);
+
+  const upcomingBatches = useMemo(
+    () => (Array.isArray(courseBatches) ? courseBatches : []).filter(isUpcomingBatch),
+    [courseBatches],
+  );
 
   const selectableCourseBatches = useMemo(
-    () => (Array.isArray(courseBatches) ? courseBatches : []).filter(isBatchSelectable),
-    [courseBatches],
+    () => upcomingBatches.filter(isBatchSelectable),
+    [upcomingBatches],
   );
 
   const branchFilteredBatches = useMemo(
@@ -109,8 +143,6 @@ export function CourseDetails({ course }: CourseDetailsProps) {
     }
   }, [availableBranches, selectedBranchId]);
 
-  const safeBatches = branchFilteredBatches;
-  const safeTrainers = Array.isArray(branchTrainers) ? branchTrainers : [];
   const safeModules = Array.isArray(course.previewModules)
     ? course.previewModules
     : [];
@@ -118,7 +150,35 @@ export function CourseDetails({ course }: CourseDetailsProps) {
   const moduleCount =
     summary?.modules ?? course.moduleCount ?? safeModules.length;
   const lessonCount = summary?.lessons ?? course.lessonCount ?? 0;
-  const trainerCount = summary?.instructors ?? safeTrainers.length;
+  const resourceCount = course.resourceCount ?? 0;
+  const quizCount = summary?.quizzes ?? course.quizCount ?? 0;
+
+  const feesByMode = useMemo(
+    () => buildCourseFeesByMode(upcomingBatches),
+    [upcomingBatches],
+  );
+
+  const upcomingBatchGroups = useMemo(
+    () => buildCourseUpcomingBatchGroups(upcomingBatches, course.title),
+    [course.title, upcomingBatches],
+  );
+
+  const batchTrainerIds = useMemo(
+    () => new Set(collectBatchTrainerIds(upcomingBatches)),
+    [upcomingBatches],
+  );
+
+  const displayTrainers = useMemo(() => {
+    const trainers = Array.isArray(courseTrainers) ? courseTrainers : [];
+
+    if (batchTrainerIds.size === 0) {
+      return trainers;
+    }
+
+    const matched = trainers.filter((trainer) => batchTrainerIds.has(trainer.id));
+
+    return matched.length > 0 ? matched : trainers;
+  }, [batchTrainerIds, courseTrainers]);
 
   const heroDescription =
     course.tagline?.trim() || course.shortDescription?.trim() || null;
@@ -134,27 +194,68 @@ export function CourseDetails({ course }: CourseDetailsProps) {
     [safeModules],
   );
 
-  const courseIncludes = [
-    moduleCount > 0
-      ? `${moduleCount} Module${moduleCount === 1 ? "" : "s"}`
-      : null,
-    lessonCount > 0
-      ? `${lessonCount} Lesson${lessonCount === 1 ? "" : "s"}`
-      : null,
-    course.duration
-      ? formatDuration(course.duration, course.durationType)
-      : null,
-    course.level ? formatCourseLevel(course.level) : null,
-    trainerCount > 0
-      ? `${trainerCount} Trainer${trainerCount === 1 ? "" : "s"}`
-      : null,
-  ].filter(Boolean) as string[];
+  const courseHighlights = useMemo(() => {
+    const highlights: string[] = [];
+
+    if (course.level) {
+      highlights.push(`${formatCourseLevel(course.level)} level course`);
+    }
+
+    if (course.language) {
+      highlights.push(`Delivered in ${course.language}`);
+    }
+
+    if (course.selfPacedVideoCount > 0 || course.liveRecordedVideoCount > 0) {
+      highlights.push("Recorded and live learning content included");
+    }
+
+    if (quizCount > 0) {
+      highlights.push(`${quizCount} assessment${quizCount === 1 ? "" : "s"} included`);
+    }
+
+    if (summary?.branches && summary.branches > 0) {
+      highlights.push(`Available across ${summary.branches} branch${summary.branches === 1 ? "" : "es"}`);
+    }
+
+    return highlights;
+  }, [course, quizCount, summary?.branches]);
+
+  const heroStats = [
+    {
+      label: "Modules",
+      value: moduleCount > 0 ? String(moduleCount) : "—",
+      icon: Layers3,
+    },
+    {
+      label: "Lessons",
+      value: lessonCount > 0 ? String(lessonCount) : "—",
+      icon: BookOpen,
+    },
+    {
+      label: "Resources",
+      value: resourceCount > 0 ? String(resourceCount) : "—",
+      icon: FileText,
+    },
+    {
+      label: "Duration",
+      value: course.duration
+        ? formatDuration(course.duration, course.durationType)
+        : "—",
+      icon: Clock3,
+    },
+  ];
 
   const scrollToAvailableBranches = () => {
     branchesSectionRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "start",
     });
+  };
+
+  const handleEnquire = () => {
+    router.push(
+      `/contact?course=${encodeURIComponent(course.slug)}&courseId=${course.id}`,
+    );
   };
 
   const handleEnroll = () => {
@@ -175,7 +276,6 @@ export function CourseDetails({ course }: CourseDetailsProps) {
 
   return (
     <main className="min-h-screen w-full bg-white">
-      {/* Breadcrumb */}
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-2.5 sm:px-6 lg:px-8">
           <nav className="flex flex-wrap items-center gap-1 text-sm text-slate-500">
@@ -199,94 +299,126 @@ export function CourseDetails({ course }: CourseDetailsProps) {
         </div>
       </div>
 
-      {/* Hero: left = image + info, right = enroll CTA */}
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-4 pt-5 pb-6 sm:px-6 lg:px-8 lg:pt-6">
           <div className="grid gap-6 lg:grid-cols-[7fr_3fr] lg:items-start lg:gap-8">
-            {/* LEFT 70% */}
             <div className="min-w-0">
-              <div className="relative h-[220px] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-[260px] lg:h-[300px]">
-                {course.thumbnailUrl ? (
-                  <img
-                    src={course.thumbnailUrl}
-                    alt={course.title}
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate-400">
-                    <ImageOff className="h-10 w-10 stroke-[1.4]" />
-                    <span className="text-sm font-medium">
-                      No Preview Available
-                    </span>
-                  </div>
-                )}
-
-                <span className="absolute right-3 top-3 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                  {course.status ?? "ACTIVE"}
-                </span>
-              </div>
-
-              <div className="mt-5">
-                <Badge
-                  variant="info"
-                  className="rounded-full px-3 py-0.5 text-xs font-medium"
-                >
-                  {course.categoryName || "Course"}
-                </Badge>
-
-                <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-                  {course.title}
-                </h1>
-
-                {heroDescription ? (
-                  <p className="mt-1.5 text-sm leading-relaxed text-slate-600 sm:text-base">
-                    {heroDescription}
-                  </p>
-                ) : null}
-
-                <div className="mt-2">
-                  <CourseRatingMeta
-                    rating={course.averageRating}
-                    totalReviews={course.totalReviews}
-                    className="inline-flex items-center gap-1.5 text-sm text-slate-600"
-                    emptyClassName="text-sm text-slate-400"
-                  />
+              <div className="grid gap-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
+                <div className="relative h-[180px] w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 sm:h-[200px] lg:h-[220px]">
+                  {course.thumbnailUrl ? (
+                    <img
+                      src={course.thumbnailUrl}
+                      alt={course.title}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate-400">
+                      <ImageOff className="h-8 w-8 stroke-[1.4]" />
+                      <span className="text-sm font-medium">No Preview Available</span>
+                    </div>
+                  )}
                 </div>
 
-                <p className="mt-2 text-sm font-semibold text-[#2563D9]">
-                  {course.code}
-                </p>
-
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {course.level ? (
-                    <Badge className="border-0 bg-slate-100 px-3 py-0.5 text-xs font-medium uppercase text-slate-700 hover:bg-slate-100">
-                      {formatCourseLevel(course.level)}
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge
+                      variant="info"
+                      className="rounded-full px-3 py-0.5 text-xs font-medium"
+                    >
+                      {course.categoryName || "Course"}
                     </Badge>
+                    <Badge className="border-0 bg-emerald-50 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 hover:bg-emerald-50">
+                      {formatCourseStatus(course.status)}
+                    </Badge>
+                  </div>
+
+                  <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+                    {course.title}
+                  </h1>
+
+                  {heroDescription ? (
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-[15px]">
+                      {heroDescription}
+                    </p>
                   ) : null}
+
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <CourseRatingMeta
+                      rating={course.averageRating}
+                      totalReviews={course.totalReviews}
+                      className="inline-flex items-center gap-1.5 text-sm text-slate-600"
+                      emptyClassName="text-sm text-slate-400"
+                    />
+                    {course.code ? (
+                      <span className="text-xs font-semibold uppercase tracking-wide text-[#2563D9]">
+                        {course.code}
+                      </span>
+                    ) : null}
+                    {course.level ? (
+                      <Badge className="border-0 bg-slate-100 px-3 py-0.5 text-xs font-medium uppercase text-slate-700 hover:bg-slate-100">
+                        {formatCourseLevel(course.level)}
+                      </Badge>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {heroStats.map((stat) => (
+                      <div
+                        key={stat.label}
+                        className="rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-3"
+                      >
+                        <div className="flex items-center gap-2 text-[#2563D9]">
+                          <stat.icon className="h-4 w-4" />
+                          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                            {stat.label}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-lg font-bold text-[#0B1F3A]">
+                          {stat.value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-3 lg:hidden">
+                    <Button
+                      type="button"
+                      onClick={handleEnquire}
+                      className="h-11 rounded-xl px-5 text-sm font-semibold"
+                    >
+                      {course.isEnrolled ? "Continue Learning" : "Enquire Now"}
+                    </Button>
+                    {!course.isEnrolled ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleEnroll}
+                        className="h-11 rounded-xl border-slate-200 px-5 text-sm font-semibold text-[#2563D9]"
+                      >
+                        Enroll Now
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* RIGHT 30% */}
-            <aside className="lg:sticky lg:top-20 lg:self-start">
+            <aside className="hidden lg:block lg:sticky lg:top-20 lg:self-start">
               <CourseDetailPricingCard
                 course={course}
-                summary={summary}
                 batchCount={selectableCourseBatches.length}
                 sticky={false}
-                onPrimaryAction={handleEnroll}
+                onPrimaryAction={handleEnquire}
+                onSecondaryAction={handleEnroll}
               />
             </aside>
           </div>
         </div>
       </section>
 
-      {/* Main content: modules + sidebar, then tabs */}
       <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[7fr_3fr] lg:items-start lg:gap-8">
-          {/* LEFT column */}
           <div className="min-w-0 space-y-6">
-            {/* Tabs */}
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
               <div className="border-b border-slate-200 px-4 sm:px-6">
                 <div className="flex items-center gap-6 overflow-x-auto">
@@ -316,58 +448,90 @@ export function CourseDetails({ course }: CourseDetailsProps) {
 
               <div className="p-5 sm:p-6">
                 {activeTab === "overview" ? (
-                  <OverviewContent
+                  <OverviewTabContent
                     description={overviewDescription}
                     learningOutcomes={learningOutcomes}
+                    highlights={courseHighlights}
+                    moduleCount={moduleCount}
+                    lessonCount={lessonCount}
+                    resourceCount={resourceCount}
+                    quizCount={quizCount}
+                    videoCount={
+                      course.selfPacedVideoCount + course.liveRecordedVideoCount
+                    }
+                    batchCount={selectableCourseBatches.length}
+                    branchCount={summary?.branches ?? availableBranches.length}
+                    durationLabel={
+                      course.duration
+                        ? formatDuration(course.duration, course.durationType)
+                        : "—"
+                    }
+                    feesByMode={feesByMode}
+                    feesLoading={courseBatchesLoading}
+                    upcomingBatchGroups={upcomingBatchGroups}
+                    batchesLoading={courseBatchesLoading}
                   />
                 ) : null}
 
                 {activeTab === "curriculum" ? (
-                  <CurriculumOverviewContent modules={safeModules} />
+                  <CurriculumTabContent
+                    modules={safeModules}
+                    moduleCount={moduleCount}
+                    lessonCount={lessonCount}
+                  />
                 ) : null}
 
                 {activeTab === "instructor" ? (
-                  <InstructorContent
-                    trainers={safeTrainers}
+                  <InstructorTabContent
+                    trainers={displayTrainers}
                     isLoading={trainersLoading}
                     isError={trainersError}
-                    branchSelected={Boolean(selectedBranchId)}
                     onRetry={() => void refetchTrainers()}
                   />
                 ) : null}
 
-                {activeTab === "faq" ? <FaqContent /> : null}
-              </div>
-            </div>
-
-            {/* Course Modules */}
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <div className="border-b border-slate-200 px-5 py-4">
-                <h2 className="text-base font-bold text-slate-950">
-                  Course Modules
-                </h2>
-                {safeModules.length > 0 ? (
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {moduleCount} module{moduleCount === 1 ? "" : "s"} ·{" "}
-                    {lessonCount} lesson{lessonCount === 1 ? "" : "s"}
-                  </p>
+                {activeTab === "faq" ? (
+                  <div>
+                    <h2 className="text-base font-bold text-slate-950">
+                      Frequently Asked Questions
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      Answers to common questions about this course.
+                    </p>
+                    <div className="mt-5">
+                      <CourseFaqAccordion faqs={faqs} isLoading={faqsLoading} />
+                    </div>
+                  </div>
                 ) : null}
-              </div>
-              <div className="p-4 sm:p-5">
-                <CourseCurriculumAccordion modules={safeModules} />
               </div>
             </div>
           </div>
 
-          {/* RIGHT sidebar */}
           <aside className="space-y-5 lg:sticky lg:top-20 lg:self-start">
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h2 className="text-base font-bold text-slate-950">
                 This Course Includes
               </h2>
               <div className="mt-4 space-y-3">
-                {courseIncludes.length > 0 ? (
-                  courseIncludes.map((item) => (
+                {[
+                  moduleCount > 0
+                    ? `${moduleCount} structured module${moduleCount === 1 ? "" : "s"}`
+                    : null,
+                  lessonCount > 0
+                    ? `${lessonCount} lesson${lessonCount === 1 ? "" : "s"} and topics`
+                    : null,
+                  resourceCount > 0
+                    ? `${resourceCount} downloadable resource${resourceCount === 1 ? "" : "s"}`
+                    : null,
+                  quizCount > 0
+                    ? `${quizCount} quiz${quizCount === 1 ? "" : "zes"}`
+                    : null,
+                  course.duration
+                    ? `${formatDuration(course.duration, course.durationType)} program duration`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .map((item) => (
                     <div
                       key={item}
                       className="flex items-center gap-2.5 text-sm text-slate-700"
@@ -375,12 +539,14 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                       <CheckCircle2 className="h-4 w-4 shrink-0 text-[#2563D9]" />
                       <span>{item}</span>
                     </div>
-                  ))
-                ) : (
+                  ))}
+                {moduleCount === 0 &&
+                lessonCount === 0 &&
+                resourceCount === 0 ? (
                   <p className="text-sm text-slate-500">
                     Course details will be available soon.
                   </p>
-                )}
+                ) : null}
               </div>
             </div>
 
@@ -402,9 +568,9 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                       Retry
                     </button>
                   </div>
-                ) : safeTrainers.length > 0 ? (
+                ) : displayTrainers.length > 0 ? (
                   <div className="space-y-4">
-                    {safeTrainers.slice(0, 2).map((trainer) => (
+                    {displayTrainers.slice(0, 2).map((trainer) => (
                       <SidebarTrainerCard key={trainer.id} trainer={trainer} />
                     ))}
                   </div>
@@ -461,7 +627,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                 </h2>
                 <div className="mt-4">
                   <CourseBatchCards
-                    batches={safeBatches}
+                    batches={branchFilteredBatches}
                     isLoading={branchBatchesLoading}
                     courseSlug={course.slug}
                     courseId={course.id}
@@ -475,7 +641,6 @@ export function CourseDetails({ course }: CourseDetailsProps) {
         </div>
       </section>
 
-      {/* Bottom CTA */}
       <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8">
         <div className="overflow-hidden rounded-xl border border-blue-100 bg-blue-50/70">
           <div className="flex flex-col items-center justify-between gap-4 px-6 py-6 sm:px-8 lg:flex-row">
@@ -484,17 +649,29 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                 Ready to start your learning journey?
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Select an available branch and batch below to continue enrollment.
+                Enquire now or select an available branch and batch to continue enrollment.
               </p>
             </div>
-            <Button
-              type="button"
-              onClick={handleEnroll}
-              className="h-11 min-w-[160px] shrink-0 rounded-lg bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-7 text-sm font-semibold text-white hover:from-[#1E58C7] hover:to-[#123D94]"
-            >
-              {course.isEnrolled ? "Continue Learning" : "Enroll Now"}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Button
+                type="button"
+                onClick={handleEnquire}
+                className="h-11 min-w-[160px] shrink-0 rounded-lg bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-7 text-sm font-semibold text-white hover:from-[#1E58C7] hover:to-[#123D94]"
+              >
+                Enquire Now
+              </Button>
+              {!course.isEnrolled ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleEnroll}
+                  className="h-11 min-w-[160px] rounded-lg border-slate-200 bg-white px-7 text-sm font-semibold text-[#2563D9]"
+                >
+                  Enroll Now
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              ) : null}
+            </div>
           </div>
         </div>
       </section>
@@ -502,23 +679,49 @@ export function CourseDetails({ course }: CourseDetailsProps) {
   );
 }
 
-function OverviewContent({
+function OverviewTabContent({
   description,
   learningOutcomes,
+  highlights,
+  moduleCount,
+  lessonCount,
+  resourceCount,
+  quizCount,
+  videoCount,
+  batchCount,
+  branchCount,
+  durationLabel,
+  feesByMode,
+  feesLoading,
+  upcomingBatchGroups,
+  batchesLoading,
 }: {
   description: string;
   learningOutcomes: string[];
+  highlights: string[];
+  moduleCount: number;
+  lessonCount: number;
+  resourceCount: number;
+  quizCount: number;
+  videoCount: number;
+  batchCount: number;
+  branchCount: number;
+  durationLabel: string;
+  feesByMode: ReturnType<typeof buildCourseFeesByMode>;
+  feesLoading: boolean;
+  upcomingBatchGroups: ReturnType<typeof buildCourseUpcomingBatchGroups>;
+  batchesLoading: boolean;
 }) {
   return (
-    <div>
-      <h2 className="text-base font-bold text-slate-950">About This Course</h2>
-      <p className="mt-3 text-sm leading-7 text-slate-600">{description}</p>
+    <div className="space-y-8">
+      <section>
+        <h2 className="text-base font-bold text-slate-950">About This Course</h2>
+        <p className="mt-3 text-sm leading-7 text-slate-600">{description}</p>
+      </section>
 
       {learningOutcomes.length > 0 ? (
-        <div className="mt-6 rounded-xl bg-emerald-50/60 p-5">
-          <h3 className="text-sm font-bold text-slate-950">
-            What You&apos;ll Learn
-          </h3>
+        <section className="rounded-xl bg-emerald-50/60 p-5">
+          <h3 className="text-sm font-bold text-slate-950">What You&apos;ll Learn</h3>
           <div className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
             {learningOutcomes.map((outcome) => (
               <div
@@ -530,115 +733,126 @@ function OverviewContent({
               </div>
             ))}
           </div>
-        </div>
+        </section>
       ) : null}
+
+      {highlights.length > 0 ? (
+        <section>
+          <h3 className="text-sm font-bold text-slate-950">Course Highlights</h3>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {highlights.map((highlight) => (
+              <div
+                key={highlight}
+                className="rounded-lg border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-700"
+              >
+                {highlight}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section>
+        <h3 className="text-sm font-bold text-slate-950">Course Structure</h3>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            { label: "Modules", value: moduleCount, icon: Layers3 },
+            { label: "Lessons", value: lessonCount, icon: BookOpen },
+            { label: "Resources", value: resourceCount, icon: FileText },
+            { label: "Quizzes", value: quizCount, icon: HelpCircle },
+            { label: "Videos", value: videoCount, icon: PlayCircle },
+            { label: "Duration", value: durationLabel, icon: Clock3 },
+            { label: "Upcoming Batches", value: batchCount, icon: GraduationCap },
+            { label: "Branches", value: branchCount, icon: CheckCircle2 },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="rounded-lg border border-slate-200 px-4 py-3"
+            >
+              <div className="flex items-center gap-2 text-[#2563D9]">
+                <item.icon className="h-4 w-4" />
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {item.label}
+                </span>
+              </div>
+              <p className="mt-1 text-lg font-bold text-[#0B1F3A]">
+                {typeof item.value === "number" && item.value <= 0 ? "—" : item.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#2563D9]">
+            Pricing
+          </p>
+          <h3 className="mt-1 text-base font-bold text-slate-950">
+            Fees & Learning Modes
+          </h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Pricing is shown only for learning modes configured on upcoming batches.
+          </p>
+        </div>
+        <CourseFeesSection rows={feesByMode} isLoading={feesLoading} />
+      </section>
+
+      <section>
+        <div className="mb-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#2563D9]">
+            Schedule
+          </p>
+          <h3 className="mt-1 text-base font-bold text-slate-950">
+            Upcoming Batches & Timings
+          </h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Timings are grouped by parent batch and learning mode.
+          </p>
+        </div>
+        <CourseUpcomingBatchesSection
+          batches={upcomingBatchGroups}
+          isLoading={batchesLoading}
+        />
+      </section>
     </div>
   );
 }
 
-function CurriculumOverviewContent({
+function CurriculumTabContent({
   modules,
+  moduleCount,
+  lessonCount,
 }: {
   modules: CoursePreviewModule[];
+  moduleCount: number;
+  lessonCount: number;
 }) {
-  const safeModules = Array.isArray(modules) ? modules : [];
-
-  const sortedModules = [...safeModules].sort(
-    (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0),
-  );
-
-  if (!sortedModules.length) {
-    return (
-      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
-        <p className="text-sm text-slate-600">
-          Curriculum details will be available soon.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div>
       <h2 className="text-base font-bold text-slate-950">Course Curriculum</h2>
       <p className="mt-1 text-sm text-slate-500">
-        Module overviews and learning focus areas for this course.
+        {moduleCount} module{moduleCount === 1 ? "" : "s"} · {lessonCount} lesson
+        {lessonCount === 1 ? "" : "s"}
       </p>
-      <div className="mt-5 space-y-4">
-        {sortedModules.map((module, index) => {
-          const lessonCount = Array.isArray(module.lessons)
-            ? module.lessons.length
-            : 0;
-          const keySkills = Array.isArray(module.keySkills)
-            ? module.keySkills
-            : [];
-
-          return (
-            <div
-              key={module.id}
-              className="rounded-lg border border-slate-200 bg-slate-50/50 p-4"
-            >
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#2563D9]">
-                Module {index + 1}
-              </p>
-              <h3 className="mt-0.5 text-sm font-semibold text-slate-900">
-                {module.title}
-              </h3>
-              {lessonCount > 0 ? (
-                <p className="mt-1 text-xs text-slate-500">
-                  {lessonCount} lesson{lessonCount === 1 ? "" : "s"}
-                </p>
-              ) : null}
-              {module.description?.trim() ? (
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {module.description.trim()}
-                </p>
-              ) : null}
-              {keySkills.length > 0 ? (
-                <ul className="mt-3 space-y-1.5">
-                  {keySkills.map((skill) => (
-                    <li
-                      key={skill}
-                      className="flex items-start gap-2 text-sm text-slate-700"
-                    >
-                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                      <span>{skill}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          );
-        })}
+      <div className="mt-5">
+        <CourseCurriculumAccordion modules={modules} />
       </div>
     </div>
   );
 }
 
-function InstructorContent({
+function InstructorTabContent({
   trainers,
   isLoading,
   isError,
-  branchSelected,
   onRetry,
 }: {
   trainers: Trainer[];
   isLoading: boolean;
   isError: boolean;
-  branchSelected: boolean;
   onRetry: () => void;
 }) {
-  const safeTrainers = Array.isArray(trainers) ? trainers : [];
-
-  if (!branchSelected) {
-    return (
-      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-        <p className="text-sm text-slate-600">
-          Select a branch above to view instructors assigned to that location.
-        </p>
-      </div>
-    );
-  }
-
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -665,7 +879,7 @@ function InstructorContent({
     );
   }
 
-  if (!safeTrainers.length) {
+  if (!trainers.length) {
     return (
       <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
         <p className="text-sm text-slate-600">
@@ -677,7 +891,7 @@ function InstructorContent({
 
   return (
     <div className="space-y-4">
-      {safeTrainers.map((trainer) => (
+      {trainers.map((trainer) => (
         <TrainerTabCard key={trainer.id} trainer={trainer} />
       ))}
     </div>
@@ -703,9 +917,17 @@ function TrainerTabCard({ trainer }: { trainer: Trainer }) {
         )}
         <div className="min-w-0">
           <h3 className="text-base font-bold text-slate-950">{fullName}</h3>
+          {trainer.qualification ? (
+            <p className="mt-1 text-sm text-slate-600">{trainer.qualification}</p>
+          ) : null}
           {(trainer.specialization ?? trainer.trainerType) ? (
             <p className="mt-1 text-sm text-[#2563D9]">
               {trainer.specialization ?? trainer.trainerType}
+            </p>
+          ) : null}
+          {trainer.experienceYears > 0 ? (
+            <p className="mt-1 text-xs text-slate-500">
+              {trainer.experienceYears}+ years experience
             </p>
           ) : null}
           {trainer.bio ? (
@@ -735,26 +957,11 @@ function SidebarTrainerCard({ trainer }: { trainer: Trainer }) {
       )}
       <div className="min-w-0">
         <p className="truncate text-sm font-bold text-slate-900">{fullName}</p>
-        {(trainer.specialization ?? trainer.trainerType) ? (
+        {(trainer.specialization ?? trainer.qualification ?? trainer.trainerType) ? (
           <p className="truncate text-xs text-slate-600">
-            {trainer.specialization ?? trainer.trainerType}
+            {trainer.specialization ?? trainer.qualification ?? trainer.trainerType}
           </p>
         ) : null}
-      </div>
-    </div>
-  );
-}
-
-function FaqContent() {
-  return (
-    <div>
-      <h2 className="text-base font-bold text-slate-950">
-        Frequently Asked Questions
-      </h2>
-      <div className="mt-5 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
-        <p className="text-sm text-slate-600">
-          FAQ content will be available soon.
-        </p>
       </div>
     </div>
   );

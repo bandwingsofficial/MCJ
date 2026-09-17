@@ -1,3 +1,5 @@
+import { resolvePersistedImageUrl } from "@/src/shared/utils/image-url.util";
+
 import type {
   StudentCourseResponseDto,
   CourseModuleResponseDto,
@@ -29,7 +31,10 @@ export class CourseMapper {
       tagline: dto.tagline,
       shortDescription: dto.shortDescription,
       description: dto.description,
-      thumbnailUrl: dto.thumbnailUrl,
+      thumbnailUrl: resolvePersistedImageUrl(
+        dto.thumbnailUrl,
+        dto.updatedAt,
+      ),
       duration: dto.duration,
       durationType: this.toDurationType(dto.durationType),
       level: this.toCourseLevel(dto.level),

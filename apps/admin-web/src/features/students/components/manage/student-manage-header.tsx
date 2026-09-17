@@ -14,6 +14,7 @@ import { Button } from "@/src/shared/components/ui/button";
 import { Dropdown } from "@/src/shared/components/ui/dropdown";
 
 import type { Student } from "@/src/features/students/types/student.types";
+import { withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 import { StudentStatusBadge } from "@/src/features/students/components/StudentStatusBadge";
 import {
   formatStudentName,
@@ -94,7 +95,11 @@ export function StudentManageHeader({
             <div className="shrink-0">
               {student.profileImageUrl ? (
                 <Image
-                  src={student.profileImageUrl}
+                  key={`${student.id}-${student.updatedAt}`}
+                  src={withImageCacheBust(
+                    student.profileImageUrl,
+                    student.updatedAt,
+                  )}
                   alt={fullName}
                   width={80}
                   height={80}

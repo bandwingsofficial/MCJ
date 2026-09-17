@@ -9,6 +9,7 @@ import {
 import {
   getCourses,
 } from "@/src/features/courses/services/course.service";
+import { ENTITY_IMAGE_QUERY_OPTIONS } from "@/src/shared/lib/entity-image-query";
 
 import type {
   GetCoursesParams,
@@ -30,7 +31,7 @@ export function useCourses(
 
     queryFn: () => getCourses(queryParams),
 
-    staleTime: 1000 * 60 * 5,
+    ...ENTITY_IMAGE_QUERY_OPTIONS,
     enabled,
   });
 }

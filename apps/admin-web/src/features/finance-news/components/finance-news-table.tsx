@@ -9,6 +9,7 @@ import { Badge } from "@/src/shared/components/ui/badge";
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
 
 import type { FinanceNewsListItem } from "@/src/features/finance-news/types/finance-news.types";
+import { withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 import { isArchivedFinanceNews } from "@/src/features/finance-news/utils/finance-news-bulk.utils";
 import { getFinanceNewsManagementStatus } from "@/src/features/finance-news/utils/finance-news-display.utils";
 import { FINANCE_ARTICLE_STATUS_LABELS } from "@/src/features/finance-news/constants/finance-news.constants";
@@ -303,7 +304,11 @@ export function FinanceNewsTable({
                   <td className="w-12 !px-4 !py-4 align-middle">
                     {item.thumbnailUrl ? (
                       <Image
-                        src={item.thumbnailUrl}
+                        key={`${item.id}-${item.updatedAt}`}
+                        src={withImageCacheBust(
+                          item.thumbnailUrl,
+                          item.updatedAt,
+                        )}
                         alt={item.title}
                         width={36}
                         height={36}

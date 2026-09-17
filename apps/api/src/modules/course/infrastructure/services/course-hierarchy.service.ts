@@ -143,6 +143,11 @@ export class CourseHierarchyService {
       lesson.displayOrder,
       lesson.description,
       lesson.videoUrl,
+      0,
+      false,
+      0,
+      0,
+      0,
     );
   }
 
@@ -484,23 +489,39 @@ export class CourseHierarchyService {
   private toPreviewModule(
     module: Awaited<ReturnType<CourseHierarchyService['loadModules']>>[number],
   ): CourseModulePreviewResult {
+    const parentLessons = module.lessons.filter(
+      (lesson) => !lesson.parentLessonId,
+    );
+
     return new CourseModulePreviewResult(
       module.id,
       module.title,
       module.description,
       module.displayOrder,
-      module.lessons
-        .filter((lesson) => !lesson.parentLessonId)
-        .map(
-        (lesson) =>
-          new CourseLessonPreviewResult(
-            lesson.id,
-            lesson.title,
-            lesson.isPreview,
-            lesson.duration,
-            lesson.displayOrder,
-          ),
-      ),
+      parentLessons.map((lesson) => {
+        const childLessons = module.lessons.filter(
+          (item) => item.parentLessonId === lesson.id,
+        );
+
+        return new CourseLessonPreviewResult(
+          lesson.id,
+          lesson.title,
+          lesson.isPreview,
+          lesson.duration,
+          lesson.displayOrder,
+          lesson.description,
+          lesson.videoUrl,
+          lesson.resources.length,
+          Boolean(lesson.quiz),
+          lesson.learnItems.length,
+          childLessons.filter(
+            (item) => item.contentType === 'SELF_PACED_VIDEO',
+          ).length,
+          childLessons.filter(
+            (item) => item.contentType === 'LIVE_RECORDED_VIDEO',
+          ).length,
+        );
+      }),
       module.keySkills ?? [],
     );
   }

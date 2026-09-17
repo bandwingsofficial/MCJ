@@ -13,6 +13,7 @@ import { GripVertical } from "lucide-react";
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
 
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
+import { withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
 import { isArchivedCourse } from "@/src/features/courses/utils/course-bulk.utils";
 
@@ -320,7 +321,11 @@ export function CourseTable({
                 <td className="w-12 !px-4 !py-4 align-middle">
                   {course.thumbnailUrl ? (
                     <Image
-                      src={course.thumbnailUrl}
+                      key={`${course.id}-${course.updatedAt}`}
+                      src={withImageCacheBust(
+                        course.thumbnailUrl,
+                        course.updatedAt,
+                      )}
                       alt={course.title}
                       width={36}
                       height={36}

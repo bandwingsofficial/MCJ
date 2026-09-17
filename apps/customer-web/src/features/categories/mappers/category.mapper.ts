@@ -4,6 +4,7 @@ import type {
   Category,
   CategoryDto,
 } from "@/src/features/categories/types/category.types";
+import { resolvePersistedImageUrl } from "@/src/shared/utils/image-url.util";
 
 export function mapCategoryDtoToCategory(
   dto: CategoryDto
@@ -13,7 +14,11 @@ export function mapCategoryDtoToCategory(
     name: dto.name,
     slug: dto.slug,
     description: dto.description,
-    thumbnailUrl: dto.thumbnailUrl,
+    thumbnailUrl: resolvePersistedImageUrl(
+      dto.thumbnailUrl,
+      dto.updatedAt,
+    ),
+    updatedAt: dto.updatedAt,
     status: dto.status,
     displayOrder: dto.displayOrder,
     branchId: dto.branchId,

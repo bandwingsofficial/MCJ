@@ -1,3 +1,5 @@
+import { resolvePersistedImageUrl } from "@/src/shared/utils/image-url.util";
+
 import type {
   Trainer,
   TrainerCourse,
@@ -32,6 +34,10 @@ export function normalizeTrainerCourses(courses: unknown): TrainerCourse[] {
 export function normalizeTrainer(trainer: Trainer): Trainer {
   return {
     ...trainer,
+    profileImageUrl: resolvePersistedImageUrl(
+      trainer.profileImageUrl,
+      trainer.updatedAt,
+    ),
     courses: normalizeTrainerCourses(trainer.courses),
   };
 }

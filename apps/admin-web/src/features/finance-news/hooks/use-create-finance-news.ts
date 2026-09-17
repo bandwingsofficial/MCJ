@@ -5,6 +5,7 @@ import { useState } from "react";
 import { AxiosError } from "axios";
 
 import { appToast } from "@/src/shared/components/ui/toast";
+import { getUploadFileId } from "@/src/shared/utils/upload-image.util";
 
 import { financeNewsService } from "@/src/features/finance-news/services/finance-news.service";
 import { mapFinanceNewsApiError } from "@/src/features/finance-news/utils/finance-news-form-errors";
@@ -75,14 +76,14 @@ export const useCreateFinanceNews = (
         const uploadResponse = await financeNewsService.uploadImage(
           files.thumbnail,
         );
-        payload.thumbnailFileId = uploadResponse.data.fileId;
+        payload.thumbnailFileId = getUploadFileId(uploadResponse);
       }
 
       if (files?.banner) {
         const uploadResponse = await financeNewsService.uploadImage(
           files.banner,
         );
-        payload.bannerFileId = uploadResponse.data.fileId;
+        payload.bannerFileId = getUploadFileId(uploadResponse);
       }
 
       const response = await financeNewsService.createFinanceNews(payload);

@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useRef,
   useState,
   type ChangeEvent,
   type FocusEvent,
@@ -124,6 +125,7 @@ export function EditStudentForm({
   onSubmit,
 }: EditStudentFormProps) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const selectedImageRef = useRef<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     profileImageUrl ?? null,
   );
@@ -147,6 +149,7 @@ export function EditStudentForm({
   useEffect(() => {
     reset(defaultValues);
     setSelectedImage(null);
+    selectedImageRef.current = null;
     setPreviewUrl(profileImageUrl ?? null);
   }, [defaultValues, profileImageUrl, reset]);
 
@@ -273,7 +276,7 @@ export function EditStudentForm({
   return (
     <form
       onSubmit={handleSubmit(async (formValues) => {
-        await onSubmit(formValues, selectedImage);
+        await onSubmit(formValues, selectedImageRef.current);
       })}
       className="flex min-h-0 flex-1 flex-col"
       autoComplete="off"
@@ -294,6 +297,7 @@ export function EditStudentForm({
                 disabled={isSubmitting}
                 state={getFieldState("profileImageFileId")}
                 onFileSelect={(file) => {
+                  selectedImageRef.current = file;
                   setSelectedImage(file);
                   if (!file) {
                     setPreviewUrl(profileImageUrl ?? null);
@@ -301,6 +305,7 @@ export function EditStudentForm({
                 }}
                 onRemove={() => {
                   setSelectedImage(null);
+                  selectedImageRef.current = null;
                   setPreviewUrl(profileImageUrl ?? null);
                 }}
               />

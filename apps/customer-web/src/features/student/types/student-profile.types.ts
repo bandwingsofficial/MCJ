@@ -32,6 +32,8 @@ export interface StudentProfile {
 
   profileImageUrl: string | null;
 
+  updatedAt?: string | null;
+
   qualification: string;
 
   collegeName: string;

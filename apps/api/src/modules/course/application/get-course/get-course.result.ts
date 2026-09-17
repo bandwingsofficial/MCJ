@@ -71,6 +71,11 @@ export class CourseLessonPreviewResult {
     public readonly displayOrder: number,
     public readonly description?: string | null,
     public readonly videoUrl?: string | null,
+    public readonly resourceCount: number = 0,
+    public readonly hasQuiz: boolean = false,
+    public readonly learnItemCount: number = 0,
+    public readonly selfPacedVideoCount: number = 0,
+    public readonly liveRecordedVideoCount: number = 0,
   ) {}
 }
 

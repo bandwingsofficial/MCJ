@@ -7,6 +7,7 @@ import type {
   GetCoursesParams,
   GetCoursesResponse,
   GetCourseSummaryResponse,
+  GetCourseFaqsResponse,
 } from "@/src/features/courses/types/course.types";
 
 export async function getCoursesApi(
@@ -36,6 +37,16 @@ export async function getCourseSummaryApi(
   const response = await apiClient.get<GetCourseSummaryResponse>(
     `/courses/${id}/summary`,
   );
+  return response.data;
+}
+
+export async function getCourseFaqsApi(
+  id: string,
+): Promise<GetCourseFaqsResponse> {
+  const response = await apiClient.get<GetCourseFaqsResponse>(
+    `/courses/${id}/faqs`,
+  );
+
   return response.data;
 }
 

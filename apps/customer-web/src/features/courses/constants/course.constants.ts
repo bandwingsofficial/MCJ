@@ -26,4 +26,6 @@ export const COURSE_QUERY_KEYS = {
 
   summary: (id: string) =>
     [...COURSE_QUERY_KEYS.all, "summary", id] as const,
+
+  faqs: (id: string) => [...COURSE_QUERY_KEYS.all, "faqs", id] as const,
 };

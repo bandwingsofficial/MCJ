@@ -25,6 +25,7 @@ function mapPublicBranch(branch: {
   description?: string | null;
   status: BranchStatus;
   thumbnailUrl?: string | null;
+  updatedAt?: Date | string | null;
 }) {
   return {
     id: branch.id,
@@ -44,6 +45,11 @@ function mapPublicBranch(branch: {
     description: branch.description ?? null,
     status: branch.status,
     thumbnailUrl: branch.thumbnailUrl ?? null,
+    updatedAt: branch.updatedAt
+      ? branch.updatedAt instanceof Date
+        ? branch.updatedAt.toISOString()
+        : branch.updatedAt
+      : null,
   };
 }
 

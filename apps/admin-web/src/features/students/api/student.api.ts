@@ -15,6 +15,10 @@ import type {
 } from "@/src/features/students/types/student.types";
 import type { StudentAssessmentOverview } from "@/src/features/students/types/student-assessment.types";
 import { buildStudentListQueryParams } from "@/src/features/students/utils/student-list.utils";
+import {
+  syncStudentImageFields,
+  syncStudentImageList,
+} from "@/src/shared/utils/entity-image-sync.util";
 
 export const studentApi = {
   async getStudents(filters?: StudentFilters) {
@@ -24,7 +28,31 @@ export const studentApi = {
       params: buildStudentListQueryParams(filters),
     });
 
-    return response.data;
+    const payload = response.data;
+
+    if (Array.isArray(payload.data)) {
+      return {
+        ...payload,
+        data: syncStudentImageList(payload.data),
+      };
+    }
+
+    if (
+      payload.data &&
+      typeof payload.data === "object" &&
+      "items" in payload.data &&
+      Array.isArray(payload.data.items)
+    ) {
+      return {
+        ...payload,
+        data: {
+          ...payload.data,
+          items: syncStudentImageList(payload.data.items),
+        },
+      };
+    }
+
+    return payload;
   },
 
   async getStudent(id: string) {
@@ -32,7 +60,10 @@ export const studentApi = {
       `/admin/students/${id}`,
     );
 
-    return response.data;
+    return {
+      ...response.data,
+      data: syncStudentImageFields(response.data.data),
+    };
   },
 
   async getStudentAssessments(id: string) {
@@ -57,7 +88,10 @@ export const studentApi = {
       payload,
     );
 
-    return response.data;
+    return {
+      ...response.data,
+      data: syncStudentImageFields(response.data.data),
+    };
   },
 
   async updateStudent(id: string, payload: UpdateStudentRequest) {
@@ -66,7 +100,10 @@ export const studentApi = {
       payload,
     );
 
-    return response.data;
+    return {
+      ...response.data,
+      data: syncStudentImageFields(response.data.data),
+    };
   },
 
   async activateStudent(id: string) {
@@ -74,7 +111,10 @@ export const studentApi = {
       `/admin/students/${id}/activate`,
     );
 
-    return response.data;
+    return {
+      ...response.data,
+      data: syncStudentImageFields(response.data.data),
+    };
   },
 
   async deactivateStudent(id: string) {
@@ -82,7 +122,10 @@ export const studentApi = {
       `/admin/students/${id}/deactivate`,
     );
 
-    return response.data;
+    return {
+      ...response.data,
+      data: syncStudentImageFields(response.data.data),
+    };
   },
 
   async restoreStudent(id: string) {
@@ -90,21 +133,24 @@ export const studentApi = {
       `/admin/students/${id}/restore`,
     );
 
-    return response.data;
+    return {
+      ...response.data,
+      data: syncStudentImageFields(response.data.data),
+    };
   },
 
   async deleteStudent(id: string) {
-    const response = await apiClient.delete<ApiSuccessResponse<Student>>(
-      `/admin/students/${id}`,
-    );
+    const response = await apiClient.delete<
+      ApiSuccessResponse<Student>
+    >(`/admin/students/${id}`);
 
     return response.data;
   },
 
   async permanentDeleteStudent(id: string) {
-    const response = await apiClient.delete<ApiSuccessResponse<Student>>(
-      `/admin/students/${id}/permanent`,
-    );
+    const response = await apiClient.delete<
+      ApiSuccessResponse<Student>
+    >(`/admin/students/${id}/permanent`);
 
     return response.data;
   },

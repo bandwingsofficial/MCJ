@@ -7,6 +7,7 @@ import { GetPublicCourseModulesHandler } from '../../application/get-public-cour
 import { GetPublicCourseModulesQuery } from '../../application/get-public-course-modules/get-public-course-modules.query';
 import { GetCourseSummaryHandler } from '../../application/get-course-summary/get-course-summary.handler';
 import { GetCourseSummaryQuery } from '../../application/get-course-summary/get-course-summary.query';
+import { CourseFaqService } from '../../infrastructure/services/course-faq.service';
 import { GetPreviewLessonHandler } from '../../application/get-preview-lesson/get-preview-lesson.handler';
 import { GetPreviewLessonQuery } from '../../application/get-preview-lesson/get-preview-lesson.query';
 import { GetCourseHandler } from '../../application/get-course/get-course.handler';
@@ -25,6 +26,7 @@ export class CourseController {
     private readonly getPublicCourseModulesHandler: GetPublicCourseModulesHandler,
     private readonly getPreviewLessonHandler: GetPreviewLessonHandler,
     private readonly getCourseSummaryHandler: GetCourseSummaryHandler,
+    private readonly courseFaqService: CourseFaqService,
   ) {}
 
   @Get()
@@ -100,6 +102,17 @@ async getBySlug(
       success: true,
       message: 'Preview lesson fetched successfully',
       data: result,
+    };
+  }
+
+  @Get(':id/faqs')
+  async getFaqs(@Param('id') id: string) {
+    const data = await this.courseFaqService.listByCourseId(id);
+
+    return {
+      success: true,
+      message: 'Course FAQs fetched successfully',
+      data,
     };
   }
 

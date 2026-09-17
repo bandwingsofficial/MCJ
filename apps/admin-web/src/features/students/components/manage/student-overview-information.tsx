@@ -14,6 +14,7 @@ import {
 
 import { StudentStatusBadge } from "@/src/features/students/components/StudentStatusBadge";
 import type { Student } from "@/src/features/students/types/student.types";
+import { withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
 import {
   formatStudentName,
@@ -166,7 +167,11 @@ export function StudentOverviewInformation({
         <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
           {student.profileImageUrl ? (
             <Image
-              src={student.profileImageUrl}
+              key={`${student.id}-${student.updatedAt}`}
+              src={withImageCacheBust(
+                student.profileImageUrl,
+                student.updatedAt,
+              )}
               alt={fullName}
               width={72}
               height={72}

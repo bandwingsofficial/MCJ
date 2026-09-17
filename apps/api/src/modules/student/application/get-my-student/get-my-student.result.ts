@@ -31,6 +31,7 @@ export class GetMyStudentResult {
     public readonly status: StudentStatus,
     public readonly jobStatus: StudentJobStatus | null,
     public readonly isActive: boolean,
+    public readonly updatedAt: Date,
   ) {}
 
   static fromStudent(student: Student): GetMyStudentResult {
@@ -61,6 +62,7 @@ export class GetMyStudentResult {
       student.status,
       student.jobStatus,
       student.isActive,
+      student.updatedAt,
     );
   }
 }

@@ -18,6 +18,7 @@ export interface PublicBranch {
   description?: string | null;
   status: string;
   thumbnailUrl?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface GetBranchesResponse {

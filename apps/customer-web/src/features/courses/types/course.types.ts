@@ -28,6 +28,12 @@ export interface CoursePreviewLesson {
   displayOrder: number;
   duration: number | null;
   isPreview: boolean;
+  description?: string | null;
+  resourceCount?: number;
+  hasQuiz?: boolean;
+  learnItemCount?: number;
+  selfPacedVideoCount?: number;
+  liveRecordedVideoCount?: number;
 }
 
 export interface CoursePreviewModule {
@@ -66,6 +72,10 @@ export interface CourseDto {
   isEnrolled?: boolean | null;
   isAdmitted?: boolean | null;
   previewLessonCount?: number;
+  resourceCount?: number;
+  quizCount?: number;
+  selfPacedVideoCount?: number;
+  liveRecordedVideoCount?: number;
   updatedAt?: string;
 }
 
@@ -109,6 +119,10 @@ export interface Course {
   moduleCount: number;
   lessonCount: number;
   previewLessonCount: number;
+  resourceCount: number;
+  quizCount: number;
+  selfPacedVideoCount: number;
+  liveRecordedVideoCount: number;
   isEnrolled: boolean | null;
   isAdmitted: boolean | null;
   updatedAt: string | null;
@@ -136,4 +150,18 @@ export interface GetCourseResponse {
   success: boolean;
   message: string;
   data: CourseDto;
+}
+
+export interface CourseFaq {
+  id: string;
+  courseId: string;
+  question: string;
+  answer: string;
+  displayOrder: number;
+}
+
+export interface GetCourseFaqsResponse {
+  success: boolean;
+  message: string;
+  data: CourseFaq[];
 }

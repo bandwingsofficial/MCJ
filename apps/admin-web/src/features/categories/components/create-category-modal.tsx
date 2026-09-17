@@ -9,6 +9,7 @@ import { useCreateCategory } from "@/src/features/categories/hooks/use-create-ca
 import { categoryService } from "@/src/features/categories/services/category.service";
 
 import type { CategoryFormValues } from "@/src/features/categories/schemas/category.schema";
+import { getUploadFileId } from "@/src/shared/utils/upload-image.util";
 
 interface Props {
   open: boolean;
@@ -33,7 +34,7 @@ export function CreateCategoryModal({
       const uploadResponse =
         await categoryService.uploadCategoryImage(image);
 
-      thumbnailFileId = uploadResponse.data.fileId;
+      thumbnailFileId = getUploadFileId(uploadResponse);
     }
 
     await createCategory({

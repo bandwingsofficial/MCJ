@@ -3,13 +3,14 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { branchService } from "@/src/features/branches/services/branch.service";
+import { ENTITY_IMAGE_QUERY_OPTIONS } from "@/src/shared/lib/entity-image-query";
 
 export function useBranch(branchId: string | undefined) {
   return useQuery({
     queryKey: ["branch", branchId],
     queryFn: () => branchService.getBranch(branchId!),
     enabled: Boolean(branchId),
-    staleTime: 1000 * 60 * 5,
+    ...ENTITY_IMAGE_QUERY_OPTIONS,
   });
 }
 
@@ -18,7 +19,7 @@ export function useBranchBySlugOrId(slugOrId: string | undefined) {
     queryKey: ["branch", slugOrId],
     queryFn: () => branchService.getBranch(slugOrId!),
     enabled: Boolean(slugOrId),
-    staleTime: 1000 * 60 * 5,
+    ...ENTITY_IMAGE_QUERY_OPTIONS,
     retry: false,
   });
 

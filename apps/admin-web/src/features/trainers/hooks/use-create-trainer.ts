@@ -18,7 +18,6 @@ interface UseCreateTrainerReturn {
 
   createTrainer: (
     payload: CreateTrainerRequest,
-    image?: File | null
   ) => Promise<boolean>;
 }
 
@@ -34,31 +33,12 @@ export const useCreateTrainer =
     const createTrainer =
       async (
         payload: CreateTrainerRequest,
-        image?: File | null
       ): Promise<boolean> => {
         try {
           setIsLoading(true);
 
-          const requestPayload: CreateTrainerRequest =
-            {
-              ...payload,
-            };
-
-          if (image) {
-            const uploadResponse =
-              await trainerService.uploadTrainerImage(
-                image
-              );
-
-           requestPayload.profileImageFileId =
-  uploadResponse.data.fileId;
-          }
-        
-
           const response =
-            await trainerService.createTrainer(
-              requestPayload
-            );
+            await trainerService.createTrainer(payload);
 
           appToast.success(
             response.message

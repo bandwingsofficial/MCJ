@@ -29,6 +29,7 @@ export interface Category {
   slug: string;
   description: string | null;
   thumbnailUrl: string | null;
+  updatedAt: string;
   status: CategoryStatus;
   displayOrder: number;
   branchId: string;

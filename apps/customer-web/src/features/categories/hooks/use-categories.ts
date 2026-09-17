@@ -9,6 +9,7 @@ import {
 import {
   getCategories,
 } from "@/src/features/categories/services/category.service";
+import { ENTITY_IMAGE_QUERY_OPTIONS } from "@/src/shared/lib/entity-image-query";
 
 import type {
   GetCategoriesParams,
@@ -27,7 +28,6 @@ export function useCategories(
     queryFn: () =>
       getCategories(params),
 
-    staleTime:
-      1000 * 60 * 5,
+    ...ENTITY_IMAGE_QUERY_OPTIONS,
   });
 }

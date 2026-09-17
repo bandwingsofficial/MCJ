@@ -1,6 +1,10 @@
 import { apiClient } from "@/src/core/api/axios";
 
 import { categoryApi } from "@/src/features/categories/api/category.api";
+import {
+  syncCategoryImageFields,
+  syncCategoryImageList,
+} from "@/src/shared/utils/entity-image-sync.util";
 
 import type {
   ApiSuccessResponse,
@@ -48,7 +52,10 @@ class CategoryService {
         ApiSuccessResponse<CategoryDetails>
       >(this.basePath, payload);
 
-    return response.data;
+    return {
+      ...response.data,
+      data: syncCategoryImageFields(response.data.data),
+    };
   }
 
   async getCategories(
@@ -90,7 +97,10 @@ class CategoryService {
         },
       });
 
-    return response.data;
+    return {
+      ...response.data,
+      data: syncCategoryImageList(response.data.data),
+    };
   }
 
   async listAllCategories(
@@ -144,7 +154,10 @@ class CategoryService {
         ApiSuccessResponse<CategoryDetails>
       >(`${this.basePath}/${id}`);
 
-    return response.data;
+    return {
+      ...response.data,
+      data: syncCategoryImageFields(response.data.data),
+    };
   }
 
   async updateCategory(
@@ -161,7 +174,10 @@ class CategoryService {
         payload
       );
 
-    return response.data;
+    return {
+      ...response.data,
+      data: syncCategoryImageFields(response.data.data),
+    };
   }
 
   async activateCategory(

@@ -6,6 +6,7 @@ import {
   getCoursesApi,
   getCourseBySlugApi,
   getCourseByIdApi,
+  getCourseFaqsApi,
   getCourseSummaryApi,
 } from "@/src/features/courses/api/course.api";
 
@@ -16,6 +17,7 @@ import {
 
 import type {
   Course,
+  CourseFaq,
   CourseSummary,
   GetCoursesParams,
 } from "@/src/features/courses/types/course.types";
@@ -86,5 +88,18 @@ export async function getCourseSummary(id: string): Promise<CourseSummary> {
     }
 
     throw new Error("Failed to fetch course summary");
+  }
+}
+
+export async function getCourseFaqs(courseId: string): Promise<CourseFaq[]> {
+  try {
+    const response = await getCourseFaqsApi(courseId);
+    return Array.isArray(response.data) ? response.data : [];
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      throw error;
+    }
+
+    throw new Error("Failed to fetch course FAQs");
   }
 }

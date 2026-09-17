@@ -32,6 +32,7 @@ export interface StudentSummary {
   gender: string;
   qualification: string;
   profileImageUrl: string | null;
+  updatedAt?: string | null;
   status: string;
   isActive: boolean;
 }
@@ -59,6 +60,7 @@ export interface CourseSummary {
   level: string;
   language: string;
   thumbnailUrl: string | null;
+  updatedAt?: string | null;
   status: string;
   averageRating: number;
   totalReviews: number;

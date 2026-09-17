@@ -2,6 +2,10 @@ import { AxiosError } from "axios";
 
 import { apiClient } from "@/src/core/api/axios";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import {
+  syncFinanceNewsImageFields,
+  syncFinanceNewsImageList,
+} from "@/src/shared/utils/entity-image-sync.util";
 
 import { FINANCE_NEWS_UPLOAD_FOLDER } from "@/src/features/finance-news/constants/finance-news.constants";
 
@@ -76,7 +80,10 @@ class FinanceNewsService {
         }
       >(this.basePath, { params });
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncFinanceNewsImageList(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }
@@ -88,7 +95,10 @@ class FinanceNewsService {
         ApiSuccessResponse<FinanceNewsDetails>
       >(`${this.basePath}/${id}`);
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncFinanceNewsImageFields(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }
@@ -100,7 +110,10 @@ class FinanceNewsService {
         ApiSuccessResponse<FinanceNewsDetails>
       >(this.basePath, payload);
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncFinanceNewsImageFields(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }
@@ -115,7 +128,10 @@ class FinanceNewsService {
         ApiSuccessResponse<FinanceNewsDetails>
       >(`${this.basePath}/${id}`, payload);
 
-      return response.data;
+      return {
+        ...response.data,
+        data: syncFinanceNewsImageFields(response.data.data),
+      };
     } catch (error) {
       throw this.handleError(error);
     }
