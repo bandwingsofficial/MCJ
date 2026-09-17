@@ -5,6 +5,7 @@ import type {
   BatchTiming,
 } from "@/src/features/batches/types/batch.types";
 import {
+  formatBatchPrice,
   getBatchPricing,
   normalizeBatchPricing,
   type BatchPricing as NormalizedBatchPricing,
@@ -14,6 +15,7 @@ import {
   formatEnrollmentDate,
   formatEnrollmentTime,
   isBatchDateExpired,
+  isBatchSelectable,
 } from "@/src/features/enrollments/utils/enrollment-batch.utils";
 
 export const COURSE_MODE_ORDER: BatchMode[] = ["OFFLINE", "ONLINE", "RECORDED"];
@@ -29,6 +31,33 @@ export interface CourseModeFeeRow {
   modeLabel: string;
   pricing: NormalizedBatchPricing;
   timingCount: number;
+}
+
+export const COURSE_MODE_BADGE_LABELS: Record<BatchMode, string> = {
+  OFFLINE: "OFFLINE",
+  ONLINE: "ONLINE",
+  RECORDED: "SELF-PACED",
+};
+
+export interface CourseUpcomingTableRow {
+  id: string;
+  batchId: string;
+  batchName: string;
+  batchRowSpan: number;
+  isFirstRowInBatch: boolean;
+  isFirstRowInModeGroup: boolean;
+  mode: BatchMode;
+  modeBadgeLabel: string;
+  timingName: string;
+  startTimeLabel: string;
+  endTimeLabel: string;
+  showTimingRange: boolean;
+  days: string;
+  startDateLabel: string;
+  feeLabel: string;
+  branchId: string | null;
+  joinEnabled: boolean;
+  timingId: string | null;
 }
 
 export interface CourseUpcomingTimingRow {
@@ -287,6 +316,86 @@ function buildModeGroupsForBatch(batch: Batch): CourseUpcomingModeGroup[] {
       ],
     },
   ];
+}
+
+function formatModeFeeLabel(pricing: NormalizedBatchPricing): string {
+  if (pricing.isFree) {
+    return "Free";
+  }
+
+  return formatBatchPrice(pricing);
+}
+
+function resolveTimingDays(mode: BatchMode, days: string): string {
+  if (mode === "RECORDED") {
+    return "Flexible Learning";
+  }
+
+  return days || "—";
+}
+
+function isTimingJoinEnabled(
+  batch: Batch,
+  timing: Pick<CourseUpcomingTimingRow, "availableSeats" | "id">,
+): boolean {
+  if (!isBatchSelectable(batch)) {
+    return false;
+  }
+
+  return timing.availableSeats > 0;
+}
+
+function flattenBatchToTableRows(batch: Batch): CourseUpcomingTableRow[] {
+  const modeGroups = buildModeGroupsForBatch(batch);
+  const flatRows: Omit<
+    CourseUpcomingTableRow,
+    "batchRowSpan" | "isFirstRowInBatch"
+  >[] = [];
+
+  modeGroups.forEach((group) => {
+    const pricing = resolveModePricing(batch, group.mode);
+    const feeLabel = formatModeFeeLabel(pricing);
+
+    group.timings.forEach((timing, timingIndex) => {
+      const showTimingRange =
+        group.mode !== "RECORDED" &&
+        timing.startTimeLabel !== "—" &&
+        timing.endTimeLabel !== "—";
+
+      flatRows.push({
+        id: timing.id,
+        batchId: batch.id,
+        batchName: batch.name,
+        isFirstRowInModeGroup: timingIndex === 0,
+        mode: group.mode,
+        modeBadgeLabel: COURSE_MODE_BADGE_LABELS[group.mode],
+        timingName: timing.name,
+        startTimeLabel: timing.startTimeLabel,
+        endTimeLabel: timing.endTimeLabel,
+        showTimingRange,
+        days: resolveTimingDays(group.mode, timing.days),
+        startDateLabel: timing.startDateLabel,
+        feeLabel,
+        branchId: batch.branchId,
+        joinEnabled: isTimingJoinEnabled(batch, timing),
+        timingId: timing.id !== batch.id ? timing.id : null,
+      });
+    });
+  });
+
+  return flatRows.map((row, index) => ({
+    ...row,
+    batchRowSpan: flatRows.length,
+    isFirstRowInBatch: index === 0,
+  }));
+}
+
+export function buildCourseUpcomingBatchTableRows(
+  batches: Batch[],
+): CourseUpcomingTableRow[] {
+  return batches
+    .filter(isUpcomingBatch)
+    .flatMap((batch) => flattenBatchToTableRows(batch));
 }
 
 export function buildCourseUpcomingBatchGroups(

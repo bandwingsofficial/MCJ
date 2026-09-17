@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 
+import { BatchTimingsTable } from "@/src/features/batches/components/batch-timings-table";
 import type { Batch } from "@/src/features/batches/types/batch.types";
 import {
-  buildBranchCourseBatchTabs,
-  type BranchParentBatchRow,
-} from "@/src/features/branches/utils/branch-batch.utils";
-import { Button } from "@/src/shared/components/ui/button";
+  buildCourseUpcomingBatchTableRows,
+  isUpcomingBatch,
+} from "@/src/features/courses/utils/course-batch.utils";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { cn } from "@/src/shared/lib/cn";
@@ -20,37 +19,30 @@ interface Props {
   isLoading: boolean;
 }
 
-function TimingCell({ row }: { row: BranchParentBatchRow }) {
-  return (
-    <div className="space-y-3">
-      {row.modeGroups.map((group) => (
-        <div key={group.mode} className="space-y-1.5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#2563EB]">
-            {group.modeLabel}
-          </p>
-          {group.lines.map((line) => (
-            <div key={`${group.mode}-${line.name}-${line.timeRange}`}>
-              <p className="text-sm font-medium text-[#0B1F3A]">{line.name}</p>
-              <p className="text-xs text-slate-500">{line.timeRange}</p>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
+function buildBranchCourseTabs(batches: Batch[]) {
+  const tabs = new Map<
+    string,
+    { courseId: string; courseTitle: string; courseSlug: string | null }
+  >();
 
-function DaysCell({ row }: { row: BranchParentBatchRow }) {
-  const lines = row.modeGroups.flatMap((group) => group.lines);
+  batches.filter(isUpcomingBatch).forEach((batch) => {
+    if (!batch.courseId) {
+      return;
+    }
 
-  return (
-    <div className="space-y-2">
-      {lines.map((line) => (
-        <p key={`${line.name}-${line.days}`} className="text-sm text-slate-600">
-          {line.days}
-        </p>
-      ))}
-    </div>
+    if (tabs.has(batch.courseId)) {
+      return;
+    }
+
+    tabs.set(batch.courseId, {
+      courseId: batch.courseId,
+      courseTitle: batch.course?.title ?? "Course",
+      courseSlug: null,
+    });
+  });
+
+  return Array.from(tabs.values()).sort((left, right) =>
+    left.courseTitle.localeCompare(right.courseTitle),
   );
 }
 
@@ -60,10 +52,14 @@ export function BranchUpcomingBatchesSection({
   courseSlugById,
   isLoading,
 }: Props) {
-  const courseTabs = useMemo(
-    () => buildBranchCourseBatchTabs(batches, courseSlugById),
-    [batches, courseSlugById],
-  );
+  const courseTabs = useMemo(() => {
+    const tabs = buildBranchCourseTabs(batches);
+
+    return tabs.map((tab) => ({
+      ...tab,
+      courseSlug: courseSlugById.get(tab.courseId) ?? null,
+    }));
+  }, [batches, courseSlugById]);
 
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
 
@@ -81,6 +77,18 @@ export function BranchUpcomingBatchesSection({
   }, [courseTabs]);
 
   const activeTab = courseTabs.find((tab) => tab.courseId === activeCourseId);
+
+  const tableRows = useMemo(() => {
+    if (!activeCourseId) {
+      return [];
+    }
+
+    const courseBatches = batches.filter(
+      (batch) => batch.courseId === activeCourseId && isUpcomingBatch(batch),
+    );
+
+    return buildCourseUpcomingBatchTableRows(courseBatches);
+  }, [activeCourseId, batches]);
 
   return (
     <section className="bg-[#F8FBFF] py-12">
@@ -103,86 +111,32 @@ export function BranchUpcomingBatchesSection({
           />
         ) : (
           <>
-            <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-              {courseTabs.map((tab) => (
-                <button
-                  key={tab.courseId}
-                  type="button"
-                  onClick={() => setActiveCourseId(tab.courseId)}
-                  className={cn(
-                    "shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition",
-                    activeCourseId === tab.courseId
-                      ? "border-[#2563EB] bg-[#2563EB] text-white"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-[#2563EB]/30 hover:text-[#2563EB]",
-                  )}
-                >
-                  {tab.courseTitle}
-                </button>
-              ))}
-            </div>
-
-            {activeTab && activeTab.rows.length > 0 ? (
-              <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-                <table className="min-w-full text-left text-sm">
-                  <thead className="border-b border-slate-100 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th className="px-4 py-3">Course</th>
-                      <th className="px-4 py-3">Timing</th>
-                      <th className="px-4 py-3">Days</th>
-                      <th className="px-4 py-3">Start Date</th>
-                      <th className="px-4 py-3">Availability</th>
-                      <th className="px-4 py-3">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activeTab.rows.map((row) => (
-                      <tr
-                        key={row.batchId}
-                        className="border-b border-slate-100 align-top last:border-0"
-                      >
-                        <td className="px-4 py-4 font-medium text-[#0B1F3A]">
-                          {row.batchName}
-                        </td>
-                        <td className="px-4 py-4">
-                          <TimingCell row={row} />
-                        </td>
-                        <td className="px-4 py-4">
-                          <DaysCell row={row} />
-                        </td>
-                        <td className="px-4 py-4 text-slate-600">
-                          {row.startDateLabel}
-                        </td>
-                        <td className="px-4 py-4">
-                          <span
-                            className={cn(
-                              "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
-                              row.availabilityTone === "success" &&
-                                "bg-emerald-50 text-emerald-700",
-                              row.availabilityTone === "warning" &&
-                                "bg-amber-50 text-amber-700",
-                              row.availabilityTone === "muted" &&
-                                "bg-slate-100 text-slate-500",
-                            )}
-                          >
-                            {row.availabilityLabel}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          {row.joinHref ? (
-                            <Link href={row.joinHref}>
-                              <Button size="sm" className="rounded-lg bg-[#0B1F3A]">
-                                Join Now
-                              </Button>
-                            </Link>
-                          ) : (
-                            <span className="text-xs text-slate-400">Unavailable</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {courseTabs.length > 1 ? (
+              <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+                {courseTabs.map((tab) => (
+                  <button
+                    key={tab.courseId}
+                    type="button"
+                    onClick={() => setActiveCourseId(tab.courseId)}
+                    className={cn(
+                      "shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition",
+                      activeCourseId === tab.courseId
+                        ? "border-[#2563EB] bg-[#2563EB] text-white"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-[#2563EB]/30 hover:text-[#2563EB]",
+                    )}
+                  >
+                    {tab.courseTitle}
+                  </button>
+                ))}
               </div>
+            ) : null}
+
+            {activeTab && tableRows.length > 0 ? (
+              <BatchTimingsTable
+                rows={tableRows}
+                courseSlug={activeTab.courseSlug}
+                courseId={activeTab.courseId}
+              />
             ) : (
               <EmptyState
                 title="No upcoming batches available"

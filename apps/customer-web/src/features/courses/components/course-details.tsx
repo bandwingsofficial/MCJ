@@ -22,7 +22,7 @@ import { Button } from "@/src/shared/components/ui/button";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
 import { useCourseBatches } from "@/src/features/batches/hooks/useCourseBatches";
-import type { BatchBranch } from "@/src/features/batches/types/batch.types";
+import type { Batch, BatchBranch } from "@/src/features/batches/types/batch.types";
 import { CourseAvailableBranches } from "@/src/features/courses/components/course-available-branches";
 import { CourseBatchCards } from "@/src/features/courses/components/course-batch-cards";
 import { CourseCurriculumAccordion } from "@/src/features/courses/components/course-curriculum-accordion";
@@ -41,7 +41,6 @@ import type {
 } from "@/src/features/courses/types/course.types";
 import {
   buildCourseFeesByMode,
-  buildCourseUpcomingBatchGroups,
   collectBatchTrainerIds,
   isUpcomingBatch,
 } from "@/src/features/courses/utils/course-batch.utils";
@@ -156,11 +155,6 @@ export function CourseDetails({ course }: CourseDetailsProps) {
   const feesByMode = useMemo(
     () => buildCourseFeesByMode(upcomingBatches),
     [upcomingBatches],
-  );
-
-  const upcomingBatchGroups = useMemo(
-    () => buildCourseUpcomingBatchGroups(upcomingBatches, course.title),
-    [course.title, upcomingBatches],
   );
 
   const batchTrainerIds = useMemo(
@@ -468,7 +462,9 @@ export function CourseDetails({ course }: CourseDetailsProps) {
                     }
                     feesByMode={feesByMode}
                     feesLoading={courseBatchesLoading}
-                    upcomingBatchGroups={upcomingBatchGroups}
+                    upcomingBatches={upcomingBatches}
+                    courseSlug={course.slug}
+                    courseId={course.id}
                     batchesLoading={courseBatchesLoading}
                   />
                 ) : null}
@@ -693,7 +689,9 @@ function OverviewTabContent({
   durationLabel,
   feesByMode,
   feesLoading,
-  upcomingBatchGroups,
+  upcomingBatches,
+  courseSlug,
+  courseId,
   batchesLoading,
 }: {
   description: string;
@@ -709,7 +707,9 @@ function OverviewTabContent({
   durationLabel: string;
   feesByMode: ReturnType<typeof buildCourseFeesByMode>;
   feesLoading: boolean;
-  upcomingBatchGroups: ReturnType<typeof buildCourseUpcomingBatchGroups>;
+  upcomingBatches: Batch[];
+  courseSlug: string;
+  courseId: string;
   batchesLoading: boolean;
 }) {
   return (
@@ -807,11 +807,13 @@ function OverviewTabContent({
             Upcoming Batches & Timings
           </h3>
           <p className="mt-1 text-sm text-slate-500">
-            Timings are grouped by parent batch and learning mode.
+            Each timing is listed individually. Batch names span all related rows.
           </p>
         </div>
         <CourseUpcomingBatchesSection
-          batches={upcomingBatchGroups}
+          batches={upcomingBatches}
+          courseSlug={courseSlug}
+          courseId={courseId}
           isLoading={batchesLoading}
         />
       </section>
