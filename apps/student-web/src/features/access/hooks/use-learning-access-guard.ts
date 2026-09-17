@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { env } from "@/src/core/config/env";
 import { tokenStorage } from "@/src/core/storage/token-storage";
-import { authService } from "@/src/features/auth/services/auth.service";
-import { useAuthStore } from "@/src/features/auth/store/auth.store";
+import { buildCustomerWebHandoffUrl } from "@/src/features/access/utils/auth-handoff.utils";
 import {
   isAdmittedStudentStatus,
   isValidLearningEnrollmentStatus,
 } from "@/src/features/access/utils/student-access";
+import { authService } from "@/src/features/auth/services/auth.service";
+import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { learningService } from "@/src/features/learning/services/learning.service";
 
 export type LearningAccessState =
@@ -24,7 +24,7 @@ export function useLearningAccessGuard() {
 
   const redirectToCustomerWeb = useCallback(() => {
     setState("redirecting");
-    window.location.href = env.CUSTOMER_WEB_URL;
+    window.location.href = buildCustomerWebHandoffUrl("/");
   }, []);
 
   useEffect(() => {

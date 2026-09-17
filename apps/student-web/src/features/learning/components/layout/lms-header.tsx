@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink, GraduationCap } from "lucide-react";
 
-import { env } from "@/src/core/config/env";
+import { buildCustomerWebHandoffUrl } from "@/src/features/access/utils/auth-handoff.utils";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { Avatar } from "@/src/shared/components/ui/avatar";
 import { Button } from "@/src/shared/components/ui/button";
@@ -60,7 +60,7 @@ export function LmsHeader({ title, subtitle }: LmsHeaderProps) {
               My Courses
             </Button>
           </Link>
-          <a href={env.CUSTOMER_WEB_URL} target="_self" rel="noreferrer">
+          <a href={buildCustomerWebHandoffUrl("/")} target="_self" rel="noreferrer">
             <Button variant="outline" size="sm">
               <ExternalLink className="mr-2 h-4 w-4" />
               Back to Website
