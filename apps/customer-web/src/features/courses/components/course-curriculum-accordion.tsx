@@ -4,11 +4,7 @@ import { useMemo, useState } from "react";
 import {
   ChevronDown,
   Clock3,
-  FileText,
-  HelpCircle,
   Lock,
-  PlayCircle,
-  BookOpen,
 } from "lucide-react";
 
 import { appToast } from "@/src/shared/components/ui/toast";
@@ -102,21 +98,15 @@ function getLessonContentIndicators(lesson: CoursePreviewLesson): string[] {
   }
 
   if ((lesson.selfPacedVideoCount ?? 0) > 0) {
-    indicators.push(
-      `${lesson.selfPacedVideoCount} Video${lesson.selfPacedVideoCount === 1 ? "" : "s"}`,
-    );
+    indicators.push("Video");
   }
 
   if ((lesson.liveRecordedVideoCount ?? 0) > 0) {
-    indicators.push(
-      `${lesson.liveRecordedVideoCount} Recording${lesson.liveRecordedVideoCount === 1 ? "" : "s"}`,
-    );
+    indicators.push("Live/Recorded Session");
   }
 
   if ((lesson.resourceCount ?? 0) > 0) {
-    indicators.push(
-      `${lesson.resourceCount} Resource${lesson.resourceCount === 1 ? "" : "s"}`,
-    );
+    indicators.push("Resource");
   }
 
   if (lesson.hasQuiz) {
@@ -138,30 +128,9 @@ function LessonContentIndicators({
   }
 
   return (
-    <div className="hidden flex-wrap items-center gap-1.5 sm:flex">
-      {indicators.map((indicator) => {
-        const icon =
-          indicator === "Quiz" ? (
-            <HelpCircle className="h-3 w-3" />
-          ) : indicator === "Learn" ? (
-            <BookOpen className="h-3 w-3" />
-          ) : indicator.includes("Video") || indicator.includes("Recording") ? (
-            <PlayCircle className="h-3 w-3" />
-          ) : (
-            <FileText className="h-3 w-3" />
-          );
-
-        return (
-          <span
-            key={`${lesson.id}-${indicator}`}
-            className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-slate-200"
-          >
-            {icon}
-            {indicator}
-          </span>
-        );
-      })}
-    </div>
+    <p className="hidden shrink-0 text-xs font-medium text-slate-500 sm:block">
+      {indicators.join(" · ")}
+    </p>
   );
 }
 
@@ -429,20 +398,22 @@ export function CourseCurriculumAccordion({
                                 )}
                               </span>
 
-                              {/* Lesson title */}
-                              <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">
-                                {lesson.title ||
-                                  "Untitled Lesson"}
-                              </span>
+                              <div className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-medium text-slate-800">
+                                  {lesson.title || "Untitled Lesson"}
+                                </span>
+                                {lesson.description?.trim() ? (
+                                  <span className="mt-0.5 line-clamp-1 block text-xs text-slate-500">
+                                    {lesson.description.trim()}
+                                  </span>
+                                ) : null}
+                              </div>
 
                               <LessonContentIndicators lesson={lesson} />
 
-                              {/* Duration, only if available */}
                               {lesson.duration ? (
                                 <span className="hidden shrink-0 text-[11px] text-slate-400 sm:block">
-                                  {formatLessonDuration(
-                                    lesson.duration,
-                                  )}
+                                  {formatLessonDuration(lesson.duration)}
                                 </span>
                               ) : null}
 

@@ -9,7 +9,7 @@ export function getCourseDetailPath(course: { slug: string }): string {
 }
 
 export function getCourseBatchesSectionPath(course: { slug: string }): string {
-  return `${getCourseDetailPath(course)}#available-branches`;
+  return `${getCourseDetailPath(course)}#batch-timings`;
 }
 
 export function getCourseEnrollPath(
