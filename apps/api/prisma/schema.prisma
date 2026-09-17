@@ -152,6 +152,7 @@ model Branch {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   batches        Batch[]
+  branchBatches  BranchBatch[]
   branchUsers    BranchUser[]
   branchCategories BranchCategory[]
   courseBranches CourseBranch[]
@@ -682,6 +683,21 @@ model BranchTrainer {
   @@index([trainerId])
 }
 
+/// Independent branch ↔ batch assignments (same parent batch can belong to many branches).
+model BranchBatch {
+  id        String   @id @default(uuid())
+  branchId  String
+  batchId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  batch     Batch    @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, batchId])
+  @@index([branchId])
+  @@index([batchId])
+}
+
 model Batch {
   id            String         @id @default(uuid())
   name          String
@@ -722,6 +738,7 @@ model Batch {
   isActive      Boolean        @default(true)
   displayOrder  Int?
   branch        Branch?        @relation(fields: [branchId], references: [id])
+  branchAssignments BranchBatch[]
   course        Course?        @relation(fields: [courseId], references: [id])
   category      Category?      @relation(fields: [categoryId], references: [id])
   trainers      BatchTrainer[]

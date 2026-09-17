@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Eye, Layers, Link2Off, Plus } from "lucide-react";
+import { Eye, Layers, Link2Off } from "lucide-react";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
@@ -19,14 +18,14 @@ import {
   BranchManageTableShell,
 } from "@/src/features/branches/components/manage/branch-manage-table-shell";
 import {
-  BRANCH_PRIMARY_BUTTON_CLASS,
   BRANCH_TAB_COUNT_CLASS,
+  BRANCH_TAB_HEADER_CLASS,
+  BRANCH_TAB_HEADER_ROW_CLASS,
+  BRANCH_TAB_TITLE_CLASS,
   BRANCH_TABLE_CARD_CLASS,
 } from "@/src/features/branches/components/manage/branch-manage-layout.constants";
-import {
-  assignBatchToBranch,
-  unassignBatchFromBranch,
-} from "@/src/features/branches/utils/branch-assign.utils";
+import { unassignBatchFromBranch } from "@/src/features/branches/utils/branch-assign.utils";
+import { branchService } from "@/src/features/branches/services/branch.service";
 import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type { Batch, BatchFilters } from "@/src/features/batches/types/batch.types";
@@ -137,8 +136,7 @@ export function BranchManageBatchesPanel({
             (item) =>
               !item.deletedAt &&
               !item.isDeleted &&
-              !assigned.has(item.id) &&
-              item.branchId !== branchId,
+              !assigned.has(item.id),
           )
           .map((item) => {
             const display = getBatchDisplayStatus(item);
@@ -195,9 +193,7 @@ export function BranchManageBatchesPanel({
 
     setAssignSubmitting(true);
     try {
-      for (const id of selectableIds) {
-        await assignBatchToBranch(id, branchId);
-      }
+      await branchService.assignBatches(branchId, selectableIds);
       appToast.success(
         selectableIds.length === 1
           ? "Batch assigned successfully"
@@ -220,7 +216,7 @@ export function BranchManageBatchesPanel({
 
     setUnassignLoading(true);
     try {
-      await unassignBatchFromBranch(unassignTarget.id);
+      await unassignBatchFromBranch(branchId, unassignTarget.id);
       appToast.success("Batch unassigned");
       setUnassignTarget(null);
       await loadData();
@@ -235,43 +231,30 @@ export function BranchManageBatchesPanel({
   return (
     <>
       <div className="space-y-3">
-        <div className={BRANCH_TABLE_CARD_CLASS}>
-          <div className="border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-4 py-2.5">
-            <div className="flex flex-col gap-2.5 xl:flex-row xl:items-center xl:gap-3">
-              <div className="shrink-0">
-                <h2 className="text-base font-semibold text-[#102A56]">Batches</h2>
-                <p className="mt-0.5 text-sm text-[#647A9B]">
-                  Parent batches assigned to this branch.
-                  {!isLoading ? (
-                    <span className={`${BRANCH_TAB_COUNT_CLASS} ml-2`}>
-                      Total:
-                      <span className="ml-1 font-semibold tabular-nums">
-                        {batches.length}
-                      </span>
-                    </span>
-                  ) : null}
-                </p>
-              </div>
-
-              <BranchBatchFiltersBar
-                filters={filters}
-                onChange={setFilters}
-              />
-
-              <Button
-                type="button"
-                disabled={assignmentsDisabled}
-                onClick={() => {
-                  void openAssign();
-                }}
-                className={BRANCH_PRIMARY_BUTTON_CLASS}
-              >
-                <Plus className="mr-1 h-4 w-4" aria-hidden="true" />
-                Assign Batch
-              </Button>
+        <header className={BRANCH_TAB_HEADER_CLASS}>
+          <div className={BRANCH_TAB_HEADER_ROW_CLASS}>
+            <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
+              <h2 className={BRANCH_TAB_TITLE_CLASS}>Batches</h2>
+              <span className={BRANCH_TAB_COUNT_CLASS}>
+                Total Batches:
+                <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
+                  {isLoading ? "—" : batches.length}
+                </span>
+              </span>
             </div>
-          </div>
 
+            <BranchBatchFiltersBar
+              filters={filters}
+              onChange={setFilters}
+              assignDisabled={assignmentsDisabled}
+              onAssign={() => {
+                void openAssign();
+              }}
+            />
+          </div>
+        </header>
+
+        <div className={BRANCH_TABLE_CARD_CLASS}>
           <BranchManageTableShell
             embedded
             columns={[

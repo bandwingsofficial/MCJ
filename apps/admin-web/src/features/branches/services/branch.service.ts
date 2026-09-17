@@ -181,6 +181,28 @@ class BranchService {
     }
   }
 
+  async assignBatches(
+    branchId: string,
+    batchIds: string[],
+  ) {
+    try {
+      return await branchApi.assignBatches(branchId, batchIds);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async unassignBatch(
+    branchId: string,
+    batchId: string,
+  ) {
+    try {
+      return await branchApi.unassignBatch(branchId, batchId);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async restoreBranch(id: string) {
     try {
       return await branchApi.restoreBranch(id);

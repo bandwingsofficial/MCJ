@@ -32,6 +32,10 @@ export type BatchWithRelations = PrismaBatch & {
     branchCode: string;
   } | null;
 
+  branchAssignments?: {
+    branchId: string;
+  }[];
+
   category: {
     id: string;
     name: string;
@@ -239,6 +243,19 @@ export class BatchMapper {
 
     (batch as Batch & { modePricing?: unknown }).modePricing =
       record.modePricing ?? null;
+
+    const assignedFromJoin = (record.branchAssignments ?? []).map(
+      (assignment) => assignment.branchId,
+    );
+    const assignedBranchIds = Array.from(
+      new Set(
+        [record.branchId, ...assignedFromJoin].filter(
+          (id): id is string => Boolean(id),
+        ),
+      ),
+    );
+    (batch as Batch & { assignedBranchIds?: string[] }).assignedBranchIds =
+      assignedBranchIds;
 
     return batch;
 }

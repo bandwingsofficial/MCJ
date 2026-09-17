@@ -60,6 +60,26 @@ export interface CourseUpcomingTableRow {
   timingId: string | null;
 }
 
+export interface CourseModeGroupedTimingLine {
+  id: string;
+  name: string;
+  scheduleLabel: string | null;
+}
+
+export interface CourseModeGroupedModeRow {
+  mode: BatchMode;
+  modeBadgeLabel: string;
+  daysLabel: string;
+  timings: CourseModeGroupedTimingLine[];
+}
+
+export interface CourseModeGroupedBatchBlock {
+  batchId: string;
+  batchHeadline: string;
+  startDateLabel: string;
+  modeRows: CourseModeGroupedModeRow[];
+}
+
 export interface CourseUpcomingTimingRow {
   id: string;
   name: string;
@@ -107,11 +127,9 @@ export function isUpcomingTiming(timing: BatchTiming): boolean {
     return false;
   }
 
-  if (timing.status === "CANCELLED" || timing.status === "COMPLETED") {
-    return false;
-  }
+  const status = String(timing.status ?? "").toUpperCase();
 
-  if (timing.status === "ONGOING") {
+  if (status === "CANCELLED" || status === "COMPLETED" || status === "ONGOING") {
     return false;
   }
 
@@ -119,7 +137,7 @@ export function isUpcomingTiming(timing: BatchTiming): boolean {
     return false;
   }
 
-  return timing.status === "UPCOMING";
+  return status === "UPCOMING";
 }
 
 export function isUpcomingBatch(batch: Batch): boolean {
@@ -127,11 +145,7 @@ export function isUpcomingBatch(batch: Batch): boolean {
     return false;
   }
 
-  if (
-    batch.status === "CANCELLED" ||
-    batch.status === "COMPLETED" ||
-    batch.status === "ONGOING"
-  ) {
+  if (batch.status === "CANCELLED" || batch.status === "COMPLETED") {
     return false;
   }
 
@@ -139,16 +153,22 @@ export function isUpcomingBatch(batch: Batch): boolean {
     return false;
   }
 
-  if (batch.status !== "UPCOMING") {
-    return false;
-  }
-
   const upcomingTimings = (batch.timings ?? []).filter(isUpcomingTiming);
+
+  /*
+   * Parent batches may already be ONGOING while still exposing upcoming
+   * timings at other branches/slots. Prefer timing eligibility first so
+   * those branches are not silently dropped from enrollment.
+   */
   if ((batch.timings?.length ?? 0) > 0) {
     return upcomingTimings.length > 0;
   }
 
-  return true;
+  if (batch.status === "ONGOING") {
+    return false;
+  }
+
+  return batch.status === "UPCOMING";
 }
 
 function getBatchAvailableSeats(batch: Batch): number {
@@ -160,7 +180,7 @@ function getBatchAvailableSeats(batch: Batch): number {
   return Math.max(0, capacity - enrolled);
 }
 
-function resolveModePricing(
+export function resolveModePricing(
   batch: Batch,
   mode: BatchMode,
 ): NormalizedBatchPricing {
@@ -396,6 +416,121 @@ export function buildCourseUpcomingBatchTableRows(
   return batches
     .filter(isUpcomingBatch)
     .flatMap((batch) => flattenBatchToTableRows(batch));
+}
+
+function formatBatchMonthHeadline(
+  startDate: string,
+  title: string,
+): string {
+  const date = new Date(startDate);
+  if (Number.isNaN(date.getTime())) {
+    return title;
+  }
+
+  const month = date.toLocaleDateString("en-IN", { month: "long" });
+  const year = String(date.getFullYear()).slice(-2);
+  const safeTitle = title.trim() || "Batch";
+
+  return `${month} '${year} | ${safeTitle}`;
+}
+
+function resolveModeDaysLabel(
+  mode: BatchMode,
+  timings: CourseUpcomingTimingRow[],
+): string {
+  if (mode === "RECORDED") {
+    return "Learn at your own pace";
+  }
+
+  const uniqueDays = [
+    ...new Set(
+      timings
+        .map((timing) => timing.days?.trim())
+        .filter((days): days is string => Boolean(days) && days !== "—"),
+    ),
+  ];
+
+  if (uniqueDays.length === 0) {
+    return "—";
+  }
+
+  if (uniqueDays.length === 1) {
+    return uniqueDays[0];
+  }
+
+  return uniqueDays[0];
+}
+
+function buildModeGroupedTimingLine(
+  mode: BatchMode,
+  timing: CourseUpcomingTimingRow,
+): CourseModeGroupedTimingLine {
+  if (mode === "RECORDED") {
+    return {
+      id: timing.id,
+      name: timing.name,
+      scheduleLabel: "Lifetime access",
+    };
+  }
+
+  const hasRange =
+    timing.startTimeLabel !== "—" && timing.endTimeLabel !== "—";
+
+  return {
+    id: timing.id,
+    name: timing.name,
+    scheduleLabel: hasRange
+      ? `${timing.startTimeLabel} – ${timing.endTimeLabel}`
+      : null,
+  };
+}
+
+function buildModeGroupedBlockForBatch(
+  batch: Batch,
+): CourseModeGroupedBatchBlock | null {
+  const modeGroups = buildModeGroupsForBatch(batch);
+
+  if (modeGroups.length === 0) {
+    return null;
+  }
+
+  const modeRows: CourseModeGroupedModeRow[] = modeGroups.map((group) => ({
+    mode: group.mode,
+    modeBadgeLabel: COURSE_MODE_BADGE_LABELS[group.mode],
+    daysLabel: resolveModeDaysLabel(group.mode, group.timings),
+    timings: group.timings.map((timing) =>
+      buildModeGroupedTimingLine(group.mode, timing),
+    ),
+  }));
+
+  if (modeRows.length === 0) {
+    return null;
+  }
+
+  const courseTitle = batch.course?.title?.trim() || batch.name;
+  const firstUpcomingTiming = (batch.timings ?? []).find(isUpcomingTiming);
+  const startDateSource = firstUpcomingTiming?.startDate || batch.startDate;
+
+  return {
+    batchId: batch.id,
+    batchHeadline: formatBatchMonthHeadline(startDateSource, courseTitle),
+    startDateLabel: formatEnrollmentDate(startDateSource),
+    modeRows,
+  };
+}
+
+/**
+ * Course Batch Timings tab: one parent-batch block with exactly one row per
+ * configured learning mode (Offline / Online / Self-Paced), timings grouped
+ * inside each mode cell.
+ */
+export function buildCourseModeGroupedBatchBlocks(
+  batches: Batch[],
+): CourseModeGroupedBatchBlock[] {
+  return batches
+    .filter(isUpcomingBatch)
+    .map((batch) => buildModeGroupedBlockForBatch(batch))
+    .filter((block): block is CourseModeGroupedBatchBlock => block !== null);
 }
 
 export function buildCourseUpcomingBatchGroups(

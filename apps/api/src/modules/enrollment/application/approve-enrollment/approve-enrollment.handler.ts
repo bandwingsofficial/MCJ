@@ -60,7 +60,13 @@ export class ApproveEnrollmentHandler {
     }
 
     if (batch.branchId !== enrollment.branchId) {
-      throw new BatchBranchMismatchException();
+      const assigned = await this.batchRepo.isAssignedToBranch(
+        enrollment.batchId,
+        enrollment.branchId,
+      );
+      if (!assigned) {
+        throw new BatchBranchMismatchException();
+      }
     }
 
     if (batch.courseId && batch.courseId !== enrollment.courseId) {

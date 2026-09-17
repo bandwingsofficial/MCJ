@@ -123,6 +123,7 @@ export class GetBatchResult {
     public readonly courseId: string | null,
     public readonly categoryId: string | null,
     public readonly branchId: string | null,
+    public readonly assignedBranchIds: string[],
     public readonly batchTemplateId: string | null,
     public readonly batchTemplate: BatchTemplateRefResult | null,
     public readonly timings: BatchTimingResult[],
@@ -207,6 +208,8 @@ export class GetBatchResult {
       batch.courseId,
       batch.categoryId,
       batch.branchId,
+      ((batch as Batch & { assignedBranchIds?: string[] }).assignedBranchIds ??
+        (batch.branchId ? [batch.branchId] : [])),
       batch.batchTemplateId,
 
       batch.batchTemplate

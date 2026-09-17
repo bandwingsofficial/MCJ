@@ -74,17 +74,25 @@ interface BatchTimingsTableProps {
   rows: CourseUpcomingTableRow[];
   courseSlug: string | null;
   courseId: string;
+  /** When false, hide Join/Enroll action column (informational tables). */
+  showActions?: boolean;
 }
 
 export function BatchTimingsTable({
   rows,
   courseSlug,
   courseId,
+  showActions = true,
 }: BatchTimingsTableProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
-        <table className="min-w-[920px] w-full border-collapse text-left text-sm">
+        <table
+          className={cn(
+            "w-full border-collapse text-left text-sm",
+            showActions ? "min-w-[920px]" : "min-w-[780px]",
+          )}
+        >
           <thead>
             <tr className="border-b border-slate-200 bg-[#F4F8FC] text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
               <th className="px-4 py-3.5">Batch Name</th>
@@ -93,7 +101,7 @@ export function BatchTimingsTable({
               <th className="px-4 py-3.5">Days</th>
               <th className="px-4 py-3.5">Start Date</th>
               <th className="px-4 py-3.5">Fee</th>
-              <th className="px-4 py-3.5">Action</th>
+              {showActions ? <th className="px-4 py-3.5">Action</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -145,13 +153,15 @@ export function BatchTimingsTable({
                   <span className="font-bold text-[#0B1F3A]">{row.feeLabel}</span>
                 </td>
 
-                <td className="px-4 py-3.5">
-                  <JoinNowButton
-                    row={row}
-                    courseSlug={courseSlug}
-                    courseId={courseId}
-                  />
-                </td>
+                {showActions ? (
+                  <td className="px-4 py-3.5">
+                    <JoinNowButton
+                      row={row}
+                      courseSlug={courseSlug}
+                      courseId={courseId}
+                    />
+                  </td>
+                ) : null}
               </tr>
             ))}
           </tbody>

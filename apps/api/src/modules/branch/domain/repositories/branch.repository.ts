@@ -36,6 +36,12 @@ export interface BranchAssignableTrainer {
   isDeleted: boolean;
 }
 
+export interface BranchAssignableBatch {
+  id: string;
+  isActive: boolean;
+  isDeleted: boolean;
+}
+
 export interface BranchRepository {
   save(branch: Branch): Promise<void>;
 
@@ -175,5 +181,19 @@ export interface BranchRepository {
   unassignTrainerFromBranch(
     branchId: string,
     trainerId: string,
+  ): Promise<void>;
+
+  findBatchesByIds(
+    batchIds: string[],
+  ): Promise<BranchAssignableBatch[]>;
+
+  assignBatchesToBranch(
+    branchId: string,
+    batchIds: string[],
+  ): Promise<number>;
+
+  unassignBatchFromBranch(
+    branchId: string,
+    batchId: string,
   ): Promise<void>;
 }

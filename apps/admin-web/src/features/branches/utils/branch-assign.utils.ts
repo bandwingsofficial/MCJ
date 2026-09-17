@@ -1,4 +1,4 @@
-import { batchService } from "@/src/features/batches/services/batch.service";
+import { branchService } from "@/src/features/branches/services/branch.service";
 import { studentService } from "@/src/features/students/services/student.service";
 import {
   mapStudentToFormValues,
@@ -9,13 +9,14 @@ export async function assignBatchToBranch(
   batchId: string,
   branchId: string,
 ): Promise<void> {
-  await batchService.updateBatch(batchId, { branchId });
+  await branchService.assignBatches(branchId, [batchId]);
 }
 
-export async function unassignBatchFromBranch(batchId: string): Promise<void> {
-  await batchService.updateBatch(batchId, {
-    branchId: null,
-  });
+export async function unassignBatchFromBranch(
+  branchId: string,
+  batchId: string,
+): Promise<void> {
+  await branchService.unassignBatch(branchId, batchId);
 }
 
 export async function assignStudentToBranch(

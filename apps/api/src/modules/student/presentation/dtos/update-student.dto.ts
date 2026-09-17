@@ -6,16 +6,13 @@ import {
   MaxLength,
   ValidateIf,
 } from 'class-validator';
-import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 
 import { CreateStudentDto } from './create-student.dto';
 
-const trimOrUndefined = (value: unknown) =>
-  typeof value === 'string'
-    ? value.trim() || undefined
-    : value;
-
-export class UpdateStudentDto extends PartialType(CreateStudentDto) {
+export class UpdateStudentDto extends PartialType(
+  OmitType(CreateStudentDto, ['profileImageFileId'] as const),
+) {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
-  ArrowRight,
   Award,
   BookOpen,
   Briefcase,
@@ -15,17 +13,13 @@ import {
   GraduationCap,
   Home,
   ImageOff,
-  IndianRupee,
   Languages,
   LayoutDashboard,
   Monitor,
   Share2,
-  Sparkles,
-  Star,
   Users,
 } from "lucide-react";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { cn } from "@/src/shared/lib/cn";
 import { appToast } from "@/src/shared/components/ui/toast";
@@ -34,9 +28,9 @@ import { useCourseBatches } from "@/src/features/batches/hooks/useCourseBatches"
 import type { Batch, BatchMode } from "@/src/features/batches/types/batch.types";
 import { CourseCurriculumAccordion } from "@/src/features/courses/components/course-curriculum-accordion";
 import { CourseFaqAccordion } from "@/src/features/courses/components/course-faq-accordion";
-import { CourseFeesSection } from "@/src/features/courses/components/course-fees-section";
 import { CourseRatingMeta } from "@/src/features/courses/components/course-rating-meta";
 import { CourseUpcomingBatchesSection } from "@/src/features/courses/components/course-upcoming-batches-section";
+import { CourseEnrollmentSidebar } from "@/src/features/courses/components/course-enrollment-sidebar";
 import {
   useCourseFaqs,
   useCourseSummary,
@@ -47,24 +41,15 @@ import type {
   CoursePreviewModule,
 } from "@/src/features/courses/types/course.types";
 import {
-  buildCourseFeesByMode,
   collectBatchTrainerIds,
   COURSE_MODE_ORDER,
   isUpcomingBatch,
-  type CourseModeFeeRow,
 } from "@/src/features/courses/utils/course-batch.utils";
 import {
   formatCourseLevel,
   formatDuration,
   getCourseLearningOutcomes,
 } from "@/src/features/courses/utils/course-display.utils";
-import { getCourseEnrollPath } from "@/src/features/courses/utils/course-route.utils";
-import {
-  formatCourseRatingCountLabel,
-  formatCourseRatingValue,
-  hasCourseRating,
-} from "@/src/features/courses/utils/course-rating.utils";
-import { isBatchSelectable } from "@/src/features/enrollments/utils/enrollment-batch.utils";
 import { useCourseTrainers } from "@/src/features/trainers/hooks/useCourseTrainers";
 import type { Trainer } from "@/src/features/trainers/types/trainer.types";
 
@@ -75,10 +60,8 @@ interface CourseDetailsProps {
 type DetailTab =
   | "overview"
   | "curriculum"
-  | "fees"
   | "batches"
   | "instructors"
-  | "reviews"
   | "faq";
 
 const TABS: {
@@ -88,10 +71,8 @@ const TABS: {
 }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "curriculum", label: "Curriculum", icon: BookOpen },
-  { id: "fees", label: "Fees", icon: IndianRupee },
   { id: "batches", label: "Batch Timings", icon: Clock3 },
   { id: "instructors", label: "Instructors", icon: Users },
-  { id: "reviews", label: "Reviews", icon: Star },
   { id: "faq", label: "FAQ", icon: CircleHelp },
 ];
 
@@ -154,7 +135,6 @@ function resolveModesLabel(modes: BatchMode[]): string {
 }
 
 export function CourseDetails({ course }: CourseDetailsProps) {
-  const router = useRouter();
   const tabsRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>("overview");
 
@@ -190,11 +170,6 @@ export function CourseDetails({ course }: CourseDetailsProps) {
     [courseBatches],
   );
 
-  const selectableCourseBatches = useMemo(
-    () => upcomingBatches.filter(isBatchSelectable),
-    [upcomingBatches],
-  );
-
   const configuredModes = useMemo(() => {
     const modes = new Set<BatchMode>();
 
@@ -225,11 +200,6 @@ export function CourseDetails({ course }: CourseDetailsProps) {
   const durationLabel = course.duration
     ? formatDuration(course.duration, course.durationType)
     : null;
-
-  const feesByMode = useMemo(
-    () => buildCourseFeesByMode(upcomingBatches),
-    [upcomingBatches],
-  );
 
   const batchTrainerIds = useMemo(
     () => new Set(collectBatchTrainerIds(upcomingBatches)),
@@ -273,77 +243,8 @@ export function CourseDetails({ course }: CourseDetailsProps) {
     return [...new Set(skills.map((skill) => skill.trim()).filter(Boolean))];
   }, [safeModules]);
 
-  const courseHighlights = useMemo(() => {
-    const highlights: string[] = [];
-
-    if (course.level) {
-      highlights.push(`${formatCourseLevel(course.level)} level curriculum`);
-    }
-
-    if (course.language) {
-      highlights.push(`Delivered in ${course.language}`);
-    }
-
-    if (moduleCount > 0) {
-      highlights.push(
-        `${moduleCount} structured module${moduleCount === 1 ? "" : "s"}`,
-      );
-    }
-
-    if (lessonCount > 0) {
-      highlights.push(
-        `${lessonCount} lesson${lessonCount === 1 ? "" : "s"} and topics`,
-      );
-    }
-
-    if (selectableCourseBatches.length > 0) {
-      highlights.push(
-        `${selectableCourseBatches.length} upcoming batch${selectableCourseBatches.length === 1 ? "" : "es"} open for enrollment`,
-      );
-    }
-
-    return highlights;
-  }, [
-    course.language,
-    course.level,
-    lessonCount,
-    moduleCount,
-    selectableCourseBatches.length,
-  ]);
-
-  const firstJoinHref = useMemo(() => {
-    const batch = selectableCourseBatches[0];
-    if (!batch) {
-      return null;
-    }
-
-    return getCourseEnrollPath(
-      { slug: course.slug },
-      {
-        batchId: batch.id,
-        branchId: batch.branchId ?? undefined,
-        courseId: course.id,
-      },
-    );
-  }, [course.id, course.slug, selectableCourseBatches]);
-
   const scrollToTabs = () => {
     tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const handleEnroll = () => {
-    if (course.isEnrolled) {
-      router.push(`/student/courses/${course.id}`);
-      return;
-    }
-
-    if (firstJoinHref) {
-      router.push(firstJoinHref);
-      return;
-    }
-
-    setActiveTab("batches");
-    window.requestAnimationFrame(scrollToTabs);
   };
 
   const handleShare = async () => {
@@ -543,123 +444,95 @@ export function CourseDetails({ course }: CourseDetailsProps) {
         </div>
       </section>
 
-      {/* Sticky tabs */}
-      <div
-        id="batch-timings"
-        ref={tabsRef}
-        className="sticky top-[76px] z-30 scroll-mt-[76px] border-y border-slate-200/80 bg-white/95 shadow-[0_1px_0_rgba(15,23,42,0.04)] backdrop-blur"
-      >
-        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {TABS.map((tab) => {
-              const active = activeTab === tab.id;
-              const Icon = tab.icon;
+      {/* Tabs + content (70%) with enrollment sidebar (30%) aligned at the same top */}
+      <section className="border-t border-slate-200/80">
+        <div className="mx-auto grid max-w-7xl items-start gap-8 px-4 py-0 sm:px-6 lg:grid-cols-[minmax(0,7fr)_minmax(260px,3fr)] lg:gap-10 lg:px-8">
+          <div className="min-w-0">
+            <div
+              id="batch-timings"
+              ref={tabsRef}
+              className="sticky top-[76px] z-30 -mx-4 scroll-mt-[76px] border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0"
+            >
+              <div className="flex min-w-0 items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {TABS.map((tab) => {
+                  const active = activeTab === tab.id;
+                  const Icon = tab.icon;
 
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setTab(tab.id)}
-                  className={cn(
-                    "relative inline-flex shrink-0 items-center gap-2 rounded-t-lg px-3.5 py-3.5 text-sm font-medium transition-colors",
-                    active
-                      ? "bg-[#EAF1FF] text-[#2563D9]"
-                      : "text-slate-500 hover:bg-slate-50 hover:text-[#0B1F3A]",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {tab.label}
-                  {active ? (
-                    <span className="absolute inset-x-2 bottom-0 h-[3px] rounded-full bg-[#2563D9]" />
-                  ) : null}
-                </button>
-              );
-            })}
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setTab(tab.id)}
+                      className={cn(
+                        "relative inline-flex shrink-0 items-center gap-2 rounded-t-lg px-3.5 py-3.5 text-sm font-medium transition-colors",
+                        active
+                          ? "bg-[#EAF1FF] text-[#2563D9]"
+                          : "text-slate-500 hover:bg-slate-50 hover:text-[#0B1F3A]",
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {tab.label}
+                      {active ? (
+                        <span className="absolute inset-x-2 bottom-0 h-[3px] rounded-full bg-[#2563D9]" />
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="py-8 sm:py-10">
+              {activeTab === "overview" ? (
+                <OverviewPanel
+                  description={overviewDescription}
+                  learningOutcomes={learningOutcomes}
+                  skillsCovered={skillsCovered}
+                />
+              ) : null}
+
+              {activeTab === "curriculum" ? (
+                <CurriculumPanel
+                  modules={safeModules}
+                  moduleCount={moduleCount}
+                  lessonCount={lessonCount}
+                />
+              ) : null}
+
+              {activeTab === "batches" ? (
+                <BatchesPanel
+                  batches={upcomingBatches}
+                  courseSlug={course.slug}
+                  courseId={course.id}
+                  isLoading={courseBatchesLoading}
+                />
+              ) : null}
+
+              {activeTab === "instructors" ? (
+                <InstructorsPanel
+                  trainers={displayTrainers}
+                  isLoading={trainersLoading}
+                  isError={trainersError}
+                  onRetry={() => void refetchTrainers()}
+                />
+              ) : null}
+
+              {activeTab === "faq" ? (
+                <FaqPanel faqs={faqs} isLoading={faqsLoading} />
+              ) : null}
+            </div>
           </div>
 
-          <Button
-            type="button"
-            onClick={handleEnroll}
-            className="hidden h-10 shrink-0 rounded-xl bg-[#0B1F3A] px-5 text-sm font-semibold text-white hover:bg-[#132a4a] sm:inline-flex"
-          >
-            {course.isEnrolled ? "Continue Learning" : "Enroll Now"}
-            <ArrowRight className="ml-1.5 h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Tab content */}
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-        {activeTab === "overview" ? (
-          <OverviewPanel
-            description={overviewDescription}
-            learningOutcomes={learningOutcomes}
-            skillsCovered={skillsCovered}
-            highlights={courseHighlights}
-            moduleCount={moduleCount}
-            lessonCount={lessonCount}
-            durationLabel={durationLabel}
-            level={course.level}
-            language={course.language}
-          />
-        ) : null}
-
-        {activeTab === "curriculum" ? (
-          <CurriculumPanel
-            modules={safeModules}
-            moduleCount={moduleCount}
-            lessonCount={lessonCount}
-          />
-        ) : null}
-
-        {activeTab === "fees" ? (
-          <FeesPanel
-            rows={feesByMode}
-            isLoading={courseBatchesLoading}
-            onJoin={handleEnroll}
-            joinHref={firstJoinHref}
-          />
-        ) : null}
-
-        {activeTab === "batches" ? (
-          <BatchesPanel
-            batches={upcomingBatches}
-            courseSlug={course.slug}
-            courseId={course.id}
-            isLoading={courseBatchesLoading}
-          />
-        ) : null}
-
-        {activeTab === "instructors" ? (
-          <InstructorsPanel
-            trainers={displayTrainers}
-            isLoading={trainersLoading}
-            isError={trainersError}
-            onRetry={() => void refetchTrainers()}
-          />
-        ) : null}
-
-        {activeTab === "reviews" ? (
-          <ReviewsPanel
-            rating={course.averageRating}
-            totalReviews={course.totalReviews}
-          />
-        ) : null}
-
-        {activeTab === "faq" ? (
-          <FaqPanel faqs={faqs} isLoading={faqsLoading} />
-        ) : null}
-
-        {/* Mobile enroll CTA */}
-        <div className="mt-10 sm:hidden">
-          <Button
-            type="button"
-            onClick={handleEnroll}
-            className="h-12 w-full rounded-xl bg-[#0B1F3A] text-sm font-semibold text-white hover:bg-[#132a4a]"
-          >
-            {course.isEnrolled ? "Continue Learning" : "Enroll Now"}
-            <ArrowRight className="ml-1.5 h-4 w-4" />
-          </Button>
+          <aside className="min-w-0 pb-8 pt-4 sm:pb-10 lg:sticky lg:top-[92px] lg:self-start lg:pt-4">
+            <CourseEnrollmentSidebar
+              batches={Array.isArray(courseBatches) ? courseBatches : []}
+              courseBranches={course.branches}
+              courseSlug={course.slug}
+              courseId={course.id}
+              courseTitle={course.title}
+              isEnrolled={course.isEnrolled}
+              isLoading={courseBatchesLoading}
+            />
+          </aside>
         </div>
       </section>
     </div>
@@ -685,25 +558,13 @@ function OverviewPanel({
   description,
   learningOutcomes,
   skillsCovered,
-  highlights,
-  moduleCount,
-  lessonCount,
-  durationLabel,
-  level,
-  language,
 }: {
   description: string;
   learningOutcomes: string[];
   skillsCovered: string[];
-  highlights: string[];
-  moduleCount: number;
-  lessonCount: number;
-  durationLabel: string | null;
-  level: Course["level"];
-  language: string;
 }) {
   return (
-    <div className="mx-auto max-w-4xl space-y-12">
+    <div className="space-y-12">
       <section>
         <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2563D9]">
           About
@@ -758,57 +619,6 @@ function OverviewPanel({
           </div>
         </section>
       ) : null}
-
-      {highlights.length > 0 ? (
-        <section>
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2563D9]">
-            Highlights
-          </p>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#0B1F3A]">
-            Course highlights
-          </h2>
-          <div className="mt-6 space-y-3 border-l-2 border-[#2563D9]/25 pl-5">
-            {highlights.map((highlight) => (
-              <p key={highlight} className="text-[15px] leading-7 text-slate-700">
-                {highlight}
-              </p>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section>
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2563D9]">
-          Snapshot
-        </p>
-        <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#0B1F3A]">
-          Course at a glance
-        </h2>
-        <dl className="mt-6 grid gap-4 sm:grid-cols-2">
-          {[
-            { label: "Modules", value: moduleCount > 0 ? String(moduleCount) : null },
-            { label: "Lessons", value: lessonCount > 0 ? String(lessonCount) : null },
-            { label: "Duration", value: durationLabel },
-            {
-              label: "Level",
-              value: level ? formatCourseLevel(level) : null,
-            },
-            { label: "Language", value: language || null },
-          ]
-            .filter((item) => item.value)
-            .map((item) => (
-              <div
-                key={item.label}
-                className="flex items-baseline justify-between gap-4 border-b border-slate-100 pb-3"
-              >
-                <dt className="text-sm text-slate-500">{item.label}</dt>
-                <dd className="text-sm font-semibold text-[#0B1F3A]">
-                  {item.value}
-                </dd>
-              </div>
-            ))}
-        </dl>
-      </section>
     </div>
   );
 }
@@ -836,40 +646,6 @@ function CurriculumPanel({
       </p>
       <div className="mt-8">
         <CourseCurriculumAccordion modules={modules} />
-      </div>
-    </div>
-  );
-}
-
-function FeesPanel({
-  rows,
-  isLoading,
-  onJoin,
-  joinHref,
-}: {
-  rows: CourseModeFeeRow[];
-  isLoading: boolean;
-  onJoin: () => void;
-  joinHref: string | null;
-}) {
-  return (
-    <div>
-      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2563D9]">
-        Pricing
-      </p>
-      <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#0B1F3A]">
-        Fees & learning modes
-      </h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-        Pricing is shown only for learning modes configured on upcoming batches.
-      </p>
-      <div className="mt-8">
-        <CourseFeesSection
-          rows={rows}
-          isLoading={isLoading}
-          onJoin={onJoin}
-          joinHref={joinHref}
-        />
       </div>
     </div>
   );
@@ -1001,7 +777,7 @@ function InstructorRow({ trainer }: { trainer: Trainer }) {
           ) : null}
         </div>
         {trainer.bio ? (
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
+          <p className="mt-3 max-w-2xl line-clamp-3 text-sm leading-7 text-slate-600">
             {trainer.bio}
           </p>
         ) : null}
@@ -1018,61 +794,6 @@ function InstructorSkeleton() {
         <Skeleton className="h-5 w-40" />
         <Skeleton className="h-4 w-56" />
         <Skeleton className="h-4 w-72" />
-      </div>
-    </div>
-  );
-}
-
-function ReviewsPanel({
-  rating,
-  totalReviews,
-}: {
-  rating: number;
-  totalReviews: number;
-}) {
-  const hasRating = hasCourseRating(rating, totalReviews);
-
-  return (
-    <div>
-      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#2563D9]">
-        Feedback
-      </p>
-      <h2 className="mt-2 text-2xl font-bold tracking-tight text-[#0B1F3A]">
-        Reviews
-      </h2>
-
-      <div className="mt-8 rounded-2xl border border-slate-200 bg-[#F8FBFF] px-6 py-8">
-        {hasRating ? (
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Star className="h-7 w-7 fill-amber-400 text-amber-400" />
-              <span className="text-3xl font-bold text-[#0B1F3A]">
-                {formatCourseRatingValue(rating)}
-              </span>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-[#0B1F3A]">
-                {formatCourseRatingCountLabel(totalReviews)}
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                Based on learner feedback for this course.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-start gap-3">
-            <Sparkles className="mt-0.5 h-5 w-5 text-[#2563D9]" />
-            <div>
-              <p className="text-sm font-semibold text-[#0B1F3A]">
-                Reviews coming soon
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                Detailed learner reviews will appear here once they are
-                published for this course.
-              </p>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -107,7 +107,7 @@ export class PrismaBranchRepository
       this.prisma.student.count({ where: { branchId } }),
       this.prisma.branchTrainer.count({ where: { branchId } }),
       this.prisma.enrollment.count({ where: { branchId } }),
-      this.prisma.batch.count({ where: { branchId } }),
+      this.prisma.branchBatch.count({ where: { branchId } }),
       this.prisma.branchCategory.count({
         where: { branchId },
       }),
@@ -150,8 +150,11 @@ export class PrismaBranchRepository
           course: { isDeleted: false },
         },
       }),
-      this.prisma.batch.count({
-        where: { branchId, isDeleted: false },
+      this.prisma.branchBatch.count({
+        where: {
+          branchId,
+          batch: { isDeleted: false },
+        },
       }),
       this.prisma.enrollment.count({
         where: { branchId, isDeleted: false },
@@ -796,6 +799,55 @@ export class PrismaBranchRepository
   ): Promise<void> {
     await this.prisma.branchTrainer.deleteMany({
       where: { branchId, trainerId },
+    });
+  }
+
+  async findBatchesByIds(
+    batchIds: string[],
+  ): Promise<
+    Array<{ id: string; isActive: boolean; isDeleted: boolean }>
+  > {
+    const uniqueIds = [...new Set(batchIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return [];
+    }
+
+    return this.prisma.batch.findMany({
+      where: { id: { in: uniqueIds } },
+      select: {
+        id: true,
+        isActive: true,
+        isDeleted: true,
+      },
+    });
+  }
+
+  async assignBatchesToBranch(
+    branchId: string,
+    batchIds: string[],
+  ): Promise<number> {
+    const uniqueIds = [...new Set(batchIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return 0;
+    }
+
+    const result = await this.prisma.branchBatch.createMany({
+      data: uniqueIds.map((batchId) => ({
+        branchId,
+        batchId,
+      })),
+      skipDuplicates: true,
+    });
+
+    return result.count;
+  }
+
+  async unassignBatchFromBranch(
+    branchId: string,
+    batchId: string,
+  ): Promise<void> {
+    await this.prisma.branchBatch.deleteMany({
+      where: { branchId, batchId },
     });
   }
 }

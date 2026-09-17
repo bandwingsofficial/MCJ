@@ -183,6 +183,8 @@ export interface Batch {
   courseId: string | null;
   categoryId: string | null;
   branchId: string | null;
+  /** Branches this parent batch is assigned to (BranchBatch + legacy branchId). */
+  assignedBranchIds?: string[];
   batchTemplateId?: string | null;
   course?: BatchCourse | null;
   category?: BatchCategory | null;

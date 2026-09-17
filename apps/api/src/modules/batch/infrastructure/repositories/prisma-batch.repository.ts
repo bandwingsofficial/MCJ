@@ -40,6 +40,19 @@ export class PrismaBatchRepository implements BatchRepository {
         create: { ...data },
       });
 
+      // Keep BranchBatch in sync when a primary branchId is set (additive; does not unassign others).
+      if (data.branchId) {
+        await tx.branchBatch.createMany({
+          data: [
+            {
+              branchId: data.branchId,
+              batchId: batch.id,
+            },
+          ],
+          skipDuplicates: true,
+        });
+      }
+
       await tx.batchTrainer.deleteMany({
         where: { batchId: batch.id },
       });
@@ -383,6 +396,27 @@ export class PrismaBatchRepository implements BatchRepository {
     return assignment?.courseId ?? null;
   }
 
+  async isAssignedToBranch(
+    batchId: string,
+    branchId: string,
+  ): Promise<boolean> {
+    if (!batchId || !branchId) {
+      return false;
+    }
+
+    const assignment = await this.prisma.branchBatch.findUnique({
+      where: {
+        branchId_batchId: {
+          branchId,
+          batchId,
+        },
+      },
+      select: { id: true },
+    });
+
+    return Boolean(assignment);
+  }
+
   async deletePermanent(id: string): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       const enrollments = await tx.enrollment.findMany({
@@ -458,6 +492,12 @@ export class PrismaBatchRepository implements BatchRepository {
         },
       },
 
+      branchAssignments: {
+        select: {
+          branchId: true,
+        },
+      },
+
       category: {
         select: {
           id: true,
@@ -528,7 +568,11 @@ export class PrismaBatchRepository implements BatchRepository {
     }
 
     if (filters.courseId) where.courseId = filters.courseId;
-    if (filters.branchId) where.branchId = filters.branchId;
+    if (filters.branchId) {
+      where.branchAssignments = {
+        some: { branchId: filters.branchId },
+      };
+    }
     if (filters.mode) where.mode = filters.mode;
     if (filters.categoryId) {
       where.AND = [

@@ -252,6 +252,38 @@ export const branchApi = {
     return response.data;
   },
 
+  async assignBatches(
+    branchId: string,
+    batchIds: string[],
+  ) {
+    const response = await apiClient.post<
+      ApiResponse<{
+        branchId: string;
+        assignedCount: number;
+        batchIds: string[];
+      }>
+    >(`/admin/branches/${branchId}/batches/assign`, {
+      batchIds,
+    });
+
+    return response.data;
+  },
+
+  async unassignBatch(
+    branchId: string,
+    batchId: string,
+  ) {
+    const response = await apiClient.delete<
+      ApiResponse<{
+        branchId: string;
+        batchId: string;
+        unassigned: boolean;
+      }>
+    >(`/admin/branches/${branchId}/batches/${batchId}`);
+
+    return response.data;
+  },
+
   async restoreBranch(id: string) {
     const response = await apiClient.patch(
       `/admin/branches/${id}/restore`

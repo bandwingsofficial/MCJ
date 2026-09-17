@@ -86,6 +86,9 @@ export interface Batch {
 
   branchId: string | null;
 
+  /** Branches this parent batch is assigned to (BranchBatch + legacy branchId). */
+  assignedBranchIds?: string[];
+
   startDate: string;
 
   endDate: string | null;

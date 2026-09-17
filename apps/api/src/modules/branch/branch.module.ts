@@ -6,12 +6,15 @@ import { UploadsModule } from '../uploads/uploads.module';
 import { UploadDomainService } from '../uploads/domain/services/upload-domain.service';
 
 import { BranchController } from './presentation/controllers/branch.controller';
+import { BranchBatchController } from './presentation/controllers/branch-batch.controller';
 import { BranchCourseController } from './presentation/controllers/branch-course.controller';
 import { BranchTrainerController } from './presentation/controllers/branch-trainer.controller';
 import { PublicBranchController } from './presentation/controllers/public-branch.controller';
 
+import { AssignBatchesToBranchHandler } from './application/assign-batches-to-branch/assign-batches-to-branch.handler';
 import { AssignCoursesToBranchHandler } from './application/assign-courses-to-branch/assign-courses-to-branch.handler';
 import { AssignTrainersToBranchHandler } from './application/assign-trainers-to-branch/assign-trainers-to-branch.handler';
+import { UnassignBatchFromBranchHandler } from './application/unassign-batch-from-branch/unassign-batch-from-branch.handler';
 import { UnassignCourseFromBranchHandler } from './application/unassign-course-from-branch/unassign-course-from-branch.handler';
 import { UnassignTrainerFromBranchHandler } from './application/unassign-trainer-from-branch/unassign-trainer-from-branch.handler';
 
@@ -44,6 +47,7 @@ import { BRANCH_TOKENS } from './branch.tokens';
 
   controllers: [
     BranchController,
+    BranchBatchController,
     BranchCourseController,
     BranchTrainerController,
     PublicBranchController,
@@ -294,6 +298,20 @@ import { BRANCH_TOKENS } from './branch.tokens';
       provide: UnassignTrainerFromBranchHandler,
       useFactory: (branchRepo: BranchRepository) =>
         new UnassignTrainerFromBranchHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
+
+    {
+      provide: AssignBatchesToBranchHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new AssignBatchesToBranchHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
+
+    {
+      provide: UnassignBatchFromBranchHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new UnassignBatchFromBranchHandler(branchRepo),
       inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
     },
   ],

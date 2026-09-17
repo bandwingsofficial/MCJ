@@ -2,9 +2,9 @@
 
 import { useMemo } from "react";
 
-import { BatchTimingsTable } from "@/src/features/batches/components/batch-timings-table";
+import { CourseBatchTimingsModeTable } from "@/src/features/courses/components/course-batch-timings-mode-table";
 import type { Batch } from "@/src/features/batches/types/batch.types";
-import { buildCourseUpcomingBatchTableRows } from "@/src/features/courses/utils/course-batch.utils";
+import { buildCourseModeGroupedBatchBlocks } from "@/src/features/courses/utils/course-batch.utils";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
@@ -17,12 +17,10 @@ interface CourseUpcomingBatchesSectionProps {
 
 export function CourseUpcomingBatchesSection({
   batches,
-  courseSlug,
-  courseId,
   isLoading = false,
 }: CourseUpcomingBatchesSectionProps) {
-  const rows = useMemo(
-    () => buildCourseUpcomingBatchTableRows(batches),
+  const blocks = useMemo(
+    () => buildCourseModeGroupedBatchBlocks(batches),
     [batches],
   );
 
@@ -30,7 +28,7 @@ export function CourseUpcomingBatchesSection({
     return <Skeleton className="h-72 w-full rounded-xl" />;
   }
 
-  if (rows.length === 0) {
+  if (blocks.length === 0) {
     return (
       <EmptyState
         title="No upcoming batches available"
@@ -39,11 +37,5 @@ export function CourseUpcomingBatchesSection({
     );
   }
 
-  return (
-    <BatchTimingsTable
-      rows={rows}
-      courseSlug={courseSlug}
-      courseId={courseId}
-    />
-  );
+  return <CourseBatchTimingsModeTable blocks={blocks} />;
 }

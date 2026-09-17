@@ -185,7 +185,13 @@ export class EnrollmentDomainService {
     }
 
     if (batch.branchId !== branchId) {
-      throw new EnrollmentBranchAccessDeniedException();
+      const assigned = await batchRepo.isAssignedToBranch(
+        enrollment.batchId,
+        branchId,
+      );
+      if (!assigned) {
+        throw new EnrollmentBranchAccessDeniedException();
+      }
     }
   }
 
@@ -314,21 +320,42 @@ export class EnrollmentDomainService {
     }
 
     if (!batch.branchId) {
-      throw new BranchNotFoundException();
+      const hasAnyAssignment = params.expectedBranchId
+        ? await repos.batchRepo.isAssignedToBranch(
+            params.batchId,
+            params.expectedBranchId,
+          )
+        : false;
+
+      if (!hasAnyAssignment) {
+        throw new BranchNotFoundException();
+      }
     }
 
-    if (
-      params.expectedBranchId &&
-      batch.branchId !== params.expectedBranchId
-    ) {
-      throw new BatchBranchMismatchException();
+    if (params.expectedBranchId) {
+      const assignedToExpected =
+        batch.branchId === params.expectedBranchId ||
+        (await repos.batchRepo.isAssignedToBranch(
+          params.batchId,
+          params.expectedBranchId,
+        ));
+
+      if (!assignedToExpected) {
+        throw new BatchBranchMismatchException();
+      }
     }
 
-    if (
-      params.actorBranchId &&
-      batch.branchId !== params.actorBranchId
-    ) {
-      throw new EnrollmentBranchAccessDeniedException();
+    if (params.actorBranchId) {
+      const assignedToActor =
+        batch.branchId === params.actorBranchId ||
+        (await repos.batchRepo.isAssignedToBranch(
+          params.batchId,
+          params.actorBranchId,
+        ));
+
+      if (!assignedToActor) {
+        throw new EnrollmentBranchAccessDeniedException();
+      }
     }
 
     const student = await repos.studentRepo.findById(
@@ -347,7 +374,14 @@ export class EnrollmentDomainService {
       throw new StudentInactiveException();
     }
 
-    const branchId = batch.branchId;
+    const branchId =
+      params.expectedBranchId ??
+      params.actorBranchId ??
+      batch.branchId;
+
+    if (!branchId) {
+      throw new BranchNotFoundException();
+    }
 
     let courseId = batch.courseId;
     let courseResolvedFromAssignment = false;
@@ -430,7 +464,11 @@ export class EnrollmentDomainService {
     // the create/update handlers associate the student with this batch's branch.
 
     const batchProvesBranchOffering =
-      batch.branchId === branchId &&
+      (batch.branchId === branchId ||
+        (await repos.batchRepo.isAssignedToBranch(
+          params.batchId,
+          branchId,
+        ))) &&
       (batch.courseId === course.id || courseResolvedFromAssignment);
 
     const isCategoryAssigned = category

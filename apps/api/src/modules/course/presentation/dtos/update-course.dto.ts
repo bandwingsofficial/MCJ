@@ -1,9 +1,11 @@
-import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { IsOptional, IsUUID, ValidateIf } from 'class-validator';
 
 import { CreateCourseDto } from './create-course.dto';
 
-export class UpdateCourseDto extends PartialType(CreateCourseDto) {
+export class UpdateCourseDto extends PartialType(
+  OmitType(CreateCourseDto, ['thumbnailFileId'] as const),
+) {
   @ApiPropertyOptional({
     description:
       'Upload file ID from POST /admin/uploads, or null to remove image',

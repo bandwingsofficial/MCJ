@@ -57,5 +57,6 @@ export interface BatchRepository {
   ): Promise<void>;
   getSummaryCounts(batchId: string): Promise<BatchSummaryCounts>;
   findFirstAssignedCourseId(batchId: string): Promise<string | null>;
+  isAssignedToBranch(batchId: string, branchId: string): Promise<boolean>;
   deletePermanent(id: string): Promise<void>;
 }
