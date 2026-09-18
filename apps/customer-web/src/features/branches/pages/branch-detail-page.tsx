@@ -125,7 +125,7 @@ function BranchHero({
 
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href={`/contact?branch=${branch.id}`}>
-              <Button className="rounded-xl bg-[#0B1F3A] text-white hover:bg-[#102A56]">
+              <Button className="rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] text-white hover:from-[#2860D4] hover:to-[#1A3F96]">
                 Enquire Now →
               </Button>
             </Link>
@@ -333,7 +333,7 @@ function BranchEnquiryForm({
       <Button
         type="submit"
         loading={submitting}
-        className="w-full rounded-xl bg-[#0B1F3A] hover:bg-[#102A56]"
+        className="w-full rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
       >
         Submit Enquiry
       </Button>
@@ -613,7 +613,7 @@ export function BranchDetailPage({ branchSlugOrId }: Props) {
                 </Button>
               </a>
               <a href={getGoogleMapsDirectionsUrl(branch)} target="_blank" rel="noreferrer">
-                <Button className="rounded-xl bg-[#0B1F3A]">
+                <Button className="rounded-xl">
                   Get Directions
                 </Button>
               </a>

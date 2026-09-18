@@ -74,7 +74,7 @@ function JoinNowButton({
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1.5 rounded-lg bg-[#0B1F3A] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#10294A]"
+      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-4 py-2 text-xs font-semibold text-white transition hover:from-[#2860D4] hover:to-[#1A3F96]"
     >
       Join Now
       <ArrowRight className="h-3.5 w-3.5" />

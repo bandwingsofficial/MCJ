@@ -528,7 +528,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
                   </p>
                   <Link
                     href={`/student/courses/${course.id}`}
-                    className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-6 text-sm font-semibold text-white hover:from-[#1E58C7] hover:to-[#123D94]"
+                    className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-6 text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
                   >
                     Continue Learning
                   </Link>
@@ -591,7 +591,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
                   <FormError message={checkoutError ?? undefined} />
                   <Button
                     type="button"
-                    className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2563D9] to-[#1746A2] text-sm font-semibold hover:from-[#1E58C7] hover:to-[#123D94]"
+                    className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] text-sm font-semibold hover:from-[#2860D4] hover:to-[#1A3F96]"
                     disabled={
                       !selectedBatchId ||
                       !selectedBranchId ||

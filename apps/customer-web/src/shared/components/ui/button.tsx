@@ -4,6 +4,10 @@ import * as React from "react";
 import { Loader2 } from "lucide-react";
 
 import { cn } from "@/src/shared/lib/cn";
+import {
+  PRIMARY_BUTTON_CLASSES,
+  PRIMARY_FOCUS_RING,
+} from "@/src/shared/styles/brand";
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -20,8 +24,7 @@ export interface ButtonProps
 }
 
 const variantClasses = {
-  primary:
-    "bg-gradient-to-r from-[#2563D9] to-[#1746A2] text-white shadow-sm hover:from-[#1E58C7] hover:to-[#123D94] hover:shadow-md",
+  primary: PRIMARY_BUTTON_CLASSES,
 
   secondary:
     "bg-[#F29A2E] text-white hover:bg-[#E28718]",
@@ -59,11 +62,12 @@ export function Button({
       disabled={loading || disabled}
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all",
-        "focus:outline-none focus:ring-2 focus:ring-[#2563D9]/40",
+        "focus:outline-none focus:ring-2",
+        PRIMARY_FOCUS_RING,
         "disabled:pointer-events-none disabled:opacity-50",
         variantClasses[variant],
         sizeClasses[size],
-        className
+        className,
       )}
       {...props}
     >

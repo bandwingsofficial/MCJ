@@ -346,7 +346,7 @@ export function CompanyJobOnboardingPage() {
             </p>
             <Link
               href="/"
-              className="relative mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-[#0B1F3A] px-5 text-sm font-semibold text-white transition hover:bg-[#102A56]"
+              className="relative mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-5 text-sm font-semibold text-white transition hover:from-[#2860D4] hover:to-[#1A3F96]"
             >
               Back to Home
             </Link>
@@ -1202,7 +1202,7 @@ export function CompanyJobOnboardingPage() {
                   {step < 3 ? (
                     <Button
                       type="button"
-                      className="h-11 rounded-xl bg-[#0B1F3A] text-white hover:bg-[#102A56]"
+                      className="h-11 rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
                       disabled={isSubmitting}
                       onClick={() => {
                         void handleNext();
@@ -1214,7 +1214,7 @@ export function CompanyJobOnboardingPage() {
                   ) : (
                     <Button
                       type="submit"
-                      className="h-11 rounded-xl bg-[#0B1F3A] text-white hover:bg-[#102A56]"
+                      className="h-11 rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
                       disabled={isSubmitting}
                       loading={isSubmitting}
                     >

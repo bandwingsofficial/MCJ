@@ -229,7 +229,7 @@ export function HomePopularCourseCard({
                 h-8
                 shrink-0
                 rounded-lg
-                bg-gradient-to-r from-[#2563D9] to-[#1746A2]
+                bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8]
                 px-3.5
                 text-[10px]
                 font-semibold
@@ -237,9 +237,9 @@ export function HomePopularCourseCard({
                 shadow-none
                 transition-all
                 duration-200
-                hover:from-[#1E58C7]
-                hover:to-[#123D94]
-                hover:shadow-[0_5px_14px_rgba(37,99,217,0.25)]
+                hover:from-[#2860D4]
+                hover:to-[#1A3F96]
+                hover:shadow-[0_5px_14px_rgba(47,107,229,0.25)]
               "
               onClick={handleEnroll}
             >

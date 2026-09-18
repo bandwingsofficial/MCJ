@@ -426,7 +426,7 @@ export function PublicJobApplyPage({ slug }: PublicJobApplyPageProps) {
             <div className="flex justify-end">
               <Button
                 type="submit"
-                className="h-[46px] bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-6 hover:from-[#1E58C7] hover:to-[#123D94]"
+                className="h-[46px] bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-6 hover:from-[#2860D4] hover:to-[#1A3F96]"
                 loading={isSubmitting}
                 disabled={isSubmitting}
               >

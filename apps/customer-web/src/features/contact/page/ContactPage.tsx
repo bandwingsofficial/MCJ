@@ -225,7 +225,7 @@ export function ContactPage() {
                     <Button
                       type="submit"
                       size="lg"
-                      className="h-12 w-full rounded-xl bg-[#0B1F3A] text-sm font-semibold text-white hover:bg-[#102A56] sm:w-auto sm:px-8"
+                      className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96] sm:w-auto sm:px-8"
                     >
                       <Send className="mr-2 h-4 w-4" />
                       Send Message
@@ -246,7 +246,7 @@ export function ContactPage() {
                   <Button
                     type="button"
                     onClick={() => setSubmitted(false)}
-                    className="mt-6 h-11 rounded-xl bg-[#0B1F3A] px-6 text-white hover:bg-[#102A56]"
+                    className="mt-6 h-11 rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-6 text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
                   >
                     Send Another
                   </Button>

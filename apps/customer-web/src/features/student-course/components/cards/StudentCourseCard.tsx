@@ -105,7 +105,7 @@ export function StudentCourseCard({ enrollment }: StudentCourseCardProps) {
         <div className="mt-auto border-t border-slate-100 pt-4">
           <Link
             href={`/student/my-learning/${course.id}`}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-4 py-2 text-sm font-medium text-white hover:from-[#1E58C7] hover:to-[#123D94]"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-4 py-2 text-sm font-medium text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
           >
             Continue Learning
             <ArrowRight className="h-3.5 w-3.5" />

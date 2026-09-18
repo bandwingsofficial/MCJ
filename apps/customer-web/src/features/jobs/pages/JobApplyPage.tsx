@@ -200,7 +200,7 @@ function ProgressSteps({
                 step.done
                   ? "bg-emerald-500 text-white"
                   : index === activeIndex
-                    ? "bg-[#0B1F3A] text-white"
+                    ? "bg-[#2F6BE5] text-white"
                     : "bg-white text-slate-400 ring-1 ring-slate-200",
               )}
             >
@@ -464,7 +464,7 @@ export function JobApplyPage({ slug }: JobApplyPageProps) {
             </p>
             <Link
               href={`/jobs/${slug}`}
-              className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-[#0B1F3A] px-5 text-sm font-semibold text-white transition hover:bg-[#102A56]"
+              className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-5 text-sm font-semibold text-white transition hover:from-[#2860D4] hover:to-[#1A3F96]"
             >
               View Job Details
             </Link>
@@ -651,7 +651,7 @@ export function JobApplyPage({ slug }: JobApplyPageProps) {
                   <Button
                     type="submit"
                     size="lg"
-                    className="h-12 w-full rounded-xl bg-[#0B1F3A] text-sm font-semibold text-white hover:bg-[#102A56]"
+                    className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
                     loading={isSubmitting}
                     disabled={isSubmitting}
                   >
@@ -711,7 +711,7 @@ export function JobApplyPage({ slug }: JobApplyPageProps) {
                     <Button
                       type="submit"
                       size="lg"
-                      className="h-12 w-full rounded-xl bg-[#0B1F3A] text-sm font-semibold text-white hover:bg-[#102A56]"
+                      className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
                       loading={isSubmitting}
                       disabled={isSubmitting}
                     >
@@ -858,7 +858,7 @@ export function JobApplySuccess({
               {slug ? (
                 <Link
                   href={`/jobs/${slug}`}
-                  className="inline-flex h-11 items-center justify-center rounded-xl bg-[#0B1F3A] px-5 text-sm font-semibold text-white transition hover:bg-[#102A56]"
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-5 text-sm font-semibold text-white transition hover:from-[#2860D4] hover:to-[#1A3F96]"
                 >
                   View Job Details
                 </Link>

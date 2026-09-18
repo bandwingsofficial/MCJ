@@ -37,7 +37,7 @@ export function HomeJobs({ jobs }: HomeJobsProps) {
 
           <Link
             href="/jobs"
-            className="hidden items-center gap-2 rounded-xl bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-5 py-3 text-sm font-semibold text-white transition hover:from-[#1E58C7] hover:to-[#123D94] md:flex"
+            className="hidden items-center gap-2 rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-5 py-3 text-sm font-semibold text-white transition hover:from-[#2860D4] hover:to-[#1A3F96] md:flex"
           >
             View All Jobs
             <ArrowRight className="h-4 w-4" />

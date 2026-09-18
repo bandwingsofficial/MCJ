@@ -171,7 +171,7 @@ export function Header() {
             ) : null}
 
             <Link href="/contact" className="hidden sm:inline-flex">
-              <Button className="rounded-xl bg-[#0B1F3A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#102A56]">
+              <Button className="rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-4 py-2 text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96]">
                 Enquire Now →
               </Button>
             </Link>
@@ -302,7 +302,7 @@ export function Header() {
               ) : null}
               <Link
                 href="/contact"
-                className="mt-2 inline-flex justify-center rounded-xl bg-[#0B1F3A] px-4 py-2.5 text-sm font-semibold text-white"
+                className="mt-2 inline-flex justify-center rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-4 py-2.5 text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
               >
                 Enquire Now →
               </Link>

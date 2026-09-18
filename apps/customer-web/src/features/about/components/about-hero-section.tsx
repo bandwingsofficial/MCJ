@@ -36,7 +36,7 @@ export function AboutHeroSection() {
 
           <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:items-center">
             <Link href="/courses">
-              <Button className="h-10 rounded-xl bg-[#0B1F3A] px-5 text-sm text-white hover:bg-[#102A56]">
+              <Button className="h-10 rounded-xl px-5 text-sm">
                 Explore Courses
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

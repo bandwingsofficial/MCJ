@@ -93,7 +93,7 @@ export function JobSidebar({ job }: JobSidebarProps) {
         {accepting ? (
           <Button
             size="lg"
-            className="h-11 w-full rounded-xl bg-[#0B1F3A] text-sm font-semibold text-white hover:bg-[#102A56]"
+            className="h-11 w-full rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
             onClick={() => router.push(`/jobs/${job.slug}/apply`)}
           >
             Apply Now

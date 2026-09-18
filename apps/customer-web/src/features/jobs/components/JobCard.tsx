@@ -126,7 +126,7 @@ function DefaultJobCard({ job }: { job: Job }) {
           View Job
         </Button>
         <Button
-          className="rounded-xl bg-gradient-to-r from-[#2563D9] to-[#1746A2] font-medium text-white hover:from-[#1E58C7] hover:to-[#123D94]"
+          className="rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] font-medium text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
           disabled={!accepting}
           onClick={() => router.push(`/jobs/${job.slug}/apply`)}
         >
@@ -230,7 +230,7 @@ function ListingJobCard({ job }: { job: Job }) {
               </Button>
               <Button
                 size="sm"
-                className="h-9 rounded-xl bg-[#0B1F3A] px-4 text-xs font-semibold text-white hover:bg-[#102A56] sm:text-sm"
+                className="h-9 rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-4 text-xs font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96] sm:text-sm"
                 disabled={!accepting}
                 onClick={() => router.push(`/jobs/${job.slug}/apply`)}
               >

@@ -22,7 +22,7 @@ export function Avatar({
       />
 
       <AvatarPrimitive.Fallback
-        className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#2563D9] to-[#1746A2] text-sm font-semibold text-white"
+        className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#2F6BE5] to-[#1E49A8] text-sm font-semibold text-white"
       >
         {fallback}
       </AvatarPrimitive.Fallback>

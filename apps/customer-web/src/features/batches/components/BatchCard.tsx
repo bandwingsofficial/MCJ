@@ -96,7 +96,7 @@ export function BatchCard({ batch, onView }: BatchCardProps) {
 
       {/* Primary Action Target */}
       <Button
-        className="mt-5 w-full h-9 text-xs font-semibold bg-gradient-to-r from-[#2563D9] to-[#1746A2] hover:from-[#1E58C7] hover:to-[#123D94] text-white rounded-lg shadow-sm transition-colors"
+        className="mt-5 w-full h-9 text-xs font-semibold bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] hover:from-[#2860D4] hover:to-[#1A3F96] text-white rounded-lg shadow-sm transition-colors"
         onClick={() => onView(batch.id)}
       >
         View Details

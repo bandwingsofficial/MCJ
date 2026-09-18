@@ -186,7 +186,7 @@ export function EnrollmentBatchSelector({
                     disabled={!selectable}
                     className={`h-10 rounded-xl px-5 ${
                       isSelected
-                        ? "bg-gradient-to-r from-[#2563D9] to-[#1746A2] hover:from-[#1E58C7] hover:to-[#123D94]"
+                        ? "bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] hover:from-[#2860D4] hover:to-[#1A3F96]"
                         : selectable
                           ? "border-slate-200"
                           : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"

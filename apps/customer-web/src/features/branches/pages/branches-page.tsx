@@ -209,7 +209,7 @@ export function BranchesPage() {
                 <button
                   type="button"
                   onClick={() => setSearch("")}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#0B1F3A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#102A56]"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-4 py-2.5 text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
                 >
                   <Search className="h-4 w-4" />
                   Clear search
