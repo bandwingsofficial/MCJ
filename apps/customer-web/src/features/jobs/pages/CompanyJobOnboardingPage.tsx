@@ -6,8 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
   ArrowRight,
-  Briefcase,
-  Building2,
   CheckCircle2,
   Pencil,
   Upload,
@@ -141,17 +139,6 @@ function labelFor(
   value?: string,
 ) {
   return options.find((item) => item.value === value)?.label ?? value ?? "—";
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 last:border-b-0">
-      <span className="text-sm text-slate-500">{label}</span>
-      <span className="max-w-[60%] text-right text-sm font-semibold text-[#0B1F3A]">
-        {value || "—"}
-      </span>
-    </div>
-  );
 }
 
 function ReviewBlock({
@@ -370,124 +357,128 @@ export function CompanyJobOnboardingPage() {
   }
 
   return (
-    <div className="pb-12">
-      {/* Compact light header */}
-      <section className="relative overflow-hidden border-b border-slate-100 bg-[#F8FBFF]">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#EFF6FF] to-transparent" />
-        <div className="pointer-events-none absolute -right-16 top-0 h-44 w-44 rounded-full bg-[#E0E7FF]/45 blur-3xl" />
-        <div className="pointer-events-none absolute -left-10 bottom-0 h-36 w-36 rounded-full bg-[#EDE9FE]/35 blur-3xl" />
+    <div className="bg-[#F8FBFF] pb-12">
+      {/* Compact top header */}
+      <header className="border-b border-slate-200/80 bg-white">
+        <div className="mx-auto flex w-full max-w-[1050px] flex-col gap-3 px-4 py-4 sm:px-6 sm:py-5 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-[#2563EB] transition hover:text-[#1D4ED8]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Careers
+          </Link>
 
-        <div className="relative mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-7 lg:px-8">
-          <nav className="mb-3 flex items-center gap-1.5 text-xs text-slate-500">
-            <Link href="/" className="transition hover:text-[#2563EB]">
-              Home
-            </Link>
-            <span>/</span>
-            <span className="font-medium text-[#0B1F3A]">
+          <div className="min-w-0 text-left lg:flex-1 lg:text-center">
+            <h1 className="text-lg font-bold tracking-tight text-[#0B1F3A] sm:text-xl">
               Company Job Registration
-            </span>
-          </nav>
+            </h1>
+            <p className="mt-0.5 text-xs text-slate-500 sm:text-sm">
+              Create and submit a new job opening for MCJ Academy students.
+            </p>
+          </div>
 
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0 max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#BFDBFE] bg-white px-3 py-1 text-xs font-semibold text-[#2563EB]">
-                <Building2 className="h-3.5 w-3.5" />
-                Employer onboarding
-              </div>
-              <h1 className="mt-3 text-2xl font-bold tracking-tight text-[#0B1F3A] sm:text-3xl">
-                Company Job Registration
-              </h1>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-[15px]">
-                Submit an open job role through MCJ. Share your company and role
-                details — our team will review and publish approved openings to
-                students.
+          <p className="text-sm font-semibold text-[#1D4ED8] lg:shrink-0 lg:text-right">
+            MCJ Academy Careers
+          </p>
+        </div>
+      </header>
+
+      <div className="mx-auto w-full max-w-[1050px] px-4 py-6 sm:px-6 lg:py-8">
+        {/* Progress + horizontal wizard */}
+        <div className="mb-6">
+          <div className="-mx-4 mb-5 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
+            <ol className="flex min-w-max items-start justify-between gap-0 sm:min-w-0">
+              {STEPS.map((item, index) => {
+                const active = step === item.id;
+                const completed = item.id < step;
+                const reachable = item.id <= highestStep || item.id <= step;
+
+                return (
+                  <li
+                    key={item.id}
+                    className="flex flex-1 items-start last:flex-none"
+                  >
+                    <button
+                      type="button"
+                      disabled={!reachable && item.id > step}
+                      onClick={() => {
+                        if (item.id <= highestStep || item.id < step) {
+                          goToStep(item.id);
+                        }
+                      }}
+                      className={cn(
+                        "flex w-[4.5rem] flex-col items-center gap-1.5 sm:w-auto sm:min-w-[5.5rem]",
+                        reachable || item.id <= step
+                          ? "cursor-pointer"
+                          : "cursor-not-allowed",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition",
+                          active
+                            ? "bg-[#2563EB] text-white shadow-sm"
+                            : completed
+                              ? "bg-[#DBEAFE] text-[#1D4ED8] ring-1 ring-[#93C5FD]"
+                              : "bg-slate-100 text-slate-400 ring-1 ring-slate-200",
+                        )}
+                      >
+                        {completed && !active ? (
+                          <CheckCircle2 className="h-4 w-4" />
+                        ) : (
+                          index + 1
+                        )}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-center text-[10px] font-semibold sm:text-xs",
+                          active || completed
+                            ? "text-[#1D4ED8]"
+                            : "text-slate-400",
+                        )}
+                      >
+                        {item.short}
+                      </span>
+                    </button>
+
+                    {index < STEPS.length - 1 ? (
+                      <div
+                        className={cn(
+                          "mt-4 h-0.5 min-w-[1.25rem] flex-1 rounded-full sm:min-w-[2rem]",
+                          item.id < step ? "bg-[#2563EB]" : "bg-slate-200",
+                        )}
+                        aria-hidden
+                      />
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+
+          <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-medium text-slate-500">
+                Step {step + 1} of {STEPS.length}
+              </p>
+              <p className="mt-0.5 text-base font-bold text-[#0B1F3A] sm:text-lg">
+                {STEPS[step].label}
               </p>
             </div>
-            <div className="hidden shrink-0 items-center gap-2 rounded-2xl border border-slate-200/90 bg-white/90 px-4 py-3 shadow-sm lg:flex">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#2563EB]">
-                <Briefcase className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-                  Step
-                </p>
-                <p className="text-sm font-bold text-[#0B1F3A]">
-                  {step + 1} of {STEPS.length}
-                </p>
-              </div>
-            </div>
+            <p className="text-sm font-semibold text-[#2563EB]">
+              {Math.round(((step + 1) / STEPS.length) * 100)}% Complete
+            </p>
           </div>
-        </div>
-      </section>
 
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        {/* Step tabs */}
-        <div className="mb-6 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
-          <ol className="flex min-w-max gap-2 sm:min-w-0 sm:flex-wrap lg:gap-3">
-            {STEPS.map((item, index) => {
-              const active = step === item.id;
-              const reachable = item.id <= highestStep || item.id <= step;
-              const completed = item.id < step || item.id < highestStep;
-
-              return (
-                <li key={item.id} className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={!reachable && item.id > step}
-                    onClick={() => {
-                      if (item.id <= highestStep || item.id < step) {
-                        goToStep(item.id);
-                      }
-                    }}
-                    className={cn(
-                      "inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition",
-                      active
-                        ? "border-[#2563EB] bg-[#EFF6FF] shadow-sm"
-                        : completed
-                          ? "border-emerald-200 bg-emerald-50/50 hover:border-emerald-300"
-                          : "border-slate-200 bg-white text-slate-400",
-                      reachable || item.id <= step
-                        ? "cursor-pointer"
-                        : "cursor-not-allowed opacity-60",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
-                        active
-                          ? "bg-[#0B1F3A] text-white"
-                          : completed
-                            ? "bg-emerald-500 text-white"
-                            : "bg-slate-100 text-slate-400",
-                      )}
-                    >
-                      {completed && !active ? (
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      ) : (
-                        String(index + 1).padStart(2, "0")
-                      )}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-xs font-semibold sm:text-sm",
-                        active
-                          ? "text-[#0B1F3A]"
-                          : completed
-                            ? "text-emerald-800"
-                            : "text-slate-400",
-                      )}
-                    >
-                      <span className="sm:hidden">{item.short}</span>
-                      <span className="hidden sm:inline">{item.label}</span>
-                    </span>
-                  </button>
-                  {index < STEPS.length - 1 ? (
-                    <span className="hidden h-px w-4 bg-slate-200 lg:block" />
-                  ) : null}
-                </li>
-              );
-            })}
-          </ol>
+          <div className="h-1.5 overflow-hidden rounded-full bg-slate-200/80">
+            <div
+              className="h-full rounded-full bg-[#2563EB] transition-all duration-500 ease-out"
+              style={{
+                width: `${((step + 1) / STEPS.length) * 100}%`,
+              }}
+            />
+          </div>
         </div>
 
         <form
@@ -499,17 +490,15 @@ export function CompanyJobOnboardingPage() {
             }
           }}
         >
-          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(280px,3fr)] lg:gap-8">
-            <div className="order-2 space-y-5 lg:order-1">
-              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_8px_28px_rgba(11,31,58,0.06)] sm:p-6">
-                <div className="mb-5 border-b border-slate-100 pb-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2563EB]">
-                    {String(step + 1).padStart(2, "0")} · {STEPS[step].label}
-                  </p>
-                  <p className="mt-1.5 text-sm text-slate-500">
-                    {STEPS[step].description}
-                  </p>
-                </div>
+          <div className="rounded-[22px] border border-slate-200/90 bg-white p-5 shadow-[0_8px_28px_rgba(11,31,58,0.06)] sm:p-7 lg:p-8">
+            <div className="mb-6 border-b border-slate-100 pb-4">
+              <h2 className="text-lg font-bold tracking-tight text-[#0B1F3A] sm:text-xl">
+                {STEPS[step].label}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {STEPS[step].description}
+              </p>
+            </div>
 
                 {step === 0 ? (
                   <div className="space-y-4">
@@ -1235,58 +1224,6 @@ export function CompanyJobOnboardingPage() {
                     </Button>
                   )}
                 </div>
-              </div>
-            </div>
-
-            {/* Sticky summary */}
-            <aside className="order-1 lg:order-2 lg:sticky lg:top-20 lg:self-start">
-              <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_8px_28px_rgba(11,31,58,0.06)]">
-                <div className="border-b border-slate-100 bg-gradient-to-br from-[#EFF6FF] via-white to-[#F5F3FF] px-5 py-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#2563EB]">
-                    Job Posting Summary
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Live preview of key details
-                  </p>
-                </div>
-                <div className="px-5 py-2">
-                  <SummaryRow
-                    label="Company"
-                    value={values.companyName || "—"}
-                  />
-                  <SummaryRow label="Job Role" value={values.title || "—"} />
-                  <SummaryRow
-                    label="Location"
-                    value={values.location || "—"}
-                  />
-                  <SummaryRow
-                    label="Employment"
-                    value={labelFor(
-                      EMPLOYMENT_TYPES,
-                      values.employmentType,
-                    )}
-                  />
-                  <SummaryRow label="Experience" value={experienceSummary} />
-                  <SummaryRow label="Salary" value={salarySummary} />
-                </div>
-                <div className="border-t border-slate-100 px-5 py-3">
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>Progress</span>
-                    <span className="font-semibold text-[#0B1F3A]">
-                      {Math.round(((step + 1) / STEPS.length) * 100)}%
-                    </span>
-                  </div>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-[#2563EB] transition-all"
-                      style={{
-                        width: `${((step + 1) / STEPS.length) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </aside>
           </div>
         </form>
       </div>
