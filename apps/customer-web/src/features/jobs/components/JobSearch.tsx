@@ -21,7 +21,7 @@ export function JobSearch({
       value={value}
       placeholder={placeholder}
       className={cn(
-        "h-11 rounded-xl border-slate-200 bg-white pl-10 shadow-sm",
+        "h-11 rounded-xl border-slate-200 bg-[#F8FBFF] pl-10 shadow-none focus-visible:ring-[#2563EB]/30",
         className,
       )}
       onChange={onChange}

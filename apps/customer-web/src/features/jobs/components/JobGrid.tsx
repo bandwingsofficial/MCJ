@@ -23,11 +23,11 @@ export function JobGrid({
 }: JobGridProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
-        {Array.from({ length: 6 }).map((_, index) => (
+      <div className="space-y-4">
+        {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton
             key={index}
-            className="h-[320px] w-full rounded-2xl"
+            className="h-[180px] w-full rounded-2xl"
           />
         ))}
       </div>
@@ -49,7 +49,7 @@ export function JobGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+    <div className="space-y-4">
       {jobs.map((job) => (
         <JobCard
           key={job.id}

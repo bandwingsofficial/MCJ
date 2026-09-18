@@ -21,7 +21,7 @@ export const MCJ_NAV_ITEMS = [
   { name: "Home", href: "/" },
   { name: "Courses", href: "/courses" },
   { name: "Our Branches", href: "/branches" },
-  { name: "Placements", href: "/success-stories" },
+  { name: "Job Applications", href: "/jobs" },
   { name: "About Us", href: "/about" },
   { name: "Contact", href: "/contact" },
 ] as const;
