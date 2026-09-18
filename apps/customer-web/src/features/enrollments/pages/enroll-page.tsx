@@ -40,7 +40,13 @@ import {
   type EnrollmentStudentInfoHandle,
 } from "@/src/features/enrollments/components/enrollment-student-info";
 import { useEnrollmentCheckout } from "@/src/features/enrollments/hooks/use-enrollment-checkout";
+import { useMyEnrollments } from "@/src/features/enrollments/hooks/useMyEnrollments";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
+import {
+  findBlockingCourseEnrollment,
+  getActiveCourseEnrollmentBlockCopy,
+  resolveEnrollmentBatchEndDate,
+} from "@/src/features/enrollments/utils/active-course-enrollment.utils";
 import {
   BLOCKED_BATCH_SELECTION_MESSAGE,
   isBatchSelectable,
@@ -138,6 +144,10 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     error: profileError,
     refetch: refetchStudentProfile,
   } = useStudentProfile({
+    enabled: hasSession,
+  });
+
+  const { enrollments: myEnrollments } = useMyEnrollments({
     enabled: hasSession,
   });
 
@@ -333,6 +343,20 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       return;
     }
 
+    const activeEnrollment = findBlockingCourseEnrollment(
+      myEnrollments,
+      course.id,
+    );
+    if (course.isEnrolled || activeEnrollment) {
+      const block = getActiveCourseEnrollmentBlockCopy(
+        activeEnrollment
+          ? resolveEnrollmentBatchEndDate(activeEnrollment)
+          : null,
+      );
+      appToast.error(`${block.title} ${block.description}`);
+      return;
+    }
+
     if (!selectedBatchTimingId) {
       appToast.error("Please select a batch timing from the course page.");
       return;
@@ -437,7 +461,17 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     );
   }
 
-  const isAlreadyEnrolled = Boolean(course.isEnrolled);
+  const blockingEnrollment = findBlockingCourseEnrollment(
+    myEnrollments,
+    course.id,
+  );
+  const hasActiveCourseEnrollment =
+    Boolean(course.isEnrolled) || Boolean(blockingEnrollment);
+  const activeEnrollmentBlock = getActiveCourseEnrollmentBlockCopy(
+    blockingEnrollment
+      ? resolveEnrollmentBatchEndDate(blockingEnrollment)
+      : null,
+  );
 
   const batchErrorMessage =
     batchValidationError === "wrong_course"
@@ -518,13 +552,13 @@ export function EnrollPage({ slug }: EnrollPageProps) {
                 batchName={selectedBatch?.name ?? null}
               />
 
-              {isAlreadyEnrolled ? (
+              {hasActiveCourseEnrollment ? (
                 <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-6">
                   <h3 className="text-base font-semibold text-slate-900">
-                    You are already enrolled in this course.
+                    {activeEnrollmentBlock.title}
                   </h3>
                   <p className="mt-2 text-sm text-slate-600">
-                    Continue learning from your student dashboard.
+                    {activeEnrollmentBlock.description}
                   </p>
                   <Link
                     href={`/student/courses/${course.id}`}
@@ -586,7 +620,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
                 isBatchLoading={isBatchResolving}
               />
 
-              {!isAlreadyEnrolled && selectedBatchId && selectedBranchId ? (
+              {!hasActiveCourseEnrollment && selectedBatchId && selectedBranchId ? (
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <FormError message={checkoutError ?? undefined} />
                   <Button

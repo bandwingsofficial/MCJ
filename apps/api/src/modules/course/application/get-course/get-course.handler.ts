@@ -1,6 +1,7 @@
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
 import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-status.enum';
+import { isActiveCourseEnrollmentBlocking } from '@modules/enrollment/domain/utils/active-course-enrollment.util';
 import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
 import type { EnrollmentRepository } from '@modules/enrollment/domain/repositories/enrollment.repository';
 import { ResolveAuthenticatedStudentService } from '@modules/student/domain/services/resolve-authenticated-student.service';
@@ -166,11 +167,16 @@ export class GetCourseHandler {
       return { isEnrolled: false, isAdmitted: false };
     }
 
+    const blockingEnrollments = courseEnrollments.filter((enrollment) =>
+      isActiveCourseEnrollmentBlocking(enrollment),
+    );
+
     return {
-      isEnrolled: true,
-      isAdmitted: courseEnrollments.some(
+      isEnrolled: blockingEnrollments.length > 0,
+      isAdmitted: blockingEnrollments.some(
         (enrollment) =>
-          enrollment.status === EnrollmentStatus.ADMITTED,
+          enrollment.status === EnrollmentStatus.ADMITTED ||
+          enrollment.status === EnrollmentStatus.ACTIVE,
       ),
     };
   }

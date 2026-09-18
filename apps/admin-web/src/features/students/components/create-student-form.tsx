@@ -36,6 +36,8 @@ import {
 } from "@/src/shared/components/ui/validated-field";
 import { cn } from "@/src/shared/lib/cn";
 
+import { buildStudentQualificationSelectOptions } from "@mcj/shared-constants";
+
 import {
   DEFAULT_CREATE_STUDENT_FORM_VALUES,
   STUDENT_GENDER_OPTIONS,
@@ -497,10 +499,21 @@ export function CreateStudentForm({
             errorMessage={errors.qualification?.message}
           >
             <div className="relative">
-              <Input
-                placeholder="Qualification"
-                autoComplete="off"
-                {...registerField("qualification")}
+              <AppSelect
+                value={values.qualification || undefined}
+                placeholder="Select qualification"
+                onValueChange={(value) =>
+                  setValue("qualification", value, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  })
+                }
+                options={buildStudentQualificationSelectOptions(
+                  values.qualification,
+                )}
+                triggerClassName={selectTriggerClass(
+                  getFieldState("qualification"),
+                )}
               />
               <FieldIcon icon={GraduationCap} />
             </div>

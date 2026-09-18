@@ -173,6 +173,26 @@ export class PrismaEnrollmentRepository
       : null;
   }
 
+  async findCurrentDetailsByStudentAndCourse(
+    studentId: string,
+    courseId: string,
+  ): Promise<EnrollmentDetailView[]> {
+    const records = await this.prisma.enrollment.findMany({
+      where: {
+        studentId,
+        courseId,
+        isDeleted: false,
+        status: { in: Enrollment.currentStatuses() },
+      },
+      include: enrollmentDetailInclude,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return records.map((record) =>
+      EnrollmentResponseMapper.toDetail(record),
+    );
+  }
+
   async findSummaries(
     filters: EnrollmentListFilters = {},
   ): Promise<EnrollmentSummaryView[]> {

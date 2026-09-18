@@ -68,6 +68,12 @@ export class CreateEnrollmentHandler {
       },
     );
 
+    await this.domainService.ensureNoBlockingCourseEnrollment(
+      this.enrollmentRepo,
+      command.studentId,
+      hierarchy.courseId,
+    );
+
     await this.domainService.ensureNotDuplicate(
       this.enrollmentRepo,
       command.studentId,

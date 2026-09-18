@@ -9,9 +9,12 @@ import {
 } from "react";
 import { z } from "zod";
 
+import { buildStudentQualificationSelectOptions } from "@mcj/shared-constants";
+
 import { FormError } from "@/src/shared/components/ui/form-error";
 import { Input } from "@/src/shared/components/ui/input";
 import { Label } from "@/src/shared/components/ui/label";
+import { AppSelect } from "@/src/shared/components/ui/select";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
 import type { UserProfile } from "@/src/features/auth/types/auth.types";
@@ -334,14 +337,15 @@ export const EnrollmentStudentInfo = forwardRef<
 
         <div>
           <Label htmlFor="enrollment-qualification">Qualification</Label>
-          <Input
-            id="enrollment-qualification"
-            className="mt-1.5"
-            value={values.qualification ?? ""}
+          <AppSelect
+            value={values.qualification || undefined}
+            placeholder="Select qualification"
             disabled={isSubmitting}
-            onChange={(event) =>
-              updateField("qualification", event.target.value)
-            }
+            options={buildStudentQualificationSelectOptions(
+              values.qualification,
+            )}
+            onValueChange={(value) => updateField("qualification", value)}
+            className="mt-1.5"
           />
         </div>
 

@@ -59,6 +59,7 @@ import type {
   EnrollmentDetailView,
   EnrollmentRepository,
 } from '../repositories/enrollment.repository';
+import { isActiveCourseEnrollmentBlocking } from '../utils/active-course-enrollment.util';
 
 export interface EnrollmentHierarchy {
   student: Student;
@@ -244,6 +245,83 @@ export class EnrollmentDomainService {
       detail,
       batchId,
     );
+  }
+
+  /**
+   * One active enrollment per student per course until the current batch
+   * end date has passed. Does not modify existing enrollments.
+   */
+  async ensureNoBlockingCourseEnrollment(
+    enrollmentRepo: EnrollmentRepository,
+    studentId: string,
+    courseId: string,
+    options?: {
+      excludeEnrollmentId?: string;
+    },
+  ): Promise<void> {
+    const existing = await enrollmentRepo.findCurrentDetailsByStudentAndCourse(
+      studentId,
+      courseId,
+    );
+
+    const blocking = existing.find((enrollment) => {
+      if (
+        options?.excludeEnrollmentId &&
+        enrollment.id === options.excludeEnrollmentId
+      ) {
+        return false;
+      }
+
+      return isActiveCourseEnrollmentBlocking(enrollment);
+    });
+
+    if (!blocking) {
+      return;
+    }
+
+    throw EnrollmentAlreadyExistsException.forActiveCourseEnrollment(blocking);
+  }
+
+  /**
+   * Resume unpaid same-batch/same-timing checkout only. Never moves or
+   * replaces an existing enrollment. Any other active same-course attempt
+   * is rejected.
+   */
+  async findResumableCourseEnrollment(
+    enrollmentRepo: EnrollmentRepository,
+    studentId: string,
+    courseId: string,
+    batchId: string,
+    batchTimingId: string,
+  ): Promise<EnrollmentDetailView | null> {
+    const existing = await enrollmentRepo.findCurrentDetailsByStudentAndCourse(
+      studentId,
+      courseId,
+    );
+
+    const blocking = existing.find((enrollment) =>
+      isActiveCourseEnrollmentBlocking(enrollment),
+    );
+
+    if (!blocking) {
+      return null;
+    }
+
+    const sameBatchAndTiming =
+      blocking.batch.id === batchId &&
+      blocking.batchTimingId === batchTimingId;
+
+    const canResumePayment =
+      sameBatchAndTiming &&
+      (blocking.status === EnrollmentStatus.PENDING ||
+        blocking.status === EnrollmentStatus.PENDING_APPROVAL) &&
+      blocking.dueAmount > 0;
+
+    if (canResumePayment) {
+      return blocking;
+    }
+
+    throw EnrollmentAlreadyExistsException.forActiveCourseEnrollment(blocking);
   }
 
   async ensureNoCurrentEnrollment(

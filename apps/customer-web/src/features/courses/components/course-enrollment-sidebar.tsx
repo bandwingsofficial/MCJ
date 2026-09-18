@@ -10,6 +10,8 @@ import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { cn } from "@/src/shared/lib/cn";
 import { MCJ_CONTACT } from "@/src/shared/constants/site.constants";
 
+import { useAuthStore } from "@/src/features/auth/store/auth.store";
+import { tokenStorage } from "@/src/core/storage/token-storage";
 import type { Batch, BatchMode, DayOfWeek } from "@/src/features/batches/types/batch.types";
 import {
   formatBatchPrice,
@@ -26,6 +28,12 @@ import {
   resolveModePricing,
 } from "@/src/features/courses/utils/course-batch.utils";
 import { getCourseEnrollPath } from "@/src/features/courses/utils/course-route.utils";
+import { useMyEnrollments } from "@/src/features/enrollments/hooks/useMyEnrollments";
+import {
+  findBlockingCourseEnrollment,
+  getActiveCourseEnrollmentBlockCopy,
+  resolveEnrollmentBatchEndDate,
+} from "@/src/features/enrollments/utils/active-course-enrollment.utils";
 import { saveEnrollmentSelection } from "@/src/features/enrollments/utils/enrollment-selection-storage";
 import {
   formatBatchDays,
@@ -265,6 +273,23 @@ export function CourseEnrollmentSidebar({
   isLoading = false,
 }: CourseEnrollmentSidebarProps) {
   const { branches: publicBranches } = useBranches();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const hasSession =
+    Boolean(tokenStorage.getAccessToken()) && isAuthenticated;
+  const { enrollments: myEnrollments } = useMyEnrollments({
+    enabled: hasSession,
+  });
+  const blockingEnrollment = findBlockingCourseEnrollment(
+    myEnrollments,
+    courseId,
+  );
+  const hasActiveCourseEnrollment =
+    Boolean(isEnrolled) || Boolean(blockingEnrollment);
+  const activeEnrollmentBlock = getActiveCourseEnrollmentBlockCopy(
+    blockingEnrollment
+      ? resolveEnrollmentBatchEndDate(blockingEnrollment)
+      : null,
+  );
 
   const publicBranchNames = useMemo(() => {
     const map = new Map<string, string>();
@@ -460,14 +485,17 @@ export function CourseEnrollmentSidebar({
     );
   }
 
-  if (isEnrolled) {
+  if (hasActiveCourseEnrollment) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_40px_-24px_rgba(11,31,58,0.35)]">
         <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#2563D9]">
           Your enrollment
         </p>
         <p className="mt-2 text-sm font-semibold text-[#0B1F3A]">
-          You are already enrolled in this course.
+          {activeEnrollmentBlock.title}
+        </p>
+        <p className="mt-2 text-sm text-slate-600">
+          {activeEnrollmentBlock.description}
         </p>
         <Link href={`/student/courses/${courseId}`} className="mt-5 block">
           <Button

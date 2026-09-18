@@ -71,6 +71,7 @@ export function useEnroll(): UseEnrollResult {
                 code?: string;
                 message?: string;
                 meta?: {
+                  reason?: string;
                   existingEnrollment?: {
                     branch?: { branchName?: string };
                     batch?: { name?: string; code?: string };
@@ -85,8 +86,11 @@ export function useEnroll(): UseEnrollResult {
             (typeof data?.message === "string" && data.message.trim()) ||
             getEnrollmentErrorMessage(data?.code);
 
+          const isActiveCourseBlock =
+            data?.meta?.reason === "ACTIVE_COURSE_ENROLLMENT";
+
           const existing = data?.meta?.existingEnrollment;
-          if (existing) {
+          if (existing && !isActiveCourseBlock) {
             const batchName = existing.batch?.name?.trim();
             const batchCode = existing.batch?.code?.trim();
             const batch = batchName

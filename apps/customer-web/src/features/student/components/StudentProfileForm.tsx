@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, type FieldValues, type Path, type UseFormRegister, type UseFormSetValue, type UseFormWatch } from "react-hook-form";
 
+import { buildStudentQualificationSelectOptions } from "@mcj/shared-constants";
+
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { Button } from "@/src/shared/components/ui/button";
@@ -155,7 +157,13 @@ function CreateStudentProfileForm({
         isCreateMode
       />
       <AddressFields errors={errors} register={register} isCreateMode />
-      <EducationFields errors={errors} register={register} isCreateMode />
+      <EducationFields
+        errors={errors}
+        register={register}
+        watch={watch}
+        setValue={setValue}
+        isCreateMode
+      />
       <EmergencyContactFields
         errors={errors}
         register={register}
@@ -323,7 +331,12 @@ function UpdateStudentProfileForm({
         setValue={setValue}
       />
       <AddressFields errors={errors} register={register} />
-      <EducationFields errors={errors} register={register} />
+      <EducationFields
+        errors={errors}
+        register={register}
+        watch={watch}
+        setValue={setValue}
+      />
       <ParentFields errors={errors} register={register} />
       <EmergencyContactFields errors={errors} register={register} />
       <section className="space-y-3">
@@ -553,25 +566,41 @@ function AddressFields<T extends FieldValues>({
 function EducationFields<T extends FieldValues>({
   errors,
   register,
+  watch,
+  setValue,
   isCreateMode = false,
 }: {
   errors: Record<string, { message?: string } | undefined>;
   register: UseFormRegister<T>;
+  watch: UseFormWatch<T>;
+  setValue: UseFormSetValue<T>;
   isCreateMode?: boolean;
 }) {
+  const qualificationValue = String(watch("qualification" as Path<T>) ?? "");
+
   return (
     <section className="space-y-3">
       <h3 className="border-b pb-1 text-base font-semibold">
         Education Details
       </h3>
       <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <Label required={!isCreateMode}>Qualification</Label>
+          <AppSelect
+            value={qualificationValue || undefined}
+            placeholder="Select qualification"
+            options={buildStudentQualificationSelectOptions(qualificationValue)}
+            onValueChange={(value) =>
+              setValue("qualification" as Path<T>, value as never, {
+                shouldValidate: true,
+                shouldDirty: true,
+              })
+            }
+          />
+          <FormError message={errors.qualification?.message as string} />
+        </div>
         {(
-          [
-            "qualification",
-            "collegeName",
-            "specialization",
-            "passingYear",
-          ] as const
+          ["collegeName", "specialization", "passingYear"] as const
         ).map((field) => (
           <div key={field}>
             <Label required={!isCreateMode}>

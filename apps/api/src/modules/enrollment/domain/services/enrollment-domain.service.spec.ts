@@ -263,3 +263,131 @@ describe('EnrollmentDomainService per-batch current enrollment rule', () => {
     ).not.toThrow();
   });
 });
+
+describe('EnrollmentDomainService same-course active enrollment block', () => {
+  const domain = new EnrollmentDomainService();
+  const COURSE_ID = 'course-1';
+
+  function courseRepo(existing: EnrollmentDetailView[]) {
+    return {
+      findCurrentDetailsByStudentAndCourse: jest
+        .fn()
+        .mockResolvedValue(existing),
+    } as unknown as EnrollmentRepository;
+  }
+
+  it('blocks another batch for the same course while the batch end date has not passed', async () => {
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 30);
+
+    const existing = detail({ batchId: BATCH_A });
+    existing.batch.endDate = endDate;
+    existing.course.id = COURSE_ID;
+
+    await expect(
+      domain.ensureNoBlockingCourseEnrollment(
+        courseRepo([existing]),
+        STUDENT_ID,
+        COURSE_ID,
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'STUDENT_ALREADY_ENROLLED',
+    });
+  });
+
+  it('blocks same-batch re-entry when already admitted', async () => {
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 30);
+
+    const existing = detail({
+      batchId: BATCH_A,
+      status: EnrollmentStatus.ADMITTED,
+    });
+    existing.batch.endDate = endDate;
+    existing.course.id = COURSE_ID;
+    existing.batchTimingId = 'timing-1';
+    existing.dueAmount = 0;
+
+    await expect(
+      domain.findResumableCourseEnrollment(
+        courseRepo([existing]),
+        STUDENT_ID,
+        COURSE_ID,
+        BATCH_A,
+        'timing-1',
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'STUDENT_ALREADY_ENROLLED',
+    });
+  });
+
+  it('resumes unpaid pending checkout for the exact same batch and timing only', async () => {
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 30);
+
+    const existing = detail({
+      batchId: BATCH_A,
+      status: EnrollmentStatus.PENDING,
+    });
+    existing.batch.endDate = endDate;
+    existing.course.id = COURSE_ID;
+    existing.batchTimingId = 'timing-1';
+    existing.dueAmount = 5000;
+
+    await expect(
+      domain.findResumableCourseEnrollment(
+        courseRepo([existing]),
+        STUDENT_ID,
+        COURSE_ID,
+        BATCH_A,
+        'timing-1',
+      ),
+    ).resolves.toMatchObject({ id: existing.id });
+  });
+
+  it('blocks a different timing while a current enrollment is active', async () => {
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 30);
+
+    const existing = detail({
+      batchId: BATCH_A,
+      status: EnrollmentStatus.PENDING,
+    });
+    existing.batch.endDate = endDate;
+    existing.course.id = COURSE_ID;
+    existing.batchTimingId = 'timing-1';
+    existing.dueAmount = 5000;
+
+    await expect(
+      domain.findResumableCourseEnrollment(
+        courseRepo([existing]),
+        STUDENT_ID,
+        COURSE_ID,
+        BATCH_A,
+        'timing-2',
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      code: 'STUDENT_ALREADY_ENROLLED',
+    });
+  });
+
+  it('allows re-enrollment after the current batch end date has passed', async () => {
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() - 1);
+
+    const existing = detail({ batchId: BATCH_A });
+    existing.batch.endDate = endDate;
+    existing.course.id = COURSE_ID;
+
+    await expect(
+      domain.ensureNoBlockingCourseEnrollment(
+        courseRepo([existing]),
+        STUDENT_ID,
+        COURSE_ID,
+      ),
+    ).resolves.toBeUndefined();
+  });
+});

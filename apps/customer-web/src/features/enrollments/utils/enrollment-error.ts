@@ -8,7 +8,7 @@ const ERROR_MESSAGES: Record<string, string> = {
     "This course is currently unavailable for enrollment.",
 
   STUDENT_ALREADY_ENROLLED:
-    "You are already enrolled in another active batch.",
+    "You're already enrolled in this course. You can enroll in this course again after your current batch is completed.",
 
   BATCH_COURSE_MISMATCH:
     "This batch is not available for the selected course.",

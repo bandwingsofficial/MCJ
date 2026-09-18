@@ -17,7 +17,6 @@ import { ApplicationType } from '../../domain/enums/application-type.enum';
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import type { EnrollmentRepository } from '../../domain/repositories/enrollment.repository';
-import { EnrollmentAlreadyExistsException } from '../../domain/errors/enrollment-already-exists.exception';
 import {
   BatchNotFoundException,
 } from '../../domain/errors/enrollment-business.exception';
@@ -25,7 +24,6 @@ import { EnrollmentDomainService } from '../../domain/services/enrollment-domain
 import { mapCourseModeToEnrollmentMode } from '../../domain/utils/map-course-mode-to-enrollment-mode';
 import {
   assertBatchTimingHasLiveCapacity,
-  syncBatchTimingEnrolledCount,
 } from '../../infrastructure/utils/enrollment-timing-count.util';
 import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
 import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
@@ -96,60 +94,26 @@ export class CreatePublicEnrollmentHandler {
       command.batchTimingId,
     );
 
-    const sameBatchEnrollment =
-      await this.enrollmentRepo.findByStudentAndBatch(
+    const resumable =
+      await this.domainService.findResumableCourseEnrollment(
+        this.enrollmentRepo,
         student.id,
+        hierarchy.courseId,
         command.batchId,
+        batchTiming.id,
       );
 
-    if (sameBatchEnrollment?.isCurrent()) {
-      // Repair legacy PUBLIC rows created before applicationType / batchTiming
-      // were persisted correctly (do not invent a new enrollment).
-      const needsRepair =
-        sameBatchEnrollment.applicationType !== ApplicationType.ONLINE ||
-        sameBatchEnrollment.source !== EnrollmentSource.PUBLIC ||
-        !sameBatchEnrollment.batchTimingId ||
-        sameBatchEnrollment.batchTimingId !== batchTiming.id ||
-        sameBatchEnrollment.mode !==
-          mapCourseModeToEnrollmentMode(batchTiming.mode);
-
-      if (needsRepair) {
-        sameBatchEnrollment.update({
-          applicationType: ApplicationType.ONLINE,
-          batchTimingId: batchTiming.id,
-          mode: mapCourseModeToEnrollmentMode(batchTiming.mode),
-          joiningDate: batchTiming.startDate,
-          expectedCompletionDate: batchTiming.endDate,
-          updatedBy: command.userId,
-        });
-        await this.enrollmentRepo.save(sameBatchEnrollment);
-
-        if (
-          sameBatchEnrollment.status === EnrollmentStatus.ADMITTED ||
-          sameBatchEnrollment.status === EnrollmentStatus.ACTIVE
-        ) {
-          await syncBatchTimingEnrolledCount(this.prisma, batchTiming.id);
-        }
-      }
-
-      const detail = await this.enrollmentRepo.findDetailById(
-        sameBatchEnrollment.id,
-        true,
-      );
-      if (detail) {
-        const inProgress =
-          detail.status === EnrollmentStatus.PENDING ||
-          detail.status === EnrollmentStatus.PENDING_APPROVAL ||
-          detail.status === EnrollmentStatus.ADMITTED ||
-          detail.status === EnrollmentStatus.ACTIVE;
-
-        if (inProgress) {
-          return detail;
-        }
-      }
+    if (resumable) {
+      return resumable;
     }
 
     await assertBatchTimingHasLiveCapacity(this.prisma, batchTiming.id);
+
+    await this.domainService.ensureNoBlockingCourseEnrollment(
+      this.enrollmentRepo,
+      student.id,
+      hierarchy.courseId,
+    );
 
     await this.domainService.ensureNotDuplicate(
       this.enrollmentRepo,

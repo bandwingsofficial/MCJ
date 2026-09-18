@@ -9,10 +9,11 @@ import type {
   Enrollment,
 } from "@/src/features/enrollments/types/enrollment.types";
 
-export function useMyEnrollments() {
+export function useMyEnrollments(options?: { enabled?: boolean }) {
   const query = useQuery({
     queryKey: ["my-enrollments"],
     queryFn: () => enrollmentService.getMyEnrollments(),
+    enabled: options?.enabled ?? true,
     ...ENTITY_IMAGE_QUERY_OPTIONS,
   });
 

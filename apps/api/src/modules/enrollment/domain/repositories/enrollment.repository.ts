@@ -258,6 +258,10 @@ export interface EnrollmentRepository {
     courseId: string,
     includeDeleted?: boolean,
   ): Promise<EnrollmentDetailView | null>;
+  findCurrentDetailsByStudentAndCourse(
+    studentId: string,
+    courseId: string,
+  ): Promise<EnrollmentDetailView[]>;
   findSummaries(
     filters?: EnrollmentListFilters,
   ): Promise<EnrollmentSummaryView[]>;

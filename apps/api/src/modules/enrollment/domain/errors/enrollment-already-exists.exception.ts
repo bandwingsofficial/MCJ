@@ -3,10 +3,15 @@ import type { ErrorCode } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
 
 import type { EnrollmentDetailView } from '../repositories/enrollment.repository';
+import {
+  formatEnrollmentEndDateLabel,
+  resolveEnrollmentBatchEndDate,
+} from '../utils/active-course-enrollment.util';
 
 export interface ExistingEnrollmentMeta {
   enrollmentId: string;
   status: string;
+  batchEndDate: string | null;
   student?: {
     id: string;
     studentCode: string;
@@ -57,14 +62,38 @@ export class EnrollmentAlreadyExistsException extends BaseException {
       },
     );
   }
+
+  static forActiveCourseEnrollment(
+    detail: EnrollmentDetailView,
+  ): EnrollmentAlreadyExistsException {
+    const endDate = resolveEnrollmentBatchEndDate(detail);
+    const endLabel = endDate
+      ? formatEnrollmentEndDateLabel(endDate)
+      : null;
+    const message = endLabel
+      ? `You're already enrolled in this course. Your current enrollment is active until ${endLabel}. You can enroll in this course again after your current batch is completed.`
+      : `You're already enrolled in this course. You can enroll in this course again after your current batch is completed.`;
+
+    return new EnrollmentAlreadyExistsException(
+      ERROR_CODES.STUDENT_ALREADY_ENROLLED,
+      message,
+      {
+        existingEnrollment: toExistingEnrollmentMeta(detail),
+        reason: 'ACTIVE_COURSE_ENROLLMENT',
+      },
+    );
+  }
 }
 
 export function toExistingEnrollmentMeta(
   detail: EnrollmentDetailView,
 ): ExistingEnrollmentMeta {
+  const endDate = resolveEnrollmentBatchEndDate(detail);
+
   return {
     enrollmentId: detail.id,
     status: detail.status,
+    batchEndDate: endDate ? endDate.toISOString() : null,
     student: {
       id: detail.student.id,
       studentCode: detail.student.studentCode,
