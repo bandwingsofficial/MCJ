@@ -87,15 +87,21 @@ export function buildBatchListQueryParams(filters?: BatchFilters) {
     categoryId: filters?.categoryId || undefined,
     branchId: filters?.branchId || undefined,
     mode: filters?.mode || undefined,
+    // Lifecycle filter only when explicitly requested (Ongoing/Upcoming/Expired tabs).
+    // Enrollment selectors omit this so both Ongoing and Upcoming assigned batches appear.
     status: filters?.batchStatus || undefined,
     skip,
     take: pageSize,
-    includeDeleted: true,
+    // Default true for Batch list archive "All"; enrollment selectors pass false.
+    includeDeleted: filters?.includeDeleted !== false,
   };
 
   if (filters?.isDeleted === true) {
     params.isDeleted = true;
-  } else if (filters?.isDeleted === false) {
+  } else if (
+    filters?.isDeleted === false ||
+    filters?.includeDeleted === false
+  ) {
     params.isDeleted = false;
   }
 

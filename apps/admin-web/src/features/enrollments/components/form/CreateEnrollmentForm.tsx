@@ -299,15 +299,14 @@ export function CreateEnrollmentForm({
         const response = await batchService.getBatches({
           branchId,
           includeDeleted: false,
+          isDeleted: false,
           page: 1,
           pageSize: 100,
         });
-        const nextBatches = (response.data.items ?? []).filter((batch) => {
-          if (batch.branchId && batch.branchId !== branchId) {
-            return false;
-          }
-          return true;
-        });
+        // Branch assignment (API branchId → BranchBatch) is the source of truth.
+        // Do not re-filter by batch.branchId — assigned batches may have a
+        // different primary branch while still belonging to this branch.
+        const nextBatches = response.data.items ?? [];
         setBatches(nextBatches);
 
         const savedBatchId = resolveEnrollmentBatchId(enrollment);

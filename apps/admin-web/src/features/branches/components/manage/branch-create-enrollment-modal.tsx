@@ -141,6 +141,7 @@ export function BranchCreateEnrollmentModal({
         const response = await batchService.getBatches({
           branchId,
           includeDeleted: false,
+          isDeleted: false,
           page: 1,
           pageSize: 100,
         });

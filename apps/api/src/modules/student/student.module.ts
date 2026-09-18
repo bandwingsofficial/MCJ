@@ -195,16 +195,19 @@ import { PublicStudentController } from './presentation/controllers/public-stude
         studentRepo: StudentRepository,
         domainService: StudentDomainService,
         resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
+        uploadDomainService: UploadDomainService,
       ) =>
         new UpdateMyStudentHandler(
           studentRepo,
           domainService,
           resolveAuthenticatedStudent,
+          uploadDomainService,
         ),
       inject: [
         STUDENT_TOKENS.STUDENT_REPOSITORY,
         StudentDomainService,
         STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
+        UploadDomainService,
       ],
     },
 

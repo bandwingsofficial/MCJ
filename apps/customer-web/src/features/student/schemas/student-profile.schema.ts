@@ -34,8 +34,11 @@ export const createStudentProfileSchema = z.object({
   lastName: z
     .string()
     .trim()
-    .min(2, "Last name must be at least 2 characters.")
-    .max(100, "Last name cannot exceed 100 characters."),
+    .max(100, "Last name cannot exceed 100 characters.")
+    .refine(
+      (value) => value.length === 0 || value.length >= 2,
+      "Last name must be at least 2 characters.",
+    ),
 
   email: z
     .string()
@@ -55,7 +58,12 @@ export const createStudentProfileSchema = z.object({
 
   dateOfBirth: z
     .string()
-    .min(1, "Date of birth is required."),
+    .optional()
+    .or(z.literal(""))
+    .refine(
+      (value) => !value || /^\d{4}-\d{2}-\d{2}/.test(value),
+      "Please enter a valid date of birth.",
+    ),
 
   addressLine1: z
     .string()
@@ -114,7 +122,7 @@ export const createStudentProfileSchema = z.object({
     .min(2, "Specialization is required.")
     .max(255),
 
-  passingYear: z
+  passingYear: z.coerce
     .number()
     .min(1980, "Passing year is invalid.")
     .max(currentYear + 10, "Passing year is invalid."),

@@ -4,18 +4,27 @@ import {
   Get,
   Patch,
   Post,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import type { AuthUser } from '@common/decorators/current-user.decorator';
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
 import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
+import { UploadFileCommand } from '@modules/uploads/application/upload-file/upload-file.command';
+import { UploadFileHandler } from '@modules/uploads/application/upload-file/upload-file.handler';
+import { UploadValidationService } from '@modules/uploads/domain/services/upload-validation.service';
 
 import { CreateStudentByPublicCommand } from '../../application/create-student-by-public/create-student-by-public.command';
 import { CreateStudentByPublicHandler } from '../../application/create-student-by-public/create-student-by-public.handler';
@@ -35,6 +44,8 @@ export class PublicStudentController {
     private readonly createStudentByPublicHandler: CreateStudentByPublicHandler,
     private readonly getMyStudentHandler: GetMyStudentHandler,
     private readonly updateMyStudentHandler: UpdateMyStudentHandler,
+    private readonly uploadFileHandler: UploadFileHandler,
+    private readonly uploadValidationService: UploadValidationService,
   ) {}
 
   @Post('profile')
@@ -103,6 +114,55 @@ export class PublicStudentController {
     };
   }
 
+  @Post('me/uploads')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        folder: { type: 'string' },
+        fileName: { type: 'string' },
+        entityId: { type: 'string' },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Student profile image uploaded' })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadMyProfileImage(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: AuthUser,
+  ) {
+    if (!file) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'File is required',
+        400,
+      );
+    }
+
+    this.uploadValidationService.validate(file);
+
+    const result = await this.uploadFileHandler.execute(
+      new UploadFileCommand(
+        file,
+        'students',
+        file.originalname || 'profile',
+        undefined,
+        undefined,
+        undefined,
+        user?.sub,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'File uploaded successfully',
+      data: result,
+    };
+  }
+
   @Patch('me')
   @ApiBody({ type: UpdatePublicStudentDto })
   @ApiResponse({
@@ -116,6 +176,22 @@ export class PublicStudentController {
     const result = await this.updateMyStudentHandler.execute(
       new UpdateMyStudentCommand(
         user.sub,
+        dto.firstName,
+        dto.lastName,
+        dto.email,
+        dto.phone,
+        dto.gender,
+        dto.dateOfBirth === undefined
+          ? undefined
+          : dto.dateOfBirth
+            ? new Date(dto.dateOfBirth)
+            : null,
+        dto.addressLine1,
+        dto.addressLine2,
+        dto.city,
+        dto.state,
+        dto.country,
+        dto.postalCode,
         dto.qualification,
         dto.collegeName,
         dto.specialization,
@@ -125,6 +201,7 @@ export class PublicStudentController {
         dto.emergencyContactName,
         dto.emergencyContactPhone,
         dto.notes,
+        dto.profileImageFileId,
       ),
     );
 

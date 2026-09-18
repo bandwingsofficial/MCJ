@@ -1,6 +1,20 @@
+import { StudentGender } from '../../domain/enums/student-gender.enum';
+
 export class UpdateMyStudentCommand {
   constructor(
     public readonly userId: string,
+    public readonly firstName?: string,
+    public readonly lastName?: string | null,
+    public readonly email?: string,
+    public readonly phone?: string,
+    public readonly gender?: StudentGender,
+    public readonly dateOfBirth?: Date | null,
+    public readonly addressLine1?: string,
+    public readonly addressLine2?: string | null,
+    public readonly city?: string,
+    public readonly state?: string,
+    public readonly country?: string,
+    public readonly postalCode?: string,
     public readonly qualification?: string,
     public readonly collegeName?: string,
     public readonly specialization?: string,
@@ -10,5 +24,6 @@ export class UpdateMyStudentCommand {
     public readonly emergencyContactName?: string,
     public readonly emergencyContactPhone?: string,
     public readonly notes?: string,
+    public readonly profileImageFileId?: string | null,
   ) {}
 }

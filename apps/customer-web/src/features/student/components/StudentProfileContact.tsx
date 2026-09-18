@@ -5,6 +5,7 @@ import { Globe, Home, MapPin, MapPinned } from "lucide-react";
 import { Card } from "@/src/shared/components/ui/card";
 
 import type { StudentProfile } from "@/src/features/student/types";
+import { toFormString } from "@/src/features/student/utils/student-profile-form.utils";
 
 interface StudentProfileContactProps {
   profile: StudentProfile | null;
@@ -76,6 +77,8 @@ interface InfoItemProps {
 }
 
 function InfoItem({ icon, label, value }: InfoItemProps) {
+  const display = toFormString(value);
+
   return (
     <div className="rounded-lg border border-border/70 p-4 transition-colors duration-200 hover:border-primary/40 hover:bg-primary/[0.03]">
       <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -83,7 +86,11 @@ function InfoItem({ icon, label, value }: InfoItemProps) {
         <span>{label}</span>
       </div>
       <p className="break-words text-sm font-semibold text-foreground">
-        {value || <span className="font-normal text-muted-foreground/50">Not provided</span>}
+        {display || (
+          <span className="font-normal text-muted-foreground/50">
+            Not provided
+          </span>
+        )}
       </p>
     </div>
   );

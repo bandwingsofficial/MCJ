@@ -8,49 +8,49 @@ export interface StudentProfile {
 
   firstName: string;
 
-  lastName: string;
+  lastName: string | null;
 
-  email: string;
+  email: string | null;
 
-  phone: string;
+  phone: string | null;
 
-  gender: Gender;
+  gender: Gender | null;
 
-  dateOfBirth: string;
+  dateOfBirth: string | null;
 
-  addressLine1: string;
+  addressLine1: string | null;
 
   addressLine2: string | null;
 
-  city: string;
+  city: string | null;
 
-  state: string;
+  state: string | null;
 
-  country: string;
+  country: string | null;
 
-  postalCode: string;
+  postalCode: string | null;
 
   profileImageUrl: string | null;
 
   updatedAt?: string | null;
 
-  qualification: string;
+  qualification: string | null;
 
-  collegeName: string;
+  collegeName: string | null;
 
-  specialization: string;
+  specialization: string | null;
 
-  passingYear: number;
+  passingYear: number | null;
 
-  parentName: string;
+  parentName: string | null;
 
-  parentPhone: string;
+  parentPhone: string | null;
 
-  emergencyContactName: string;
+  emergencyContactName: string | null;
 
-  emergencyContactPhone: string;
+  emergencyContactPhone: string | null;
 
-  notes: string;
+  notes: string | null;
 
   applicationType?: "OFFLINE" | "ONLINE";
 
@@ -117,22 +117,27 @@ export type CreateStudentProfilePayload = {
 >;
 
 export interface UpdateStudentProfileRequest {
+  firstName?: string;
+  lastName?: string | null;
+  email?: string;
+  phone?: string;
+  gender?: Gender;
+  dateOfBirth?: string | null;
+  profileImageFileId?: string | null;
+  addressLine1?: string;
+  addressLine2?: string | null;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
   qualification?: string;
-
   collegeName?: string;
-
   specialization?: string;
-
   passingYear?: number;
-
   parentName?: string;
-
   parentPhone?: string;
-
   emergencyContactName?: string;
-
   emergencyContactPhone?: string;
-
   notes?: string;
 }
 

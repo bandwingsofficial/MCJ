@@ -18,7 +18,11 @@ export function StudentJobStatusBadge({
   jobStatus,
 }: StudentJobStatusBadgeProps) {
   if (!jobStatus) {
-    return <span className="text-sm text-slate-400">—</span>;
+    return (
+      <Badge variant="danger" className={compactClass}>
+        Not Yet
+      </Badge>
+    );
   }
 
   return (

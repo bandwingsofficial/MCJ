@@ -290,6 +290,7 @@ import { UploadController } from './presentation/controllers/upload.controller';
   exports: [
     UPLOADS_TOKENS.UPLOAD_REPOSITORY,
     UploadDomainService,
+    UploadValidationService,
     UploadFileHandler,
     ReplaceFileHandler,
     DeleteFileHandler,

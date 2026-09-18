@@ -37,4 +37,20 @@ export const studentProfileApi = {
       data,
     );
   },
+
+  uploadProfileImage(file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", "students");
+    formData.append("fileName", file.name);
+
+    return apiClient.post<
+      ApiResponse<{ fileId?: string; id?: string }>
+    >("/students/me/uploads", formData, {
+      headers: {
+        "Content-Type": undefined,
+      },
+      transformRequest: [(data) => data],
+    });
+  },
 };

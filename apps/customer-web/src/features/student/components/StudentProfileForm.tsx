@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, type FieldValues, type Path, type UseFormRegister, type UseFormSetValue, type UseFormWatch } from "react-hook-form";
 
@@ -10,10 +10,13 @@ import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
 import { cn } from "@/src/shared/lib/cn";
 import { FormError } from "@/src/shared/components/ui/form-error";
+import { ImageUploadField } from "@/src/shared/components/ui/image-upload-field";
 import { Input } from "@/src/shared/components/ui/input";
 import { Label } from "@/src/shared/components/ui/label";
 import { Textarea } from "@/src/shared/components/ui/textarea";
 import { AppSelect } from "@/src/shared/components/ui/select";
+import { withImageCacheBust } from "@/src/shared/utils/image-url.util";
+import { getUploadFileId } from "@/src/shared/utils/upload-image.util";
 import { GENDER_OPTIONS } from "@/src/features/student/constants";
 import {
   createStudentProfileSchema,
@@ -26,8 +29,14 @@ import {
   useStudentProfile,
   useUpdateStudentProfile,
 } from "@/src/features/student/hooks";
+import { studentProfileService } from "@/src/features/student/services";
 import { buildOptionalCreateStudentProfilePayload } from "@/src/features/student/utils/build-create-student-profile-payload.utils";
 import type { StudentProfile } from "@/src/features/student/types";
+import {
+  mapStudentProfileToFormValues,
+  toApiDateOfBirth,
+  toFormString,
+} from "@/src/features/student/utils/student-profile-form.utils";
 
 interface StudentProfileFormProps {
   isEditing?: boolean;
@@ -164,40 +173,45 @@ function UpdateStudentProfileForm({
 }: StudentProfileFormProps & { profile: StudentProfile }) {
   const { refetch } = useStudentProfile();
   const { updateProfile, isSubmitting } = useUpdateStudentProfile();
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(() =>
+    profile.profileImageUrl
+      ? withImageCacheBust(profile.profileImageUrl, profile.updatedAt)
+      : null,
+  );
 
   const form = useForm<CreateStudentProfileFormValues>({
     resolver: zodResolver(createStudentProfileSchema),
-    defaultValues: {
-      firstName: profile.firstName,
-      lastName: profile.lastName,
-      email: profile.email,
-      phone: profile.phone,
-      gender: profile.gender,
-      dateOfBirth: profile.dateOfBirth.split("T")[0],
-      addressLine1: profile.addressLine1,
-      addressLine2: profile.addressLine2 ?? "",
-      city: profile.city,
-      state: profile.state,
-      country: profile.country,
-      postalCode: profile.postalCode,
-      qualification: profile.qualification,
-      collegeName: profile.collegeName,
-      specialization: profile.specialization,
-      passingYear: profile.passingYear,
-      parentName: profile.parentName,
-      parentPhone: profile.parentPhone,
-      emergencyContactName: profile.emergencyContactName,
-      emergencyContactPhone: profile.emergencyContactPhone,
-      notes: profile.notes ?? "",
-    },
+    defaultValues: mapStudentProfileToFormValues(
+      profile,
+    ) as CreateStudentProfileFormValues,
   });
 
   const {
     register,
+    reset,
     setValue,
     watch,
     formState: { errors },
   } = form;
+
+  // Prefill (including Date of Birth / image) whenever the Student profile payload changes.
+  useEffect(() => {
+    reset(
+      mapStudentProfileToFormValues(profile) as CreateStudentProfileFormValues,
+    );
+    setSelectedImage(null);
+    setImageError(null);
+    setPreviewUrl(
+      profile.profileImageUrl
+        ? withImageCacheBust(profile.profileImageUrl, profile.updatedAt)
+        : null,
+    );
+  }, [profile, reset]);
+
+  const saving = isSubmitting || isUploadingImage;
 
   return (
     <ProfileFormShell
@@ -210,33 +224,98 @@ function UpdateStudentProfileForm({
           : "Review your profile information."
       }
       submitLabel="Save Changes"
-      isSubmitting={isSubmitting}
+      isSubmitting={saving}
       onCancel={isEditing ? onCancel : undefined}
       onSubmit={form.handleSubmit(async (values) => {
         try {
+          setImageError(null);
+
+          let profileImageFileId: string | undefined;
+
+          if (selectedImage) {
+            setIsUploadingImage(true);
+            try {
+              const uploaded =
+                await studentProfileService.uploadProfileImage(selectedImage);
+              profileImageFileId = getUploadFileId({ data: uploaded });
+            } finally {
+              setIsUploadingImage(false);
+            }
+          }
+
           await updateProfile({
-            qualification: values.qualification,
-            collegeName: values.collegeName,
-            specialization: values.specialization,
-            passingYear: values.passingYear,
-            parentName: values.parentName,
-            parentPhone: values.parentPhone,
-            emergencyContactName: values.emergencyContactName,
-            emergencyContactPhone: values.emergencyContactPhone,
-            notes: values.notes,
+            firstName: values.firstName.trim(),
+            lastName: toFormString(values.lastName) || null,
+            email: values.email.trim(),
+            phone: values.phone.trim(),
+            gender: values.gender,
+            dateOfBirth: toApiDateOfBirth(values.dateOfBirth),
+            ...(profileImageFileId !== undefined
+              ? { profileImageFileId }
+              : {}),
+            addressLine1: values.addressLine1.trim(),
+            addressLine2: toFormString(values.addressLine2) || null,
+            city: values.city.trim(),
+            state: values.state.trim(),
+            country: values.country.trim(),
+            postalCode: values.postalCode.trim(),
+            qualification: values.qualification.trim(),
+            collegeName: values.collegeName.trim(),
+            specialization: values.specialization.trim(),
+            passingYear: Number(values.passingYear),
+            parentName: values.parentName.trim(),
+            parentPhone: values.parentPhone.trim(),
+            emergencyContactName: values.emergencyContactName.trim(),
+            emergencyContactPhone: values.emergencyContactPhone.trim(),
+            notes: toFormString(values.notes) || undefined,
           });
           appToast.success("Profile updated successfully.");
           await refetch();
           onSuccess?.();
         } catch (error) {
-          appToast.error(
+          const message =
             error instanceof Error
               ? error.message
-              : "Failed to save profile.",
-          );
+              : "Failed to save profile.";
+          if (selectedImage) {
+            setImageError(message);
+          }
+          appToast.error(message);
         }
       })}
     >
+      <section className="space-y-3">
+        <h3 className="border-b pb-1 text-base font-semibold">
+          Profile Image
+        </h3>
+        <div>
+          <Label>Profile Image</Label>
+          <ImageUploadField
+            previewUrl={previewUrl}
+            file={selectedImage}
+            disabled={!isEditing || saving}
+            isUploading={isUploadingImage}
+            error={imageError}
+            entityLabel="profile"
+            onFileSelect={(file) => {
+              setSelectedImage(file);
+              setImageError(null);
+            }}
+            onRemove={() => {
+              setSelectedImage(null);
+              setImageError(null);
+              setPreviewUrl(
+                profile.profileImageUrl
+                  ? withImageCacheBust(
+                      profile.profileImageUrl,
+                      profile.updatedAt,
+                    )
+                  : null,
+              );
+            }}
+          />
+        </div>
+      </section>
       <PersonalFields
         errors={errors}
         register={register}
@@ -360,12 +439,12 @@ function PersonalFields<T extends FieldValues>({
       <div className="grid gap-4 md:grid-cols-2">
         {(
           [
-            { label: "First Name", id: "firstName" },
-            { label: "Last Name", id: "lastName" },
+            { label: "First Name", id: "firstName", required: !isCreateMode },
+            { label: "Last Name", id: "lastName", required: false },
           ] as const
         ).map((field) => (
           <div key={field.id}>
-            <Label required={!isCreateMode}>{field.label}</Label>
+            <Label required={field.required}>{field.label}</Label>
             <Input
               {...register(field.id as Path<T>)}
               placeholder={`Enter ${field.label.toLowerCase()}`}
@@ -418,7 +497,11 @@ function PersonalFields<T extends FieldValues>({
 
         <div>
           <Label required={!isCreateMode}>Date of Birth</Label>
-          <Input type="date" {...register("dateOfBirth" as Path<T>)} />
+          <Input
+            type="date"
+            placeholder="dd-mm-yyyy"
+            {...register("dateOfBirth" as Path<T>)}
+          />
           <FormError message={errors.dateOfBirth?.message as string} />
         </div>
       </div>

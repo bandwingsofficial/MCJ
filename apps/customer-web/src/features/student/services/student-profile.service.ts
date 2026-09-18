@@ -85,6 +85,24 @@ class StudentProfileService {
     }
   }
 
+  async uploadProfileImage(file: File): Promise<{ fileId: string }> {
+    try {
+      const response =
+        await studentProfileApi.uploadProfileImage(file);
+
+      const fileId =
+        response.data.data?.fileId ?? response.data.data?.id;
+
+      if (!fileId) {
+        throw new Error("Upload did not return a file ID.");
+      }
+
+      return { fileId };
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   private handleError(
     error: unknown,
   ): Error {
