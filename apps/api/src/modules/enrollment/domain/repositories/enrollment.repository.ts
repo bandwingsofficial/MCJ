@@ -1,4 +1,6 @@
 import { Enrollment } from '../entities/enrollment.entity';
+import { ApplicationType } from '../enums/application-type.enum';
+import { EnrollmentMode } from '../enums/enrollment-mode.enum';
 import { EnrollmentSource } from '../enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../enums/enrollment-status.enum';
 import { PaymentStatus } from '../enums/payment-status.enum';
@@ -15,6 +17,8 @@ export interface EnrollmentListFilters {
   currentOnly?: boolean;
   paymentStatus?: PaymentStatus;
   source?: EnrollmentSource;
+  applicationType?: ApplicationType;
+  mode?: EnrollmentMode;
   isActive?: boolean;
   includeDeleted?: boolean;
   admissionDateFrom?: Date;
@@ -42,8 +46,23 @@ export interface EnrollmentStudentView {
   qualification: string | null;
   profileImageUrl: string | null;
   status: string;
+  applicationType: string;
   isActive: boolean;
   updatedAt: Date;
+}
+
+export interface EnrollmentPaymentView {
+  id: string;
+  paymentNumber: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  gateway: string;
+  gatewayOrderId: string | null;
+  gatewayPaymentId: string | null;
+  paidAt: Date | null;
+  createdAt: Date;
 }
 
 export interface EnrollmentBranchView {
@@ -138,9 +157,16 @@ export interface EnrollmentBatchView {
 export interface EnrollmentDetailView {
   id: string;
   enrollmentNumber: string;
+  studentId: string;
+  branchId: string;
+  categoryId: string;
+  courseId: string;
+  batchId: string;
   status: EnrollmentStatus;
   paymentStatus: PaymentStatus;
   source: EnrollmentSource;
+  applicationType: ApplicationType;
+  mode: EnrollmentMode;
   feeAmount: number;
   discountAmount: number;
   finalAmount: number;
@@ -161,6 +187,7 @@ export interface EnrollmentDetailView {
   batch: EnrollmentBatchView;
   batchTimingId: string | null;
   batchTiming: EnrollmentBatchTimingView | null;
+  payments: EnrollmentPaymentView[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -168,9 +195,16 @@ export interface EnrollmentDetailView {
 export interface EnrollmentSummaryView {
   id: string;
   enrollmentNumber: string;
+  studentId: string;
+  branchId: string;
+  categoryId: string;
+  courseId: string;
+  batchId: string;
   status: EnrollmentStatus;
   paymentStatus: PaymentStatus;
   source: EnrollmentSource;
+  applicationType: ApplicationType;
+  mode: EnrollmentMode;
   feeAmount: number;
   discountAmount: number;
   finalAmount: number;

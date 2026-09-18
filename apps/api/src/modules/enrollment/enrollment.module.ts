@@ -179,6 +179,8 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         batchRepo: BatchRepository,
         domainService: EnrollmentDomainService,
         resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
+        sideEffects: EnrollmentSideEffectsService,
+        prisma: PrismaService,
       ) =>
         new CreatePublicEnrollmentHandler(
           enrollmentRepo,
@@ -189,6 +191,8 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
           batchRepo,
           domainService,
           resolveAuthenticatedStudent,
+          sideEffects,
+          prisma,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
@@ -199,6 +203,8 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         BATCH_TOKENS.BATCH_REPOSITORY,
         EnrollmentDomainService,
         STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
+        EnrollmentSideEffectsService,
+        PrismaService,
       ],
     },
 

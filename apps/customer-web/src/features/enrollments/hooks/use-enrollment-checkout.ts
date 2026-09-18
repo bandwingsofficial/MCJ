@@ -16,9 +16,9 @@ export type EnrollmentCheckoutStatus =
 
 interface CompleteEnrollmentCheckoutInput {
   batchId: string;
+  batchTimingId: string;
   branchId?: string;
   courseId?: string;
-  remarks?: string;
   isFree: boolean;
 }
 
@@ -56,7 +56,7 @@ export function useEnrollmentCheckout(): UseEnrollmentCheckoutReturn {
         batchId: input.batchId,
         branchId: input.branchId,
         courseId: input.courseId,
-        remarks: input.remarks,
+        batchTimingId: input.batchTimingId,
       });
 
       if (!enrollment) {

@@ -940,6 +940,7 @@ model Student {
   admissionDate         DateTime?
   branchId              String?
   notes                 String?
+  applicationType       ApplicationType  @default(OFFLINE)
   status                StudentStatus    @default(LEAD)
   jobStatus             StudentJobStatus?
   createdBy             String?
@@ -1017,6 +1018,8 @@ model Enrollment {
   paymentStatus          PaymentStatus    @default(UNPAID)
   status                 EnrollmentStatus @default(PENDING)
   source                 EnrollmentSource @default(ADMIN)
+  applicationType        ApplicationType  @default(OFFLINE)
+  mode                   EnrollmentMode   @default(OFFLINE)
   remarks                String?
   rejectionReason        String?
   isActive               Boolean          @default(false)
@@ -1834,6 +1837,17 @@ enum PaymentStatus {
 enum EnrollmentSource {
   ADMIN
   PUBLIC
+}
+
+enum ApplicationType {
+  OFFLINE
+  ONLINE
+}
+
+enum EnrollmentMode {
+  OFFLINE
+  ONLINE
+  SELF_PACED
 }
 
 enum PaymentMethod {

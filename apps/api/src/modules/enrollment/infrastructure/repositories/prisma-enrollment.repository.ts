@@ -274,6 +274,14 @@ export class PrismaEnrollmentRepository
       where.source = filters.source;
     }
 
+    if (filters.applicationType !== undefined) {
+      where.applicationType = filters.applicationType;
+    }
+
+    if (filters.mode !== undefined) {
+      where.mode = filters.mode;
+    }
+
     if (filters.isActive !== undefined) {
       where.isActive = filters.isActive;
     }

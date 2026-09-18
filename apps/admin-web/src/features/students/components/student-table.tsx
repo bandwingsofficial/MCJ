@@ -52,7 +52,7 @@ export function StudentTable({
   const safeSelectedIds = selectedStudentIds ?? [];
   const selectionEnabled = Boolean(onSelectionChange);
   const visibleIds = students.map((student) => student.id);
-  const columnCount = selectionEnabled ? 8 : 7;
+  const columnCount = selectionEnabled ? 9 : 8;
   const selectedVisibleCount = visibleIds.filter((id) =>
     safeSelectedIds.includes(id),
   ).length;
@@ -129,6 +129,9 @@ export function StudentTable({
               Phone
             </th>
             <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              App Type
+            </th>
+            <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Status
             </th>
             <th className="w-28 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
@@ -199,6 +202,10 @@ export function StudentTable({
 
                   <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
                     {student.phone ?? "—"}
+                  </td>
+
+                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
+                    {student.applicationType === "ONLINE" ? "Online" : "Offline"}
                   </td>
 
                   <td className="!px-4 !py-4 align-middle">

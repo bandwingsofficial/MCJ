@@ -52,6 +52,8 @@ export interface StudentProfile {
 
   notes: string;
 
+  applicationType?: "OFFLINE" | "ONLINE";
+
   status: string;
 
   jobStatus: string | null;

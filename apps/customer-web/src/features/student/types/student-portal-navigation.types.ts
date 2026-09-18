@@ -16,6 +16,7 @@ export interface StudentPortalNavigationState {
   showProfile: boolean;
   showMyApplications: boolean;
   showMyCourses: boolean;
+  showMyEnrollment: boolean;
 }
 
 export function buildStudentPortalNavigationState(input: {
@@ -48,6 +49,7 @@ export function buildStudentPortalNavigationState(input: {
     showProfile: access.showProfile,
     showMyApplications: access.showMyApplications,
     showMyCourses: access.showMyCourses,
+    showMyEnrollment: access.showMyEnrollment,
   };
 }
 
@@ -66,4 +68,5 @@ export const STUDENT_PORTAL_DEFAULT_NAVIGATION: StudentPortalNavigationState =
     showProfile: true,
     showMyApplications: false,
     showMyCourses: false,
+    showMyEnrollment: false,
   };

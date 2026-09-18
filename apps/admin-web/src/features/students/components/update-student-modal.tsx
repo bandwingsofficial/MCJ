@@ -14,6 +14,19 @@ import {
   withImageCacheBust,
 } from "@/src/shared/utils/upload-image.util";
 
+import { EditStudentForm } from "@/src/features/students/components/edit-student-form";
+import { useUpdateStudent } from "@/src/features/students/hooks/useUpdateStudent";
+import type { CreateStudentFormValues } from "@/src/features/students/schemas/create-student.schema";
+import { studentService } from "@/src/features/students/services/student.service";
+import type {
+  StudentListItem,
+  UpdateStudentRequest,
+} from "@/src/features/students/types/student.types";
+import {
+  mapStudentToFormValues,
+  toUpdateStudentRequest,
+} from "@/src/features/students/utils/student-form.utils";
+
 interface UpdateStudentModalProps {
   open: boolean;
   student: StudentListItem | null;

@@ -1,4 +1,5 @@
 import { Student } from '../../domain/entities/student.entity';
+import { ApplicationType } from '../../domain/enums/application-type.enum';
 import { StudentGender } from '../../domain/enums/student-gender.enum';
 import { StudentJobStatus } from '../../domain/enums/student-job-status.enum';
 import { StudentStatus } from '../../domain/enums/student-status.enum';
@@ -33,6 +34,7 @@ export class GetStudentResult {
     public readonly branchId: string | null,
     public readonly notes: string | null,
     public readonly isActive: boolean,
+    public readonly applicationType: ApplicationType,
     public readonly status: StudentStatus,
     public readonly jobStatus: StudentJobStatus | null,
     public readonly createdBy: string | null,
@@ -73,6 +75,7 @@ export class GetStudentResult {
       student.branchId,
       student.notes,
       student.isActive,
+      student.applicationType,
       student.status,
       student.jobStatus,
       student.createdBy,

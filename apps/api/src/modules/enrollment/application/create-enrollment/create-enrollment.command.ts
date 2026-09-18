@@ -1,4 +1,6 @@
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
+import { ApplicationType } from '../../domain/enums/application-type.enum';
+import { EnrollmentMode } from '../../domain/enums/enrollment-mode.enum';
 import type { CreateEnrollmentInstallmentDto } from '../../presentation/dtos/create-enrollment-installment.dto';
 import type { PaymentMethod } from '@modules/payment/domain/enums/payment-method.enum';
 
@@ -18,5 +20,7 @@ export class CreateEnrollmentCommand {
     public readonly createdBy?: string,
     public readonly expectedBranchId?: string,
     public readonly batchTimingId?: string,
+    public readonly applicationType: ApplicationType = ApplicationType.OFFLINE,
+    public readonly mode?: EnrollmentMode,
   ) {}
 }

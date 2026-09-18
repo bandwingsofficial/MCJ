@@ -2,6 +2,8 @@ import { Prisma } from '@prisma/client';
 
 import { buildBatchPricing } from '@modules/batch/domain/value-objects/batch-pricing.vo';
 
+import { ApplicationType } from '../../domain/enums/application-type.enum';
+import { EnrollmentMode } from '../../domain/enums/enrollment-mode.enum';
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { PaymentStatus } from '../../domain/enums/payment-status.enum';
@@ -12,6 +14,7 @@ import type {
   EnrollmentCategoryView,
   EnrollmentCourseView,
   EnrollmentDetailView,
+  EnrollmentPaymentView,
   EnrollmentStudentView,
   EnrollmentSummaryView,
   EnrollmentTrainerView,
@@ -30,6 +33,10 @@ export const enrollmentDetailInclude = {
   },
   batchTiming: true,
   batch: { include: { trainers: { include: { trainer: true } } } },
+  payments: {
+    where: { isDeleted: false },
+    orderBy: { createdAt: 'desc' as const },
+  },
 } satisfies Prisma.EnrollmentInclude;
 
 type EnrollmentWithRelations = Prisma.EnrollmentGetPayload<{
@@ -45,9 +52,16 @@ export class EnrollmentResponseMapper {
     return {
       id: record.id,
       enrollmentNumber: record.enrollmentNumber,
+      studentId: record.studentId,
+      branchId: record.branchId,
+      categoryId: record.categoryId,
+      courseId: record.courseId,
+      batchId: record.batchId,
       status: record.status as EnrollmentStatus,
       paymentStatus: record.paymentStatus as PaymentStatus,
       source: record.source as EnrollmentSource,
+      applicationType: record.applicationType as ApplicationType,
+      mode: record.mode as EnrollmentMode,
       feeAmount: toNumber(record.feeAmount),
       discountAmount: toNumber(record.discountAmount),
       finalAmount: toNumber(record.finalAmount),
@@ -70,6 +84,9 @@ export class EnrollmentResponseMapper {
       batchTiming: record.batchTiming
         ? this.toBatchTiming(record.batchTiming)
         : null,
+      payments: (record.payments ?? []).map((payment) =>
+        this.toPayment(payment),
+      ),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     };
@@ -81,9 +98,16 @@ export class EnrollmentResponseMapper {
     return {
       id: record.id,
       enrollmentNumber: record.enrollmentNumber,
+      studentId: record.studentId,
+      branchId: record.branchId,
+      categoryId: record.categoryId,
+      courseId: record.courseId,
+      batchId: record.batchId,
       status: record.status as EnrollmentStatus,
       paymentStatus: record.paymentStatus as PaymentStatus,
       source: record.source as EnrollmentSource,
+      applicationType: record.applicationType as ApplicationType,
+      mode: record.mode as EnrollmentMode,
       feeAmount: toNumber(record.feeAmount),
       discountAmount: toNumber(record.discountAmount),
       finalAmount: toNumber(record.finalAmount),
@@ -108,6 +132,24 @@ export class EnrollmentResponseMapper {
     };
   }
 
+  private static toPayment(
+    payment: EnrollmentWithRelations['payments'][number],
+  ): EnrollmentPaymentView {
+    return {
+      id: payment.id,
+      paymentNumber: payment.paymentNumber,
+      amount: toNumber(payment.amount),
+      currency: payment.currency,
+      paymentMethod: payment.paymentMethod,
+      paymentStatus: payment.paymentStatus,
+      gateway: payment.gateway,
+      gatewayOrderId: payment.gatewayOrderId,
+      gatewayPaymentId: payment.gatewayPaymentId,
+      paidAt: payment.paidAt,
+      createdAt: payment.createdAt,
+    };
+  }
+
   private static toStudent(
     student: EnrollmentWithRelations['student'],
   ): EnrollmentStudentView {
@@ -122,6 +164,7 @@ export class EnrollmentResponseMapper {
       qualification: student.qualification,
       profileImageUrl: student.profileImageUrl,
       status: student.status,
+      applicationType: student.applicationType,
       isActive: student.isActive,
       updatedAt: student.updatedAt,
     };

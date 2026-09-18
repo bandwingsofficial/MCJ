@@ -1,3 +1,5 @@
+import { ApplicationType } from '../enums/application-type.enum';
+import { EnrollmentMode } from '../enums/enrollment-mode.enum';
 import { EnrollmentSource } from '../enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../enums/enrollment-status.enum';
 import { PaymentStatus } from '../enums/payment-status.enum';
@@ -29,6 +31,8 @@ export class Enrollment {
     public paymentStatus: PaymentStatus,
     public status: EnrollmentStatus,
     public source: EnrollmentSource,
+    public applicationType: ApplicationType,
+    public mode: EnrollmentMode,
     public remarks: string | null,
     public rejectionReason: string | null,
     public isActive: boolean,
@@ -68,6 +72,8 @@ export class Enrollment {
       PaymentStatus.UNPAID,
       params.status ?? EnrollmentStatus.PENDING,
       params.source ?? EnrollmentSource.ADMIN,
+      params.applicationType ?? ApplicationType.OFFLINE,
+      params.mode ?? EnrollmentMode.OFFLINE,
       sanitizeText(params.remarks, 4000),
       null,
       params.isActive ?? true,
@@ -108,6 +114,8 @@ export class Enrollment {
       params.paymentStatus,
       params.status,
       params.source,
+      params.applicationType,
+      params.mode,
       params.remarks,
       params.rejectionReason,
       params.isActive,
@@ -153,6 +161,9 @@ export class Enrollment {
       this.rejectionReason = sanitizeText(params.rejectionReason, 2000);
 
     if (params.status !== undefined) this.status = params.status;
+    if (params.applicationType !== undefined)
+      this.applicationType = params.applicationType;
+    if (params.mode !== undefined) this.mode = params.mode;
 
     // isActive is a manual flag, independent of the enrollment status.
     if (params.isActive !== undefined) this.isActive = params.isActive;
@@ -279,6 +290,8 @@ export interface EnrollmentCreateParams {
   paidAmount?: number | null;
   status?: EnrollmentStatus;
   source?: EnrollmentSource;
+  applicationType?: ApplicationType;
+  mode?: EnrollmentMode;
   remarks?: string | null;
   isActive?: boolean;
   createdBy?: string | null;
@@ -300,6 +313,8 @@ export interface EnrollmentUpdateParams {
   remarks?: string | null;
   rejectionReason?: string | null;
   status?: EnrollmentStatus;
+  applicationType?: ApplicationType;
+  mode?: EnrollmentMode;
   isActive?: boolean;
   updatedBy?: string | null;
 }
@@ -324,6 +339,8 @@ export interface EnrollmentReconstituteParams {
   paymentStatus: PaymentStatus;
   status: EnrollmentStatus;
   source: EnrollmentSource;
+  applicationType: ApplicationType;
+  mode: EnrollmentMode;
   remarks: string | null;
   rejectionReason: string | null;
   isActive: boolean;

@@ -362,10 +362,16 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       (selectedSchedule.learningMode || selectedBatch.mode) as BatchMode,
     );
 
+    if (!selectedBatchTimingId) {
+      appToast.error("Please select a batch timing before continuing.");
+      return;
+    }
+
     const result = await completeCheckout({
       batchId: selectedBatchId,
       branchId: selectedBranchId,
       courseId: course.id,
+      batchTimingId: selectedBatchTimingId,
       isFree: batchPricing.isFree,
     });
 
@@ -376,10 +382,11 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     if (result.status === "success_free" || result.status === "success_paid") {
       setCompletedEnrollment(result.enrollment);
       setPageView("success");
+      void refetchStudentProfile();
       appToast.success(
         result.status === "success_free"
-          ? "Enrollment submitted for approval."
-          : "Payment successful. Your enrollment is awaiting approval.",
+          ? "Enrollment confirmed successfully."
+          : "Payment verified. Your enrollment is confirmed.",
       );
       return;
     }

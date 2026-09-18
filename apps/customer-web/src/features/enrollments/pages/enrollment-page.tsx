@@ -9,63 +9,36 @@ import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { PageHeader } from "@/src/shared/components/ui/page-header";
 
 export function EnrollmentPage() {
-  const {
-    enrollments,
-    isLoading,
-    error,
-    refetch,
-  } = useMyEnrollments();
+  const { enrollments, isLoading, error, refetch } = useMyEnrollments();
 
   return (
     <main className="container mx-auto space-y-8 px-4 py-0">
-
       <PageHeader
-        title="Enrollment History"
-        description="View your enrollment records, payment status, and admission updates."
+        title="My Enrollment"
+        description="Your confirmed enrollments, academic assignment, and payment details."
       />
 
-      {isLoading && (
-        <EnrollmentSkeleton />
-      )}
+      {isLoading ? <EnrollmentSkeleton /> : null}
 
-      {!isLoading &&
-        error && (
-          <ErrorState
-            title="Failed to load enrollments"
-            description={error}
-            onRetry={refetch}
-          />
-        )}
+      {!isLoading && error ? (
+        <ErrorState
+          title="Failed to load enrollments"
+          description={error}
+          onRetry={refetch}
+        />
+      ) : null}
 
-      {!isLoading &&
-        !error &&
-        enrollments.length ===
-          0 && (
-          <EnrollmentEmpty />
-        )}
+      {!isLoading && !error && enrollments.length === 0 ? (
+        <EnrollmentEmpty />
+      ) : null}
 
-      {!isLoading &&
-        !error &&
-        enrollments.length >
-          0 && (
-          <div className="space-y-6">
-            {enrollments.map(
-              (
-                enrollment,
-              ) => (
-                <EnrollmentCard
-                  key={
-                    enrollment.id
-                  }
-                  enrollment={
-                    enrollment
-                  }
-                />
-              ),
-            )}
-          </div>
-        )}
-
+      {!isLoading && !error && enrollments.length > 0 ? (
+        <div className="space-y-6">
+          {enrollments.map((enrollment) => (
+            <EnrollmentCard key={enrollment.id} enrollment={enrollment} />
+          ))}
+        </div>
+      ) : null}
     </main>
   );
 }

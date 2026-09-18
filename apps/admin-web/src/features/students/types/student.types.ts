@@ -2,6 +2,8 @@
 
 export type StudentGender = "MALE" | "FEMALE" | "OTHER";
 
+export type ApplicationType = "OFFLINE" | "ONLINE";
+
 export type StudentStatus =
   | "LEAD"
   | "ENQUIRED"
@@ -50,6 +52,7 @@ export interface Student {
   admissionDate: string | null;
   branchId?: string | null;
   notes: string | null;
+  applicationType: ApplicationType;
   status: StudentStatus;
   jobStatus: StudentJobStatus | null;
   isActive: boolean;

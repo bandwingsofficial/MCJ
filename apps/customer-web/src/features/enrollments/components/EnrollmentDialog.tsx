@@ -67,8 +67,6 @@ export function EnrollmentDialog({
           await createEnrollment({
             batchId:
               values.batchId,
-            remarks:
-              values.remarks,
           });
 
         if (!enrollment) {

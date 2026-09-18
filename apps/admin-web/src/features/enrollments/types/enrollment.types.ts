@@ -4,6 +4,8 @@ import {
   EnrollmentStatus,
   PaymentStatus,
   EnrollmentSource,
+  ApplicationType,
+  EnrollmentMode,
 } from "./enrollment.enums";
 
 export interface StudentInfo {
@@ -116,9 +118,17 @@ export interface Enrollment {
   id: string;
   enrollmentNumber: string;
 
+  studentId?: string;
+  branchId?: string;
+  categoryId?: string;
+  courseId?: string;
+  batchId?: string;
+
   status: EnrollmentStatus;
   paymentStatus: PaymentStatus;
   source: EnrollmentSource;
+  applicationType: ApplicationType;
+  mode: EnrollmentMode;
 
   feeAmount: number;
   discountAmount: number;
@@ -144,7 +154,22 @@ export interface Enrollment {
   batch: BatchInfo;
   batchTimingId?: string | null;
   batchTiming?: BatchTimingInfo | null;
+  payments?: EnrollmentPaymentInfo[];
 
   createdAt: string;
   updatedAt: string;
+}
+
+export interface EnrollmentPaymentInfo {
+  id: string;
+  paymentNumber?: string;
+  amount: number;
+  currency?: string;
+  paymentMethod?: string | null;
+  paymentStatus?: string;
+  gateway?: string | null;
+  gatewayOrderId?: string | null;
+  gatewayPaymentId?: string | null;
+  paidAt?: string | null;
+  createdAt?: string;
 }

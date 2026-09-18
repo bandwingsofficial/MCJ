@@ -28,13 +28,17 @@ export function resolveCustomerStudentAccess(input: {
   showProfile: true;
   showMyApplications: boolean;
   showMyCourses: boolean;
+  showMyEnrollment: boolean;
 } {
+  const admittedLearningAccess =
+    input.hasStudentRecord &&
+    isAdmittedStudentStatus(input.studentStatus) &&
+    input.hasValidEnrollment;
+
   return {
     showProfile: true,
     showMyApplications: input.hasStudentRecord,
-    showMyCourses:
-      input.hasStudentRecord &&
-      isAdmittedStudentStatus(input.studentStatus) &&
-      input.hasValidEnrollment,
+    showMyCourses: admittedLearningAccess,
+    showMyEnrollment: admittedLearningAccess,
   };
 }

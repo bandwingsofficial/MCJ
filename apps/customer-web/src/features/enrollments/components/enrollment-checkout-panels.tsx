@@ -20,12 +20,12 @@ function getEnrollmentStatusLabel(enrollment: Enrollment): string {
     case "ACTIVE":
       return "Admitted";
     case "PENDING_APPROVAL":
-      return "Awaiting Approval";
+      return "Pending Approval";
     case "REJECTED":
       return "Rejected";
     case "PENDING":
       return enrollment.paymentStatus === "PAID"
-        ? "Awaiting Approval"
+        ? "Admitted"
         : "Pending Payment";
     default:
       return enrollment.status;
@@ -36,16 +36,24 @@ export function EnrollmentSuccessView({
   course,
   enrollment,
 }: EnrollmentSuccessViewProps) {
-  const isAwaitingApproval =
-    enrollment.status === "PENDING_APPROVAL" ||
-    (enrollment.status === "PENDING" && enrollment.paymentStatus === "PAID");
   const isAdmitted =
-    enrollment.status === "ADMITTED" || enrollment.status === "ACTIVE";
+    enrollment.status === "ADMITTED" ||
+    enrollment.status === "ACTIVE" ||
+    (enrollment.status === "PENDING" && enrollment.paymentStatus === "PAID");
   const isFree = enrollment.finalAmount <= 0;
   const currency =
     enrollment.batch?.currency ??
     enrollment.batch?.pricing?.currency ??
     "INR";
+  const payment = enrollment.payments?.[0];
+  const modeLabel =
+    enrollment.mode === "SELF_PACED"
+      ? "Self-Paced"
+      : enrollment.mode === "ONLINE"
+        ? "Online"
+        : enrollment.mode === "OFFLINE"
+          ? "Offline"
+          : enrollment.batchTiming?.mode ?? enrollment.batch?.mode ?? "—";
 
   return (
     <div
@@ -70,44 +78,65 @@ export function EnrollmentSuccessView({
       </div>
 
       <h2 className="mt-5 text-2xl font-bold text-slate-900">
-        {isAdmitted
-          ? "Enrollment Approved"
-          : isFree && enrollment.status === "PENDING_APPROVAL"
-            ? "Enrollment Submitted Successfully"
-            : "Enrollment Submitted Successfully"}
+        {isAdmitted ? "Enrollment Successful" : "Enrollment Submitted"}
       </h2>
 
       <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-slate-600">
         {isAdmitted
-          ? "You have been admitted to this course. Course access is now enabled."
-          : isAwaitingApproval || enrollment.status === "PENDING_APPROVAL"
-            ? "Your payment was successful. Our team will review your enrollment and update your admission status within 24 hours."
-            : isFree
-              ? "Your enrollment has been submitted. Our team will review your request and update your admission status within 24 hours."
-              : "Your enrollment request has been recorded."}
+          ? "Your payment has been successfully verified and your enrollment has been confirmed."
+          : isFree
+            ? "Your enrollment has been recorded."
+            : "Your enrollment request has been recorded."}
       </p>
 
-      <div className="mx-auto mt-6 max-w-md rounded-xl border border-white bg-white p-4 text-left text-sm">
+      <div className="mx-auto mt-6 max-w-md space-y-2 rounded-xl border border-white bg-white p-4 text-left text-sm">
         <p className="font-medium text-slate-900">{course.title}</p>
-        <p className="mt-1 text-slate-600">
+        <p className="text-slate-600">
           Enrollment ID: {enrollment.enrollmentNumber}
         </p>
-        <p className="mt-1 text-slate-600">
-          Batch: {enrollment.batch?.name ?? "—"}
+        <p className="text-slate-600">
+          Course: {enrollment.course?.title ?? course.title}
         </p>
-        <p className="mt-1 text-slate-600">
+        <p className="text-slate-600">
           Branch: {enrollment.branch?.branchName ?? "—"}
         </p>
+        <p className="text-slate-600">
+          Batch: {enrollment.batch?.name ?? "—"}
+        </p>
+        <p className="text-slate-600">
+          Batch Timing:{" "}
+          {enrollment.batchTiming?.name ??
+            (enrollment.batchTiming
+              ? `${enrollment.batchTiming.startTime} - ${enrollment.batchTiming.endTime}`
+              : "—")}
+        </p>
+        <p className="text-slate-600">Mode: {modeLabel}</p>
+        <p className="text-slate-600">
+          Application Type:{" "}
+          {enrollment.applicationType === "ONLINE"
+            ? "Online"
+            : enrollment.applicationType === "OFFLINE"
+              ? "Offline"
+              : "—"}
+        </p>
         {!isFree ? (
-          <p className="mt-1 text-slate-600">
-            Payment: {formatCurrency(enrollment.finalAmount, currency)}
+          <p className="text-slate-600">
+            Payment Amount: {formatCurrency(enrollment.finalAmount, currency)}
           </p>
         ) : null}
-        <p className="mt-1 text-slate-600">
+        <p className="text-slate-600">
           Payment Status: {enrollment.paymentStatus}
         </p>
-        <p className="mt-1 font-medium text-slate-900">
-          Status: {getEnrollmentStatusLabel(enrollment)}
+        {payment?.gatewayPaymentId ? (
+          <p className="text-slate-600">
+            Payment ID: {payment.gatewayPaymentId}
+          </p>
+        ) : null}
+        {payment?.gatewayOrderId ? (
+          <p className="text-slate-600">Order ID: {payment.gatewayOrderId}</p>
+        ) : null}
+        <p className="font-medium text-slate-900">
+          Enrollment Status: {getEnrollmentStatusLabel(enrollment)}
         </p>
       </div>
 
@@ -120,10 +149,10 @@ export function EnrollmentSuccessView({
         </Link>
         {isAdmitted ? (
           <Link
-            href={`/student/courses/${course.id}`}
+            href="/student/my-learning"
             className="inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#2563D9] to-[#1746A2] px-6 text-sm font-semibold text-white hover:from-[#1E58C7] hover:to-[#123D94]"
           >
-            Go to Course
+            Go to My Course
           </Link>
         ) : (
           <Link
@@ -190,9 +219,8 @@ export function EnrollmentSecurePaymentNote() {
             Your payment will be securely processed through Razorpay.
           </p>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            After successful payment, your enrollment will be submitted for
-            verification by our team. Course access will be enabled after your
-            enrollment is approved.
+            After successful payment verification, your enrollment is confirmed
+            immediately and course access is enabled.
           </p>
         </div>
       </div>

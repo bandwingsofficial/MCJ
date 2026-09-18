@@ -9,11 +9,12 @@ import type { CourseRepository } from '@modules/course/domain/repositories/cours
 import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
-import { Enrollment } from '../../domain/entities/enrollment.entity';
+import { ApplicationType } from '../../domain/enums/application-type.enum';
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import type { EnrollmentRepository } from '../../domain/repositories/enrollment.repository';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
+import { mapCourseModeToEnrollmentMode } from '../../domain/utils/map-course-mode-to-enrollment-mode';
 import {
   assertBatchTimingHasLiveCapacity,
 } from '../../infrastructure/utils/enrollment-timing-count.util';
@@ -27,6 +28,7 @@ import { EnrollmentPaymentRecordingService } from '../shared/enrollment-payment-
 import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
 
 import { CreateEnrollmentCommand } from './create-enrollment.command';
+import { Enrollment } from '../../domain/entities/enrollment.entity';
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
@@ -78,6 +80,12 @@ export class CreateEnrollmentHandler {
           command.batchTimingId,
         )
       : null;
+
+    const enrollmentMode =
+      command.mode ??
+      mapCourseModeToEnrollmentMode(
+        batchTiming?.mode ?? hierarchy.batch.mode,
+      );
 
     if (!command.batchTimingId) {
       await this.domainService.ensureBatchHasCapacity(hierarchy.batch);
@@ -152,6 +160,9 @@ export class CreateEnrollmentHandler {
         ? EnrollmentStatus.ADMITTED
         : EnrollmentStatus.PENDING,
       source: command.source,
+      applicationType:
+        command.applicationType ?? ApplicationType.OFFLINE,
+      mode: enrollmentMode,
       remarks: undefined,
       createdBy: command.createdBy,
     });
@@ -219,6 +230,7 @@ export class CreateEnrollmentHandler {
       select: {
         id: true,
         batchId: true,
+        mode: true,
         enrolledCount: true,
         capacity: true,
         startDate: true,

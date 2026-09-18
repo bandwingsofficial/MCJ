@@ -115,6 +115,8 @@ export class AdminEnrollmentController {
         user.sub,
         dto.branchId,
         dto.batchTimingId,
+        dto.applicationType,
+        dto.mode,
       ),
     );
 
@@ -159,6 +161,8 @@ export class AdminEnrollmentController {
         query.sortBy,
         query.sortOrder,
         query.currentOnly,
+        query.applicationType,
+        query.mode,
       ),
     );
 

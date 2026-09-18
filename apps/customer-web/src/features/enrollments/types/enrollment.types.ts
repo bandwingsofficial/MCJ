@@ -1,5 +1,9 @@
 import type { ApiResponse } from "@/src/core/types/api-response.types";
 
+export type ApplicationType = "OFFLINE" | "ONLINE";
+
+export type EnrollmentMode = "OFFLINE" | "ONLINE" | "SELF_PACED";
+
 export type EnrollmentStatus =
   | "PENDING"
   | "PENDING_APPROVAL"
@@ -17,9 +21,38 @@ export type PaymentStatus =
 
 export interface CreateEnrollmentRequest {
   batchId: string;
+  batchTimingId: string;
   branchId?: string;
   courseId?: string;
-  remarks?: string;
+}
+
+export interface EnrollmentPayment {
+  id: string;
+  paymentNumber: string;
+  amount: number;
+  currency: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  gateway: string;
+  gatewayOrderId: string | null;
+  gatewayPaymentId: string | null;
+  paidAt: string | null;
+  createdAt: string;
+}
+
+export interface BatchTimingSummary {
+  id: string;
+  name: string;
+  mode: string;
+  daysOfWeek: string[];
+  startDate: string;
+  endDate: string | null;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  enrolledCount: number;
+  status: string;
+  isActive: boolean;
 }
 
 export interface StudentSummary {
@@ -118,6 +151,8 @@ export interface Enrollment {
   status: EnrollmentStatus;
   paymentStatus: PaymentStatus;
   source: string;
+  applicationType: ApplicationType;
+  mode: EnrollmentMode;
 
   feeAmount: number;
   discountAmount: number;
@@ -141,6 +176,9 @@ export interface Enrollment {
   category: CategorySummary;
   course: CourseSummary;
   batch: BatchSummary;
+  batchTimingId?: string | null;
+  batchTiming?: BatchTimingSummary | null;
+  payments?: EnrollmentPayment[];
 
   createdAt: string;
   updatedAt: string;

@@ -26,6 +26,8 @@ function detail(
     status: overrides?.status ?? EnrollmentStatus.ADMITTED,
     paymentStatus: 'UNPAID' as EnrollmentDetailView['paymentStatus'],
     source: 'ADMIN' as EnrollmentDetailView['source'],
+    applicationType: 'OFFLINE' as EnrollmentDetailView['applicationType'],
+    mode: 'OFFLINE' as EnrollmentDetailView['mode'],
     feeAmount: 0,
     discountAmount: 0,
     finalAmount: 0,
@@ -50,14 +52,20 @@ function detail(
       qualification: null,
       profileImageUrl: null,
       status: 'ADMITTED',
+      applicationType: 'OFFLINE',
       isActive: true,
+      updatedAt: new Date(),
     },
     branch: {
       id: 'branch-1',
       branchName: overrides?.branchName ?? 'Branch A',
       branchCode: 'BR-A',
     },
-    category: { id: 'cat-1', name: 'CA', slug: 'ca' },
+    category: {
+      id: 'cat-1',
+      name: 'Accounting',
+      slug: 'accounting',
+    },
     course: {
       id: 'course-1',
       title: 'CA Foundation',
@@ -67,18 +75,19 @@ function detail(
       duration: null,
       durationType: null,
       level: 'BEGINNER',
-      language: 'EN',
+      language: 'en',
       thumbnailUrl: null,
-      status: 'ACTIVE',
+      status: 'PUBLISHED',
       averageRating: 0,
       totalReviews: 0,
+      updatedAt: new Date(),
       trainers: [],
     },
     batch: {
       id: batchId,
-      name: batchId === BATCH_A ? 'Morning' : 'Evening',
-      code: batchId === BATCH_A ? 'BCH-A' : 'BCH-B',
-      slug: 'batch',
+      name: 'Morning batch',
+      code: 'B1',
+      slug: 'morning',
       description: null,
       startDate: new Date(),
       endDate: null,
@@ -107,21 +116,31 @@ function detail(
     },
     batchTimingId: null,
     batchTiming: null,
+    payments: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 }
 
-describe('EnrollmentDomainService one-current-enrollment rule', () => {
+describe('EnrollmentDomainService per-batch current enrollment rule', () => {
   const domain = new EnrollmentDomainService();
 
   function repo(
     current: EnrollmentDetailView | null,
-    sameBatch?: { id: string } | null,
+    options?: {
+      sameBatch?: { id: string; isCurrent: () => boolean } | null;
+    },
   ): EnrollmentRepository {
+    const sameBatch =
+      options && 'sameBatch' in options
+        ? options.sameBatch
+        : current
+          ? { id: current.id, isCurrent: () => true }
+          : null;
+
     return {
       findCurrentDetailByStudentId: jest.fn().mockResolvedValue(current),
-      findByStudentAndBatch: jest.fn().mockResolvedValue(sameBatch ?? null),
+      findByStudentAndBatch: jest.fn().mockResolvedValue(sameBatch),
       findDetailById: jest.fn().mockResolvedValue(current),
     } as unknown as EnrollmentRepository;
   }
@@ -145,67 +164,33 @@ describe('EnrollmentDomainService one-current-enrollment rule', () => {
       statusCode: 409,
       code: 'STUDENT_ALREADY_ENROLLED',
     });
-
-    try {
-      await domain.ensureNoCurrentEnrollment(repo(existing), STUDENT_ID, {
-        intendedBatchId: BATCH_A,
-      });
-    } catch (error) {
-      expect(error).toBeInstanceOf(EnrollmentAlreadyExistsException);
-      expect((error as Error).message).toBe(
-        'Student is already actively enrolled in Malleswaram - Morning batch. A student can have only one active enrollment at a time.',
-      );
-    }
   });
 
-  it('rejects enrollment into another batch in the same branch', async () => {
+  it('allows enrollment into another batch while one is already current', async () => {
     const existing = detail({ batchId: BATCH_A, branchName: 'Malleswaram' });
 
     await expect(
-      domain.ensureNoCurrentEnrollment(repo(existing), STUDENT_ID, {
-        intendedBatchId: BATCH_B,
-      }),
-    ).rejects.toBeInstanceOf(EnrollmentAlreadyExistsException);
-
-    try {
-      await domain.ensureNoCurrentEnrollment(repo(existing), STUDENT_ID, {
-        intendedBatchId: BATCH_B,
-      });
-    } catch (error) {
-      expect(error).toMatchObject({
-        statusCode: 409,
-        metadata: {
-          existingEnrollment: expect.objectContaining({
-            batch: expect.objectContaining({ id: BATCH_A }),
-            branch: expect.objectContaining({ branchName: 'Malleswaram' }),
-            course: expect.objectContaining({ title: 'CA Foundation' }),
-          }),
-        },
-      });
-      expect((error as Error).message).toBe(
-        'Student is already actively enrolled in Malleswaram - Morning batch. A student can have only one active enrollment at a time.',
-      );
-    }
+      domain.ensureNoCurrentEnrollment(
+        repo(existing, { sameBatch: null }),
+        STUDENT_ID,
+        { intendedBatchId: BATCH_B },
+      ),
+    ).resolves.toBeUndefined();
   });
 
-  it('rejects enrollment into a batch in another branch', async () => {
+  it('allows enrollment into a batch in another branch', async () => {
     const existing = detail({
       batchId: BATCH_A,
       branchName: 'Rajinagar',
     });
 
     await expect(
-      domain.ensureNoCurrentEnrollment(repo(existing), STUDENT_ID, {
-        intendedBatchId: BATCH_B,
-      }),
-    ).rejects.toMatchObject({
-      statusCode: 409,
-      metadata: {
-        existingEnrollment: expect.objectContaining({
-          branch: expect.objectContaining({ branchName: 'Rajinagar' }),
-        }),
-      },
-    });
+      domain.ensureNoCurrentEnrollment(
+        repo(existing, { sameBatch: null }),
+        STUDENT_ID,
+        { intendedBatchId: BATCH_B },
+      ),
+    ).resolves.toBeUndefined();
   });
 
   it('does not treat a completed enrollment as current', async () => {
@@ -214,8 +199,6 @@ describe('EnrollmentDomainService one-current-enrollment rule', () => {
         intendedBatchId: BATCH_B,
       }),
     ).resolves.toBeUndefined();
-
-    expect(EnrollmentStatus.COMPLETED).toBe('COMPLETED');
   });
 
   it('does not treat a cancelled enrollment as current', async () => {
@@ -239,12 +222,26 @@ describe('EnrollmentDomainService one-current-enrollment rule', () => {
   it('allows re-enrollment into the same batch after a historical enrollment', async () => {
     const enrollmentRepo = {
       findCurrentDetailByStudentId: jest.fn().mockResolvedValue(null),
-      findByStudentAndBatch: jest.fn().mockResolvedValue({ id: 'old-enroll' }),
+      findByStudentAndBatch: jest.fn().mockResolvedValue({
+        id: 'old-enroll',
+        isCurrent: () => false,
+      }),
       findDetailById: jest.fn(),
     } as unknown as EnrollmentRepository;
 
     await expect(
       domain.ensureNotDuplicate(enrollmentRepo, STUDENT_ID, BATCH_A),
+    ).resolves.toBeUndefined();
+  });
+
+  it('allows a second current enrollment in a different batch', async () => {
+    const enrollmentRepo = {
+      findByStudentAndBatch: jest.fn().mockResolvedValue(null),
+      findDetailById: jest.fn(),
+    } as unknown as EnrollmentRepository;
+
+    await expect(
+      domain.ensureNotDuplicate(enrollmentRepo, STUDENT_ID, BATCH_B),
     ).resolves.toBeUndefined();
   });
 

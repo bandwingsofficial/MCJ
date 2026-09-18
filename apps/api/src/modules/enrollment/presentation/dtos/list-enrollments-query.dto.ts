@@ -11,6 +11,8 @@ import {
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { PaginationQueryDto } from '@common/pagination/pagination-query.dto';
+import { ApplicationType } from '../../domain/enums/application-type.enum';
+import { EnrollmentMode } from '../../domain/enums/enrollment-mode.enum';
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { PaymentStatus } from '../../domain/enums/payment-status.enum';
@@ -71,6 +73,16 @@ export class ListEnrollmentsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(EnrollmentSource)
   source?: EnrollmentSource;
+
+  @ApiPropertyOptional({ enum: ApplicationType })
+  @IsOptional()
+  @IsEnum(ApplicationType)
+  applicationType?: ApplicationType;
+
+  @ApiPropertyOptional({ enum: EnrollmentMode })
+  @IsOptional()
+  @IsEnum(EnrollmentMode)
+  mode?: EnrollmentMode;
 
   @ApiPropertyOptional()
   @IsOptional()

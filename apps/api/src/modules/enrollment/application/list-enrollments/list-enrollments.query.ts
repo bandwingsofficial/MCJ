@@ -1,3 +1,5 @@
+import { ApplicationType } from '../../domain/enums/application-type.enum';
+import { EnrollmentMode } from '../../domain/enums/enrollment-mode.enum';
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { PaymentStatus } from '../../domain/enums/payment-status.enum';
@@ -25,5 +27,7 @@ export class ListEnrollmentsQuery {
     public readonly sortBy?: string,
     public readonly sortOrder?: 'asc' | 'desc',
     public readonly currentOnly?: boolean,
+    public readonly applicationType?: ApplicationType,
+    public readonly mode?: EnrollmentMode,
   ) {}
 }

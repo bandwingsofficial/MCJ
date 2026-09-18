@@ -32,6 +32,23 @@ export enum EnrollmentSource {
 }
 
 /**
+ * Application Type — where the application originated
+ */
+export enum ApplicationType {
+  OFFLINE = "OFFLINE",
+  ONLINE = "ONLINE",
+}
+
+/**
+ * Enrollment Mode — how the student takes the course
+ */
+export enum EnrollmentMode {
+  OFFLINE = "OFFLINE",
+  ONLINE = "ONLINE",
+  SELF_PACED = "SELF_PACED",
+}
+
+/**
  * Sort Order
  */
 export enum SortOrder {

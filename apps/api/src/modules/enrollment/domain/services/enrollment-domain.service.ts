@@ -220,13 +220,30 @@ export class EnrollmentDomainService {
     batchId: string,
     excludeId?: string,
   ): Promise<void> {
-    // Global rule: at most one current enrollment per student across all
-    // branches/batches. Historical CANCELLED/COMPLETED/DROPPED/REJECTED rows
-    // do not block a new enrollment (including re-enrolling the same batch).
-    await this.ensureNoCurrentEnrollment(enrollmentRepo, studentId, {
-      excludeId,
-      intendedBatchId: batchId,
-    });
+    // One student may have multiple current enrollments across batches.
+    // Only block a second CURRENT enrollment for the same student + batch.
+    const existing = await enrollmentRepo.findByStudentAndBatch(
+      studentId,
+      batchId,
+    );
+
+    if (
+      !existing ||
+      !existing.isCurrent() ||
+      (excludeId && existing.id === excludeId)
+    ) {
+      return;
+    }
+
+    const detail = await enrollmentRepo.findDetailById(existing.id, true);
+    if (!detail) {
+      return;
+    }
+
+    throw EnrollmentAlreadyExistsException.forCurrentEnrollment(
+      detail,
+      batchId,
+    );
   }
 
   async ensureNoCurrentEnrollment(
@@ -237,6 +254,16 @@ export class EnrollmentDomainService {
       intendedBatchId?: string;
     },
   ): Promise<void> {
+    if (options?.intendedBatchId) {
+      await this.ensureNotDuplicate(
+        enrollmentRepo,
+        studentId,
+        options.intendedBatchId,
+        options.excludeId,
+      );
+      return;
+    }
+
     const existing = await enrollmentRepo.findCurrentDetailByStudentId(
       studentId,
       options?.excludeId,

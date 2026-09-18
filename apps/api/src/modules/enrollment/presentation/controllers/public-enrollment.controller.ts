@@ -48,7 +48,7 @@ export class PublicEnrollmentController {
         new CreatePublicEnrollmentCommand(
           user.sub,
           dto.batchId,
-          dto.remarks,
+          dto.batchTimingId,
           dto.branchId,
           dto.courseId,
         ),

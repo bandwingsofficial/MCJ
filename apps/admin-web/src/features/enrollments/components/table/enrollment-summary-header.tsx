@@ -10,6 +10,7 @@ import { AppSelect } from "@/src/shared/components/ui/select";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
 import {
+  ApplicationType,
   EnrollmentFilters as Filters,
   EnrollmentStatus,
 } from "@/src/features/enrollments/types";
@@ -26,6 +27,12 @@ const STATUS_OPTIONS = [
   { label: "Cancelled", value: EnrollmentStatus.CANCELLED },
   { label: "Dropped", value: EnrollmentStatus.DROPPED },
   { label: "Rejected", value: EnrollmentStatus.REJECTED },
+];
+
+const APPLICATION_TYPE_OPTIONS = [
+  { label: "All", value: ALL_VALUE },
+  { label: "Online", value: ApplicationType.ONLINE },
+  { label: "Offline", value: ApplicationType.OFFLINE },
 ];
 
 interface BranchOption {
@@ -169,6 +176,24 @@ export function EnrollmentSummaryHeader({
                     })
                   }
                   options={STATUS_OPTIONS}
+                />
+              </div>
+
+              <div className="w-full sm:w-[120px]">
+                <AppSelect
+                  value={filters.applicationType ?? ALL_VALUE}
+                  triggerClassName="h-9 rounded-lg px-2.5 text-sm"
+                  onValueChange={(value) =>
+                    onFiltersChange({
+                      ...filters,
+                      applicationType:
+                        value === ALL_VALUE
+                          ? undefined
+                          : (value as ApplicationType),
+                      skip: 0,
+                    })
+                  }
+                  options={APPLICATION_TYPE_OPTIONS}
                 />
               </div>
 

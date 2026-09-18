@@ -24,7 +24,7 @@ export function EnrollmentTable({
   onManage,
   onUnenroll,
 }: EnrollmentTableProps) {
-  const columnCount = 7;
+  const columnCount = 9;
 
   return (
     <div className="w-full overflow-x-auto">
@@ -45,6 +45,12 @@ export function EnrollmentTable({
             </th>
             <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Course
+            </th>
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              App Type
+            </th>
+            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Mode
             </th>
             <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Status
@@ -104,6 +110,18 @@ export function EnrollmentTable({
                   </td>
                   <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
                     {enrollment.course?.title ?? "—"}
+                  </td>
+                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
+                    {enrollment.applicationType === "ONLINE"
+                      ? "Online"
+                      : "Offline"}
+                  </td>
+                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
+                    {enrollment.mode === "SELF_PACED"
+                      ? "Self-Paced"
+                      : enrollment.mode === "ONLINE"
+                        ? "Online"
+                        : "Offline"}
                   </td>
                   <td className="!px-4 !py-4 align-middle">
                     <EnrollmentStatusBadge

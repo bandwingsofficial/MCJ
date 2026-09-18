@@ -25,6 +25,8 @@ export class ListEnrollmentsHandler {
       status: query.status,
       paymentStatus: query.paymentStatus,
       source: query.source,
+      applicationType: query.applicationType,
+      mode: query.mode,
       isActive: query.isActive,
       includeDeleted: query.includeDeleted,
       admissionDateFrom: query.admissionDateFrom,

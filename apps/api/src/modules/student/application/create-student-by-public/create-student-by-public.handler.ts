@@ -9,6 +9,7 @@ import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
 
 import { Student } from '../../domain/entities/student.entity';
+import { ApplicationType } from '../../domain/enums/application-type.enum';
 import { StudentStatus } from '../../domain/enums/student-status.enum';
 import type { StudentRepository } from '../../domain/repositories/student.repository';
 import { StudentDomainService } from '../../domain/services/student-domain.service';
@@ -145,6 +146,7 @@ export class CreateStudentByPublicHandler {
       branchId,
       notes: command.notes,
       status: StudentStatus.LEAD,
+      applicationType: ApplicationType.ONLINE,
       isActive: true,
       createdBy: userId,
     });

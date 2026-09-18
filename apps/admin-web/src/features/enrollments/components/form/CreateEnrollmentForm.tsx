@@ -95,6 +95,69 @@ function buildEnrollmentStudentOption(enrollment: Enrollment | undefined) {
   };
 }
 
+function enrollmentModeToBatchMode(
+  mode: string | null | undefined,
+): BatchMode | "" {
+  if (mode === "SELF_PACED" || mode === "RECORDED") {
+    return "RECORDED";
+  }
+  if (mode === "ONLINE" || mode === "OFFLINE") {
+    return mode;
+  }
+  return "";
+}
+
+function formatApplicationTypeLabel(
+  applicationType: string | null | undefined,
+): string {
+  if (applicationType === "ONLINE") {
+    return "Online";
+  }
+  if (applicationType === "OFFLINE") {
+    return "Offline";
+  }
+  return applicationType ?? "—";
+}
+
+function formatEnrollmentModeLabel(
+  mode: string | null | undefined,
+): string {
+  if (mode === "SELF_PACED") {
+    return "Self-Paced";
+  }
+  if (mode === "ONLINE") {
+    return "Online";
+  }
+  if (mode === "OFFLINE") {
+    return "Offline";
+  }
+  return mode ?? "—";
+}
+
+function resolveEnrollmentBranchId(
+  enrollment: Enrollment | undefined,
+): string {
+  return enrollment?.branchId ?? enrollment?.branch?.id ?? "";
+}
+
+function resolveEnrollmentBatchId(
+  enrollment: Enrollment | undefined,
+): string {
+  return enrollment?.batchId ?? enrollment?.batch?.id ?? "";
+}
+
+function resolveEnrollmentStudentId(
+  enrollment: Enrollment | undefined,
+): string {
+  return enrollment?.studentId ?? enrollment?.student?.id ?? "";
+}
+
+function resolveEnrollmentTimingId(
+  enrollment: Enrollment | undefined,
+): string {
+  return enrollment?.batchTimingId ?? enrollment?.batchTiming?.id ?? "";
+}
+
 export function CreateEnrollmentForm({
   mode = "create",
   enrollment,
@@ -106,7 +169,9 @@ export function CreateEnrollmentForm({
   const [branches, setBranches] = useState<
     Array<{ id: string; label: string }>
   >([]);
-  const [branchId, setBranchId] = useState(enrollment?.branch?.id ?? "");
+  const [branchId, setBranchId] = useState(
+    () => resolveEnrollmentBranchId(enrollment),
+  );
   const [batches, setBatches] = useState<Batch[]>([]);
   const [admissionDate, setAdmissionDate] = useState(
     enrollment?.admissionDate
@@ -114,20 +179,29 @@ export function CreateEnrollmentForm({
       : todayDateInputValue(),
   );
   const [paymentDate, setPaymentDate] = useState(todayDateInputValue());
-  const [batchId, setBatchId] = useState(enrollment?.batch?.id ?? "");
+  const [batchId, setBatchId] = useState(
+    () => resolveEnrollmentBatchId(enrollment),
+  );
   const [selectedMode, setSelectedMode] = useState<BatchMode | "">(
-    (enrollment?.batchTiming?.mode as BatchMode | undefined) ?? "",
+    () =>
+      enrollmentModeToBatchMode(enrollment?.mode) ||
+      enrollmentModeToBatchMode(enrollment?.batchTiming?.mode) ||
+      "",
   );
   const [batchTimingId, setBatchTimingId] = useState(
-    enrollment?.batchTimingId ?? enrollment?.batchTiming?.id ?? "",
+    () => resolveEnrollmentTimingId(enrollment),
   );
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
   const [categoryName, setCategoryName] = useState(
     enrollment?.category?.name ?? "—",
   );
-  const [feeAmount, setFeeAmount] = useState(0);
-  const [discountAmount, setDiscountAmount] = useState(0);
+  const [feeAmount, setFeeAmount] = useState(
+    () => normalizeMoney(enrollment?.feeAmount),
+  );
+  const [discountAmount, setDiscountAmount] = useState(
+    () => normalizeMoney(enrollment?.discountAmount),
+  );
 
   const [students, setStudents] = useState<
     Array<{
@@ -141,7 +215,7 @@ export function CreateEnrollmentForm({
     return enrolledStudent ? [enrolledStudent] : [];
   });
   const [studentId, setStudentId] = useState(
-    enrollment?.student?.id ?? "",
+    () => resolveEnrollmentStudentId(enrollment),
   );
 
   const [amountPaidNow, setAmountPaidNow] = useState("");
@@ -207,12 +281,12 @@ export function CreateEnrollmentForm({
   useEffect(() => {
     if (!branchId) {
       setBatches([]);
-      setBatchId("");
-      setSelectedMode("");
-      setBatchTimingId("");
-      setSelectedBatch(null);
-      setCourse(null);
       if (!isEdit) {
+        setBatchId("");
+        setSelectedMode("");
+        setBatchTimingId("");
+        setSelectedBatch(null);
+        setCourse(null);
         setStudents([]);
         setStudentId("");
       }
@@ -235,6 +309,13 @@ export function CreateEnrollmentForm({
           return true;
         });
         setBatches(nextBatches);
+
+        const savedBatchId = resolveEnrollmentBatchId(enrollment);
+        // Edit mode: never wipe the saved batch/timing just because the batch
+        // is missing from the selectable list or marked blocked for new enrollments.
+        if (isEdit && savedBatchId && savedBatchId === batchId) {
+          return;
+        }
 
         if (
           batchId &&
@@ -274,15 +355,15 @@ export function CreateEnrollmentForm({
     void loadBatches();
     // batchId is read to keep the current selection when possible.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branchId, enrollment?.batch?.id, isEdit]);
+  }, [branchId, enrollment?.batch?.id, enrollment?.batchId, isEdit]);
 
   useEffect(() => {
     if (!branchId || !batchId) {
       setSelectedBatch(null);
-      setSelectedMode("");
-      setBatchTimingId("");
-      setCourse(null);
       if (!isEdit) {
+        setSelectedMode("");
+        setBatchTimingId("");
+        setCourse(null);
         setStudents([]);
         setStudentId("");
       }
@@ -296,26 +377,37 @@ export function CreateEnrollmentForm({
         const batch = batchResponse.data;
         setSelectedBatch(batch);
 
-        let nextFee = 0;
-        let nextDiscount = 0;
+        let nextFee = normalizeMoney(enrollment?.feeAmount);
+        let nextDiscount = normalizeMoney(enrollment?.discountAmount);
         let nextCategory = categoryName;
         let nextCourse: Course | null = null;
-        let nextMode = selectedMode;
+
+        const savedBatchId = resolveEnrollmentBatchId(enrollment);
+        const savedTimingId = resolveEnrollmentTimingId(enrollment);
+        const savedMode =
+          enrollmentModeToBatchMode(enrollment?.mode) ||
+          enrollmentModeToBatchMode(enrollment?.batchTiming?.mode) ||
+          "";
+
+        let nextMode: BatchMode | "" = selectedMode;
         let nextTimingId = batchTimingId;
 
-        if (
-          isEdit &&
-          enrollment &&
-          enrollment.batch?.id === batchId &&
-          (enrollment.batchTimingId ?? enrollment.batchTiming?.id)
-        ) {
-          const savedTimingId =
-            enrollment.batchTimingId ?? enrollment.batchTiming?.id ?? "";
-          const savedTiming = findBatchTimingById(batch, savedTimingId);
+        if (isEdit && enrollment && savedBatchId === batchId) {
+          // Enrollment payload is the source of truth for edit prefill.
+          nextTimingId = savedTimingId || nextTimingId;
+          const savedTiming = nextTimingId
+            ? findBatchTimingById(batch, nextTimingId)
+            : undefined;
+
           if (savedTiming) {
             nextMode = savedTiming.mode;
             nextTimingId = savedTiming.id;
+          } else {
+            nextMode = savedMode || nextMode;
           }
+        } else if (isEdit && enrollment?.mode) {
+          nextMode =
+            enrollmentModeToBatchMode(enrollment.mode) || nextMode;
         }
 
         if (nextTimingId) {
@@ -327,9 +419,15 @@ export function CreateEnrollmentForm({
             nextFee = timingPricing.originalPrice;
             nextDiscount = timingPricing.discountAmount;
           }
+        } else if (isEdit && enrollment) {
+          nextFee = normalizeMoney(enrollment.feeAmount);
+          nextDiscount = normalizeMoney(enrollment.discountAmount);
         }
 
-        const courseId = batch.courseId ?? enrollment?.course?.id;
+        const courseId =
+          batch.courseId ??
+          enrollment?.courseId ??
+          enrollment?.course?.id;
         if (courseId) {
           const courseResponse = await courseService.getCourse(courseId);
           nextCourse = courseResponse.data;
@@ -355,7 +453,7 @@ export function CreateEnrollmentForm({
 
     void loadBatchContext();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branchId, batchId, enrollment?.batch?.id, enrollment?.id, isEdit]);
+  }, [branchId, batchId, enrollment?.batch?.id, enrollment?.batchId, enrollment?.batchTimingId, enrollment?.id, isEdit]);
 
   useEffect(() => {
     if (!selectedBatch || !batchTimingId) {
@@ -407,7 +505,7 @@ export function CreateEnrollmentForm({
         const studentPayload = parseStudentListResponse(studentResponse.data);
         const mappedStudents = studentPayload.items
           .filter((item) => {
-            const isCurrent = item.id === enrollment?.student?.id;
+            const isCurrent = item.id === resolveEnrollmentStudentId(enrollment);
             if (isCurrent) {
               return !isArchivedStudent(item);
             }
@@ -484,10 +582,20 @@ export function CreateEnrollmentForm({
     [branches],
   );
 
-  const batchOptions = useMemo(
-    () => toBatchSelectOptions(batches),
-    [batches],
-  );
+  const batchOptions = useMemo(() => {
+    const options = toBatchSelectOptions(batches);
+    if (
+      isEdit &&
+      enrollment?.batch?.id &&
+      !options.some((option) => option.value === enrollment.batch.id)
+    ) {
+      options.unshift({
+        label: enrollment.batch.name,
+        value: enrollment.batch.id,
+      });
+    }
+    return options;
+  }, [batches, enrollment?.batch?.id, enrollment?.batch?.name, isEdit]);
 
   const studentOptions = useMemo(
     () =>
@@ -518,8 +626,11 @@ export function CreateEnrollmentForm({
       return;
     }
 
-    const selectedBatchRecord = findBatchById(batches, batchId);
-    if (!selectedBatchRecord || isBatchBlockedForSelection(selectedBatchRecord)) {
+    const selectedBatchRecord = findBatchById(batches, batchId) ?? selectedBatch;
+    if (
+      !selectedBatchRecord ||
+      (!isEdit && isBatchBlockedForSelection(selectedBatchRecord))
+    ) {
       appToast.error(BLOCKED_BATCH_SELECTION_MESSAGE);
       return;
     }
@@ -610,6 +721,39 @@ export function CreateEnrollmentForm({
 
   return (
     <div className="space-y-5">
+      {isEdit ? (
+        <div className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-3">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              Application Type
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              {formatApplicationTypeLabel(enrollment?.applicationType)}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Origin is historical and cannot be changed here.
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              Mode
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              {formatEnrollmentModeLabel(enrollment?.mode) ||
+                formatEnrollmentModeLabel(selectedMode)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              Status
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              {enrollment?.status?.replaceAll("_", " ") ?? "—"}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">
@@ -673,7 +817,16 @@ export function CreateEnrollmentForm({
           selectedMode={selectedMode}
           onSelectMode={(mode) => {
             setSelectedMode(mode);
-            setBatchTimingId("");
+            const savedTimingId = resolveEnrollmentTimingId(enrollment);
+            const savedTiming =
+              isEdit && selectedBatch && savedTimingId
+                ? findBatchTimingById(selectedBatch, savedTimingId)
+                : undefined;
+            if (savedTiming && savedTiming.mode === mode) {
+              setBatchTimingId(savedTiming.id);
+            } else {
+              setBatchTimingId("");
+            }
             if (!isEdit) {
               setStudentId("");
             }
@@ -687,9 +840,7 @@ export function CreateEnrollmentForm({
           mode={selectedMode}
           selectedTimingId={batchTimingId}
           reservedTimingId={
-            isEdit
-              ? (enrollment?.batchTimingId ?? enrollment?.batchTiming?.id)
-              : undefined
+            isEdit ? resolveEnrollmentTimingId(enrollment) || undefined : undefined
           }
           onSelectTiming={(timingId) => {
             setBatchTimingId(timingId);
@@ -712,7 +863,7 @@ export function CreateEnrollmentForm({
         />
       ) : null}
 
-      {selectionComplete ? (
+      {selectionComplete || (isEdit && Boolean(studentId)) ? (
         <div className="space-y-2">
           <p className="text-sm font-medium text-slate-700">Select Student</p>
           {isLoadingContext &&
@@ -739,11 +890,37 @@ export function CreateEnrollmentForm({
         </div>
       ) : null}
 
-      {selectionComplete &&
-      studentId &&
-      !selectedStudentEnrollment?.enrolledElsewhere ? (
+      {(selectionComplete &&
+        studentId &&
+        !selectedStudentEnrollment?.enrolledElsewhere) ||
+      (isEdit && Boolean(studentId)) ? (
         <div className="space-y-4 rounded-xl border border-slate-200 p-4">
           <h3 className="text-sm font-semibold text-[#102A56]">Payment</h3>
+
+          {isEdit ? (
+            <div className="grid gap-3 rounded-lg border border-slate-100 bg-slate-50/80 p-3 sm:grid-cols-3">
+              <div>
+                <p className="text-xs text-slate-500">Payment Status</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">
+                  {enrollment?.paymentStatus ?? paymentStatus}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Amount Paid</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">
+                  {formatCurrency(existingPaidAmount)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Method</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">
+                  {enrollment?.payments?.[0]?.paymentMethod ??
+                    enrollment?.payments?.[0]?.gateway ??
+                    "—"}
+                </p>
+              </div>
+            </div>
+          ) : null}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

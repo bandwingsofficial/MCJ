@@ -3,6 +3,7 @@
 import {
   EnrollmentStatus,
   PaymentStatus,
+  ApplicationType,
   SortOrder,
 } from "./enrollment.enums";
 
@@ -14,6 +15,8 @@ export interface EnrollmentFilters {
   status?: EnrollmentStatus;
 
   paymentStatus?: PaymentStatus;
+
+  applicationType?: ApplicationType;
 
   branchId?: string;
 

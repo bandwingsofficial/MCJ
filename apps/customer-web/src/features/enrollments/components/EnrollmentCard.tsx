@@ -8,6 +8,7 @@ import { Card } from "@/src/shared/components/ui/card";
 import { Separator } from "@/src/shared/components/ui/separator";
 import { PaymentButton } from "@/src/features/payments/components/PaymentButton";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
+import { formatEnrollmentTime } from "@/src/features/enrollments/utils/enrollment-batch.utils";
 
 interface EnrollmentCardProps {
   enrollment: Enrollment;
@@ -56,18 +57,17 @@ function getEnrollmentStatusLabel(enrollment: Enrollment): string {
   }
 
   if (enrollment.status === "PENDING_APPROVAL") {
-    return "Awaiting Approval";
+    return "Pending Approval";
   }
 
   if (enrollment.status === "PENDING" && enrollment.paymentStatus === "PAID") {
-    return "Awaiting Approval";
+    return "Admitted";
   }
 
   return enrollment.status.replaceAll("_", " ");
 }
 
 export function EnrollmentCard({ enrollment }: EnrollmentCardProps) {
-  const trainer = enrollment.batch.trainers[0];
   const canPay =
     enrollment.status === "PENDING" && enrollment.paymentStatus === "UNPAID";
 
@@ -107,46 +107,123 @@ export function EnrollmentCard({ enrollment }: EnrollmentCardProps) {
 
         <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { label: "Batch", value: enrollment.batch.name },
-            {
-              label: "Trainer",
-              value: trainer
-                ? `${trainer.firstName} ${trainer.lastName}`
-                : "—",
-            },
+            { label: "Course", value: enrollment.course.title },
             { label: "Branch", value: enrollment.branch.branchName },
+            { label: "Batch", value: enrollment.batch.name },
+            (() => {
+              const timing = enrollment.batchTiming;
+              const name = timing?.name?.trim() || "—";
+              const start = timing?.startTime
+                ? formatEnrollmentTime(timing.startTime)
+                : null;
+              const end = timing?.endTime
+                ? formatEnrollmentTime(timing.endTime)
+                : null;
+              const timeLine =
+                start &&
+                end &&
+                !(timing?.startTime === "00:00" && timing?.endTime === "23:59")
+                  ? `${start} – ${end}`
+                  : null;
+
+              return {
+                label: "Batch Timing",
+                value: name,
+                secondaryValue: timeLine,
+              };
+            })(),
+            {
+              label: "Mode",
+              value:
+                enrollment.mode === "SELF_PACED"
+                  ? "Self-Paced"
+                  : enrollment.mode === "ONLINE"
+                    ? "Online"
+                    : enrollment.mode === "OFFLINE"
+                      ? "Offline"
+                      : "—",
+            },
+            {
+              label: "Application Type",
+              value:
+                enrollment.applicationType === "ONLINE" ? "Online" : "Offline",
+            },
             {
               label: "Enrollment Date",
               value: new Date(enrollment.createdAt).toLocaleDateString(),
             },
             {
-              label: "Amount",
-              value: `₹${enrollment.finalAmount}`,
-              className: "font-bold text-slate-900",
-            },
-            {
-              label: "Admission",
-              value:
-                enrollment.status === "ADMITTED" ||
-                enrollment.status === "ACTIVE"
-                  ? "Admitted"
-                  : enrollment.status === "REJECTED"
-                    ? "Rejected"
-                    : "Pending",
+              label: "Status",
+              value: getEnrollmentStatusLabel(enrollment),
             },
           ].map((item) => (
             <div key={item.label}>
               <p className="mb-1 text-xs font-medium text-slate-500">
                 {item.label}
               </p>
-              <p
-                className={`text-sm text-slate-900 ${item.className || "font-medium"}`}
-              >
-                {item.value}
-              </p>
+              <p className="text-sm font-medium text-slate-900">{item.value}</p>
+              {"secondaryValue" in item && item.secondaryValue ? (
+                <p className="mt-0.5 text-sm font-medium text-slate-900">
+                  {item.secondaryValue}
+                </p>
+              ) : null}
             </div>
           ))}
         </div>
+
+        {enrollment.payments && enrollment.payments.length > 0 ? (
+          <>
+            <div className="my-6">
+              <Separator />
+            </div>
+            <div>
+              <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Payment Details
+              </p>
+              <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+                {[
+                  {
+                    label: "Payment Status",
+                    value: enrollment.paymentStatus,
+                  },
+                  {
+                    label: "Amount",
+                    value: `₹${Number(enrollment.finalAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+                  },
+                  {
+                    label: "Payment Method",
+                    value: enrollment.payments[0]?.paymentMethod ?? "—",
+                  },
+                  {
+                    label: "Payment ID",
+                    value: enrollment.payments[0]?.gatewayPaymentId ?? "—",
+                  },
+                  {
+                    label: "Order ID",
+                    value: enrollment.payments[0]?.gatewayOrderId ?? "—",
+                  },
+                  {
+                    label: "Payment Date",
+                    value: enrollment.payments[0]?.paidAt
+                      ? new Date(
+                          enrollment.payments[0].paidAt,
+                        ).toLocaleDateString()
+                      : "—",
+                  },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <p className="mb-1 text-xs font-medium text-slate-500">
+                      {item.label}
+                    </p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : null}
 
         {enrollment.rejectionReason ? (
           <>
@@ -163,22 +240,6 @@ export function EnrollmentCard({ enrollment }: EnrollmentCardProps) {
             </div>
           </>
         ) : null}
-
-        {enrollment.remarks ? (
-          <>
-            <div className="my-6">
-              <Separator />
-            </div>
-            <div className="rounded-lg bg-slate-50 p-4">
-              <p className="mb-2 text-xs font-semibold uppercase text-slate-500">
-                Remarks
-              </p>
-              <p className="text-sm leading-relaxed text-slate-700">
-                {enrollment.remarks}
-              </p>
-            </div>
-          </>
-        ) : null}
       </div>
 
       <div className="flex flex-col justify-end gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4 sm:flex-row">
@@ -189,15 +250,16 @@ export function EnrollmentCard({ enrollment }: EnrollmentCardProps) {
         </Link>
         {canPay ? (
           <PaymentButton enrollmentId={enrollment.id} />
-        ) : enrollment.status === "ADMITTED" || enrollment.status === "ACTIVE" ? (
-          <Link href={`/student/courses/${enrollment.course.id}`}>
-            <Button className="font-semibold">Go to Course</Button>
+        ) : enrollment.status === "ADMITTED" ||
+          enrollment.status === "ACTIVE" ? (
+          <Link href={`/student/my-learning`}>
+            <Button className="font-semibold">Go to My Course</Button>
           </Link>
         ) : (
           <Button disabled variant="outline" className="font-semibold">
             {enrollment.status === "REJECTED"
               ? "Enrollment Rejected"
-              : "Awaiting Approval"}
+              : "Pending Payment"}
           </Button>
         )}
       </div>

@@ -4,6 +4,7 @@ import {
 } from '@prisma/client';
 
 import { Student } from '../../domain/entities/student.entity';
+import { ApplicationType } from '../../domain/enums/application-type.enum';
 import { StudentGender } from '../../domain/enums/student-gender.enum';
 import { StudentJobStatus } from '../../domain/enums/student-job-status.enum';
 import { StudentStatus } from '../../domain/enums/student-status.enum';
@@ -40,6 +41,7 @@ export class StudentMapper {
       branchId: record.branchId,
       notes: record.notes,
       isActive: record.isActive,
+      applicationType: record.applicationType as ApplicationType,
       status: record.status as StudentStatus,
       jobStatus: (record.jobStatus as StudentJobStatus | null) ?? null,
       createdBy: record.createdBy,
@@ -87,6 +89,7 @@ export class StudentMapper {
       branchId: student.branchId,
       notes: student.notes,
       isActive: student.isActive,
+      applicationType: student.applicationType,
       status: student.status,
       jobStatus: student.jobStatus,
       createdBy: student.createdBy,

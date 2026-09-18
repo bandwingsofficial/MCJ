@@ -49,11 +49,11 @@ function getStatusLabel(status: string, paymentStatus: string): string {
   }
 
   if (status === "PENDING_APPROVAL") {
-    return "Awaiting Approval";
+    return "Pending Approval";
   }
 
   if (status === "PENDING" && paymentStatus === "PAID") {
-    return "Awaiting Approval";
+    return "Admitted";
   }
 
   if (status === "REJECTED") {

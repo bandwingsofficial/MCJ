@@ -4,6 +4,8 @@ import {
 } from '@prisma/client';
 
 import { Enrollment } from '../../domain/entities/enrollment.entity';
+import { ApplicationType } from '../../domain/enums/application-type.enum';
+import { EnrollmentMode } from '../../domain/enums/enrollment-mode.enum';
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { PaymentStatus } from '../../domain/enums/payment-status.enum';
@@ -33,6 +35,8 @@ export class EnrollmentMapper {
       paymentStatus: record.paymentStatus as PaymentStatus,
       status: record.status as EnrollmentStatus,
       source: record.source as EnrollmentSource,
+      applicationType: record.applicationType as ApplicationType,
+      mode: record.mode as EnrollmentMode,
       remarks: record.remarks,
       rejectionReason: record.rejectionReason,
       isActive: record.isActive,
@@ -69,6 +73,8 @@ export class EnrollmentMapper {
       paymentStatus: enrollment.paymentStatus,
       status: enrollment.status,
       source: enrollment.source,
+      applicationType: enrollment.applicationType,
+      mode: enrollment.mode,
       remarks: enrollment.remarks,
       rejectionReason: enrollment.rejectionReason,
       isActive: enrollment.isActive,

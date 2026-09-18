@@ -11,9 +11,11 @@ import { AuthModule } from '../auth/auth.module';
 import { BranchUserModule } from '../branch-user/branch-user.module';
 import { ENROLLMENT_TOKENS } from '../enrollment/enrollment.tokens';
 import { EnrollmentModule } from '../enrollment/enrollment.module';
+import { EnrollmentSideEffectsService } from '../enrollment/application/shared/enrollment-side-effects.service';
 import type { EnrollmentRepository } from '../enrollment/domain/repositories/enrollment.repository';
 import { STUDENT_TOKENS } from '../student/student.tokens';
 import { StudentModule } from '../student/student.module';
+import type { StudentRepository } from '../student/domain/repositories/student.repository';
 import { ResolveAuthenticatedStudentService } from '../student/domain/services/resolve-authenticated-student.service';
 
 import { PAYMENT_TOKENS } from './payment.tokens';
@@ -68,9 +70,21 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
 
     {
       provide: PaymentEnrollmentSyncService,
-      useFactory: (enrollmentRepo: EnrollmentRepository) =>
-        new PaymentEnrollmentSyncService(enrollmentRepo),
-      inject: [ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY],
+      useFactory: (
+        enrollmentRepo: EnrollmentRepository,
+        sideEffects: EnrollmentSideEffectsService,
+        studentRepo: StudentRepository,
+      ) =>
+        new PaymentEnrollmentSyncService(
+          enrollmentRepo,
+          sideEffects,
+          studentRepo,
+        ),
+      inject: [
+        ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+        EnrollmentSideEffectsService,
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+      ],
     },
 
     {

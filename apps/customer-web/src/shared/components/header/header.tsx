@@ -90,6 +90,8 @@ export function Header() {
     !navigation.isLoading && navigation.showMyApplications;
   const showMyCourses =
     !navigation.isLoading && navigation.showMyCourses;
+  const showMyEnrollment =
+    !navigation.isLoading && navigation.showMyEnrollment;
 
   const navigateFromDropdown = (href: string) => {
     router.push(href);
@@ -213,10 +215,19 @@ export function Header() {
                       ) : null}
                       {showMyCourses ? (
                         <AccountDropdownItem
-                          label="My Courses"
+                          label="My Course"
                           icon={LayoutDashboard}
                           onClick={() =>
                             navigateFromDropdown("/student/my-learning")
+                          }
+                        />
+                      ) : null}
+                      {showMyEnrollment ? (
+                        <AccountDropdownItem
+                          label="My Enrollment"
+                          icon={LayoutDashboard}
+                          onClick={() =>
+                            navigateFromDropdown("/student/enrollments")
                           }
                         />
                       ) : null}

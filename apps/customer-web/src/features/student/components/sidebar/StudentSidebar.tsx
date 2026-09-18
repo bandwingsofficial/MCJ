@@ -215,7 +215,14 @@ export function StudentSidebar() {
             <StudentSidebarItem
               href="/student/my-learning"
               icon={BriefcaseBusiness}
-              label="My Courses"
+              label="My Course"
+            />
+          ) : null}
+          {navigation.showMyEnrollment ? (
+            <StudentSidebarItem
+              href="/student/enrollments"
+              icon={BriefcaseBusiness}
+              label="My Enrollment"
             />
           ) : null}
         </nav>

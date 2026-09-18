@@ -4,6 +4,7 @@ import { Phone } from '../value-objects/phone.vo';
 import { Qualification } from '../value-objects/qualification.vo';
 import { StudentCode } from '../value-objects/student-code.vo';
 import { StudentName } from '../value-objects/student-name.vo';
+import { ApplicationType } from '../enums/application-type.enum';
 import { StudentGender } from '../enums/student-gender.enum';
 import { StudentJobStatus } from '../enums/student-job-status.enum';
 import { StudentStatus } from '../enums/student-status.enum';
@@ -34,6 +35,7 @@ export class Student {
     public branchId: string | null,
     public notes: string | null,
     public isActive: boolean,
+    public applicationType: ApplicationType,
     public status: StudentStatus,
     public jobStatus: StudentJobStatus | null,
     public readonly createdBy: string | null,
@@ -73,6 +75,7 @@ export class Student {
       params.branchId ?? null,
       sanitizeText(params.notes, 4000),
       params.isActive ?? true,
+      params.applicationType ?? ApplicationType.OFFLINE,
       params.status ?? StudentStatus.LEAD,
       params.jobStatus ?? null,
       params.createdBy ?? null,
@@ -113,6 +116,7 @@ export class Student {
       params.branchId,
       sanitizeText(params.notes, 4000),
       params.isActive,
+      params.applicationType,
       params.status,
       params.jobStatus,
       params.createdBy,
@@ -147,6 +151,8 @@ export class Student {
     if (params.admissionDate !== undefined) this.admissionDate = params.admissionDate;
     if (params.branchId !== undefined) this.branchId = params.branchId;
     if (params.notes !== undefined) this.notes = sanitizeText(params.notes, 4000);
+    if (params.applicationType !== undefined)
+      this.applicationType = params.applicationType;
     if (params.status !== undefined) this.status = params.status;
     if (params.jobStatus !== undefined) this.jobStatus = params.jobStatus;
     if (params.userId !== undefined) this.userId = params.userId;
@@ -228,6 +234,7 @@ export interface StudentCreateParams {
   branchId?: string | null;
   notes?: string | null;
   isActive?: boolean;
+  applicationType?: ApplicationType;
   status?: StudentStatus;
   jobStatus?: StudentJobStatus | null;
   createdBy?: string | null;

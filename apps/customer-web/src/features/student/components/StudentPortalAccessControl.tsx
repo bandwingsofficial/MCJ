@@ -17,6 +17,7 @@ function getRedirectPath(input: {
   pathname: string;
   showMyApplications: boolean;
   showMyCourses: boolean;
+  showMyEnrollment: boolean;
 }): string | null {
   const { pathname } = input;
 
@@ -30,6 +31,10 @@ function getRedirectPath(input: {
 
   if (matchesRoute(pathname, "/student/my-learning")) {
     return input.showMyCourses ? null : "/student/profile";
+  }
+
+  if (matchesRoute(pathname, "/student/enrollments")) {
+    return input.showMyEnrollment ? null : "/student/profile";
   }
 
   if (pathname.startsWith("/student")) {
@@ -57,6 +62,7 @@ export function StudentPortalAccessControl({
         pathname,
         showMyApplications: navigation.showMyApplications,
         showMyCourses: navigation.showMyCourses,
+        showMyEnrollment: navigation.showMyEnrollment,
       });
 
   useEffect(() => {
