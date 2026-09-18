@@ -51,14 +51,14 @@ export function ResumeUploadField({
         tabIndex={disabled ? -1 : 0}
         aria-label="Upload resume"
         className={cn(
-          "cursor-pointer rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563D9]/30",
+          "cursor-pointer rounded-2xl border-2 border-dashed px-4 py-8 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/30",
           error
             ? "border-red-300 bg-red-50/30"
             : isDragging
-              ? "border-[#2563D9] bg-blue-50/40"
+              ? "border-[#2563EB] bg-[#EFF6FF]"
               : file
-                ? "border-emerald-400 bg-emerald-50/20"
-                : "border-slate-300 bg-slate-50/50",
+                ? "border-emerald-400 bg-emerald-50/30"
+                : "border-[#BFDBFE] bg-white/80",
           disabled && "pointer-events-none opacity-60",
         )}
         onClick={() => inputRef.current?.click()}
@@ -85,9 +85,11 @@ export function ResumeUploadField({
       >
         {file ? (
           <div className="flex flex-col items-center gap-2">
-            <FileText className="h-7 w-7 text-emerald-600" />
-            <p className="text-sm font-medium text-[#102A56]">{file.name}</p>
-            <p className="text-xs text-[#647A9B]">{formatFileSize(file.size)}</p>
+            <FileText className="h-8 w-8 text-emerald-600" />
+            <p className="text-sm font-semibold text-[#0B1F3A]">{file.name}</p>
+            <p className="text-xs text-slate-500">
+              PDF · {formatFileSize(file.size)}
+            </p>
             <Button
               type="button"
               variant="outline"
@@ -103,13 +105,15 @@ export function ResumeUploadField({
           </div>
         ) : (
           <>
-            <Upload className="mx-auto h-7 w-7 text-slate-400" />
-            <p className="mt-2 text-sm font-medium text-[#102A56]">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-[#EFF6FF]">
+              <Upload className="h-6 w-6 text-[#2563EB]" />
+            </div>
+            <p className="mt-3 text-sm font-semibold text-[#0B1F3A]">
               Drag & drop your resume here
             </p>
-            <p className="mt-1 text-sm text-[#647A9B]">or click to browse</p>
-            <p className="mt-2 text-xs text-slate-400">
-              {pdfOnly ? "PDF only" : "PDF, DOC, DOCX"}
+            <p className="mt-1 text-sm text-slate-500">or click to browse</p>
+            <p className="mt-2 text-xs font-medium text-[#2563EB]">
+              {pdfOnly ? "PDF only · Required" : "PDF, DOC, DOCX"}
             </p>
           </>
         )}

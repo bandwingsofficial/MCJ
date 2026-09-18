@@ -26,8 +26,10 @@ function ContentSection({
   children: ReactNode;
 }) {
   return (
-    <section className="border-b border-slate-200 py-6 last:border-b-0">
-      <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+    <section className="border-b border-slate-100 py-6 last:border-b-0 sm:py-7">
+      <h2 className="text-lg font-bold tracking-tight text-[#0B1F3A]">
+        {title}
+      </h2>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -54,7 +56,7 @@ function BenefitList({ benefits }: { benefits: string }) {
           key={item}
           className="flex gap-2.5 text-sm leading-6 text-slate-600"
         >
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#2563EB]" />
           <span>{item.replace(/^[-•*]\s*/, "")}</span>
         </li>
       ))}
@@ -78,9 +80,12 @@ export function JobDetails({ job }: JobDetailsProps) {
 
       {job.responsibilities?.length ? (
         <ContentSection title="Responsibilities">
-          <ul className="list-disc space-y-2 pl-5 text-sm leading-7 text-slate-600 sm:text-[15px]">
+          <ul className="space-y-2.5 text-sm leading-7 text-slate-600 sm:text-[15px]">
             {job.responsibilities.map((item) => (
-              <li key={item}>{item}</li>
+              <li key={item} className="flex gap-2.5">
+                <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[#2563EB]" />
+                <span>{item}</span>
+              </li>
             ))}
           </ul>
         </ContentSection>
@@ -95,9 +100,12 @@ export function JobDetails({ job }: JobDetailsProps) {
       {job.qualifications?.length || job.eligibilityTitle ? (
         <ContentSection title="Qualifications">
           {job.qualifications?.length ? (
-            <ul className="list-disc space-y-2 pl-5 text-sm leading-7 text-slate-600 sm:text-[15px]">
+            <ul className="space-y-2.5 text-sm leading-7 text-slate-600 sm:text-[15px]">
               {job.qualifications.map((item) => (
-                <li key={item}>{item}</li>
+                <li key={item} className="flex gap-2.5">
+                  <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[#2563EB]" />
+                  <span>{item}</span>
+                </li>
               ))}
             </ul>
           ) : null}
@@ -126,14 +134,14 @@ export function JobDetails({ job }: JobDetailsProps) {
                 {index < job.interviewProcess.length - 1 ? (
                   <span
                     aria-hidden
-                    className="absolute left-[13px] top-7 h-[calc(100%-12px)] w-px bg-slate-200"
+                    className="absolute left-[13px] top-7 h-[calc(100%-12px)] w-px bg-[#BFDBFE]"
                   />
                 ) : null}
-                <span className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#2563D9] bg-white text-xs font-bold text-[#2563D9]">
+                <span className="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#2563EB] bg-[#EFF6FF] text-xs font-bold text-[#2563EB]">
                   {index + 1}
                 </span>
                 <div className="min-w-0 pt-0.5">
-                  <h3 className="text-sm font-semibold text-slate-900 sm:text-base">
+                  <h3 className="text-sm font-semibold text-[#0B1F3A] sm:text-base">
                     {round.title}
                   </h3>
                   {round.description ? (
@@ -157,9 +165,9 @@ export function JobDetails({ job }: JobDetailsProps) {
       <ContentSection title="Company Information">
         <div className="space-y-3 text-sm text-slate-600">
           <div className="flex items-start gap-2">
-            <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+            <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-[#2563EB]" />
             <div>
-              <p className="font-semibold text-slate-900">{job.companyName}</p>
+              <p className="font-semibold text-[#0B1F3A]">{job.companyName}</p>
               {job.companyDescription ? (
                 <p className="mt-2 leading-6">{job.companyDescription}</p>
               ) : null}
@@ -171,7 +179,7 @@ export function JobDetails({ job }: JobDetailsProps) {
               href={job.companyWebsite}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2 text-[#2563D9] hover:underline"
+              className="flex items-center gap-2 text-[#2563EB] hover:underline"
             >
               <Globe className="h-4 w-4 shrink-0" />
               {job.companyWebsite.replace(/^https?:\/\//, "")}
@@ -181,7 +189,7 @@ export function JobDetails({ job }: JobDetailsProps) {
           {job.companyEmail ? (
             <a
               href={`mailto:${job.companyEmail}`}
-              className="flex items-center gap-2 hover:text-slate-900"
+              className="flex items-center gap-2 hover:text-[#0B1F3A]"
             >
               <Mail className="h-4 w-4 shrink-0 text-slate-400" />
               {job.companyEmail}
@@ -191,7 +199,7 @@ export function JobDetails({ job }: JobDetailsProps) {
           {job.companyPhone ? (
             <a
               href={`tel:${job.companyPhone}`}
-              className="flex items-center gap-2 hover:text-slate-900"
+              className="flex items-center gap-2 hover:text-[#0B1F3A]"
             >
               <Phone className="h-4 w-4 shrink-0 text-slate-400" />
               {job.companyPhone}
@@ -199,7 +207,7 @@ export function JobDetails({ job }: JobDetailsProps) {
           ) : null}
 
           <div className="flex items-start gap-2">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#2563EB]" />
             <span>{locationLabel(job)}</span>
           </div>
         </div>
