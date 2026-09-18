@@ -28,11 +28,14 @@ export async function getCourses(
 ): Promise<Course[]> {
   try {
     const response = await getCoursesApi(params);
-    const items = response.data?.items ?? response.data ?? [];
+    const payload = response.data;
+    const items = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.items)
+        ? payload.items
+        : [];
 
-    return mapCourseDtosToCourses(
-      Array.isArray(items) ? items : [],
-    );
+    return mapCourseDtosToCourses(items);
   } catch (error) {
     if (error instanceof AxiosError) {
       throw error;

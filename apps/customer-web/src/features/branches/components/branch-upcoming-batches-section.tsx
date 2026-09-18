@@ -12,32 +12,27 @@ import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { cn } from "@/src/shared/lib/cn";
 
+const ALL_COURSES = "all";
+
 interface Props {
   branchName: string;
+  branchId: string;
   batches: Batch[];
   courseSlugById: Map<string, string>;
   isLoading: boolean;
 }
 
 function buildBranchCourseTabs(batches: Batch[]) {
-  const tabs = new Map<
-    string,
-    { courseId: string; courseTitle: string; courseSlug: string | null }
-  >();
+  const tabs = new Map<string, { courseId: string; courseTitle: string }>();
 
   batches.filter(isUpcomingBatch).forEach((batch) => {
-    if (!batch.courseId) {
-      return;
-    }
-
-    if (tabs.has(batch.courseId)) {
+    if (!batch.courseId || tabs.has(batch.courseId)) {
       return;
     }
 
     tabs.set(batch.courseId, {
       courseId: batch.courseId,
-      courseTitle: batch.course?.title ?? "Course",
-      courseSlug: null,
+      courseTitle: batch.course?.title?.trim() || "Course",
     });
   });
 
@@ -48,47 +43,60 @@ function buildBranchCourseTabs(batches: Batch[]) {
 
 export function BranchUpcomingBatchesSection({
   branchName,
+  branchId,
   batches,
   courseSlugById,
   isLoading,
 }: Props) {
-  const courseTabs = useMemo(() => {
-    const tabs = buildBranchCourseTabs(batches);
+  const courseTabs = useMemo(
+    () => buildBranchCourseTabs(batches),
+    [batches],
+  );
 
-    return tabs.map((tab) => ({
-      ...tab,
-      courseSlug: courseSlugById.get(tab.courseId) ?? null,
-    }));
-  }, [batches, courseSlugById]);
-
-  const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState(ALL_COURSES);
 
   useEffect(() => {
     if (courseTabs.length === 0) {
-      setActiveCourseId(null);
+      setSelectedCourseId(ALL_COURSES);
       return;
     }
 
-    setActiveCourseId((current) =>
-      current && courseTabs.some((tab) => tab.courseId === current)
+    setSelectedCourseId((current) => {
+      if (current === ALL_COURSES) {
+        return ALL_COURSES;
+      }
+
+      return courseTabs.some((tab) => tab.courseId === current)
         ? current
-        : courseTabs[0]?.courseId ?? null,
-    );
+        : ALL_COURSES;
+    });
   }, [courseTabs]);
 
-  const activeTab = courseTabs.find((tab) => tab.courseId === activeCourseId);
+  const filteredBatches = useMemo(() => {
+    const upcoming = batches.filter(isUpcomingBatch);
 
-  const tableRows = useMemo(() => {
-    if (!activeCourseId) {
-      return [];
+    if (selectedCourseId === ALL_COURSES) {
+      return upcoming;
     }
 
-    const courseBatches = batches.filter(
-      (batch) => batch.courseId === activeCourseId && isUpcomingBatch(batch),
-    );
+    return upcoming.filter((batch) => batch.courseId === selectedCourseId);
+  }, [batches, selectedCourseId]);
 
-    return buildCourseUpcomingBatchTableRows(courseBatches);
-  }, [activeCourseId, batches]);
+  const tableRows = useMemo(() => {
+    return buildCourseUpcomingBatchTableRows(filteredBatches).map((row) => ({
+      ...row,
+      branchId,
+      courseSlug: courseSlugById.get(row.courseId) ?? null,
+    }));
+  }, [branchId, courseSlugById, filteredBatches]);
+
+  const activeCourseSlug =
+    selectedCourseId === ALL_COURSES
+      ? null
+      : courseSlugById.get(selectedCourseId) ?? null;
+
+  const activeCourseId =
+    selectedCourseId === ALL_COURSES ? "" : selectedCourseId;
 
   return (
     <section className="bg-[#F8FBFF] py-12">
@@ -106,40 +114,71 @@ export function BranchUpcomingBatchesSection({
           <Skeleton className="h-56 w-full rounded-2xl" />
         ) : courseTabs.length === 0 ? (
           <EmptyState
-            title="No upcoming batches available"
-            description="New upcoming batches will appear here when they are published for this branch."
+            title="No batches or courses available"
+            description="No batches are assigned to this branch yet. Assigned courses and batches will appear here when published."
           />
         ) : (
           <>
-            {courseTabs.length > 1 ? (
-              <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-                {courseTabs.map((tab) => (
-                  <button
-                    key={tab.courseId}
-                    type="button"
-                    onClick={() => setActiveCourseId(tab.courseId)}
-                    className={cn(
-                      "shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition",
-                      activeCourseId === tab.courseId
-                        ? "border-[#2563EB] bg-[#2563EB] text-white"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-[#2563EB]/30 hover:text-[#2563EB]",
-                    )}
-                  >
-                    {tab.courseTitle}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+            <div className="mb-5 border-b border-slate-200/80">
+              <div
+                role="tablist"
+                aria-label="Filter batches by course"
+                className="flex min-w-0 items-center gap-1 overflow-x-auto pb-px [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={selectedCourseId === ALL_COURSES}
+                  onClick={() => setSelectedCourseId(ALL_COURSES)}
+                  className={cn(
+                    "relative inline-flex shrink-0 items-center px-3.5 py-3 text-sm font-medium transition-colors",
+                    selectedCourseId === ALL_COURSES
+                      ? "bg-[#EAF1FF] text-[#2563D9]"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-[#0B1F3A]",
+                  )}
+                >
+                  All Courses
+                  {selectedCourseId === ALL_COURSES ? (
+                    <span className="absolute inset-x-2 bottom-0 h-[3px] rounded-full bg-[#2563D9]" />
+                  ) : null}
+                </button>
 
-            {activeTab && tableRows.length > 0 ? (
+                {courseTabs.map((tab) => {
+                  const active = selectedCourseId === tab.courseId;
+
+                  return (
+                    <button
+                      key={tab.courseId}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setSelectedCourseId(tab.courseId)}
+                      className={cn(
+                        "relative inline-flex shrink-0 items-center px-3.5 py-3 text-sm font-medium transition-colors",
+                        active
+                          ? "bg-[#EAF1FF] text-[#2563D9]"
+                          : "text-slate-500 hover:bg-slate-50 hover:text-[#0B1F3A]",
+                      )}
+                    >
+                      {tab.courseTitle}
+                      {active ? (
+                        <span className="absolute inset-x-2 bottom-0 h-[3px] rounded-full bg-[#2563D9]" />
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {tableRows.length > 0 ? (
               <BatchTimingsTable
                 rows={tableRows}
-                courseSlug={activeTab.courseSlug}
-                courseId={activeTab.courseId}
+                courseSlug={activeCourseSlug}
+                courseId={activeCourseId}
               />
             ) : (
               <EmptyState
-                title="No upcoming batches available"
+                title="No batches available"
                 description="This course does not have any upcoming batches at this branch right now."
               />
             )}

@@ -12,16 +12,10 @@ import { CourseEmptyState } from "@/src/features/courses/components/course-empty
 import { getCourseDetailPath } from "@/src/features/courses/utils/course-route.utils";
 
 interface CourseSectionProps {
-  categoryId?: string;
-  branchId?: string;
   search?: string;
 }
 
-export function CourseSection({
-  categoryId,
-  branchId,
-  search,
-}: CourseSectionProps) {
+export function CourseSection({ search }: CourseSectionProps) {
   const router = useRouter();
 
   const {
@@ -31,8 +25,6 @@ export function CourseSection({
     refetch,
   } = useCourses({
     search: search || undefined,
-    categoryId,
-    branchId,
   });
 
   if (isLoading) {
@@ -50,7 +42,7 @@ export function CourseSection({
   }
 
   if (!courses || courses.length === 0) {
-    return <CourseEmptyState />;
+    return <CourseEmptyState hasSearch={Boolean(search?.trim())} />;
   }
 
   return (

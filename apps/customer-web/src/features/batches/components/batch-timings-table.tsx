@@ -46,18 +46,21 @@ function JoinNowButton({
   courseSlug: string | null;
   courseId: string;
 }) {
-  if (!row.joinEnabled || !courseSlug) {
+  const resolvedCourseId = row.courseId || courseId;
+  const resolvedCourseSlug = row.courseSlug ?? courseSlug;
+
+  if (!row.joinEnabled || !resolvedCourseSlug || !resolvedCourseId) {
     return <span className="text-xs font-medium text-slate-400">Unavailable</span>;
   }
 
   const href =
     row.timingId
       ? getCourseEnrollPath(
-          { slug: courseSlug },
+          { slug: resolvedCourseSlug },
           {
             batchId: row.batchId,
             branchId: row.branchId ?? undefined,
-            courseId,
+            courseId: resolvedCourseId,
             batchTimingId: row.timingId,
             mode: row.mode,
           },

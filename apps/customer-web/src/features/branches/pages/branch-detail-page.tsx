@@ -221,6 +221,7 @@ function BranchEnquiryForm({
   const [phone, setPhone] = useState("");
   const [courseId, setCourseId] = useState("");
   const [batchId, setBatchId] = useState("");
+  const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -244,6 +245,8 @@ function BranchEnquiryForm({
     });
     if (courseId) params.set("courseId", courseId);
     if (batchId) params.set("batchId", batchId);
+    const trimmedNotes = notes.trim();
+    if (trimmedNotes) params.set("notes", trimmedNotes);
     router.push(`/contact?${params.toString()}`);
     setSubmitted(true);
     setSubmitting(false);
@@ -310,6 +313,23 @@ function BranchEnquiryForm({
           </option>
         ))}
       </select>
+      <div>
+        <label
+          htmlFor="branch-enquiry-notes"
+          className="mb-1.5 block text-sm font-medium text-[#0B1F3A]"
+        >
+          Additional Notes{" "}
+          <span className="font-normal text-slate-500">(Optional)</span>
+        </label>
+        <textarea
+          id="branch-enquiry-notes"
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          rows={3}
+          placeholder="Add any information you'd like us to know..."
+          className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#2563EB]"
+        />
+      </div>
       <Button
         type="submit"
         loading={submitting}
@@ -410,6 +430,7 @@ export function BranchDetailPage({ branchSlugOrId }: Props) {
 
       <BranchUpcomingBatchesSection
         branchName={branch.branchName}
+        branchId={branch.id}
         batches={batchesQuery.data ?? []}
         courseSlugById={courseSlugById}
         isLoading={batchesQuery.isLoading}

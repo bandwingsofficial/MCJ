@@ -40,7 +40,7 @@ function resolvePreviewModules(
 export function mapCourseDtoToCourse(dto: CourseDto): Course {
   return {
     id: dto.id,
-    code: dto.code ?? "—",
+    code: dto.code?.trim() || "",
     title: dto.title,
     slug: dto.slug,
     tagline: dto.tagline,
@@ -57,8 +57,8 @@ export function mapCourseDtoToCourse(dto: CourseDto): Course {
     averageRating: dto.averageRating ?? 0,
     totalReviews: dto.totalReviews ?? 0,
     categoryId: dto.category?.id ?? dto.categoryId ?? "",
-    categoryName: dto.category?.name ?? "General",
-    branches: dto.branches ?? [],
+    categoryName: dto.category?.name?.trim() || "",
+    branches: Array.isArray(dto.branches) ? dto.branches : [],
     isFeatured: dto.isFeatured ?? false,
     previewModules: resolvePreviewModules(dto),
     moduleCount: dto.moduleCount ?? dto.previewModules?.length ?? 0,
@@ -76,5 +76,16 @@ export function mapCourseDtoToCourse(dto: CourseDto): Course {
 }
 
 export function mapCourseDtosToCourses(dtos: CourseDto[]): Course[] {
-  return dtos.map(mapCourseDtoToCourse);
+  const seen = new Set<string>();
+
+  return dtos
+    .filter((dto) => {
+      if (!dto?.id || seen.has(dto.id)) {
+        return false;
+      }
+
+      seen.add(dto.id);
+      return true;
+    })
+    .map(mapCourseDtoToCourse);
 }

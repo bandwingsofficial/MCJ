@@ -2,11 +2,24 @@
 
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
-export function CourseEmptyState() {
+interface CourseEmptyStateProps {
+  hasSearch?: boolean;
+}
+
+export function CourseEmptyState({ hasSearch = false }: CourseEmptyStateProps) {
+  if (hasSearch) {
+    return (
+      <EmptyState
+        title="No Courses Found"
+        description="Try a different search to find matching courses."
+      />
+    );
+  }
+
   return (
     <EmptyState
       title="No Courses Found"
-      description="Try a different search or category."
+      description="There are no courses available right now."
     />
   );
 }

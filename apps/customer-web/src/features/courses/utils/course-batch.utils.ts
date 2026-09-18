@@ -43,6 +43,9 @@ export interface CourseUpcomingTableRow {
   id: string;
   batchId: string;
   batchName: string;
+  courseId: string;
+  courseTitle: string;
+  courseSlug?: string | null;
   batchRowSpan: number;
   isFirstRowInBatch: boolean;
   isFirstRowInModeGroup: boolean;
@@ -386,6 +389,10 @@ function flattenBatchToTableRows(batch: Batch): CourseUpcomingTableRow[] {
         id: timing.id,
         batchId: batch.id,
         batchName: batch.name,
+        courseId: batch.courseId,
+        courseTitle:
+          batch.course?.title?.trim() ||
+          "Course",
         isFirstRowInModeGroup: timingIndex === 0,
         mode: group.mode,
         modeBadgeLabel: COURSE_MODE_BADGE_LABELS[group.mode],
