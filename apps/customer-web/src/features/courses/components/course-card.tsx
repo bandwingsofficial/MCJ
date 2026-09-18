@@ -3,9 +3,9 @@
 import { useRouter } from "next/navigation";
 import {
   BookOpen,
-  Clock3,
   ImageOff,
   ArrowRight,
+  Star,
 } from "lucide-react";
 
 import { Card } from "@/src/shared/components/ui/card";
@@ -17,7 +17,7 @@ import {
   getCourseDetailPath,
   getCourseBatchesSectionPath,
 } from "@/src/features/courses/utils/course-route.utils";
-import { formatDuration } from "@/src/features/courses/utils/course-display.utils";
+import { formatCourseRatingValue } from "@/src/features/courses/utils/course-rating.utils";
 
 interface CourseCardProps {
   course: Course;
@@ -48,11 +48,6 @@ export function CourseCard({
   const handleEnroll = () => {
     router.push(getCourseBatchesSectionPath(course));
   };
-
-  const duration = formatDuration(
-    course.duration,
-    course.durationType,
-  );
 
   return (
     <Card
@@ -192,7 +187,7 @@ export function CourseCard({
           </p>
         )}
 
-        {/* Category + Duration */}
+        {/* Category + Rating */}
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-500">
           {course.categoryName && (
             <span className="inline-flex items-center gap-1.5">
@@ -202,8 +197,8 @@ export function CourseCard({
           )}
 
           <span className="inline-flex items-center gap-1.5">
-            <Clock3 className="h-3.5 w-3.5 text-indigo-500" />
-            {duration}
+            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+            {formatCourseRatingValue(course.averageRating)}
           </span>
         </div>
 

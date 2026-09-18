@@ -1,23 +1,17 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 
 import { useCourses } from "@/src/features/courses/hooks/use-courses";
-
-import { CourseList } from "@/src/features/courses/components/course-list";
-import { CourseSkeleton } from "@/src/features/courses/components/course-skeleton";
+import { HomePopularCourseCard } from "@/src/features/courses/components/home-popular-course-card";
+import { HomePopularCourseSkeleton } from "@/src/features/courses/components/home-popular-course-skeleton";
 import { CourseEmptyState } from "@/src/features/courses/components/course-empty-state";
-import { getCourseDetailPath } from "@/src/features/courses/utils/course-route.utils";
 
 interface CourseSectionProps {
   search?: string;
 }
 
 export function CourseSection({ search }: CourseSectionProps) {
-  const router = useRouter();
-
   const {
     data: courses,
     isLoading,
@@ -28,7 +22,7 @@ export function CourseSection({ search }: CourseSectionProps) {
   });
 
   if (isLoading) {
-    return <CourseSkeleton />;
+    return <HomePopularCourseSkeleton count={8} />;
   }
 
   if (isError) {
@@ -46,9 +40,10 @@ export function CourseSection({ search }: CourseSectionProps) {
   }
 
   return (
-    <CourseList
-      courses={courses}
-      onCourseClick={(course) => router.push(getCourseDetailPath(course))}
-    />
+    <div className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      {courses.map((course) => (
+        <HomePopularCourseCard key={course.id} course={course} />
+      ))}
+    </div>
   );
 }
