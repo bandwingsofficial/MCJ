@@ -14,7 +14,15 @@ export function getCourseBatchesSectionPath(course: { slug: string }): string {
 
 export function getCourseEnrollPath(
   course: { slug: string },
-  options?: { batchId?: string; branchId?: string; courseId?: string },
+  options?: {
+    batchId?: string;
+    branchId?: string;
+    courseId?: string;
+    batchTimingId?: string;
+    /** @deprecated use batchTimingId */
+    timingId?: string;
+    mode?: string;
+  },
 ): string {
   const base = `/courses/${encodeURIComponent(course.slug)}/enroll`;
   const params = new URLSearchParams();
@@ -29,6 +37,15 @@ export function getCourseEnrollPath(
 
   if (options?.batchId) {
     params.set("batchId", options.batchId);
+  }
+
+  const batchTimingId = options?.batchTimingId ?? options?.timingId;
+  if (batchTimingId) {
+    params.set("batchTimingId", batchTimingId);
+  }
+
+  if (options?.mode) {
+    params.set("mode", options.mode);
   }
 
   const query = params.toString();

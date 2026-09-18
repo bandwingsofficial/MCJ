@@ -2,23 +2,17 @@
 
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
-import type { Batch } from "@/src/features/batches/types/batch.types";
+import type { Batch, BatchMode } from "@/src/features/batches/types/batch.types";
 import {
   formatCurrency,
-  getBatchPricing,
   hasBatchDiscount,
 } from "@/src/features/batches/utils/batch-pricing.utils";
-import type { Course } from "@/src/features/courses/types/course.types";
-import {
-  formatBatchBranchName,
-  formatBatchSummaryLabel,
-} from "@/src/features/enrollments/utils/enrollment-batch.utils";
+import { resolveModePricing } from "@/src/features/courses/utils/course-batch.utils";
 
 interface EnrollmentOrderSummaryProps {
-  course: Course;
   selectedBatch: Batch | null;
+  learningMode?: string | null;
   isBatchLoading?: boolean;
-  hasBatchId?: boolean;
 }
 
 function SummaryRow({
@@ -49,125 +43,69 @@ function SummaryValueSkeleton() {
 }
 
 export function EnrollmentOrderSummary({
-  course,
   selectedBatch,
+  learningMode,
   isBatchLoading = false,
-  hasBatchId = false,
 }: EnrollmentOrderSummaryProps) {
-  const pricing = getBatchPricing(selectedBatch);
-  const showDiscount = hasBatchDiscount(selectedBatch);
-  const discountPercent =
-    pricing.discountPercent > 0
-      ? Math.round(pricing.discountPercent)
-      : null;
-
-  const batchLabel = isBatchLoading
-    ? null
-    : selectedBatch
-      ? formatBatchSummaryLabel(selectedBatch)
-      : hasBatchId
-        ? "Unavailable"
-        : "—";
-
-  const branchLabel = isBatchLoading
-    ? null
-    : hasBatchId || selectedBatch
-      ? formatBatchBranchName(selectedBatch)
-      : "—";
+  const mode = (learningMode?.toUpperCase() ||
+    selectedBatch?.mode ||
+    "OFFLINE") as BatchMode;
+  const pricing = selectedBatch
+    ? resolveModePricing(selectedBatch, mode)
+    : null;
+  const showDiscount = pricing ? hasBatchDiscount(pricing) : false;
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <h3 className="text-base font-semibold text-slate-900">Fee Summary</h3>
 
       <div className="mt-5 space-y-3">
-        <SummaryRow label="Course" value={course.title} />
-
-        <div className="flex items-start justify-between gap-4 text-sm">
-          <span className="text-slate-500">Batch</span>
-          {isBatchLoading ? (
+        {isBatchLoading ? (
+          <>
             <SummaryValueSkeleton />
-          ) : (
-            <span className="text-right font-medium text-slate-900">
-              {batchLabel}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-start justify-between gap-4 text-sm">
-          <span className="text-slate-500">Branch</span>
-          {isBatchLoading ? (
             <SummaryValueSkeleton />
-          ) : (
-            <span className="text-right font-medium text-slate-900">
-              {branchLabel}
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="my-5 border-t border-slate-200" />
-
-      {isBatchLoading ? (
-        <div className="space-y-3">
-          <SummaryValueSkeleton />
-          <SummaryValueSkeleton />
-        </div>
-      ) : !selectedBatch ? (
-        <p className="text-sm text-slate-500">
-          Select a batch to view fees.
-        </p>
-      ) : pricing.isFree ? (
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-slate-700">Total</span>
-          <span className="text-2xl font-bold text-emerald-600">FREE</span>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {showDiscount ? (
-            <>
-              <SummaryRow
-                label="Original Price"
-                value={formatCurrency(
-                  pricing.originalPrice,
-                  pricing.currency,
-                )}
-              />
-              <SummaryRow
-                label="Discount Amount"
-                value={`-${formatCurrency(
-                  pricing.discountAmount,
-                  pricing.currency,
-                )}`}
-              />
-              {discountPercent ? (
-                <SummaryRow
-                  label="Discount %"
-                  value={`${discountPercent}% OFF`}
-                />
-              ) : null}
-            </>
-          ) : (
+          </>
+        ) : !selectedBatch || !pricing ? (
+          <p className="text-sm text-slate-500">
+            Select a batch to view fees.
+          </p>
+        ) : pricing.isFree ? (
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-slate-700">Amount</span>
+            <span className="text-2xl font-bold text-emerald-600">FREE</span>
+          </div>
+        ) : showDiscount ? (
+          <>
             <SummaryRow
               label="Original Price"
-              value={formatCurrency(
-                pricing.originalPrice,
-                pricing.currency,
-              )}
+              value={formatCurrency(pricing.originalPrice, pricing.currency)}
             />
-          )}
-
-          <div className="border-t border-slate-200 pt-3">
             <SummaryRow
-              label="Final Amount"
-              value={formatCurrency(
-                pricing.discountedPrice,
+              label="Discount"
+              value={`-${formatCurrency(
+                pricing.discountAmount,
                 pricing.currency,
-              )}
-              emphasize
+              )}`}
             />
-          </div>
-        </div>
-      )}
+            <div className="border-t border-slate-200 pt-3">
+              <SummaryRow
+                label="Final Amount"
+                value={formatCurrency(
+                  pricing.discountedPrice,
+                  pricing.currency,
+                )}
+                emphasize
+              />
+            </div>
+          </>
+        ) : (
+          <SummaryRow
+            label="Amount"
+            value={formatCurrency(pricing.discountedPrice, pricing.currency)}
+            emphasize
+          />
+        )}
+      </div>
     </section>
   );
 }

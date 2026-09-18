@@ -1,15 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Lock } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { FormError } from "@/src/shared/components/ui/form-error";
-import { Label } from "@/src/shared/components/ui/label";
-import { Textarea } from "@/src/shared/components/ui/textarea";
 import { appToast } from "@/src/shared/components/ui/toast";
 
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
@@ -24,26 +22,37 @@ import {
 } from "@/src/features/courses/utils/course-route.utils";
 import {
   formatCurrency,
-  getBatchPricing,
 } from "@/src/features/batches/utils/batch-pricing.utils";
-import { EnrollmentBranchInfo } from "@/src/features/enrollments/components/enrollment-branch-info";
+import { useBranches } from "@/src/features/branches/hooks/useBranches";
+import { resolveModePricing } from "@/src/features/courses/utils/course-batch.utils";
+import type { BatchMode } from "@/src/features/batches/types/batch.types";
 import {
   EnrollmentPaymentCancelled,
-  EnrollmentSecurePaymentNote,
   EnrollmentSuccessView,
 } from "@/src/features/enrollments/components/enrollment-checkout-panels";
 import { EnrollmentCourseSummary } from "@/src/features/enrollments/components/enrollment-course-summary";
 import { EnrollmentMissingBatch } from "@/src/features/enrollments/components/enrollment-missing-batch";
 import { EnrollmentOrderSummary } from "@/src/features/enrollments/components/enrollment-order-summary";
 import { EnrollmentPageSkeleton } from "@/src/features/enrollments/components/enrollment-page-skeleton";
-import { EnrollmentSelectedBatchReview } from "@/src/features/enrollments/components/enrollment-selected-batch-review";
-import { EnrollmentStudentInfo } from "@/src/features/enrollments/components/enrollment-student-info";
+import { EnrollmentSelectedConfiguration } from "@/src/features/enrollments/components/enrollment-selected-configuration";
+import {
+  EnrollmentStudentInfo,
+  type EnrollmentStudentInfoHandle,
+} from "@/src/features/enrollments/components/enrollment-student-info";
 import { useEnrollmentCheckout } from "@/src/features/enrollments/hooks/use-enrollment-checkout";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import {
   BLOCKED_BATCH_SELECTION_MESSAGE,
   isBatchSelectable,
 } from "@/src/features/enrollments/utils/enrollment-batch.utils";
+import {
+  resolveEnrollmentBranchName,
+  resolveEnrollmentSchedule,
+} from "@/src/features/enrollments/utils/enrollment-configuration.utils";
+import {
+  readEnrollmentSelection,
+  selectionMatchesIds,
+} from "@/src/features/enrollments/utils/enrollment-selection-storage";
 import { useStudentProfile } from "@/src/features/student/hooks";
 
 type EnrollmentPageView =
@@ -88,14 +97,27 @@ export function EnrollPage({ slug }: EnrollPageProps) {
   const urlBatchId = searchParams.get("batchId") ?? undefined;
   const urlBranchId = searchParams.get("branchId") ?? undefined;
   const urlCourseId = searchParams.get("courseId") ?? undefined;
+  const urlBatchTimingId =
+    searchParams.get("batchTimingId") ??
+    searchParams.get("timingId") ??
+    undefined;
+  const urlMode = searchParams.get("mode") ?? undefined;
 
   const { authReady, hasSession } = useAuthSessionReady();
   const authUser = useAuthStore((state) => state.user);
+  const { branches: publicBranches } = useBranches();
 
-  const [remarks, setRemarks] = useState("");
   const [pageView, setPageView] = useState<EnrollmentPageView>("checkout");
   const [completedEnrollment, setCompletedEnrollment] =
     useState<Enrollment | null>(null);
+  const [selectionSnapshot, setSelectionSnapshot] = useState(() =>
+    readEnrollmentSelection(),
+  );
+  const studentInfoRef = useRef<EnrollmentStudentInfoHandle>(null);
+
+  useEffect(() => {
+    setSelectionSnapshot(readEnrollmentSelection());
+  }, [urlBatchId, urlBranchId, urlBatchTimingId, urlCourseId]);
 
   const {
     data: course,
@@ -114,6 +136,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     profile: studentProfile,
     isLoading: profileLoading,
     error: profileError,
+    refetch: refetchStudentProfile,
   } = useStudentProfile({
     enabled: hasSession,
   });
@@ -127,6 +150,8 @@ export function EnrollPage({ slug }: EnrollPageProps) {
 
   const selectedBatchId = urlBatchId;
   const selectedBranchId = urlBranchId;
+  const selectedBatchTimingId = urlBatchTimingId;
+  const selectedMode = urlMode;
 
   const selectedBatch = useMemo(() => {
     if (!selectedBatchId) {
@@ -139,6 +164,64 @@ export function EnrollPage({ slug }: EnrollPageProps) {
 
     return null;
   }, [fetchedBatch, selectedBatchId]);
+
+  const publicBranchNames = useMemo(() => {
+    const map = new Map<string, string>();
+    publicBranches.forEach((branch) => {
+      map.set(branch.id, branch.branchName);
+    });
+    return map;
+  }, [publicBranches]);
+
+  const selectedBranchName = useMemo(
+    () =>
+      resolveEnrollmentBranchName({
+        branchId: selectedBranchId,
+        course,
+        batch: selectedBatch,
+        publicBranchNames,
+      }),
+    [course, publicBranchNames, selectedBatch, selectedBranchId],
+  );
+
+  const matchedSelection = useMemo(() => {
+    const snapshot = selectionSnapshot;
+    if (
+      !selectionMatchesIds(snapshot, {
+        courseId: course?.id ?? urlCourseId,
+        branchId: selectedBranchId,
+        batchId: selectedBatchId,
+        batchTimingId: selectedBatchTimingId,
+      })
+    ) {
+      return null;
+    }
+    return snapshot;
+  }, [
+    course?.id,
+    selectionSnapshot,
+    selectedBatchId,
+    selectedBatchTimingId,
+    selectedBranchId,
+    urlCourseId,
+  ]);
+
+  const selectedSchedule = useMemo(
+    () =>
+      resolveEnrollmentSchedule({
+        batch: selectedBatch,
+        batchTimingId: selectedBatchTimingId,
+        mode: selectedMode ?? matchedSelection?.mode,
+        timingSnapshot: matchedSelection?.timing ?? null,
+      }),
+    [
+      matchedSelection?.mode,
+      matchedSelection?.timing,
+      selectedBatch,
+      selectedBatchTimingId,
+      selectedMode,
+    ],
+  );
 
   const isBatchResolving = Boolean(selectedBatchId) && fetchedBatchLoading;
 
@@ -154,7 +237,8 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     if (
       selectedBatch &&
       selectedBranchId &&
-      selectedBatch.branchId !== selectedBranchId
+      selectedBatch.branchId !== selectedBranchId &&
+      !(selectedBatch.assignedBranchIds ?? []).includes(selectedBranchId)
     ) {
       return "wrong_branch";
     }
@@ -184,7 +268,13 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     selectedBranchId,
   ]);
 
-  const pricing = selectedBatch ? getBatchPricing(selectedBatch) : null;
+  const pricing = selectedBatch
+    ? resolveModePricing(
+        selectedBatch,
+        (selectedSchedule.learningMode ||
+          selectedBatch.mode) as BatchMode,
+      )
+    : null;
 
   const enrollPath = useMemo(
     () =>
@@ -194,9 +284,19 @@ export function EnrollPage({ slug }: EnrollPageProps) {
           batchId: selectedBatchId,
           branchId: selectedBranchId,
           courseId: course?.id ?? urlCourseId,
+          batchTimingId: selectedBatchTimingId,
+          mode: selectedMode,
         },
       ),
-    [course?.id, selectedBatchId, selectedBranchId, slug, urlCourseId],
+    [
+      course?.id,
+      selectedBatchId,
+      selectedBatchTimingId,
+      selectedBranchId,
+      selectedMode,
+      slug,
+      urlCourseId,
+    ],
   );
 
   useEffect(() => {
@@ -233,8 +333,8 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       return;
     }
 
-    if (!studentProfile) {
-      appToast.error("Please complete your student profile before enrolling.");
+    if (!selectedBatchTimingId) {
+      appToast.error("Please select a batch timing from the course page.");
       return;
     }
 
@@ -248,15 +348,24 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       return;
     }
 
+    const synced = await studentInfoRef.current?.syncBeforePayment();
+    if (!synced) {
+      return;
+    }
+
+    await refetchStudentProfile();
+
     clearError();
 
-    const batchPricing = getBatchPricing(selectedBatch);
+    const batchPricing = resolveModePricing(
+      selectedBatch,
+      (selectedSchedule.learningMode || selectedBatch.mode) as BatchMode,
+    );
 
     const result = await completeCheckout({
       batchId: selectedBatchId,
       branchId: selectedBranchId,
       courseId: course.id,
-      remarks: remarks.trim() || undefined,
       isFree: batchPricing.isFree,
     });
 
@@ -392,9 +501,15 @@ export function EnrollPage({ slug }: EnrollPageProps) {
             />
           </div>
         ) : (
-          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
+          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.85fr)]">
             <div className="space-y-6">
-              <EnrollmentCourseSummary course={course} />
+              <EnrollmentCourseSummary
+                course={course}
+                learningMode={
+                  selectedSchedule.learningMode ?? selectedBatch?.mode ?? null
+                }
+                batchName={selectedBatch?.name ?? null}
+              />
 
               {isAlreadyEnrolled ? (
                 <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-6">
@@ -429,46 +544,40 @@ export function EnrollPage({ slug }: EnrollPageProps) {
                     </div>
                   ) : null}
 
-                  <EnrollmentSelectedBatchReview
-                    course={course}
-                    batch={selectedBatch}
-                    isLoading={isBatchResolving}
-                  />
-
-                  {selectedBatch ? (
-                    <EnrollmentBranchInfo batch={selectedBatch} />
-                  ) : null}
-
                   <EnrollmentStudentInfo
+                    ref={studentInfoRef}
                     authUser={authUser}
                     studentProfile={studentProfile}
                     isLoading={profileLoading}
                     profileError={profileError}
+                    onProfileSynced={() => {
+                      void refetchStudentProfile();
+                    }}
                   />
-
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                    <Label htmlFor="remarks">Remarks (Optional)</Label>
-                    <Textarea
-                      id="remarks"
-                      value={remarks}
-                      onChange={(event) => setRemarks(event.target.value)}
-                      placeholder="Add any information you would like us to know..."
-                      className="mt-2 min-h-28 rounded-xl border-slate-200"
-                    />
-                  </section>
                 </>
               )}
             </div>
 
             <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-              <EnrollmentOrderSummary
-                course={course}
-                selectedBatch={selectedBatch}
-                isBatchLoading={isBatchResolving}
-                hasBatchId={Boolean(selectedBatchId)}
-              />
+              {selectedBatchId && selectedBranchId ? (
+                <EnrollmentSelectedConfiguration
+                  course={course}
+                  batch={selectedBatch}
+                  branchId={selectedBranchId}
+                  batchTimingId={selectedBatchTimingId}
+                  mode={selectedMode ?? matchedSelection?.mode}
+                  branchNameOverride={selectedBranchName}
+                  timingSnapshot={matchedSelection?.timing ?? null}
+                  isLoading={isBatchResolving}
+                  compact
+                />
+              ) : null}
 
-              {!pricing?.isFree ? <EnrollmentSecurePaymentNote /> : null}
+              <EnrollmentOrderSummary
+                selectedBatch={selectedBatch}
+                learningMode={selectedSchedule.learningMode}
+                isBatchLoading={isBatchResolving}
+              />
 
               {!isAlreadyEnrolled && selectedBatchId && selectedBranchId ? (
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -479,10 +588,10 @@ export function EnrollPage({ slug }: EnrollPageProps) {
                     disabled={
                       !selectedBatchId ||
                       !selectedBranchId ||
+                      !selectedBatchTimingId ||
                       Boolean(batchValidationError) ||
                       isBatchResolving ||
                       isProcessing ||
-                      !studentProfile ||
                       !selectedBatch ||
                       !isBatchSelectable(selectedBatch)
                     }
@@ -491,6 +600,12 @@ export function EnrollPage({ slug }: EnrollPageProps) {
                   >
                     {checkoutButtonLabel}
                   </Button>
+                  {!pricing?.isFree ? (
+                    <p className="mt-3 flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600">
+                      <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+                      Secure Payment
+                    </p>
+                  ) : null}
                 </div>
               ) : null}
             </div>

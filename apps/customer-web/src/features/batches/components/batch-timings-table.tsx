@@ -50,14 +50,23 @@ function JoinNowButton({
     return <span className="text-xs font-medium text-slate-400">Unavailable</span>;
   }
 
-  const href = getCourseEnrollPath(
-    { slug: courseSlug },
-    {
-      batchId: row.batchId,
-      branchId: row.branchId ?? undefined,
-      courseId,
-    },
-  );
+  const href =
+    row.timingId
+      ? getCourseEnrollPath(
+          { slug: courseSlug },
+          {
+            batchId: row.batchId,
+            branchId: row.branchId ?? undefined,
+            courseId,
+            batchTimingId: row.timingId,
+            mode: row.mode,
+          },
+        )
+      : null;
+
+  if (!href) {
+    return <span className="text-xs font-medium text-slate-400">Unavailable</span>;
+  }
 
   return (
     <Link

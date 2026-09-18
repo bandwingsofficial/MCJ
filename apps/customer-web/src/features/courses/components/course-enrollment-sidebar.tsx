@@ -10,7 +10,7 @@ import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { cn } from "@/src/shared/lib/cn";
 import { MCJ_CONTACT } from "@/src/shared/constants/site.constants";
 
-import type { Batch, BatchMode } from "@/src/features/batches/types/batch.types";
+import type { Batch, BatchMode, DayOfWeek } from "@/src/features/batches/types/batch.types";
 import {
   formatBatchPrice,
   formatCurrency,
@@ -26,6 +26,7 @@ import {
   resolveModePricing,
 } from "@/src/features/courses/utils/course-batch.utils";
 import { getCourseEnrollPath } from "@/src/features/courses/utils/course-route.utils";
+import { saveEnrollmentSelection } from "@/src/features/enrollments/utils/enrollment-selection-storage";
 import {
   formatBatchDays,
   formatEnrollmentDate,
@@ -50,12 +51,16 @@ interface TimingOption {
   branchId: string;
   branchName: string;
   mode: BatchMode;
+  timingId?: string;
   timingName: string;
   days: string;
+  daysOfWeek: DayOfWeek[];
   startDateIso: string;
   startDateLabel: string;
   startTimeLabel: string;
   endTimeLabel: string;
+  startTime: string;
+  endTime: string;
   showTimeRange: boolean;
   joinEnabled: boolean;
 }
@@ -183,15 +188,19 @@ function buildTimingOptions(
             branchId,
             branchName: resolvedName,
             mode: timing.mode,
+            timingId: timing.id,
             timingName: timing.name?.trim() || batch.name,
             days:
               timing.mode === "RECORDED"
                 ? "Flexible Learning"
                 : formatBatchDays(timing.daysOfWeek ?? []),
+            daysOfWeek: timing.daysOfWeek ?? [],
             startDateIso: timing.startDate,
             startDateLabel: formatEnrollmentDate(timing.startDate),
             startTimeLabel: formatEnrollmentTime(timing.startTime),
             endTimeLabel: formatEnrollmentTime(timing.endTime),
+            startTime: timing.startTime,
+            endTime: timing.endTime,
             showTimeRange,
             joinEnabled,
           });
@@ -215,10 +224,13 @@ function buildTimingOptions(
           batch.mode === "RECORDED"
             ? "Flexible Learning"
             : formatBatchDays(batch.daysOfWeek ?? []),
+        daysOfWeek: batch.daysOfWeek ?? [],
         startDateIso: batch.startDate,
         startDateLabel: formatEnrollmentDate(batch.startDate),
         startTimeLabel: formatEnrollmentTime(batch.startTime),
         endTimeLabel: formatEnrollmentTime(batch.endTime),
+        startTime: batch.startTime,
+        endTime: batch.endTime,
         showTimeRange,
         joinEnabled,
       });
@@ -408,13 +420,15 @@ export function CourseEnrollmentSidebar({
       : 0;
 
   const enrollHref =
-    selectedOption?.joinEnabled
+    selectedOption?.joinEnabled && selectedOption.timingId
       ? getCourseEnrollPath(
           { slug: courseSlug },
           {
             batchId: selectedOption.batchId,
             branchId: selectedOption.branchId,
             courseId,
+            batchTimingId: selectedOption.timingId,
+            mode: selectedOption.mode,
           },
         )
       : null;
@@ -683,8 +697,33 @@ export function CourseEnrollmentSidebar({
           </div>
         ) : null}
 
-        {enrollHref ? (
-          <Link href={enrollHref} className="mt-5 block">
+        {enrollHref && selectedOption?.timingId ? (
+          <Link
+            href={enrollHref}
+            className="mt-5 block"
+            onClick={() => {
+              if (!selectedOption.timingId) {
+                return;
+              }
+
+              saveEnrollmentSelection({
+                courseId,
+                branchId: selectedOption.branchId,
+                batchId: selectedOption.batchId,
+                batchTimingId: selectedOption.timingId,
+                mode: selectedOption.mode,
+                timing: {
+                  id: selectedOption.timingId,
+                  name: selectedOption.timingName,
+                  mode: selectedOption.mode,
+                  startDate: selectedOption.startDateIso,
+                  startTime: selectedOption.startTime,
+                  endTime: selectedOption.endTime,
+                  daysOfWeek: selectedOption.daysOfWeek,
+                },
+              });
+            }}
+          >
             <Button
               type="button"
               className="h-11 w-full rounded-xl bg-[#0B1F3A] text-sm font-semibold text-white hover:bg-[#132a4a]"
@@ -701,7 +740,9 @@ export function CourseEnrollmentSidebar({
           >
             {selectedBranchId
               ? selectedOption
-                ? "Unavailable"
+                ? selectedOption.timingId
+                  ? "Unavailable"
+                  : "Select a Timing"
                 : "Select a Timing"
               : "Select a Branch"}
           </Button>
