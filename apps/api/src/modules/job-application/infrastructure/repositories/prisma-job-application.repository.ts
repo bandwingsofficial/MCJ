@@ -246,7 +246,23 @@ export class PrismaJobApplicationRepository
       where.studentId = filters.studentId;
     }
 
-    if (filters.status) {
+    if (filters.statusGroup === 'PENDING') {
+      where.status = {
+        in: ['APPLIED', 'UNDER_REVIEW'],
+      };
+    } else if (filters.statusGroup === 'SHORTLISTED') {
+      // Shortlisted pipeline includes apps currently in interview rounds.
+      where.OR = [
+        { status: 'SHORTLISTED' },
+        { status: 'INTERVIEW' },
+        {
+          status: 'SELECTED',
+          interviewStatus: 'NOT_YET',
+        },
+      ];
+    } else if (filters.statusGroup === 'REJECTED') {
+      where.status = 'REJECTED';
+    } else if (filters.status) {
       where.status = filters.status;
     }
 
@@ -264,7 +280,7 @@ export class PrismaJobApplicationRepository
     if (filters.search?.trim()) {
       const search = filters.search.trim();
 
-      where.OR = [
+      const searchOr: Prisma.JobApplicationWhereInput[] = [
         {
           applicantName: {
             contains: search,
@@ -354,6 +370,14 @@ export class PrismaJobApplicationRepository
           },
         },
       ];
+
+      // statusGroup SHORTLISTED already uses OR — nest search under AND.
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchOr }];
+        delete where.OR;
+      } else {
+        where.OR = searchOr;
+      }
     }
 
     return where;

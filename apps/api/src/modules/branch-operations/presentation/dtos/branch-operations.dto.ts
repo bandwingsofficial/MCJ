@@ -25,6 +25,8 @@ import {
   CourseMode,
   EnrollmentStatus,
   InterviewMode,
+  InterviewResult,
+  InterviewRoundStatus,
   InterviewStatus,
   JobApplicationStatus,
 } from '@prisma/client';
@@ -449,6 +451,60 @@ export class AssessmentSheetQueryDto {
   batchTimingId?: string;
 }
 
+export class CreateInterviewRoundDto {
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  name!: string;
+
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @MaxLength(500)
+  description?: string;
+
+  @IsInt()
+  @Min(1)
+  sortOrder!: number;
+
+  @IsOptional()
+  @IsEnum(InterviewRoundStatus)
+  status?: InterviewRoundStatus;
+}
+
+export class UpdateInterviewRoundDto {
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  name?: string;
+
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @MaxLength(500)
+  description?: string | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  sortOrder?: number;
+
+  @IsOptional()
+  @IsEnum(InterviewRoundStatus)
+  status?: InterviewRoundStatus;
+}
+
 export class ScheduleInterviewDto {
   @IsUUID()
   applicationId!: string;
@@ -478,6 +534,12 @@ export class ScheduleInterviewDto {
   @IsUUID()
   interviewerId?: string;
 
+  /** Prefer this over roundNumber when scheduling against configured rounds. */
+  @IsOptional()
+  @IsUUID()
+  roundId?: string;
+
+  /** Legacy fallback when roundId is omitted and assignment already has a round. */
   @IsOptional()
   @IsInt()
   @Min(1)
@@ -522,9 +584,79 @@ export class UpdateInterviewDto {
   decision?: JobApplicationStatus;
 
   @IsOptional()
+  @IsUUID()
+  roundId?: string;
+
+  @IsOptional()
+  @IsEnum(InterviewResult)
+  result?: InterviewResult;
+
+  @IsOptional()
   @IsInt()
   @Min(1)
   roundNumber?: number;
+}
+
+export class CompleteInterviewScheduleNextDto {
+  @IsDateString()
+  scheduledAt!: string;
+
+  @IsEnum(InterviewMode)
+  mode!: InterviewMode;
+
+  @IsString()
+  @MaxLength(500)
+  locationOrLink!: string;
+
+  @IsUUID()
+  interviewerId!: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(15)
+  durationMinutes?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  notes?: string;
+}
+
+export class CompleteInterviewDto {
+  @IsEnum(InterviewResult)
+  result!: InterviewResult;
+
+  @IsOptional()
+  @IsUUID()
+  nextRoundId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  evaluation?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  notes?: string;
+
+  /** Required when result is SELECTED_FOR_NEXT_ROUND — schedules next interview atomically. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CompleteInterviewScheduleNextDto)
+  scheduleNext?: CompleteInterviewScheduleNextDto;
+}
+
+export class ScheduleNextRoundDto {
+  @IsUUID()
+  applicationId!: string;
+
+  @IsUUID()
+  roundId!: string;
+
+  @IsOptional()
+  @IsUUID()
+  interviewerId?: string;
 }
 
 export class UpdateApplicationStatusDto {

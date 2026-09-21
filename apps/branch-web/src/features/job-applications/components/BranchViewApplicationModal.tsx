@@ -4,15 +4,27 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
-import type { JobApplicationItem } from "@/src/features/branch-ops/types";
+import type {
+  ApplicationRoundProgress,
+  InterviewResult,
+  JobApplicationItem,
+} from "@/src/features/branch-ops/types";
+import { BranchInterviewProgressTimeline } from "@/src/features/interviews/components/BranchInterviewProgressTimeline";
 import { BranchJobApplicationStatusBadge } from "@/src/features/job-applications/components/BranchJobApplicationStatusBadge";
 import {
   formatAppliedDate,
   formatInterviewDateTime,
   formatInterviewMode,
+  getBranchNextRoundLabel,
   getInterviewerName,
   isInterviewScheduled,
+  resolveBranchInterviewDisplay,
 } from "@/src/features/job-applications/utils/job-application-display.utils";
+import {
+  formatInterviewResult,
+  getInterviewResultVariant,
+  isValidInterviewSchedule,
+} from "@/src/features/interviews/utils/interview-display.utils";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
 import { Loader } from "@/src/shared/components/ui/loader";
@@ -63,6 +75,7 @@ type ApplicationDetail = {
     url?: string;
     originalName?: string;
   } | null;
+  roundProgress?: ApplicationRoundProgress | null;
   interviews?: Array<{
     id: string;
     scheduledAt?: string | null;
@@ -70,7 +83,21 @@ type ApplicationDetail = {
     mode?: string | null;
     locationOrLink?: string | null;
     notes?: string | null;
+    evaluation?: string | null;
+    roundId?: string | null;
+    nextRoundId?: string | null;
     roundNumber?: number;
+    result?: InterviewResult | null;
+    round?: {
+      id: string;
+      name: string;
+      sortOrder: number;
+    } | null;
+    nextRound?: {
+      id: string;
+      name: string;
+      sortOrder: number;
+    } | null;
     branch?: {
       branchName: string;
       branchCode: string;
@@ -81,6 +108,8 @@ type ApplicationDetail = {
     } | null;
   }>;
 };
+
+const compactBadgeClass = "px-2 py-0 text-[11px] font-semibold leading-5";
 
 function Info({
   label,
@@ -112,6 +141,11 @@ function Section({
       {children}
     </section>
   );
+}
+
+function safeScheduleLabel(value?: string | null): string | null {
+  if (!isValidInterviewSchedule(value)) return null;
+  return formatInterviewDateTime(value);
 }
 
 export function BranchViewApplicationModal({
@@ -173,7 +207,12 @@ export function BranchViewApplicationModal({
             mode: application.latestInterview.mode,
             locationOrLink: application.latestInterview.locationOrLink,
             notes: application.latestInterview.notes,
+            roundId: application.latestInterview.roundId,
+            nextRoundId: application.latestInterview.nextRoundId,
             roundNumber: application.latestInterview.roundNumber,
+            result: application.latestInterview.result,
+            round: application.latestInterview.round,
+            nextRound: application.latestInterview.nextRound,
             branch: application.latestInterview.branch,
             interviewer: application.latestInterview.interviewer
               ? {
@@ -185,14 +224,59 @@ export function BranchViewApplicationModal({
         : null;
     }
 
-    return (
-      detail.interviews.find((item) => item.status === "ASSIGNED") ??
-      detail.interviews.find((item) => item.status === "SCHEDULED") ??
-      detail.interviews[0]
-    );
+    const interviews = detail.interviews;
+    const scheduledOpen = interviews.find((item) => item.status === "SCHEDULED");
+    if (scheduledOpen) return scheduledOpen;
+    const assignedOpen = interviews.find((item) => item.status === "ASSIGNED");
+    if (assignedOpen) return assignedOpen;
+    const completed = [...interviews]
+      .filter((item) => item.status === "COMPLETED")
+      .sort(
+        (a, b) =>
+          (b.roundNumber ?? 0) - (a.roundNumber ?? 0) ||
+          String(b.scheduledAt ?? "").localeCompare(String(a.scheduledAt ?? "")),
+      )[0];
+    return completed ?? interviews[interviews.length - 1] ?? interviews[0];
   }, [detail, application]);
 
   const scheduled = isInterviewScheduled(activeInterview);
+  const interviewDisplay = resolveBranchInterviewDisplay(
+    activeInterview
+      ? {
+          id: activeInterview.id,
+          status: activeInterview.status,
+          result: activeInterview.result ?? null,
+          scheduledAt: activeInterview.scheduledAt,
+          roundNumber: activeInterview.roundNumber,
+          round: activeInterview.round,
+          nextRound: activeInterview.nextRound ?? null,
+        }
+      : null,
+  );
+  const currentRoundLabel =
+    activeInterview?.round?.name?.trim() ||
+    (activeInterview ? "Not Set" : "Not Started");
+  const nextRoundLabel = getBranchNextRoundLabel({
+    id: application?.id ?? "",
+    applicationNumber: application?.applicationNumber ?? "",
+    applicantName: application?.applicantName ?? null,
+    status: application?.status ?? "",
+    createdAt: application?.createdAt ?? "",
+    job: application?.job ?? { title: "", companyName: "" },
+    interviewStatus: application?.interviewStatus ?? null,
+    interviewScheduledAt: application?.interviewScheduledAt ?? null,
+    latestInterview: activeInterview
+      ? {
+          id: activeInterview.id,
+          status: activeInterview.status,
+          result: activeInterview.result ?? null,
+          scheduledAt: activeInterview.scheduledAt,
+          roundNumber: activeInterview.roundNumber,
+          round: activeInterview.round,
+          nextRound: activeInterview.nextRound ?? null,
+        }
+      : null,
+  });
   const studentName =
     [detail?.student?.firstName, detail?.student?.lastName]
       .filter(Boolean)
@@ -200,6 +284,13 @@ export function BranchViewApplicationModal({
       .trim() ||
     detail?.applicantName ||
     application?.applicantName;
+
+  const roundLabel =
+    activeInterview?.round?.name ??
+    (activeInterview?.roundNumber
+      ? `Round ${activeInterview.roundNumber}`
+      : null);
+  const resultLabel = formatInterviewResult(activeInterview?.result);
 
   return (
     <Modal
@@ -230,10 +321,10 @@ export function BranchViewApplicationModal({
             />
             {activeInterview ? (
               <Badge
-                variant={scheduled ? "success" : "warning"}
-                className="px-2 py-0 text-[11px] font-semibold leading-5"
+                variant={interviewDisplay.variant}
+                className={compactBadgeClass}
               >
-                {scheduled ? "Scheduled" : "Not Scheduled"}
+                {interviewDisplay.label}
               </Badge>
             ) : null}
           </div>
@@ -427,12 +518,14 @@ export function BranchViewApplicationModal({
               <div className="grid gap-3 sm:grid-cols-2">
                 <Info
                   label="Interview Status"
-                  value={scheduled ? "Scheduled" : "Not Scheduled"}
+                  value={interviewDisplay.label}
                 />
+                <Info label="Current Round" value={currentRoundLabel} />
+                <Info label="Next Round" value={nextRoundLabel} />
                 <Info
                   label="Interview Date"
                   value={
-                    activeInterview.scheduledAt
+                    isValidInterviewSchedule(activeInterview.scheduledAt)
                       ? new Date(
                           activeInterview.scheduledAt,
                         ).toLocaleDateString("en-IN")
@@ -442,7 +535,7 @@ export function BranchViewApplicationModal({
                 <Info
                   label="Interview Time"
                   value={
-                    activeInterview.scheduledAt
+                    isValidInterviewSchedule(activeInterview.scheduledAt)
                       ? new Date(
                           activeInterview.scheduledAt,
                         ).toLocaleTimeString([], {
@@ -452,12 +545,22 @@ export function BranchViewApplicationModal({
                       : null
                   }
                 />
+                <Info label="Interview Round" value={roundLabel} />
                 <Info
-                  label="Interview Round"
+                  label="Result"
                   value={
-                    scheduled || activeInterview.roundNumber
-                      ? activeInterview.roundNumber ?? 1
-                      : null
+                    resultLabel === "—" ? (
+                      "—"
+                    ) : (
+                      <Badge
+                        variant={getInterviewResultVariant(
+                          activeInterview.result,
+                        )}
+                        className={compactBadgeClass}
+                      >
+                        {resultLabel}
+                      </Badge>
+                    )
                   }
                 />
                 <Info
@@ -474,11 +577,7 @@ export function BranchViewApplicationModal({
                 />
                 <Info
                   label="Date & Time"
-                  value={
-                    activeInterview.scheduledAt
-                      ? formatInterviewDateTime(activeInterview.scheduledAt)
-                      : null
-                  }
+                  value={safeScheduleLabel(activeInterview.scheduledAt)}
                 />
                 <Info label="Remarks" value={activeInterview.notes} />
               </div>
@@ -487,6 +586,12 @@ export function BranchViewApplicationModal({
                 No interview details available.
               </p>
             )}
+          </Section>
+
+          <Section title="Interview Progress">
+            <BranchInterviewProgressTimeline
+              roundProgress={detail?.roundProgress}
+            />
           </Section>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { JobApplicationInterviewStatus } from '../../domain/enums/job-application-interview-status.enum';
 import { JobApplicationStatus } from '../../domain/enums/job-application-status.enum';
+import { JobApplicationStatusGroup } from '../../domain/enums/job-application-status-group.enum';
 
 export class ListJobApplicationsQuery {
   constructor(
@@ -13,5 +14,6 @@ export class ListJobApplicationsQuery {
     public readonly includeDeleted?: boolean,
     public readonly skip?: number,
     public readonly take?: number,
+    public readonly statusGroup?: JobApplicationStatusGroup,
   ) {}
 }

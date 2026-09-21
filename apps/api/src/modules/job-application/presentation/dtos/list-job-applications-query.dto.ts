@@ -1,10 +1,18 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsDateString, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { PaginationQueryDto } from '@common/pagination/pagination-query.dto';
 import { JobApplicationInterviewStatus } from '../../domain/enums/job-application-interview-status.enum';
 import { JobApplicationStatus } from '../../domain/enums/job-application-status.enum';
+import { JobApplicationStatusGroup } from '../../domain/enums/job-application-status-group.enum';
 
 const toBoolean = (value: unknown) =>
   value === true || value === 'true';
@@ -24,6 +32,15 @@ export class ListJobApplicationsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(JobApplicationStatus)
   status?: JobApplicationStatus;
+
+  @ApiPropertyOptional({
+    enum: JobApplicationStatusGroup,
+    description:
+      'Admin tab grouping. Prefer over single status for Pending/Shortlisted/Rejected.',
+  })
+  @IsOptional()
+  @IsEnum(JobApplicationStatusGroup)
+  statusGroup?: JobApplicationStatusGroup;
 
   @ApiPropertyOptional({ enum: JobApplicationInterviewStatus })
   @IsOptional()

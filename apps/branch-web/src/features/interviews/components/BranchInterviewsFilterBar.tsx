@@ -5,11 +5,11 @@ import { SearchInput } from "@/src/shared/components/ui/search-input";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import {
   BRANCH_INTERVIEW_MODE_OPTIONS,
-  BRANCH_INTERVIEW_ROUND_OPTIONS,
   BRANCH_INTERVIEW_STATUS_OPTIONS,
   DEFAULT_BRANCH_INTERVIEW_FILTERS,
   type BranchInterviewFilters,
 } from "@/src/features/interviews/constants/interview.constants";
+import type { InterviewRoundOption } from "@/src/features/branch-ops/types";
 
 interface InterviewerOption {
   id: string;
@@ -20,6 +20,7 @@ interface InterviewerOption {
 interface Props {
   filters: BranchInterviewFilters;
   interviewerOptions: InterviewerOption[];
+  roundOptions: InterviewRoundOption[];
   disabled?: boolean;
   onChange: (filters: BranchInterviewFilters) => void;
 }
@@ -27,6 +28,7 @@ interface Props {
 export function BranchInterviewsFilterBar({
   filters,
   interviewerOptions,
+  roundOptions,
   disabled = false,
   onChange,
 }: Props) {
@@ -34,7 +36,7 @@ export function BranchInterviewsFilterBar({
     Boolean(filters.search.trim()) ||
     filters.interviewerId !== "ALL" ||
     filters.mode !== "ALL" ||
-    filters.roundNumber !== "ALL" ||
+    filters.roundId !== "ALL" ||
     filters.status !== "ALL" ||
     Boolean(filters.from) ||
     Boolean(filters.to);
@@ -85,15 +87,21 @@ export function BranchInterviewsFilterBar({
         />
       </div>
 
-      <div className="w-full sm:w-[140px]">
+      <div className="w-full sm:w-[160px]">
         <AppSelect
-          value={filters.roundNumber}
+          value={filters.roundId}
           disabled={disabled}
           triggerClassName="h-9 rounded-lg px-2.5 text-sm"
           onValueChange={(value) =>
-            onChange({ ...filters, roundNumber: value, page: 1 })
+            onChange({ ...filters, roundId: value, page: 1 })
           }
-          options={[...BRANCH_INTERVIEW_ROUND_OPTIONS]}
+          options={[
+            { label: "All Rounds", value: "ALL" },
+            ...roundOptions.map((round) => ({
+              label: round.name,
+              value: round.id,
+            })),
+          ]}
         />
       </div>
 

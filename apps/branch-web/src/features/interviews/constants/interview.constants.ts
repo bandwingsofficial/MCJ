@@ -1,10 +1,15 @@
-export type InterviewTab = "UPCOMING" | "TODAY" | "COMPLETED" | "CANCELLED";
+export type InterviewTab =
+  | "UPCOMING"
+  | "TODAY"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED";
 
 export interface BranchInterviewFilters {
   search: string;
   interviewerId: string;
   mode: string;
-  roundNumber: string;
+  roundId: string;
   status: string;
   from: string;
   to: string;
@@ -17,7 +22,7 @@ export const DEFAULT_BRANCH_INTERVIEW_FILTERS: BranchInterviewFilters = {
   search: "",
   interviewerId: "ALL",
   mode: "ALL",
-  roundNumber: "ALL",
+  roundId: "ALL",
   status: "ALL",
   from: "",
   to: "",
@@ -40,11 +45,4 @@ export const BRANCH_INTERVIEW_STATUS_OPTIONS = [
   { label: "Completed", value: "COMPLETED" },
   { label: "Cancelled", value: "CANCELLED" },
   { label: "No Show", value: "NO_SHOW" },
-] as const;
-
-export const BRANCH_INTERVIEW_ROUND_OPTIONS = [
-  { label: "All Rounds", value: "ALL" },
-  { label: "Round 1", value: "1" },
-  { label: "Round 2", value: "2" },
-  { label: "Round 3", value: "3" },
 ] as const;

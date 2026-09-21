@@ -44,7 +44,7 @@ export function BranchJobApplicationsTable({
             <th className="w-28 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Status
             </th>
-            <th className="min-w-[12rem] !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+            <th className="min-w-[14rem] !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Assignment / Interview
             </th>
             <th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">

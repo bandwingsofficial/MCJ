@@ -141,6 +141,7 @@ export class JobApplicationDomainService {
       ],
       [JobApplicationStatus.INTERVIEW]: [
         JobApplicationStatus.SELECTED,
+        JobApplicationStatus.PLACED,
         JobApplicationStatus.REJECTED,
       ],
       [JobApplicationStatus.SELECTED]: [

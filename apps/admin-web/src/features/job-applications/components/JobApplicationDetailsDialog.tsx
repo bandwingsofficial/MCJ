@@ -9,6 +9,7 @@ import { Modal } from "@/src/shared/components/ui/model";
 
 import { ApplicationResumeSection } from "@/src/features/job-applications/components/ApplicationResumeSection";
 import { JobApplicationAssignmentStatusBadge } from "@/src/features/job-applications/components/JobApplicationAssignmentStatusBadge";
+import { JobApplicationInterviewStatusBadge } from "@/src/features/job-applications/components/JobApplicationInterviewStatusBadge";
 import { JobApplicationStatusBadge } from "@/src/features/job-applications/components/JobApplicationStatusBadge";
 import { jobApplicationService } from "@/src/features/job-applications/services/job-application.service";
 import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
@@ -19,6 +20,8 @@ import {
   getApplicantEmail,
   getApplicantName,
   getApplicantPhone,
+  getCurrentRoundName,
+  getNextRoundName,
   getStudentCode,
   isInterviewAssigned,
 } from "@/src/features/job-applications/types/job-application.types";
@@ -217,9 +220,22 @@ export function JobApplicationDetailsDialog({
             />
             <Info
               label="Status"
-              value={<JobApplicationStatusBadge status={current.status} />}
+              value={
+                <JobApplicationStatusBadge
+                  status={current.status}
+                  interviewStatus={current.interviewStatus}
+                />
+              }
             />
-            {current.status === "SHORTLISTED" ? (
+            <Info
+              label="Interview Status"
+              value={
+                <JobApplicationInterviewStatusBadge
+                  application={current}
+                />
+              }
+            />
+            {canManageAssignment(current) || isInterviewAssigned(current) ? (
               <Info
                 label="Assignment Status"
                 value={
@@ -227,6 +243,14 @@ export function JobApplicationDetailsDialog({
                 }
               />
             ) : null}
+            <Info
+              label="Current Round"
+              value={getCurrentRoundName(current)}
+            />
+            <Info
+              label="Next Round"
+              value={getNextRoundName(current)}
+            />
             <Info
               label="Applied Date"
               value={new Date(current.createdAt).toLocaleString("en-IN", {
@@ -237,12 +261,16 @@ export function JobApplicationDetailsDialog({
                 minute: "2-digit",
               })}
             />
-            {current.status === "SHORTLISTED" || current.status === "SELECTED" ? (
+            {canManageAssignment(current) ||
+            current.status === "SELECTED" ||
+            current.status === "PLACED" ? (
               <Info
                 label={
-                  current.status === "SHORTLISTED"
-                    ? "Shortlisted Date"
-                    : "Selected Date"
+                  current.status === "PLACED"
+                    ? "Placed Date"
+                    : canManageAssignment(current)
+                      ? "Shortlisted Date"
+                      : "Selected Date"
                 }
                 value={new Date(current.updatedAt).toLocaleString("en-IN", {
                   day: "2-digit",

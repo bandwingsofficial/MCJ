@@ -1,32 +1,24 @@
+"use client";
+
 import { Badge } from "@/src/shared/components/ui/badge";
 
-import type { JobApplicationInterviewStatus } from "@/src/features/job-applications/types/job-application.types";
-import { getInterviewStatusLabel } from "@/src/features/job-applications/types/job-application.types";
+import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
+import { resolveApplicationInterviewDisplay } from "@/src/features/job-applications/types/job-application.types";
 
 interface JobApplicationInterviewStatusBadgeProps {
-  status: JobApplicationInterviewStatus;
+  application: JobApplication;
 }
 
 const compactClass = "px-2 py-0 text-[11px] font-semibold leading-5";
 
-const STATUS_VARIANTS: Record<
-  JobApplicationInterviewStatus,
-  "success" | "warning" | "danger" | "info" | "default"
-> = {
-  NOT_YET: "default",
-  INTERVIEW_SCHEDULED: "info",
-  INTERVIEWED: "warning",
-  SELECTED: "success",
-  REJECTED: "danger",
-  PLACED: "success",
-};
-
 export function JobApplicationInterviewStatusBadge({
-  status,
+  application,
 }: JobApplicationInterviewStatusBadgeProps) {
+  const display = resolveApplicationInterviewDisplay(application);
+
   return (
-    <Badge variant={STATUS_VARIANTS[status]} className={compactClass}>
-      {getInterviewStatusLabel(status)}
+    <Badge variant={display.variant} className={compactClass}>
+      {display.label}
     </Badge>
   );
 }

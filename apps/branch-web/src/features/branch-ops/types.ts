@@ -920,9 +920,22 @@ export interface JobApplicationItem {
     scheduledAt?: string | null;
     mode?: string | null;
     locationOrLink?: string | null;
+    roundId?: string | null;
+    nextRoundId?: string | null;
     roundNumber?: number;
+    result?: InterviewResult | null;
     status: string;
     notes?: string | null;
+    round?: {
+      id: string;
+      name: string;
+      sortOrder: number;
+    } | null;
+    nextRound?: {
+      id: string;
+      name: string;
+      sortOrder: number;
+    } | null;
     interviewer?: {
       id: string;
       firstName?: string;
@@ -935,6 +948,57 @@ export interface JobApplicationItem {
       branchCode: string;
     } | null;
   } | null;
+  roundProgress?: ApplicationRoundProgress | null;
+}
+
+export type InterviewResult =
+  | "PENDING"
+  | "SELECTED_FOR_NEXT_ROUND"
+  | "REJECTED"
+  | "ON_HOLD"
+  | "NEED_FURTHER_REVIEW"
+  | "PLACED";
+
+export type InterviewRoundStatus = "ACTIVE" | "INACTIVE";
+
+export interface InterviewRoundItem {
+  id: string;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  status: InterviewRoundStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface InterviewRoundListResult {
+  items: InterviewRoundItem[];
+  total: number;
+}
+
+export interface InterviewRoundOption {
+  id: string;
+  name: string;
+  sortOrder: number;
+}
+
+export interface ApplicationRoundProgressHistoryItem {
+  interviewId: string;
+  roundId: string | null;
+  nextRoundId?: string | null;
+  roundNumber: number;
+  status: string;
+  result: InterviewResult;
+  evaluation?: string | null;
+  scheduledAt: string | null;
+  round: InterviewRoundOption | null;
+  nextRound?: InterviewRoundOption | null;
+}
+
+export interface ApplicationRoundProgress {
+  currentRound: InterviewRoundOption | null;
+  nextRound: InterviewRoundOption | null;
+  history: ApplicationRoundProgressHistoryItem[];
 }
 
 export interface JobApplicationJobOption {
@@ -960,8 +1024,13 @@ export interface InterviewItem {
   notes: string | null;
   evaluation: string | null;
   status: string;
+  roundId?: string | null;
+  nextRoundId?: string | null;
   roundNumber?: number;
+  result?: InterviewResult | null;
   interviewerId?: string | null;
+  round?: InterviewRoundOption | null;
+  nextRound?: InterviewRoundOption | null;
   application?: {
     id: string;
     applicationNumber: string;
@@ -977,10 +1046,16 @@ export interface InterviewItem {
   } | null;
 }
 
+/** Response from POST /branch/interviews/:id/complete */
+export interface CompleteInterviewResult extends InterviewItem {
+  nextInterview?: InterviewItem | null;
+}
+
 export interface InterviewListCounts {
   total: number;
   upcoming: number;
   today: number;
+  inProgress: number;
   completed: number;
   cancelled: number;
 }
@@ -994,6 +1069,7 @@ export interface InterviewListResult {
     name: string;
     email: string;
   }>;
+  roundOptions?: InterviewRoundOption[];
 }
 
 export interface PlacementActivityItem {

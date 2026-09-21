@@ -44,6 +44,7 @@ const MANAGER_PREFIXES = [
   "/attendance",
   "/assessments",
   "/job-applications",
+  "/interview-rounds",
   "/interviews",
   "/placements",
   "/users",

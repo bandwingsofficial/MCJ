@@ -26,6 +26,7 @@ export class ListJobApplicationsHandler {
       jobId: query.jobId,
       studentId: query.studentId,
       status: query.status,
+      statusGroup: query.statusGroup,
       interviewStatus: query.interviewStatus,
       search: query.search,
       appliedFrom: query.appliedFrom,

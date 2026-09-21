@@ -11,9 +11,10 @@ import { jobApplicationService } from "@/src/features/job-applications/services/
 import type {
   JobApplication,
   JobApplicationInterviewStatus,
+  JobApplicationStatusGroup,
   OnboardingStatusFilter,
 } from "@/src/features/job-applications/types/job-application.types";
-import { toJobApplicationStatus } from "@/src/features/job-applications/types/job-application.types";
+import { toJobApplicationStatusGroup } from "@/src/features/job-applications/types/job-application.types";
 import type { JobApplicationListQuery } from "@/src/features/job-applications/services/job-application.service";
 
 const SEARCH_DEBOUNCE_MS = 400;
@@ -49,7 +50,17 @@ interface UseJobApplicationsReturn {
   error: string | null;
   filters: JobApplicationFilters;
   setFilters: (filters: JobApplicationFilters) => void;
-  refetch: () => Promise<void>;
+  refetch: (overrideFilters?: JobApplicationFilters) => Promise<void>;
+}
+
+function resolveStatusGroup(
+  status: ApplicationStatusFilter,
+): JobApplicationStatusGroup | undefined {
+  if (status === JOB_APPLICATION_FILTER_ALL) {
+    return undefined;
+  }
+
+  return toJobApplicationStatusGroup(status as OnboardingStatusFilter);
 }
 
 function buildListQuery(
@@ -63,21 +74,18 @@ function buildListQuery(
     interviewStatus: filters.interviewStatus || undefined,
     appliedFrom: filters.appliedFrom || undefined,
     appliedTo: filters.appliedTo || undefined,
-    status:
-      filters.status === JOB_APPLICATION_FILTER_ALL
-        ? undefined
-        : toJobApplicationStatus(filters.status as OnboardingStatusFilter),
+    statusGroup: resolveStatusGroup(filters.status),
     skip: overrides?.skip,
     take: overrides?.take,
     ...overrides,
   };
 }
 
-async function fetchGlobalStatusTotal(
-  status: JobApplicationListQuery["status"],
+async function fetchGlobalStatusGroupTotal(
+  statusGroup: JobApplicationStatusGroup,
 ): Promise<number> {
   const response = await jobApplicationService.getJobApplications({
-    status,
+    statusGroup,
     skip: 0,
     take: 1,
   });
@@ -106,6 +114,11 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
   const hasLoadedRef = useRef(false);
   const requestIdRef = useRef(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filtersRef = useRef(filters);
+  const debouncedSearchRef = useRef(debouncedSearch);
+
+  filtersRef.current = filters;
+  debouncedSearchRef.current = debouncedSearch;
 
   const setFilters = useCallback((next: JobApplicationFilters) => {
     setFiltersState((prev) => {
@@ -155,73 +168,77 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
     };
   }, [filters.search]);
 
-  const fetchJobApplications = useCallback(async () => {
-    const requestId = ++requestIdRef.current;
-    const isFirstLoad = !hasLoadedRef.current;
+  const fetchJobApplications = useCallback(
+    async (overrideFilters?: JobApplicationFilters) => {
+      const requestId = ++requestIdRef.current;
+      const isFirstLoad = !hasLoadedRef.current;
+      const activeFilters = overrideFilters ?? filtersRef.current;
+      const activeSearch = overrideFilters
+        ? (overrideFilters.search ?? "").trim()
+        : debouncedSearchRef.current;
 
-    try {
-      if (isFirstLoad) {
-        setIsInitialLoading(true);
-      } else {
-        setIsFetching(true);
+      try {
+        if (isFirstLoad) {
+          setIsInitialLoading(true);
+        } else {
+          setIsFetching(true);
+        }
+
+        const page = activeFilters.page ?? 1;
+        const pageSize =
+          activeFilters.pageSize ?? DEFAULT_APPLICATION_PAGE_SIZE;
+        const baseQuery = buildListQuery(activeFilters, activeSearch);
+
+        const [response, pendingTotal, approvedTotal, rejectedTotal] =
+          await Promise.all([
+            jobApplicationService.getJobApplications({
+              ...baseQuery,
+              skip: (page - 1) * pageSize,
+              take: pageSize,
+            }),
+            fetchGlobalStatusGroupTotal("PENDING"),
+            fetchGlobalStatusGroupTotal("SHORTLISTED"),
+            fetchGlobalStatusGroupTotal("REJECTED"),
+          ]);
+
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        setJobApplications(response.items);
+        setTotal(response.total);
+
+        setStatusCounts({
+          pending: pendingTotal,
+          approved: approvedTotal,
+          rejected: rejectedTotal,
+        });
+        setCatalogTotal(pendingTotal + approvedTotal + rejectedTotal);
+
+        setError(null);
+        hasLoadedRef.current = true;
+      } catch (err) {
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to fetch job applications",
+        );
+      } finally {
+        if (requestId === requestIdRef.current) {
+          setIsInitialLoading(false);
+          setIsFetching(false);
+        }
       }
+    },
+    [],
+  );
 
-      const page = filters.page ?? 1;
-      const pageSize = filters.pageSize ?? DEFAULT_APPLICATION_PAGE_SIZE;
-      const baseQuery = buildListQuery(filters, debouncedSearch);
-
-      const [
-        response,
-        underReviewTotal,
-        appliedTotal,
-        shortlistedTotal,
-        rejectedTotal,
-      ] = await Promise.all([
-          jobApplicationService.getJobApplications({
-            ...baseQuery,
-            skip: (page - 1) * pageSize,
-            take: pageSize,
-          }),
-          fetchGlobalStatusTotal("UNDER_REVIEW"),
-          fetchGlobalStatusTotal("APPLIED"),
-          fetchGlobalStatusTotal("SHORTLISTED"),
-          fetchGlobalStatusTotal("REJECTED"),
-        ]);
-
-      if (requestId !== requestIdRef.current) {
-        return;
-      }
-
-      setJobApplications(response.items);
-      setTotal(response.total);
-      const pendingTotal = underReviewTotal + appliedTotal;
-      const approvedTotal = shortlistedTotal;
-
-      setStatusCounts({
-        pending: pendingTotal,
-        approved: approvedTotal,
-        rejected: rejectedTotal,
-      });
-      setCatalogTotal(pendingTotal + approvedTotal + rejectedTotal);
-
-      setError(null);
-      hasLoadedRef.current = true;
-    } catch (err) {
-      if (requestId !== requestIdRef.current) {
-        return;
-      }
-
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to fetch job applications",
-      );
-    } finally {
-      if (requestId === requestIdRef.current) {
-        setIsInitialLoading(false);
-        setIsFetching(false);
-      }
-    }
+  useEffect(() => {
+    void fetchJobApplications();
   }, [
     debouncedSearch,
     filters.appliedFrom,
@@ -231,11 +248,8 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
     filters.page,
     filters.pageSize,
     filters.status,
+    fetchJobApplications,
   ]);
-
-  useEffect(() => {
-    void fetchJobApplications();
-  }, [fetchJobApplications]);
 
   return {
     jobApplications,
@@ -249,6 +263,7 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
     error,
     filters,
     setFilters,
-    refetch: fetchJobApplications,
+    refetch: (overrideFilters?: JobApplicationFilters) =>
+      fetchJobApplications(overrideFilters ?? filtersRef.current),
   };
 };

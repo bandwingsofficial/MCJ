@@ -5,12 +5,17 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
-import type { InterviewItem } from "@/src/features/branch-ops/types";
-import { BranchViewApplicationModal } from "@/src/features/job-applications/components/BranchViewApplicationModal";
+import type {
+  InterviewItem,
+  InterviewRoundOption,
+  JobApplicationItem,
+} from "@/src/features/branch-ops/types";
 import { BranchScheduleInterviewModal } from "@/src/features/job-applications/components/BranchScheduleInterviewModal";
+import { BranchCompleteInterviewModal } from "@/src/features/interviews/components/BranchCompleteInterviewModal";
 import { BranchInterviewTabs } from "@/src/features/interviews/components/BranchInterviewTabs";
 import { BranchInterviewsFilterBar } from "@/src/features/interviews/components/BranchInterviewsFilterBar";
 import { BranchInterviewsTable } from "@/src/features/interviews/components/BranchInterviewsTable";
+import { BranchViewInterviewModal } from "@/src/features/interviews/components/BranchViewInterviewModal";
 import {
   BRANCH_INTERVIEW_PAGE_SIZES,
   DEFAULT_BRANCH_INTERVIEW_FILTERS,
@@ -24,7 +29,6 @@ import { CategoryPagination } from "@/src/shared/components/ui/category-paginati
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { useAsyncData } from "@/src/shared/hooks/use-async-data";
-import type { JobApplicationItem } from "@/src/features/branch-ops/types";
 
 export default function InterviewsPage() {
   const role = useAuthStore((state) => state.user?.role);
@@ -36,10 +40,12 @@ export default function InterviewsPage() {
   const [interviewerOptions, setInterviewerOptions] = useState<
     Array<{ id: string; name: string; email: string }>
   >([]);
+  const [roundOptions, setRoundOptions] = useState<InterviewRoundOption[]>([]);
   const [selectedInterview, setSelectedInterview] =
     useState<InterviewItem | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [completeOpen, setCompleteOpen] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -57,8 +63,7 @@ export default function InterviewsPage() {
         interviewerId:
           filters.interviewerId === "ALL" ? undefined : filters.interviewerId,
         mode: filters.mode === "ALL" ? undefined : filters.mode,
-        roundNumber:
-          filters.roundNumber === "ALL" ? undefined : filters.roundNumber,
+        roundId: filters.roundId === "ALL" ? undefined : filters.roundId,
         status: filters.status === "ALL" ? undefined : filters.status,
         from: filters.from || undefined,
         to: filters.to || undefined,
@@ -70,7 +75,7 @@ export default function InterviewsPage() {
       filters.tab,
       filters.interviewerId,
       filters.mode,
-      filters.roundNumber,
+      filters.roundId,
       filters.status,
       filters.from,
       filters.to,
@@ -85,12 +90,19 @@ export default function InterviewsPage() {
     }
   }, [query.data?.interviewerOptions]);
 
+  useEffect(() => {
+    if (query.data?.roundOptions?.length) {
+      setRoundOptions(query.data.roundOptions);
+    }
+  }, [query.data?.roundOptions]);
+
   const items = query.data?.items ?? [];
   const total = query.data?.total ?? 0;
   const counts = query.data?.counts ?? {
     total: 0,
     upcoming: 0,
     today: 0,
+    inProgress: 0,
     completed: 0,
     cancelled: 0,
   };
@@ -115,16 +127,33 @@ export default function InterviewsPage() {
     setFilters((current) => ({ ...current, tab, page: 1 }));
   };
 
+  const clearSelection = () => {
+    setSelectedInterview(null);
+  };
+
   const openView = (interview: InterviewItem) => {
     setSelectedInterview(interview);
     setScheduleOpen(false);
+    setCompleteOpen(false);
     setViewOpen(true);
   };
 
   const openManage = (interview: InterviewItem) => {
     setSelectedInterview(interview);
     setViewOpen(false);
+    setCompleteOpen(false);
     setScheduleOpen(true);
+  };
+
+  const openRecordResult = (interview: InterviewItem) => {
+    setSelectedInterview(interview);
+    setViewOpen(false);
+    setScheduleOpen(false);
+    setCompleteOpen(true);
+  };
+
+  const handleCompleteSuccess = async () => {
+    await query.reload();
   };
 
   return (
@@ -174,6 +203,7 @@ export default function InterviewsPage() {
       <BranchInterviewsFilterBar
         filters={{ ...filters, search: searchInput }}
         interviewerOptions={interviewerOptions}
+        roundOptions={roundOptions}
         disabled={query.loading}
         onChange={handleFiltersChange}
       />
@@ -210,6 +240,7 @@ export default function InterviewsPage() {
               actionsDisabled={query.loading}
               onView={openView}
               onManage={openManage}
+              onRecordResult={openRecordResult}
             />
           </div>
 
@@ -251,12 +282,12 @@ export default function InterviewsPage() {
         </div>
       )}
 
-      <BranchViewApplicationModal
+      <BranchViewInterviewModal
         open={viewOpen}
-        application={selectedAsApplication}
+        interview={selectedInterview}
         onClose={() => {
           setViewOpen(false);
-          setSelectedInterview(null);
+          clearSelection();
         }}
       />
 
@@ -265,11 +296,21 @@ export default function InterviewsPage() {
         application={selectedAsApplication}
         onClose={() => {
           setScheduleOpen(false);
-          setSelectedInterview(null);
+          clearSelection();
         }}
         onSuccess={async () => {
           await query.reload();
         }}
+      />
+
+      <BranchCompleteInterviewModal
+        open={completeOpen}
+        interview={selectedInterview}
+        onClose={() => {
+          setCompleteOpen(false);
+          clearSelection();
+        }}
+        onSuccess={handleCompleteSuccess}
       />
     </div>
   );

@@ -108,10 +108,48 @@ export interface JobApplication {
   interviewAssignment?: {
     id: string;
     status: string;
+    result?: string | null;
+    evaluation?: string | null;
     branchId: string;
     interviewerId: string | null;
+    roundId?: string | null;
+    nextRoundId?: string | null;
     scheduledAt: string | null;
+    mode?: string | null;
+    locationOrLink?: string | null;
+    roundNumber?: number;
+    notes?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+    branch?: {
+      id: string;
+      branchName: string;
+      branchCode: string;
+      addressLine1?: string | null;
+      addressLine2?: string | null;
+      city?: string | null;
+      state?: string | null;
+      country?: string | null;
+      postalCode?: string | null;
+    } | null;
+    interviewer?: {
+      id: string;
+      firstName: string;
+      lastName: string | null;
+      email: string;
+    } | null;
+    round?: {
+      id: string;
+      name: string;
+      sortOrder: number;
+    } | null;
+    nextRound?: {
+      id: string;
+      name: string;
+      sortOrder: number;
+    } | null;
   } | null;
+  interviews?: Array<NonNullable<JobApplication["interviewAssignment"]>>;
   createdAt: string;
   updatedAt: string;
 }
@@ -186,33 +224,59 @@ export function getApplicantName(application: JobApplication): string {
 }
 
 export function getApplicantEmail(application: JobApplication): string {
-  return (
-    application.student?.email ||
-    application.user?.email ||
-    application.applicantEmail ||
-    "—"
-  );
+  const email =
+    application.student?.email?.trim() ||
+    application.user?.email?.trim() ||
+    application.applicantEmail?.trim() ||
+    "";
+
+  return email || "—";
 }
 
 export function getStudentCode(application: JobApplication): string {
-  return (
-    application.student?.studentCode ??
-    application.resolvedStudentCode ??
-    "—"
-  );
+  const code =
+    application.student?.studentCode?.trim() ||
+    application.resolvedStudentCode?.trim() ||
+    "";
+
+  return code || "—";
 }
 
 export function getApplicantPhone(application: JobApplication): string {
-  return (
-    application.student?.phone ||
-    application.user?.phone ||
-    application.applicantPhone ||
-    "—"
-  );
+  const phone =
+    application.student?.phone?.trim() ||
+    application.user?.phone?.trim() ||
+    application.applicantPhone?.trim() ||
+    "";
+
+  return phone || "—";
 }
 
 export type OnboardingStatusFilter = "PENDING" | "ACCEPTED" | "REJECTED";
 
+export type JobApplicationStatusGroup =
+  | "PENDING"
+  | "SHORTLISTED"
+  | "REJECTED";
+
+/** Map admin tab filter → API statusGroup (matches persisted statuses). */
+export function toJobApplicationStatusGroup(
+  filter: OnboardingStatusFilter,
+): JobApplicationStatusGroup {
+  if (filter === "PENDING") {
+    return "PENDING";
+  }
+
+  if (filter === "ACCEPTED") {
+    return "SHORTLISTED";
+  }
+
+  return "REJECTED";
+}
+
+/**
+ * @deprecated Prefer toJobApplicationStatusGroup — single status misses APPLIED / legacy SELECTED.
+ */
 export function toJobApplicationStatus(
   filter: OnboardingStatusFilter,
 ): JobApplicationStatus | undefined {
@@ -235,36 +299,176 @@ export function getInterviewStatusLabel(
   status: JobApplicationInterviewStatus,
 ): string {
   const labels: Record<JobApplicationInterviewStatus, string> = {
-    NOT_YET: "Not Yet",
-    INTERVIEW_SCHEDULED: "Interview Scheduled",
-    INTERVIEWED: "Interviewed",
-    SELECTED: "Selected",
-    REJECTED: "Rejected",
-    PLACED: "Placed",
+    NOT_YET: "NOT YET",
+    INTERVIEW_SCHEDULED: "SCHEDULED",
+    INTERVIEWED: "COMPLETED",
+    SELECTED: "SELECTED",
+    REJECTED: "REJECTED",
+    PLACED: "PLACED",
   };
 
   return labels[status];
 }
 
-export function getOnboardingStatusLabel(status: JobApplicationStatus): string {
-  if (status === "APPLIED" || status === "UNDER_REVIEW") {
-    return "Pending";
+export type InterviewPipelineDisplayKey =
+  | "NOT_YET"
+  | "SCHEDULED"
+  | "COMPLETED"
+  | "SELECTED_FOR_NEXT_ROUND"
+  | "REJECTED"
+  | "ON_HOLD"
+  | "NEED_FURTHER_REVIEW"
+  | "PLACED"
+  | "CANCELLED"
+  | "NO_SHOW";
+
+type InterviewRecordLike = {
+  status?: string | null;
+  result?: string | null;
+  round?: { name?: string | null } | null;
+  nextRound?: { name?: string | null } | null;
+};
+
+/**
+ * Interview column status from the latest persisted Interview record
+ * (status + result) — not from JobApplication.interviewStatus alone.
+ */
+export function resolveInterviewPipelineDisplay(
+  interview?: InterviewRecordLike | null,
+): {
+  key: InterviewPipelineDisplayKey;
+  label: string;
+  variant: "success" | "warning" | "danger" | "info" | "default";
+} {
+  if (!interview) {
+    return { key: "NOT_YET", label: "NOT YET", variant: "default" };
   }
 
-  if (status === "SHORTLISTED") {
-    return "Shortlisted";
+  const status = (interview.status ?? "").toString().trim().toUpperCase();
+  const result = (interview.result ?? "").toString().trim().toUpperCase();
+
+  if (status === "ASSIGNED") {
+    return { key: "NOT_YET", label: "NOT YET", variant: "default" };
+  }
+
+  if (status === "SCHEDULED") {
+    return { key: "SCHEDULED", label: "SCHEDULED", variant: "info" };
+  }
+
+  if (status === "COMPLETED") {
+    if (result === "SELECTED_FOR_NEXT_ROUND") {
+      return {
+        key: "SELECTED_FOR_NEXT_ROUND",
+        label: "SELECTED FOR NEXT ROUND",
+        variant: "success",
+      };
+    }
+    if (result === "REJECTED") {
+      return { key: "REJECTED", label: "REJECTED", variant: "danger" };
+    }
+    if (result === "ON_HOLD") {
+      return { key: "ON_HOLD", label: "ON HOLD", variant: "warning" };
+    }
+    if (result === "NEED_FURTHER_REVIEW") {
+      return {
+        key: "NEED_FURTHER_REVIEW",
+        label: "NEED FURTHER REVIEW",
+        variant: "warning",
+      };
+    }
+    if (result === "PLACED") {
+      return { key: "PLACED", label: "PLACED", variant: "success" };
+    }
+    return { key: "COMPLETED", label: "COMPLETED", variant: "warning" };
+  }
+
+  if (status === "CANCELLED") {
+    return { key: "CANCELLED", label: "CANCELLED", variant: "danger" };
+  }
+
+  if (status === "NO_SHOW") {
+    return { key: "NO_SHOW", label: "NO SHOW", variant: "danger" };
+  }
+
+  return { key: "NOT_YET", label: "NOT YET", variant: "default" };
+}
+
+export function resolveApplicationInterviewDisplay(application: {
+  interviewAssignment?: InterviewRecordLike | null;
+  interviewStatus?: JobApplicationInterviewStatus | string | null;
+}): {
+  key: InterviewPipelineDisplayKey;
+  label: string;
+  variant: "success" | "warning" | "danger" | "info" | "default";
+} {
+  if (application.interviewAssignment) {
+    return resolveInterviewPipelineDisplay(application.interviewAssignment);
+  }
+
+  const fallback = (application.interviewStatus ?? "NOT_YET")
+    .toString()
+    .trim()
+    .toUpperCase();
+
+  if (fallback === "INTERVIEW_SCHEDULED") {
+    return { key: "SCHEDULED", label: "SCHEDULED", variant: "info" };
+  }
+  if (fallback === "INTERVIEWED") {
+    return { key: "COMPLETED", label: "COMPLETED", variant: "warning" };
+  }
+  if (fallback === "REJECTED") {
+    return { key: "REJECTED", label: "REJECTED", variant: "danger" };
+  }
+  if (fallback === "PLACED") {
+    return { key: "PLACED", label: "PLACED", variant: "success" };
+  }
+  if (fallback === "SELECTED") {
+    return { key: "COMPLETED", label: "SELECTED", variant: "success" };
+  }
+
+  return { key: "NOT_YET", label: "NOT YET", variant: "default" };
+}
+
+/** True when status is a legacy "approved as SELECTED" shortlist (pre-SHORTLISTED flow). */
+export function isLegacyShortlistedSelected(
+  status: JobApplicationStatus,
+  interviewStatus?: JobApplicationInterviewStatus | string | null,
+): boolean {
+  if (status !== "SELECTED") {
+    return false;
+  }
+  const interview = (interviewStatus ?? "NOT_YET").toString().trim().toUpperCase();
+  return interview === "NOT_YET" || interview === "";
+}
+
+export function getOnboardingStatusLabel(
+  status: JobApplicationStatus,
+  interviewStatus?: JobApplicationInterviewStatus | string | null,
+): string {
+  if (status === "APPLIED" || status === "UNDER_REVIEW") {
+    return "UNDER REVIEW";
+  }
+
+  // Apps in the shortlist / interview pipeline stay SHORTLISTED until a final outcome.
+  if (
+    status === "SHORTLISTED" ||
+    status === "INTERVIEW" ||
+    status === "ASSESSMENT" ||
+    isLegacyShortlistedSelected(status, interviewStatus)
+  ) {
+    return "SHORTLISTED";
   }
 
   if (status === "REJECTED") {
-    return "Rejected";
+    return "REJECTED";
   }
 
-  if (status === "SELECTED" || status === "PLACED") {
-    return "Selected";
+  if (status === "PLACED") {
+    return "PLACED";
   }
 
-  if (status === "INTERVIEW") {
-    return "Interview";
+  if (status === "SELECTED") {
+    return "SELECTED";
   }
 
   return status
@@ -298,20 +502,115 @@ export function getAssignmentStatus(
 export function getAssignmentStatusLabel(
   status: "ASSIGNED" | "UNASSIGNED",
 ): string {
-  return status === "ASSIGNED" ? "Assigned" : "Unassigned";
+  return status;
 }
 
-/** Shortlisted applications can always open assign / manage assignment. */
+const FINAL_RESULTS = new Set([
+  "REJECTED",
+  "PLACED",
+  "ON_HOLD",
+  "NEED_FURTHER_REVIEW",
+]);
+
+/** Current round label from the latest interview assignment. */
+export function getCurrentRoundName(application: {
+  interviewAssignment?: {
+    round?: { name?: string | null } | null;
+  } | null;
+}): string {
+  const name = application.interviewAssignment?.round?.name?.trim();
+  if (name) {
+    return name;
+  }
+  if (application.interviewAssignment) {
+    return "Not Set";
+  }
+  return "Not Started";
+}
+
+/** Next round label from persisted nextRound / result progression. */
+export function getNextRoundName(application: {
+  interviewAssignment?: {
+    status?: string | null;
+    result?: string | null;
+    round?: { name?: string | null } | null;
+    nextRound?: { name?: string | null } | null;
+  } | null;
+  interviews?: Array<{
+    result?: string | null;
+    nextRound?: { name?: string | null } | null;
+  }>;
+}): string {
+  const interview = application.interviewAssignment;
+  if (!interview) {
+    return "Not Started";
+  }
+
+  const result = (interview.result ?? "").toString().trim().toUpperCase();
+  const status = (interview.status ?? "").toString().trim().toUpperCase();
+
+  if (FINAL_RESULTS.has(result)) {
+    return "No Further Round";
+  }
+
+  const fromAssignment = interview.nextRound?.name?.trim() || null;
+  if (fromAssignment) {
+    return fromAssignment;
+  }
+
+  const currentName = interview.round?.name?.trim() || null;
+  const interviews = application.interviews ?? [];
+
+  for (let index = interviews.length - 1; index >= 0; index -= 1) {
+    const item = interviews[index];
+    if (item.result !== "SELECTED_FOR_NEXT_ROUND") {
+      continue;
+    }
+    const nextName = item.nextRound?.name?.trim() || null;
+    if (!nextName) {
+      continue;
+    }
+    // Already progressed onto that round — no longer "next".
+    if (currentName && currentName === nextName) {
+      if (status === "SCHEDULED" || status === "ASSIGNED") {
+        return "Not Set";
+      }
+      continue;
+    }
+    return nextName;
+  }
+
+  if (result === "SELECTED_FOR_NEXT_ROUND") {
+    return "Not Set";
+  }
+
+  if (status === "COMPLETED" || status === "SCHEDULED" || status === "ASSIGNED") {
+    return "Not Set";
+  }
+
+  return "Not Set";
+}
+
+/** Shortlisted / interview-pipeline applications can open assign / manage assignment. */
 export function canManageAssignment(application: {
   status: JobApplicationStatus;
+  interviewStatus?: JobApplicationInterviewStatus | string | null;
 }): boolean {
-  return application.status === "SHORTLISTED";
+  return (
+    application.status === "SHORTLISTED" ||
+    application.status === "INTERVIEW" ||
+    isLegacyShortlistedSelected(
+      application.status,
+      application.interviewStatus,
+    )
+  );
 }
 
 /** @deprecated Prefer canManageAssignment */
 export function canAssignInterview(application: {
   status: JobApplicationStatus;
   interviewAssignment?: { id: string } | null;
+  interviewStatus?: JobApplicationInterviewStatus | string | null;
 }): boolean {
   return canManageAssignment(application);
 }

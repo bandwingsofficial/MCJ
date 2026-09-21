@@ -77,7 +77,9 @@ export function ApplicationInterviewDetails({
 
         <div>
           <p className="text-muted-foreground">Interview Round</p>
-          <p className="mt-1 font-medium">Round {assignment.roundNumber}</p>
+          <p className="mt-1 font-medium">
+            {assignment.round?.name?.trim() || "Interview Round"}
+          </p>
         </div>
 
         <div>

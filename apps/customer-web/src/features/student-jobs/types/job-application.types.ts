@@ -35,15 +35,31 @@ export interface JobApplicationInterviewInterviewer {
 export interface JobApplicationInterviewAssignment {
   id: string;
   status: InterviewRecordStatus | string;
+  result?: string | null;
+  evaluation?: string | null;
   branchId: string;
   interviewerId: string | null;
+  roundId?: string | null;
+  nextRoundId?: string | null;
   scheduledAt: string | null;
   mode: InterviewMode | string | null;
   locationOrLink: string | null;
   roundNumber: number;
   notes: string | null;
+  createdAt?: string;
+  updatedAt?: string;
   branch: JobApplicationInterviewBranch | null;
   interviewer: JobApplicationInterviewInterviewer | null;
+  round?: {
+    id: string;
+    name: string;
+    sortOrder: number;
+  } | null;
+  nextRound?: {
+    id: string;
+    name: string;
+    sortOrder: number;
+  } | null;
 }
 
 export interface JobApplication {
@@ -84,6 +100,9 @@ export interface JobApplication {
   student: ApplicationStudentSummary;
 
   interviewAssignment?: JobApplicationInterviewAssignment | null;
+
+  /** Full persisted interview history for application progress timeline. */
+  interviews?: JobApplicationInterviewAssignment[];
 }
 
 export interface JobApplicationJob {

@@ -13,6 +13,7 @@ import { BranchBatchOpsService } from './application/branch-batch-ops.service';
 import { BranchAttendanceService } from './application/branch-attendance.service';
 import { BranchAssessmentService } from './application/branch-assessment.service';
 import { BranchInterviewService } from './application/branch-interview.service';
+import { BranchInterviewRoundService } from './application/branch-interview-round.service';
 import { BranchStaffService } from './application/branch-staff.service';
 import { BranchOperationsController } from './presentation/controllers/branch-operations.controller';
 
@@ -33,6 +34,7 @@ import { BranchOperationsController } from './presentation/controllers/branch-op
     BranchAttendanceService,
     BranchAssessmentService,
     BranchInterviewService,
+    BranchInterviewRoundService,
     BranchStaffService,
   ],
   exports: [BranchAttendanceService, BranchAssessmentService],

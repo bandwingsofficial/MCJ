@@ -7,12 +7,15 @@ import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import { JobApplicationActions } from "@/src/features/job-applications/components/JobApplicationActions";
 import { JobApplicationAssignmentStatusBadge } from "@/src/features/job-applications/components/JobApplicationAssignmentStatusBadge";
+import { JobApplicationInterviewStatusBadge } from "@/src/features/job-applications/components/JobApplicationInterviewStatusBadge";
 import { JobApplicationStatusBadge } from "@/src/features/job-applications/components/JobApplicationStatusBadge";
 import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
 import {
   getApplicantEmail,
   getApplicantName,
   getApplicantPhone,
+  getCurrentRoundName,
+  getNextRoundName,
   getStudentCode,
 } from "@/src/features/job-applications/types/job-application.types";
 
@@ -44,7 +47,7 @@ export function JobApplicationTable({
   onUnassignInterview,
 }: JobApplicationTableProps) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
-  const columnCount = 11;
+  const columnCount = 14;
   const visibleIds = applications.map((application) => application.id);
   const selectedVisibleCount = visibleIds.filter((id) =>
     selectedIds.includes(id),
@@ -124,8 +127,17 @@ export function JobApplicationTable({
             <th className="w-28 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Application Status
             </th>
-            <th className="w-32 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+            <th className="w-28 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Assignment Status
+            </th>
+            <th className="w-32 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Interview Status
+            </th>
+            <th className="whitespace-nowrap !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Current Round
+            </th>
+            <th className="whitespace-nowrap !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Next Round
             </th>
             <th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
               Actions
@@ -145,95 +157,117 @@ export function JobApplicationTable({
               </td>
             </tr>
           ) : (
-            applications.map((application) => (
-              <tr
-                key={application.id}
-                className="cursor-pointer border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
-                onClick={() => onView(application)}
-              >
-                <td
-                  className="!px-6 !py-4 align-middle"
-                  onClick={(event) => event.stopPropagation()}
+            applications.map((application) => {
+              const currentRound = getCurrentRoundName(application);
+              const nextRound = getNextRoundName(application);
+
+              return (
+                <tr
+                  key={application.id}
+                  className="cursor-pointer border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
+                  onClick={() => onView(application)}
                 >
-                  <Checkbox
-                    checked={selectedIds.includes(application.id)}
-                    onCheckedChange={(checked) =>
-                      toggleRow(application.id, Boolean(checked))
-                    }
-                  />
-                </td>
-                <td className="!px-4 !py-4 align-middle">
-                  <p className="font-mono text-sm font-medium text-[#2563D9]">
-                    {getStudentCode(application)}
-                  </p>
-                </td>
-                <td className="!px-4 !py-4 align-middle">
-                  <p className="text-sm font-medium leading-snug text-[#102A56]">
-                    {getApplicantName(application)}
-                  </p>
-                </td>
-                <td className="!px-4 !py-4 align-middle">
-                  <p className="text-sm text-[#102A56]">
-                    {application.job?.title ?? "—"}
-                  </p>
-                  {application.job?.jobNumber ? (
-                    <p className="text-xs text-[#647A9B]">
-                      {application.job.jobNumber}
+                  <td
+                    className="!px-6 !py-4 align-middle"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={selectedIds.includes(application.id)}
+                      onCheckedChange={(checked) =>
+                        toggleRow(application.id, Boolean(checked))
+                      }
+                    />
+                  </td>
+                  <td className="!px-4 !py-4 align-middle">
+                    <p className="font-mono text-sm font-medium text-[#2563D9]">
+                      {getStudentCode(application)}
                     </p>
-                  ) : null}
-                </td>
-                <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
-                  {application.job?.companyName ?? "—"}
-                </td>
-                <td className="max-w-[9rem] !px-4 !py-4 align-middle text-sm text-slate-700">
-                  {(() => {
-                    const email = getApplicantEmail(application);
+                  </td>
+                  <td className="!px-4 !py-4 align-middle">
+                    <p className="text-sm font-medium leading-snug text-[#102A56]">
+                      {getApplicantName(application)}
+                    </p>
+                  </td>
+                  <td className="!px-4 !py-4 align-middle">
+                    <p className="text-sm text-[#102A56]">
+                      {application.job?.title ?? "—"}
+                    </p>
+                    {application.job?.jobNumber ? (
+                      <p className="text-xs text-[#647A9B]">
+                        {application.job.jobNumber}
+                      </p>
+                    ) : null}
+                  </td>
+                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
+                    {application.job?.companyName ?? "—"}
+                  </td>
+                  <td className="max-w-[9rem] !px-4 !py-4 align-middle text-sm text-slate-700">
+                    {(() => {
+                      const email = getApplicantEmail(application);
 
-                    if (email === "—") {
-                      return email;
-                    }
+                      if (email === "—") {
+                        return email;
+                      }
 
-                    return (
-                      <Tooltip content={email}>
-                        <span className="block truncate">{email}</span>
-                      </Tooltip>
-                    );
-                  })()}
-                </td>
-                <td className="whitespace-nowrap !px-4 !py-4 align-middle text-sm text-slate-700">
-                  {getApplicantPhone(application)}
-                </td>
-                <td className="whitespace-nowrap !px-4 !py-4 align-middle text-sm text-[#647A9B]">
-                  {new Date(application.createdAt).toLocaleDateString("en-IN", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </td>
-                <td className="!px-4 !py-4 align-middle">
-                  <JobApplicationStatusBadge status={application.status} />
-                </td>
-                <td className="!px-4 !py-4 align-middle">
-                  <JobApplicationAssignmentStatusBadge
-                    application={application}
-                  />
-                </td>
-                <td
-                  className="!px-8 !py-4 text-right align-middle"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <JobApplicationActions
-                    application={application}
-                    disabled={actionsDisabled}
-                    onView={onView}
-                    onApprove={onApprove}
-                    onReject={onReject}
-                    onAssignInterview={onAssignInterview}
-                    onUnassignInterview={onUnassignInterview}
-                  />
-                </td>
-              </tr>
-            ))
+                      return (
+                        <Tooltip content={email}>
+                          <span className="block truncate">{email}</span>
+                        </Tooltip>
+                      );
+                    })()}
+                  </td>
+                  <td className="whitespace-nowrap !px-4 !py-4 align-middle text-sm text-slate-700">
+                    {getApplicantPhone(application)}
+                  </td>
+                  <td className="whitespace-nowrap !px-4 !py-4 align-middle text-sm text-[#647A9B]">
+                    {new Date(application.createdAt).toLocaleDateString(
+                      "en-IN",
+                      {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      },
+                    )}
+                  </td>
+                  <td className="!px-4 !py-4 align-middle">
+                    <JobApplicationStatusBadge
+                      status={application.status}
+                      interviewStatus={application.interviewStatus}
+                    />
+                  </td>
+                  <td className="!px-4 !py-4 align-middle">
+                    <JobApplicationAssignmentStatusBadge
+                      application={application}
+                    />
+                  </td>
+                  <td className="!px-4 !py-4 align-middle">
+                    <JobApplicationInterviewStatusBadge
+                      application={application}
+                    />
+                  </td>
+                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
+                    {currentRound}
+                  </td>
+                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
+                    {nextRound}
+                  </td>
+                  <td
+                    className="!px-8 !py-4 text-right align-middle"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <JobApplicationActions
+                      application={application}
+                      disabled={actionsDisabled}
+                      onView={onView}
+                      onApprove={onApprove}
+                      onReject={onReject}
+                      onAssignInterview={onAssignInterview}
+                      onUnassignInterview={onUnassignInterview}
+                    />
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>

@@ -14,6 +14,7 @@ interface Props {
 const TABS: Array<{ value: InterviewTab; label: string; countKey: keyof InterviewListCounts }> = [
   { value: "UPCOMING", label: "Upcoming", countKey: "upcoming" },
   { value: "TODAY", label: "Today", countKey: "today" },
+  { value: "IN_PROGRESS", label: "In Progress", countKey: "inProgress" },
   { value: "COMPLETED", label: "Completed", countKey: "completed" },
   { value: "CANCELLED", label: "Cancelled", countKey: "cancelled" },
 ];

@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
+import type { InterviewRoundItem } from "@/src/features/branch-ops/types";
 import { BranchJobApplicationStatusBadge } from "@/src/features/job-applications/components/BranchJobApplicationStatusBadge";
 import {
   formatInterviewDateTime,
   formatInterviewMode,
   isInterviewScheduled,
 } from "@/src/features/job-applications/utils/job-application-display.utils";
+import { isValidInterviewSchedule } from "@/src/features/interviews/utils/interview-display.utils";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
@@ -78,8 +80,15 @@ type BranchApplicationDetail = {
     mode?: string | null;
     locationOrLink?: string | null;
     notes?: string | null;
+    roundId?: string | null;
     roundNumber?: number;
+    result?: string | null;
     durationMinutes?: number;
+    round?: {
+      id: string;
+      name: string;
+      sortOrder: number;
+    } | null;
     branch?: {
       id: string;
       branchName: string;
@@ -154,8 +163,10 @@ export default function JobApplicationDetailPage({ params }: PageProps) {
   const [interviewTime, setInterviewTime] = useState("");
   const [mode, setMode] = useState<"ONLINE" | "OFFLINE">("ONLINE");
   const [locationOrLink, setLocationOrLink] = useState("");
-  const [roundNumber, setRoundNumber] = useState("1");
+  const [roundId, setRoundId] = useState("");
   const [notes, setNotes] = useState("");
+  const [rounds, setRounds] = useState<InterviewRoundItem[]>([]);
+  const [roundsLoading, setRoundsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -173,7 +184,7 @@ export default function JobApplicationDetailPage({ params }: PageProps) {
       setInterviewTime("");
       setMode("ONLINE");
       setLocationOrLink("");
-      setRoundNumber("1");
+      setRoundId("");
       setNotes("");
       return;
     }
@@ -182,9 +193,46 @@ export default function JobApplicationDetailPage({ params }: PageProps) {
     setInterviewTime(toTimeInputValue(activeInterview.scheduledAt));
     setMode(activeInterview.mode === "OFFLINE" ? "OFFLINE" : "ONLINE");
     setLocationOrLink(activeInterview.locationOrLink ?? "");
-    setRoundNumber(String(activeInterview.roundNumber ?? 1));
+    setRoundId(activeInterview.roundId ?? activeInterview.round?.id ?? "");
     setNotes(activeInterview.notes ?? "");
   }, [activeInterview]);
+
+  useEffect(() => {
+    if (!showScheduleForm) return;
+
+    let cancelled = false;
+    const loadRounds = async () => {
+      try {
+        setRoundsLoading(true);
+        const active = await branchOpsApi.activeInterviewRounds();
+        if (cancelled) return;
+        setRounds(active);
+        setRoundId((current) => {
+          if (current && active.some((round) => round.id === current)) {
+            return current;
+          }
+          return (
+            activeInterview?.roundId ||
+            activeInterview?.round?.id ||
+            ""
+          );
+        });
+      } catch {
+        if (!cancelled) {
+          setRounds([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setRoundsLoading(false);
+        }
+      }
+    };
+
+    void loadRounds();
+    return () => {
+      cancelled = true;
+    };
+  }, [showScheduleForm, activeInterview]);
 
   useEffect(() => {
     setShowScheduleForm(openSchedule && Boolean(activeInterview));
@@ -210,6 +258,8 @@ export default function JobApplicationDetailPage({ params }: PageProps) {
     Boolean(interviewDate) &&
     Boolean(interviewTime) &&
     Boolean(locationOrLink.trim()) &&
+    Boolean(roundId) &&
+    !roundsLoading &&
     !submitting;
 
   const handleSchedule = async () => {
@@ -229,7 +279,7 @@ export default function JobApplicationDetailPage({ params }: PageProps) {
         mode,
         locationOrLink: locationOrLink.trim(),
         notes: notes.trim() || undefined,
-        roundNumber: Number(roundNumber) || 1,
+        roundId,
       });
       appToast.success(
         scheduled
@@ -522,14 +572,17 @@ export default function JobApplicationDetailPage({ params }: PageProps) {
                   variant="default"
                   className="px-2 py-0 text-[11px] font-semibold leading-5"
                 >
-                  Round {activeInterview.roundNumber ?? 1}
+                  {activeInterview.round?.name ??
+                    (activeInterview.roundNumber
+                      ? `Round ${activeInterview.roundNumber}`
+                      : "Round")}
                 </Badge>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <Info
                   label="Date & Time"
                   value={
-                    activeInterview.scheduledAt
+                    isValidInterviewSchedule(activeInterview.scheduledAt)
                       ? formatInterviewDateTime(activeInterview.scheduledAt)
                       : "Not scheduled"
                   }
@@ -590,12 +643,21 @@ export default function JobApplicationDetailPage({ params }: PageProps) {
                   <label className="text-xs font-medium text-[#647A9B]">
                     Round
                   </label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={roundNumber}
-                    disabled={submitting}
-                    onChange={(event) => setRoundNumber(event.target.value)}
+                  <AppSelect
+                    value={roundId || undefined}
+                    disabled={submitting || roundsLoading || rounds.length === 0}
+                    placeholder={
+                      roundsLoading
+                        ? "Loading rounds..."
+                        : rounds.length === 0
+                          ? "No active rounds"
+                          : "Select round"
+                    }
+                    options={rounds.map((round) => ({
+                      label: round.name,
+                      value: round.id,
+                    }))}
+                    onValueChange={setRoundId}
                   />
                 </div>
               </div>

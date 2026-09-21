@@ -17,12 +17,55 @@ import {
   BranchManageTableShell,
   TABLE_CELL_CLASS,
 } from "@/src/features/branches/components/manage/branch-manage-table-shell";
+import { JobApplicationAssignmentStatusBadge } from "@/src/features/job-applications/components/JobApplicationAssignmentStatusBadge";
 import { JobApplicationDetailsDialog } from "@/src/features/job-applications/components/JobApplicationDetailsDialog";
 import { JobApplicationInterviewStatusBadge } from "@/src/features/job-applications/components/JobApplicationInterviewStatusBadge";
 import { JobApplicationStatusBadge } from "@/src/features/job-applications/components/JobApplicationStatusBadge";
 import { jobApplicationService } from "@/src/features/job-applications/services/job-application.service";
 import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
+import {
+  getCurrentRoundName,
+  getNextRoundName,
+} from "@/src/features/job-applications/types/job-application.types";
 import type { Student } from "@/src/features/students/types/student.types";
+
+const EPOCH_GUARD_MS = Date.parse("1970-01-02T00:00:00.000Z");
+
+function isValidInterviewSchedule(
+  scheduledAt?: string | null,
+): scheduledAt is string {
+  if (!scheduledAt) return false;
+  const time = Date.parse(scheduledAt);
+  return Number.isFinite(time) && time > EPOCH_GUARD_MS;
+}
+
+function hasScheduledInterview(application: JobApplication): boolean {
+  const assignment = application.interviewAssignment;
+  if (!assignment) return false;
+  if (assignment.status === "ASSIGNED") return false;
+  return isValidInterviewSchedule(assignment.scheduledAt);
+}
+
+function formatScheduleSummary(application: JobApplication): string | null {
+  if (!hasScheduledInterview(application)) {
+    return null;
+  }
+
+  const scheduledAt = application.interviewAssignment!.scheduledAt!;
+  const when = new Date(scheduledAt);
+  const date = when.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  const time = when.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const roundName = application.interviewAssignment?.round?.name?.trim();
+  const roundLabel = roundName ? `${roundName} · ` : "";
+  return `${roundLabel}${date} · ${time}`;
+}
 
 const JOB_APPLICATION_COLUMNS = [
   { key: "applicationNumber", label: "Application #" },
@@ -30,7 +73,10 @@ const JOB_APPLICATION_COLUMNS = [
   { key: "company", label: "Company" },
   { key: "status", label: "Application Status" },
   { key: "appliedDate", label: "Applied Date" },
+  { key: "assignmentStatus", label: "Assignment Status" },
   { key: "interviewStatus", label: "Interview Status" },
+  { key: "currentRound", label: "Current Round" },
+  { key: "nextRound", label: "Next Round" },
   { key: "actions", label: "Actions", className: "w-24 text-right" },
 ];
 
@@ -145,48 +191,77 @@ export function StudentManageJobApplicationsPanel({ student }: Props) {
           emptyIcon={ClipboardList}
           embedded
         >
-          {paginatedApplications.map((application) => (
-            <tr
-              key={application.id}
-              className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
-            >
-              <td className={`${TABLE_CELL_CLASS} font-mono text-slate-700`}>
-                {application.applicationNumber}
-              </td>
-              <td className={`${TABLE_CELL_CLASS} font-medium text-[#102A56]`}>
-                {application.job.title}
-              </td>
-              <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
-                {application.job.companyName}
-              </td>
-              <td className={TABLE_CELL_CLASS}>
-                <JobApplicationStatusBadge status={application.status} />
-              </td>
-              <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
-                {new Date(application.createdAt).toLocaleDateString("en-IN")}
-              </td>
-              <td className={TABLE_CELL_CLASS}>
-                <JobApplicationInterviewStatusBadge
-                  status={application.interviewStatus}
-                />
-              </td>
-              <td className={`${TABLE_CELL_CLASS} text-right`}>
-                <Tooltip content="View application details">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedApplication(application);
-                      setDetailsOpen(true);
-                    }}
-                    aria-label="View job application details"
-                    className={`${BRANCH_ICON_BUTTON_CLASS} text-[#2563EB]`}
-                  >
-                    <Eye className={BRANCH_ICON_CLASS} />
-                  </button>
-                </Tooltip>
-              </td>
-            </tr>
-          ))}
+          {paginatedApplications.map((application) => {
+            const scheduleSummary = formatScheduleSummary(application);
+            const currentRound = getCurrentRoundName(application);
+            const nextRound = getNextRoundName(application);
+
+            return (
+              <tr
+                key={application.id}
+                className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
+              >
+                <td className={`${TABLE_CELL_CLASS} font-mono text-slate-700`}>
+                  {application.applicationNumber || "—"}
+                </td>
+                <td className={`${TABLE_CELL_CLASS} font-medium text-[#102A56]`}>
+                  {application.job?.title || "—"}
+                </td>
+                <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                  {application.job?.companyName || "—"}
+                </td>
+                <td className={TABLE_CELL_CLASS}>
+                  <JobApplicationStatusBadge
+                    status={application.status}
+                    interviewStatus={application.interviewStatus}
+                  />
+                </td>
+                <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                  {new Date(application.createdAt).toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </td>
+                <td className={TABLE_CELL_CLASS}>
+                  <JobApplicationAssignmentStatusBadge
+                    application={application}
+                  />
+                </td>
+                <td className={TABLE_CELL_CLASS}>
+                  <div className="flex flex-col gap-1.5">
+                    <JobApplicationInterviewStatusBadge
+                      application={application}
+                    />
+                    {scheduleSummary ? (
+                      <p className="text-xs text-[#526581]">{scheduleSummary}</p>
+                    ) : null}
+                  </div>
+                </td>
+                <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                  {currentRound}
+                </td>
+                <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                  {nextRound}
+                </td>
+                <td className={`${TABLE_CELL_CLASS} text-right`}>
+                  <Tooltip content="View application details">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedApplication(application);
+                        setDetailsOpen(true);
+                      }}
+                      aria-label="View job application details"
+                      className={`${BRANCH_ICON_BUTTON_CLASS} text-[#2563EB]`}
+                    >
+                      <Eye className={BRANCH_ICON_CLASS} />
+                    </button>
+                  </Tooltip>
+                </td>
+              </tr>
+            );
+          })}
         </BranchManageTableShell>
 
         <BranchManagePaginationFooter

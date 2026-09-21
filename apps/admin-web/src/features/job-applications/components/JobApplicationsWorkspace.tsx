@@ -34,7 +34,7 @@ interface JobApplicationsWorkspaceProps {
   error: string | null;
   filters: JobApplicationFilters;
   setFilters: (filters: JobApplicationFilters) => void;
-  refetch: () => Promise<void>;
+  refetch: (overrideFilters?: JobApplicationFilters) => Promise<void>;
   actionsDisabled?: boolean;
 }
 
@@ -130,13 +130,13 @@ export function JobApplicationsWorkspace({
       setDetailsOpen(false);
       setSelectedApplication(null);
 
-      setFilters({
+      const nextFilters: JobApplicationFilters = {
         ...filters,
         status: "ACCEPTED" as ApplicationStatusFilter,
         page: 1,
-      });
-
-      await refetch();
+      };
+      setFilters(nextFilters);
+      await refetch(nextFilters);
     } catch (err) {
       appToast.error(
         err instanceof Error

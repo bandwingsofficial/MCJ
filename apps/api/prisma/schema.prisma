@@ -1375,13 +1375,18 @@ model Interview {
   jobId            String
   interviewerId    String?
   branchId         String
+  roundId          String?
+  /// Selected next round when result is SELECTED_FOR_NEXT_ROUND (does not create interview yet).
+  nextRoundId      String?
   scheduledAt      DateTime?
   durationMinutes  Int             @default(60)
   mode             InterviewMode?
   locationOrLink   String?
   notes            String?
   evaluation       String?
+  /// Denormalized from InterviewRound.sortOrder for ordering / legacy display.
   roundNumber      Int             @default(1)
+  result           InterviewResult @default(PENDING)
   status           InterviewStatus @default(ASSIGNED)
   createdBy        String?
   updatedBy        String?
@@ -1391,14 +1396,39 @@ model Interview {
   job              Job             @relation(fields: [jobId], references: [id])
   interviewer      BranchUser?     @relation(fields: [interviewerId], references: [id], onDelete: SetNull)
   branch           Branch          @relation(fields: [branchId], references: [id])
+  round            InterviewRound? @relation("InterviewCurrentRound", fields: [roundId], references: [id], onDelete: SetNull)
+  nextRound        InterviewRound? @relation("InterviewNextRound", fields: [nextRoundId], references: [id], onDelete: SetNull)
 
   @@index([applicationId])
   @@index([jobId])
   @@index([interviewerId])
   @@index([branchId])
+  @@index([roundId])
+  @@index([nextRoundId])
   @@index([scheduledAt])
   @@index([status])
+  @@index([result])
   @@index([interviewerId, scheduledAt])
+  @@index([applicationId, roundNumber])
+}
+
+/// Configurable interview rounds (Technical, HR, etc.) — not hardcoded in app logic.
+model InterviewRound {
+  id                 String               @id @default(uuid())
+  name               String               @unique
+  description        String?
+  sortOrder          Int
+  status             InterviewRoundStatus @default(ACTIVE)
+  createdBy          String?
+  updatedBy          String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  interviews         Interview[]          @relation("InterviewCurrentRound")
+  nextForInterviews  Interview[]          @relation("InterviewNextRound")
+
+  @@index([sortOrder])
+  @@index([status])
+  @@index([name])
 }
 
 model BranchActivityLog {
@@ -1975,6 +2005,20 @@ enum InterviewStatus {
   COMPLETED
   CANCELLED
   NO_SHOW
+}
+
+enum InterviewResult {
+  PENDING
+  SELECTED_FOR_NEXT_ROUND
+  REJECTED
+  ON_HOLD
+  NEED_FURTHER_REVIEW
+  PLACED
+}
+
+enum InterviewRoundStatus {
+  ACTIVE
+  INACTIVE
 }
 
 enum InterviewMode {

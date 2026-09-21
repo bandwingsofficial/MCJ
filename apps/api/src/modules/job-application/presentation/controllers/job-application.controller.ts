@@ -113,6 +113,7 @@ export class AdminJobApplicationController {
         query.includeDeleted,
         query.skip,
         query.take,
+        query.statusGroup,
       ),
     );
 

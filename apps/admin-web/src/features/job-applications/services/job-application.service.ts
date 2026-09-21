@@ -7,6 +7,7 @@ import type {
   JobApplicationListResponse,
   JobApplicationResponse,
   JobApplicationStatus,
+  JobApplicationStatusGroup,
   RestoreJobApplicationResponse,
   UpdateJobApplicationStatusRequest,
 } from "@/src/features/job-applications/types/job-application.types";
@@ -15,6 +16,7 @@ import { enrichJobApplicationStudentCodes } from "@/src/features/job-application
 export interface JobApplicationListQuery {
   search?: string;
   status?: JobApplicationStatus;
+  statusGroup?: JobApplicationStatusGroup;
   interviewStatus?: JobApplicationInterviewStatus;
   jobId?: string;
   appliedFrom?: string;
@@ -51,7 +53,8 @@ class JobApplicationService {
       {
         params: {
           search: params?.search || undefined,
-          status: params?.status,
+          status: params?.statusGroup ? undefined : params?.status,
+          statusGroup: params?.statusGroup || undefined,
           interviewStatus: params?.interviewStatus || undefined,
           jobId: params?.jobId || undefined,
           appliedFrom: params?.appliedFrom || undefined,

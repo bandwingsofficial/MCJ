@@ -26,20 +26,26 @@ export const jobApplicationDetailInclude = {
       },
     },
     orderBy: [
-      { roundNumber: 'desc' as const },
-      { createdAt: 'desc' as const },
+      { roundNumber: 'asc' as const },
+      { createdAt: 'asc' as const },
     ],
-    take: 5,
+    take: 20,
     select: {
       id: true,
       status: true,
+      result: true,
+      evaluation: true,
       branchId: true,
       interviewerId: true,
+      roundId: true,
+      nextRoundId: true,
       scheduledAt: true,
       mode: true,
       locationOrLink: true,
       roundNumber: true,
       notes: true,
+      createdAt: true,
+      updatedAt: true,
       branch: {
         select: {
           id: true,
@@ -61,6 +67,20 @@ export const jobApplicationDetailInclude = {
           email: true,
         },
       },
+      round: {
+        select: {
+          id: true,
+          name: true,
+          sortOrder: true,
+        },
+      },
+      nextRound: {
+        select: {
+          id: true,
+          name: true,
+          sortOrder: true,
+        },
+      },
     },
   },
 } satisfies Prisma.JobApplicationInclude;
@@ -71,6 +91,32 @@ type JobApplicationWithRelations = Prisma.JobApplicationGetPayload<{
 
 const SCHEDULE_EPOCH_GUARD_MS = Date.parse('1970-01-02T00:00:00.000Z');
 
+function mapInterviewAssignment(
+  interview: JobApplicationWithRelations['interviews'][number],
+) {
+  return {
+    id: interview.id,
+    status: interview.status,
+    result: interview.result ?? null,
+    evaluation: interview.evaluation ?? null,
+    branchId: interview.branchId,
+    interviewerId: interview.interviewerId,
+    roundId: interview.roundId ?? null,
+    nextRoundId: interview.nextRoundId ?? null,
+    scheduledAt: interview.scheduledAt,
+    mode: interview.mode,
+    locationOrLink: interview.locationOrLink,
+    roundNumber: interview.roundNumber,
+    notes: interview.notes,
+    createdAt: interview.createdAt,
+    updatedAt: interview.updatedAt,
+    branch: interview.branch,
+    interviewer: interview.interviewer,
+    round: interview.round ?? null,
+    nextRound: interview.nextRound ?? null,
+  };
+}
+
 function pickInterviewAssignment(
   interviews: JobApplicationWithRelations['interviews'],
 ) {
@@ -78,17 +124,34 @@ function pickInterviewAssignment(
     return null;
   }
 
-  const scheduled = interviews.find((interview) => {
-    if (interview.status === InterviewStatus.ASSIGNED) {
-      return false;
+  // Prefer the latest currently scheduled interview.
+  for (let index = interviews.length - 1; index >= 0; index -= 1) {
+    const interview = interviews[index];
+    if (
+      interview.status === InterviewStatus.SCHEDULED &&
+      interview.scheduledAt &&
+      interview.scheduledAt.getTime() > SCHEDULE_EPOCH_GUARD_MS
+    ) {
+      return interview;
     }
-    if (!interview.scheduledAt) {
-      return false;
-    }
-    return interview.scheduledAt.getTime() > SCHEDULE_EPOCH_GUARD_MS;
-  });
+  }
 
-  return scheduled ?? interviews[0] ?? null;
+  // Then the latest assignment awaiting schedule.
+  for (let index = interviews.length - 1; index >= 0; index -= 1) {
+    if (interviews[index].status === InterviewStatus.ASSIGNED) {
+      return interviews[index];
+    }
+  }
+
+  // Then the latest completed interview (highest round / newest).
+  for (let index = interviews.length - 1; index >= 0; index -= 1) {
+    if (interviews[index].status === InterviewStatus.COMPLETED) {
+      return interviews[index];
+    }
+  }
+
+  // Otherwise the most recent interview record.
+  return interviews[interviews.length - 1] ?? null;
 }
 
 export class JobApplicationResponseMapper {
@@ -124,20 +187,9 @@ export class JobApplicationResponseMapper {
       user: this.toUser(record),
       student: this.toStudent(record.Student),
       interviewAssignment: interview
-        ? {
-            id: interview.id,
-            status: interview.status,
-            branchId: interview.branchId,
-            interviewerId: interview.interviewerId,
-            scheduledAt: interview.scheduledAt,
-            mode: interview.mode,
-            locationOrLink: interview.locationOrLink,
-            roundNumber: interview.roundNumber,
-            notes: interview.notes,
-            branch: interview.branch,
-            interviewer: interview.interviewer,
-          }
+        ? mapInterviewAssignment(interview)
         : null,
+      interviews: record.interviews.map(mapInterviewAssignment),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     };

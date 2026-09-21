@@ -13,7 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { InterviewMode, InterviewStatus, JobApplicationStatus } from '@prisma/client';
+import { InterviewMode, InterviewRoundStatus, InterviewStatus, JobApplicationStatus } from '@prisma/client';
 
 import { CurrentBranchUser } from '@common/decorators/current-branch-user.decorator';
 import type { BranchAuthUser } from '@common/decorators/current-branch-user.decorator';
@@ -31,6 +31,7 @@ import { BranchBatchOpsService } from '../../application/branch-batch-ops.servic
 import { BranchDashboardService } from '../../application/branch-dashboard.service';
 import { FacultyDashboardService } from '../../application/faculty-dashboard.service';
 import { BranchInterviewService } from '../../application/branch-interview.service';
+import { BranchInterviewRoundService } from '../../application/branch-interview-round.service';
 import { BranchStaffService } from '../../application/branch-staff.service';
 import {
   AssignFacultyDto,
@@ -41,8 +42,10 @@ import {
   BulkCreateAssessmentDto,
   BulkRecordAttendanceDto,
   BulkUpdateAssessmentGroupDto,
+  CompleteInterviewDto,
   CreateAssessmentDto,
   CreateBranchStaffDto,
+  CreateInterviewRoundDto,
   EnrollmentListQueryDto,
   FacultyDashboardQueryDto,
   ListBranchStaffQueryDto,
@@ -50,12 +53,14 @@ import {
   RecordAttendanceDto,
   ResetBranchStaffPasswordDto,
   ScheduleInterviewDto,
+  ScheduleNextRoundDto,
   StudentBatchAttendanceQueryDto,
   StudentFeesQueryDto,
   UpdateApplicationStatusDto,
   UpdateAssessmentDto,
   UpdateBranchStaffDto,
   UpdateInterviewDto,
+  UpdateInterviewRoundDto,
 } from '../dtos/branch-operations.dto';
 import {
   BatchCalendarMonthQueryDto,
@@ -89,6 +94,7 @@ export class BranchOperationsController {
     private readonly attendance: BranchAttendanceService,
     private readonly assessments: BranchAssessmentService,
     private readonly interviews: BranchInterviewService,
+    private readonly interviewRounds: BranchInterviewRoundService,
     private readonly staff: BranchStaffService,
   ) {}
 
@@ -824,16 +830,108 @@ export class BranchOperationsController {
     };
   }
 
+  @Get('interview-rounds')
+  @Roles(...InterviewOrManager)
+  @Permissions(Permission.INTERVIEW_READ)
+  async listInterviewRounds(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Query('search') search?: string,
+    @Query('status') status?: InterviewRoundStatus | 'ALL',
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    return {
+      success: true,
+      message: 'Interview rounds fetched successfully',
+      data: await this.interviewRounds.list(user, {
+        search,
+        status,
+        skip: skip ? Number(skip) : undefined,
+        take: take ? Number(take) : undefined,
+      }),
+    };
+  }
+
+  @Get('interview-rounds/active')
+  @Roles(...InterviewOrManager)
+  @Permissions(Permission.INTERVIEW_READ)
+  async listActiveInterviewRounds(@CurrentBranchUser() user: BranchAuthUser) {
+    return {
+      success: true,
+      message: 'Active interview rounds fetched successfully',
+      data: await this.interviewRounds.listActive(user),
+    };
+  }
+
+  @Get('interview-rounds/:id')
+  @Roles(...InterviewOrManager)
+  @Permissions(Permission.INTERVIEW_READ)
+  async getInterviewRound(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+  ) {
+    return {
+      success: true,
+      message: 'Interview round fetched successfully',
+      data: await this.interviewRounds.getById(user, id),
+    };
+  }
+
+  @Post('interview-rounds')
+  @Roles(BranchUserRole.BRANCH_MANAGER)
+  @Permissions(Permission.INTERVIEW_WRITE)
+  async createInterviewRound(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Body() dto: CreateInterviewRoundDto,
+  ) {
+    return {
+      success: true,
+      message: 'Interview round created successfully',
+      data: await this.interviewRounds.create(user, dto),
+    };
+  }
+
+  @Patch('interview-rounds/:id')
+  @Roles(BranchUserRole.BRANCH_MANAGER)
+  @Permissions(Permission.INTERVIEW_WRITE)
+  async updateInterviewRound(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateInterviewRoundDto,
+  ) {
+    return {
+      success: true,
+      message: 'Interview round updated successfully',
+      data: await this.interviewRounds.update(user, id, dto),
+    };
+  }
+
+  @Delete('interview-rounds/:id')
+  @Roles(BranchUserRole.BRANCH_MANAGER)
+  @Permissions(Permission.INTERVIEW_WRITE)
+  async deleteInterviewRound(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+  ) {
+    return {
+      success: true,
+      message: 'Interview round deleted successfully',
+      data: await this.interviewRounds.remove(user, id),
+    };
+  }
+
   @Get('interviews')
   @Roles(...InterviewOrManager)
   @Permissions(Permission.INTERVIEW_READ)
   async listInterviews(
     @CurrentBranchUser() user: BranchAuthUser,
-    @Query('tab') tab?: 'UPCOMING' | 'TODAY' | 'COMPLETED' | 'CANCELLED',
+    @Query('tab')
+    tab?: 'UPCOMING' | 'TODAY' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED',
     @Query('status') status?: InterviewStatus,
     @Query('search') search?: string,
     @Query('interviewerId') interviewerId?: string,
     @Query('mode') mode?: InterviewMode,
+    @Query('roundId') roundId?: string,
     @Query('roundNumber') roundNumber?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
@@ -849,7 +947,12 @@ export class BranchOperationsController {
         search,
         interviewerId,
         mode,
-        roundNumber: roundNumber ? Number(roundNumber) : undefined,
+        roundId,
+        roundNumber: roundId
+          ? undefined
+          : roundNumber
+            ? Number(roundNumber)
+            : undefined,
         from,
         to,
         skip: skip ? Number(skip) : undefined,
@@ -869,6 +972,35 @@ export class BranchOperationsController {
       success: true,
       message: 'Interview scheduled successfully',
       data: await this.interviews.schedule(user, dto),
+    };
+  }
+
+  @Post('interviews/next-round')
+  @Roles(...InterviewOrManager)
+  @Permissions(Permission.INTERVIEW_WRITE)
+  async scheduleNextRound(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Body() dto: ScheduleNextRoundDto,
+  ) {
+    return {
+      success: true,
+      message: 'Next interview round assigned successfully',
+      data: await this.interviews.createNextRound(user, dto),
+    };
+  }
+
+  @Post('interviews/:id/complete')
+  @Roles(...InterviewOrManager)
+  @Permissions(Permission.INTERVIEW_WRITE)
+  async completeInterview(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+    @Body() dto: CompleteInterviewDto,
+  ) {
+    return {
+      success: true,
+      message: 'Interview completed successfully',
+      data: await this.interviews.completeInterview(user, id, dto),
     };
   }
 

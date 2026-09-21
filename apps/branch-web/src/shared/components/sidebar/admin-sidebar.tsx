@@ -18,6 +18,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  ListOrdered,
 } from "lucide-react";
 
 import { cn } from "@/src/shared/lib/cn";
@@ -46,6 +47,7 @@ const MANAGER_MENU: MenuItem[] = [
   { name: "Attendance", icon: ClipboardCheck, path: "/attendance" },
   { name: "Marks / Assessments", icon: GraduationCap, path: "/assessments" },
   { name: "Job Applications", icon: FileText, path: "/job-applications" },
+  { name: "Interview Rounds", icon: ListOrdered, path: "/interview-rounds" },
   { name: "Interviews", icon: CalendarClock, path: "/interviews" },
   { name: "Placement Activities", icon: Briefcase, path: "/placements" },
   { name: "Settings", icon: Settings, path: "/settings" },

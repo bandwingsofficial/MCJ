@@ -24,7 +24,13 @@ export class UnassignInterviewHandler {
     );
     this.domainService.ensureNotDeleted(application);
 
-    if (application.status !== DomainJobApplicationStatus.SHORTLISTED) {
+    if (
+      application.status !== DomainJobApplicationStatus.SHORTLISTED &&
+      !(
+        application.status === DomainJobApplicationStatus.SELECTED &&
+        application.interviewStatus === 'NOT_YET'
+      )
+    ) {
       throw new BadRequestException(
         'Only shortlisted applications can be unassigned',
       );

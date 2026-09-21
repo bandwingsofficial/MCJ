@@ -24,10 +24,15 @@ import type {
   UpsertBatchCalendarExceptionRequest,
   BatchStudentItem,
   BranchUserItem,
+  CompleteInterviewResult,
   DashboardData,
   EnrollmentItem,
   InterviewItem,
   InterviewListResult,
+  InterviewResult,
+  InterviewRoundItem,
+  InterviewRoundListResult,
+  InterviewRoundStatus,
   JobApplicationItem,
   JobApplicationListResult,
   PaginatedList,
@@ -373,12 +378,54 @@ export const branchOpsApi = {
       apiClient.patch(`/branch/job-applications/${id}/status`, { status }),
     ),
 
+  interviewRounds: (params?: {
+    search?: string;
+    status?: InterviewRoundStatus | "ALL";
+    skip?: number;
+    take?: number;
+  }) =>
+    unwrap<InterviewRoundListResult>(
+      apiClient.get("/branch/interview-rounds", { params }),
+    ),
+
+  activeInterviewRounds: () =>
+    unwrap<InterviewRoundItem[]>(
+      apiClient.get("/branch/interview-rounds/active"),
+    ),
+
+  createInterviewRound: (payload: {
+    name: string;
+    description?: string;
+    sortOrder: number;
+    status?: InterviewRoundStatus;
+  }) =>
+    unwrap<InterviewRoundItem>(
+      apiClient.post("/branch/interview-rounds", payload),
+    ),
+
+  updateInterviewRound: (
+    id: string,
+    payload: {
+      name?: string;
+      description?: string | null;
+      sortOrder?: number;
+      status?: InterviewRoundStatus;
+    },
+  ) =>
+    unwrap<InterviewRoundItem>(
+      apiClient.patch(`/branch/interview-rounds/${id}`, payload),
+    ),
+
+  deleteInterviewRound: (id: string) =>
+    unwrap<{ id: string }>(apiClient.delete(`/branch/interview-rounds/${id}`)),
+
   interviews: (params?: {
     tab?: string;
     status?: string;
     search?: string;
     interviewerId?: string;
     mode?: string;
+    roundId?: string;
     roundNumber?: number | string;
     from?: string;
     to?: string;
@@ -393,6 +440,7 @@ export const branchOpsApi = {
     applicationId: string;
     scheduledAt: string;
     mode: string;
+    roundId: string;
     durationMinutes?: number;
     locationOrLink?: string;
     notes?: string;
@@ -411,9 +459,41 @@ export const branchOpsApi = {
       evaluation?: string;
       status?: string;
       decision?: string;
+      roundId?: string;
+      result?: InterviewResult;
       roundNumber?: number;
     },
   ) => unwrap<InterviewItem>(apiClient.patch(`/branch/interviews/${id}`, payload)),
+
+  completeInterview: (
+    id: string,
+    payload: {
+      result: InterviewResult;
+      nextRoundId?: string;
+      evaluation?: string;
+      notes?: string;
+      scheduleNext?: {
+        scheduledAt: string;
+        mode: "ONLINE" | "OFFLINE";
+        locationOrLink: string;
+        interviewerId: string;
+        durationMinutes?: number;
+        notes?: string;
+      };
+    },
+  ) =>
+    unwrap<CompleteInterviewResult>(
+      apiClient.post(`/branch/interviews/${id}/complete`, payload),
+    ),
+
+  createNextRound: (payload: {
+    applicationId: string;
+    roundId: string;
+    interviewerId?: string;
+  }) =>
+    unwrap<InterviewItem>(
+      apiClient.post("/branch/interviews/next-round", payload),
+    ),
 
   placementActivity: () =>
     unwrap<PlacementActivityItem[]>(

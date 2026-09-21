@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
-import type { JobApplicationItem } from "@/src/features/branch-ops/types";
+import type {
+  InterviewRoundItem,
+  JobApplicationItem,
+} from "@/src/features/branch-ops/types";
 import {
   getInterviewerName,
   isInterviewScheduled,
@@ -52,27 +55,65 @@ export function BranchScheduleInterviewModal({
   const [interviewTime, setInterviewTime] = useState("");
   const [mode, setMode] = useState<"ONLINE" | "OFFLINE">("ONLINE");
   const [locationOrLink, setLocationOrLink] = useState("");
-  const [roundNumber, setRoundNumber] = useState("1");
+  const [roundId, setRoundId] = useState("");
   const [notes, setNotes] = useState("");
+  const [rounds, setRounds] = useState<InterviewRoundItem[]>([]);
+  const [roundsLoading, setRoundsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!open || !application) {
+    if (!open) {
       setInterviewDate("");
       setInterviewTime("");
       setMode("ONLINE");
       setLocationOrLink("");
-      setRoundNumber("1");
+      setRoundId("");
       setNotes("");
+      setRounds([]);
       return;
     }
+
+    let cancelled = false;
+
+    const loadRounds = async () => {
+      try {
+        setRoundsLoading(true);
+        const active = await branchOpsApi.activeInterviewRounds();
+        if (cancelled) return;
+        setRounds(active);
+
+        const preferred =
+          interview?.status === "COMPLETED" &&
+          (interview.nextRoundId || interview.nextRound?.id)
+            ? interview.nextRoundId || interview.nextRound?.id || ""
+            : interview?.roundId || interview?.round?.id || "";
+        setRoundId(preferred);
+      } catch (error) {
+        if (!cancelled) {
+          setRounds([]);
+          appToast.error(
+            error instanceof Error
+              ? error.message
+              : "Unable to load interview rounds.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setRoundsLoading(false);
+        }
+      }
+    };
 
     setInterviewDate(toDateInputValue(interview?.scheduledAt));
     setInterviewTime(toTimeInputValue(interview?.scheduledAt));
     setMode(interview?.mode === "OFFLINE" ? "OFFLINE" : "ONLINE");
     setLocationOrLink(interview?.locationOrLink ?? "");
-    setRoundNumber(String(interview?.roundNumber ?? 1));
     setNotes(interview?.notes ?? "");
+    void loadRounds();
+
+    return () => {
+      cancelled = true;
+    };
   }, [open, application, interview]);
 
   if (!application) {
@@ -83,6 +124,8 @@ export function BranchScheduleInterviewModal({
     Boolean(interviewDate) &&
     Boolean(interviewTime) &&
     Boolean(locationOrLink.trim()) &&
+    Boolean(roundId) &&
+    !roundsLoading &&
     !submitting;
 
   const handleSubmit = async () => {
@@ -104,7 +147,7 @@ export function BranchScheduleInterviewModal({
         mode,
         locationOrLink: locationOrLink.trim(),
         notes: notes.trim() || undefined,
-        roundNumber: Number(roundNumber) || 1,
+        roundId,
       });
       appToast.success(
         scheduled
@@ -205,12 +248,21 @@ export function BranchScheduleInterviewModal({
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-[#647A9B]">Round</label>
-            <Input
-              type="number"
-              min={1}
-              value={roundNumber}
-              disabled={submitting}
-              onChange={(event) => setRoundNumber(event.target.value)}
+            <AppSelect
+              value={roundId || undefined}
+              disabled={submitting || roundsLoading || rounds.length === 0}
+              placeholder={
+                roundsLoading
+                  ? "Loading rounds..."
+                  : rounds.length === 0
+                    ? "No active rounds"
+                    : "Select round"
+              }
+              options={rounds.map((round) => ({
+                label: round.name,
+                value: round.id,
+              }))}
+              onValueChange={setRoundId}
             />
           </div>
         </div>

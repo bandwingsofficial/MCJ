@@ -10,6 +10,7 @@ export type CustomerApplicationStatusKey =
   | "SHORTLISTED"
   | "INTERVIEW"
   | "SELECTED"
+  | "PLACED"
   | "REJECTED";
 
 /**
@@ -20,8 +21,9 @@ export type CustomerApplicationStatusKey =
  * - Legacy admin "approve" wrote SELECTED before shortlisting existed. Those rows
  *   still have interviewStatus NOT_YET (never entered the interview pipeline), so
  *   they must display as SHORTLISTED — not Selected.
- * - True final selection is SELECTED/PLACED after the interview pipeline
- *   (interviewStatus is no longer NOT_YET).
+ * - INTERVIEW pipeline status stays SHORTLISTED on the application badge;
+ *   interview details are shown separately.
+ * - True final placement is JobApplication.status = PLACED.
  */
 export function resolveCustomerApplicationStatus(
   status: string,
@@ -47,7 +49,11 @@ export function resolveCustomerApplicationStatus(
     return "SHORTLISTED";
   }
 
-  if (normalized === "SELECTED" || normalized === "PLACED") {
+  if (normalized === "PLACED") {
+    return "PLACED";
+  }
+
+  if (normalized === "SELECTED") {
     // Legacy admin-approval SELECTED never entered interview scheduling.
     if (interview === "NOT_YET" || interview === "") {
       return "SHORTLISTED";
@@ -64,6 +70,7 @@ const CUSTOMER_STATUS_LABELS: Record<CustomerApplicationStatusKey, string> = {
   SHORTLISTED: "Shortlisted",
   INTERVIEW: "Shortlisted",
   SELECTED: "Selected",
+  PLACED: "Placed",
   REJECTED: "Rejected",
 };
 
@@ -86,7 +93,7 @@ export function getJobApplicationStatusVariant(
     return "danger";
   }
 
-  if (key === "SELECTED") {
+  if (key === "SELECTED" || key === "PLACED") {
     return "success";
   }
 

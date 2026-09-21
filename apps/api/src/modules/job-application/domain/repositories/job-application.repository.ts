@@ -62,16 +62,28 @@ export interface JobApplicationStudentView {
   jobStatus: string | null;
 }
 
+export interface JobApplicationInterviewRoundView {
+  id: string;
+  name: string;
+  sortOrder: number;
+}
+
 export interface JobApplicationInterviewAssignmentView {
   id: string;
   status: string;
+  result: string | null;
+  evaluation: string | null;
   branchId: string;
   interviewerId: string | null;
+  roundId: string | null;
+  nextRoundId: string | null;
   scheduledAt: Date | null;
   mode: string | null;
   locationOrLink: string | null;
   roundNumber: number;
   notes: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
   branch: {
     id: string;
     branchName: string;
@@ -89,6 +101,8 @@ export interface JobApplicationInterviewAssignmentView {
     lastName: string | null;
     email: string;
   } | null;
+  round: JobApplicationInterviewRoundView | null;
+  nextRound: JobApplicationInterviewRoundView | null;
 }
 
 export interface JobApplicationDetailView {
@@ -116,6 +130,8 @@ export interface JobApplicationDetailView {
   student: JobApplicationStudentView | null;
   resolvedStudentCode?: string | null;
   interviewAssignment?: JobApplicationInterviewAssignmentView | null;
+  /** Full persisted interview history for timeline / round progression. */
+  interviews?: JobApplicationInterviewAssignmentView[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -124,6 +140,8 @@ export interface JobApplicationListFilters {
   jobId?: string;
   studentId?: string;
   status?: JobApplicationStatus;
+  /** Tab grouping that expands to the correct persisted status set. */
+  statusGroup?: 'PENDING' | 'SHORTLISTED' | 'REJECTED';
   interviewStatus?: JobApplicationInterviewStatus;
   search?: string;
   appliedFrom?: Date;
