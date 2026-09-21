@@ -196,7 +196,7 @@ export function PublicJobApplyPage({ slug }: PublicJobApplyPageProps) {
       <div className="mx-auto w-full max-w-3xl space-y-5">
         <section className="rounded-2xl border border-[#DCE8F5] bg-white p-5 shadow-[0_8px_24px_rgba(16,42,86,0.06)] sm:p-6">
           <p className="text-sm font-medium text-[#2563D9]">
-            {job.companyName || "MCJ Institute"}
+            {job.companyName || "MCJ Academy"}
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-[#102A56] sm:text-3xl">
             {job.title}

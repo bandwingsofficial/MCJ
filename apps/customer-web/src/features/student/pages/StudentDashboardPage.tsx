@@ -243,7 +243,7 @@ export function StudentDashboardPage() {
         <div className="stu-dash-heading">
           <div className="stu-dash-eyebrow">
             <span className="stu-dash-eyebrow-dot" />
-            MCJ Institute
+            MCJ Academy
           </div>
           <h1 className="stu-dash-title">User Dashboard</h1>
           <p className="stu-dash-subtitle">Here's what's happening with your learning journey.</p>

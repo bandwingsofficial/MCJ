@@ -9,7 +9,7 @@ export const DASHBOARD_ROUTES = {
   student: (id: string) => `/students/${id}`,
 } as const;
 
-/** Shared dashboard design tokens (MCJ Institute) */
+/** Shared dashboard design tokens (MCJ Academy) */
 export const DASHBOARD_COLORS = {
   primary: "#2563EB",
   navy: "#102A56",

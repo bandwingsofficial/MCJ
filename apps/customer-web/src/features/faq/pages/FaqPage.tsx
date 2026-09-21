@@ -7,7 +7,7 @@ const faqData = [
     category: "Courses",
     items: [
       {
-        q: "What courses does MCJ Institute offer?",
+        q: "What courses does MCJ Academy offer?",
         a: "We offer courses in Tally, GST, Financial Accounting, and taxation with practical training.",
       },
       {

@@ -96,7 +96,7 @@ export function tomorrowDateInputValue(): string {
 export function createDefaultJobFormValues(): CreateJobFormValues {
   return {
     title: "",
-    companyName: "MCJ Institute",
+    companyName: "MCJ Academy",
     companyEmail: "",
     companyPhone: "",
     companyWebsite: "",

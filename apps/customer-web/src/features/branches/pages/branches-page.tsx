@@ -53,7 +53,7 @@ export function BranchesPage() {
         <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2563EB]">
-              MCJ Training Institutes
+              MCJ Training Institute
             </p>
             <h1 className="mt-3 text-4xl font-bold tracking-tight text-[#0B1F3A] sm:text-5xl">
               Our Branches

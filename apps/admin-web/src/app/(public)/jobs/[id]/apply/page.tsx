@@ -9,8 +9,8 @@ interface Props {
 }
 
 export const metadata: Metadata = {
-  title: "Apply for this Job | MCJ Institute",
-  description: "Submit your application to MCJ Institute.",
+  title: "Apply for this Job | MCJ Academy",
+  description: "Submit your application to MCJ Academy.",
 };
 
 export default async function PublicJobApplyRoute({ params }: Props) {

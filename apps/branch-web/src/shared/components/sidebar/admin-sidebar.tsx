@@ -154,7 +154,7 @@ export function BranchSidebar() {
           {!collapsed ? (
             <div className="min-w-0">
               <h2 className="text-[15px] font-bold tracking-tight text-[#102A56]">
-                MCJ Institute
+                MCJ Academy
               </h2>
               <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2563EB]">
                 {formatRoleLabel(user?.role) || "Branch Portal"}

@@ -190,7 +190,7 @@ export const AuthLayout = ({ title, subtitle, children, footer }: AuthLayoutProp
                   />
                 </div>
                 <div>
-                  <div className="mcj-brand-name">MCJ Institute</div>
+                  <div className="mcj-brand-name">MCJ Academy</div>
                   <div className="mcj-brand-tag">Learning Platform</div>
                 </div>
               </div>

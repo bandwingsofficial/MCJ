@@ -27,7 +27,7 @@ export function CTASection() {
 
               <Heading
                 title="Build Your Career with Industry-Ready Skills"
-                subtitle="Join MCJ Institute to access expert-led courses, live classes, downloadable notes, and real-world training that helps you crack interviews with confidence."
+                subtitle="Join MCJ Academy to access expert-led courses, live classes, downloadable notes, and real-world training that helps you crack interviews with confidence."
               />
 
               <div className="mt-8 flex flex-col sm:flex-row items-center md:items-start gap-4">

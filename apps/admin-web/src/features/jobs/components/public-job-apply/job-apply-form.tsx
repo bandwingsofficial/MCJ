@@ -416,7 +416,7 @@ export function JobApplyForm({
               />
               <span className="text-sm leading-relaxed text-[#102A56]">
                 I confirm that the information provided is accurate and
-                complete. I understand that MCJ Institute may use these details
+                complete. I understand that MCJ Academy may use these details
                 to evaluate my application for this position.
               </span>
             </label>

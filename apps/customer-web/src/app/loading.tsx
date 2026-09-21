@@ -10,7 +10,7 @@ export default function Loading() {
       <header className="w-full bg-white border-b border-[#e8e0cf]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <h1 className="font-bold text-lg text-[#0f2044]">
-            MCJ Institute
+            MCJ Academy
           </h1>
 
           <Link
@@ -50,7 +50,7 @@ export default function Loading() {
       {/* FOOTER */}
       <footer className="w-full bg-white border-t border-[#e8e0cf]">
         <div className="max-w-7xl mx-auto px-6 py-6 text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} MCJ Institute. All rights reserved.
+          © {new Date().getFullYear()} MCJ Academy. All rights reserved.
         </div>
       </footer>
 

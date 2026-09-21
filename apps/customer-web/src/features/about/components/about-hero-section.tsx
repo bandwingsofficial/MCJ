@@ -17,7 +17,7 @@ export function AboutHeroSection() {
         {/* Left — editorial copy */}
         <div className="min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#2563EB]">
-            About MCJ Training Institute
+            About MCJ Academy
           </p>
 
           <h1 className="mt-2.5 text-3xl font-bold leading-[1.12] tracking-tight text-[#0B1F3A] sm:text-[2.35rem]">
@@ -28,7 +28,7 @@ export function AboutHeroSection() {
           </h1>
 
           <p className="mt-3.5 max-w-xl text-sm leading-relaxed text-slate-600">
-            MCJ Institute is a leading training institute focused on delivering
+            MCJ Academy is a leading training institute focused on delivering
             industry-relevant accounting and taxation education. With expert
             trainers, live projects, and placement support, we ensure every
             student is job-ready from day one.
@@ -63,7 +63,7 @@ export function AboutHeroSection() {
             <div className="relative aspect-[4/3] w-full">
               <Image
                 src="/why/Image-Expert-Mentors.jpg"
-                alt="MCJ Training Institute classroom and mentors"
+                alt="MCJ Academy classroom and mentors"
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 480px"

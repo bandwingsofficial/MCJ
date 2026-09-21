@@ -55,12 +55,14 @@ export function CompanyJobOnboardingPage() {
       <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:py-12">
         <div className="rounded-2xl border border-[#DCE8F5] bg-white px-6 py-10 text-center shadow-[0_8px_24px_rgba(16,42,86,0.06)] sm:px-10">
           <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
+
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-[#102A56]">
             Requirement Submitted Successfully
           </h1>
+
           <p className="mt-3 text-sm leading-6 text-[#647A9B]">
             Thank you. Your hiring requirement has been submitted to MCJ
-            Institute and is currently under review.
+            Academy and is currently under review.
           </p>
 
           <dl className="mx-auto mt-8 grid max-w-md grid-cols-1 gap-3 text-left sm:grid-cols-2">
@@ -72,6 +74,7 @@ export function CompanyJobOnboardingPage() {
                 {result.companyName}
               </dd>
             </div>
+
             <div className="rounded-xl border border-[#E8F1FF] bg-[#F8FBFF] px-4 py-3">
               <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
                 Job Title
@@ -80,6 +83,7 @@ export function CompanyJobOnboardingPage() {
                 {result.title}
               </dd>
             </div>
+
             <div className="rounded-xl border border-[#E8F1FF] bg-[#F8FBFF] px-4 py-3">
               <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
                 Submission Date
@@ -88,6 +92,7 @@ export function CompanyJobOnboardingPage() {
                 {submittedOn}
               </dd>
             </div>
+
             <div className="rounded-xl border border-[#E8F1FF] bg-[#F8FBFF] px-4 py-3">
               <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
                 Status
@@ -96,6 +101,7 @@ export function CompanyJobOnboardingPage() {
                 Pending Review
               </dd>
             </div>
+
             <div className="rounded-xl border border-[#E8F1FF] bg-[#F8FBFF] px-4 py-3 sm:col-span-2">
               <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
                 Request ID
@@ -124,8 +130,9 @@ export function CompanyJobOnboardingPage() {
         <h1 className="text-3xl font-bold tracking-tight text-[#102A56]">
           Submit Your Hiring Requirement
         </h1>
+
         <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-[#647A9B]">
-          Share your hiring requirements with MCJ Institute. Our team will
+          Share your hiring requirements with MCJ Academy. Our team will
           review your submission before publishing the job.
         </p>
       </section>

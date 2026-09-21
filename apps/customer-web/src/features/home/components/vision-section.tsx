@@ -22,7 +22,7 @@ export function VisionSection() {
             </p>
 
             <p className="text-gray-600 leading-relaxed text-base md:text-lg mb-6">
-              At MCJ Institute, our vision is to bridge this gap by delivering
+              At MCJ Academy, our vision is to bridge this gap by delivering
               industry-relevant, practical, and job-oriented training programs
               designed for both beginners and experienced learners.
             </p>

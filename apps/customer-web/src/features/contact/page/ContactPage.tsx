@@ -261,7 +261,7 @@ export function ContactPage() {
                   Contact details
                 </p>
                 <h2 className="mt-1.5 text-xl font-bold tracking-tight text-[#0B1F3A]">
-                  Reach MCJ Institute
+                  Reach MCJ Academy
                 </h2>
                 <p className="mt-1.5 text-sm leading-relaxed text-slate-500">
                   Prefer to talk directly? Use the details below to call, email,
@@ -347,7 +347,7 @@ export function ContactPage() {
           <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_8px_28px_rgba(11,31,58,0.06)]">
             <div className="relative aspect-[21/9] min-h-[220px] w-full sm:min-h-[280px]">
               <iframe
-                title="MCJ Institute location"
+                title="MCJ Academy location"
                 src={mapsEmbedUrl}
                 className="absolute inset-0 h-full w-full border-0"
                 loading="lazy"

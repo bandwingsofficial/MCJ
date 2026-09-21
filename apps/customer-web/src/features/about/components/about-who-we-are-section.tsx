@@ -14,7 +14,7 @@ export function AboutWhoWeAreSection() {
             A practical training institute for accounting careers
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-slate-600 sm:text-base">
-            MCJ Institute is a leading training institute focused on delivering
+            MCJ Academy is a leading training institute focused on delivering
             industry-relevant accounting and taxation education.
           </p>
           <p className="mt-4 text-sm leading-relaxed text-slate-600 sm:text-base">

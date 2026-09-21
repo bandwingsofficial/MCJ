@@ -61,7 +61,7 @@ export default function Error({ error, reset }: Props) {
       {/* FOOTER */}
       <footer className="w-full border-t border-[#e8e0cf] bg-white">
         <div className="max-w-7xl mx-auto px-6 py-6 text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} MCJ Institute. All rights reserved.
+          © {new Date().getFullYear()} MCJ Academy. All rights reserved.
         </div>
       </footer>
 

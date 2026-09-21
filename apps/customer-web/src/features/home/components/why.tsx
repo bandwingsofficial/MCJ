@@ -61,7 +61,7 @@ export function WhySection() {
           </span>
           {/* Reduced font sizes matching premium visual boundaries (from 5xl down to 4xl desktop balance) */}
           <h2 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold text-[#0f2044] leading-tight">
-            Why Choose <span className="text-[#b8922a] relative inline-block">MCJ Institute</span>?
+            Why Choose <span className="text-[#b8922a] relative inline-block">MCJ Academy</span>?
           </h2>
           <div className="w-[50px] h-[2.5px] bg-[#b8922a] mx-auto mt-3.5 rounded-full" />
           <p className="mt-4 text-[#5a6478] text-[14px] md:text-[15px] leading-[1.65] font-light">

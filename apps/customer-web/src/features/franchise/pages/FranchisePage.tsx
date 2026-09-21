@@ -615,7 +615,7 @@ export function FranchisePage() {
                 <div className="info-val">Monday – Saturday &nbsp;·&nbsp; 9:00 AM – 6:00 PM</div>
                 <div className="map-box">
                   <div className="map-pin-big">📍</div>
-                  <div className="map-txt">MCJ Institute of Accounting</div>
+                  <div className="map-txt">MCJ Academy of Accounting</div>
                   <div className="map-addr">Thyagaraja Nagar, Bengaluru 560028</div>
                 </div>
               </div>

@@ -24,14 +24,14 @@ export default function OnboardingLayout({
             <span className="relative h-10 w-10 shrink-0">
               <Image
                 src="/logo/MCJ_logo.png"
-                alt="MCJ Institute"
+                alt="MCJ Academy"
                 fill
                 className="object-contain"
               />
             </span>
             <span>
               <span className="block text-sm font-bold tracking-tight text-[#102A56]">
-                MCJ Institute
+                MCJ Academy
               </span>
               <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2563D9]">
                 Careers
@@ -45,7 +45,7 @@ export default function OnboardingLayout({
 
       <footer className="relative z-10 border-t border-[#DCE8F5] bg-white/90">
         <p className="mx-auto max-w-4xl px-4 py-4 text-center text-sm text-[#647A9B]">
-          © {new Date().getFullYear()} MCJ Institute. All rights reserved.
+          © {new Date().getFullYear()} MCJ Academy. All rights reserved.
         </p>
       </footer>
     </div>
