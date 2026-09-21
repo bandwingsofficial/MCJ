@@ -38,7 +38,7 @@ export function ApplicationJobInfo({
 
         <div>
           <p className="text-sm text-muted-foreground">
-            Current Location
+            Location
           </p>
 
           <p>{application.currentLocation}</p>
@@ -46,12 +46,11 @@ export function ApplicationJobInfo({
 
         <div>
           <p className="text-sm text-muted-foreground">
-            Expected Salary
+            Applied
           </p>
 
           <p>
-            ₹
-            {application.expectedSalary?.toLocaleString() ?? "—"}
+            {new Date(application.createdAt).toLocaleDateString()}
           </p>
         </div>
       </div>

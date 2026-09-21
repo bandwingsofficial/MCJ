@@ -16,17 +16,51 @@ export const jobApplicationDetailInclude = {
   interviews: {
     where: {
       status: {
-        in: [InterviewStatus.ASSIGNED, InterviewStatus.SCHEDULED],
+        in: [
+          InterviewStatus.ASSIGNED,
+          InterviewStatus.SCHEDULED,
+          InterviewStatus.COMPLETED,
+          InterviewStatus.CANCELLED,
+          InterviewStatus.NO_SHOW,
+        ],
       },
     },
-    orderBy: { createdAt: 'desc' as const },
-    take: 1,
+    orderBy: [
+      { roundNumber: 'desc' as const },
+      { createdAt: 'desc' as const },
+    ],
+    take: 5,
     select: {
       id: true,
       status: true,
       branchId: true,
       interviewerId: true,
       scheduledAt: true,
+      mode: true,
+      locationOrLink: true,
+      roundNumber: true,
+      notes: true,
+      branch: {
+        select: {
+          id: true,
+          branchName: true,
+          branchCode: true,
+          addressLine1: true,
+          addressLine2: true,
+          city: true,
+          state: true,
+          country: true,
+          postalCode: true,
+        },
+      },
+      interviewer: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
     },
   },
 } satisfies Prisma.JobApplicationInclude;
@@ -35,10 +69,34 @@ type JobApplicationWithRelations = Prisma.JobApplicationGetPayload<{
   include: typeof jobApplicationDetailInclude;
 }>;
 
+const SCHEDULE_EPOCH_GUARD_MS = Date.parse('1970-01-02T00:00:00.000Z');
+
+function pickInterviewAssignment(
+  interviews: JobApplicationWithRelations['interviews'],
+) {
+  if (!interviews.length) {
+    return null;
+  }
+
+  const scheduled = interviews.find((interview) => {
+    if (interview.status === InterviewStatus.ASSIGNED) {
+      return false;
+    }
+    if (!interview.scheduledAt) {
+      return false;
+    }
+    return interview.scheduledAt.getTime() > SCHEDULE_EPOCH_GUARD_MS;
+  });
+
+  return scheduled ?? interviews[0] ?? null;
+}
+
 export class JobApplicationResponseMapper {
   static toDetail(
     record: JobApplicationWithRelations,
   ): JobApplicationDetailView {
+    const interview = pickInterviewAssignment(record.interviews);
+
     return {
       id: record.id,
       jobId: record.jobId,
@@ -65,13 +123,19 @@ export class JobApplicationResponseMapper {
       job: this.toJob(record.job),
       user: this.toUser(record),
       student: this.toStudent(record.Student),
-      interviewAssignment: record.interviews[0]
+      interviewAssignment: interview
         ? {
-            id: record.interviews[0].id,
-            status: record.interviews[0].status,
-            branchId: record.interviews[0].branchId,
-            interviewerId: record.interviews[0].interviewerId,
-            scheduledAt: record.interviews[0].scheduledAt,
+            id: interview.id,
+            status: interview.status,
+            branchId: interview.branchId,
+            interviewerId: interview.interviewerId,
+            scheduledAt: interview.scheduledAt,
+            mode: interview.mode,
+            locationOrLink: interview.locationOrLink,
+            roundNumber: interview.roundNumber,
+            notes: interview.notes,
+            branch: interview.branch,
+            interviewer: interview.interviewer,
           }
         : null,
       createdAt: record.createdAt,

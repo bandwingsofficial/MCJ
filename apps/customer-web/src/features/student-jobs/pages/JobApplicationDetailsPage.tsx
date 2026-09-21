@@ -8,6 +8,7 @@ import { PageHeader } from "@/src/shared/components/ui/page-header";
 
 import {
   ApplicationHeader,
+  ApplicationInterviewDetails,
   ApplicationJobInfo,
   ApplicationStatus,
   ApplicationStudentInfo,
@@ -71,6 +72,10 @@ export function JobApplicationDetailsPage({
       />
 
       <ApplicationStatus
+        application={application}
+      />
+
+      <ApplicationInterviewDetails
         application={application}
       />
 

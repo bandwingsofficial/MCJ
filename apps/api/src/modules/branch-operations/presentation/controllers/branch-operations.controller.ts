@@ -13,7 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { InterviewStatus, JobApplicationStatus } from '@prisma/client';
+import { InterviewMode, InterviewStatus, JobApplicationStatus } from '@prisma/client';
 
 import { CurrentBranchUser } from '@common/decorators/current-branch-user.decorator';
 import type { BranchAuthUser } from '@common/decorators/current-branch-user.decorator';
@@ -829,17 +829,31 @@ export class BranchOperationsController {
   @Permissions(Permission.INTERVIEW_READ)
   async listInterviews(
     @CurrentBranchUser() user: BranchAuthUser,
+    @Query('tab') tab?: 'UPCOMING' | 'TODAY' | 'COMPLETED' | 'CANCELLED',
     @Query('status') status?: InterviewStatus,
+    @Query('search') search?: string,
+    @Query('interviewerId') interviewerId?: string,
+    @Query('mode') mode?: InterviewMode,
+    @Query('roundNumber') roundNumber?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
   ) {
     return {
       success: true,
       message: 'Interviews fetched successfully',
       data: await this.interviews.listInterviews(user, {
+        tab,
         status,
+        search,
+        interviewerId,
+        mode,
+        roundNumber: roundNumber ? Number(roundNumber) : undefined,
         from,
         to,
+        skip: skip ? Number(skip) : undefined,
+        take: take ? Number(take) : undefined,
       }),
     };
   }

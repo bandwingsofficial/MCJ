@@ -27,6 +27,7 @@ import type {
   DashboardData,
   EnrollmentItem,
   InterviewItem,
+  InterviewListResult,
   JobApplicationItem,
   JobApplicationListResult,
   PaginatedList,
@@ -372,8 +373,21 @@ export const branchOpsApi = {
       apiClient.patch(`/branch/job-applications/${id}/status`, { status }),
     ),
 
-  interviews: (params?: Record<string, string | undefined>) =>
-    unwrap<InterviewItem[]>(apiClient.get("/branch/interviews", { params })),
+  interviews: (params?: {
+    tab?: string;
+    status?: string;
+    search?: string;
+    interviewerId?: string;
+    mode?: string;
+    roundNumber?: number | string;
+    from?: string;
+    to?: string;
+    skip?: number;
+    take?: number;
+  }) =>
+    unwrap<InterviewListResult>(
+      apiClient.get("/branch/interviews", { params }),
+    ),
 
   scheduleInterview: (payload: {
     applicationId: string;

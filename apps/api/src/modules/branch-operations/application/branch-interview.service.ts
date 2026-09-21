@@ -334,50 +334,220 @@ export class BranchInterviewService {
 
   async listInterviews(
     user: BranchAuthUser,
-    query: { status?: InterviewStatus; from?: string; to?: string },
+    query: {
+      tab?: 'UPCOMING' | 'TODAY' | 'COMPLETED' | 'CANCELLED';
+      status?: InterviewStatus;
+      search?: string;
+      interviewerId?: string;
+      mode?: InterviewMode;
+      roundNumber?: number;
+      from?: string;
+      to?: string;
+      skip?: number;
+      take?: number;
+    },
   ) {
     this.assertInterviewRole(user);
 
-    const where: Prisma.InterviewWhereInput = {};
+    const skip = query.skip ?? 0;
+    const take = query.take ?? 20;
 
-    if (this.access.isInterviewer(user)) {
-      where.interviewerId = user.sub;
-    } else {
-      where.branchId = user.branchId;
-    }
+    const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTomorrow = new Date(startOfToday);
+    startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
+    const scope: Prisma.InterviewWhereInput = this.access.isInterviewer(user)
+      ? { interviewerId: user.sub, branchId: user.branchId }
+      : { branchId: user.branchId };
+
+    // Only real schedules — never ASSIGNED / null / epoch placeholders.
+    const scheduledBase: Prisma.InterviewWhereInput = {
+      ...scope,
+      scheduledAt: { not: null, gt: new Date('1970-01-02T00:00:00.000Z') },
+      status: {
+        in: [
+          InterviewStatus.SCHEDULED,
+          InterviewStatus.COMPLETED,
+          InterviewStatus.CANCELLED,
+          InterviewStatus.NO_SHOW,
+        ],
+      },
+    };
+
+    const tabWhere = (tab: typeof query.tab): Prisma.InterviewWhereInput => {
+      if (tab === 'UPCOMING') {
+        return {
+          status: InterviewStatus.SCHEDULED,
+          scheduledAt: { gte: startOfTomorrow },
+        };
+      }
+      if (tab === 'TODAY') {
+        return {
+          status: InterviewStatus.SCHEDULED,
+          scheduledAt: { gte: startOfToday, lt: startOfTomorrow },
+        };
+      }
+      if (tab === 'COMPLETED') {
+        return {
+          OR: [
+            { status: InterviewStatus.COMPLETED },
+            { status: InterviewStatus.NO_SHOW },
+            {
+              status: InterviewStatus.SCHEDULED,
+              scheduledAt: { lt: startOfToday },
+            },
+          ],
+        };
+      }
+      if (tab === 'CANCELLED') {
+        return { status: InterviewStatus.CANCELLED };
+      }
+      return {};
+    };
+
+    const andClauses: Prisma.InterviewWhereInput[] = [tabWhere(query.tab)];
     if (query.status) {
-      where.status = query.status;
+      andClauses.push({ status: query.status });
     }
-
     if (query.from || query.to) {
-      where.scheduledAt = {
-        ...(query.from ? { gte: new Date(query.from) } : {}),
-        ...(query.to ? { lte: new Date(query.to) } : {}),
-      };
+      andClauses.push({
+        scheduledAt: {
+          ...(query.from
+            ? { gte: new Date(`${query.from}T00:00:00.000Z`) }
+            : {}),
+          ...(query.to
+            ? { lte: new Date(`${query.to}T23:59:59.999Z`) }
+            : {}),
+        },
+      });
     }
 
-    const interviews = await this.prisma.interview.findMany({
-      where,
-      include: {
-        application: {
+    const where: Prisma.InterviewWhereInput = {
+      ...scheduledBase,
+      ...(query.interviewerId ? { interviewerId: query.interviewerId } : {}),
+      ...(query.mode ? { mode: query.mode } : {}),
+      ...(query.roundNumber ? { roundNumber: query.roundNumber } : {}),
+      ...(query.search?.trim()
+        ? {
+            OR: [
+              {
+                application: {
+                  applicantName: {
+                    contains: query.search.trim(),
+                    mode: 'insensitive',
+                  },
+                },
+              },
+              {
+                application: {
+                  applicationNumber: {
+                    contains: query.search.trim(),
+                    mode: 'insensitive',
+                  },
+                },
+              },
+              {
+                job: {
+                  title: {
+                    contains: query.search.trim(),
+                    mode: 'insensitive',
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+      AND: andClauses,
+    };
+
+    const countBase = scheduledBase;
+
+    const [records, total, upcoming, today, completed, cancelled, interviewers] =
+      await Promise.all([
+        this.prisma.interview.findMany({
+          where,
+          include: {
+            application: {
+              select: {
+                id: true,
+                applicationNumber: true,
+                applicantName: true,
+                applicantEmail: true,
+                status: true,
+              },
+            },
+            job: { select: { id: true, title: true, companyName: true } },
+            interviewer: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            branch: {
+              select: { id: true, branchName: true, branchCode: true },
+            },
+          },
+          orderBy: { scheduledAt: query.tab === 'COMPLETED' ? 'desc' : 'asc' },
+          skip,
+          take,
+        }),
+        this.prisma.interview.count({ where }),
+        this.prisma.interview.count({
+          where: { AND: [countBase, tabWhere('UPCOMING')] },
+        }),
+        this.prisma.interview.count({
+          where: { AND: [countBase, tabWhere('TODAY')] },
+        }),
+        this.prisma.interview.count({
+          where: { AND: [countBase, tabWhere('COMPLETED')] },
+        }),
+        this.prisma.interview.count({
+          where: { AND: [countBase, tabWhere('CANCELLED')] },
+        }),
+        this.prisma.branchUser.findMany({
+          where: {
+            branchId: user.branchId,
+            isDeleted: false,
+            isActive: true,
+            role: BranchUserRole.INTERVIEWER,
+          },
           select: {
             id: true,
-            applicationNumber: true,
-            applicantName: true,
-            applicantEmail: true,
-            status: true,
+            firstName: true,
+            lastName: true,
+            email: true,
           },
-        },
-        job: { select: { id: true, title: true, companyName: true } },
-        interviewer: {
-          select: { id: true, firstName: true, lastName: true, email: true },
-        },
-      },
-      orderBy: { scheduledAt: 'asc' },
+          orderBy: { firstName: 'asc' },
+          take: 200,
+        }),
+      ]);
+
+    const allScheduledTotal = await this.prisma.interview.count({
+      where: countBase,
     });
 
-    return interviews.map((item) => this.toInterviewDto(item));
+    return {
+      items: records
+        .filter((item) => item.scheduledAt != null)
+        .map((item) => this.toInterviewDto(item)),
+      total,
+      counts: {
+        total: allScheduledTotal,
+        upcoming,
+        today,
+        completed,
+        cancelled,
+      },
+      interviewerOptions: interviewers.map((person) => ({
+        id: person.id,
+        name: [person.firstName, person.lastName].filter(Boolean).join(' '),
+        email: person.email,
+      })),
+    };
   }
 
   async schedule(

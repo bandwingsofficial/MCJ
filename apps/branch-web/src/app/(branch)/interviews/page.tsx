@@ -1,85 +1,276 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
-import { ListPageHeader } from "@/src/shared/components/ui/list-page-header";
-import { Loader } from "@/src/shared/components/ui/loader";
-import { ErrorState } from "@/src/shared/components/ui/error-state";
-import { EmptyState } from "@/src/shared/components/ui/empty-state";
-import { Badge } from "@/src/shared/components/ui/badge";
+import type { InterviewItem } from "@/src/features/branch-ops/types";
+import { BranchViewApplicationModal } from "@/src/features/job-applications/components/BranchViewApplicationModal";
+import { BranchScheduleInterviewModal } from "@/src/features/job-applications/components/BranchScheduleInterviewModal";
+import { BranchInterviewTabs } from "@/src/features/interviews/components/BranchInterviewTabs";
+import { BranchInterviewsFilterBar } from "@/src/features/interviews/components/BranchInterviewsFilterBar";
+import { BranchInterviewsTable } from "@/src/features/interviews/components/BranchInterviewsTable";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/src/shared/components/ui/table";
-import { useAsyncData } from "@/src/shared/hooks/use-async-data";
+  BRANCH_INTERVIEW_PAGE_SIZES,
+  DEFAULT_BRANCH_INTERVIEW_FILTERS,
+  type BranchInterviewFilters,
+  type InterviewTab,
+} from "@/src/features/interviews/constants/interview.constants";
+import { toJobApplicationLike } from "@/src/features/interviews/utils/interview-display.utils";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { formatRoleLabel } from "@/src/core/auth/roles";
+import { CategoryPagination } from "@/src/shared/components/ui/category-pagination";
+import { ErrorState } from "@/src/shared/components/ui/error-state";
+import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
+import { useAsyncData } from "@/src/shared/hooks/use-async-data";
+import type { JobApplicationItem } from "@/src/features/branch-ops/types";
 
 export default function InterviewsPage() {
   const role = useAuthStore((state) => state.user?.role);
-  const { data, loading, error, reload } = useAsyncData(
-    () => branchOpsApi.interviews(),
-    [],
+  const [filters, setFilters] = useState<BranchInterviewFilters>(
+    DEFAULT_BRANCH_INTERVIEW_FILTERS,
+  );
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [interviewerOptions, setInterviewerOptions] = useState<
+    Array<{ id: string; name: string; email: string }>
+  >([]);
+  const [selectedInterview, setSelectedInterview] =
+    useState<InterviewItem | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+      setFilters((current) => ({ ...current, page: 1 }));
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  const query = useAsyncData(
+    () =>
+      branchOpsApi.interviews({
+        tab: filters.tab,
+        search: debouncedSearch || undefined,
+        interviewerId:
+          filters.interviewerId === "ALL" ? undefined : filters.interviewerId,
+        mode: filters.mode === "ALL" ? undefined : filters.mode,
+        roundNumber:
+          filters.roundNumber === "ALL" ? undefined : filters.roundNumber,
+        status: filters.status === "ALL" ? undefined : filters.status,
+        from: filters.from || undefined,
+        to: filters.to || undefined,
+        skip: (filters.page - 1) * filters.pageSize,
+        take: filters.pageSize,
+      }),
+    [
+      debouncedSearch,
+      filters.tab,
+      filters.interviewerId,
+      filters.mode,
+      filters.roundNumber,
+      filters.status,
+      filters.from,
+      filters.to,
+      filters.page,
+      filters.pageSize,
+    ],
   );
 
-  if (loading) return <Loader />;
-  if (error) return <ErrorState description={error} onRetry={reload} />;
+  useEffect(() => {
+    if (query.data?.interviewerOptions?.length) {
+      setInterviewerOptions(query.data.interviewerOptions);
+    }
+  }, [query.data?.interviewerOptions]);
 
-  const items = data ?? [];
+  const items = query.data?.items ?? [];
+  const total = query.data?.total ?? 0;
+  const counts = query.data?.counts ?? {
+    total: 0,
+    upcoming: 0,
+    today: 0,
+    completed: 0,
+    cancelled: 0,
+  };
+  const totalPages = Math.max(1, Math.ceil(total / filters.pageSize));
+  const from = total === 0 ? 0 : (filters.page - 1) * filters.pageSize + 1;
+  const to = Math.min(filters.page * filters.pageSize, total);
+  const isInitialLoading = query.loading && !query.data;
+
+  const selectedAsApplication = selectedInterview
+    ? (toJobApplicationLike(selectedInterview) as JobApplicationItem)
+    : null;
+
+  const handleFiltersChange = (next: BranchInterviewFilters) => {
+    setSearchInput(next.search);
+    setFilters(next);
+    if (next.search.trim() !== debouncedSearch) {
+      setDebouncedSearch(next.search.trim());
+    }
+  };
+
+  const handleTabChange = (tab: InterviewTab) => {
+    setFilters((current) => ({ ...current, tab, page: 1 }));
+  };
+
+  const openView = (interview: InterviewItem) => {
+    setSelectedInterview(interview);
+    setScheduleOpen(false);
+    setViewOpen(true);
+  };
+
+  const openManage = (interview: InterviewItem) => {
+    setSelectedInterview(interview);
+    setViewOpen(false);
+    setScheduleOpen(true);
+  };
 
   return (
-    <div className="space-y-5">
-      <ListPageHeader
-        parentLabel={formatRoleLabel(role) || "Branch"}
-        currentLabel="Interviews"
-        title="Interviews"
-        totalLabel="Total Interviews"
-        total={items.length}
+    <div className="space-y-3">
+      <header className="px-1 py-1">
+        <nav
+          aria-label="Breadcrumb"
+          className="mb-1 flex items-center gap-1 text-xs"
+        >
+          <Link
+            href="/dashboard"
+            className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
+          >
+            {formatRoleLabel(role) || "Branch"}
+          </Link>
+          <ChevronRight
+            className="h-3.5 w-3.5 text-slate-400"
+            aria-hidden="true"
+          />
+          <span aria-current="page" className="font-medium text-[#102A56]">
+            Interviews
+          </span>
+        </nav>
+
+        <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:gap-4">
+          <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
+            <h1 className="text-[22px] font-bold tracking-tight text-[#102A56] sm:text-[26px]">
+              Interviews
+            </h1>
+            <span className="text-xs text-[#647A9B] sm:text-[13px]">
+              Total Interviews:
+              <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
+                {isInitialLoading ? "—" : counts.total}
+              </span>
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <BranchInterviewTabs
+        counts={counts}
+        activeTab={filters.tab}
+        disabled={query.loading}
+        onChange={handleTabChange}
       />
 
-      {!items.length ? (
-        <EmptyState title="No interviews scheduled." />
+      <BranchInterviewsFilterBar
+        filters={{ ...filters, search: searchInput }}
+        interviewerOptions={interviewerOptions}
+        disabled={query.loading}
+        onChange={handleFiltersChange}
+      />
+
+      {isInitialLoading ? (
+        <div className="min-w-0 overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
+          <SkeletonTable rows={8} />
+        </div>
+      ) : query.error && !query.data ? (
+        <ErrorState description={query.error} onRetry={query.reload} />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>When</TableHead>
-              <TableHead>Candidate</TableHead>
-              <TableHead>Job</TableHead>
-              <TableHead>Mode</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>
-                  {new Date(item.scheduledAt).toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  <Link
-                    href={`/job-applications/${item.applicationId}`}
-                    className="font-medium text-[#2563EB] hover:underline"
-                  >
-                    {item.application?.candidateName ??
-                      item.application?.applicationNumber}
-                  </Link>
-                </TableCell>
-                <TableCell>{item.job?.title}</TableCell>
-                <TableCell>{item.mode}</TableCell>
-                <TableCell>
-                  <Badge>{item.status}</Badge>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="min-w-0 overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
+          {query.error ? (
+            <div className="border-b border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
+              {query.error}{" "}
+              <button
+                type="button"
+                className="font-medium underline"
+                onClick={() => {
+                  void query.reload();
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          ) : null}
+
+          <div aria-busy={query.loading} className="relative">
+            {query.loading ? (
+              <span className="sr-only">Updating interviews</span>
+            ) : null}
+            <BranchInterviewsTable
+              interviews={items}
+              actionsDisabled={query.loading}
+              onView={openView}
+              onManage={openManage}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5 border-t border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#647A9B] sm:text-sm">
+              <span>
+                Showing {from}–{to} of {total}
+              </span>
+              <label className="flex items-center gap-1.5">
+                <span className="whitespace-nowrap">Rows per page</span>
+                <select
+                  className="h-7 rounded-md border border-[#DCE8F5] bg-white px-1.5 text-xs text-[#102A56] sm:text-sm"
+                  value={filters.pageSize}
+                  disabled={query.loading}
+                  onChange={(event) =>
+                    setFilters((current) => ({
+                      ...current,
+                      pageSize: Number(event.target.value),
+                      page: 1,
+                    }))
+                  }
+                >
+                  {BRANCH_INTERVIEW_PAGE_SIZES.map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <CategoryPagination
+              page={filters.page}
+              totalPages={totalPages}
+              onPageChange={(nextPage) =>
+                setFilters((current) => ({ ...current, page: nextPage }))
+              }
+            />
+          </div>
+        </div>
       )}
+
+      <BranchViewApplicationModal
+        open={viewOpen}
+        application={selectedAsApplication}
+        onClose={() => {
+          setViewOpen(false);
+          setSelectedInterview(null);
+        }}
+      />
+
+      <BranchScheduleInterviewModal
+        open={scheduleOpen}
+        application={selectedAsApplication}
+        onClose={() => {
+          setScheduleOpen(false);
+          setSelectedInterview(null);
+        }}
+        onSuccess={async () => {
+          await query.reload();
+        }}
+      />
     </div>
   );
 }

@@ -4,6 +4,48 @@ import type {
 } from "@/src/features/student-jobs/types/apply-job.types";
 import type { JobApplicationInterviewStatus } from "@/src/features/student-jobs/constants/interview-status.constants";
 
+export type InterviewMode = "ONLINE" | "OFFLINE" | "PHONE";
+
+export type InterviewRecordStatus =
+  | "ASSIGNED"
+  | "SCHEDULED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "NO_SHOW";
+
+export interface JobApplicationInterviewBranch {
+  id: string;
+  branchName: string;
+  branchCode: string;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  postalCode: string | null;
+}
+
+export interface JobApplicationInterviewInterviewer {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  email: string;
+}
+
+export interface JobApplicationInterviewAssignment {
+  id: string;
+  status: InterviewRecordStatus | string;
+  branchId: string;
+  interviewerId: string | null;
+  scheduledAt: string | null;
+  mode: InterviewMode | string | null;
+  locationOrLink: string | null;
+  roundNumber: number;
+  notes: string | null;
+  branch: JobApplicationInterviewBranch | null;
+  interviewer: JobApplicationInterviewInterviewer | null;
+}
+
 export interface JobApplication {
   id: string;
 
@@ -40,6 +82,8 @@ export interface JobApplication {
   job: JobApplicationJob;
 
   student: ApplicationStudentSummary;
+
+  interviewAssignment?: JobApplicationInterviewAssignment | null;
 }
 
 export interface JobApplicationJob {

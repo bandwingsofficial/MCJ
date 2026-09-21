@@ -6,4 +6,6 @@ export * from "@/src/features/student-jobs/components/application-details/Applic
 
 export * from "@/src/features/student-jobs/components/application-details/ApplicationStatus";
 
+export * from "@/src/features/student-jobs/components/application-details/ApplicationInterviewDetails";
+
 export * from "@/src/features/student-jobs/components/application-details/ApplicationTimeline";

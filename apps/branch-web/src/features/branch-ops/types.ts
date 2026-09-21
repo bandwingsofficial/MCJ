@@ -953,13 +953,15 @@ export interface JobApplicationListResult {
 export interface InterviewItem {
   id: string;
   applicationId: string;
-  scheduledAt: string;
+  scheduledAt: string | null;
   durationMinutes: number;
-  mode: string;
+  mode: string | null;
   locationOrLink: string | null;
   notes: string | null;
   evaluation: string | null;
   status: string;
+  roundNumber?: number;
+  interviewerId?: string | null;
   application?: {
     id: string;
     applicationNumber: string;
@@ -967,7 +969,31 @@ export interface InterviewItem {
     status: string;
   };
   job?: { id: string; title: string; companyName: string };
-  interviewer?: { id: string; name: string; email: string };
+  interviewer?: { id: string; name: string; email: string } | null;
+  branch?: {
+    id: string;
+    branchName: string;
+    branchCode: string;
+  } | null;
+}
+
+export interface InterviewListCounts {
+  total: number;
+  upcoming: number;
+  today: number;
+  completed: number;
+  cancelled: number;
+}
+
+export interface InterviewListResult {
+  items: InterviewItem[];
+  total: number;
+  counts: InterviewListCounts;
+  interviewerOptions?: Array<{
+    id: string;
+    name: string;
+    email: string;
+  }>;
 }
 
 export interface PlacementActivityItem {

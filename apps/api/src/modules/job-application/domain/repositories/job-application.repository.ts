@@ -62,6 +62,35 @@ export interface JobApplicationStudentView {
   jobStatus: string | null;
 }
 
+export interface JobApplicationInterviewAssignmentView {
+  id: string;
+  status: string;
+  branchId: string;
+  interviewerId: string | null;
+  scheduledAt: Date | null;
+  mode: string | null;
+  locationOrLink: string | null;
+  roundNumber: number;
+  notes: string | null;
+  branch: {
+    id: string;
+    branchName: string;
+    branchCode: string;
+    addressLine1: string | null;
+    addressLine2: string | null;
+    city: string | null;
+    state: string | null;
+    country: string | null;
+    postalCode: string | null;
+  } | null;
+  interviewer: {
+    id: string;
+    firstName: string;
+    lastName: string | null;
+    email: string;
+  } | null;
+}
+
 export interface JobApplicationDetailView {
   id: string;
   jobId: string;
@@ -86,13 +115,7 @@ export interface JobApplicationDetailView {
   user: JobApplicationUserView | null;
   student: JobApplicationStudentView | null;
   resolvedStudentCode?: string | null;
-  interviewAssignment?: {
-    id: string;
-    status: string;
-    branchId: string;
-    interviewerId: string | null;
-    scheduledAt: Date | null;
-  } | null;
+  interviewAssignment?: JobApplicationInterviewAssignmentView | null;
   createdAt: Date;
   updatedAt: Date;
 }

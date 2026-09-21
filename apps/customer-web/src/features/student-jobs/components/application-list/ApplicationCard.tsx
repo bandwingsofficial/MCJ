@@ -7,6 +7,7 @@ import { Button } from "@/src/shared/components/ui/button";
 
 import { ApplicationStatusBadge } from "@/src/features/student-jobs/components/application-list/ApplicationStatusBadge";
 import { ApplicationInterviewStatusBadge } from "@/src/features/student-jobs/components/application-list/ApplicationInterviewStatusBadge";
+import { ApplicationInterviewDetails } from "@/src/features/student-jobs/components/application-details/ApplicationInterviewDetails";
 import {
   canReapplyToJob,
   isUnderReviewStatus,
@@ -59,14 +60,6 @@ export function ApplicationCard({
         </p>
 
         <p>
-          <strong>Expected Salary</strong>
-          {" : "}
-          {application.expectedSalary != null
-            ? `₹${application.expectedSalary.toLocaleString()}`
-            : "Not specified"}
-        </p>
-
-        <p>
           <strong>Location</strong>
           {" : "}
           {application.currentLocation}
@@ -88,6 +81,11 @@ export function ApplicationCard({
           />
         </p>
       </div>
+
+      <ApplicationInterviewDetails
+        application={application}
+        compact
+      />
 
       {isUnderReviewStatus(
         application.status,

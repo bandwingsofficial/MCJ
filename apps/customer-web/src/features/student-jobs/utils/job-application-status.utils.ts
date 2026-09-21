@@ -42,8 +42,9 @@ export function resolveCustomerApplicationStatus(
     return "SHORTLISTED";
   }
 
+  // Keep application status as Shortlisted while interview details are shown separately.
   if (normalized === "INTERVIEW") {
-    return "INTERVIEW";
+    return "SHORTLISTED";
   }
 
   if (normalized === "SELECTED" || normalized === "PLACED") {
@@ -61,7 +62,7 @@ export function resolveCustomerApplicationStatus(
 const CUSTOMER_STATUS_LABELS: Record<CustomerApplicationStatusKey, string> = {
   UNDER_REVIEW: "Under Review",
   SHORTLISTED: "Shortlisted",
-  INTERVIEW: "Interview Scheduled",
+  INTERVIEW: "Shortlisted",
   SELECTED: "Selected",
   REJECTED: "Rejected",
 };
