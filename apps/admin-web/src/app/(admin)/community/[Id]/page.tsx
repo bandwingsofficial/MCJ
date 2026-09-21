@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { CommunityManagePage } from "@/src/features/community/pages/community-manage-page";
 
 interface Props {
   params: Promise<{
@@ -6,8 +6,8 @@ interface Props {
   }>;
 }
 
-export default async function LegacyCommunityDetailRoute({ params }: Props) {
+export default async function CommunityManageRoute({ params }: Props) {
   const { Id } = await params;
 
-  redirect(`/community/${Id}/manage`);
+  return <CommunityManagePage postId={Id} />;
 }

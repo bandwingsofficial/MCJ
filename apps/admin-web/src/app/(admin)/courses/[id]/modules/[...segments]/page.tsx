@@ -10,6 +10,11 @@ interface Props {
   }>;
 }
 
+/**
+ * Stable dispatcher for deep course-modules URLs.
+ * Keep this as the ONLY route under `modules/` besides `page.tsx`.
+ * Do not add competing `modules/[moduleId]/...` filesystem pages.
+ */
 export default async function CourseModulesCatchAllRoute({ params }: Props) {
   const { id, segments } = await params;
 

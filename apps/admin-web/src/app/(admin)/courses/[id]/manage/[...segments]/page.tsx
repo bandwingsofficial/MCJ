@@ -11,6 +11,12 @@ interface Props {
   }>;
 }
 
+/**
+ * Stable dispatcher for deep course-manage URLs.
+ * Keep this as the ONLY route under `manage/` besides `page.tsx`.
+ * Do not add competing `manage/modules/...` filesystem pages — they shadow
+ * this catch-all and reintroduce intermittent Turbopack 404s.
+ */
 export default async function CourseManageCatchAllRoute({ params }: Props) {
   const { id, segments } = await params;
 
