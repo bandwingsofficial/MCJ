@@ -1,13 +1,15 @@
 "use client";
 
-import { CircleCheck, Eye, X } from "lucide-react";
+import { CalendarPlus, CircleCheck, Eye, UserCog, UserMinus, X } from "lucide-react";
 
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
 import {
   canApproveApplication,
+  canManageAssignment,
   canRejectApplication,
+  isInterviewAssigned,
 } from "@/src/features/job-applications/types/job-application.types";
 
 const iconButtonClass =
@@ -21,6 +23,8 @@ interface JobApplicationActionsProps {
   onView: (application: JobApplication) => void;
   onApprove: (application: JobApplication) => void;
   onReject: (application: JobApplication) => void;
+  onAssignInterview?: (application: JobApplication) => void;
+  onUnassignInterview?: (application: JobApplication) => void;
 }
 
 export function JobApplicationActions({
@@ -29,7 +33,12 @@ export function JobApplicationActions({
   onView,
   onApprove,
   onReject,
+  onAssignInterview,
+  onUnassignInterview,
 }: JobApplicationActionsProps) {
+  const assigned = isInterviewAssigned(application);
+  const showManage = canManageAssignment(application) && onAssignInterview;
+
   return (
     <div className="flex items-center justify-end gap-2">
       <Tooltip content="View">
@@ -45,7 +54,7 @@ export function JobApplicationActions({
       </Tooltip>
 
       {canApproveApplication(application.status) ? (
-        <Tooltip content="Approve">
+        <Tooltip content="Approve / Shortlist">
           <button
             type="button"
             disabled={disabled}
@@ -54,6 +63,38 @@ export function JobApplicationActions({
             className={`${iconButtonClass} text-green-800`}
           >
             <CircleCheck className={iconClass} />
+          </button>
+        </Tooltip>
+      ) : null}
+
+      {showManage ? (
+        <Tooltip content={assigned ? "Manage Assignment" : "Assign Interviewer"}>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onAssignInterview(application)}
+            aria-label={assigned ? "Manage assignment" : "Assign interviewer"}
+            className={`${iconButtonClass} text-indigo-800`}
+          >
+            {assigned ? (
+              <UserCog className={iconClass} />
+            ) : (
+              <CalendarPlus className={iconClass} />
+            )}
+          </button>
+        </Tooltip>
+      ) : null}
+
+      {assigned && onUnassignInterview && canManageAssignment(application) ? (
+        <Tooltip content="Unassign">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onUnassignInterview(application)}
+            aria-label="Unassign interviewer"
+            className={`${iconButtonClass} text-amber-700`}
+          >
+            <UserMinus className={iconClass} />
           </button>
         </Tooltip>
       ) : null}

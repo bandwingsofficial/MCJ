@@ -66,7 +66,10 @@ export function useSyncedJobApplicationStatus({
       }
 
       setStatusLabel(
-        getJobApplicationStatusLabel(application.status),
+        getJobApplicationStatusLabel(
+          application.status,
+          application.interviewStatus,
+        ),
       );
     } catch (fetchError) {
       setStatusLabel(null);

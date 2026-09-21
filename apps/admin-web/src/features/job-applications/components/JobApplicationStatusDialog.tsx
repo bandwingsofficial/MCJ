@@ -8,6 +8,7 @@ import {
 import { Button } from "@/src/shared/components/ui/button";
 import { Modal } from "@/src/shared/components/ui/model";
 import { AppSelect } from "@/src/shared/components/ui/select";
+import { Textarea } from "@/src/shared/components/ui/textarea";
 import { appToast } from "@/src/shared/components/ui/toast";
 
 import {
@@ -43,6 +44,8 @@ export function JobApplicationStatusDialog({
   ] =
     useState<JobApplicationStatus>();
 
+  const [rejectionReason, setRejectionReason] = useState("");
+
   const [
     loading,
     setLoading,
@@ -56,6 +59,7 @@ export function JobApplicationStatusDialog({
         ][0];
 
       setStatus(next);
+      setRejectionReason("");
     }
   }, [application]);
 
@@ -69,6 +73,11 @@ export function JobApplicationStatusDialog({
         return;
       }
 
+      if (status === "REJECTED" && !rejectionReason.trim()) {
+        appToast.error("Rejection reason is required.");
+        return;
+      }
+
       try {
         setLoading(true);
 
@@ -76,6 +85,9 @@ export function JobApplicationStatusDialog({
           application.id,
           {
             status,
+            ...(status === "REJECTED"
+              ? { rejectionReason: rejectionReason.trim() }
+              : {}),
           },
         );
 
@@ -131,6 +143,16 @@ export function JobApplicationStatusDialog({
           )}
         />
 
+        {status === "REJECTED" ? (
+          <Textarea
+            value={rejectionReason}
+            onChange={(event) => setRejectionReason(event.target.value)}
+            placeholder="Rejection reason..."
+            className="min-h-28"
+            disabled={loading}
+          />
+        ) : null}
+
         <div className="flex justify-end gap-3">
           <Button
             variant="outline"
@@ -148,6 +170,7 @@ export function JobApplicationStatusDialog({
             onClick={
               handleSubmit
             }
+            disabled={status === "REJECTED" && !rejectionReason.trim()}
           >
             Update
           </Button>

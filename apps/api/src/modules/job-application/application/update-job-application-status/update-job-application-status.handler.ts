@@ -32,7 +32,16 @@ export class UpdateJobApplicationStatusHandler {
       command.status,
     );
 
-    application.changeStatus(command.status, command.updatedBy);
+    const rejectionReason = this.domainService.ensureRejectionReason(
+      command.status,
+      command.rejectionReason,
+    );
+
+    application.changeStatus(
+      command.status,
+      command.updatedBy,
+      rejectionReason,
+    );
     await this.applicationRepo.save(application);
 
     if (command.status === JobApplicationStatus.PLACED) {

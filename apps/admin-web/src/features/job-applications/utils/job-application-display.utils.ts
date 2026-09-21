@@ -105,8 +105,8 @@ export function getEmptyApplicationsMessage(
   switch (status) {
     case "ACCEPTED":
       return {
-        title: "No approved applications",
-        description: "Approved applications will appear here.",
+        title: "No shortlisted applications",
+        description: "Shortlisted applications will appear here.",
       };
     case "REJECTED":
       return {

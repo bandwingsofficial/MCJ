@@ -32,9 +32,14 @@ import { RestoreJobApplicationCommand } from '../../application/restore-job-appl
 import { RestoreJobApplicationHandler } from '../../application/restore-job-application/restore-job-application.handler';
 import { PermanentDeleteJobApplicationCommand } from '../../application/permanent-delete-job-application/permanent-delete-job-application.command';
 import { PermanentDeleteJobApplicationHandler } from '../../application/permanent-delete-job-application/permanent-delete-job-application.handler';
+import { AssignInterviewCommand } from '../../application/assign-interview/assign-interview.command';
+import { AssignInterviewHandler } from '../../application/assign-interview/assign-interview.handler';
+import { UnassignInterviewCommand } from '../../application/unassign-interview/unassign-interview.command';
+import { UnassignInterviewHandler } from '../../application/unassign-interview/unassign-interview.handler';
 import { UpdateJobApplicationStatusCommand } from '../../application/update-job-application-status/update-job-application-status.command';
 import { UpdateJobApplicationStatusHandler } from '../../application/update-job-application-status/update-job-application-status.handler';
 import { CreateJobApplicationDto } from '../dtos/create-job-application.dto';
+import { AssignInterviewDto } from '../dtos/assign-interview.dto';
 import { ListJobApplicationsQueryDto } from '../dtos/list-job-applications-query.dto';
 import { UpdateJobApplicationStatusDto } from '../dtos/update-job-application-status.dto';
 
@@ -83,6 +88,8 @@ export class AdminJobApplicationController {
     private readonly listJobApplicationsHandler: ListJobApplicationsHandler,
     private readonly getJobApplicationHandler: GetJobApplicationHandler,
     private readonly updateJobApplicationStatusHandler: UpdateJobApplicationStatusHandler,
+    private readonly assignInterviewHandler: AssignInterviewHandler,
+    private readonly unassignInterviewHandler: UnassignInterviewHandler,
     private readonly deleteJobApplicationHandler: DeleteJobApplicationHandler,
     private readonly restoreJobApplicationHandler: RestoreJobApplicationHandler,
     private readonly permanentDeleteJobApplicationHandler: PermanentDeleteJobApplicationHandler,
@@ -146,12 +153,51 @@ export class AdminJobApplicationController {
           id,
           dto.status,
           user?.sub,
+          dto.rejectionReason,
         ),
       );
 
     return {
       success: true,
       message: 'Application status updated successfully',
+      data: result,
+    };
+  }
+
+  @Post(':id/assign-interview')
+  async assignInterview(
+    @Param('id') id: string,
+    @Body() dto: AssignInterviewDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.assignInterviewHandler.execute(
+      new AssignInterviewCommand(
+        id,
+        dto.branchId,
+        dto.interviewerId,
+        user?.sub,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Interviewer assigned successfully',
+      data: result,
+    };
+  }
+
+  @Post(':id/unassign-interview')
+  async unassignInterview(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.unassignInterviewHandler.execute(
+      new UnassignInterviewCommand(id, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: 'Interviewer unassigned successfully',
       data: result,
     };
   }

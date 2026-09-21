@@ -8,16 +8,19 @@ import { Loader } from "@/src/shared/components/ui/loader";
 import { Modal } from "@/src/shared/components/ui/model";
 
 import { ApplicationResumeSection } from "@/src/features/job-applications/components/ApplicationResumeSection";
+import { JobApplicationAssignmentStatusBadge } from "@/src/features/job-applications/components/JobApplicationAssignmentStatusBadge";
 import { JobApplicationStatusBadge } from "@/src/features/job-applications/components/JobApplicationStatusBadge";
 import { jobApplicationService } from "@/src/features/job-applications/services/job-application.service";
 import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
 import {
   canApproveApplication,
+  canManageAssignment,
   canRejectApplication,
   getApplicantEmail,
   getApplicantName,
   getApplicantPhone,
   getStudentCode,
+  isInterviewAssigned,
 } from "@/src/features/job-applications/types/job-application.types";
 import {
   getApplicationCompany,
@@ -33,6 +36,8 @@ interface JobApplicationDetailsDialogProps {
   onClose: () => void;
   onApprove: (application: JobApplication) => void;
   onReject: (application: JobApplication) => void;
+  onAssignInterview?: (application: JobApplication) => void;
+  onUnassignInterview?: (application: JobApplication) => void;
 }
 
 function Info({
@@ -74,6 +79,8 @@ export function JobApplicationDetailsDialog({
   onClose,
   onApprove,
   onReject,
+  onAssignInterview,
+  onUnassignInterview,
 }: JobApplicationDetailsDialogProps) {
   const [detail, setDetail] = useState<JobApplication | null>(application);
   const [isLoading, setIsLoading] = useState(false);
@@ -128,6 +135,10 @@ export function JobApplicationDetailsDialog({
   const current = detail ?? application;
   const showApprove = canApproveApplication(current.status);
   const showReject = canRejectApplication(current.status);
+  const showAssign = canManageAssignment(current) && onAssignInterview;
+  const assigned = isInterviewAssigned(current);
+  const showUnassign =
+    assigned && canManageAssignment(current) && onUnassignInterview;
 
   return (
     <Modal
@@ -155,6 +166,25 @@ export function JobApplicationDetailsDialog({
               Reject
             </Button>
           ) : null}
+          {showUnassign ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isActing}
+              onClick={() => onUnassignInterview?.(current)}
+            >
+              Unassign
+            </Button>
+          ) : null}
+          {showAssign ? (
+            <Button
+              type="button"
+              disabled={isActing}
+              onClick={() => onAssignInterview?.(current)}
+            >
+              {assigned ? "Manage Assignment" : "Assign Interviewer"}
+            </Button>
+          ) : null}
           {showApprove ? (
             <Button
               type="button"
@@ -162,7 +192,7 @@ export function JobApplicationDetailsDialog({
               disabled={isActing}
               onClick={() => onApprove(current)}
             >
-              Approve
+              Shortlist
             </Button>
           ) : null}
         </>
@@ -189,6 +219,14 @@ export function JobApplicationDetailsDialog({
               label="Status"
               value={<JobApplicationStatusBadge status={current.status} />}
             />
+            {current.status === "SHORTLISTED" ? (
+              <Info
+                label="Assignment Status"
+                value={
+                  <JobApplicationAssignmentStatusBadge application={current} />
+                }
+              />
+            ) : null}
             <Info
               label="Applied Date"
               value={new Date(current.createdAt).toLocaleString("en-IN", {
@@ -199,9 +237,13 @@ export function JobApplicationDetailsDialog({
                 minute: "2-digit",
               })}
             />
-            {current.status === "SELECTED" ? (
+            {current.status === "SHORTLISTED" || current.status === "SELECTED" ? (
               <Info
-                label="Approved Date"
+                label={
+                  current.status === "SHORTLISTED"
+                    ? "Shortlisted Date"
+                    : "Selected Date"
+                }
                 value={new Date(current.updatedAt).toLocaleString("en-IN", {
                   day: "2-digit",
                   month: "short",
@@ -209,6 +251,12 @@ export function JobApplicationDetailsDialog({
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
+              />
+            ) : null}
+            {current.status === "REJECTED" ? (
+              <Info
+                label="Rejection Reason"
+                value={current.rejectionReason || "—"}
               />
             ) : null}
           </section>

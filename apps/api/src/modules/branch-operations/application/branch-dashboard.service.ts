@@ -156,10 +156,23 @@ export class BranchDashboardService {
       rejectedCandidates,
     ] = await Promise.all([
       this.prisma.jobApplication.count({
-        where: { isDeleted: false, status: JobApplicationStatus.APPLIED },
+        where: {
+          isDeleted: false,
+          status: {
+            in: [
+              JobApplicationStatus.UNDER_REVIEW,
+              JobApplicationStatus.APPLIED,
+            ],
+          },
+        },
       }),
       this.prisma.interview.count({
-        where: { ...interviewerFilter, status: InterviewStatus.SCHEDULED },
+        where: {
+          ...interviewerFilter,
+          status: {
+            in: [InterviewStatus.ASSIGNED, InterviewStatus.SCHEDULED],
+          },
+        },
       }),
       this.prisma.interview.count({
         where: {

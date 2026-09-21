@@ -23,6 +23,8 @@ export interface JobApplication {
 
   remarks: string;
 
+  rejectionReason?: string | null;
+
   status: ApplicationStatus | string;
 
   interviewStatus?: JobApplicationInterviewStatus;

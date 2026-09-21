@@ -17,6 +17,7 @@ export class JobApplication {
     public currentLocation: string | null,
     public expectedSalary: number | null,
     public remarks: string | null,
+    public rejectionReason: string | null,
     public status: JobApplicationStatus,
     public interviewStatus: JobApplicationInterviewStatus,
     public readonly createdBy: string | null,
@@ -44,7 +45,8 @@ export class JobApplication {
       params.currentLocation ?? null,
       params.expectedSalary ?? null,
       params.remarks ?? null,
-      JobApplicationStatus.APPLIED,
+      null,
+      JobApplicationStatus.UNDER_REVIEW,
       JobApplicationInterviewStatus.NOT_YET,
       params.createdBy ?? null,
       null,
@@ -74,6 +76,7 @@ export class JobApplication {
       params.currentLocation,
       params.expectedSalary,
       params.remarks,
+      params.rejectionReason,
       params.status,
       params.interviewStatus,
       params.createdBy,
@@ -114,8 +117,17 @@ export class JobApplication {
   changeStatus(
     status: JobApplicationStatus,
     updatedBy?: string | null,
+    rejectionReason?: string | null,
   ) {
     this.status = status;
+
+    if (status === JobApplicationStatus.REJECTED) {
+      this.rejectionReason =
+        rejectionReason?.trim() ? rejectionReason.trim() : null;
+    } else {
+      this.rejectionReason = null;
+    }
+
     this.updatedBy = updatedBy ?? this.updatedBy;
     this.touch();
   }
@@ -169,6 +181,7 @@ export interface JobApplicationUpdateParams {
 
 export interface JobApplicationReconstituteParams
   extends Required<JobApplicationCreateParams> {
+  rejectionReason: string | null;
   status: JobApplicationStatus;
   interviewStatus: JobApplicationInterviewStatus;
   updatedBy: string | null;

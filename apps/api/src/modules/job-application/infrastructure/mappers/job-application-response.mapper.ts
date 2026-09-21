@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { InterviewStatus } from '@prisma/client';
 
 import { JobApplicationInterviewStatus } from '../../domain/enums/job-application-interview-status.enum';
 import { JobApplicationStatus } from '../../domain/enums/job-application-status.enum';
@@ -12,6 +13,22 @@ import type {
 export const jobApplicationDetailInclude = {
   job: true,
   Student: true,
+  interviews: {
+    where: {
+      status: {
+        in: [InterviewStatus.ASSIGNED, InterviewStatus.SCHEDULED],
+      },
+    },
+    orderBy: { createdAt: 'desc' as const },
+    take: 1,
+    select: {
+      id: true,
+      status: true,
+      branchId: true,
+      interviewerId: true,
+      scheduledAt: true,
+    },
+  },
 } satisfies Prisma.JobApplicationInclude;
 
 type JobApplicationWithRelations = Prisma.JobApplicationGetPayload<{
@@ -39,6 +56,7 @@ export class JobApplicationResponseMapper {
         ? Number(record.expectedSalary)
         : null,
       remarks: record.remarks,
+      rejectionReason: record.rejectionReason,
       status: record.status as JobApplicationStatus,
       interviewStatus:
         record.interviewStatus as JobApplicationInterviewStatus,
@@ -47,6 +65,15 @@ export class JobApplicationResponseMapper {
       job: this.toJob(record.job),
       user: this.toUser(record),
       student: this.toStudent(record.Student),
+      interviewAssignment: record.interviews[0]
+        ? {
+            id: record.interviews[0].id,
+            status: record.interviews[0].status,
+            branchId: record.interviews[0].branchId,
+            interviewerId: record.interviews[0].interviewerId,
+            scheduledAt: record.interviews[0].scheduledAt,
+          }
+        : null,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     };

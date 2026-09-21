@@ -55,13 +55,12 @@ export class JobApplicationDomainService {
     jobId: string,
     studentId: string,
   ): Promise<void> {
-    const existing = await repo.findByJobAndStudent(
+    const existing = await repo.findBlockingByJobAndStudent(
       jobId,
       studentId,
-      true,
     );
 
-    if (existing && !existing.isDeleted) {
+    if (existing) {
       throw new BaseException(
         ERROR_CODES.JOB_ALREADY_APPLIED,
         'You have already applied to this job.',
@@ -75,19 +74,39 @@ export class JobApplicationDomainService {
     jobId: string,
     email: string,
   ): Promise<void> {
-    const existing = await repo.findByJobAndEmail(
+    const existing = await repo.findBlockingByJobAndEmail(
       jobId,
       email,
-      true,
     );
 
-    if (existing && !existing.isDeleted) {
+    if (existing) {
       throw new BaseException(
         ERROR_CODES.JOB_ALREADY_APPLIED,
         'An application with this email already exists for this job.',
         409,
       );
     }
+  }
+
+  ensureRejectionReason(
+    status: JobApplicationStatus,
+    rejectionReason?: string | null,
+  ): string | null {
+    if (status !== JobApplicationStatus.REJECTED) {
+      return null;
+    }
+
+    const reason = rejectionReason?.trim() ?? '';
+
+    if (!reason) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Rejection reason is required.',
+        400,
+      );
+    }
+
+    return reason;
   }
 
   ensureValidStatusTransition(
@@ -98,16 +117,19 @@ export class JobApplicationDomainService {
       return;
     }
 
+    const firstStageTargets: JobApplicationStatus[] = [
+      JobApplicationStatus.SHORTLISTED,
+      JobApplicationStatus.INTERVIEW,
+      JobApplicationStatus.SELECTED,
+      JobApplicationStatus.REJECTED,
+    ];
+
     const allowedTransitions: Record<
       JobApplicationStatus,
       JobApplicationStatus[]
     > = {
-      [JobApplicationStatus.APPLIED]: [
-        JobApplicationStatus.SHORTLISTED,
-        JobApplicationStatus.INTERVIEW,
-        JobApplicationStatus.SELECTED,
-        JobApplicationStatus.REJECTED,
-      ],
+      [JobApplicationStatus.APPLIED]: firstStageTargets,
+      [JobApplicationStatus.UNDER_REVIEW]: firstStageTargets,
       [JobApplicationStatus.SHORTLISTED]: [
         JobApplicationStatus.ASSESSMENT,
         JobApplicationStatus.INTERVIEW,
@@ -126,7 +148,10 @@ export class JobApplicationDomainService {
         JobApplicationStatus.REJECTED,
       ],
       [JobApplicationStatus.PLACED]: [],
-      [JobApplicationStatus.REJECTED]: [JobApplicationStatus.SELECTED],
+      [JobApplicationStatus.REJECTED]: [
+        JobApplicationStatus.SHORTLISTED,
+        JobApplicationStatus.SELECTED,
+      ],
     };
 
     if (!allowedTransitions[from].includes(to)) {

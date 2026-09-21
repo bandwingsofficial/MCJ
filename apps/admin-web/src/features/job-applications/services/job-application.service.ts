@@ -1,6 +1,7 @@
 import { apiClient } from "@/src/core/api/axios";
 
 import type {
+  AssignInterviewRequest,
   DeleteJobApplicationResponse,
   JobApplicationInterviewStatus,
   JobApplicationListResponse,
@@ -93,6 +94,26 @@ class JobApplicationService {
       `/admin/job-applications/${id}/status`,
       payload,
     );
+
+    return data;
+  }
+
+  async assignInterview(id: string, payload: AssignInterviewRequest) {
+    const { data } = await apiClient.post<{
+      success: boolean;
+      message: string;
+      data: unknown;
+    }>(`/admin/job-applications/${id}/assign-interview`, payload);
+
+    return data;
+  }
+
+  async unassignInterview(id: string) {
+    const { data } = await apiClient.post<{
+      success: boolean;
+      message: string;
+      data: unknown;
+    }>(`/admin/job-applications/${id}/unassign-interview`);
 
     return data;
   }

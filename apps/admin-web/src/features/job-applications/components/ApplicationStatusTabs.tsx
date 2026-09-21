@@ -22,7 +22,7 @@ export function ApplicationStatusTabs({
     count: number;
   }[] = [
     { value: "PENDING", label: "Pending", count: counts.pending },
-    { value: "ACCEPTED", label: "Approved", count: counts.approved },
+    { value: "ACCEPTED", label: "Shortlisted", count: counts.approved },
     { value: "REJECTED", label: "Rejected", count: counts.rejected },
   ];
 

@@ -6,7 +6,7 @@ import { Checkbox } from "@/src/shared/components/ui/checkbox";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import { JobApplicationActions } from "@/src/features/job-applications/components/JobApplicationActions";
-import { JobApplicationInterviewStatusBadge } from "@/src/features/job-applications/components/JobApplicationInterviewStatusBadge";
+import { JobApplicationAssignmentStatusBadge } from "@/src/features/job-applications/components/JobApplicationAssignmentStatusBadge";
 import { JobApplicationStatusBadge } from "@/src/features/job-applications/components/JobApplicationStatusBadge";
 import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
 import {
@@ -26,6 +26,8 @@ interface JobApplicationTableProps {
   onView: (application: JobApplication) => void;
   onApprove: (application: JobApplication) => void;
   onReject: (application: JobApplication) => void;
+  onAssignInterview?: (application: JobApplication) => void;
+  onUnassignInterview?: (application: JobApplication) => void;
 }
 
 export function JobApplicationTable({
@@ -38,6 +40,8 @@ export function JobApplicationTable({
   onView,
   onApprove,
   onReject,
+  onAssignInterview,
+  onUnassignInterview,
 }: JobApplicationTableProps) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
   const columnCount = 11;
@@ -121,7 +125,7 @@ export function JobApplicationTable({
               Application Status
             </th>
             <th className="w-32 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Interview Status
+              Assignment Status
             </th>
             <th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
               Actions
@@ -210,8 +214,8 @@ export function JobApplicationTable({
                   <JobApplicationStatusBadge status={application.status} />
                 </td>
                 <td className="!px-4 !py-4 align-middle">
-                  <JobApplicationInterviewStatusBadge
-                    status={application.interviewStatus ?? "NOT_YET"}
+                  <JobApplicationAssignmentStatusBadge
+                    application={application}
                   />
                 </td>
                 <td
@@ -224,6 +228,8 @@ export function JobApplicationTable({
                     onView={onView}
                     onApprove={onApprove}
                     onReject={onReject}
+                    onAssignInterview={onAssignInterview}
+                    onUnassignInterview={onUnassignInterview}
                   />
                 </td>
               </tr>

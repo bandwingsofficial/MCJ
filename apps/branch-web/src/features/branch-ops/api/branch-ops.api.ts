@@ -28,6 +28,7 @@ import type {
   EnrollmentItem,
   InterviewItem,
   JobApplicationItem,
+  JobApplicationListResult,
   PaginatedList,
   PlacementActivityItem,
   StudentBatchActivity,
@@ -347,8 +348,17 @@ export const branchOpsApi = {
       apiClient.patch(`/branch/assessments/groups/${groupId}`, payload),
     ),
 
-  jobApplications: (params?: Record<string, string | undefined>) =>
-    unwrap<{ items: JobApplicationItem[]; total: number }>(
+  jobApplications: (params?: {
+    status?: string;
+    search?: string;
+    jobId?: string;
+    appliedFrom?: string;
+    appliedTo?: string;
+    interviewPhase?: string;
+    skip?: number;
+    take?: number;
+  }) =>
+    unwrap<JobApplicationListResult>(
       apiClient.get("/branch/job-applications", { params }),
     ),
 
@@ -372,15 +382,22 @@ export const branchOpsApi = {
     durationMinutes?: number;
     locationOrLink?: string;
     notes?: string;
+    roundNumber?: number;
+    interviewerId?: string;
   }) => unwrap<InterviewItem>(apiClient.post("/branch/interviews", payload)),
 
   updateInterview: (
     id: string,
     payload: {
+      scheduledAt?: string;
+      mode?: string;
+      durationMinutes?: number;
+      locationOrLink?: string;
       notes?: string;
       evaluation?: string;
       status?: string;
       decision?: string;
+      roundNumber?: number;
     },
   ) => unwrap<InterviewItem>(apiClient.patch(`/branch/interviews/${id}`, payload)),
 

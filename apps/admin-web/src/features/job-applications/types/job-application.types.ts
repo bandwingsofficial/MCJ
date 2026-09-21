@@ -1,5 +1,6 @@
 export type JobApplicationStatus =
   | "APPLIED"
+  | "UNDER_REVIEW"
   | "SHORTLISTED"
   | "ASSESSMENT"
   | "INTERVIEW"
@@ -95,6 +96,7 @@ export interface JobApplication {
   currentLocation: string | null;
   expectedSalary: number | null;
   remarks: string | null;
+  rejectionReason?: string | null;
   status: JobApplicationStatus;
   interviewStatus: JobApplicationInterviewStatus;
   isDeleted: boolean;
@@ -103,6 +105,13 @@ export interface JobApplication {
   user: JobApplicationUser | null;
   student: JobApplicationStudent | null;
   resolvedStudentCode?: string | null;
+  interviewAssignment?: {
+    id: string;
+    status: string;
+    branchId: string;
+    interviewerId: string | null;
+    scheduledAt: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -126,6 +135,12 @@ export interface JobApplicationResponse {
 
 export interface UpdateJobApplicationStatusRequest {
   status: JobApplicationStatus;
+  rejectionReason?: string;
+}
+
+export interface AssignInterviewRequest {
+  branchId: string;
+  interviewerId: string;
 }
 
 export interface DeleteJobApplicationResponse {
@@ -202,11 +217,11 @@ export function toJobApplicationStatus(
   filter: OnboardingStatusFilter,
 ): JobApplicationStatus | undefined {
   if (filter === "PENDING") {
-    return "APPLIED";
+    return "UNDER_REVIEW";
   }
 
   if (filter === "ACCEPTED") {
-    return "SELECTED";
+    return "SHORTLISTED";
   }
 
   if (filter === "REJECTED") {
@@ -232,8 +247,12 @@ export function getInterviewStatusLabel(
 }
 
 export function getOnboardingStatusLabel(status: JobApplicationStatus): string {
-  if (status === "APPLIED") {
+  if (status === "APPLIED" || status === "UNDER_REVIEW") {
     return "Pending";
+  }
+
+  if (status === "SHORTLISTED") {
+    return "Shortlisted";
   }
 
   if (status === "REJECTED") {
@@ -241,7 +260,11 @@ export function getOnboardingStatusLabel(status: JobApplicationStatus): string {
   }
 
   if (status === "SELECTED" || status === "PLACED") {
-    return "Approved";
+    return "Selected";
+  }
+
+  if (status === "INTERVIEW") {
+    return "Interview";
   }
 
   return status
@@ -251,7 +274,46 @@ export function getOnboardingStatusLabel(status: JobApplicationStatus): string {
 }
 
 export function canApproveApplication(status: JobApplicationStatus): boolean {
-  return status === "APPLIED" || status === "REJECTED";
+  return (
+    status === "APPLIED" ||
+    status === "UNDER_REVIEW" ||
+    status === "REJECTED"
+  );
+}
+
+export function isInterviewAssigned(application: {
+  interviewAssignment?: { id: string } | null;
+}): boolean {
+  return Boolean(application.interviewAssignment?.id);
+}
+
+export function getAssignmentStatus(
+  application: {
+    interviewAssignment?: { id: string } | null;
+  },
+): "ASSIGNED" | "UNASSIGNED" {
+  return isInterviewAssigned(application) ? "ASSIGNED" : "UNASSIGNED";
+}
+
+export function getAssignmentStatusLabel(
+  status: "ASSIGNED" | "UNASSIGNED",
+): string {
+  return status === "ASSIGNED" ? "Assigned" : "Unassigned";
+}
+
+/** Shortlisted applications can always open assign / manage assignment. */
+export function canManageAssignment(application: {
+  status: JobApplicationStatus;
+}): boolean {
+  return application.status === "SHORTLISTED";
+}
+
+/** @deprecated Prefer canManageAssignment */
+export function canAssignInterview(application: {
+  status: JobApplicationStatus;
+  interviewAssignment?: { id: string } | null;
+}): boolean {
+  return canManageAssignment(application);
 }
 
 export function canRejectApplication(status: JobApplicationStatus): boolean {
@@ -259,8 +321,9 @@ export function canRejectApplication(status: JobApplicationStatus): boolean {
     status !== "REJECTED" &&
     status !== "PLACED" &&
     (status === "APPLIED" ||
-      status === "SELECTED" ||
+      status === "UNDER_REVIEW" ||
       status === "SHORTLISTED" ||
+      status === "SELECTED" ||
       status === "ASSESSMENT" ||
       status === "INTERVIEW")
   );

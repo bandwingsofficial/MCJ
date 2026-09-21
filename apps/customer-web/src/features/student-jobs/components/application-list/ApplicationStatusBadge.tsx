@@ -9,14 +9,16 @@ import {
 
 interface ApplicationStatusBadgeProps {
   status: string;
+  interviewStatus?: string | null;
 }
 
 export function ApplicationStatusBadge({
   status,
+  interviewStatus,
 }: ApplicationStatusBadgeProps) {
   return (
-    <Badge variant={getJobApplicationStatusVariant(status)}>
-      {getJobApplicationStatusLabel(status)}
+    <Badge variant={getJobApplicationStatusVariant(status, interviewStatus)}>
+      {getJobApplicationStatusLabel(status, interviewStatus)}
     </Badge>
   );
 }

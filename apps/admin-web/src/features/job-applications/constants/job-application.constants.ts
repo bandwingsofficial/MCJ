@@ -4,6 +4,7 @@ import type {
 
 export const JOB_APPLICATION_STATUSES: readonly JobApplicationStatus[] =
   [
+    "UNDER_REVIEW",
     "APPLIED",
     "SHORTLISTED",
     "ASSESSMENT",
@@ -24,6 +25,12 @@ export const JOB_APPLICATION_STATUS_FLOW: Record<
   JobApplicationStatus,
   JobApplicationStatus[]
 > = {
+  UNDER_REVIEW: [
+    "SHORTLISTED",
+    "SELECTED",
+    "REJECTED",
+  ],
+
   APPLIED: [
     "SHORTLISTED",
     "SELECTED",
@@ -52,12 +59,12 @@ export const JOB_APPLICATION_STATUS_FLOW: Record<
 
   PLACED: [],
 
-  REJECTED: ["SELECTED"],
+  REJECTED: ["SHORTLISTED", "SELECTED"],
 };
 
 export const APPLICATION_STATUS_TABS = [
   { value: "PENDING", label: "Pending" },
-  { value: "ACCEPTED", label: "Approved" },
+  { value: "ACCEPTED", label: "Shortlisted" },
   { value: "REJECTED", label: "Rejected" },
 ] as const;
 

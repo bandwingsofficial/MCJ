@@ -5,5 +5,6 @@ export class UpdateJobApplicationStatusCommand {
     public readonly id: string,
     public readonly status: JobApplicationStatus,
     public readonly updatedBy?: string,
+    public readonly rejectionReason?: string | null,
   ) {}
 }

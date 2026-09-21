@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { buildNextSerialNumber } from '@common/utils/serial-number';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { JobApplication } from '../../domain/entities/job-application.entity';
+import { JOB_APPLICATION_BLOCKING_STATUSES } from '../../domain/enums/job-application-status.enum';
 import type {
   JobApplicationDetailView,
   JobApplicationListFilters,
@@ -73,6 +74,30 @@ export class PrismaJobApplicationRepository
         studentId,
         ...(includeDeleted ? {} : { isDeleted: false }),
       },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return record ? JobApplicationMapper.toDomain(record) : null;
+  }
+
+  async findBlockingByJobAndStudent(
+    jobId: string,
+    studentId: string,
+  ): Promise<JobApplication | null> {
+    const record = await this.prisma.jobApplication.findFirst({
+      where: {
+        jobId,
+        studentId,
+        isDeleted: false,
+        status: {
+          in: [...JOB_APPLICATION_BLOCKING_STATUSES],
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
 
     return record ? JobApplicationMapper.toDomain(record) : null;
@@ -91,6 +116,33 @@ export class PrismaJobApplicationRepository
           mode: 'insensitive',
         },
         ...(includeDeleted ? {} : { isDeleted: false }),
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return record ? JobApplicationMapper.toDomain(record) : null;
+  }
+
+  async findBlockingByJobAndEmail(
+    jobId: string,
+    email: string,
+  ): Promise<JobApplication | null> {
+    const record = await this.prisma.jobApplication.findFirst({
+      where: {
+        jobId,
+        applicantEmail: {
+          equals: email,
+          mode: 'insensitive',
+        },
+        isDeleted: false,
+        status: {
+          in: [...JOB_APPLICATION_BLOCKING_STATUSES],
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
 

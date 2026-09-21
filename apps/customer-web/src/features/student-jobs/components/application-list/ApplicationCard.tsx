@@ -1,10 +1,16 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { Card } from "@/src/shared/components/ui/card";
 import { Button } from "@/src/shared/components/ui/button";
 
 import { ApplicationStatusBadge } from "@/src/features/student-jobs/components/application-list/ApplicationStatusBadge";
 import { ApplicationInterviewStatusBadge } from "@/src/features/student-jobs/components/application-list/ApplicationInterviewStatusBadge";
+import {
+  canReapplyToJob,
+  isUnderReviewStatus,
+} from "@/src/features/student-jobs/utils/job-application-status.utils";
 
 import type {
   JobApplication,
@@ -22,9 +28,13 @@ export function ApplicationCard({
   application,
   onView,
 }: ApplicationCardProps) {
+  const router = useRouter();
+  const showReapply = canReapplyToJob(application.status);
+  const jobSlug = application.job.slug;
+
   return (
     <Card className="space-y-4 p-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold">
             {application.job.title}
@@ -37,6 +47,7 @@ export function ApplicationCard({
 
         <ApplicationStatusBadge
           status={application.status}
+          interviewStatus={application.interviewStatus}
         />
       </div>
 
@@ -78,7 +89,24 @@ export function ApplicationCard({
         </p>
       </div>
 
-      <div className="flex justify-end">
+      {isUnderReviewStatus(
+        application.status,
+        application.interviewStatus,
+      ) ? (
+        <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Your application is under review. We will get back to you within 24
+          hours.
+        </p>
+      ) : null}
+
+      {showReapply && application.rejectionReason ? (
+        <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-800">
+          <span className="font-medium">Rejection reason: </span>
+          {application.rejectionReason}
+        </p>
+      ) : null}
+
+      <div className="flex flex-wrap justify-end gap-2">
         <Button
           variant="outline"
           onClick={() =>
@@ -87,6 +115,15 @@ export function ApplicationCard({
         >
           View Details
         </Button>
+        {showReapply && jobSlug ? (
+          <Button
+            onClick={() => {
+              router.push(`/jobs/${jobSlug}/apply`);
+            }}
+          >
+            Reapply
+          </Button>
+        ) : null}
       </div>
     </Card>
   );

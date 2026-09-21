@@ -170,16 +170,21 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
       const pageSize = filters.pageSize ?? DEFAULT_APPLICATION_PAGE_SIZE;
       const baseQuery = buildListQuery(filters, debouncedSearch);
 
-      const [response, pendingTotal, selectedTotal, placedTotal, rejectedTotal] =
-        await Promise.all([
+      const [
+        response,
+        underReviewTotal,
+        appliedTotal,
+        shortlistedTotal,
+        rejectedTotal,
+      ] = await Promise.all([
           jobApplicationService.getJobApplications({
             ...baseQuery,
             skip: (page - 1) * pageSize,
             take: pageSize,
           }),
+          fetchGlobalStatusTotal("UNDER_REVIEW"),
           fetchGlobalStatusTotal("APPLIED"),
-          fetchGlobalStatusTotal("SELECTED"),
-          fetchGlobalStatusTotal("PLACED"),
+          fetchGlobalStatusTotal("SHORTLISTED"),
           fetchGlobalStatusTotal("REJECTED"),
         ]);
 
@@ -189,7 +194,8 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
 
       setJobApplications(response.items);
       setTotal(response.total);
-      const approvedTotal = selectedTotal + placedTotal;
+      const pendingTotal = underReviewTotal + appliedTotal;
+      const approvedTotal = shortlistedTotal;
 
       setStatusCounts({
         pending: pendingTotal,

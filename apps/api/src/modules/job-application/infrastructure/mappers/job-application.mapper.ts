@@ -28,6 +28,7 @@ export class JobApplicationMapper {
         ? Number(record.expectedSalary)
         : null,
       remarks: record.remarks,
+      rejectionReason: record.rejectionReason,
       createdBy: record.createdBy,
       status: record.status as JobApplicationStatus,
       interviewStatus:
@@ -59,6 +60,7 @@ export class JobApplicationMapper {
       currentLocation: application.currentLocation,
       expectedSalary: application.expectedSalary,
       remarks: application.remarks,
+      rejectionReason: application.rejectionReason,
       status: application.status,
       interviewStatus: application.interviewStatus,
       createdBy: application.createdBy,

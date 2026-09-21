@@ -77,6 +77,7 @@ export interface JobApplicationDetailView {
   currentLocation: string | null;
   expectedSalary: number | null;
   remarks: string | null;
+  rejectionReason: string | null;
   status: JobApplicationStatus;
   interviewStatus: JobApplicationInterviewStatus;
   isDeleted: boolean;
@@ -85,6 +86,13 @@ export interface JobApplicationDetailView {
   user: JobApplicationUserView | null;
   student: JobApplicationStudentView | null;
   resolvedStudentCode?: string | null;
+  interviewAssignment?: {
+    id: string;
+    status: string;
+    branchId: string;
+    interviewerId: string | null;
+    scheduledAt: Date | null;
+  } | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -121,10 +129,20 @@ export interface JobApplicationRepository {
     includeDeleted?: boolean,
   ): Promise<JobApplication | null>;
 
+  findBlockingByJobAndStudent(
+    jobId: string,
+    studentId: string,
+  ): Promise<JobApplication | null>;
+
   findByJobAndEmail(
     jobId: string,
     email: string,
     includeDeleted?: boolean,
+  ): Promise<JobApplication | null>;
+
+  findBlockingByJobAndEmail(
+    jobId: string,
+    email: string,
   ): Promise<JobApplication | null>;
 
   nextApplicationNumber(): Promise<string>;

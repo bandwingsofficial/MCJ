@@ -781,7 +781,9 @@ export function JobApplySuccess({
     : applicationStatus ?? "—";
   const statusHighlight =
     !isLoadingStatus &&
-    (applicationStatus === "Pending" || !applicationStatus);
+    (applicationStatus === "Under Review" ||
+      applicationStatus === "Pending" ||
+      !applicationStatus);
 
   return (
     <main className="min-h-screen bg-[#F8FBFF] px-4 py-10 sm:py-16">
@@ -796,7 +798,8 @@ export function JobApplySuccess({
               Application Submitted Successfully
             </h1>
             <p className="relative mt-2 text-sm text-white/70">
-              Your application has been received and is awaiting review.
+              Application submitted successfully. Your application is under
+              review. We will get back to you within 24 hours.
             </p>
           </div>
 
@@ -840,9 +843,8 @@ export function JobApplySuccess({
                     What happens next?
                   </p>
                   <p className="mt-1 text-sm text-emerald-800">
-                    Our recruitment team will review your application. If you are
-                    shortlisted, we will contact you with interview and update
-                    details.
+                    Your application is under review. We will get back to you
+                    within 24 hours.
                   </p>
                 </div>
               </div>

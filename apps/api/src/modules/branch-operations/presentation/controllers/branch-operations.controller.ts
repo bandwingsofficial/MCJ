@@ -768,6 +768,12 @@ export class BranchOperationsController {
     @CurrentBranchUser() user: BranchAuthUser,
     @Query('status') status?: JobApplicationStatus,
     @Query('search') search?: string,
+    @Query('jobId') jobId?: string,
+    @Query('appliedFrom') appliedFrom?: string,
+    @Query('appliedTo') appliedTo?: string,
+    @Query('interviewPhase') interviewPhase?: 'ASSIGNED' | 'SCHEDULED',
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
   ) {
     return {
       success: true,
@@ -775,6 +781,12 @@ export class BranchOperationsController {
       data: await this.interviews.listApplications(user, {
         status,
         search,
+        jobId,
+        appliedFrom,
+        appliedTo,
+        interviewPhase,
+        skip: skip ? Number(skip) : undefined,
+        take: take ? Number(take) : undefined,
       }),
     };
   }

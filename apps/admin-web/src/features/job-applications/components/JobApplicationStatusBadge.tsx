@@ -14,6 +14,7 @@ const STATUS_VARIANTS: Record<
   "success" | "warning" | "danger" | "info" | "default"
 > = {
   APPLIED: "default",
+  UNDER_REVIEW: "default",
   SHORTLISTED: "info",
   ASSESSMENT: "warning",
   INTERVIEW: "info",

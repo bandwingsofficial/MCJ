@@ -901,11 +901,53 @@ export interface JobApplicationItem {
   id: string;
   applicationNumber: string;
   applicantName: string | null;
+  applicantEmail?: string | null;
+  applicantPhone?: string | null;
   status: string;
   createdAt: string;
-  job: { title: string; companyName: string };
+  job: {
+    id?: string;
+    title: string;
+    companyName: string;
+    jobNumber?: string | null;
+    employmentType?: string;
+  };
   interviewStatus: string | null;
+  interviewScheduleStatus?: string | null;
   interviewScheduledAt: string | null;
+  latestInterview?: {
+    id: string;
+    scheduledAt?: string | null;
+    mode?: string | null;
+    locationOrLink?: string | null;
+    roundNumber?: number;
+    status: string;
+    notes?: string | null;
+    interviewer?: {
+      id: string;
+      firstName?: string;
+      lastName?: string | null;
+      email?: string;
+    } | null;
+    branch?: {
+      id: string;
+      branchName: string;
+      branchCode: string;
+    } | null;
+  } | null;
+}
+
+export interface JobApplicationJobOption {
+  id: string;
+  title: string;
+  companyName: string;
+  jobNumber?: string | null;
+}
+
+export interface JobApplicationListResult {
+  items: JobApplicationItem[];
+  total: number;
+  jobOptions?: JobApplicationJobOption[];
 }
 
 export interface InterviewItem {

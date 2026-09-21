@@ -477,6 +477,11 @@ export class ScheduleInterviewDto {
   @IsOptional()
   @IsUUID()
   interviewerId?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  roundNumber?: number;
 }
 
 export class UpdateInterviewDto {
@@ -515,6 +520,11 @@ export class UpdateInterviewDto {
   @IsOptional()
   @IsEnum(JobApplicationStatus)
   decision?: JobApplicationStatus;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  roundNumber?: number;
 }
 
 export class UpdateApplicationStatusDto {

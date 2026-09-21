@@ -37,6 +37,8 @@ import { ListJobApplicationsHandler } from './application/list-job-applications/
 import { ListMyJobApplicationsHandler } from './application/list-my-job-applications/list-my-job-applications.handler';
 import { RestoreJobApplicationHandler } from './application/restore-job-application/restore-job-application.handler';
 import { PermanentDeleteJobApplicationHandler } from './application/permanent-delete-job-application/permanent-delete-job-application.handler';
+import { AssignInterviewHandler } from './application/assign-interview/assign-interview.handler';
+import { UnassignInterviewHandler } from './application/unassign-interview/unassign-interview.handler';
 import { UpdateJobApplicationStatusHandler } from './application/update-job-application-status/update-job-application-status.handler';
 import type { JobApplicationRepository } from './domain/repositories/job-application.repository';
 import { JobApplicationDomainService } from './domain/services/job-application-domain.service';
@@ -260,6 +262,34 @@ import { StudentJobApplicationController } from './presentation/controllers/stud
         JobApplicationDomainService,
         JobDomainService,
         CreatePlacementFromApplicationHandler,
+      ],
+    },
+    {
+      provide: AssignInterviewHandler,
+      useFactory: (
+        prisma: PrismaService,
+        applicationRepo: JobApplicationRepository,
+        domainService: JobApplicationDomainService,
+      ) =>
+        new AssignInterviewHandler(prisma, applicationRepo, domainService),
+      inject: [
+        PrismaService,
+        JOB_APPLICATION_TOKENS.JOB_APPLICATION_REPOSITORY,
+        JobApplicationDomainService,
+      ],
+    },
+    {
+      provide: UnassignInterviewHandler,
+      useFactory: (
+        prisma: PrismaService,
+        applicationRepo: JobApplicationRepository,
+        domainService: JobApplicationDomainService,
+      ) =>
+        new UnassignInterviewHandler(prisma, applicationRepo, domainService),
+      inject: [
+        PrismaService,
+        JOB_APPLICATION_TOKENS.JOB_APPLICATION_REPOSITORY,
+        JobApplicationDomainService,
       ],
     },
     {

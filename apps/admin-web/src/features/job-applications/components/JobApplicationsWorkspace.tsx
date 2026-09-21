@@ -12,6 +12,8 @@ import { ApplicationStatusTabs } from "@/src/features/job-applications/component
 import { JobApplicationDetailsDialog } from "@/src/features/job-applications/components/JobApplicationDetailsDialog";
 import { JobApplicationsFilterBar } from "@/src/features/job-applications/components/JobApplicationsFilterBar";
 import { JobApplicationTable } from "@/src/features/job-applications/components/JobApplicationTable";
+import { AssignInterviewDialog } from "@/src/features/job-applications/components/AssignInterviewDialog";
+import { RejectJobApplicationDialog } from "@/src/features/job-applications/components/RejectJobApplicationDialog";
 import type {
   ApplicationStatusCounts,
   ApplicationStatusFilter,
@@ -52,9 +54,9 @@ export function JobApplicationsWorkspace({
   const [selectedApplication, setSelectedApplication] =
     useState<JobApplication | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<
-    "approve" | "reject" | null
-  >(null);
+  const [confirmAction, setConfirmAction] = useState<"approve" | "unassign" | null>(null);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [isActing, setIsActing] = useState(false);
 
   const page = filters.page ?? 1;
@@ -66,20 +68,24 @@ export function JobApplicationsWorkspace({
   const emptyState = getEmptyApplicationsMessage(filters.status);
 
   const confirmCopy = useMemo(() => {
-    if (confirmAction === "approve") {
+    if (confirmAction === "unassign") {
       return {
-        title: "Approve Application?",
+        title: "Unassign Interviewer?",
         description:
-          "Are you sure you want to approve this candidate application?",
-        confirmLabel: "Approve",
+          "This removes the Branch and Interviewer assignment only. The application stays shortlisted and can be assigned again.",
+        confirmLabel: "Unassign",
+        loadingLabel: "Unassigning...",
+        confirmVariant: "danger" as const,
       };
     }
 
     return {
-      title: "Reject Application?",
+      title: "Shortlist Application?",
       description:
-        "Are you sure you want to reject this candidate application?",
-      confirmLabel: "Reject",
+        "Are you sure you want to shortlist this candidate application?",
+      confirmLabel: "Shortlist",
+      loadingLabel: "Shortlisting...",
+      confirmVariant: "success" as const,
     };
   }, [confirmAction]);
 
@@ -95,34 +101,97 @@ export function JobApplicationsWorkspace({
 
   const requestReject = (application: JobApplication) => {
     setSelectedApplication(application);
-    setConfirmAction("reject");
+    setRejectOpen(true);
   };
 
-  const runStatusChange = async () => {
-    if (!selectedApplication || !confirmAction) {
+  const requestAssignInterview = (application: JobApplication) => {
+    setSelectedApplication(application);
+    setAssignOpen(true);
+  };
+
+  const requestUnassignInterview = (application: JobApplication) => {
+    setSelectedApplication(application);
+    setAssignOpen(false);
+    setConfirmAction("unassign");
+  };
+
+  const runApprove = async () => {
+    if (!selectedApplication) {
       return;
     }
 
     try {
       setIsActing(true);
       await jobApplicationService.updateStatus(selectedApplication.id, {
-        status: confirmAction === "approve" ? "SELECTED" : "REJECTED",
+        status: "SHORTLISTED",
       });
-      appToast.success(
-        confirmAction === "approve"
-          ? "Application approved."
-          : "Application rejected.",
-      );
+      appToast.success("Application shortlisted.");
       setConfirmAction(null);
       setDetailsOpen(false);
       setSelectedApplication(null);
 
       setFilters({
         ...filters,
-        status:
-          confirmAction === "approve"
-            ? ("ACCEPTED" as ApplicationStatusFilter)
-            : ("REJECTED" as ApplicationStatusFilter),
+        status: "ACCEPTED" as ApplicationStatusFilter,
+        page: 1,
+      });
+
+      await refetch();
+    } catch (err) {
+      appToast.error(
+        err instanceof Error
+          ? err.message
+          : "Unable to update application. Please try again.",
+      );
+    } finally {
+      setIsActing(false);
+    }
+  };
+
+  const runUnassign = async () => {
+    if (!selectedApplication) {
+      return;
+    }
+
+    try {
+      setIsActing(true);
+      await jobApplicationService.unassignInterview(selectedApplication.id);
+      appToast.success("Interviewer unassigned.");
+      setConfirmAction(null);
+      setAssignOpen(false);
+      setDetailsOpen(false);
+      setSelectedApplication(null);
+      await refetch();
+    } catch (err) {
+      appToast.error(
+        err instanceof Error
+          ? err.message
+          : "Unable to unassign interviewer. Please try again.",
+      );
+    } finally {
+      setIsActing(false);
+    }
+  };
+
+  const runReject = async (rejectionReason: string) => {
+    if (!selectedApplication) {
+      return;
+    }
+
+    try {
+      setIsActing(true);
+      await jobApplicationService.updateStatus(selectedApplication.id, {
+        status: "REJECTED",
+        rejectionReason,
+      });
+      appToast.success("Application rejected.");
+      setRejectOpen(false);
+      setDetailsOpen(false);
+      setSelectedApplication(null);
+
+      setFilters({
+        ...filters,
+        status: "REJECTED" as ApplicationStatusFilter,
         page: 1,
       });
 
@@ -195,6 +264,8 @@ export function JobApplicationsWorkspace({
                   onView={openReview}
                   onApprove={requestApprove}
                   onReject={requestReject}
+                  onAssignInterview={requestAssignInterview}
+                  onUnassignInterview={requestUnassignInterview}
                 />
               </div>
 
@@ -249,6 +320,8 @@ export function JobApplicationsWorkspace({
         }}
         onApprove={requestApprove}
         onReject={requestReject}
+        onAssignInterview={requestAssignInterview}
+        onUnassignInterview={requestUnassignInterview}
       />
 
       <ConfirmDialog
@@ -257,18 +330,52 @@ export function JobApplicationsWorkspace({
         description={confirmCopy.description}
         confirmLabel={confirmCopy.confirmLabel}
         loading={isActing}
-        loadingLabel={
-          confirmAction === "approve" ? "Approving..." : "Rejecting..."
-        }
-        confirmVariant={confirmAction === "approve" ? "success" : "danger"}
+        loadingLabel={confirmCopy.loadingLabel}
+        confirmVariant={confirmCopy.confirmVariant}
         onConfirm={() => {
-          void runStatusChange();
+          if (confirmAction === "unassign") {
+            void runUnassign();
+            return;
+          }
+          void runApprove();
         }}
         onCancel={() => {
           if (isActing) {
             return;
           }
           setConfirmAction(null);
+        }}
+      />
+
+      <RejectJobApplicationDialog
+        open={rejectOpen}
+        loading={isActing}
+        onConfirm={(reason) => {
+          void runReject(reason);
+        }}
+        onClose={() => {
+          if (isActing) {
+            return;
+          }
+          setRejectOpen(false);
+        }}
+      />
+
+      <AssignInterviewDialog
+        open={assignOpen}
+        application={selectedApplication}
+        onClose={() => {
+          if (isActing) {
+            return;
+          }
+          setAssignOpen(false);
+        }}
+        onUnassign={requestUnassignInterview}
+        onSuccess={async () => {
+          setAssignOpen(false);
+          setDetailsOpen(false);
+          setSelectedApplication(null);
+          await refetch();
         }}
       />
     </>
