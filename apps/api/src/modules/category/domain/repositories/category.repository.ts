@@ -2,7 +2,7 @@ import { Category } from '../entities/category.entity';
 import { CategoryStatus } from '../enums/category-status.enum';
 
 export interface CategoryListFilters {
-  /** When set, only categories assigned to this branch via BranchCategory. */
+  /** When set, only categories manually assigned to this branch (BranchCategory.linkedViaManual). */
   branchId?: string;
   status?: CategoryStatus;
   search?: string;

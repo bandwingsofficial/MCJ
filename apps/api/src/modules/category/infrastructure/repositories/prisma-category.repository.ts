@@ -178,15 +178,36 @@ export class PrismaCategoryRepository
       return 0;
     }
 
-    const result = await this.prisma.branchCategory.createMany({
-      data: uniqueIds.map((categoryId) => ({
-        branchId,
-        categoryId,
-      })),
-      skipDuplicates: true,
-    });
+    let assignedCount = 0;
 
-    return result.count;
+    for (const categoryId of uniqueIds) {
+      const existing = await this.prisma.branchCategory.findUnique({
+        where: {
+          branchId_categoryId: { branchId, categoryId },
+        },
+        select: { id: true, linkedViaManual: true },
+      });
+
+      await this.prisma.branchCategory.upsert({
+        where: {
+          branchId_categoryId: { branchId, categoryId },
+        },
+        create: {
+          branchId,
+          categoryId,
+          linkedViaManual: true,
+        },
+        update: {
+          linkedViaManual: true,
+        },
+      });
+
+      if (!existing?.linkedViaManual) {
+        assignedCount += 1;
+      }
+    }
+
+    return assignedCount;
   }
 
   async unassignCategoryFromBranch(
@@ -505,7 +526,10 @@ export class PrismaCategoryRepository
 
     if (filters.branchId !== undefined) {
       where.branchCategories = {
-        some: { branchId: filters.branchId },
+        some: {
+          branchId: filters.branchId,
+          linkedViaManual: true,
+        },
       };
     }
 

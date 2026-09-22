@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -49,6 +49,13 @@ export function BranchManagePage({ branchId }: Props) {
     isLoading: summaryLoading,
     refetch: refetchSummary,
   } = useBranchSummary(branch?.id);
+
+  const [manageDataSyncKey, setManageDataSyncKey] = useState(0);
+
+  const refreshBranchManageData = useCallback(async () => {
+    await refetchSummary();
+    setManageDataSyncKey((current) => current + 1);
+  }, [refetchSummary]);
 
   const { deleteBranch, isPending: isArchiving } =
     useDeleteBranch();
@@ -120,7 +127,8 @@ export function BranchManagePage({ branchId }: Props) {
         branch={branch}
         summary={summary}
         summaryLoading={summaryLoading}
-        onSummaryRefresh={refetchSummary}
+        manageDataSyncKey={manageDataSyncKey}
+        onSummaryRefresh={refreshBranchManageData}
         onTabChange={(tab) => {
           setActiveSection(TAB_LABELS[tab]);
         }}

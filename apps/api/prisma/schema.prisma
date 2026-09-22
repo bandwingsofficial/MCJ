@@ -301,13 +301,14 @@ model Category {
 }
 
 model BranchCategory {
-  id         String   @id @default(uuid())
-  branchId   String
-  categoryId String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  branch     Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  id              String   @id @default(uuid())
+  branchId        String
+  categoryId      String
+  linkedViaManual Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  branch          Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  category        Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([branchId, categoryId])
   @@index([branchId])
@@ -391,14 +392,16 @@ model CourseFaq {
 }
 
 model CourseBranch {
-  courseId         String
-  branchId         String
+  courseId          String
+  branchId          String
   /// Set when an admin assigns the course directly on Branch → Courses.
-  linkedViaManual  Boolean @default(false)
+  linkedViaManual   Boolean   @default(false)
   /// Set when the course is linked because a parent batch is assigned to the branch.
-  linkedViaBatch   Boolean @default(false)
-  branch           Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  course           Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  linkedViaBatch    Boolean   @default(false)
+  /// Set only by Branch → Courses assign (distinguishes real manual links from legacy flags).
+  manualAssignedAt  DateTime?
+  branch            Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  course            Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@id([courseId, branchId])
   @@index([courseId])

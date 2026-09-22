@@ -37,6 +37,7 @@ interface Props {
   branch: Branch;
   summary: BranchSummaryCounts | null;
   summaryLoading?: boolean;
+  manageDataSyncKey?: number;
   onSummaryRefresh: () => Promise<void>;
   onTabChange?: (tab: BranchManageTabKey) => void;
 }
@@ -63,6 +64,7 @@ export function BranchManageWorkspace({
   branch,
   summary,
   summaryLoading = false,
+  manageDataSyncKey = 0,
   onSummaryRefresh,
   onTabChange,
 }: Props) {
@@ -115,6 +117,7 @@ export function BranchManageWorkspace({
           branch={branch}
           summary={summary}
           summaryLoading={summaryLoading}
+          manageDataSyncKey={manageDataSyncKey}
           assignmentsDisabled={assignmentsDisabled}
           onNavigateToTab={navigateToTab}
         />

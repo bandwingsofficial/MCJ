@@ -25,21 +25,20 @@ import {
   computeBranchBatchOverviewStats,
   getBranchBatchTotalTimings,
 } from "@/src/features/branches/utils/branch-batch-overview.utils";
-import { categoryService } from "@/src/features/categories/services/category.service";
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
 import { CategoryStatusBadge } from "@/src/features/categories/components/category-status-badge";
-import { courseService } from "@/src/features/courses/services/course.service";
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
-import { batchService } from "@/src/features/batches/services/batch.service";
 import type { Batch } from "@/src/features/batches/types/batch.types";
-import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
+import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
+import { loadBranchManageAssignedData } from "@/src/features/branches/utils/branch-manage-data.utils";
 
 interface Props {
   branch: Branch;
   summary: BranchSummaryCounts | null;
   summaryLoading?: boolean;
+  manageDataSyncKey?: number;
   assignmentsDisabled?: boolean;
   onNavigateToTab: (
     tab: BranchManageTabKey,
@@ -49,8 +48,7 @@ interface Props {
 
 const PREVIEW_LIMIT = 4;
 const BATCH_PREVIEW_LIMIT = 4;
-const BRANCH_BATCH_FETCH_LIMIT = 100;
-const BRANCH_ENROLLMENT_FETCH_LIMIT = 500;
+const ENROLLMENT_PREVIEW_LIMIT = 4;
 
 function OverviewField({
   label,
@@ -73,6 +71,7 @@ export function BranchManageOverviewPanel({
   branch,
   summary,
   summaryLoading = false,
+  manageDataSyncKey = 0,
   assignmentsDisabled = false,
   onNavigateToTab,
 }: Props) {
@@ -92,76 +91,23 @@ export function BranchManageOverviewPanel({
   const loadPreview = useCallback(async () => {
     setPreviewLoading(true);
     try {
-      const [
-        categoryResponse,
-        courseResponse,
-        allCoursesResponse,
-        batchResponse,
-        branchEnrollmentResponse,
-        enrollmentResponse,
-      ] = await Promise.all([
-        categoryService.getCategories({
-          search: "",
-          status: "ACTIVE",
-          branchId,
-          page: 1,
-          pageSize: PREVIEW_LIMIT,
-        }),
-        courseService.getCourses({
-          branchId,
-          page: 1,
-          pageSize: PREVIEW_LIMIT,
-        }),
-        courseService.getCourses({
-          branchId,
-          page: 1,
-          pageSize: 100,
-        }),
-        batchService.getBatches({
-          branchId,
-          includeDeleted: false,
-          page: 1,
-          pageSize: BRANCH_BATCH_FETCH_LIMIT,
-        }),
+      const [assignedData, enrollmentPreviewResponse] = await Promise.all([
+        loadBranchManageAssignedData(branchId),
         enrollmentService.getEnrollments({
           branchId,
           skip: 0,
-          take: BRANCH_ENROLLMENT_FETCH_LIMIT,
-        }),
-        enrollmentService.getEnrollments({
-          branchId,
-          skip: 0,
-          take: PREVIEW_LIMIT,
+          take: ENROLLMENT_PREVIEW_LIMIT,
         }),
       ]);
 
-      const categoryItems = (categoryResponse.data ?? []).filter(
-        (item) => !item.isDeleted && item.status === "ACTIVE",
+      setCategories(assignedData.categories);
+      setCourses(assignedData.courses);
+      setBatches(assignedData.batches);
+      setBranchEnrollments(assignedData.branchEnrollments);
+      setCourseCountByCategory(assignedData.courseCountByCategory);
+      setEnrollments(
+        parseEnrollmentListResponse(enrollmentPreviewResponse).items,
       );
-      const courseItems = (courseResponse.data.items ?? []).filter(
-        (item) => !item.isDeleted,
-      );
-      const batchItems = batchResponse.data.items ?? [];
-      const branchEnrollmentItems = parseEnrollmentListResponse(
-        branchEnrollmentResponse,
-      ).items;
-      const enrollmentItems = parseEnrollmentListResponse(enrollmentResponse)
-        .items;
-
-      setCategories(categoryItems);
-      setCourses(courseItems);
-      setBatches(batchItems);
-      setBranchEnrollments(branchEnrollmentItems);
-      setEnrollments(enrollmentItems);
-
-      const categoryCounts: Record<string, number> = {};
-      for (const course of allCoursesResponse.data.items ?? []) {
-        if (course.categoryId) {
-          categoryCounts[course.categoryId] =
-            (categoryCounts[course.categoryId] ?? 0) + 1;
-        }
-      }
-      setCourseCountByCategory(categoryCounts);
     } catch (error) {
       appToast.error(getErrorMessage(error));
       setCategories([]);
@@ -177,18 +123,20 @@ export function BranchManageOverviewPanel({
 
   useEffect(() => {
     void loadPreview();
-  }, [loadPreview]);
+  }, [loadPreview, manageDataSyncKey]);
 
   const batchStats = computeBranchBatchOverviewStats(
     batches,
     branchEnrollments,
   );
-  const batchCount = batchStats.totalBatches;
+  const batchCount = summary?.batches ?? batchStats.totalBatches;
   const totalTimings = getBranchBatchTotalTimings(batches);
   const previewBatches = batches.slice(0, BATCH_PREVIEW_LIMIT);
+  const previewCategories = categories.slice(0, PREVIEW_LIMIT);
+  const previewCourses = courses.slice(0, PREVIEW_LIMIT);
   const categoryCount = summary?.categories ?? categories.length;
   const courseCount = summary?.courses ?? courses.length;
-  const enrolledCount = summary?.enrollments ?? enrollments.length;
+  const enrolledCount = summary?.enrollments ?? branchEnrollments.length;
 
   return (
     <div className="space-y-3">
@@ -283,14 +231,14 @@ export function BranchManageOverviewPanel({
 
           <BranchManageCardGrid
             isLoading={previewLoading}
-            isEmpty={!previewLoading && categories.length === 0}
+            isEmpty={!previewLoading && categoryCount === 0}
             emptyMessage="No Categories Yet"
             emptyDescription="Assign categories to organize branch courses."
             emptyIcon={Tag}
             columnsClassName="grid grid-cols-1 gap-3"
             skeletonCount={2}
           >
-            {categories.map((item) => (
+            {previewCategories.map((item) => (
               <BranchSummaryModuleCard
                 key={item.id}
                 title={item.name}
@@ -323,14 +271,14 @@ export function BranchManageOverviewPanel({
 
           <BranchManageCardGrid
             isLoading={previewLoading}
-            isEmpty={!previewLoading && courses.length === 0}
+            isEmpty={!previewLoading && courseCount === 0}
             emptyMessage="No Courses Yet"
             emptyDescription="Assign courses available at this branch."
             emptyIcon={BookOpen}
             columnsClassName="grid grid-cols-1 gap-3"
             skeletonCount={2}
           >
-            {courses.map((course) => (
+            {previewCourses.map((course) => (
               <BranchSummaryModuleCard
                 key={course.id}
                 title={course.title}

@@ -121,57 +121,156 @@ export async function linkCoursesForAssignedBatches(
       },
     });
   }
+
+  await reconcileCourseBranchLinksForBranch(prisma, branchId);
+}
+
+export async function resolveActiveCourseIdsForBranch(
+  prisma: PrismaService,
+  branchId: string,
+): Promise<Set<string>> {
+  const batchCourseIds = await resolveCourseIdsForBatchesAtBranch(
+    prisma,
+    branchId,
+  );
+
+  const rows = await prisma.courseBranch.findMany({
+    where: {
+      branchId,
+      course: { isDeleted: false },
+    },
+    select: {
+      courseId: true,
+      manualAssignedAt: true,
+    },
+  });
+
+  const courseIds = new Set<string>();
+
+  for (const row of rows) {
+    if (batchCourseIds.has(row.courseId) || row.manualAssignedAt) {
+      courseIds.add(row.courseId);
+    }
+  }
+
+  return courseIds;
+}
+
+export async function resolveDerivedCategoryIdsForBranch(
+  prisma: PrismaService,
+  branchId: string,
+): Promise<Set<string>> {
+  const activeCourseIds = await resolveActiveCourseIdsForBranch(
+    prisma,
+    branchId,
+  );
+
+  if (activeCourseIds.size === 0) {
+    return new Set();
+  }
+
+  const courses = await prisma.course.findMany({
+    where: {
+      id: { in: [...activeCourseIds] },
+      isDeleted: false,
+    },
+    select: { categoryId: true },
+  });
+
+  const categoryIds = new Set<string>();
+
+  for (const course of courses) {
+    if (course.categoryId) {
+      categoryIds.add(course.categoryId);
+    }
+  }
+
+  return categoryIds;
+}
+
+/**
+ * Branch → Course links must match assigned batches plus explicit manual assigns.
+ */
+export async function reconcileCourseBranchLinksForBranch(
+  prisma: PrismaService,
+  branchId: string,
+): Promise<void> {
+  const batchCourseIds = await resolveCourseIdsForBatchesAtBranch(
+    prisma,
+    branchId,
+  );
+
+  const rows = await prisma.courseBranch.findMany({
+    where: { branchId },
+    select: {
+      courseId: true,
+      linkedViaBatch: true,
+      manualAssignedAt: true,
+    },
+  });
+
+  for (const row of rows) {
+    const onAssignedBatch = batchCourseIds.has(row.courseId);
+    const manualLink = Boolean(row.manualAssignedAt);
+
+    if (onAssignedBatch) {
+      if (!row.linkedViaBatch) {
+        await prisma.courseBranch.update({
+          where: {
+            courseId_branchId: {
+              courseId: row.courseId,
+              branchId,
+            },
+          },
+          data: { linkedViaBatch: true },
+        });
+      }
+      continue;
+    }
+
+    if (manualLink) {
+      if (row.linkedViaBatch) {
+        await prisma.courseBranch.update({
+          where: {
+            courseId_branchId: {
+              courseId: row.courseId,
+              branchId,
+            },
+          },
+          data: { linkedViaBatch: false },
+        });
+      }
+      continue;
+    }
+
+    await prisma.courseBranch.deleteMany({
+      where: { branchId, courseId: row.courseId },
+    });
+  }
+
+  await syncBranchCategoryLinksForBranch(prisma, branchId);
+}
+
+/**
+ * BranchCategory rows with linkedViaManual=false are legacy/duplicate derived joins.
+ * Derived categories are computed from CourseBranch → Course.categoryId; remove stale rows.
+ */
+export async function syncBranchCategoryLinksForBranch(
+  prisma: PrismaService,
+  branchId: string,
+): Promise<void> {
+  await prisma.branchCategory.deleteMany({
+    where: {
+      branchId,
+      linkedViaManual: false,
+    },
+  });
 }
 
 export async function syncCourseLinksAfterBatchUnassign(
   prisma: PrismaService,
   branchId: string,
-  batchId: string,
+  _batchId: string,
 ): Promise<void> {
-  const removedBatchCourseIds = await resolveCourseIdsForBatch(
-    prisma,
-    batchId,
-  );
-
-  if (removedBatchCourseIds.length === 0) {
-    return;
-  }
-
-  const stillViaBatch = await resolveCourseIdsForBatchesAtBranch(
-    prisma,
-    branchId,
-    batchId,
-  );
-
-  for (const courseId of removedBatchCourseIds) {
-    const row = await prisma.courseBranch.findUnique({
-      where: {
-        courseId_branchId: { courseId, branchId },
-      },
-    });
-
-    if (!row) {
-      continue;
-    }
-
-    const batchStillNeedsCourse = stillViaBatch.has(courseId);
-
-    if (batchStillNeedsCourse) {
-      continue;
-    }
-
-    if (row.linkedViaManual) {
-      await prisma.courseBranch.update({
-        where: {
-          courseId_branchId: { courseId, branchId },
-        },
-        data: { linkedViaBatch: false },
-      });
-      continue;
-    }
-
-    await prisma.courseBranch.deleteMany({
-      where: { courseId, branchId },
-    });
-  }
+  await reconcileCourseBranchLinksForBranch(prisma, branchId);
 }

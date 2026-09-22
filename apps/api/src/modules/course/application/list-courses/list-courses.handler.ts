@@ -37,6 +37,12 @@ export class ListCoursesHandler {
       take: query.take,
     };
 
+    if (query.branchId) {
+      await this.branchRepo.reconcileBranchAssignmentLinks(
+        query.branchId,
+      );
+    }
+
     const [courses, total] = await Promise.all([
       this.courseRepo.findAll(filters),
       this.courseRepo.count(filters),

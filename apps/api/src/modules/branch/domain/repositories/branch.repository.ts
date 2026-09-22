@@ -286,6 +286,10 @@ export interface BranchRepository {
     batchId: string,
   ): Promise<void>;
 
+  reconcileBranchAssignmentLinks(
+    branchId: string,
+  ): Promise<void>;
+
   findCourseBranchLinksAtBranch(
     branchId: string,
     courseIds: string[],

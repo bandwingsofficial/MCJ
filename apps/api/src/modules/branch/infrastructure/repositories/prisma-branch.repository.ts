@@ -17,6 +17,10 @@ import { BranchMapper } from '../mappers/branch.mapper';
 import { BranchStatus } from '../../domain/enums/branch-status.enum';
 import {
   linkCoursesForAssignedBatches,
+  reconcileCourseBranchLinksForBranch,
+  resolveActiveCourseIdsForBranch,
+  resolveDerivedCategoryIdsForBranch,
+  syncBranchCategoryLinksForBranch,
   syncCourseLinksAfterBatchUnassign,
 } from '../../application/services/branch-batch-course-link.service';
 
@@ -137,22 +141,19 @@ export class PrismaBranchRepository
     instructors: number;
     categories: number;
   }> {
+    await reconcileCourseBranchLinksForBranch(this.prisma, branchId);
+
     const [
       students,
-      courses,
       batches,
       enrollments,
       instructors,
-      courseBranchCategories,
+      manualBranchCategories,
+      activeCourseIds,
+      derivedCategoryIds,
     ] = await Promise.all([
       this.prisma.student.count({
         where: { branchId, isDeleted: false },
-      }),
-      this.prisma.courseBranch.count({
-        where: {
-          branchId,
-          course: { isDeleted: false },
-        },
       }),
       this.prisma.branchBatch.count({
         where: {
@@ -163,37 +164,36 @@ export class PrismaBranchRepository
       this.prisma.enrollment.count({
         where: { branchId, isDeleted: false },
       }),
-      this.prisma.branchTrainer
-        .groupBy({
-          by: ['trainerId'],
-          where: {
-            branchId,
-            trainer: { isDeleted: false },
-          },
-        })
-        .then((rows) => rows.length),
-      this.prisma.courseBranch.findMany({
+      this.prisma.branchTrainer.count({
         where: {
           branchId,
-          course: { isDeleted: false },
-        },
-        select: {
-          course: { select: { categoryId: true } },
+          trainer: { isDeleted: false },
         },
       }),
+      this.prisma.branchCategory.findMany({
+        where: {
+          branchId,
+          linkedViaManual: true,
+          category: {
+            isDeleted: false,
+            status: 'ACTIVE',
+          },
+        },
+        select: { categoryId: true },
+      }),
+      resolveActiveCourseIdsForBranch(this.prisma, branchId),
+      resolveDerivedCategoryIdsForBranch(this.prisma, branchId),
     ]);
 
-    const categoryIds = new Set<string>();
-    for (const row of courseBranchCategories) {
-      const categoryId = row.course.categoryId;
-      if (categoryId) {
-        categoryIds.add(categoryId);
-      }
+    const categoryIds = new Set<string>(derivedCategoryIds);
+
+    for (const row of manualBranchCategories) {
+      categoryIds.add(row.categoryId);
     }
 
     return {
       students,
-      courses,
+      courses: activeCourseIds.size,
       batches,
       enrollments,
       instructors,
@@ -770,9 +770,11 @@ export class PrismaBranchRepository
           branchId,
           linkedViaManual: true,
           linkedViaBatch: existing?.linkedViaBatch ?? false,
+          manualAssignedAt: new Date(),
         },
         update: {
           linkedViaManual: true,
+          manualAssignedAt: new Date(),
         },
       });
 
@@ -813,12 +815,15 @@ export class PrismaBranchRepository
         },
         data: { linkedViaManual: false },
       });
+      await syncBranchCategoryLinksForBranch(this.prisma, branchId);
       return;
     }
 
     await this.prisma.courseBranch.deleteMany({
       where: { branchId, courseId },
     });
+
+    await syncBranchCategoryLinksForBranch(this.prisma, branchId);
   }
 
   async findTrainersByIds(
@@ -1200,6 +1205,15 @@ export class PrismaBranchRepository
       this.prisma,
       branchId,
       batchId,
+    );
+  }
+
+  async reconcileBranchAssignmentLinks(
+    branchId: string,
+  ): Promise<void> {
+    await reconcileCourseBranchLinksForBranch(
+      this.prisma,
+      branchId,
     );
   }
 

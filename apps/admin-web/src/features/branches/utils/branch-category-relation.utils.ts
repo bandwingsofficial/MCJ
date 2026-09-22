@@ -1,7 +1,7 @@
 import { categoryService } from "@/src/features/categories/services/category.service";
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
-import { courseService } from "@/src/features/courses/services/course.service";
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
+import { loadBranchAssignedCourses } from "@/src/features/branches/utils/branch-course-relation.utils";
 
 export async function getBranchCoursesForAssignment(
   branchId: string,
@@ -10,15 +10,8 @@ export async function getBranchCoursesForAssignment(
     return [];
   }
 
-  const courseResponse = await courseService.getCourses({
-    branchId,
-    page: 1,
-    pageSize: 100,
-  });
-
-  return (courseResponse.data.items ?? []).filter(
-    (course) => !course.isDeleted && course.status === "ACTIVE",
-  );
+  const { courses } = await loadBranchAssignedCourses(branchId);
+  return courses;
 }
 
 /**
