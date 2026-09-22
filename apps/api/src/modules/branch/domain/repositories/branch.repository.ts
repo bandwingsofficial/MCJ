@@ -36,6 +36,60 @@ export interface BranchAssignableTrainer {
   isDeleted: boolean;
 }
 
+export type BranchTrainerAssignmentType =
+  | 'BRANCH_ONLY'
+  | 'COURSE_BATCH';
+
+export interface BranchTrainerAssignmentRecord {
+  id: string;
+  branchId: string;
+  trainerId: string;
+  assignmentType: BranchTrainerAssignmentType;
+  courseId: string | null;
+  batchId: string | null;
+  mode: string | null;
+  batchTimingId: string | null;
+  trainer: {
+    id: string;
+    firstName: string;
+    lastName: string | null;
+    employeeCode: string | null;
+    qualification: string | null;
+    specialization: string | null;
+    status: string;
+    profileImageUrl: string | null;
+    email: string | null;
+    isDeleted: boolean;
+  };
+  course: {
+    id: string;
+    title: string;
+    code: string;
+  } | null;
+  batch: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
+  batchTiming: {
+    id: string;
+    name: string;
+    mode: string;
+    startTime: string;
+    endTime: string;
+    startDate: Date;
+    endDate: Date | null;
+    status: string;
+  } | null;
+}
+
+export interface CourseBatchTrainerAssignmentContext {
+  courseId: string;
+  batchId: string;
+  mode: string;
+  batchTimingId: string;
+}
+
 export interface BranchAssignableBatch {
   id: string;
   isActive: boolean;
@@ -178,9 +232,34 @@ export interface BranchRepository {
     trainerIds: string[],
   ): Promise<number>;
 
+  assignCourseBatchTrainersToBranch(
+    branchId: string,
+    trainerIds: string[],
+    context: CourseBatchTrainerAssignmentContext,
+  ): Promise<number>;
+
+  listBranchTrainerAssignments(
+    branchId: string,
+  ): Promise<BranchTrainerAssignmentRecord[]>;
+
   unassignTrainerFromBranch(
     branchId: string,
     trainerId: string,
+  ): Promise<void>;
+
+  unassignBranchTrainerAssignment(
+    branchId: string,
+    assignmentId: string,
+  ): Promise<void>;
+
+  findAssignedTrainerIdsForCourseBatchContext(
+    branchId: string,
+    context: CourseBatchTrainerAssignmentContext,
+  ): Promise<string[]>;
+
+  validateCourseBatchTrainerContext(
+    branchId: string,
+    context: CourseBatchTrainerAssignmentContext,
   ): Promise<void>;
 
   findBatchesByIds(

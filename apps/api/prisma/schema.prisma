@@ -358,6 +358,7 @@ model Course {
   lessonProgress   LessonProgress[]
   trainers         TrainerCourse[]
   faqs             CourseFaq[]
+  branchTrainerAssignments BranchTrainer[]
 
   @@index([title])
   @@index([code])
@@ -673,18 +674,34 @@ model TrainerCourse {
   @@index([courseId])
 }
 
-model BranchTrainer {
-  id        String   @id @default(uuid())
-  branchId  String
-  trainerId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  branch    Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  trainer   Trainer  @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+enum BranchTrainerAssignmentType {
+  BRANCH_ONLY
+  COURSE_BATCH
+}
 
-  @@unique([branchId, trainerId])
+model BranchTrainer {
+  id             String                      @id @default(uuid())
+  branchId       String
+  trainerId      String
+  assignmentType BranchTrainerAssignmentType @default(BRANCH_ONLY)
+  courseId       String?
+  batchId        String?
+  mode           CourseMode?
+  batchTimingId  String?
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+  branch         Branch                      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  trainer        Trainer                     @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  course         Course?                     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  batch          Batch?                      @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batchTiming    BatchTiming?                @relation(fields: [batchTimingId], references: [id], onDelete: Cascade)
+
   @@index([branchId])
   @@index([trainerId])
+  @@index([courseId])
+  @@index([batchId])
+  @@index([batchTimingId])
+  @@index([branchId, assignmentType])
 }
 
 /// Independent branch ↔ batch assignments (same parent batch can belong to many branches).
@@ -756,6 +773,7 @@ model Batch {
   batchTemplate   BatchTemplate? @relation(fields: [batchTemplateId], references: [id], onDelete: SetNull)
   timings         BatchTiming[]
   modeCalendarExceptions BatchModeCalendarException[]
+  branchTrainerAssignments BranchTrainer[]
 
   @@unique([slug, branchId])
   @@index([name])
@@ -837,6 +855,7 @@ model BatchTiming {
   template     BatchTemplate? @relation(fields: [batchTemplateId], references: [id], onDelete: SetNull)
   enrollments  Enrollment[]
   attendances  Attendance[]
+  branchTrainerAssignments BranchTrainer[]
 
   @@index([batchId])
   @@index([batchTemplateId])

@@ -17,6 +17,8 @@ import { AssignTrainersToBranchHandler } from './application/assign-trainers-to-
 import { UnassignBatchFromBranchHandler } from './application/unassign-batch-from-branch/unassign-batch-from-branch.handler';
 import { UnassignCourseFromBranchHandler } from './application/unassign-course-from-branch/unassign-course-from-branch.handler';
 import { UnassignTrainerFromBranchHandler } from './application/unassign-trainer-from-branch/unassign-trainer-from-branch.handler';
+import { ListBranchTrainerAssignmentsHandler } from './application/list-branch-trainer-assignments/list-branch-trainer-assignments.handler';
+import { UnassignBranchTrainerAssignmentHandler } from './application/unassign-branch-trainer-assignment/unassign-branch-trainer-assignment.handler';
 
 import { CreateBranchHandler } from './application/create-branch/create-branch.handler';
 import { DeleteBranchHandler } from './application/delete-branch/delete-branch.handler';
@@ -298,6 +300,20 @@ import { BRANCH_TOKENS } from './branch.tokens';
       provide: UnassignTrainerFromBranchHandler,
       useFactory: (branchRepo: BranchRepository) =>
         new UnassignTrainerFromBranchHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
+
+    {
+      provide: ListBranchTrainerAssignmentsHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new ListBranchTrainerAssignmentsHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+    },
+
+    {
+      provide: UnassignBranchTrainerAssignmentHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new UnassignBranchTrainerAssignmentHandler(branchRepo),
       inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
     },
 

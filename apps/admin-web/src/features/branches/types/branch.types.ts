@@ -205,3 +205,57 @@ export interface BulkBranchOperationResult {
   results: BulkBranchItemResult[];
   failures: BulkBranchItemResult[];
 }
+
+export type BranchTrainerAssignmentType = "BRANCH_ONLY" | "COURSE_BATCH";
+
+export interface BranchTrainerAssignment {
+  id: string;
+  branchId: string;
+  trainerId: string;
+  assignmentType: BranchTrainerAssignmentType;
+  courseId: string | null;
+  batchId: string | null;
+  mode: string | null;
+  batchTimingId: string | null;
+  trainer: {
+    id: string;
+    firstName: string;
+    lastName: string | null;
+    employeeCode: string | null;
+    qualification: string | null;
+    specialization: string | null;
+    status: string;
+    profileImageUrl: string | null;
+    email: string | null;
+    isDeleted: boolean;
+  };
+  course: {
+    id: string;
+    title: string;
+    code: string;
+  } | null;
+  batch: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
+  batchTiming: {
+    id: string;
+    name: string;
+    mode: string;
+    startTime: string;
+    endTime: string;
+    startDate: string;
+    endDate: string | null;
+    status: string;
+  } | null;
+}
+
+export interface AssignBranchTrainersPayload {
+  assignmentType: BranchTrainerAssignmentType;
+  trainerIds: string[];
+  courseId?: string;
+  batchId?: string;
+  mode?: string;
+  batchTimingId?: string;
+}

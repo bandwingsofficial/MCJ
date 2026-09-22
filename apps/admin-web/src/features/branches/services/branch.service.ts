@@ -4,6 +4,7 @@ import { branchApi } from "@/src/features/branches/api/branch.api";
 import { apiClient } from "@/src/core/api/axios";
 
 import {
+  AssignBranchTrainersPayload,
   BranchFilters,
   CreateBranchRequest,
   UpdateBranchRequest,
@@ -159,12 +160,50 @@ class BranchService {
     }
   }
 
-  async assignTrainers(
+  async getTrainerAssignments(branchId: string) {
+    try {
+      return await branchApi.getTrainerAssignments(branchId);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getContextAssignedTrainerIds(
     branchId: string,
-    trainerIds: string[],
+    params: {
+      courseId: string;
+      batchId: string;
+      mode: string;
+      batchTimingId: string;
+    },
   ) {
     try {
-      return await branchApi.assignTrainers(branchId, trainerIds);
+      return await branchApi.getContextAssignedTrainerIds(branchId, params);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async assignTrainers(
+    branchId: string,
+    payload: AssignBranchTrainersPayload,
+  ) {
+    try {
+      return await branchApi.assignTrainers(branchId, payload);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async unassignTrainerAssignment(
+    branchId: string,
+    assignmentId: string,
+  ) {
+    try {
+      return await branchApi.unassignTrainerAssignment(
+        branchId,
+        assignmentId,
+      );
     } catch (error) {
       throw this.handleError(error);
     }

@@ -26,16 +26,22 @@ import {
   BRANCH_TABLE_CARD_CLASS,
 } from "@/src/features/branches/components/manage/branch-manage-layout.constants";
 import {
-  filterAssignedBranchTrainers,
+  filterBranchTrainerAssignments,
+  formatBranchTrainerTimingLabel,
   formatTrainerDisplayName,
-  loadBranchAssignedTrainerIds,
-  loadBranchAssignedTrainers,
+  getAssignmentTypeLabel,
+  getBranchOnlyAssignedTrainerIds,
+  loadBranchTrainerAssignments,
 } from "@/src/features/branches/utils/branch-trainer-relation.utils";
 import { branchService } from "@/src/features/branches/services/branch.service";
+import type {
+  AssignBranchTrainersPayload,
+  BranchTrainerAssignment,
+} from "@/src/features/branches/types/branch.types";
 import { DEFAULT_TRAINER_PAGE_SIZE } from "@/src/features/trainers/constants/trainer.constants";
 import { TrainerStatusBadge } from "@/src/features/trainers/components/trainer-status-badge";
-import { trainerService } from "@/src/features/trainers/services/trainer.service";
-import type { TrainerListItem } from "@/src/features/trainers/types/trainer.types";
+import type { BatchMode } from "@/src/features/batches/types/batch.types";
+import { getBatchModeLabel } from "@/src/features/batches/utils/batch-mode.utils";
 
 interface Props {
   branchId: string;
@@ -50,49 +56,39 @@ export function BranchManageTrainersPanel({
 }: Props) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [assignedTrainers, setAssignedTrainers] = useState<TrainerListItem[]>(
-    [],
-  );
+  const [assignments, setAssignments] = useState<BranchTrainerAssignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [availableTrainers, setAvailableTrainers] = useState<TrainerListItem[]>(
-    [],
-  );
-  const [modalAssignedTrainerIds, setModalAssignedTrainerIds] = useState<
-    string[]
-  >([]);
   const [assignOpen, setAssignOpen] = useState(false);
-  const [assignModalLoading, setAssignModalLoading] = useState(false);
   const [assignSubmitting, setAssignSubmitting] = useState(false);
 
-  const [unassignTarget, setUnassignTarget] = useState<TrainerListItem | null>(
-    null,
-  );
+  const [unassignTarget, setUnassignTarget] =
+    useState<BranchTrainerAssignment | null>(null);
   const [unassignLoading, setUnassignLoading] = useState(false);
 
   const pageSize = DEFAULT_TRAINER_PAGE_SIZE;
 
-  const filteredTrainers = useMemo(
-    () => filterAssignedBranchTrainers(assignedTrainers, search),
-    [assignedTrainers, search],
+  const filteredAssignments = useMemo(
+    () => filterBranchTrainerAssignments(assignments, search),
+    [assignments, search],
   );
 
-  const total = filteredTrainers.length;
+  const total = filteredAssignments.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const paginatedTrainers = useMemo(() => {
+  const paginatedAssignments = useMemo(() => {
     const start = (page - 1) * pageSize;
-    return filteredTrainers.slice(start, start + pageSize);
-  }, [filteredTrainers, page, pageSize]);
+    return filteredAssignments.slice(start, start + pageSize);
+  }, [filteredAssignments, page, pageSize]);
 
-  const assignedTrainerIds = useMemo(
-    () => new Set(assignedTrainers.map((trainer) => trainer.id)),
-    [assignedTrainers],
+  const branchOnlyAssignedTrainerIds = useMemo(
+    () => getBranchOnlyAssignedTrainerIds(assignments),
+    [assignments],
   );
 
   const loadData = useCallback(async () => {
     if (!branchId) {
-      setAssignedTrainers([]);
+      setAssignments([]);
       setIsLoading(false);
       return;
     }
@@ -101,12 +97,11 @@ export function BranchManageTrainersPanel({
     setError(null);
 
     try {
-      const trainers = await loadBranchAssignedTrainers(branchId);
-      setAssignedTrainers(trainers);
+      setAssignments(await loadBranchTrainerAssignments(branchId));
     } catch (loadError) {
       const message = getErrorMessage(loadError);
       setError(message);
-      setAssignedTrainers([]);
+      setAssignments([]);
       appToast.error(message);
     } finally {
       setIsLoading(false);
@@ -127,30 +122,6 @@ export function BranchManageTrainersPanel({
     }
   }, [page, totalPages]);
 
-  const loadAvailableTrainers = useCallback(async () => {
-    setAssignModalLoading(true);
-    try {
-      const [assignedIds, activeTrainers] = await Promise.all([
-        loadBranchAssignedTrainerIds(branchId),
-        trainerService.getActiveTrainersForAssignment(),
-      ]);
-
-      setAvailableTrainers(activeTrainers);
-      setModalAssignedTrainerIds(assignedIds);
-    } catch (loadError) {
-      appToast.error(getErrorMessage(loadError));
-      setAssignOpen(false);
-    } finally {
-      setAssignModalLoading(false);
-    }
-  }, [branchId]);
-
-  const openAssignModal = async () => {
-    setModalAssignedTrainerIds(assignedTrainers.map((trainer) => trainer.id));
-    setAssignOpen(true);
-    await loadAvailableTrainers();
-  };
-
   const closeAssignModal = () => {
     if (assignSubmitting) {
       return;
@@ -159,23 +130,15 @@ export function BranchManageTrainersPanel({
     setAssignOpen(false);
   };
 
-  const handleAssign = async (trainerIds: string[]) => {
-    const uniqueTrainerIds = Array.from(new Set(trainerIds)).filter(
-      (trainerId) => !assignedTrainerIds.has(trainerId),
-    );
-
-    if (uniqueTrainerIds.length === 0) {
-      appToast.error("Selected trainers are already assigned to this branch.");
-      return;
-    }
-
+  const handleAssign = async (payload: AssignBranchTrainersPayload) => {
     setAssignSubmitting(true);
     try {
-      await branchService.assignTrainers(branchId, uniqueTrainerIds);
+      const result = await branchService.assignTrainers(branchId, payload);
+      const count = result.data?.assignedCount ?? payload.trainerIds.length;
       appToast.success(
-        uniqueTrainerIds.length === 1
+        count === 1
           ? "Trainer assigned successfully"
-          : `${uniqueTrainerIds.length} trainers assigned successfully`,
+          : `${count} trainers assigned successfully`,
       );
       setAssignOpen(false);
       await loadData();
@@ -194,7 +157,10 @@ export function BranchManageTrainersPanel({
 
     setUnassignLoading(true);
     try {
-      await branchService.unassignTrainer(branchId, unassignTarget.id);
+      await branchService.unassignTrainerAssignment(
+        branchId,
+        unassignTarget.id,
+      );
       appToast.success("Trainer unassigned");
       setUnassignTarget(null);
       await loadData();
@@ -209,7 +175,7 @@ export function BranchManageTrainersPanel({
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
 
-  if (error && assignedTrainers.length === 0 && !isLoading) {
+  if (error && assignments.length === 0 && !isLoading) {
     return (
       <ErrorState
         title="Failed to load trainers"
@@ -229,9 +195,9 @@ export function BranchManageTrainersPanel({
             <div className="flex shrink-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
               <h2 className={BRANCH_TAB_TITLE_CLASS}>Trainers</h2>
               <span className={BRANCH_TAB_COUNT_CLASS}>
-                Total Trainers:
+                Total Assignments:
                 <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
-                  {isLoading ? "—" : assignedTrainers.length}
+                  {isLoading ? "—" : assignments.length}
                 </span>
               </span>
             </div>
@@ -242,9 +208,7 @@ export function BranchManageTrainersPanel({
               searchPlaceholder="Search trainers..."
               assignLabel="Assign Trainer"
               assignDisabled={assignmentsDisabled}
-              onAssign={() => {
-                void openAssignModal();
-              }}
+              onAssign={() => setAssignOpen(true)}
             />
           </div>
         </header>
@@ -253,15 +217,18 @@ export function BranchManageTrainersPanel({
           <BranchManageTableShell
             embedded
             columns={[
-              { key: "profile", label: "Profile", className: "w-[4.5rem]" },
-              { key: "name", label: "Trainer Name" },
-              { key: "qualification", label: "Qualification" },
-              { key: "specialization", label: "Specialization" },
-              { key: "status", label: "Status", className: "w-[8rem]" },
+              { key: "profile", label: "Profile", className: "w-[4rem]" },
+              { key: "name", label: "Trainer", className: "min-w-[9rem]" },
+              { key: "course", label: "Course", className: "min-w-[8rem]" },
+              { key: "batch", label: "Batch", className: "min-w-[8rem]" },
+              { key: "mode", label: "Mode", className: "w-[7rem]" },
+              { key: "timing", label: "Batch Timing", className: "min-w-[10rem]" },
+              { key: "type", label: "Assignment", className: "w-[7.5rem]" },
+              { key: "status", label: "Status", className: "w-[7rem]" },
               {
                 key: "actions",
                 label: "Actions",
-                className: "w-[10.5rem] text-right",
+                className: "w-[6rem] text-right",
               },
             ]}
             isLoading={isLoading}
@@ -270,26 +237,27 @@ export function BranchManageTrainersPanel({
             emptyDescription="Assign trainers to this branch to get started."
             emptyIcon={GraduationCap}
           >
-            {paginatedTrainers.map((trainer) => {
+            {paginatedAssignments.map((row) => {
               const displayName =
-                formatTrainerDisplayName(trainer) || "Unnamed trainer";
+                formatTrainerDisplayName(row.trainer) || "Unnamed trainer";
+              const isBranchOnly = row.assignmentType === "BRANCH_ONLY";
 
               return (
                 <tr
-                  key={trainer.id}
+                  key={row.id}
                   className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
                 >
                   <td className={TABLE_CELL_CLASS}>
-                    {trainer.profileImageUrl ? (
+                    {row.trainer.profileImageUrl ? (
                       <Image
-                        src={trainer.profileImageUrl}
+                        src={row.trainer.profileImageUrl}
                         alt=""
-                        width={44}
-                        height={44}
-                        className="h-11 w-11 rounded-lg border border-slate-200 object-cover shadow-sm"
+                        width={40}
+                        height={40}
+                        className="h-10 w-10 rounded-lg border border-slate-200 object-cover"
                       />
                     ) : (
-                      <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-sm font-semibold text-slate-500">
                         {displayName.charAt(0) || "?"}
                       </div>
                     )}
@@ -298,24 +266,36 @@ export function BranchManageTrainersPanel({
                     <span className="block truncate" title={displayName}>
                       {displayName}
                     </span>
-                    {trainer.employeeCode ? (
-                      <p className="truncate text-xs text-slate-500">
-                        {trainer.employeeCode}
-                      </p>
-                    ) : null}
                   </td>
                   <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
                     <span className="block truncate">
-                      {trainer.qualification?.trim() || "—"}
+                      {isBranchOnly ? "" : (row.course?.title ?? "")}
                     </span>
                   </td>
                   <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
                     <span className="block truncate">
-                      {trainer.specialization?.trim() || "—"}
+                      {isBranchOnly ? "" : (row.batch?.name ?? "")}
                     </span>
+                  </td>
+                  <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                    {isBranchOnly
+                      ? ""
+                      : row.mode
+                        ? getBatchModeLabel(row.mode as BatchMode)
+                        : ""}
+                  </td>
+                  <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                    <span className="block truncate text-xs">
+                      {isBranchOnly
+                        ? ""
+                        : formatBranchTrainerTimingLabel(row.batchTiming)}
+                    </span>
+                  </td>
+                  <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
+                    {getAssignmentTypeLabel(row.assignmentType)}
                   </td>
                   <td className={TABLE_CELL_CLASS}>
-                    <TrainerStatusBadge status={trainer.status} />
+                    <TrainerStatusBadge status={row.trainer.status} />
                   </td>
                   <td className={TABLE_CELL_CLASS}>
                     <div className="flex items-center justify-end">
@@ -328,7 +308,7 @@ export function BranchManageTrainersPanel({
                           unassignLoading ||
                           assignSubmitting
                         }
-                        onClick={() => setUnassignTarget(trainer)}
+                        onClick={() => setUnassignTarget(row)}
                       />
                     </div>
                   </td>
@@ -355,9 +335,7 @@ export function BranchManageTrainersPanel({
       <AssignBranchTrainerModal
         open={assignOpen}
         branchId={branchId}
-        trainers={availableTrainers}
-        assignedTrainerIds={modalAssignedTrainerIds}
-        isLoading={assignModalLoading}
+        branchOnlyAssignedTrainerIds={branchOnlyAssignedTrainerIds}
         isSubmitting={assignSubmitting}
         onClose={closeAssignModal}
         onAssign={handleAssign}
@@ -366,7 +344,7 @@ export function BranchManageTrainersPanel({
       <ConfirmDialog
         open={Boolean(unassignTarget)}
         title="Unassign trainer?"
-        description={`Remove ${formatTrainerDisplayName(unassignTarget ?? { firstName: "this trainer", lastName: null })} from this branch? This only removes the branch assignment.`}
+        description={`Remove ${formatTrainerDisplayName(unassignTarget?.trainer ?? { firstName: "this trainer", lastName: null })} from this branch assignment? Other branch or course/batch assignments will not be changed.`}
         confirmLabel="Unassign"
         loading={unassignLoading}
         onCancel={() => {

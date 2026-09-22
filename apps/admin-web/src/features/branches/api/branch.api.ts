@@ -11,6 +11,8 @@ import {
   SuggestBranchCodeResponse,
   UpdateBranchRequest,
   UpdateBranchStatusRequest,
+  BranchTrainerAssignment,
+  AssignBranchTrainersPayload,
 } from "@/src/features/branches/types/branch.types";
 import {
   syncBranchImageFields,
@@ -220,9 +222,38 @@ export const branchApi = {
     return response.data;
   },
 
+  async getTrainerAssignments(branchId: string) {
+    const response = await apiClient.get<
+      ApiResponse<{
+        branchId: string;
+        items: BranchTrainerAssignment[];
+      }>
+    >(`/admin/branches/${branchId}/trainer-assignments`);
+
+    return response.data;
+  },
+
+  async getContextAssignedTrainerIds(
+    branchId: string,
+    params: {
+      courseId: string;
+      batchId: string;
+      mode: string;
+      batchTimingId: string;
+    },
+  ) {
+    const response = await apiClient.get<
+      ApiResponse<{ branchId: string; trainerIds: string[] }>
+    >(`/admin/branches/${branchId}/trainer-assignments/context`, {
+      params,
+    });
+
+    return response.data;
+  },
+
   async assignTrainers(
     branchId: string,
-    trainerIds: string[],
+    payload: AssignBranchTrainersPayload,
   ) {
     const response = await apiClient.post<
       ApiResponse<{
@@ -230,9 +261,22 @@ export const branchApi = {
         assignedCount: number;
         trainerIds: string[];
       }>
-    >(`/admin/branches/${branchId}/trainers/assign`, {
-      trainerIds,
-    });
+    >(`/admin/branches/${branchId}/trainers/assign`, payload);
+
+    return response.data;
+  },
+
+  async unassignTrainerAssignment(
+    branchId: string,
+    assignmentId: string,
+  ) {
+    const response = await apiClient.delete<
+      ApiResponse<{
+        branchId: string;
+        assignmentId: string;
+        unassigned: boolean;
+      }>
+    >(`/admin/branches/${branchId}/trainer-assignments/${assignmentId}`);
 
     return response.data;
   },

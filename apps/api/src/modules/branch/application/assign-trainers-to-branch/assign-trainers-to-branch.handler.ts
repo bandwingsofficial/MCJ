@@ -53,15 +53,76 @@ export class AssignTrainersToBranchHandler {
       }
     }
 
-    const assignedCount = await this.branchRepo.assignTrainersToBranch(
-      command.branchId,
-      uniqueIds,
-    );
+    let assignedCount = 0;
+
+    if (command.assignmentType === 'COURSE_BATCH') {
+      if (
+        !command.courseId ||
+        !command.batchId ||
+        !command.mode ||
+        !command.batchTimingId
+      ) {
+        throw new BaseException(
+          ERROR_CODES.VALIDATION_ERROR,
+          'Course, batch, learning mode, and batch timing are required',
+          400,
+        );
+      }
+
+      try {
+        assignedCount = await this.branchRepo.assignCourseBatchTrainersToBranch(
+          command.branchId,
+          uniqueIds,
+          {
+            courseId: command.courseId,
+            batchId: command.batchId,
+            mode: command.mode,
+            batchTimingId: command.batchTimingId,
+          },
+        );
+      } catch (error) {
+        this.throwMappedContextError(error);
+      }
+    } else {
+      assignedCount = await this.branchRepo.assignTrainersToBranch(
+        command.branchId,
+        uniqueIds,
+      );
+    }
 
     return new AssignTrainersToBranchResult(
       command.branchId,
       assignedCount,
       uniqueIds,
     );
+  }
+
+  private throwMappedContextError(error: unknown): never {
+    if (!(error instanceof Error)) {
+      throw error;
+    }
+
+    const messages: Record<string, string> = {
+      BRANCH_COURSE_NOT_LINKED:
+        'The selected course is not assigned to this branch',
+      BRANCH_BATCH_NOT_LINKED:
+        'The selected batch is not assigned to this branch',
+      BATCH_NOT_FOUND: 'Batch not found',
+      BATCH_NOT_UPCOMING: 'Only upcoming batches can be used for trainer assignment',
+      BATCH_COURSE_MISMATCH: 'The selected batch does not belong to this course',
+      BATCH_TIMING_NOT_FOUND: 'Batch timing not found',
+      BATCH_TIMING_NOT_UPCOMING:
+        'Only upcoming batch timings can be used for trainer assignment',
+      BATCH_TIMING_MODE_MISMATCH:
+        'The selected timing does not match the learning mode',
+    };
+
+    const message = messages[error.message];
+
+    if (message) {
+      throw new BaseException(ERROR_CODES.VALIDATION_ERROR, message, 400);
+    }
+
+    throw error;
   }
 }

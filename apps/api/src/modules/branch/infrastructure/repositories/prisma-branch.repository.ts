@@ -163,12 +163,15 @@ export class PrismaBranchRepository
       this.prisma.enrollment.count({
         where: { branchId, isDeleted: false },
       }),
-      this.prisma.branchTrainer.count({
-        where: {
-          branchId,
-          trainer: { isDeleted: false },
-        },
-      }),
+      this.prisma.branchTrainer
+        .groupBy({
+          by: ['trainerId'],
+          where: {
+            branchId,
+            trainer: { isDeleted: false },
+          },
+        })
+        .then((rows) => rows.length),
       this.prisma.courseBranch.findMany({
         where: {
           branchId,
@@ -847,15 +850,268 @@ export class PrismaBranchRepository
       return 0;
     }
 
-    const result = await this.prisma.branchTrainer.createMany({
-      data: uniqueIds.map((trainerId) => ({
-        branchId,
-        trainerId,
-      })),
-      skipDuplicates: true,
+    let assignedCount = 0;
+
+    for (const trainerId of uniqueIds) {
+      const existing = await this.prisma.branchTrainer.findFirst({
+        where: {
+          branchId,
+          trainerId,
+          assignmentType: 'BRANCH_ONLY',
+        },
+      });
+
+      if (existing) {
+        continue;
+      }
+
+      await this.prisma.branchTrainer.create({
+        data: {
+          branchId,
+          trainerId,
+          assignmentType: 'BRANCH_ONLY',
+        },
+      });
+      assignedCount += 1;
+    }
+
+    return assignedCount;
+  }
+
+  async assignCourseBatchTrainersToBranch(
+    branchId: string,
+    trainerIds: string[],
+    context: {
+      courseId: string;
+      batchId: string;
+      mode: string;
+      batchTimingId: string;
+    },
+  ): Promise<number> {
+    await this.validateCourseBatchTrainerContext(branchId, context);
+
+    const uniqueIds = [...new Set(trainerIds.filter(Boolean))];
+    if (uniqueIds.length === 0) {
+      return 0;
+    }
+
+    let assignedCount = 0;
+
+    for (const trainerId of uniqueIds) {
+      const existing = await this.prisma.branchTrainer.findFirst({
+        where: {
+          branchId,
+          trainerId,
+          assignmentType: 'COURSE_BATCH',
+          courseId: context.courseId,
+          batchId: context.batchId,
+          mode: context.mode as never,
+          batchTimingId: context.batchTimingId,
+        },
+      });
+
+      if (existing) {
+        continue;
+      }
+
+      await this.prisma.branchTrainer.create({
+        data: {
+          branchId,
+          trainerId,
+          assignmentType: 'COURSE_BATCH',
+          courseId: context.courseId,
+          batchId: context.batchId,
+          mode: context.mode as never,
+          batchTimingId: context.batchTimingId,
+        },
+      });
+      assignedCount += 1;
+    }
+
+    return assignedCount;
+  }
+
+  async listBranchTrainerAssignments(branchId: string) {
+    const rows = await this.prisma.branchTrainer.findMany({
+      where: { branchId },
+      orderBy: [{ createdAt: 'desc' }],
+      include: {
+        trainer: true,
+        course: {
+          select: { id: true, title: true, code: true },
+        },
+        batch: {
+          select: { id: true, name: true, code: true },
+        },
+        batchTiming: {
+          select: {
+            id: true,
+            name: true,
+            mode: true,
+            startTime: true,
+            endTime: true,
+            startDate: true,
+            endDate: true,
+            status: true,
+          },
+        },
+      },
     });
 
-    return result.count;
+    return rows.map((row) => ({
+      id: row.id,
+      branchId: row.branchId,
+      trainerId: row.trainerId,
+      assignmentType: row.assignmentType as 'BRANCH_ONLY' | 'COURSE_BATCH',
+      courseId: row.courseId,
+      batchId: row.batchId,
+      mode: row.mode,
+      batchTimingId: row.batchTimingId,
+      trainer: {
+        id: row.trainer.id,
+        firstName: row.trainer.firstName,
+        lastName: row.trainer.lastName,
+        employeeCode: row.trainer.employeeCode,
+        qualification: row.trainer.qualification,
+        specialization: row.trainer.specialization,
+        status: row.trainer.status,
+        profileImageUrl: row.trainer.profileImageUrl,
+        email: row.trainer.email,
+        isDeleted: row.trainer.isDeleted,
+      },
+      course: row.course,
+      batch: row.batch,
+      batchTiming: row.batchTiming
+        ? {
+            id: row.batchTiming.id,
+            name: row.batchTiming.name,
+            mode: row.batchTiming.mode,
+            startTime: row.batchTiming.startTime,
+            endTime: row.batchTiming.endTime,
+            startDate: row.batchTiming.startDate,
+            endDate: row.batchTiming.endDate,
+            status: row.batchTiming.status,
+          }
+        : null,
+    }));
+  }
+
+  async findAssignedTrainerIdsForCourseBatchContext(
+    branchId: string,
+    context: {
+      courseId: string;
+      batchId: string;
+      mode: string;
+      batchTimingId: string;
+    },
+  ): Promise<string[]> {
+    const rows = await this.prisma.branchTrainer.findMany({
+      where: {
+        branchId,
+        assignmentType: 'COURSE_BATCH',
+        courseId: context.courseId,
+        batchId: context.batchId,
+        mode: context.mode as never,
+        batchTimingId: context.batchTimingId,
+      },
+      select: { trainerId: true },
+    });
+
+    return rows.map((row) => row.trainerId);
+  }
+
+  async validateCourseBatchTrainerContext(
+    branchId: string,
+    context: {
+      courseId: string;
+      batchId: string;
+      mode: string;
+      batchTimingId: string;
+    },
+  ): Promise<void> {
+    const courseLink = await this.prisma.courseBranch.findUnique({
+      where: {
+        courseId_branchId: {
+          courseId: context.courseId,
+          branchId,
+        },
+      },
+    });
+
+    if (!courseLink) {
+      throw new Error('BRANCH_COURSE_NOT_LINKED');
+    }
+
+    const batchLink = await this.prisma.branchBatch.findUnique({
+      where: {
+        branchId_batchId: {
+          branchId,
+          batchId: context.batchId,
+        },
+      },
+    });
+
+    if (!batchLink) {
+      throw new Error('BRANCH_BATCH_NOT_LINKED');
+    }
+
+    const batch = await this.prisma.batch.findFirst({
+      where: {
+        id: context.batchId,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        courseId: true,
+        status: true,
+        batchCourses: {
+          where: { isDeleted: false },
+          select: { courseId: true },
+        },
+      },
+    });
+
+    if (!batch) {
+      throw new Error('BATCH_NOT_FOUND');
+    }
+
+    if (batch.status !== 'UPCOMING') {
+      throw new Error('BATCH_NOT_UPCOMING');
+    }
+
+    const batchCourseIds = new Set<string>();
+
+    if (batch.courseId) {
+      batchCourseIds.add(batch.courseId);
+    }
+
+    for (const row of batch.batchCourses) {
+      batchCourseIds.add(row.courseId);
+    }
+
+    if (!batchCourseIds.has(context.courseId)) {
+      throw new Error('BATCH_COURSE_MISMATCH');
+    }
+
+    const timing = await this.prisma.batchTiming.findFirst({
+      where: {
+        id: context.batchTimingId,
+        batchId: context.batchId,
+        isDeleted: false,
+      },
+    });
+
+    if (!timing) {
+      throw new Error('BATCH_TIMING_NOT_FOUND');
+    }
+
+    if (timing.status !== 'UPCOMING') {
+      throw new Error('BATCH_TIMING_NOT_UPCOMING');
+    }
+
+    if (timing.mode !== context.mode) {
+      throw new Error('BATCH_TIMING_MODE_MISMATCH');
+    }
   }
 
   async unassignTrainerFromBranch(
@@ -864,6 +1120,15 @@ export class PrismaBranchRepository
   ): Promise<void> {
     await this.prisma.branchTrainer.deleteMany({
       where: { branchId, trainerId },
+    });
+  }
+
+  async unassignBranchTrainerAssignment(
+    branchId: string,
+    assignmentId: string,
+  ): Promise<void> {
+    await this.prisma.branchTrainer.deleteMany({
+      where: { id: assignmentId, branchId },
     });
   }
 
