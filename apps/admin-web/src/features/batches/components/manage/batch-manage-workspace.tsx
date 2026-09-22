@@ -19,6 +19,7 @@ import type {
   Batch,
   BatchSummary,
 } from "@/src/features/batches/types/batch.types";
+import type { BatchManageReturnContext } from "@/src/features/batches/utils/batch-manage.routes";
 
 import { BatchManageDetailsPanel } from "./batch-manage-details-panel";
 import { BatchManageOverviewPanel } from "./batch-manage-overview-panel";
@@ -32,6 +33,7 @@ interface Props {
   onTabChange?: (tab: BatchManageTabKey) => void;
   onEditBatch: () => void;
   editDisabled?: boolean;
+  returnContext?: BatchManageReturnContext;
 }
 
 export type BatchManageTabKey = "overview" | "details" | "timings" | "calendar";
@@ -46,7 +48,7 @@ export const BATCH_MANAGE_TABS: {
 }[] = [
   { value: "overview", label: "Overview", icon: LayoutDashboard },
   { value: "details", label: "Batch Details", icon: FileText },
-  { value: "timings", label: "Batch Timings", icon: Clock3 },
+  { value: "timings", label: "Student & Enrolled", icon: Clock3 },
   { value: "calendar", label: "Calendar Management", icon: CalendarDays },
 ];
 
@@ -57,6 +59,7 @@ export function BatchManageWorkspace({
   onTabChange,
   onEditBatch,
   editDisabled = false,
+  returnContext,
 }: Props) {
   return (
     <Tabs
@@ -91,7 +94,7 @@ export function BatchManageWorkspace({
       </TabsContent>
 
       <TabsContent value="timings">
-        <BatchManageTimingsPanel batch={batch} />
+        <BatchManageTimingsPanel batch={batch} returnContext={returnContext} />
       </TabsContent>
 
       <TabsContent value="calendar">

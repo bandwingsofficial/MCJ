@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -24,7 +24,10 @@ import {
   BatchManageWorkspace,
   type BatchManageTabKey,
 } from "@/src/features/batches/components/manage/batch-manage-workspace";
-import { BATCH_MANAGE_DEFAULT_TAB } from "@/src/features/batches/utils/batch-manage.routes";
+import {
+  BATCH_MANAGE_DEFAULT_TAB,
+  parseBatchManageReturnContext,
+} from "@/src/features/batches/utils/batch-manage.routes";
 
 interface Props {
   batchId: string;
@@ -36,6 +39,11 @@ const TAB_LABELS = Object.fromEntries(
 
 export function BatchManagePage({ batchId }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnContext = useMemo(
+    () => parseBatchManageReturnContext(searchParams),
+    [searchParams],
+  );
   const { batch, isLoading, error, refetch } = useBatch(batchId);
   const {
     summary,
@@ -78,6 +86,7 @@ export function BatchManagePage({ batchId }: Props) {
       <div className="min-h-full min-w-0">
         <BatchManageHeader
           batch={batch}
+          returnContext={returnContext}
           activeSection={activeSection}
           onArchive={() => setIsArchiveOpen(true)}
           onRestore={() => setIsRestoreOpen(true)}
@@ -90,6 +99,7 @@ export function BatchManagePage({ batchId }: Props) {
             batch={batch}
             summary={summary}
             summaryLoading={summaryLoading}
+            returnContext={returnContext}
             onTabChange={(tab) => {
               setActiveSection(TAB_LABELS[tab]);
             }}

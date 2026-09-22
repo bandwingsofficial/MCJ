@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
@@ -12,6 +13,7 @@ import {
   BatchTimingManageWorkspace,
   type BatchTimingManageTabKey,
 } from "@/src/features/batches/components/timing-manage/batch-timing-manage-workspace";
+import { parseBatchManageReturnContext } from "@/src/features/batches/utils/batch-manage.routes";
 
 interface Props {
   batchId: string;
@@ -23,6 +25,11 @@ const TAB_LABELS = Object.fromEntries(
 ) as Record<BatchTimingManageTabKey, string>;
 
 export function BatchTimingManagePage({ batchId, timingId }: Props) {
+  const searchParams = useSearchParams();
+  const returnContext = useMemo(
+    () => parseBatchManageReturnContext(searchParams),
+    [searchParams],
+  );
   const { timing, batch, isLoading, error, refetch } = useBatchTiming(
     batchId,
     timingId,
@@ -52,6 +59,7 @@ export function BatchTimingManagePage({ batchId, timingId }: Props) {
       <BatchTimingManageHeader
         batch={batch}
         timing={timing}
+        returnContext={returnContext}
         activeSection={activeSection}
       />
 

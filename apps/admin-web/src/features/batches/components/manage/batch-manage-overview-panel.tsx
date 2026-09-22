@@ -1,17 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Layers3,
-  MonitorPlay,
-  UserRound,
-} from "lucide-react";
+import { Layers3, MonitorPlay } from "lucide-react";
 
 import { Loader } from "@/src/shared/components/ui/loader";
 import { cn } from "@/src/shared/lib/cn";
 
-import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
 import { BatchModeBadge } from "@/src/features/batches/components/BatchModeBadge";
 import { BatchOverviewMetricCards } from "@/src/features/batches/components/manage/batch-overview-metric-cards";
 import type {
@@ -23,30 +17,19 @@ import {
   formatBatchDuration,
   formatBatchDurationType,
 } from "@/src/features/batches/utils/batch-duration.utils";
-import { formatBatchOperationalStatus } from "@/src/features/batches/utils/batch.helper";
-import {
-  formatBatchOriginalPrice,
-  formatBatchPrice,
-  getBatchPricing,
-} from "@/src/features/batches/utils/batch-pricing.util";
 import { calculateBatchProgress } from "@/src/features/batches/utils/batch-progress.utils";
 import {
   formatBatchDaysLabel,
   formatBatchOverviewDate,
-  formatBatchOverviewTiming,
 } from "@/src/features/batches/utils/batch-progress.utils";
 import { getTimingsForMode } from "@/src/features/batches/utils/batch-mode.utils";
 import {
   formatBatchEnrollmentCapacityLabel,
   getBatchAggregateStats,
   getBatchModeSummaries,
-  getTimingEnrolledCount,
 } from "@/src/features/batches/utils/batch-timing.utils";
 import { categoryService } from "@/src/features/categories/services/category.service";
 import { useCourse } from "@/src/features/courses/hooks/use-course";
-import type { CourseTrainer } from "@/src/features/courses/types/course.types";
-import { TrainerStatusBadge } from "@/src/features/trainers/components/trainer-status-badge";
-import { getTrainerDisplayStatus } from "@/src/features/trainers/utils/trainer-display.utils";
 
 import {
   BatchManageEmptyState,
@@ -78,62 +61,10 @@ const MODE_ACCENTS: Record<
   },
 };
 
-function formatTrainerName(
-  trainer: Pick<CourseTrainer, "firstName" | "lastName">,
-) {
-  return [trainer.firstName, trainer.lastName].filter(Boolean).join(" ") || "—";
-}
-
 function getModeCapacity(batch: Batch, mode: BatchMode): number {
   return getTimingsForMode(batch, mode).reduce(
     (total, timing) => total + (timing.capacity ?? 0),
     0,
-  );
-}
-
-function TrainerCard({ trainer }: { trainer: CourseTrainer }) {
-  const name = formatTrainerName(trainer);
-
-  return (
-    <article className="flex min-w-0 flex-col gap-3 rounded-xl border border-[#E1EBF5] bg-[#FAFCFF] p-3 sm:flex-row sm:items-start">
-      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-slate-100 ring-1 ring-[#DCE8F5]">
-        {trainer.profileImageUrl ? (
-          <Image
-            src={trainer.profileImageUrl}
-            alt={name}
-            fill
-            className="object-cover"
-            sizes="56px"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-slate-400">
-            <UserRound className="h-5 w-5" />
-          </div>
-        )}
-      </div>
-
-      <dl className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
-        <BatchManageField label="Trainer Name" value={name} />
-        <BatchManageField
-          label="Trainer Code"
-          value={trainer.employeeCode?.trim() || "—"}
-        />
-        <BatchManageField
-          label="Qualification"
-          value={trainer.qualification?.trim() || "—"}
-        />
-        <BatchManageField
-          label="Status"
-          value={
-            <TrainerStatusBadge
-              status={getTrainerDisplayStatus({
-                status: trainer.status as "ACTIVE" | "INACTIVE" | "ARCHIVED",
-              })}
-            />
-          }
-        />
-      </dl>
-    </article>
   );
 }
 
@@ -143,35 +74,15 @@ export function BatchManageOverviewPanel({
   summaryLoading = false,
 }: Props) {
   const progress = useMemo(() => calculateBatchProgress(batch), [batch]);
-  const pricing = useMemo(() => getBatchPricing(batch), [batch]);
   const modeSummaries = useMemo(() => getBatchModeSummaries(batch), [batch]);
   const aggregateStats = useMemo(
     () => getBatchAggregateStats(batch),
     [batch],
   );
-  const isArchived = Boolean(batch.deletedAt || batch.isDeleted);
   const enrollmentLabel = formatBatchEnrollmentCapacityLabel(batch);
 
   const courseId = batch.courseId?.trim() || batch.course?.id || "";
   const { course, isLoading: courseLoading } = useCourse(courseId);
-
-  const trainers: CourseTrainer[] = useMemo(
-    () =>
-      (batch.trainers ?? []).map((trainer) => ({
-        id: trainer.id,
-        firstName: trainer.firstName,
-        lastName: trainer.lastName,
-        employeeCode: trainer.employeeCode,
-        qualification: trainer.qualification,
-        specialization: trainer.specialization,
-        status: trainer.status ?? "ACTIVE",
-        profileImageUrl: trainer.profileImageUrl,
-        email: trainer.email,
-      })),
-    [batch.trainers],
-  );
-
-  const trainersLoading = courseLoading;
 
   const [categorySlug, setCategorySlug] = useState<string | null>(null);
   const [categoryLoading, setCategoryLoading] = useState(false);
@@ -350,10 +261,6 @@ export function BatchManageOverviewPanel({
             value={formatBatchOverviewDate(batch.endDate)}
           />
           <BatchManageField
-            label="Daily Timing"
-            value={formatBatchOverviewTiming(batch.startTime, batch.endTime)}
-          />
-          <BatchManageField
             label="Duration"
             value={formatBatchDuration(batch)}
           />
@@ -373,121 +280,36 @@ export function BatchManageOverviewPanel({
       </BatchManageSection>
 
       <BatchManageSection
-        title="Important Batch Information"
-        description="Core batch details, pricing, and operational statistics."
-      >
-        <dl className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <BatchManageField label="Batch Name" value={batch.name} />
-          <BatchManageField label="Batch Number" value={batch.code} />
-          <BatchManageField
-            label="Course"
-            value={batch.course?.title?.trim() || "No course assigned"}
-          />
-          <BatchManageField
-            label="Status"
-            value={
-              <BatchStatusBadge
-                status={batch.status}
-                isActive={batch.isActive}
-                isDeleted={isArchived}
-                startDate={batch.startDate}
-                endDate={batch.endDate}
-              />
-            }
-          />
-          <BatchManageField
-            label="Operational State"
-            value={formatBatchOperationalStatus(batch)}
-          />
-          <BatchManageField
-            label="Featured"
-            value={batch.isFeatured ? "Yes" : "No"}
-          />
-          <BatchManageField label="Final Price" value={formatBatchPrice(batch)} />
-          <BatchManageField
-            label="Original Price"
-            value={formatBatchOriginalPrice(batch)}
-          />
-          <BatchManageField label="Currency" value={pricing.currency} />
-        </dl>
-
-        {summaryLoading && !summary ? (
-          <div className="mt-4 border-t border-[#E1EBF5] pt-4">
-            <Loader />
-          </div>
-        ) : summary ? (
-          <div className="mt-4 border-t border-[#E1EBF5] pt-4">
-            <h3 className="mb-3 text-sm font-semibold text-[#102A56]">
-              Attendance Statistics
-            </h3>
-            <dl className="grid min-w-0 gap-3 sm:grid-cols-2">
-              <BatchManageField
-                label="Attendance Present"
-                value={summary.attendancePresent}
-              />
-              <BatchManageField
-                label="Attendance Absent"
-                value={summary.attendanceAbsent}
-              />
-            </dl>
-          </div>
-        ) : null}
-      </BatchManageSection>
-
-      <BatchManageSection
-        title="Course & Trainers"
-        description="Linked course, category, and assigned trainers for this batch."
+        title="Course"
+        description="Linked course and category for this batch."
       >
         {!courseId ? (
           <BatchManageEmptyState
             icon={Layers3}
             title="No Course Assigned"
-            description="Assign a course to this batch to view course and trainer details."
+            description="Assign a course to this batch to view course details."
           />
         ) : courseLoading && !course && !batch.course ? (
           <Loader />
         ) : (
-          <div className="space-y-4">
-            <dl className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <BatchManageField
-                label="Course Name"
-                value={courseTitle || "—"}
-              />
-              <BatchManageField
-                label="Course Code"
-                value={courseCode || "—"}
-              />
-              <BatchManageField
-                label="Category Name"
-                value={categoryName || "—"}
-              />
-              <BatchManageField
-                label="Category Code"
-                value={categoryLoading ? "…" : categorySlug || "—"}
-              />
-            </dl>
-
-            <div className="border-t border-[#E1EBF5] pt-4">
-              <h3 className="mb-3 text-sm font-semibold text-[#102A56]">
-                Trainer Details
-              </h3>
-              {trainersLoading ? (
-                <Loader />
-              ) : trainers.length === 0 ? (
-                <BatchManageEmptyState
-                  icon={UserRound}
-                  title="No Trainers Assigned"
-                  description="Trainers will appear here once assigned to this batch."
-                />
-              ) : (
-                <div className="space-y-3">
-                  {trainers.map((trainer) => (
-                    <TrainerCard key={trainer.id} trainer={trainer} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <dl className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <BatchManageField
+              label="Course Name"
+              value={courseTitle || "—"}
+            />
+            <BatchManageField
+              label="Course Code"
+              value={courseCode || "—"}
+            />
+            <BatchManageField
+              label="Category Name"
+              value={categoryName || "—"}
+            />
+            <BatchManageField
+              label="Category Code"
+              value={categoryLoading ? "…" : categorySlug || "—"}
+            />
+          </dl>
         )}
       </BatchManageSection>
     </div>

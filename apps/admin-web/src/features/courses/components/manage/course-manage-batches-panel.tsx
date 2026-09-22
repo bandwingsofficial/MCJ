@@ -330,7 +330,12 @@ export function CourseManageBatchesPanel({ courseId }: Props) {
                       <td className="!px-4 !py-3 text-right align-middle">
                         <Tooltip content="Manage batch">
                           <Link
-                            href={batchManagePath(batch.id)}
+                            href={batchManagePath(batch.id, {
+                              returnContext: {
+                                kind: "course",
+                                courseId,
+                              },
+                            })}
                             aria-label="Manage batch"
                             className={`${iconButtonClass} text-blue-900`}
                           >

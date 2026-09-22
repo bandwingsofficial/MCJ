@@ -57,6 +57,22 @@ export function formatPercentInput(value: number): string {
   return String(roundPercent(value));
 }
 
+/** Empty string when there is no discount (0). */
+export function formatOptionalAmountInput(value: number): string {
+  if (!Number.isFinite(value) || value === 0) {
+    return "";
+  }
+  return formatAmountInput(value);
+}
+
+/** Empty string when there is no discount (0). */
+export function formatOptionalPercentInput(value: number): string {
+  if (!Number.isFinite(value) || value === 0) {
+    return "";
+  }
+  return formatPercentInput(value);
+}
+
 export function getOriginalPriceError(value: string): string | null {
   const parsed = parseNumeric(value);
   if (parsed === null || parsed <= 0) {
@@ -66,6 +82,9 @@ export function getOriginalPriceError(value: string): string | null {
 }
 
 export function getDiscountPercentError(value: string): string | null {
+  if (value.trim() === "") {
+    return null;
+  }
   const parsed = parseNumeric(value);
   if (parsed === null || parsed < 0) {
     return "Enter a valid discount percentage.";
@@ -80,6 +99,9 @@ export function getDiscountAmountError(
   value: string,
   originalPrice: number | null,
 ): string | null {
+  if (value.trim() === "") {
+    return null;
+  }
   const parsed = parseNumeric(value);
   if (parsed === null || parsed < 0) {
     return "Enter a valid discount amount.";
@@ -94,6 +116,68 @@ export function getDiscountAmountError(
   return null;
 }
 
+export function getEffectiveDiscountAmount(state: {
+  originalPrice: string;
+  discountPercent: string;
+  discountAmount: string;
+}): number {
+  const original = parseNumeric(state.originalPrice);
+  const amountRaw = state.discountAmount.trim();
+  const percentRaw = state.discountPercent.trim();
+
+  if (amountRaw !== "") {
+    const amount = parseNumeric(amountRaw);
+    if (amount !== null && amount >= 0) {
+      if (original !== null && original > 0) {
+        return roundMoney(Math.min(amount, original));
+      }
+      return roundMoney(amount);
+    }
+  }
+
+  if (percentRaw !== "") {
+    const percent = parseNumeric(percentRaw);
+    if (
+      percent !== null &&
+      percent >= 0 &&
+      original !== null &&
+      original > 0
+    ) {
+      return roundMoney((original * percent) / 100);
+    }
+  }
+
+  return 0;
+}
+
+export function getModeTabFinalAmount(state: {
+  originalPrice: string;
+  discountPercent: string;
+  discountAmount: string;
+}): number {
+  const original = parseNumeric(state.originalPrice);
+  if (original === null || original <= 0) {
+    return 0;
+  }
+  const discount = getEffectiveDiscountAmount(state);
+  return roundMoney(Math.max(0, original - discount));
+}
+
+export function isModeTabPricingValid(state: {
+  originalPrice: string;
+  discountPercent: string;
+  discountAmount: string;
+}): boolean {
+  const originalPriceNumber = parseNumeric(state.originalPrice);
+  return (
+    !getOriginalPriceError(state.originalPrice) &&
+    !getDiscountPercentError(state.discountPercent) &&
+    !getDiscountAmountError(state.discountAmount, originalPriceNumber) &&
+    originalPriceNumber !== null &&
+    originalPriceNumber > 0
+  );
+}
+
 export function batchToAssignFormInitial(batch: Batch) {
   const pricing = getBatchPricing(batch);
   const startDate = batch.startDate.split("T")[0]!;
@@ -105,8 +189,8 @@ export function batchToAssignFormInitial(batch: Batch) {
     courseId: batch.courseId ?? "",
     mode: batch.mode,
     originalPrice: formatAmountInput(pricing.originalPrice),
-    discountPercent: formatPercentInput(pricing.discountPercent),
-    discountAmount: formatAmountInput(pricing.discountAmount),
+    discountPercent: formatOptionalPercentInput(pricing.discountPercent),
+    discountAmount: formatOptionalAmountInput(pricing.discountAmount),
     durationValue:
       batch.durationValue ?? DEFAULT_BATCH_DURATION.durationValue,
     durationType:

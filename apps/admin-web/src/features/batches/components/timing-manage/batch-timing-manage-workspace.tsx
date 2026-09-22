@@ -15,8 +15,6 @@ import type {
 } from "@/src/features/batches/types/batch.types";
 
 import { BatchTimingBatchDetailsPanel } from "./batch-timing-batch-details-panel";
-import { BatchTimingDetailsPanel } from "./batch-timing-details-panel";
-import { BatchTimingCapacityForm } from "./batch-timing-capacity-form";
 import { BatchTimingOverviewPanel } from "./batch-timing-overview-panel";
 import { BatchTimingStudentsPanel } from "./batch-timing-students-panel";
 
@@ -27,11 +25,7 @@ interface Props {
   onTimingUpdated?: () => void;
 }
 
-export type BatchTimingManageTabKey =
-  | "overview"
-  | "details"
-  | "timing"
-  | "students";
+export type BatchTimingManageTabKey = "overview" | "details" | "students";
 
 export const BATCH_TIMING_MANAGE_TABS: {
   value: BatchTimingManageTabKey;
@@ -39,7 +33,6 @@ export const BATCH_TIMING_MANAGE_TABS: {
 }[] = [
   { value: "overview", label: "Overview" },
   { value: "details", label: "Batch Details" },
-  { value: "timing", label: "Batch Timing" },
   { value: "students", label: "Students" },
 ];
 
@@ -73,19 +66,14 @@ export function BatchTimingManageWorkspace({
       </TabsList>
 
       <TabsContent value="overview" className="space-y-3">
-        <BatchTimingOverviewPanel batch={batch} timing={timing} />
+        <BatchTimingOverviewPanel timing={timing} />
       </TabsContent>
 
       <TabsContent value="details">
-        <BatchTimingBatchDetailsPanel batch={batch} timing={timing} />
-      </TabsContent>
-
-      <TabsContent value="timing" className="space-y-4">
-        <BatchTimingDetailsPanel timing={timing} />
-        <BatchTimingCapacityForm
-          batchId={batch.id}
+        <BatchTimingBatchDetailsPanel
+          batch={batch}
           timing={timing}
-          onUpdated={() => onTimingUpdated?.()}
+          onTimingUpdated={onTimingUpdated}
         />
       </TabsContent>
 

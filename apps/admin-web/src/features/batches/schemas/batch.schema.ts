@@ -28,6 +28,29 @@ const durationTypeEnum = z.enum([
 
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+function coerceOptionalNumber(value: unknown): number {
+  if (value === "" || value === null || value === undefined) {
+    return 0;
+  }
+  if (typeof value === "number" && Number.isNaN(value)) {
+    return 0;
+  }
+  return value as number;
+}
+
+const optionalDiscountPercentSchema = z.preprocess(
+  coerceOptionalNumber,
+  z
+    .number()
+    .min(0, "Discount percent cannot be negative")
+    .max(100, "Discount percent cannot exceed 100"),
+);
+
+const optionalDiscountAmountSchema = z.preprocess(
+  coerceOptionalNumber,
+  z.number().min(0, "Discount amount cannot be negative"),
+);
+
 function parseTimeToMinutes(time: string): number {
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
@@ -102,18 +125,9 @@ export const batchSchema = z
       })
       .min(0, "Original price cannot be negative"),
 
-    discountPercent: z
-      .number({
-        error: "Discount percent is required",
-      })
-      .min(0, "Discount percent cannot be negative")
-      .max(100, "Discount percent cannot exceed 100"),
+    discountPercent: optionalDiscountPercentSchema,
 
-    discountAmount: z
-      .number({
-        error: "Discount amount is required",
-      })
-      .min(0, "Discount amount cannot be negative"),
+    discountAmount: optionalDiscountAmountSchema,
 
     currency: z.string().default("INR"),
 
@@ -164,7 +178,10 @@ export const batchSchema = z
       });
     }
 
-    if (data.discountAmount > data.originalPrice) {
+    if (
+      data.discountAmount > 0 &&
+      data.discountAmount > data.originalPrice
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["discountAmount"],

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, RotateCcw, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, RotateCcw, Trash2 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 
@@ -13,9 +13,20 @@ import {
   formatBatchEnrollmentCapacityLabel,
   getBatchAggregateStats,
 } from "@/src/features/batches/utils/batch-timing.utils";
+import {
+  batchManageBackHref,
+  batchManageBackLabel,
+  batchManagePath,
+  type BatchManageReturnContext,
+} from "@/src/features/batches/utils/batch-manage.routes";
+import {
+  courseManagePath,
+  courseManageTabPath,
+} from "@/src/features/courses/utils/course-manage.routes";
 
 interface Props {
   batch: Batch;
+  returnContext: BatchManageReturnContext;
   activeSection?: string;
   onArchive: () => void;
   onRestore: () => void;
@@ -25,6 +36,7 @@ interface Props {
 
 export function BatchManageHeader({
   batch,
+  returnContext,
   activeSection,
   onArchive,
   onRestore,
@@ -33,31 +45,100 @@ export function BatchManageHeader({
 }: Props) {
   const isArchived = Boolean(batch.deletedAt || batch.isDeleted);
   const courseName = batch.course?.title?.trim() || "No course assigned";
+  const courseCode = batch.course?.code?.trim() || "";
+  const courseId =
+    returnContext.kind === "course"
+      ? returnContext.courseId
+      : batch.courseId?.trim() || batch.course?.id || "";
   const configuredModes = getBatchModes(batch);
   const aggregateStats = getBatchAggregateStats(batch);
   const enrollmentLabel = formatBatchEnrollmentCapacityLabel(batch);
+  const backHref = batchManageBackHref(returnContext);
+  const backLabel = batchManageBackLabel(returnContext);
+  const batchManageHref = batchManagePath(batch.id, { returnContext });
 
   return (
     <div className="space-y-3">
+      <Link
+        href={backHref}
+        className="inline-flex items-center text-sm font-medium text-[#2563EB] transition-colors hover:text-[#1D4ED8]"
+      >
+        <ArrowLeft className="mr-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        {backLabel}
+      </Link>
+
       <nav
         aria-label="Breadcrumb"
         className="flex flex-wrap items-center gap-1 text-xs"
       >
-        <Link
-          href="/batches"
-          className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
-        >
-          Batches
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
-        <span className="font-medium text-slate-700">
-          {batch.name} ({batch.code})
-        </span>
+        {returnContext.kind === "course" && courseId ? (
+          <>
+            <Link
+              href="/courses"
+              className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
+            >
+              Courses
+            </Link>
+            <ChevronRight
+              className="h-3.5 w-3.5 text-slate-400"
+              aria-hidden="true"
+            />
+            <Link
+              href={courseManagePath(courseId)}
+              className="font-medium text-[#647A9B] transition-colors hover:text-[#2563EB]"
+            >
+              {courseName}
+              {courseCode ? ` (${courseCode})` : ""}
+            </Link>
+            <ChevronRight
+              className="h-3.5 w-3.5 text-slate-400"
+              aria-hidden="true"
+            />
+            <Link
+              href={courseManageTabPath(courseId, "batches")}
+              className="font-medium text-[#647A9B] transition-colors hover:text-[#2563EB]"
+            >
+              Batches
+            </Link>
+            <ChevronRight
+              className="h-3.5 w-3.5 text-slate-400"
+              aria-hidden="true"
+            />
+            <Link
+              href={batchManageHref}
+              className="font-medium text-[#647A9B] transition-colors hover:text-[#2563EB]"
+            >
+              {batch.name} ({batch.code})
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link
+              href="/batches"
+              className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
+            >
+              Batches
+            </Link>
+            <ChevronRight
+              className="h-3.5 w-3.5 text-slate-400"
+              aria-hidden="true"
+            />
+            <Link
+              href={batchManageHref}
+              className="font-medium text-[#647A9B] transition-colors hover:text-[#2563EB]"
+            >
+              {batch.name} ({batch.code})
+            </Link>
+          </>
+        )}
         <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
         <span className="font-medium text-[#102A56]">Management</span>
         {activeSection ? (
           <>
-            <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+            <ChevronRight
+              className="h-3.5 w-3.5 text-slate-400"
+              aria-hidden="true"
+            />
             <span className="font-medium text-slate-700">{activeSection}</span>
           </>
         ) : null}

@@ -8,7 +8,10 @@ import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
 import type { Batch, BatchStatus } from "@/src/features/batches/types/batch.types";
-import { batchTimingManagePath } from "@/src/features/batches/utils/batch-manage.routes";
+import {
+  batchTimingManagePath,
+  type BatchManageReturnContext,
+} from "@/src/features/batches/utils/batch-manage.routes";
 import {
   getBatchModeLabel,
   getTimingsForMode,
@@ -29,6 +32,7 @@ import {
 
 interface Props {
   batch: Batch;
+  returnContext?: BatchManageReturnContext;
 }
 
 const iconButtonClass =
@@ -37,7 +41,10 @@ const iconButtonClass =
 const TABLE_HEAD_CLASS =
   "px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-[#526581]";
 
-export function BatchManageTimingsPanel({ batch }: Props) {
+export function BatchManageTimingsPanel({
+  batch,
+  returnContext,
+}: Props) {
   const router = useRouter();
   const modeSummaries = getBatchModeSummaries(batch);
 
@@ -140,7 +147,9 @@ export function BatchManageTimingsPanel({ batch }: Props) {
                               size="sm"
                               onClick={() =>
                                 router.push(
-                                  batchTimingManagePath(batch.id, timing.id),
+                                  batchTimingManagePath(batch.id, timing.id, {
+                                    returnContext,
+                                  }),
                                 )
                               }
                               aria-label={`Manage ${timing.name}`}

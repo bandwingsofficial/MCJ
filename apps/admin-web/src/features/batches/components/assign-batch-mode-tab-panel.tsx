@@ -15,11 +15,12 @@ import type { BatchMode } from "@/src/features/batches/types/batch.types";
 import { getBatchModeLabel } from "@/src/features/batches/utils/batch-mode.utils";
 import {
   formatAmountInput,
+  formatPercentInput,
   getDiscountAmountError,
   getDiscountPercentError,
+  getModeTabFinalAmount,
   getOriginalPriceError,
   parseNumeric,
-  roundMoney,
   type LastEditedDiscount,
 } from "@/src/features/batches/utils/assign-batch-form.utils";
 import {
@@ -74,8 +75,6 @@ export function AssignBatchModeTabPanel({
   );
 
   const originalPriceNumber = parseNumeric(state.originalPrice);
-  const discountPercentNumber = parseNumeric(state.discountPercent);
-  const discountAmountNumber = parseNumeric(state.discountAmount);
 
   const originalPriceError = getOriginalPriceError(state.originalPrice);
   const discountPercentError = getDiscountPercentError(state.discountPercent);
@@ -97,15 +96,12 @@ export function AssignBatchModeTabPanel({
     state.amountTouched,
   );
 
-  const finalAmount =
-    originalPriceNumber !== null &&
-    discountAmountNumber !== null &&
-    originalPriceNumber > 0 &&
-    discountAmountNumber >= 0
-      ? roundMoney(Math.max(0, originalPriceNumber - discountAmountNumber))
-      : 0;
+  const finalAmount = getModeTabFinalAmount(state);
 
   const syncAmountFromPercent = (percentRaw: string, priceRaw: string) => {
+    if (percentRaw.trim() === "") {
+      return "";
+    }
     const percent = parseNumeric(percentRaw);
     const price = parseNumeric(priceRaw);
     if (percent === null || price === null || percent < 0 || price <= 0) {
@@ -115,12 +111,15 @@ export function AssignBatchModeTabPanel({
   };
 
   const syncPercentFromAmount = (amountRaw: string, priceRaw: string) => {
+    if (amountRaw.trim() === "") {
+      return "";
+    }
     const amount = parseNumeric(amountRaw);
     const price = parseNumeric(priceRaw);
     if (amount === null || price === null || amount < 0 || price <= 0) {
       return state.discountPercent;
     }
-    return formatAmountInput((amount / price) * 100);
+    return formatPercentInput((amount / price) * 100);
   };
 
   const patch = (partial: Partial<ModeTabFormState>) => {
@@ -205,7 +204,6 @@ export function AssignBatchModeTabPanel({
 
           <ValidatedField
             label="Discount Amount"
-            required
             state={discountAmountState}
             errorMessage={discountAmountError}
             leftIcon={<span className="text-sm text-[#8AA0BB]">₹</span>}
@@ -240,7 +238,6 @@ export function AssignBatchModeTabPanel({
 
           <ValidatedField
             label="Discount Percentage"
-            required
             state={discountPercentState}
             errorMessage={discountPercentError}
           >
@@ -380,8 +377,8 @@ export function AssignBatchModeTabPanel({
 export function createDefaultModeTabState(): ModeTabFormState {
   return {
     originalPrice: "22000",
-    discountPercent: "0",
-    discountAmount: "0",
+    discountPercent: "",
+    discountAmount: "",
     lastEditedDiscount: "PERCENTAGE",
     selectedIds: [],
     priceTouched: false,
@@ -390,29 +387,7 @@ export function createDefaultModeTabState(): ModeTabFormState {
   };
 }
 
-export function isModeTabPricingValid(state: ModeTabFormState): boolean {
-  const originalPriceNumber = parseNumeric(state.originalPrice);
-  const discountAmountNumber = parseNumeric(state.discountAmount);
-  return (
-    !getOriginalPriceError(state.originalPrice) &&
-    !getDiscountPercentError(state.discountPercent) &&
-    !getDiscountAmountError(state.discountAmount, originalPriceNumber) &&
-    originalPriceNumber !== null &&
-    originalPriceNumber > 0 &&
-    discountAmountNumber !== null &&
-    discountAmountNumber >= 0
-  );
-}
-
-export function getModeTabFinalAmount(state: ModeTabFormState): number {
-  const originalPriceNumber = parseNumeric(state.originalPrice);
-  const discountAmountNumber = parseNumeric(state.discountAmount);
-  if (
-    originalPriceNumber === null ||
-    discountAmountNumber === null ||
-    originalPriceNumber <= 0
-  ) {
-    return 0;
-  }
-  return roundMoney(Math.max(0, originalPriceNumber - discountAmountNumber));
-}
+export {
+  getModeTabFinalAmount,
+  isModeTabPricingValid,
+} from "@/src/features/batches/utils/assign-batch-form.utils";

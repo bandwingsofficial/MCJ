@@ -30,10 +30,13 @@ import { BatchDurationField } from "@/src/features/batches/components/batch-dura
 import {
   AssignBatchModeTabPanel,
   createDefaultModeTabState,
-  getModeTabFinalAmount,
-  isModeTabPricingValid,
   type ModeTabFormState,
 } from "@/src/features/batches/components/assign-batch-mode-tab-panel";
+import {
+  getEffectiveDiscountAmount,
+  getModeTabFinalAmount,
+  isModeTabPricingValid,
+} from "@/src/features/batches/utils/assign-batch-form.utils";
 import { DEFAULT_BATCH_DURATION } from "@/src/features/batches/schemas/batch.schema";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type {
@@ -264,7 +267,7 @@ export const AssignBatchCreateForm = forwardRef<
       (mode) => {
         const state = modeStates[mode];
         const originalPrice = Number(state.originalPrice);
-        const discountAmount = Number(state.discountAmount);
+        const discountAmount = getEffectiveDiscountAmount(state);
         const discountedPrice = getModeTabFinalAmount(state);
 
         return {

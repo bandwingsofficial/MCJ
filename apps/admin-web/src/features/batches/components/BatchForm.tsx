@@ -814,12 +814,15 @@ export function BatchForm({
                 onChange: (event) => {
                   const nextOriginal = Number(event.target.value) || 0;
                   const percent = Number(values.discountPercent) || 0;
-                  const nextAmount =
-                    Math.round(((nextOriginal * percent) / 100) * 100) / 100;
-                  setValue("discountAmount", nextAmount, {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  });
+                  if (percent > 0 && nextOriginal > 0) {
+                    const nextAmount =
+                      Math.round(((nextOriginal * percent) / 100) * 100) /
+                      100;
+                    setValue("discountAmount", nextAmount, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                  }
                   void trigger("originalPrice");
                 },
               })}
@@ -830,7 +833,6 @@ export function BatchForm({
 
         <ValidatedField
           label="Discount %"
-          required={!pricesDisabled}
           state={getFieldState("discountPercent")}
           errorMessage={errors.discountPercent?.message}
         >
@@ -848,7 +850,20 @@ export function BatchForm({
             {...register("discountPercent", {
               valueAsNumber: true,
               onChange: (event) => {
-                const percent = Number(event.target.value) || 0;
+                const raw = event.target.value;
+                if (raw === "") {
+                  setValue("discountPercent", 0, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  setValue("discountAmount", 0, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  void trigger("discountPercent");
+                  return;
+                }
+                const percent = Number(raw) || 0;
                 const original = Number(values.originalPrice) || 0;
                 const nextAmount =
                   Math.round(((original * percent) / 100) * 100) / 100;
@@ -864,7 +879,6 @@ export function BatchForm({
 
         <ValidatedField
           label="Discount Amount"
-          required={!pricesDisabled}
           state={getFieldState("discountAmount")}
           errorMessage={errors.discountAmount?.message}
         >
@@ -890,7 +904,20 @@ export function BatchForm({
               {...register("discountAmount", {
                 valueAsNumber: true,
                 onChange: (event) => {
-                  const amount = Number(event.target.value) || 0;
+                  const raw = event.target.value;
+                  if (raw === "") {
+                    setValue("discountAmount", 0, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                    setValue("discountPercent", 0, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    });
+                    void trigger("discountAmount");
+                    return;
+                  }
+                  const amount = Number(raw) || 0;
                   const original = Number(values.originalPrice) || 0;
                   const nextPercent =
                     original > 0
