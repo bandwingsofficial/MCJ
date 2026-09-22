@@ -15,6 +15,10 @@ import { Branch } from '../../domain/entities/branch.entity';
 import { BranchMapper } from '../mappers/branch.mapper';
 
 import { BranchStatus } from '../../domain/enums/branch-status.enum';
+import {
+  linkCoursesForAssignedBatches,
+  syncCourseLinksAfterBatchUnassign,
+} from '../../application/services/branch-batch-course-link.service';
 
 export class PrismaBranchRepository
   implements BranchRepository
@@ -139,7 +143,7 @@ export class PrismaBranchRepository
       batches,
       enrollments,
       instructors,
-      categories,
+      courseBranchCategories,
     ] = await Promise.all([
       this.prisma.student.count({
         where: { branchId, isDeleted: false },
@@ -165,16 +169,24 @@ export class PrismaBranchRepository
           trainer: { isDeleted: false },
         },
       }),
-      this.prisma.branchCategory.count({
+      this.prisma.courseBranch.findMany({
         where: {
           branchId,
-          category: {
-            isDeleted: false,
-            status: 'ACTIVE',
-          },
+          course: { isDeleted: false },
+        },
+        select: {
+          course: { select: { categoryId: true } },
         },
       }),
     ]);
+
+    const categoryIds = new Set<string>();
+    for (const row of courseBranchCategories) {
+      const categoryId = row.course.categoryId;
+      if (categoryId) {
+        categoryIds.add(categoryId);
+      }
+    }
 
     return {
       students,
@@ -182,7 +194,7 @@ export class PrismaBranchRepository
       batches,
       enrollments,
       instructors,
-      categories,
+      categories: categoryIds.size,
     };
   }
 
@@ -733,21 +745,74 @@ export class PrismaBranchRepository
       return 0;
     }
 
-    const result = await this.prisma.courseBranch.createMany({
-      data: uniqueIds.map((courseId) => ({
-        courseId,
-        branchId,
-      })),
-      skipDuplicates: true,
-    });
+    let assignedCount = 0;
 
-    return result.count;
+    for (const courseId of uniqueIds) {
+      const existing = await this.prisma.courseBranch.findUnique({
+        where: {
+          courseId_branchId: { courseId, branchId },
+        },
+      });
+
+      if (existing?.linkedViaManual) {
+        continue;
+      }
+
+      await this.prisma.courseBranch.upsert({
+        where: {
+          courseId_branchId: { courseId, branchId },
+        },
+        create: {
+          courseId,
+          branchId,
+          linkedViaManual: true,
+          linkedViaBatch: existing?.linkedViaBatch ?? false,
+        },
+        update: {
+          linkedViaManual: true,
+        },
+      });
+
+      if (!existing) {
+        assignedCount += 1;
+      } else if (!existing.linkedViaManual) {
+        assignedCount += 1;
+      }
+    }
+
+    return assignedCount;
   }
 
   async unassignCourseFromBranch(
     branchId: string,
     courseId: string,
   ): Promise<void> {
+    const row = await this.prisma.courseBranch.findUnique({
+      where: {
+        courseId_branchId: { courseId, branchId },
+      },
+    });
+
+    if (!row) {
+      return;
+    }
+
+    if (!row.linkedViaManual && row.linkedViaBatch) {
+      throw new Error(
+        'COURSE_LINKED_VIA_BATCH',
+      );
+    }
+
+    if (row.linkedViaManual && row.linkedViaBatch) {
+      await this.prisma.courseBranch.update({
+        where: {
+          courseId_branchId: { courseId, branchId },
+        },
+        data: { linkedViaManual: false },
+      });
+      return;
+    }
+
     await this.prisma.courseBranch.deleteMany({
       where: { branchId, courseId },
     });
@@ -849,5 +914,68 @@ export class PrismaBranchRepository
     await this.prisma.branchBatch.deleteMany({
       where: { branchId, batchId },
     });
+  }
+
+  async linkCoursesForAssignedBatches(
+    branchId: string,
+    batchIds: string[],
+  ): Promise<void> {
+    await linkCoursesForAssignedBatches(
+      this.prisma,
+      branchId,
+      batchIds,
+    );
+  }
+
+  async syncCourseLinksAfterBatchUnassign(
+    branchId: string,
+    batchId: string,
+  ): Promise<void> {
+    await syncCourseLinksAfterBatchUnassign(
+      this.prisma,
+      branchId,
+      batchId,
+    );
+  }
+
+  async findCourseBranchLinksAtBranch(
+    branchId: string,
+    courseIds: string[],
+  ): Promise<
+    Map<
+      string,
+      { linkedViaManual: boolean; linkedViaBatch: boolean }
+    >
+  > {
+    const uniqueIds = [...new Set(courseIds.filter(Boolean))];
+    const map = new Map<
+      string,
+      { linkedViaManual: boolean; linkedViaBatch: boolean }
+    >();
+
+    if (uniqueIds.length === 0) {
+      return map;
+    }
+
+    const rows = await this.prisma.courseBranch.findMany({
+      where: {
+        branchId,
+        courseId: { in: uniqueIds },
+      },
+      select: {
+        courseId: true,
+        linkedViaManual: true,
+        linkedViaBatch: true,
+      },
+    });
+
+    for (const row of rows) {
+      map.set(row.courseId, {
+        linkedViaManual: row.linkedViaManual,
+        linkedViaBatch: row.linkedViaBatch,
+      });
+    }
+
+    return map;
   }
 }

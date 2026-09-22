@@ -390,10 +390,14 @@ model CourseFaq {
 }
 
 model CourseBranch {
-  courseId String
-  branchId String
-  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId         String
+  branchId         String
+  /// Set when an admin assigns the course directly on Branch → Courses.
+  linkedViaManual  Boolean @default(false)
+  /// Set when the course is linked because a parent batch is assigned to the branch.
+  linkedViaBatch   Boolean @default(false)
+  branch           Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  course           Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@id([courseId, branchId])
   @@index([courseId])

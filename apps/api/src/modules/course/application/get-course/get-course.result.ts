@@ -21,6 +21,13 @@ export class CourseBranchResult {
   ) {}
 }
 
+export class BranchCourseLinkResult {
+  constructor(
+    public readonly linkedViaManual: boolean,
+    public readonly linkedViaBatch: boolean,
+  ) {}
+}
+
 export class CourseCategoryResult {
   constructor(
     public readonly id: string,
@@ -222,6 +229,7 @@ export class GetCourseResult {
     public readonly quizCount: number = 0,
     public readonly selfPacedVideoCount: number = 0,
     public readonly liveRecordedVideoCount: number = 0,
+    public readonly branchCourseLink: BranchCourseLinkResult | null = null,
   ) {}
 
   static fromEntity(
@@ -243,6 +251,7 @@ export class GetCourseResult {
       quizCount?: number;
       selfPacedVideoCount?: number;
       liveRecordedVideoCount?: number;
+      branchCourseLink?: BranchCourseLinkResult | null;
     } = {},
   ): GetCourseResult {
     const publicView = options.publicView ?? false;
@@ -336,6 +345,7 @@ export class GetCourseResult {
       options.quizCount ?? 0,
       options.selfPacedVideoCount ?? 0,
       options.liveRecordedVideoCount ?? 0,
+      options.branchCourseLink ?? null,
     );
   }
 }

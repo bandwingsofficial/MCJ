@@ -37,20 +37,63 @@ export class PrismaCourseRepository
         },
       });
 
-      await tx.courseBranch.deleteMany({
-  where: {
-    courseId: course.id,
-  },
-});
+      const existingLinks = await tx.courseBranch.findMany({
+        where: { courseId: course.id },
+      });
+      const existingByBranchId = new Map(
+        existingLinks.map((link) => [link.branchId, link]),
+      );
+      const desiredBranchIds = new Set(course.branchIds);
 
-if (course.branchIds.length) {
-  await tx.courseBranch.createMany({
-    data: course.branchIds.map((branchId) => ({
-      courseId: course.id,
-      branchId,
-    })),
-  });
-}
+      for (const branchId of desiredBranchIds) {
+        const existing = existingByBranchId.get(branchId);
+
+        await tx.courseBranch.upsert({
+          where: {
+            courseId_branchId: {
+              courseId: course.id,
+              branchId,
+            },
+          },
+          create: {
+            courseId: course.id,
+            branchId,
+            linkedViaManual: true,
+            linkedViaBatch: false,
+          },
+          update: {
+            linkedViaManual: true,
+          },
+        });
+      }
+
+      for (const link of existingLinks) {
+        if (desiredBranchIds.has(link.branchId)) {
+          continue;
+        }
+
+        if (link.linkedViaBatch) {
+          if (link.linkedViaManual) {
+            await tx.courseBranch.update({
+              where: {
+                courseId_branchId: {
+                  courseId: course.id,
+                  branchId: link.branchId,
+                },
+              },
+              data: { linkedViaManual: false },
+            });
+          }
+          continue;
+        }
+
+        await tx.courseBranch.deleteMany({
+          where: {
+            courseId: course.id,
+            branchId: link.branchId,
+          },
+        });
+      }
 
       await tx.courseImage.deleteMany({
         where: { courseId: course.id },

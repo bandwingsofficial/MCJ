@@ -5,6 +5,7 @@ import {
   GetCourseResult,
   CourseBranchResult,
   CourseCategoryResult,
+  BranchCourseLinkResult,
 } from '../get-course/get-course.result';
 
 import { ListCoursesQuery } from './list-courses.query';
@@ -40,6 +41,17 @@ export class ListCoursesHandler {
       this.courseRepo.findAll(filters),
       this.courseRepo.count(filters),
     ]);
+
+    const branchCourseLinks =
+      query.branchId && courses.length > 0
+        ? await this.branchRepo.findCourseBranchLinksAtBranch(
+            query.branchId,
+            courses.map((course) => course.id),
+          )
+        : new Map<
+            string,
+            { linkedViaManual: boolean; linkedViaBatch: boolean }
+          >();
 
     const categoryCache = new Map<string, CourseCategoryResult | null>();
 
@@ -84,9 +96,18 @@ export class ListCoursesHandler {
           categoryCache.set(course.categoryId, category);
         }
 
+        const link = branchCourseLinks.get(course.id);
+        const branchCourseLink = link
+          ? new BranchCourseLinkResult(
+              link.linkedViaManual,
+              link.linkedViaBatch,
+            )
+          : null;
+
         return GetCourseResult.fromEntity(course, branches, {
           category,
           categoryName: category?.name ?? null,
+          branchCourseLink,
         });
       }),
     );

@@ -49,6 +49,11 @@ export class AssignBatchesToBranchHandler {
       uniqueIds,
     );
 
+    await this.branchRepo.linkCoursesForAssignedBatches(
+      command.branchId,
+      uniqueIds,
+    );
+
     return new AssignBatchesToBranchResult(
       command.branchId,
       assignedCount,

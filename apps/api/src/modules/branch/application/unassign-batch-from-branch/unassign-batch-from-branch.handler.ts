@@ -36,6 +36,11 @@ export class UnassignBatchFromBranchHandler {
       command.batchId,
     );
 
+    await this.branchRepo.syncCourseLinksAfterBatchUnassign(
+      command.branchId,
+      command.batchId,
+    );
+
     return new UnassignBatchFromBranchResult(
       command.branchId,
       command.batchId,

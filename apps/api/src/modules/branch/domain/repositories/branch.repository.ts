@@ -196,4 +196,24 @@ export interface BranchRepository {
     branchId: string,
     batchId: string,
   ): Promise<void>;
+
+  linkCoursesForAssignedBatches(
+    branchId: string,
+    batchIds: string[],
+  ): Promise<void>;
+
+  syncCourseLinksAfterBatchUnassign(
+    branchId: string,
+    batchId: string,
+  ): Promise<void>;
+
+  findCourseBranchLinksAtBranch(
+    branchId: string,
+    courseIds: string[],
+  ): Promise<
+    Map<
+      string,
+      { linkedViaManual: boolean; linkedViaBatch: boolean }
+    >
+  >;
 }

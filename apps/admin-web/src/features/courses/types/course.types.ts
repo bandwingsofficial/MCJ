@@ -276,6 +276,12 @@ export interface CourseListItem {
   thumbnailFileId: string | null;
 
   thumbnailUrl: string | null;
+
+  /** Present when listing courses filtered by branchId (admin branch manage). */
+  branchCourseLink?: {
+    linkedViaManual: boolean;
+    linkedViaBatch: boolean;
+  } | null;
 }
 
 export interface CourseListResponse {
