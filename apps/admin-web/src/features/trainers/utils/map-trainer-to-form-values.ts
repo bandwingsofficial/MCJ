@@ -19,7 +19,6 @@ export function mapTrainerToFormValues(
     skills: trainer.skills ?? [],
     employeeCode: trainer.employeeCode ?? "",
     trainerType: trainer.trainerType,
-    isFeatured: trainer.isFeatured,
     experienceYears: trainer.experienceYears ?? 0,
     joinedAt: toDateInputValue(trainer.joinedAt),
     linkedInUrl: trainer.linkedInUrl ?? "",

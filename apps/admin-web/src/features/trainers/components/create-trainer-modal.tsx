@@ -36,12 +36,8 @@ function toCreatePayload(
     lastName: values.lastName?.trim()
       ? values.lastName.trim()
       : undefined,
-    email: values.email?.trim()
-      ? values.email.trim()
-      : undefined,
-    phone: values.phone?.trim()
-      ? values.phone.trim()
-      : undefined,
+    email: values.email.trim(),
+    phone: values.phone.trim(),
     gender: values.gender,
     bio: values.bio?.trim() ? values.bio.trim() : undefined,
     qualification: values.qualification?.trim()
@@ -65,7 +61,7 @@ function toCreatePayload(
     instagramUrl: values.instagramUrl?.trim()
       ? values.instagramUrl.trim()
       : undefined,
-    isFeatured: values.isFeatured,
+    isFeatured: false,
     joinedAt: formatJoinedAtForApi(values.joinedAt),
     profileImageFileId,
   };

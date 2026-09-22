@@ -29,8 +29,8 @@ import { Input } from "@/src/shared/components/ui/input";
 import { Button } from "@/src/shared/components/ui/button";
 import { Label } from "@/src/shared/components/ui/label";
 import { AppSelect } from "@/src/shared/components/ui/select";
-import { Switch } from "@/src/shared/components/ui/switch";
 import { ImageUploadField } from "@/src/shared/components/ui/image-upload-field";
+import { buildStudentQualificationSelectOptions } from "@mcj/shared-constants";
 import {
   FieldVisualState,
   ValidatedField,
@@ -80,14 +80,13 @@ type SyncFieldName = Exclude<
   | "employeeCode"
   | "gender"
   | "trainerType"
-  | "isFeatured"
   | "profileImageFileId"
   | "experienceYears"
 >;
 
 type SyncNumberFieldName = "experienceYears";
 
-type SelectFieldName = "gender" | "trainerType";
+type SelectFieldName = "gender" | "trainerType" | "qualification";
 
 const OPTIONAL_EMPTY_NEUTRAL_FIELDS = new Set<SyncFieldName>([
   "lastName",
@@ -98,8 +97,6 @@ const OPTIONAL_EMPTY_NEUTRAL_FIELDS = new Set<SyncFieldName>([
   "linkedInUrl",
   "youtubeUrl",
   "instagramUrl",
-  "email",
-  "phone",
 ]);
 
 const EMPTY_DEFAULT_VALUES: CreateTrainerFormValues = {
@@ -114,7 +111,6 @@ const EMPTY_DEFAULT_VALUES: CreateTrainerFormValues = {
   skills: [],
   employeeCode: "",
   trainerType: "FULL_TIME",
-  isFeatured: false,
   experienceYears: 0,
   joinedAt: "",
   linkedInUrl: "",
@@ -469,6 +465,14 @@ export function TrainerForm({
       return "invalid";
     }
 
+    if (name === "qualification") {
+      const raw = values.qualification?.trim() ?? "";
+      if (!raw) {
+        return "neutral";
+      }
+      return "valid";
+    }
+
     return values[name] ? "valid" : "invalid";
   };
 
@@ -527,7 +531,6 @@ export function TrainerForm({
   const lastNameField = syncField("lastName");
   const emailField = syncField("email");
   const phoneField = syncField("phone");
-  const qualificationField = syncField("qualification");
   const specializationField = syncField("specialization");
   const linkedInField = syncField("linkedInUrl");
   const youtubeField = syncField("youtubeUrl");
@@ -535,6 +538,11 @@ export function TrainerForm({
   const genderFieldState = getSelectFieldState("gender");
   const trainerTypeFieldState =
     getSelectFieldState("trainerType");
+  const qualificationFieldState =
+    getSelectFieldState("qualification");
+  const qualificationOptions = buildStudentQualificationSelectOptions(
+    values.qualification,
+  );
 
   return (
     <form
@@ -576,10 +584,10 @@ export function TrainerForm({
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {renderIconInput(
-          "First Name",
+          "Trainer Name",
           firstNameField,
           User,
-          "Enter first name",
+          "Enter trainer name",
           {
             required: true,
             footer: (
@@ -640,7 +648,7 @@ export function TrainerForm({
           emailField,
           Mail,
           "example@domain.com",
-          { type: "email" },
+          { type: "email", required: true },
         )}
 
         {renderIconInput(
@@ -648,6 +656,7 @@ export function TrainerForm({
           phoneField,
           Phone,
           "Enter phone number",
+          { required: true },
         )}
 
         <ValidatedField
@@ -755,12 +764,28 @@ export function TrainerForm({
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {renderIconInput(
-          "Qualification",
-          qualificationField,
-          GraduationCap,
-          "Degree / Certification",
-        )}
+        <ValidatedField
+          label="Qualification"
+          state={qualificationFieldState}
+          errorMessage={errors.qualification?.message}
+        >
+          <div className="relative">
+            <AppSelect
+              value={values.qualification || undefined}
+              placeholder="Select qualification"
+              options={qualificationOptions}
+              triggerClassName={selectTriggerClass(qualificationFieldState)}
+              onValueChange={(value) => {
+                setValue("qualification", value, {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                  shouldValidate: true,
+                });
+              }}
+            />
+            <FieldIcon icon={GraduationCap} />
+          </div>
+        </ValidatedField>
 
         {renderIconInput(
           "Specialization",
@@ -818,16 +843,6 @@ export function TrainerForm({
           Link2,
           "https://...",
         )}
-      </div>
-
-      <div className="flex items-center gap-3">
-        <Switch
-          checked={watch("isFeatured")}
-          onCheckedChange={(value) =>
-            setValue("isFeatured", value)
-          }
-        />
-        <Label>Featured Trainer</Label>
       </div>
 
       <Button

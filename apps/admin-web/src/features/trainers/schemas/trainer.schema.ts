@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { buildStudentQualificationSelectOptions } from "@mcj/shared-constants";
+
 import {
   TRAINER_GENDERS,
   TRAINER_TYPES,
@@ -34,30 +36,41 @@ const optionalUrl = z
     message: "Enter a valid URL",
   });
 
-const optionalEmail = z
+const requiredEmail = z
   .string()
-  .email("Enter valid email address")
-  .optional()
-  .or(z.literal(""));
+  .trim()
+  .min(1, "Email is required")
+  .email("Enter valid email address");
 
-const optionalPhone = z
+const requiredPhone = z
   .string()
-  .regex(phoneRegex, "Enter valid mobile number")
-  .optional()
-  .or(z.literal(""));
+  .trim()
+  .min(1, "Phone is required")
+  .regex(phoneRegex, "Enter valid mobile number");
+
+function isAllowedQualificationValue(value: string | undefined): boolean {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) {
+    return true;
+  }
+
+  return buildStudentQualificationSelectOptions(trimmed).some(
+    (option) => option.value === trimmed,
+  );
+}
 
 export const createTrainerSchema = z.object({
   firstName: z
     .string()
     .trim()
-    .min(1, "First name is required")
+    .min(1, "Trainer name is required")
     .max(100, "Maximum 100 characters allowed"),
 
   lastName: z.string().optional().or(z.literal("")),
 
-  email: optionalEmail,
+  email: requiredEmail,
 
-  phone: optionalPhone,
+  phone: requiredPhone,
 
   profileImageFileId: z.string().optional(),
 
@@ -77,7 +90,13 @@ export const createTrainerSchema = z.object({
       }
     ),
 
-  qualification: z.string().optional().or(z.literal("")),
+  qualification: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine(isAllowedQualificationValue, {
+      message: "Select a qualification from the list",
+    }),
 
   experienceYears: z.preprocess(
     (value) => {
@@ -120,8 +139,6 @@ export const createTrainerSchema = z.object({
   youtubeUrl: optionalUrl,
 
   instagramUrl: optionalUrl,
-
-  isFeatured: z.boolean(),
 
   joinedAt: z
     .string()
