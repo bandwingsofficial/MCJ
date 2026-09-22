@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { reorderIdsByRank } from '../../../../common/utils/reorder-by-rank.util';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { CourseModule } from '../../domain/entities/course-module.entity';
@@ -182,43 +183,42 @@ export class PrismaCourseModuleRepository
   async move(
     id: string,
     courseId: string,
-    oldOrder: number,
+    _oldOrder: number,
     newOrder: number,
     updatedBy?: string | null,
   ): Promise<void> {
-    if (oldOrder === newOrder) {
+    const siblings = await this.prisma.courseModule.findMany({
+      where: {
+        courseId,
+        isDeleted: false,
+      },
+      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true },
+    });
+
+    const orderedIds = siblings.map((row) => row.id);
+    const reorderedIds = reorderIdsByRank(orderedIds, id, newOrder);
+
+    if (reorderedIds === orderedIds) {
       return;
     }
 
     await this.prisma.$transaction(async (tx) => {
-      if (newOrder < oldOrder) {
-        await tx.courseModule.updateMany({
-          where: {
-            courseId,
-            isDeleted: false,
-            displayOrder: { gte: newOrder, lt: oldOrder },
+      for (let index = 0; index < reorderedIds.length; index += 1) {
+        const siblingId = reorderedIds[index];
+        await tx.courseModule.update({
+          where: { id: siblingId },
+          data: {
+            displayOrder: index + 1,
+            ...(siblingId === id
+              ? {
+                  updatedBy: updatedBy ?? undefined,
+                  updatedAt: new Date(),
+                }
+              : {}),
           },
-          data: { displayOrder: { increment: 1 } },
-        });
-      } else {
-        await tx.courseModule.updateMany({
-          where: {
-            courseId,
-            isDeleted: false,
-            displayOrder: { gt: oldOrder, lte: newOrder },
-          },
-          data: { displayOrder: { decrement: 1 } },
         });
       }
-
-      await tx.courseModule.update({
-        where: { id },
-        data: {
-          displayOrder: newOrder,
-          updatedBy: updatedBy ?? undefined,
-          updatedAt: new Date(),
-        },
-      });
     });
   }
 

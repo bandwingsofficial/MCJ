@@ -22,10 +22,11 @@ export class MoveCourseModuleHandler {
       await this.courseModuleRepo.findById(command.id),
     );
 
-    const maxPosition =
-      await this.courseModuleRepo.getMaxDisplayOrder(
-        module.courseId,
-      );
+    const siblings = await this.courseModuleRepo.findByCourseId(
+      module.courseId,
+      false,
+    );
+    const maxPosition = siblings.length;
 
     if (
       !Number.isInteger(command.newPosition) ||

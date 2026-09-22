@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
@@ -22,7 +22,11 @@ import {
   type TabKey,
 } from "@/src/features/courses/components/manage/course-manage-workspace";
 import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
-import { COURSE_MANAGE_DEFAULT_TAB } from "@/src/features/courses/utils/course-manage.routes";
+import {
+  COURSE_MANAGE_DEFAULT_TAB,
+  courseManageTabPath,
+  isCourseManageTab,
+} from "@/src/features/courses/utils/course-manage.routes";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 interface Props {
@@ -38,6 +42,7 @@ const TAB_LABELS: Record<TabKey, string> = {
 
 export function CourseManagePage({ courseId }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const {
     course,
@@ -64,8 +69,28 @@ export function CourseManagePage({ courseId }: Props) {
   const [isRestoreOpen, setIsRestoreOpen] = useState(false);
   const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] =
     useState(false);
-  const [activeTab, setActiveTab] = useState<TabKey>(
-    COURSE_MANAGE_DEFAULT_TAB,
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    const tabParam = searchParams.get("tab");
+    return tabParam && isCourseManageTab(tabParam)
+      ? tabParam
+      : COURSE_MANAGE_DEFAULT_TAB;
+  });
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    const nextTab =
+      tabParam && isCourseManageTab(tabParam)
+        ? tabParam
+        : COURSE_MANAGE_DEFAULT_TAB;
+    setActiveTab(nextTab);
+  }, [searchParams]);
+
+  const handleTabChange = useCallback(
+    (tab: TabKey) => {
+      setActiveTab(tab);
+      router.replace(courseManageTabPath(courseId, tab), { scroll: false });
+    },
+    [courseId, router],
   );
 
   const categoryName = useMemo(
@@ -139,7 +164,7 @@ export function CourseManagePage({ courseId }: Props) {
         onSummaryRefresh={refreshCourseData}
         onCourseUpdated={setCourseData}
         onMutationSuccess={returnToOverview}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
       />
 
       <CourseDeleteDialog

@@ -32,6 +32,7 @@ import {
 } from "@/src/features/courses/utils/course-content-stats.util";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { formatContentOrderNumber } from "@/src/shared/utils/content-order";
+import { reorderByDrag } from "@/src/shared/utils/reorder-drag.utils";
 
 interface Props {
   courseId: string;
@@ -130,11 +131,15 @@ export function CourseManageModulesPanel({
       return;
     }
 
+    const reordered = reorderByDrag(rows, dragId, targetId);
+    if (!reordered) {
+      setDragId(null);
+      setDropTargetId(null);
+      return;
+    }
+
     const previousRows = rows;
-    const nextRows = [...rows];
-    const [moved] = nextRows.splice(sourceIndex, 1);
-    nextRows.splice(targetIndex, 0, moved);
-    setRows(nextRows);
+    setRows(reordered.nextItems);
     setDragId(null);
     setDropTargetId(null);
 
@@ -142,13 +147,8 @@ export function CourseManageModulesPanel({
     setIsReordering(true);
 
     try {
-      const target = sortedModules.find((item) => item.id === targetId);
-      if (!target) {
-        throw new Error("Unable to resolve module order.");
-      }
-
       await moveCourseModule(dragId, {
-        newPosition: target.displayOrder,
+        newPosition: reordered.newPosition,
       });
       await refetch();
       await onRefresh?.();

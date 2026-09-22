@@ -20,10 +20,11 @@ export class MoveCourseResourceHandler {
       await this.courseResourceRepo.findById(command.id),
     );
 
-    const maxPosition =
-      await this.courseResourceRepo.getMaxDisplayOrder(
-        resource.lessonId,
-      );
+    const siblings = await this.courseResourceRepo.findByLessonId(
+      resource.lessonId,
+      false,
+    );
+    const maxPosition = siblings.length;
 
     if (
       !Number.isInteger(command.newPosition) ||

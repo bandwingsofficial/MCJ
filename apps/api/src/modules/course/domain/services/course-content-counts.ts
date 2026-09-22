@@ -26,11 +26,69 @@ export function emptyModuleContentCounts(): ModuleContentCounts {
   };
 }
 
+function resolveLessonContentType(
+  contentType: string,
+  videoUrl: string | null | undefined,
+): LessonContentType {
+  if (
+    contentType === LessonContentType.SELF_PACED_VIDEO ||
+    contentType === LessonContentType.LIVE_RECORDED_VIDEO
+  ) {
+    return contentType as LessonContentType;
+  }
+
+  if (contentType === LessonContentType.LESSON) {
+    return LessonContentType.LESSON;
+  }
+
+  if (videoUrl?.trim()) {
+    return LessonContentType.SELF_PACED_VIDEO;
+  }
+
+  return LessonContentType.LESSON;
+}
+
+/** Matches admin Module Management "Lessons" list (filterNormalLessons). */
+export function countsTowardModuleLessonList(lesson: {
+  parentLessonId: string | null;
+  contentType: string;
+  videoUrl?: string | null;
+  description?: string | null;
+  resourceCount: number;
+  hasQuiz: boolean;
+}): boolean {
+  if (lesson.parentLessonId) {
+    return false;
+  }
+
+  if (lesson.hasQuiz) {
+    return false;
+  }
+
+  if (
+    resolveLessonContentType(lesson.contentType, lesson.videoUrl) !==
+    LessonContentType.LESSON
+  ) {
+    return false;
+  }
+
+  if (
+    lesson.resourceCount > 0 &&
+    !lesson.description?.trim()
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 export function accumulateLessonIntoCounts(
   counts: ModuleContentCounts,
   lesson: {
     parentLessonId: string | null;
     contentType: string;
+    videoUrl?: string | null;
+    description?: string | null;
     resourceCount: number;
     hasQuiz: boolean;
   },
@@ -41,20 +99,22 @@ export function accumulateLessonIntoCounts(
     counts.quizCount += 1;
   }
 
-  if (lesson.contentType === LessonContentType.SELF_PACED_VIDEO) {
+  const resolvedType = resolveLessonContentType(
+    lesson.contentType,
+    lesson.videoUrl,
+  );
+
+  if (resolvedType === LessonContentType.SELF_PACED_VIDEO) {
     counts.selfPacedVideoCount += 1;
     return;
   }
 
-  if (lesson.contentType === LessonContentType.LIVE_RECORDED_VIDEO) {
+  if (resolvedType === LessonContentType.LIVE_RECORDED_VIDEO) {
     counts.liveRecordedVideoCount += 1;
     return;
   }
 
-  if (
-    !lesson.parentLessonId &&
-    lesson.contentType === LessonContentType.LESSON
-  ) {
+  if (countsTowardModuleLessonList(lesson)) {
     counts.lessonCount += 1;
   }
 }

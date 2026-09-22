@@ -84,6 +84,14 @@ export function getModuleContentCountsFromLessons(
       continue;
     }
 
+    if (lesson.quiz) {
+      continue;
+    }
+
+    if (isResourceOnlyLesson(lesson)) {
+      continue;
+    }
+
     displayLessons += 1;
   }
 

@@ -50,9 +50,15 @@ export class ReorderCoursesHandler {
         );
       }
 
-      const maxOrder = await this.courseRepo.getMaxDisplayOrder();
+      const reorderableCourses = (
+        await this.courseRepo.findAll({
+          onlyActive: true,
+          includeDeleted: false,
+        })
+      ).filter((item) => item.displayOrder != null);
+      const maxPosition = reorderableCourses.length;
 
-      if (command.newDisplayOrder > maxOrder) {
+      if (command.newDisplayOrder > maxPosition) {
         throw new BaseException(
           ERROR_CODES.VALIDATION_ERROR,
           'Display order is out of range',
@@ -60,16 +66,22 @@ export class ReorderCoursesHandler {
         );
       }
 
-      if (course.displayOrder === command.newDisplayOrder) {
+      const currentPosition =
+        reorderableCourses.findIndex((item) => item.id === course.id) + 1;
+
+      if (
+        currentPosition > 0 &&
+        currentPosition === command.newDisplayOrder
+      ) {
         return new ReorderCoursesResult(
           course.id,
-          course.displayOrder,
+          command.newDisplayOrder,
         );
       }
 
       await this.courseRepo.moveDisplayOrder(
         course.id,
-        course.displayOrder,
+        course.displayOrder ?? 0,
         command.newDisplayOrder,
       );
 

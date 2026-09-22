@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 
 import { LessonPreviewAccessBadge } from "@/src/features/course-lessons/components/lesson-preview-access-badge";
 import type { CourseLesson } from "@/src/features/course-lessons/types";
@@ -13,6 +13,7 @@ import {
 import {
   courseManageModulePath,
   courseManagePath,
+  courseManageTabPath,
 } from "@/src/features/courses/utils/course-manage.routes";
 
 interface Props {
@@ -32,8 +33,19 @@ export function LessonManageHeader({
   lesson,
   lessonPosition,
 }: Props) {
+  const moduleManageHref = courseManageModulePath(courseId, module.id);
+  const modulesTabHref = courseManageTabPath(courseId, "modules");
+
   return (
     <div className="space-y-3">
+      <Link
+        href={moduleManageHref}
+        className="inline-flex items-center text-sm font-medium text-[#2563EB] transition-colors hover:text-[#1D4ED8]"
+      >
+        <ArrowLeft className="mr-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        Back to Module
+      </Link>
+
       <nav
         aria-label="Breadcrumb"
         className="flex flex-wrap items-center gap-1 text-xs"
@@ -52,16 +64,28 @@ export function LessonManageHeader({
           {courseTitle} ({courseCode})
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
-        <span className="font-medium text-[#102A56]">Management</span>
+        <Link
+          href={modulesTabHref}
+          className="font-medium text-[#647A9B] transition-colors hover:text-[#2563EB]"
+        >
+          Modules
+        </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
         <Link
-          href={courseManageModulePath(courseId, module.id)}
+          href={moduleManageHref}
           className="font-medium text-[#647A9B] transition-colors hover:text-[#2563EB]"
         >
           {module.title}
         </Link>
         <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
-        <span className="font-medium text-slate-700">{lesson.title}</span>
+        <Link
+          href={moduleManageHref}
+          className="font-medium text-[#647A9B] transition-colors hover:text-[#2563EB]"
+        >
+          Lessons
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+        <span className="font-medium text-[#102A56]">{lesson.title}</span>
       </nav>
 
       <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">

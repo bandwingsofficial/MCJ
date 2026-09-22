@@ -31,6 +31,7 @@ import {
 } from "@/src/features/course-modules/hooks/use-module-content-data";
 import { formatDurationHms } from "@/src/features/course-modules/utils/module-content.utils";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { reorderByDrag } from "@/src/shared/utils/reorder-drag.utils";
 
 interface VideoRow extends CourseLesson {
   isArchived: boolean;
@@ -129,6 +130,10 @@ export function ModuleVideosTab({
           sourceCount={sourceRows.length}
           orderOffset={orderOffset}
           reorderDisabled={reorderDisabled}
+          resolveReorderPosition={(dragId, targetId) => {
+            const result = reorderByDrag(sourceRows, dragId, targetId);
+            return result?.newPosition ?? null;
+          }}
           onReorder={async ({ rowId, newPosition }) => {
             await moveCourseLesson(rowId, newPosition);
             await onRefresh();

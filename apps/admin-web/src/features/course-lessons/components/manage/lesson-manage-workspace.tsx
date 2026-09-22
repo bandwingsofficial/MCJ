@@ -4,7 +4,6 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
-  ClipboardList,
   FileQuestion,
   FileText,
   LayoutDashboard,
@@ -26,7 +25,6 @@ import type { CourseModule } from "@/src/features/course-modules/types/course-mo
 import { ModuleVideosTab } from "@/src/features/course-modules/components/manage/module-videos-tab";
 import { ModuleLiveRecordedVideosTab } from "@/src/features/course-modules/components/manage/module-live-recorded-videos-tab";
 import {
-  ModuleAssignmentsTab,
   ModuleQuizzesTab,
   ModuleResourcesTab,
 } from "@/src/features/course-modules/components/manage/module-other-tabs";
@@ -43,8 +41,7 @@ export type LessonManageTab =
   | "videos"
   | "live"
   | "resources"
-  | "quizzes"
-  | "assignments";
+  | "quizzes";
 
 const TAB_CLASS =
   "inline-flex items-center rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
@@ -60,7 +57,6 @@ const TAB_ITEMS: ReadonlyArray<{
   { value: "live", label: "Live Recorded Videos", icon: Radio },
   { value: "resources", label: "Resources", icon: FileText },
   { value: "quizzes", label: "Quizzes", icon: FileQuestion },
-  { value: "assignments", label: "Assignments", icon: ClipboardList },
 ];
 
 interface Props {
@@ -201,10 +197,6 @@ export function LessonManageWorkspace({
                 quizzes={quizzes}
                 onRefresh={refetch}
               />
-            </TabsContent>
-
-            <TabsContent value="assignments">
-              <ModuleAssignmentsTab />
             </TabsContent>
           </>
         )}

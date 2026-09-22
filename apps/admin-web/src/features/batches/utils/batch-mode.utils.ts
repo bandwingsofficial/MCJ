@@ -27,6 +27,35 @@ export function getBatchModes(batch: Batch | null | undefined): BatchMode[] {
   return BATCH_MODE_ORDER.filter((mode) => modes.has(mode));
 }
 
+/** Learning modes configured on the parent batch (timings, mode pricing, or legacy mode). */
+export function getConfiguredBatchModes(
+  batch: Batch | null | undefined,
+): BatchMode[] {
+  if (!batch) {
+    return [];
+  }
+
+  const modes = new Set<BatchMode>();
+
+  for (const timing of getBatchTimings(batch)) {
+    if (isBatchMode(timing.mode)) {
+      modes.add(timing.mode);
+    }
+  }
+
+  for (const key of Object.keys(batch.modePricing ?? {})) {
+    if (isBatchMode(key)) {
+      modes.add(key);
+    }
+  }
+
+  if (modes.size === 0 && batch.mode && isBatchMode(batch.mode)) {
+    modes.add(batch.mode);
+  }
+
+  return BATCH_MODE_ORDER.filter((mode) => modes.has(mode));
+}
+
 export function formatBatchModesLabel(
   batch: Batch | null | undefined,
 ): string {

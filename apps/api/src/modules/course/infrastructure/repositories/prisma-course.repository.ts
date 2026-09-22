@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { reorderIdsByRank } from '../../../../common/utils/reorder-by-rank.util';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { Course } from '../../domain/entities/course.entity';
@@ -250,50 +251,33 @@ if (course.branchIds.length) {
 
   async moveDisplayOrder(
     courseId: string,
-    oldOrder: number,
+    _oldOrder: number,
     newOrder: number,
   ): Promise<void> {
-    if (oldOrder === newOrder) {
+    const siblings = await this.prisma.course.findMany({
+      where: {
+        isDeleted: false,
+        status: CourseStatus.ACTIVE,
+        displayOrder: { not: null },
+      },
+      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true },
+    });
+
+    const orderedIds = siblings.map((row) => row.id);
+    const reorderedIds = reorderIdsByRank(orderedIds, courseId, newOrder);
+
+    if (reorderedIds === orderedIds) {
       return;
     }
 
     await this.prisma.$transaction(async (tx) => {
-      if (newOrder < oldOrder) {
-        await tx.course.updateMany({
-          where: {
-            isDeleted: false,
-            displayOrder: {
-              gte: newOrder,
-              lt: oldOrder,
-            },
-          },
-          data: {
-            displayOrder: {
-              increment: 1,
-            },
-          },
-        });
-      } else {
-        await tx.course.updateMany({
-          where: {
-            isDeleted: false,
-            displayOrder: {
-              gt: oldOrder,
-              lte: newOrder,
-            },
-          },
-          data: {
-            displayOrder: {
-              decrement: 1,
-            },
-          },
+      for (let index = 0; index < reorderedIds.length; index += 1) {
+        await tx.course.update({
+          where: { id: reorderedIds[index] },
+          data: { displayOrder: index + 1 },
         });
       }
-
-      await tx.course.update({
-        where: { id: courseId },
-        data: { displayOrder: newOrder },
-      });
     });
   }
 

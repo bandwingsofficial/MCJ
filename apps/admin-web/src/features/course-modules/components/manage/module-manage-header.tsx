@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 
 import { CourseModuleStatusBadge } from "@/src/features/course-modules/components/CourseModuleStatusBadge";
 import type { CourseModule } from "@/src/features/course-modules/types/course-module.types";
 import { formatModuleOrderLabel } from "@/src/features/course-lessons/utils/lesson-order.utils";
-import { courseManagePath } from "@/src/features/courses/utils/course-manage.routes";
+import {
+  courseManageTabPath,
+  courseManagePath,
+} from "@/src/features/courses/utils/course-manage.routes";
 
 interface Props {
   courseId: string;
@@ -24,32 +28,43 @@ export function ModuleManageHeader({
   courseCode,
   module,
 }: Props) {
+  const modulesTabHref = courseManageTabPath(courseId, "modules");
+
   return (
     <>
-      <nav className="flex flex-wrap items-center gap-1.5 text-sm text-[#647A9B]">
+      <Link
+        href={modulesTabHref}
+        className="inline-flex items-center text-sm font-medium text-[#2563EB] transition-colors hover:text-[#1D4ED8]"
+      >
+        <ArrowLeft className="mr-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        Back to Modules
+      </Link>
+
+      <nav
+        aria-label="Breadcrumb"
+        className="flex flex-wrap items-center gap-1 text-xs"
+      >
         <Link
           href="/courses"
-          className="font-medium text-[#2563EB] hover:underline"
+          className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
         >
           Courses
         </Link>
-        <span aria-hidden>›</span>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
         <Link
           href={courseManagePath(courseId)}
-          className="font-medium text-[#2563EB] hover:underline"
+          className="font-medium text-[#647A9B] transition-colors hover:text-[#2563EB]"
         >
           {courseTitle} ({courseCode})
         </Link>
-        <span aria-hidden>›</span>
-        <span className="text-slate-700">Management</span>
-        <span aria-hidden>›</span>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
         <Link
-          href={courseManagePath(courseId)}
-          className="font-medium text-[#2563EB] hover:underline"
+          href={modulesTabHref}
+          className="font-medium text-[#647A9B] transition-colors hover:text-[#2563EB]"
         >
           Modules
         </Link>
-        <span aria-hidden>›</span>
+        <ChevronRight className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
         <span className="font-medium text-[#102A56]">{module.title}</span>
       </nav>
 

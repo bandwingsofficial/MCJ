@@ -17,6 +17,8 @@ import { withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 import { getCourseCategoryDisplayName } from "@/src/features/courses/utils/course-category.utils";
 import { isArchivedCourse } from "@/src/features/courses/utils/course-bulk.utils";
 
+import { reorderByDrag } from "@/src/shared/utils/reorder-drag.utils";
+
 import { CourseStatusBadge } from "./course-status-badge";
 import { CourseActions } from "./course-actions";
 
@@ -140,33 +142,35 @@ export function CourseTable({
       return;
     }
 
+    const source = rows.find((item) => item.id === dragId);
+    const target = rows.find((item) => item.id === targetId);
+
+    if (!source || !target || !canReorder(source) || !canReorder(target)) {
+      setDragId(null);
+      setDropTargetId(null);
+      return;
+    }
+
+    const reorderableRows = rows.filter(canReorder);
+    const reordered = reorderByDrag(reorderableRows, dragId, targetId);
+
+    if (!reordered || reordered.newPosition < 1) {
+      setDragId(null);
+      setDropTargetId(null);
+      return;
+    }
+
+    const reorderableIds = new Set(reorderableRows.map((course) => course.id));
     const previous = rows;
-    const next = [...rows];
-    const fromIndex = next.findIndex((item) => item.id === dragId);
-    const toIndex = next.findIndex((item) => item.id === targetId);
-
-    if (fromIndex < 0 || toIndex < 0) {
-      setDragId(null);
-      setDropTargetId(null);
-      return;
-    }
-
-    const source = next[fromIndex];
-    const target = next[toIndex];
-
-    if (
-      !canReorder(source) ||
-      !canReorder(target) ||
-      target.displayOrder == null
-    ) {
-      setDragId(null);
-      setDropTargetId(null);
-      return;
-    }
-
-    const newDisplayOrder = target.displayOrder;
-    const [moved] = next.splice(fromIndex, 1);
-    next.splice(toIndex, 0, moved);
+    let reorderableIndex = 0;
+    const next = rows.map((row) => {
+      if (!reorderableIds.has(row.id)) {
+        return row;
+      }
+      const nextRow = reordered.nextItems[reorderableIndex];
+      reorderableIndex += 1;
+      return nextRow;
+    });
     setRows(next);
 
     try {
@@ -174,7 +178,7 @@ export function CourseTable({
       setIsSavingOrder(true);
       await onReorder({
         courseId: source.id,
-        newDisplayOrder,
+        newDisplayOrder: reordered.newPosition,
       });
     } catch {
       setRows(previous);

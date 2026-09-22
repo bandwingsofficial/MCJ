@@ -83,6 +83,8 @@ export class CourseHierarchyService {
         moduleId: true,
         parentLessonId: true,
         contentType: true,
+        videoUrl: true,
+        description: true,
         _count: {
           select: {
             resources: {
@@ -107,6 +109,8 @@ export class CourseHierarchyService {
       accumulateLessonIntoCounts(counts, {
         parentLessonId: lesson.parentLessonId,
         contentType: lesson.contentType,
+        videoUrl: lesson.videoUrl,
+        description: lesson.description,
         resourceCount: lesson._count.resources,
         hasQuiz: Boolean(lesson.quiz),
       });
@@ -630,6 +634,8 @@ export class CourseHierarchyService {
       accumulateLessonIntoCounts(counts, {
         parentLessonId: lesson.parentLessonId,
         contentType: lesson.contentType,
+        videoUrl: lesson.videoUrl,
+        description: lesson.description,
         resourceCount: lesson.resources.length,
         hasQuiz: Boolean(lesson.quiz),
       });

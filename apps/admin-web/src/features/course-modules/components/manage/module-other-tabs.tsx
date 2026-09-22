@@ -40,6 +40,7 @@ import { ModuleContentSection } from "@/src/features/course-modules/components/m
 import { formatResourceSize } from "@/src/features/course-modules/utils/module-content.utils";
 import { courseManageLessonQuizPath } from "@/src/features/courses/utils/course-manage.routes";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { reorderByDrag } from "@/src/shared/utils/reorder-drag.utils";
 
 interface ResourceTableRow extends ModuleResourceRow {
   isArchived: boolean;
@@ -138,6 +139,10 @@ export function ModuleResourcesTab({
           sourceCount={sourceRows.length}
           orderOffset={orderOffset}
           reorderDisabled={Boolean(search.trim()) || status !== "ALL"}
+          resolveReorderPosition={(dragId, targetId) => {
+            const result = reorderByDrag(sourceRows, dragId, targetId);
+            return result?.newPosition ?? null;
+          }}
           onReorder={async ({ rowId, newPosition }) => {
             await moveCourseResource(rowId, { newPosition });
             await onRefresh();

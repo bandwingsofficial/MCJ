@@ -21,6 +21,7 @@ import {
 import { ModuleContentSection } from "@/src/features/course-modules/components/manage/module-content-section";
 import { ModuleContentTable } from "@/src/features/course-modules/components/manage/module-content-table";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { reorderByDrag } from "@/src/shared/utils/reorder-drag.utils";
 
 function truncateText(value: string | null | undefined, max = 160): string {
   if (!value?.trim()) {
@@ -173,6 +174,10 @@ export function ModuleLearnTab({
           sourceCount={sourceRows.length}
           orderOffset={orderOffset}
           reorderDisabled={Boolean(search.trim())}
+          resolveReorderPosition={(dragId, targetId) => {
+            const result = reorderByDrag(sourceRows, dragId, targetId);
+            return result?.newPosition ?? null;
+          }}
           onReorder={async ({ rowId, newPosition }) => {
             await moveCourseLearnItem(rowId, { newPosition });
             await onRefresh();

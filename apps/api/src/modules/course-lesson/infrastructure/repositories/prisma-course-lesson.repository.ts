@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { reorderIdsByRank } from '../../../../common/utils/reorder-by-rank.util';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { CourseLesson } from '../../domain/entities/course-lesson.entity';
@@ -163,44 +164,42 @@ export class PrismaCourseLessonRepository
   async move(
     id: string,
     moduleId: string,
-    oldOrder: number,
+    _oldOrder: number,
     newOrder: number,
     updatedBy?: string | null,
     parentLessonId: string | null = null,
   ): Promise<void> {
-    if (oldOrder === newOrder) {
+    const scope = this.buildOrderScopeWhere(moduleId, parentLessonId);
+
+    const siblings = await this.prisma.courseLesson.findMany({
+      where: scope,
+      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true },
+    });
+
+    const orderedIds = siblings.map((row) => row.id);
+    const reorderedIds = reorderIdsByRank(orderedIds, id, newOrder);
+
+    if (reorderedIds === orderedIds) {
       return;
     }
 
-    const scope = this.buildOrderScopeWhere(moduleId, parentLessonId);
-
     await this.prisma.$transaction(async (tx) => {
-      if (newOrder < oldOrder) {
-        await tx.courseLesson.updateMany({
-          where: {
-            ...scope,
-            displayOrder: { gte: newOrder, lt: oldOrder },
+      for (let index = 0; index < reorderedIds.length; index += 1) {
+        const siblingId = reorderedIds[index];
+        await tx.courseLesson.update({
+          where: { id: siblingId },
+          data: {
+            displayOrder: index + 1,
+            ...(siblingId === id
+              ? {
+                  updatedBy: updatedBy ?? undefined,
+                  updatedAt: new Date(),
+                }
+              : {}),
           },
-          data: { displayOrder: { increment: 1 } },
-        });
-      } else {
-        await tx.courseLesson.updateMany({
-          where: {
-            ...scope,
-            displayOrder: { gt: oldOrder, lte: newOrder },
-          },
-          data: { displayOrder: { decrement: 1 } },
         });
       }
-
-      await tx.courseLesson.update({
-        where: { id },
-        data: {
-          displayOrder: newOrder,
-          updatedBy: updatedBy ?? undefined,
-          updatedAt: new Date(),
-        },
-      });
     });
   }
 

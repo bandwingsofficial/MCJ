@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { reorderIdsByRank } from '../../../../common/utils/reorder-by-rank.util';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { CourseLearnItem } from '../../domain/entities/course-learn-item.entity';
@@ -92,41 +93,39 @@ export class PrismaCourseLearnItemRepository
   async move(
     id: string,
     lessonId: string,
-    oldOrder: number,
+    _oldOrder: number,
     newOrder: number,
     updatedBy?: string | null,
   ): Promise<void> {
-    if (oldOrder === newOrder) {
+    const siblings = await this.prisma.courseLearnItem.findMany({
+      where: { lessonId },
+      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true },
+    });
+
+    const orderedIds = siblings.map((row) => row.id);
+    const reorderedIds = reorderIdsByRank(orderedIds, id, newOrder);
+
+    if (reorderedIds === orderedIds) {
       return;
     }
 
     await this.prisma.$transaction(async (tx) => {
-      if (newOrder < oldOrder) {
-        await tx.courseLearnItem.updateMany({
-          where: {
-            lessonId,
-            displayOrder: { gte: newOrder, lt: oldOrder },
+      for (let index = 0; index < reorderedIds.length; index += 1) {
+        const siblingId = reorderedIds[index];
+        await tx.courseLearnItem.update({
+          where: { id: siblingId },
+          data: {
+            displayOrder: index + 1,
+            ...(siblingId === id
+              ? {
+                  updatedBy: updatedBy ?? undefined,
+                  updatedAt: new Date(),
+                }
+              : {}),
           },
-          data: { displayOrder: { increment: 1 } },
-        });
-      } else {
-        await tx.courseLearnItem.updateMany({
-          where: {
-            lessonId,
-            displayOrder: { gt: oldOrder, lte: newOrder },
-          },
-          data: { displayOrder: { decrement: 1 } },
         });
       }
-
-      await tx.courseLearnItem.update({
-        where: { id },
-        data: {
-          displayOrder: newOrder,
-          updatedBy: updatedBy ?? undefined,
-          updatedAt: new Date(),
-        },
-      });
     });
   }
 

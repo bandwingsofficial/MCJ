@@ -8,6 +8,7 @@ import { appToast } from "@/src/shared/components/ui/toast";
 import { formatContentOrderNumber } from "@/src/shared/utils/content-order";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { cn } from "@/src/shared/lib/cn";
+import { reorderByDrag } from "@/src/shared/utils/reorder-drag.utils";
 
 export interface ModuleContentRow {
   id: string;
@@ -39,6 +40,11 @@ interface Props<T extends ModuleContentRow> {
     rowId: string;
     newPosition: number;
   }) => Promise<void>;
+  /** When set, 1-based position is computed from this full sibling list (API scope). */
+  resolveReorderPosition?: (
+    dragId: string,
+    targetId: string,
+  ) => number | null;
   renderActions: (row: T) => React.ReactNode;
 }
 
@@ -55,6 +61,7 @@ export function ModuleContentTable<T extends ModuleContentRow>({
   showReorderColumn = true,
   variant = "default",
   onReorder,
+  resolveReorderPosition,
   renderActions,
 }: Props<T>) {
   const [localRows, setLocalRows] = useState(rows);
@@ -99,13 +106,30 @@ export function ModuleContentTable<T extends ModuleContentRow>({
       return;
     }
 
+    const reorderedVisible = reorderByDrag(localRows, dragId, targetId);
+    if (!reorderedVisible) {
+      setDragId(null);
+      setDropTargetId(null);
+      return;
+    }
+
     const previousRows = localRows;
-    const nextRows = [...localRows];
-    const [moved] = nextRows.splice(sourceIndex, 1);
-    nextRows.splice(targetIndex, 0, moved);
-    setLocalRows(nextRows);
+    setLocalRows(reorderedVisible.nextItems);
     setDragId(null);
     setDropTargetId(null);
+
+    let newPosition: number | null = null;
+    if (resolveReorderPosition) {
+      newPosition = resolveReorderPosition(dragId, targetId);
+    } else {
+      newPosition = orderOffset + reorderedVisible.newPosition;
+    }
+
+    if (newPosition == null || newPosition < 1) {
+      setLocalRows(previousRows);
+      appToast.error("Unable to resolve the new order position.");
+      return;
+    }
 
     reorderInFlightRef.current = true;
     setIsSavingOrder(true);
@@ -113,7 +137,7 @@ export function ModuleContentTable<T extends ModuleContentRow>({
     try {
       await onReorder({
         rowId: dragId,
-        newPosition: orderOffset + targetIndex + 1,
+        newPosition,
       });
     } catch (error) {
       setLocalRows(previousRows);

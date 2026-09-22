@@ -20,8 +20,10 @@ export class MoveCourseLearnItemHandler {
       await this.courseLearnItemRepo.findById(command.id),
     );
 
-    const maxPosition =
-      await this.courseLearnItemRepo.getMaxDisplayOrder(item.lessonId);
+    const siblings = await this.courseLearnItemRepo.findByLessonId(
+      item.lessonId,
+    );
+    const maxPosition = siblings.length;
 
     if (
       !Number.isInteger(command.newPosition) ||
