@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -9,12 +10,31 @@ import { CategoryPagination } from "@/src/features/categories/components/categor
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 
 import { branchService } from "@/src/features/branches/services/branch.service";
-import { CreateEnrollmentModal } from "@/src/features/enrollments/components/form/create-enrollment-modal";
-import { UpdateEnrollmentModal } from "@/src/features/enrollments/components/form/update-enrollment-modal";
-import {
-  UnenrollEnrollmentDialog,
-  type UnenrollEnrollmentTarget,
-} from "@/src/features/enrollments/components/dialogs/unenroll-enrollment-dialog";
+import type { UnenrollEnrollmentTarget } from "@/src/features/enrollments/components/dialogs/unenroll-enrollment-dialog";
+
+const CreateEnrollmentModal = dynamic(
+  () =>
+    import("@/src/features/enrollments/components/form/create-enrollment-modal").then(
+      (mod) => ({ default: mod.CreateEnrollmentModal }),
+    ),
+  { ssr: false },
+);
+
+const UpdateEnrollmentModal = dynamic(
+  () =>
+    import("@/src/features/enrollments/components/form/update-enrollment-modal").then(
+      (mod) => ({ default: mod.UpdateEnrollmentModal }),
+    ),
+  { ssr: false },
+);
+
+const UnenrollEnrollmentDialog = dynamic(
+  () =>
+    import("@/src/features/enrollments/components/dialogs/unenroll-enrollment-dialog").then(
+      (mod) => ({ default: mod.UnenrollEnrollmentDialog }),
+    ),
+  { ssr: false },
+);
 import { EnrollmentSummaryHeader } from "@/src/features/enrollments/components/table/enrollment-summary-header";
 import { EnrollmentTable } from "@/src/features/enrollments/components/table/EnrollmentTable";
 import { useEnrollment } from "@/src/features/enrollments/hooks/useEnrollment";
@@ -232,29 +252,34 @@ export function EnrollmentListPage() {
           )}
         </Card>
 
-      <CreateEnrollmentModal
-        open={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onSuccess={() => {
-          void refetch();
-        }}
-      />
+      {isCreateOpen ? (
+        <CreateEnrollmentModal
+          open={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+          onSuccess={() => {
+            void refetch();
+          }}
+        />
+      ) : null}
 
-      <UpdateEnrollmentModal
-        open={isEditOpen}
-        enrollment={editEnrollment ?? selectedEnrollment}
-        isLoading={isEditLoading && !editEnrollment}
-        onClose={() => {
-          setIsEditOpen(false);
-          setSelectedEnrollment(null);
-        }}
-        onSuccess={() => {
-          void refetch();
-        }}
-      />
+      {isEditOpen && selectedEnrollment ? (
+        <UpdateEnrollmentModal
+          open={isEditOpen}
+          enrollment={editEnrollment ?? selectedEnrollment}
+          isLoading={isEditLoading && !editEnrollment}
+          onClose={() => {
+            setIsEditOpen(false);
+            setSelectedEnrollment(null);
+          }}
+          onSuccess={() => {
+            void refetch();
+          }}
+        />
+      ) : null}
 
+      {unenrollTarget ? (
       <UnenrollEnrollmentDialog
-        open={Boolean(unenrollTarget)}
+        open
         target={unenrollTarget}
         loading={isUnenrolling}
         onClose={() => setUnenrollTarget(null)}
@@ -272,6 +297,7 @@ export function EnrollmentListPage() {
           }
         }}
       />
+      ) : null}
     </div>
   );
 }

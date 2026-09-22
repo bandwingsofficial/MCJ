@@ -1,9 +1,5 @@
 import { notFound } from "next/navigation";
 
-import { QuizBuilderPage } from "@/src/features/course-quizzes/components/quiz-builder-page";
-import { CourseLessonManagePage } from "@/src/features/courses/pages/course-lesson-manage-page";
-import { CourseModuleManagePage } from "@/src/features/courses/pages/course-module-manage-page";
-
 interface Props {
   params: Promise<{
     id: string;
@@ -16,12 +12,18 @@ interface Props {
  * Keep this as the ONLY route under `manage/` besides `page.tsx`.
  * Do not add competing `manage/modules/...` filesystem pages — they shadow
  * this catch-all and reintroduce intermittent Turbopack 404s.
+ *
+ * Page modules are loaded lazily so Turbopack only compiles the matched
+ * branch (module manage / lesson manage / quiz) instead of all three.
  */
 export default async function CourseManageCatchAllRoute({ params }: Props) {
   const { id, segments } = await params;
 
   if (segments.length === 2 && segments[0] === "modules") {
     const [, moduleId] = segments;
+    const { CourseModuleManagePage } = await import(
+      "@/src/features/courses/pages/course-module-manage-page"
+    );
 
     return <CourseModuleManagePage courseId={id} moduleId={moduleId} />;
   }
@@ -34,6 +36,9 @@ export default async function CourseManageCatchAllRoute({ params }: Props) {
   ) {
     const moduleId = segments[1];
     const lessonId = segments[3];
+    const { CourseLessonManagePage } = await import(
+      "@/src/features/courses/pages/course-lesson-manage-page"
+    );
 
     return (
       <CourseLessonManagePage
@@ -52,6 +57,9 @@ export default async function CourseManageCatchAllRoute({ params }: Props) {
   ) {
     const moduleId = segments[1];
     const lessonId = segments[3];
+    const { QuizBuilderPage } = await import(
+      "@/src/features/course-quizzes/components/quiz-builder-page"
+    );
 
     return (
       <QuizBuilderPage courseId={id} moduleId={moduleId} lessonId={lessonId} />

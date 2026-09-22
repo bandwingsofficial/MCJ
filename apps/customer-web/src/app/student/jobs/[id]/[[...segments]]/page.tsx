@@ -1,7 +1,5 @@
 import { notFound } from "next/navigation";
 
-import { ApplyJobPage } from "@/src/features/student-jobs/pages";
-
 interface Props {
   params: Promise<{
     id: string;
@@ -32,6 +30,11 @@ export default async function Page({ params }: Props) {
   }
 
   if (segments.length === 1 && segments[0] === "apply") {
+    // Direct module import (not the pages barrel) so applications list/details
+    // are not pulled into this route's compile graph.
+    const { ApplyJobPage } = await import(
+      "@/src/features/student-jobs/pages/ApplyJobPage"
+    );
     return <ApplyJobPage jobId={id} jobSlug={id} />;
   }
 

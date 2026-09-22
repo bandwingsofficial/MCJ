@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 
 import { Card } from "@/src/shared/components/ui/card";
@@ -23,9 +24,23 @@ import {
   BatchBulkActionsToolbar,
   type BulkBatchAction,
 } from "@/src/features/batches/components/batch-bulk-actions-toolbar";
-import { AssignBatchesModal } from "@/src/features/batches/components/assign-batches-modal";
-import { UpdateBatchModal } from "@/src/features/batches/components/update-batch-modal";
 import { PermanentDeleteBatchDialog } from "@/src/features/batches/components/permanent-delete-batch-dialog";
+
+const AssignBatchesModal = dynamic(
+  () =>
+    import("@/src/features/batches/components/assign-batches-modal").then(
+      (mod) => ({ default: mod.AssignBatchesModal }),
+    ),
+  { ssr: false },
+);
+
+const UpdateBatchModal = dynamic(
+  () =>
+    import("@/src/features/batches/components/update-batch-modal").then(
+      (mod) => ({ default: mod.UpdateBatchModal }),
+    ),
+  { ssr: false },
+);
 
 import type {
   BatchLifecycleStatus,
@@ -407,25 +422,29 @@ export function BatchPage() {
         )}
       </Card>
 
-      <AssignBatchesModal
-        open={isAssignOpen}
-        onClose={() => setIsAssignOpen(false)}
-        onSuccess={async () => {
-          await refetch();
-        }}
-      />
+      {isAssignOpen ? (
+        <AssignBatchesModal
+          open={isAssignOpen}
+          onClose={() => setIsAssignOpen(false)}
+          onSuccess={async () => {
+            await refetch();
+          }}
+        />
+      ) : null}
 
-      <UpdateBatchModal
-        open={isEditOpen}
-        batch={selectedBatch}
-        onClose={() => {
-          setIsEditOpen(false);
-          setSelectedBatch(null);
-        }}
-        onSuccess={async () => {
-          await refetch();
-        }}
-      />
+      {isEditOpen && selectedBatch ? (
+        <UpdateBatchModal
+          open={isEditOpen}
+          batch={selectedBatch}
+          onClose={() => {
+            setIsEditOpen(false);
+            setSelectedBatch(null);
+          }}
+          onSuccess={async () => {
+            await refetch();
+          }}
+        />
+      ) : null}
 
       <ConfirmDialog
         open={Boolean(statusTarget)}
@@ -494,8 +513,9 @@ export function BatchPage() {
         }}
       />
 
+      {permanentDeleteTarget ? (
       <PermanentDeleteBatchDialog
-        open={Boolean(permanentDeleteTarget)}
+        open
         batchName={permanentDeleteTarget?.name}
         isLoading={isPermanentDeleting}
         onCancel={() => setPermanentDeleteTarget(null)}
@@ -519,6 +539,7 @@ export function BatchPage() {
           }
         }}
       />
+      ) : null}
 
       <ConfirmDialog
         open={bulkConfirmAction !== null}

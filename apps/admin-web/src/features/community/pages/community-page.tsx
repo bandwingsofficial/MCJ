@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -26,12 +27,53 @@ import { useBulkPermanentDeleteCommunityPost } from "@/src/features/community/ho
 
 import { CommunityFeedGrid } from "@/src/features/community/components/community-feed-grid";
 import { CommunitySummaryHeader } from "@/src/features/community/components/community-summary-header";
-import { StatusCommunityPostDialog } from "@/src/features/community/components/status-community-post-dialog";
-import { ArchiveCommunityPostDialog } from "@/src/features/community/components/archive-community-post-dialog";
-import { RestoreCommunityPostDialog } from "@/src/features/community/components/restore-community-post-dialog";
-import { PermanentDeleteCommunityPostDialog } from "@/src/features/community/components/permanent-delete-community-post-dialog";
-import { CreateCommunityPostModal } from "@/src/features/community/components/create-community-post-modal";
-import { EditCommunityPostModal } from "@/src/features/community/components/edit-community-post-modal";
+const CreateCommunityPostModal = dynamic(
+  () =>
+    import("@/src/features/community/components/create-community-post-modal").then(
+      (mod) => ({ default: mod.CreateCommunityPostModal }),
+    ),
+  { ssr: false },
+);
+
+const EditCommunityPostModal = dynamic(
+  () =>
+    import("@/src/features/community/components/edit-community-post-modal").then(
+      (mod) => ({ default: mod.EditCommunityPostModal }),
+    ),
+  { ssr: false },
+);
+
+const StatusCommunityPostDialog = dynamic(
+  () =>
+    import("@/src/features/community/components/status-community-post-dialog").then(
+      (mod) => ({ default: mod.StatusCommunityPostDialog }),
+    ),
+  { ssr: false },
+);
+
+const ArchiveCommunityPostDialog = dynamic(
+  () =>
+    import("@/src/features/community/components/archive-community-post-dialog").then(
+      (mod) => ({ default: mod.ArchiveCommunityPostDialog }),
+    ),
+  { ssr: false },
+);
+
+const RestoreCommunityPostDialog = dynamic(
+  () =>
+    import("@/src/features/community/components/restore-community-post-dialog").then(
+      (mod) => ({ default: mod.RestoreCommunityPostDialog }),
+    ),
+  { ssr: false },
+);
+
+const PermanentDeleteCommunityPostDialog = dynamic(
+  () =>
+    import(
+      "@/src/features/community/components/permanent-delete-community-post-dialog"
+    ).then((mod) => ({ default: mod.PermanentDeleteCommunityPostDialog })),
+  { ssr: false },
+);
 import {
   CommunityBulkActionsToolbar,
   type BulkCommunityAction,
@@ -479,28 +521,33 @@ export function CommunityPage() {
         )}
       </Card>
 
-      <CreateCommunityPostModal
-        open={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onSuccess={() => {
-          void refetch();
-        }}
-      />
+      {isCreateOpen ? (
+        <CreateCommunityPostModal
+          open={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+          onSuccess={() => {
+            void refetch();
+          }}
+        />
+      ) : null}
 
-      <EditCommunityPostModal
-        open={isEditOpen}
-        post={editPost}
-        onClose={() => {
-          setIsEditOpen(false);
-          setEditPost(null);
-        }}
-        onSuccess={() => {
-          void refetch();
-        }}
-      />
+      {isEditOpen && editPost ? (
+        <EditCommunityPostModal
+          open={isEditOpen}
+          post={editPost}
+          onClose={() => {
+            setIsEditOpen(false);
+            setEditPost(null);
+          }}
+          onSuccess={() => {
+            void refetch();
+          }}
+        />
+      ) : null}
 
+      {statusMode !== null ? (
       <StatusCommunityPostDialog
-        open={statusMode !== null}
+        open
         item={selectedItem}
         mode={statusMode ?? "activate"}
         isLoading={isActivating || isDeactivating}
@@ -523,9 +570,11 @@ export function CommunityPage() {
           }
         }}
       />
+      ) : null}
 
+      {isArchiveOpen ? (
       <ArchiveCommunityPostDialog
-        open={isArchiveOpen}
+        open
         item={selectedItem}
         isLoading={isDeleting}
         onClose={() => setIsArchiveOpen(false)}
@@ -542,9 +591,11 @@ export function CommunityPage() {
           }
         }}
       />
+      ) : null}
 
+      {isRestoreOpen ? (
       <RestoreCommunityPostDialog
-        open={isRestoreOpen}
+        open
         item={selectedItem}
         isLoading={isRestoring}
         onClose={() => setIsRestoreOpen(false)}
@@ -561,9 +612,11 @@ export function CommunityPage() {
           }
         }}
       />
+      ) : null}
 
+      {isPermanentDeleteOpen ? (
       <PermanentDeleteCommunityPostDialog
-        open={isPermanentDeleteOpen}
+        open
         item={selectedItem}
         isLoading={isPermanentDeleting}
         onClose={() => setIsPermanentDeleteOpen(false)}
@@ -582,6 +635,7 @@ export function CommunityPage() {
           }
         }}
       />
+      ) : null}
 
       <ConfirmDialog
         open={bulkConfirmAction !== null}

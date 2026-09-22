@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
@@ -31,12 +32,54 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { TrainerTable } from "@/src/features/trainers/components/trainer-table";
 import { TrainerSummaryHeader } from "@/src/features/trainers/components/trainer-summary-header";
-import { CreateTrainerModal } from "@/src/features/trainers/components/create-trainer-modal";
-import { UpdateTrainerModal } from "@/src/features/trainers/components/update-trainer-modal";
-import { StatusTrainerDialog } from "@/src/features/trainers/components/status-trainer-dialog";
-import { TrainerDeleteDialog } from "@/src/features/trainers/components/trainer-delete-dialog";
-import { TrainerRestoreDialog } from "@/src/features/trainers/components/trainer-restore-dialog";
-import { PermanentDeleteTrainerDialog } from "@/src/features/trainers/components/permanent-delete-trainer-dialog";
+
+const CreateTrainerModal = dynamic(
+  () =>
+    import("@/src/features/trainers/components/create-trainer-modal").then(
+      (mod) => ({ default: mod.CreateTrainerModal }),
+    ),
+  { ssr: false },
+);
+
+const UpdateTrainerModal = dynamic(
+  () =>
+    import("@/src/features/trainers/components/update-trainer-modal").then(
+      (mod) => ({ default: mod.UpdateTrainerModal }),
+    ),
+  { ssr: false },
+);
+
+const StatusTrainerDialog = dynamic(
+  () =>
+    import("@/src/features/trainers/components/status-trainer-dialog").then(
+      (mod) => ({ default: mod.StatusTrainerDialog }),
+    ),
+  { ssr: false },
+);
+
+const TrainerDeleteDialog = dynamic(
+  () =>
+    import("@/src/features/trainers/components/trainer-delete-dialog").then(
+      (mod) => ({ default: mod.TrainerDeleteDialog }),
+    ),
+  { ssr: false },
+);
+
+const TrainerRestoreDialog = dynamic(
+  () =>
+    import("@/src/features/trainers/components/trainer-restore-dialog").then(
+      (mod) => ({ default: mod.TrainerRestoreDialog }),
+    ),
+  { ssr: false },
+);
+
+const PermanentDeleteTrainerDialog = dynamic(
+  () =>
+    import(
+      "@/src/features/trainers/components/permanent-delete-trainer-dialog"
+    ).then((mod) => ({ default: mod.PermanentDeleteTrainerDialog })),
+  { ssr: false },
+);
 import {
   TrainerBulkActionsToolbar,
   type BulkTrainerAction,
@@ -523,27 +566,32 @@ export function TrainersPage() {
           )}
         </Card>
 
-      <CreateTrainerModal
-        open={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onSuccess={() => {
-          void refetch();
-        }}
-      />
+      {isCreateOpen ? (
+        <CreateTrainerModal
+          open={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+          onSuccess={() => {
+            void refetch();
+          }}
+        />
+      ) : null}
 
-      <UpdateTrainerModal
-        open={isEditOpen}
-        trainer={selectedTrainer}
-        onClose={() => {
-          setIsEditOpen(false);
-        }}
-        onSuccess={() => {
-          void refetch();
-        }}
-      />
+      {isEditOpen && selectedTrainer ? (
+        <UpdateTrainerModal
+          open={isEditOpen}
+          trainer={selectedTrainer}
+          onClose={() => {
+            setIsEditOpen(false);
+          }}
+          onSuccess={() => {
+            void refetch();
+          }}
+        />
+      ) : null}
 
+      {isStatusOpen ? (
       <StatusTrainerDialog
-        open={isStatusOpen}
+        open
         trainer={selectedTrainer}
         isLoading={isActivating || isDeactivating}
         onClose={() => {
@@ -567,9 +615,11 @@ export function TrainersPage() {
           }
         }}
       />
+      ) : null}
 
+      {isDeleteOpen ? (
       <TrainerDeleteDialog
-        open={isDeleteOpen}
+        open
         isLoading={isDeleting}
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={async () => {
@@ -587,9 +637,11 @@ export function TrainersPage() {
           }
         }}
       />
+      ) : null}
 
+      {isRestoreOpen ? (
       <TrainerRestoreDialog
-        open={isRestoreOpen}
+        open
         isLoading={isRestoring}
         onClose={() => setIsRestoreOpen(false)}
         onConfirm={async () => {
@@ -607,9 +659,11 @@ export function TrainersPage() {
           }
         }}
       />
+      ) : null}
 
+      {isPermanentDeleteOpen ? (
       <PermanentDeleteTrainerDialog
-        open={isPermanentDeleteOpen}
+        open
         trainer={selectedTrainer}
         isLoading={isPermanentDeleting}
         onClose={() => setIsPermanentDeleteOpen(false)}
@@ -628,6 +682,7 @@ export function TrainersPage() {
           }
         }}
       />
+      ) : null}
 
       <ConfirmDialog
         open={bulkConfirmAction !== null}

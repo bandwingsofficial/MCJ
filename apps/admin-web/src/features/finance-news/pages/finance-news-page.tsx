@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -31,11 +32,45 @@ import { financeNewsService } from "@/src/features/finance-news/services/finance
 
 import { FinanceNewsTable } from "@/src/features/finance-news/components/finance-news-table";
 import { FinanceNewsSummaryHeader } from "@/src/features/finance-news/components/finance-news-summary-header";
-import { StatusFinanceNewsDialog } from "@/src/features/finance-news/components/status-finance-news-dialog";
-import { ArchiveFinanceNewsDialog } from "@/src/features/finance-news/components/archive-finance-news-dialog";
-import { RestoreFinanceNewsDialog } from "@/src/features/finance-news/components/restore-finance-news-dialog";
-import { PermanentDeleteFinanceNewsDialog } from "@/src/features/finance-news/components/permanent-delete-finance-news-dialog";
-import { CreateFinanceNewsModal } from "@/src/features/finance-news/components/create-finance-news-modal";
+const CreateFinanceNewsModal = dynamic(
+  () =>
+    import("@/src/features/finance-news/components/create-finance-news-modal").then(
+      (mod) => ({ default: mod.CreateFinanceNewsModal }),
+    ),
+  { ssr: false },
+);
+
+const StatusFinanceNewsDialog = dynamic(
+  () =>
+    import("@/src/features/finance-news/components/status-finance-news-dialog").then(
+      (mod) => ({ default: mod.StatusFinanceNewsDialog }),
+    ),
+  { ssr: false },
+);
+
+const ArchiveFinanceNewsDialog = dynamic(
+  () =>
+    import("@/src/features/finance-news/components/archive-finance-news-dialog").then(
+      (mod) => ({ default: mod.ArchiveFinanceNewsDialog }),
+    ),
+  { ssr: false },
+);
+
+const RestoreFinanceNewsDialog = dynamic(
+  () =>
+    import("@/src/features/finance-news/components/restore-finance-news-dialog").then(
+      (mod) => ({ default: mod.RestoreFinanceNewsDialog }),
+    ),
+  { ssr: false },
+);
+
+const PermanentDeleteFinanceNewsDialog = dynamic(
+  () =>
+    import(
+      "@/src/features/finance-news/components/permanent-delete-finance-news-dialog"
+    ).then((mod) => ({ default: mod.PermanentDeleteFinanceNewsDialog })),
+  { ssr: false },
+);
 import {
   FinanceNewsBulkActionsToolbar,
   type BulkFinanceNewsAction,
@@ -535,16 +570,19 @@ export function FinanceNewsPage() {
         )}
       </Card>
 
-      <CreateFinanceNewsModal
-        open={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onSuccess={() => {
-          void refetch();
-        }}
-      />
+      {isCreateOpen ? (
+        <CreateFinanceNewsModal
+          open={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+          onSuccess={() => {
+            void refetch();
+          }}
+        />
+      ) : null}
 
+      {statusMode !== null ? (
       <StatusFinanceNewsDialog
-        open={statusMode !== null}
+        open
         item={selectedItem}
         mode={statusMode ?? "activate"}
         isLoading={isActivating || isDeactivating}
@@ -567,9 +605,11 @@ export function FinanceNewsPage() {
           }
         }}
       />
+      ) : null}
 
+      {isArchiveOpen ? (
       <ArchiveFinanceNewsDialog
-        open={isArchiveOpen}
+        open
         item={selectedItem}
         isLoading={isDeleting}
         onClose={() => setIsArchiveOpen(false)}
@@ -586,9 +626,11 @@ export function FinanceNewsPage() {
           }
         }}
       />
+      ) : null}
 
+      {isRestoreOpen ? (
       <RestoreFinanceNewsDialog
-        open={isRestoreOpen}
+        open
         item={selectedItem}
         isLoading={isRestoring}
         onClose={() => setIsRestoreOpen(false)}
@@ -605,9 +647,11 @@ export function FinanceNewsPage() {
           }
         }}
       />
+      ) : null}
 
+      {isPermanentDeleteOpen ? (
       <PermanentDeleteFinanceNewsDialog
-        open={isPermanentDeleteOpen}
+        open
         item={selectedItem}
         isLoading={isPermanentDeleting}
         onClose={() => setIsPermanentDeleteOpen(false)}
@@ -626,6 +670,7 @@ export function FinanceNewsPage() {
           }
         }}
       />
+      ) : null}
 
       <ConfirmDialog
         open={bulkConfirmAction !== null}

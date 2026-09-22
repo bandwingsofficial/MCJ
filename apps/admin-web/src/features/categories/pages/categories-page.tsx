@@ -2,6 +2,7 @@
 
 
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 
 
@@ -38,17 +39,53 @@ import { CategoryTable } from "@/src/features/categories/components/category-tab
 
 import { CategorySummaryHeader } from "@/src/features/categories/components/category-summary-header";
 
-import { CreateCategoryModal } from "@/src/features/categories/components/create-category-modal";
+const CreateCategoryModal = dynamic(
+  () =>
+    import("@/src/features/categories/components/create-category-modal").then(
+      (mod) => ({ default: mod.CreateCategoryModal }),
+    ),
+  { ssr: false },
+);
 
-import { EditCategoryModal } from "@/src/features/categories/components/edit-category-modal";
+const EditCategoryModal = dynamic(
+  () =>
+    import("@/src/features/categories/components/edit-category-modal").then(
+      (mod) => ({ default: mod.EditCategoryModal }),
+    ),
+  { ssr: false },
+);
 
-import { StatusCategoryDialog } from "@/src/features/categories/components/status-category-dialog";
+const StatusCategoryDialog = dynamic(
+  () =>
+    import("@/src/features/categories/components/status-category-dialog").then(
+      (mod) => ({ default: mod.StatusCategoryDialog }),
+    ),
+  { ssr: false },
+);
 
-import { ArchiveCategoryDialog } from "@/src/features/categories/components/archive-category-dialog";
+const ArchiveCategoryDialog = dynamic(
+  () =>
+    import("@/src/features/categories/components/archive-category-dialog").then(
+      (mod) => ({ default: mod.ArchiveCategoryDialog }),
+    ),
+  { ssr: false },
+);
 
-import { RestoreCategoryDialog } from "@/src/features/categories/components/restore-category-dialog";
+const RestoreCategoryDialog = dynamic(
+  () =>
+    import("@/src/features/categories/components/restore-category-dialog").then(
+      (mod) => ({ default: mod.RestoreCategoryDialog }),
+    ),
+  { ssr: false },
+);
 
-import { PermanentDeleteCategoryDialog } from "@/src/features/categories/components/permanent-delete-category-dialog";
+const PermanentDeleteCategoryDialog = dynamic(
+  () =>
+    import(
+      "@/src/features/categories/components/permanent-delete-category-dialog"
+    ).then((mod) => ({ default: mod.PermanentDeleteCategoryDialog })),
+  { ssr: false },
+);
 
 import {
 
@@ -1200,48 +1237,33 @@ export function CategoriesPage() {
 
         </Card>
 
-      <CreateCategoryModal
+      {createOpen ? (
+        <CreateCategoryModal
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onSuccess={() => {
+            void refetch();
+          }}
+        />
+      ) : null}
 
-        open={createOpen}
+      {editOpen && selectedCategory ? (
+        <EditCategoryModal
+          open={editOpen}
+          category={selectedCategory}
+          onClose={() => {
+            setEditOpen(false);
+            setSelectedCategory(null);
+          }}
+          onSuccess={() => {
+            void refetch();
+          }}
+        />
+      ) : null}
 
-        onClose={() => setCreateOpen(false)}
-
-        onSuccess={() => {
-
-          void refetch();
-
-        }}
-
-      />
-
-
-
-      <EditCategoryModal
-
-        open={editOpen}
-
-        category={selectedCategory}
-
-        onClose={() => {
-
-          setEditOpen(false);
-
-          setSelectedCategory(null);
-
-        }}
-
-        onSuccess={() => {
-
-          void refetch();
-
-        }}
-
-      />
-
-
-
+      {dialogAction === "activate" || dialogAction === "deactivate" ? (
       <StatusCategoryDialog
-        open={dialogAction === "activate" || dialogAction === "deactivate"}
+        open
         category={selectedCategory}
         mode={dialogAction === "activate" ? "activate" : "deactivate"}
         isLoading={actionLoading || dependencyLoading}
@@ -1257,10 +1279,12 @@ export function CategoriesPage() {
         onClose={closeDialog}
         onConfirm={handleConfirmDialog}
       />
+      ) : null}
 
+      {dialogAction === "archive" ? (
       <ArchiveCategoryDialog
 
-        open={dialogAction === "archive"}
+        open
 
         category={selectedCategory}
 
@@ -1273,12 +1297,12 @@ export function CategoriesPage() {
         onConfirm={handleConfirmDialog}
 
       />
+      ) : null}
 
-
-
+      {dialogAction === "restore" ? (
       <RestoreCategoryDialog
 
-        open={dialogAction === "restore"}
+        open
 
         category={selectedCategory}
 
@@ -1289,12 +1313,12 @@ export function CategoriesPage() {
         onConfirm={handleConfirmDialog}
 
       />
+      ) : null}
 
-
-
+      {dialogAction === "permanent-delete" ? (
       <PermanentDeleteCategoryDialog
 
-        open={dialogAction === "permanent-delete"}
+        open
 
         category={selectedCategory}
 
@@ -1317,8 +1341,7 @@ export function CategoriesPage() {
         onConfirm={handleConfirmDialog}
 
       />
-
-
+      ) : null}
 
       <ConfirmDialog
 
