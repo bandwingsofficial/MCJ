@@ -4,6 +4,7 @@ export interface BranchOpsApiError {
   message?: string;
   field?: string;
   errors?: Record<string, string[] | string>;
+  meta?: Record<string, unknown>;
 }
 
 export function parseBranchOpsError(error: unknown): BranchOpsApiError {
@@ -30,12 +31,16 @@ export function parseBranchOpsError(error: unknown): BranchOpsApiError {
     ? rawMessage[0]
     : rawMessage;
 
+  const meta = response?.data?.meta;
+
   return {
     status: response?.status,
     code: response?.data?.code,
     message,
-    field: response?.data?.meta?.field,
+    field:
+      typeof meta?.field === "string" ? meta.field : undefined,
     errors: response?.data?.errors,
+    meta,
   };
 }
 

@@ -1041,6 +1041,17 @@ export class BranchOperationsController {
     };
   }
 
+  @Get('users/trainer-options')
+  @Roles(BranchUserRole.BRANCH_MANAGER)
+  @Permissions(Permission.BRANCH_USER_READ)
+  async listTrainerUserOptions(@CurrentBranchUser() user: BranchAuthUser) {
+    return {
+      success: true,
+      message: 'Branch trainer account options fetched successfully',
+      data: await this.staff.listTrainerAccountOptions(user),
+    };
+  }
+
   @Get('users')
   @Roles(BranchUserRole.BRANCH_MANAGER)
   @Permissions(Permission.BRANCH_USER_READ)

@@ -66,10 +66,7 @@ export class BranchOperationsAccessService {
     const rows = await this.prisma.batchFaculty.findMany({
       where: {
         branchUserId: user.sub,
-        batch: {
-          branchId: user.branchId,
-          isDeleted: false,
-        },
+        batch: facultyBranchBatchWhere(user.branchId),
       },
       select: { batchId: true },
     });
@@ -106,16 +103,15 @@ export class BranchOperationsAccessService {
 
   async assertBatchInBranch(batchId: string, branchId: string) {
     const batch = await this.prisma.batch.findFirst({
-      where: { id: batchId, isDeleted: false },
-      select: { id: true, branchId: true, name: true, isActive: true },
+      where: {
+        id: batchId,
+        ...facultyBranchBatchWhere(branchId),
+      },
+      select: { id: true, name: true, isActive: true },
     });
 
     if (!batch) {
       throw new NotFoundException('Batch not found');
-    }
-
-    if (batch.branchId !== branchId) {
-      throw new ForbiddenException('Branch access denied');
     }
 
     return batch;

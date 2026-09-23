@@ -13,11 +13,74 @@ export function formatBatchDate(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value.slice(0, 10);
   return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
+    day: "numeric",
     month: "short",
     year: "numeric",
     timeZone: "UTC",
   }).format(date);
+}
+
+export function formatBatchDateRange(
+  startDate?: string | null,
+  endDate?: string | null,
+): string {
+  const start = formatBatchDate(startDate);
+
+  if (!endDate || endDate === startDate) {
+    return start;
+  }
+
+  const end = formatBatchDate(endDate);
+
+  if (end === start) {
+    return start;
+  }
+
+  return `${start} → ${end}`;
+}
+
+type BatchTimingsLike = {
+  timings?: Array<{
+    name?: string | null;
+    startTime?: string | null;
+    endTime?: string | null;
+  }> | null;
+  startTime?: string | null;
+  endTime?: string | null;
+};
+
+/** Parent-batch schedule summary (all modes/timings on one row). */
+export function formatBatchTimingsSummary(batch: BatchTimingsLike): string {
+  const timings = batch.timings ?? [];
+  const count = timings.length;
+
+  if (count === 0) {
+    return formatBatchTiming(batch.startTime, batch.endTime);
+  }
+
+  if (count === 1) {
+    const timing = timings[0];
+    const name = timing.name?.trim();
+    const range = formatBatchTiming(timing.startTime, timing.endTime);
+    if (name && range !== "—") {
+      return `${name} · ${range}`;
+    }
+    if (name) {
+      return name;
+    }
+    return range;
+  }
+
+  return `${count} Batch Timings`;
+}
+
+export function formatBatchTimingNames(
+  batch: Pick<BatchTimingsLike, "timings">,
+): string {
+  return (batch.timings ?? [])
+    .map((timing) => timing.name?.trim())
+    .filter(Boolean)
+    .join(" • ");
 }
 
 export function formatBatchTime(value?: string | null) {

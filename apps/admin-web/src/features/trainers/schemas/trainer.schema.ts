@@ -6,6 +6,11 @@ import {
   TRAINER_GENDERS,
   TRAINER_TYPES,
 } from "@/src/features/trainers/constants/trainer.constants";
+import {
+  normalizeGender,
+  normalizePhoneForIndianForm,
+  normalizeTrainerType,
+} from "@/src/features/trainers/utils/trainer-form-normalize.utils";
 
 import {
   countWords,
@@ -70,13 +75,19 @@ export const createTrainerSchema = z.object({
 
   email: requiredEmail,
 
-  phone: requiredPhone,
+  phone: z.preprocess(
+    (value) => normalizePhoneForIndianForm(value),
+    requiredPhone,
+  ),
 
   profileImageFileId: z.string().optional(),
 
   employeeCode: z.string().optional(),
 
-  gender: z.enum(TRAINER_GENDERS).optional(),
+  gender: z.preprocess(
+    (value) => normalizeGender(value),
+    z.enum(TRAINER_GENDERS).optional(),
+  ),
 
   bio: z
     .string()
@@ -132,7 +143,10 @@ export const createTrainerSchema = z.object({
 
   skills: z.array(z.string()).default([]),
 
-  trainerType: z.enum(TRAINER_TYPES),
+  trainerType: z.preprocess(
+    (value) => normalizeTrainerType(value),
+    z.enum(TRAINER_TYPES),
+  ),
 
   linkedInUrl: optionalUrl,
 

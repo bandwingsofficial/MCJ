@@ -22,19 +22,45 @@ export function resolveAssignedCourses<T extends { id: string }>(
 }
 
 /**
- * Same merge as Admin `getUniqueBatchTrainers`:
- * BatchTrainer + BatchCourse.trainer + TrainerCourse on assigned courses.
+ * Trainers scoped to a parent batch (Admin batch trainers panel / BatchTrainer):
+ * BatchTrainer rows plus trainers on this batch's BatchCourse assignments only.
+ * Does not include course-wide TrainerCourse links.
  */
 export function resolveAssignedTrainers<T extends { id: string }>(
   batchTrainers: Array<T | null | undefined>,
   assignmentTrainers: Array<T | null | undefined>,
-  courseTrainers: Array<T | null | undefined>,
+): T[] {
+  return uniqueById([...batchTrainers, ...assignmentTrainers]);
+}
+
+/** BatchCourse.trainerId only — not course-wide TrainerCourse links. */
+export function batchCourseRowTrainers<T extends { id: string }>(
+  batchCourses: Array<{ trainer?: T | null }>,
+): T[] {
+  return uniqueById(batchCourses.map((row) => row.trainer));
+}
+
+/** Parent batch trainers: BatchTrainer + batch-course rows + branch batch/timing assignments. */
+export function resolveParentBatchAssignedTrainers<T extends { id: string }>(
+  batchTrainers: Array<T | null | undefined>,
+  batchCourses: Array<{ trainer?: T | null }>,
+  branchBatchTrainers: Array<T | null | undefined>,
 ): T[] {
   return uniqueById([
     ...batchTrainers,
-    ...assignmentTrainers,
-    ...courseTrainers,
+    ...batchCourseRowTrainers(batchCourses),
+    ...branchBatchTrainers,
   ]);
+}
+
+/**
+ * Branch-ops UI: trainers come only from Admin Branch Management assignments
+ * (BranchTrainer rows scoped to this branch + batch/timing).
+ */
+export function resolveBranchBatchDisplayTrainers<T extends { id: string }>(
+  branchBatchTrainers: Array<T | null | undefined>,
+): T[] {
+  return uniqueById(branchBatchTrainers);
 }
 
 /**
@@ -48,7 +74,6 @@ export function hydrateFacultyBatchRelations<
   assignmentCourses: C[];
   batchTrainers: Array<T | null | undefined>;
   assignmentTrainers: Array<T | null | undefined>;
-  courseTrainers: Array<T | null | undefined>;
 }): { course: C | null; trainers: T[] } {
   return {
     course:
@@ -57,7 +82,6 @@ export function hydrateFacultyBatchRelations<
     trainers: resolveAssignedTrainers(
       params.batchTrainers,
       params.assignmentTrainers,
-      params.courseTrainers,
     ),
   };
 }

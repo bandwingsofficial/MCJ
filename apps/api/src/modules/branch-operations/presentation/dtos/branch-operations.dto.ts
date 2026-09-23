@@ -18,6 +18,7 @@ import {
   MinLength,
   ArrayMinSize,
   ValidateNested,
+  ValidateIf,
 } from 'class-validator';
 import {
   AssessmentType,
@@ -665,27 +666,33 @@ export class UpdateApplicationStatusDto {
 }
 
 export class CreateBranchStaffDto {
+  @IsOptional()
+  @IsUUID()
+  trainerId?: string;
+
   @Transform(({ value }) =>
     typeof value === 'string' ? value.trim() : value,
   )
+  @ValidateIf((dto: CreateBranchStaffDto) => !dto.trainerId)
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
   @Matches(/^[A-Za-z][A-Za-z .'-]*$/, {
     message: 'Enter a valid first name',
   })
-  firstName!: string;
+  firstName?: string;
 
   @Transform(({ value }) =>
     typeof value === 'string' ? value.trim() : value,
   )
+  @ValidateIf((dto: CreateBranchStaffDto) => !dto.trainerId)
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
   @Matches(/^[A-Za-z][A-Za-z .'-]*$/, {
     message: 'Enter a valid last name',
   })
-  lastName!: string;
+  lastName?: string;
 
   @Transform(({ value }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
@@ -696,11 +703,12 @@ export class CreateBranchStaffDto {
   @Transform(({ value }) =>
     typeof value === 'string' ? value.trim() : value,
   )
+  @ValidateIf((dto: CreateBranchStaffDto) => !dto.trainerId)
   @IsString()
   @Matches(/^[6-9]\d{9}$/, {
     message: 'Enter a valid 10-digit mobile number',
   })
-  phone!: string;
+  phone?: string;
 
   @IsString()
   @MinLength(8)
@@ -835,6 +843,10 @@ export class FacultyDashboardQueryDto {
 }
 
 export class UpdateBranchStaffDto {
+  @IsOptional()
+  @IsUUID()
+  trainerId?: string;
+
   @IsOptional()
   @Transform(({ value }) =>
     typeof value === 'string' ? value.trim() : value,

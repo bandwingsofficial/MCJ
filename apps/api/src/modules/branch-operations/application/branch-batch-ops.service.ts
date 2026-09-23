@@ -9,6 +9,7 @@ import {
   DayOfWeek,
   EnrollmentStatus,
   Prisma,
+  TrainerStatus,
 } from '@prisma/client';
 
 import type { BranchAuthUser } from '@common/decorators/current-branch-user.decorator';
@@ -23,12 +24,14 @@ import { resolveBatchTimingScope } from '@modules/batch/infrastructure/utils/res
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BranchOperationsAccessService } from './branch-operations-access.service';
 import {
-  resolveAssignedTrainers,
+  resolveBranchBatchDisplayTrainers,
   hydrateFacultyBatchRelations,
+  batchCourseRowTrainers,
   uniqueById,
 } from './batch-relation-resolve';
 import {
   facultyBatchStudentWhere,
+  facultyBranchBatchWhere,
   facultyBranchEnrollmentWhere,
 } from './faculty-batch-query';
 import { formatAttendanceSessionLabel } from './attendance-session.util';
@@ -63,6 +66,8 @@ const TRAINER_SELECT = {
   experienceYears: true,
   specialization: true,
   profileImageUrl: true,
+  status: true,
+  isDeleted: true,
 } as const;
 
 const COURSE_SELECT = {
@@ -140,9 +145,16 @@ export class BranchBatchOpsService {
       orderBy: { createdAt: 'desc' },
     });
     const batchIds = batches.map((batch) => batch.id);
-    const [assignments, admittedCounts] = await Promise.all([
+    const [
+      assignments,
+      admittedCounts,
+      branchCourseIds,
+      branchBatchTrainersByBatchId,
+    ] = await Promise.all([
       this.assignmentsByBatchId(batchIds),
       this.admittedEnrollmentCounts(batchIds),
+      this.branchLinkedCourseIdSet(user.branchId),
+      this.branchBatchAssignmentTrainersByBatchId(user.branchId, batchIds),
     ]);
 
     return batches.map((batch) =>
@@ -150,6 +162,9 @@ export class BranchBatchOpsService {
         assignments: assignments.get(batch.id) ?? [],
         admittedByTiming: admittedCounts.byTiming,
         admittedByBatch: admittedCounts.byBatch,
+        branchBatchTrainers:
+          branchBatchTrainersByBatchId.get(batch.id) ?? [],
+        branchCourseIds,
       }),
     );
   }
@@ -158,7 +173,10 @@ export class BranchBatchOpsService {
     await this.access.assertFacultyCanAccessBatch(user, batchId);
 
     const batch = await this.prisma.batch.findFirst({
-      where: { id: batchId, isDeleted: false, branchId: user.branchId },
+      where: {
+        id: batchId,
+        ...facultyBranchBatchWhere(user.branchId),
+      },
       include: this.batchListInclude(),
     });
 
@@ -166,10 +184,18 @@ export class BranchBatchOpsService {
       throw new NotFoundException('Batch not found');
     }
 
-    const [students, assignments, admittedCounts] = await Promise.all([
+    const [
+      students,
+      assignments,
+      admittedCounts,
+      branchBatchTrainersByBatchId,
+      branchCourseIds,
+    ] = await Promise.all([
       this.listBatchStudents(user, batchId),
       this.batchCourseRepo.findByBatchId(batchId),
       this.admittedEnrollmentCounts([batchId]),
+      this.branchBatchAssignmentTrainersByBatchId(user.branchId, [batchId]),
+      this.branchLinkedCourseIdSet(user.branchId),
     ]);
 
     return {
@@ -178,6 +204,9 @@ export class BranchBatchOpsService {
         admittedByTiming: admittedCounts.byTiming,
         admittedByBatch: admittedCounts.byBatch,
         enrolledOverride: students.length,
+        branchBatchTrainers:
+          branchBatchTrainersByBatchId.get(batchId) ?? [],
+        branchCourseIds,
       }),
       students,
     };
@@ -203,8 +232,7 @@ export class BranchBatchOpsService {
     const batch = await this.prisma.batch.findFirst({
       where: {
         id: scope.batchId,
-        isDeleted: false,
-        branchId: user.branchId,
+        ...facultyBranchBatchWhere(user.branchId),
       },
       include: this.batchListInclude(),
     });
@@ -219,9 +247,18 @@ export class BranchBatchOpsService {
       throw new NotFoundException('Batch timing not found');
     }
 
-    const [assignments, admittedCounts] = await Promise.all([
+    const [
+      assignments,
+      admittedCounts,
+      branchBatchTrainersByBatchId,
+      branchCourseIds,
+    ] = await Promise.all([
       this.batchCourseRepo.findByBatchId(scope.batchId),
       this.admittedEnrollmentCounts([scope.batchId]),
+      this.branchBatchAssignmentTrainersByBatchId(user.branchId, [
+        scope.batchId,
+      ]),
+      this.branchLinkedCourseIdSet(user.branchId),
     ]);
 
     const admittedByTiming = admittedCounts.byTiming;
@@ -232,6 +269,9 @@ export class BranchBatchOpsService {
         assignments,
         admittedByTiming,
         admittedByBatch: admittedCounts.byBatch,
+        branchBatchTrainers:
+          branchBatchTrainersByBatchId.get(scope.batchId) ?? [],
+        branchCourseIds,
       }),
       timing: {
         id: timing.id,
@@ -353,13 +393,22 @@ export class BranchBatchOpsService {
     await this.access.assertFacultyCanAccessBatch(user, batchId);
 
     const batch = await this.prisma.batch.findFirst({
-      where: { id: batchId, isDeleted: false, branchId: user.branchId },
+      where: {
+        id: batchId,
+        ...facultyBranchBatchWhere(user.branchId),
+      },
       include: {
         course: {
           select: COURSE_SELECT,
         },
         trainers: {
           include: { trainer: { select: TRAINER_SELECT } },
+        },
+        batchCourses: {
+          where: { isDeleted: false },
+          select: {
+            trainer: { select: TRAINER_SELECT },
+          },
         },
       },
     });
@@ -368,11 +417,18 @@ export class BranchBatchOpsService {
       throw new NotFoundException('Batch not found');
     }
 
-    const assignments = await this.batchCourseRepo.findByBatchId(batchId);
+    const [assignments, branchCourseIds, branchBatchTrainersByBatchId] =
+      await Promise.all([
+        this.batchCourseRepo.findByBatchId(batchId),
+        this.branchLinkedCourseIdSet(user.branchId),
+        this.branchBatchAssignmentTrainersByBatchId(user.branchId, [batchId]),
+      ]);
     const courseIds = uniqueById([
       ...assignments.map((item) => ({ id: item.courseId })),
       batch.courseId ? { id: batch.courseId } : null,
-    ]).map((item) => item.id);
+    ])
+      .map((item) => item.id)
+      .filter((id) => branchCourseIds.has(id));
 
     const loadedCourses = courseIds.length
       ? await this.prisma.course.findMany({
@@ -395,12 +451,8 @@ export class BranchBatchOpsService {
     );
 
     const trainers = this.uniqueTrainers(
-      resolveAssignedTrainers<TrainerLike>(
-        batch.trainers.map((item) => item.trainer),
-        assignments.flatMap((item) => item.trainers),
-        courses.flatMap((course) =>
-          (course.trainers ?? []).map((item) => item.trainer),
-        ),
+      resolveBranchBatchDisplayTrainers<TrainerLike>(
+        branchBatchTrainersByBatchId.get(batchId) ?? [],
       ),
     );
 
@@ -1349,6 +1401,8 @@ export class BranchBatchOpsService {
       enrolledOverride?: number;
       admittedByTiming?: Map<string, number>;
       admittedByBatch?: Map<string, number>;
+      branchBatchTrainers?: TrainerLike[];
+      branchCourseIds?: Set<string>;
     },
   ) {
     const assignments = options?.assignments ?? [];
@@ -1404,39 +1458,47 @@ export class BranchBatchOpsService {
       batch.daysOfWeek,
     );
 
-    const assignmentCourses = assignments.map((item) => ({
-      id: item.course.id,
-      title: item.course.title,
-      code: item.course.code,
-      shortDescription: item.course.shortDescription,
-      description: item.course.description,
-      duration: null as number | null,
-      durationType: null as string | null,
-      category: item.course.category,
-      trainers: [] as CourseSelect['trainers'],
-    }));
+    const branchCourseIds = options?.branchCourseIds;
+    const branchBatchTrainers = options?.branchBatchTrainers ?? [];
+
+    const assignmentCourses = assignments
+      .map((item) => ({
+        id: item.course.id,
+        title: item.course.title,
+        code: item.course.code,
+        shortDescription: item.course.shortDescription,
+        description: item.course.description,
+        duration: null as number | null,
+        durationType: null as string | null,
+        category: item.course.category,
+        trainers: [] as CourseSelect['trainers'],
+      }))
+      .filter(
+        (course) =>
+          !branchCourseIds?.size || branchCourseIds.has(course.id),
+      );
+
+    const linkedBatchCourses = (batch.batchCourses ?? [])
+      .map((item) => item.course)
+      .filter(
+        (course) =>
+          !branchCourseIds?.size || branchCourseIds.has(course.id),
+      );
+
+    const directCourse =
+      batch.course &&
+      (!branchCourseIds?.size || branchCourseIds.has(batch.course.id))
+        ? batch.course
+        : null;
 
     const hydrated = hydrateFacultyBatchRelations<
       CourseSelect,
       TrainerLike
     >({
-      directCourse: batch.course,
-      assignmentCourses: [
-        ...assignmentCourses,
-        ...(batch.batchCourses ?? []).map((item) => item.course),
-      ],
+      directCourse,
+      assignmentCourses: [...assignmentCourses, ...linkedBatchCourses],
       batchTrainers: batch.trainers.map((item) => item.trainer),
-      assignmentTrainers: [
-        ...assignments.flatMap((item) => item.trainers),
-        ...(batch.batchCourses ?? []).map((item) => item.trainer),
-      ],
-      courseTrainers: [
-        ...assignmentCourses,
-        ...(batch.batchCourses ?? []).map((item) => item.course),
-        batch.course,
-      ].flatMap((course) =>
-        (course?.trainers ?? []).map((item) => item.trainer),
-      ),
+      assignmentTrainers: batchCourseRowTrainers(batch.batchCourses ?? []),
     });
     const primaryCourse = hydrated.course;
     const detailedCourse =
@@ -1444,7 +1506,9 @@ export class BranchBatchOpsService {
         .find((course) => course && course.id === primaryCourse?.id) ??
       primaryCourse;
 
-    const trainers = this.uniqueTrainers(hydrated.trainers);
+    const trainers = this.uniqueTrainers(
+      resolveBranchBatchDisplayTrainers<TrainerLike>(branchBatchTrainers),
+    );
 
     return {
       id: batch.id,
@@ -1513,6 +1577,60 @@ export class BranchBatchOpsService {
       }
     }
     return [...unique.values()];
+  }
+
+  private async branchBatchAssignmentTrainersByBatchId(
+    branchId: string,
+    batchIds: string[],
+  ): Promise<Map<string, TrainerLike[]>> {
+    const map = new Map<string, TrainerLike[]>();
+    if (!batchIds.length) {
+      return map;
+    }
+
+    const rows = await this.prisma.branchTrainer.findMany({
+      where: {
+        branchId,
+        assignmentType: 'COURSE_BATCH',
+        OR: [
+          { batchId: { in: batchIds } },
+          { batchTiming: { batchId: { in: batchIds } } },
+        ],
+      },
+      include: {
+        trainer: { select: TRAINER_SELECT },
+        batchTiming: { select: { batchId: true } },
+      },
+    });
+
+    for (const row of rows) {
+      const batchId = row.batchId ?? row.batchTiming?.batchId;
+      const trainer = row.trainer;
+      if (
+        !batchId ||
+        !trainer ||
+        trainer.isDeleted ||
+        trainer.status !== TrainerStatus.ACTIVE
+      ) {
+        continue;
+      }
+
+      const list = map.get(batchId) ?? [];
+      if (!list.some((item) => item.id === trainer.id)) {
+        list.push(trainer);
+      }
+      map.set(batchId, list);
+    }
+
+    return map;
+  }
+
+  private async branchLinkedCourseIdSet(branchId: string): Promise<Set<string>> {
+    const rows = await this.prisma.courseBranch.findMany({
+      where: { branchId },
+      select: { courseId: true },
+    });
+    return new Set(rows.map((row) => row.courseId));
   }
 
   private uniqueTrainers(

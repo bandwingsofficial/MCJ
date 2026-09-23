@@ -93,7 +93,7 @@ export class AdminTrainerController {
         dto.gender,
         dto.bio,
         dto.qualification,
-        dto.experienceYears,
+        dto.experienceYears ?? undefined,
         dto.specialization,
         dto.skills ?? [],
         dto.profileImageFileId,
@@ -304,7 +304,12 @@ export class AdminTrainerController {
         dto.averageRating,
         dto.totalReviews,
         dto.isFeatured,
-        dto.joinedAt ? new Date(dto.joinedAt) : undefined,
+        // undefined = leave unchanged, null = explicitly clear
+        dto.joinedAt === undefined
+          ? undefined
+          : dto.joinedAt === null
+            ? null
+            : new Date(dto.joinedAt),
         user?.sub,
       ),
     );

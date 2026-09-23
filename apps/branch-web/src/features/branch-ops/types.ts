@@ -1096,6 +1096,18 @@ export interface BranchUserItem {
   isActive: boolean;
 }
 
+export interface BranchTrainerUserOption {
+  trainerId: string;
+  firstName: string;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  employeeCode: string | null;
+  hasAccount: boolean;
+  linkedBranchUserId: string | null;
+  linkedBranchUserIsActive: boolean | null;
+}
+
 export interface EnrollmentItem {
   id: string;
   enrollmentNumber: string;

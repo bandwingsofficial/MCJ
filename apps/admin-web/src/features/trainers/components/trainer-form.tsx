@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -10,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Briefcase,
@@ -38,6 +37,7 @@ import {
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
 import { cn } from "@/src/shared/lib/cn";
+import { appToast } from "@/src/shared/components/ui/toast";
 
 import { TrainerBioField } from "@/src/features/trainers/components/trainer-bio-field";
 
@@ -127,14 +127,6 @@ export function TrainerForm({
 }: TrainerFormProps) {
   const isEdit = mode === "edit";
 
-  const initialValues = useMemo(
-    () =>
-      isEdit && trainer
-        ? mapTrainerToFormValues(trainer)
-        : EMPTY_DEFAULT_VALUES,
-    [isEdit, trainer]
-  );
-
   const [skillInput, setSkillInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const selectedImageRef = useRef<File | null>(null);
@@ -156,22 +148,38 @@ export function TrainerForm({
   const [isSuggestingCode, setIsSuggestingCode] =
     useState(false);
   const [editValidationReady, setEditValidationReady] =
-    useState(false);
+    useState(isEdit);
+  const loadedTrainerKeyRef = useRef<string | null>(null);
 
   const {
     register,
     handleSubmit,
-    reset,
     setValue,
     trigger,
     watch,
+    reset,
     formState: { errors, touchedFields, dirtyFields, isSubmitted },
   } = useForm<CreateTrainerFormValues>({
     resolver: zodResolver(createTrainerSchema) as any,
     mode: "onTouched",
     reValidateMode: "onChange",
-    defaultValues: initialValues,
+    defaultValues: EMPTY_DEFAULT_VALUES,
   });
+
+  useEffect(() => {
+    if (!isEdit || !trainer) {
+      loadedTrainerKeyRef.current = null;
+      return;
+    }
+
+    const key = `${trainer.id}:${trainer.updatedAt}`;
+    if (loadedTrainerKeyRef.current === key) {
+      return;
+    }
+
+    loadedTrainerKeyRef.current = key;
+    reset(mapTrainerToFormValues(trainer));
+  }, [isEdit, trainer, reset]);
 
   const currentSkills = watch("skills") || [];
   const values = watch();
@@ -185,7 +193,6 @@ export function TrainerForm({
     }
 
     setEditValidationReady(false);
-    reset(mapTrainerToFormValues(trainer));
     setSuggestedCode(trainer.employeeCode ?? "");
     setPreviewUrl(
       trainer.profileImageUrl
@@ -201,17 +208,12 @@ export function TrainerForm({
     removeImageRef.current = false;
     setImageError(null);
     setImageTouched(false);
-
-    void trigger().then(() => {
-      setEditValidationReady(true);
-    });
+    setEditValidationReady(true);
   }, [
     isEdit,
     trainer?.id,
     trainer?.updatedAt,
     trainer?.profileImageUrl,
-    reset,
-    trigger,
   ]);
 
   useEffect(() => {
@@ -531,17 +533,49 @@ export function TrainerForm({
     values.qualification,
   );
 
+  const resolveFirstValidationMessage = (
+    fieldErrors: FieldErrors<CreateTrainerFormValues>,
+  ): string => {
+    for (const fieldError of Object.values(fieldErrors)) {
+      if (
+        fieldError &&
+        typeof fieldError === "object" &&
+        "message" in fieldError &&
+        typeof fieldError.message === "string" &&
+        fieldError.message.trim()
+      ) {
+        return fieldError.message;
+      }
+    }
+
+    return "Please fix the highlighted fields before saving.";
+  };
+
   return (
     <form
       className="space-y-5 bg-white"
-      onSubmit={handleSubmit(async (formValues) => {
-        await onSubmit(
-          formValues,
-          selectedImageRef.current,
-          removeImageRef.current,
-        );
-      })}
+      onSubmit={handleSubmit(
+        async (formValues) => {
+          await onSubmit(
+            formValues,
+            selectedImageRef.current,
+            removeImageRef.current,
+          );
+        },
+        (fieldErrors) => {
+          appToast.error(resolveFirstValidationMessage(fieldErrors));
+          void trigger();
+        },
+      )}
     >
+      {isEdit ? (
+        <>
+          <input type="hidden" {...register("employeeCode")} />
+          <input type="hidden" {...register("gender")} />
+          <input type="hidden" {...register("trainerType")} />
+          <input type="hidden" {...register("qualification")} />
+        </>
+      ) : null}
       <ValidatedField
         label="Profile Image"
         state={getImageState()}
@@ -652,7 +686,7 @@ export function TrainerForm({
           errorMessage={errors.gender?.message}
         >
           <AppSelect
-            value={watch("gender")}
+            value={watch("gender") ?? ""}
             placeholder="Select gender"
             options={TRAINER_GENDERS.map((gender) => ({
               label: gender,
@@ -681,7 +715,7 @@ export function TrainerForm({
           errorMessage={errors.trainerType?.message}
         >
           <AppSelect
-            value={watch("trainerType")}
+            value={watch("trainerType") ?? ""}
             placeholder="Select trainer type"
             options={TRAINER_TYPES.map((type) => ({
               label: type.replaceAll("_", " "),
@@ -764,7 +798,7 @@ export function TrainerForm({
           errorMessage={errors.qualification?.message}
         >
           <AppSelect
-            value={values.qualification || undefined}
+            value={values.qualification ?? ""}
             placeholder="Select qualification"
             options={qualificationOptions}
             triggerClassName={validatedFieldInputClass(

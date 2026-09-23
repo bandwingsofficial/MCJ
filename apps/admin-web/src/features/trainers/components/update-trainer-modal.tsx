@@ -47,6 +47,7 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 
 import { formatJoinedAtForApi } from "@/src/features/trainers/utils/trainer-date.util";
+import { normalizePhoneForIndianForm } from "@/src/features/trainers/utils/trainer-form-normalize.utils";
 
 import { getUploadFileId } from "@/src/shared/utils/upload-image.util";
 
@@ -60,15 +61,32 @@ interface UpdateTrainerModalProps {
 
   onClose: () => void;
 
-  onSuccess: () => void;
+  onSuccess: () => void | Promise<void>;
 
 }
 
 
 
+/**
+ * Optional text field for an update: the form always provides the field, so
+ * an empty value is an explicit clear and must reach the API as `null`
+ * (omitting it would mean "leave unchanged").
+ */
+function toNullableText(value: string | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
+
+  return trimmed === "" ? null : trimmed;
+}
+
+function toNullableNumber(value: number | undefined): number | null {
+  return typeof value === "number" && !Number.isNaN(value) ? value : null;
+}
+
 function toUpdatePayload(
 
   values: UpdateTrainerFormValues,
+
+  details: TrainerDetails,
 
   profileImageFileId?: string | null,
 
@@ -78,59 +96,40 @@ function toUpdatePayload(
 
     firstName: values.firstName.trim(),
 
-    lastName: values.lastName?.trim()
-
-      ? values.lastName.trim()
-
-      : undefined,
+    lastName: toNullableText(values.lastName),
 
     email: values.email.trim(),
 
-    phone: values.phone.trim(),
+    phone: normalizePhoneForIndianForm(values.phone),
 
     gender: values.gender,
 
-    bio: values.bio?.trim() ? values.bio.trim() : undefined,
+    bio: toNullableText(values.bio),
 
-    qualification: values.qualification?.trim()
+    qualification: toNullableText(values.qualification),
 
-      ? values.qualification.trim()
+    experienceYears: toNullableNumber(values.experienceYears),
 
-      : undefined,
-
-    experienceYears: values.experienceYears,
-
-    specialization: values.specialization?.trim()
-
-      ? values.specialization.trim()
-
-      : undefined,
+    specialization: toNullableText(values.specialization),
 
     skills: values.skills,
 
+    employeeCode:
+      values.employeeCode?.trim() ||
+      details.employeeCode?.trim() ||
+      undefined,
+
     trainerType: values.trainerType,
 
-    linkedInUrl: values.linkedInUrl?.trim()
+    linkedInUrl: toNullableText(values.linkedInUrl),
 
-      ? values.linkedInUrl.trim()
+    youtubeUrl: toNullableText(values.youtubeUrl),
 
-      : undefined,
+    instagramUrl: toNullableText(values.instagramUrl),
 
-    youtubeUrl: values.youtubeUrl?.trim()
+    isFeatured: details.isFeatured,
 
-      ? values.youtubeUrl.trim()
-
-      : undefined,
-
-    instagramUrl: values.instagramUrl?.trim()
-
-      ? values.instagramUrl.trim()
-
-      : undefined,
-
-    isFeatured: false,
-
-    joinedAt: formatJoinedAtForApi(values.joinedAt),
+    joinedAt: formatJoinedAtForApi(values.joinedAt) ?? null,
 
     profileImageFileId,
 
@@ -258,7 +257,7 @@ export function UpdateTrainerModal({
 
   ) => {
 
-    if (!trainer) {
+    if (!trainer || !details) {
 
       return;
 
@@ -300,7 +299,7 @@ export function UpdateTrainerModal({
 
 
 
-      const payload = toUpdatePayload(values, profileImageFileId);
+      const payload = toUpdatePayload(values, details, profileImageFileId);
 
       const success = await updateTrainer(trainer.id, payload);
 
@@ -308,7 +307,7 @@ export function UpdateTrainerModal({
 
       if (success) {
 
-        onSuccess();
+        await onSuccess();
 
         onClose();
 

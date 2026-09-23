@@ -11,35 +11,32 @@ const MORNING = '863c57bc-648f-48f8-9c30-23f115b77f32';
 const EVENING = '1ddbddca-83f4-443b-9d8b-702142498b57';
 
 describe('faculty batch query contracts', () => {
-  it('scopes Faculty batch lists to the JWT branchId', () => {
+  it('scopes Faculty batch lists to BranchBatch assignments for the JWT branchId', () => {
     expect(facultyBranchBatchWhere(MALLESWARAM)).toEqual({
-      branchId: MALLESWARAM,
       isDeleted: false,
+      branchAssignments: { some: { branchId: MALLESWARAM } },
     });
-    expect(facultyBranchBatchWhere(MALLESWARAM).branchId).not.toBe(
-      OTHER_BRANCH,
-    );
+    expect(
+      facultyBranchBatchWhere(MALLESWARAM).branchAssignments?.some?.branchId,
+    ).not.toBe(OTHER_BRANCH);
   });
 
-  it('filters enrolled students by the current batchId and branchId', () => {
+  it('filters enrolled students by the current batchId and branch assignment', () => {
     const morning = facultyBatchStudentWhere(MORNING, MALLESWARAM);
     const evening = facultyBatchStudentWhere(EVENING, MALLESWARAM);
 
     expect(morning.batchId).toBe(MORNING);
     expect(evening.batchId).toBe(EVENING);
     expect(morning.batchId).not.toBe(evening.batchId);
-    expect(morning.branchId).toBeUndefined();
+    expect(morning.branchId).toBe(MALLESWARAM);
     expect(morning.batch).toEqual({
-      branchId: MALLESWARAM,
       isDeleted: false,
+      branchAssignments: { some: { branchId: MALLESWARAM } },
     });
     expect(morning.student).toEqual({ isDeleted: false });
     expect(morning.status).toEqual({
       in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
     });
-    expect(
-      (morning.student as { branchId?: string } | undefined)?.branchId,
-    ).toBeUndefined();
   });
 
   it('does not let a Morning enrollment where match Evening 1', () => {

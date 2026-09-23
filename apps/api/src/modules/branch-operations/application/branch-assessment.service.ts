@@ -1429,14 +1429,6 @@ export class BranchAssessmentService {
       );
     }
 
-    if (assignment.batch.branchId !== user.branchId) {
-      throw new BaseException(
-        ERROR_CODES.BRANCH_ACCESS_DENIED,
-        'Branch access denied',
-        403,
-      );
-    }
-
     if (options.forWrite) {
       ensureBatchSelectableForAssignment({
         status: assignment.batch.status as BatchStatus,

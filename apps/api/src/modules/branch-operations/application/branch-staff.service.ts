@@ -2,7 +2,7 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, TrainerStatus } from '@prisma/client';
 
 import type { BranchAuthUser } from '@common/decorators/current-branch-user.decorator';
 import { ERROR_CODES } from '@common/constants/error-codes';
@@ -106,13 +106,78 @@ export class BranchStaffService {
     return { items, count, skip, take };
   }
 
+  async listTrainerAccountOptions(user: BranchAuthUser) {
+    this.assertManager(user);
+
+    const assignmentRows = await this.prisma.branchTrainer.findMany({
+      where: { branchId: user.branchId },
+      select: { trainerId: true },
+      distinct: ['trainerId'],
+    });
+
+    const trainerIds = assignmentRows.map((row) => row.trainerId);
+    if (!trainerIds.length) {
+      return [];
+    }
+
+    const [trainers, branchUsers] = await Promise.all([
+      this.prisma.trainer.findMany({
+        where: {
+          id: { in: trainerIds },
+          isDeleted: false,
+          status: TrainerStatus.ACTIVE,
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          employeeCode: true,
+        },
+        orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+      }),
+      this.prisma.branchUser.findMany({
+        where: {
+          branchId: user.branchId,
+          isDeleted: false,
+          role: { in: BRANCH_MANAGER_CREATABLE_ROLES },
+        },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          firstName: true,
+          lastName: true,
+          isActive: true,
+        },
+      }),
+    ]);
+
+    return trainers.map((trainer) => {
+      const linkedBranchUser = this.findLinkedBranchUser(trainer, branchUsers);
+      return {
+        trainerId: trainer.id,
+        firstName: trainer.firstName,
+        lastName: trainer.lastName,
+        email: trainer.email,
+        phone: trainer.phone,
+        employeeCode: trainer.employeeCode,
+        hasAccount: Boolean(linkedBranchUser),
+        linkedBranchUserId: linkedBranchUser?.id ?? null,
+        linkedBranchUserIsActive: linkedBranchUser?.isActive ?? null,
+      };
+    });
+  }
+
   async create(
     user: BranchAuthUser,
     input: {
-      firstName: string;
-      lastName: string;
+      trainerId?: string;
+      firstName?: string;
+      lastName?: string;
       email: string;
-      phone: string;
+      phone?: string;
       password: string;
       role: string;
       confirmRestore?: boolean;
@@ -121,12 +186,17 @@ export class BranchStaffService {
     this.assertManager(user);
     const role = this.assertCreatableRole(input.role);
 
+    const identity = await this.resolveCreateIdentityFromTrainer(
+      user.branchId,
+      input,
+    );
+
     const created = await this.createHandler.execute(
       new CreateBranchUserCommand(
-        input.firstName,
-        input.lastName,
+        identity.firstName,
+        identity.lastName,
         input.email,
-        input.phone,
+        identity.phone,
         input.password,
         role,
         getDefaultPermissionsForRole(role),
@@ -157,6 +227,7 @@ export class BranchStaffService {
     user: BranchAuthUser,
     id: string,
     input: {
+      trainerId?: string;
       firstName?: string;
       lastName?: string | null;
       email?: string;
@@ -171,13 +242,29 @@ export class BranchStaffService {
       ? this.assertCreatableRole(input.role)
       : undefined;
 
+    let firstName = input.firstName;
+    let lastName = input.lastName;
+    let phone = input.phone;
+
+    if (input.trainerId) {
+      const identity = await this.resolveUpdateIdentityFromTrainer(
+        user.branchId,
+        id,
+        input.trainerId,
+        input.phone ?? undefined,
+      );
+      firstName = identity.firstName;
+      lastName = identity.lastName;
+      phone = identity.phone;
+    }
+
     return this.updateHandler.execute(
       new UpdateBranchUserCommand(
         id,
-        input.firstName,
-        input.lastName,
+        firstName,
+        lastName,
         input.email,
-        input.phone,
+        phone,
         nextRole,
         nextRole
           ? getDefaultPermissionsForRole(nextRole)
@@ -291,5 +378,231 @@ export class BranchStaffService {
     }
 
     return role;
+  }
+
+  private findLinkedBranchUser<
+    T extends {
+      email: string;
+      phone: string | null;
+    },
+  >(
+    trainer: { email: string | null; phone: string | null },
+    branchUsers: T[],
+  ): T | null {
+    const normalizedTrainerEmail = trainer.email?.trim().toLowerCase();
+
+    for (const branchUser of branchUsers) {
+      if (
+        normalizedTrainerEmail &&
+        branchUser.email.trim().toLowerCase() === normalizedTrainerEmail
+      ) {
+        return branchUser;
+      }
+
+      if (trainer.phone && branchUser.phone === trainer.phone) {
+        return branchUser;
+      }
+    }
+
+    return null;
+  }
+
+  private async resolveCreateIdentityFromTrainer(
+    branchId: string,
+    input: {
+      trainerId?: string;
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+    },
+  ): Promise<{ firstName: string; lastName: string; phone: string }> {
+    if (!input.trainerId) {
+      if (!input.firstName?.trim() || !input.lastName?.trim() || !input.phone) {
+        throw new BaseException(
+          ERROR_CODES.VALIDATION_ERROR,
+          'First name, last name, and phone are required.',
+          400,
+        );
+      }
+
+      return {
+        firstName: input.firstName.trim(),
+        lastName: input.lastName.trim(),
+        phone: input.phone.trim(),
+      };
+    }
+
+    const assigned = await this.prisma.branchTrainer.findFirst({
+      where: { branchId, trainerId: input.trainerId },
+      select: { trainerId: true },
+    });
+
+    if (!assigned) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Selected trainer is not assigned to this branch.',
+        400,
+        { field: 'trainerId' },
+      );
+    }
+
+    const trainer = await this.prisma.trainer.findFirst({
+      where: {
+        id: input.trainerId,
+        isDeleted: false,
+        status: TrainerStatus.ACTIVE,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+      },
+    });
+
+    if (!trainer) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Selected trainer is not available.',
+        400,
+        { field: 'trainerId' },
+      );
+    }
+
+    const branchUsers = await this.prisma.branchUser.findMany({
+      where: {
+        branchId,
+        isDeleted: false,
+        role: { in: BRANCH_MANAGER_CREATABLE_ROLES },
+      },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        firstName: true,
+        lastName: true,
+        isActive: true,
+      },
+    });
+
+    const linked = this.findLinkedBranchUser(trainer, branchUsers);
+    if (linked) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'This trainer already has a branch user account. Edit the existing user instead.',
+        409,
+        {
+          field: 'trainerId',
+          linkedBranchUserId: linked.id,
+        },
+      );
+    }
+
+    const phone = trainer.phone?.trim() || input.phone?.trim();
+    if (!phone) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Trainer phone is required to create a user account.',
+        400,
+        { field: 'phone' },
+      );
+    }
+
+    return {
+      firstName: trainer.firstName.trim(),
+      lastName: (trainer.lastName ?? '').trim() || 'Trainer',
+      phone,
+    };
+  }
+
+  private async resolveUpdateIdentityFromTrainer(
+    branchId: string,
+    branchUserId: string,
+    trainerId: string,
+    phoneInput?: string,
+  ): Promise<{ firstName: string; lastName: string; phone: string }> {
+    const assigned = await this.prisma.branchTrainer.findFirst({
+      where: { branchId, trainerId },
+      select: { trainerId: true },
+    });
+
+    if (!assigned) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Selected trainer is not assigned to this branch.',
+        400,
+        { field: 'trainerId' },
+      );
+    }
+
+    const trainer = await this.prisma.trainer.findFirst({
+      where: {
+        id: trainerId,
+        isDeleted: false,
+        status: TrainerStatus.ACTIVE,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+      },
+    });
+
+    if (!trainer) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Selected trainer is not available.',
+        400,
+        { field: 'trainerId' },
+      );
+    }
+
+    const branchUsers = await this.prisma.branchUser.findMany({
+      where: {
+        branchId,
+        isDeleted: false,
+        role: { in: BRANCH_MANAGER_CREATABLE_ROLES },
+      },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        firstName: true,
+        lastName: true,
+        isActive: true,
+      },
+    });
+
+    const linked = this.findLinkedBranchUser(trainer, branchUsers);
+    if (linked && linked.id !== branchUserId) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'This trainer already has a branch user account. Edit the existing user instead.',
+        409,
+        {
+          field: 'trainerId',
+          linkedBranchUserId: linked.id,
+        },
+      );
+    }
+
+    const phone = trainer.phone?.trim() || phoneInput?.trim();
+    if (!phone) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Trainer phone is required to link this user account.',
+        400,
+        { field: 'phone' },
+      );
+    }
+
+    return {
+      firstName: trainer.firstName.trim(),
+      lastName: (trainer.lastName ?? '').trim() || 'Trainer',
+      phone,
+    };
   }
 }

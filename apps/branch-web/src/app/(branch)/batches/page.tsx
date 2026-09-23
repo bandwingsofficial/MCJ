@@ -6,24 +6,27 @@ import { ChevronRight, LayoutGrid, List, Settings2 } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { FacultyBatchCard } from "@/src/features/branch-ops/components/batches/faculty-batch-card";
+import { BatchLifecycleTabs } from "@/src/features/branch-ops/components/batches/batch-lifecycle-tabs";
 import { BatchStatusBadge } from "@/src/features/branch-ops/components/batches/batch-status-badge";
 import type { BatchListItem } from "@/src/features/branch-ops/types";
 import {
   assignedLabel,
   courseTitle,
-  formatBatchDate,
-  formatBatchMode,
-  formatBatchTiming,
-  getBatchDisplayStatus,
+  formatBatchDateRange,
+  formatBatchTimingNames,
+  formatBatchTimingsSummary,
   isBatchLifecycleGreyed,
   trainerNames,
 } from "@/src/features/branch-ops/utils/batch-display";
+import {
+  getBatchDateLifecycleTab,
+  type BatchDateLifecycleTab,
+} from "@/src/features/branch-ops/utils/batch-selection.utils";
 import { formatRoleLabel } from "@/src/core/auth/roles";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { CategoryPagination } from "@/src/shared/components/ui/category-pagination";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { SearchInput } from "@/src/shared/components/ui/search-input";
-import { AppSelect } from "@/src/shared/components/ui/select";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 import { useAsyncData } from "@/src/shared/hooks/use-async-data";
@@ -36,13 +39,14 @@ const iconButtonClass =
 
 const iconClass = "h-[15px] w-[14px] stroke-[2]";
 
-const columnCount = 10;
+const columnCount = 7;
 
 export default function BatchesPage() {
   const role = useAuthStore((state) => state.user?.role);
   const isFaculty = role === "FACULTY";
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("ALL");
+  const [lifecycleTab, setLifecycleTab] =
+    useState<BatchDateLifecycleTab>("UPCOMING");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [view, setView] = useState<"grid" | "list">(isFaculty ? "grid" : "list");
@@ -61,18 +65,25 @@ export default function BatchesPage() {
     [],
   );
 
+  const lifecycleCounts = useMemo(() => {
+    const batches = data ?? [];
+    return batches.reduce(
+      (counts, batch) => {
+        const tab = getBatchDateLifecycleTab(batch);
+        if (tab === "UPCOMING") counts.upcoming += 1;
+        else if (tab === "ONGOING") counts.ongoing += 1;
+        else counts.expired += 1;
+        return counts;
+      },
+      { upcoming: 0, ongoing: 0, expired: 0 },
+    );
+  }, [data]);
+
   const items = useMemo(() => {
     const term = search.trim().toLowerCase();
     return (data ?? []).filter((batch) => {
-      if (status !== "ALL") {
-        const display = getBatchDisplayStatus(batch);
-        if (status === "EXPIRED") {
-          if (display.key !== "EXPIRED") return false;
-        } else if (status === "COMPLETED") {
-          if (display.key !== "COMPLETED") return false;
-        } else if (batch.status !== status) {
-          return false;
-        }
+      if (getBatchDateLifecycleTab(batch) !== lifecycleTab) {
+        return false;
       }
       if (!term) return true;
       const haystack = [
@@ -87,7 +98,7 @@ export default function BatchesPage() {
         .toLowerCase();
       return haystack.includes(term);
     });
-  }, [data, search, status]);
+  }, [data, search, lifecycleTab]);
 
   const paged = items.slice((page - 1) * pageSize, page * pageSize);
   const total = items.length;
@@ -158,24 +169,6 @@ export default function BatchesPage() {
               />
             </div>
 
-            <div className="w-full sm:w-[140px]">
-              <AppSelect
-                value={status}
-                triggerClassName="h-9 rounded-lg px-2.5 text-sm"
-                onValueChange={(value) => {
-                  setStatus(value);
-                  setPage(1);
-                }}
-                options={[
-                  { label: "All Status", value: "ALL" },
-                  { label: "Upcoming", value: "UPCOMING" },
-                  { label: "Ongoing", value: "ONGOING" },
-                  { label: "Completed", value: "COMPLETED" },
-                  { label: "Expired", value: "EXPIRED" },
-                ]}
-              />
-            </div>
-
             <div
               className="flex h-9 shrink-0 overflow-hidden rounded-lg border border-[#DCE8F5] bg-white"
               role="group"
@@ -212,6 +205,7 @@ export default function BatchesPage() {
             </div>
           </div>
         </div>
+
       </header>
 
       {loading ? (
@@ -226,6 +220,17 @@ export default function BatchesPage() {
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-0 shadow-sm">
+          <div className="px-3 pt-2">
+            <BatchLifecycleTabs
+              counts={lifecycleCounts}
+              activeTab={lifecycleTab}
+              disabled={loading}
+              onChange={(tab) => {
+                setLifecycleTab(tab);
+                setPage(1);
+              }}
+            />
+          </div>
           {view === "grid" ? (
             items.length === 0 ? (
               <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center">
@@ -247,7 +252,7 @@ export default function BatchesPage() {
                 <thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]">
                   <tr>
                     <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-                      Batch
+                      Batch Name
                     </th>
                     <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
                       Course
@@ -256,16 +261,7 @@ export default function BatchesPage() {
                       Trainer
                     </th>
                     <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-                      Mode
-                    </th>
-                    <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-                      Start date
-                    </th>
-                    <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-                      End date
-                    </th>
-                    <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-                      Timing
+                      Schedule
                     </th>
                     <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
                       Status
@@ -346,34 +342,29 @@ export default function BatchesPage() {
                               greyed ? "text-slate-400" : "text-slate-700",
                             )}
                           >
-                            {formatBatchMode(batch.mode)}
-                          </td>
-                          <td
-                            className={cn(
-                              "!px-4 !py-4 align-middle text-sm",
-                              greyed ? "text-slate-400" : "text-slate-700",
-                            )}
-                          >
-                            {formatBatchDate(batch.startDate)}
-                          </td>
-                          <td
-                            className={cn(
-                              "!px-4 !py-4 align-middle text-sm",
-                              greyed ? "text-slate-400" : "text-slate-700",
-                            )}
-                          >
-                            {formatBatchDate(batch.endDate)}
-                          </td>
-                          <td
-                            className={cn(
-                              "!px-4 !py-4 align-middle text-sm",
-                              greyed ? "text-slate-400" : "text-slate-700",
-                            )}
-                          >
-                            {formatBatchTiming(batch.startTime, batch.endTime)}
+                            <div className="flex min-w-0 flex-col gap-0.5 leading-snug">
+                              <span className="truncate">
+                                {formatBatchDateRange(
+                                  batch.startDate,
+                                  batch.endDate,
+                                )}
+                              </span>
+                              <span
+                                className="truncate text-[#647A9B]"
+                                title={
+                                  formatBatchTimingNames(batch) || undefined
+                                }
+                              >
+                                {formatBatchTimingsSummary(batch)}
+                              </span>
+                            </div>
                           </td>
                           <td className="!px-4 !py-4 align-middle">
-                            <BatchStatusBadge status={batch.status} />
+                            <BatchStatusBadge
+                              status={getBatchDateLifecycleTab(batch)}
+                              startDate={batch.startDate}
+                              endDate={batch.endDate}
+                            />
                           </td>
                           <td
                             className={cn(

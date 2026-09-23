@@ -24,6 +24,7 @@ import type {
   UpsertBatchCalendarExceptionRequest,
   BatchStudentItem,
   BranchUserItem,
+  BranchTrainerUserOption,
   CompleteInterviewResult,
   DashboardData,
   EnrollmentItem,
@@ -505,11 +506,15 @@ export const branchOpsApi = {
       apiClient.get("/branch/users", { params }),
     ),
 
+  userTrainerOptions: () =>
+    unwrap<BranchTrainerUserOption[]>(
+      apiClient.get("/branch/users/trainer-options"),
+    ),
+
   createUser: (payload: {
-    firstName: string;
-    lastName: string;
+    trainerId: string;
     email: string;
-    phone: string;
+    phone?: string;
     password: string;
     role: "FACULTY" | "INTERVIEWER";
     confirmRestore?: boolean;
@@ -521,6 +526,7 @@ export const branchOpsApi = {
   updateUser: (
     id: string,
     payload: {
+      trainerId?: string;
       firstName?: string;
       lastName?: string;
       email?: string;

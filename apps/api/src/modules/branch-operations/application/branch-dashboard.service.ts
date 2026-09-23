@@ -12,6 +12,7 @@ import {
 import type { BranchAuthUser } from '@common/decorators/current-branch-user.decorator';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BranchOperationsAccessService } from './branch-operations-access.service';
+import { facultyBranchBatchWhere } from './faculty-batch-query';
 import {
   addUtcDays,
   parseDateOnly,
@@ -52,6 +53,7 @@ export class BranchDashboardService {
 
     const enrollmentWhere = {
       isDeleted: false,
+      branchId: user.branchId,
       status: {
         in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
       },
@@ -226,7 +228,7 @@ export class BranchDashboardService {
         where: { branchId, isDeleted: false },
       }),
       this.prisma.batch.count({
-        where: { branchId, isDeleted: false },
+        where: facultyBranchBatchWhere(branchId),
       }),
       this.prisma.attendance.count({
         where: { branchId, date: today },

@@ -1,5 +1,6 @@
 import { UploadDomainService } from '@modules/uploads/domain/services/upload-domain.service';
 
+import type { TrainerUpdateParams } from '../../domain/entities/trainer.entity';
 import type { TrainerRepository } from '../../domain/repositories/trainer.repository';
 import { TrainerDomainService } from '../../domain/services/trainer-domain.service';
 import { GetTrainerResult } from '../get-trainer/get-trainer.result';
@@ -8,6 +9,28 @@ import { UpdateTrainerCommand } from './update-trainer.command';
 
 const TRAINER_UPLOAD_FOLDER = 'trainers';
 const TRAINER_PROFILE_FILE_NAME = 'profile';
+
+/**
+ * Nullable text column semantics for PATCH:
+ * - undefined  → field not provided, leave the stored value unchanged
+ * - null / ""  → field explicitly cleared, store NULL
+ * - otherwise  → store the trimmed value
+ */
+function toNullableText(
+  value: string | null | undefined,
+): string | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+
+  return trimmed === '' ? null : trimmed;
+}
 
 export class UpdateTrainerHandler {
   constructor(
@@ -74,31 +97,82 @@ export class UpdateTrainerHandler {
       }
     }
 
-    trainer.update({
-      firstName: command.firstName,
-      lastName: command.lastName,
-      email: command.email,
-      phone: command.phone,
-      gender: command.gender,
-      bio: command.bio,
-      qualification: command.qualification,
-      experienceYears: command.experienceYears,
-      specialization: command.specialization,
-      skills: command.skills,
+    const patch: TrainerUpdateParams = {
+      updatedBy: command.updatedBy,
       profileImageFileId: nextProfileImageFileId,
       profileImageUrl: nextProfileImageUrl,
-      employeeCode: command.employeeCode,
-      trainerType: command.trainerType,
-      linkedInUrl: command.linkedInUrl,
-      youtubeUrl: command.youtubeUrl,
-      instagramUrl: command.instagramUrl,
-      branchId: command.branchId,
-      averageRating: command.averageRating,
-      totalReviews: command.totalReviews,
-      isFeatured: command.isFeatured,
-      joinedAt: command.joinedAt,
-      updatedBy: command.updatedBy,
-    });
+    };
+
+    const lastName = toNullableText(command.lastName);
+    const bio = toNullableText(command.bio);
+    const qualification = toNullableText(command.qualification);
+    const specialization = toNullableText(command.specialization);
+    const linkedInUrl = toNullableText(command.linkedInUrl);
+    const youtubeUrl = toNullableText(command.youtubeUrl);
+    const instagramUrl = toNullableText(command.instagramUrl);
+
+    if (command.firstName !== undefined) {
+      patch.firstName = command.firstName;
+    }
+    if (lastName !== undefined) {
+      patch.lastName = lastName;
+    }
+    if (command.email !== undefined) {
+      patch.email = command.email;
+    }
+    if (command.phone !== undefined) {
+      patch.phone = command.phone;
+    }
+    if (command.gender !== undefined) {
+      patch.gender = command.gender;
+    }
+    if (bio !== undefined) {
+      patch.bio = bio;
+    }
+    if (qualification !== undefined) {
+      patch.qualification = qualification;
+    }
+    if (command.experienceYears !== undefined) {
+      patch.experienceYears = command.experienceYears;
+    }
+    if (specialization !== undefined) {
+      patch.specialization = specialization;
+    }
+    if (command.skills !== undefined) {
+      patch.skills = command.skills;
+    }
+    if (command.employeeCode !== undefined) {
+      patch.employeeCode = command.employeeCode;
+    }
+    if (command.trainerType !== undefined) {
+      patch.trainerType = command.trainerType;
+    }
+    if (linkedInUrl !== undefined) {
+      patch.linkedInUrl = linkedInUrl;
+    }
+    if (youtubeUrl !== undefined) {
+      patch.youtubeUrl = youtubeUrl;
+    }
+    if (instagramUrl !== undefined) {
+      patch.instagramUrl = instagramUrl;
+    }
+    if (command.branchId !== undefined) {
+      patch.branchId = command.branchId;
+    }
+    if (command.averageRating !== undefined) {
+      patch.averageRating = command.averageRating;
+    }
+    if (command.totalReviews !== undefined) {
+      patch.totalReviews = command.totalReviews;
+    }
+    if (command.isFeatured !== undefined) {
+      patch.isFeatured = command.isFeatured;
+    }
+    if (command.joinedAt !== undefined) {
+      patch.joinedAt = command.joinedAt;
+    }
+
+    trainer.update(patch);
 
     await this.trainerRepo.save(trainer);
 

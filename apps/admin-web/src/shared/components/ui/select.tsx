@@ -29,11 +29,24 @@ export function AppSelect({
   triggerClassName,
   onValueChange,
 }: AppSelectProps) {
+  const handleValueChange = (nextValue: string) => {
+    // Radix forbids empty-string item values, so "" can never be a user
+    // selection. It is only emitted by Radix's hidden native <select> bridge
+    // when it re-syncs after the controlled `value` changes (e.g. a form
+    // reset) and the native options don't match yet. Propagating it would
+    // wipe the value the form just set, so ignore it.
+    if (nextValue === "") {
+      return;
+    }
+
+    onValueChange(nextValue);
+  };
+
   return (
     <SelectPrimitive.Root
-      value={value}
+      value={value ?? ""}
       disabled={disabled}
-      onValueChange={onValueChange}
+      onValueChange={handleValueChange}
     >
       <SelectPrimitive.Trigger
         className={cn(

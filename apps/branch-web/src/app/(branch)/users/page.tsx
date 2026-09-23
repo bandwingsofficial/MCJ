@@ -483,6 +483,26 @@ export default function BranchUsersPage() {
         onSuccess={() => {
           void query.reload();
         }}
+        onEditExistingUser={(userId) => {
+          const fromList = items.find((item) => item.id === userId);
+          if (fromList) {
+            setEditing(fromList);
+            return;
+          }
+          void branchOpsApi
+            .users({ skip: 0, take: 100 })
+            .then((result) => {
+              const match = result.items.find((item) => item.id === userId);
+              if (match) {
+                setEditing(match);
+              } else {
+                appToast.error("Could not load the existing user account.");
+              }
+            })
+            .catch((error) => {
+              appToast.error(userFacingApiMessage(parseBranchOpsError(error)));
+            });
+        }}
       />
 
       <ResetPasswordModal

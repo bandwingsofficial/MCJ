@@ -5,23 +5,29 @@ export const FACULTY_VISIBLE_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
   EnrollmentStatus.ACTIVE,
 ];
 
+/** Matches Admin batch list: `BranchBatch` rows from Branch Management. */
+export function branchAssignedBatchWhere(
+  branchId: string,
+): Prisma.BatchWhereInput {
+  return {
+    branchAssignments: { some: { branchId } },
+  };
+}
+
 export function facultyBranchBatchWhere(
   branchId: string,
   batchIds?: string[] | null,
 ): Prisma.BatchWhereInput {
   return {
-    branchId,
     isDeleted: false,
+    ...branchAssignedBatchWhere(branchId),
     ...(batchIds ? { id: { in: batchIds } } : {}),
   };
 }
 
 /**
- * Branch Portal enrollments follow Admin's source of truth:
- * Batch (in this branch) -> Enrollment -> Student
- *
- * Do not require Enrollment.branchId or Student.branchId to match.
- * Those fields can lag behind the batch assignment Admin uses.
+ * Branch Portal enrollments follow Admin Branch Management:
+ * `Enrollment.branchId` plus batch still assigned via `BranchBatch`.
  */
 export function facultyBranchEnrollmentWhere(
   branchId: string,
@@ -33,6 +39,7 @@ export function facultyBranchEnrollmentWhere(
 ): Prisma.EnrollmentWhereInput {
   return {
     isDeleted: false,
+    branchId,
     student: { isDeleted: false },
     ...(options?.studentId ? { studentId: options.studentId } : {}),
     ...(options?.batchId ? { batchId: options.batchId } : {}),

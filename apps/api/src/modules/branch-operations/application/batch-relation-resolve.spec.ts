@@ -2,6 +2,8 @@ import {
   hydrateFacultyBatchRelations,
   resolveAssignedCourses,
   resolveAssignedTrainers,
+  resolveBranchBatchDisplayTrainers,
+  resolveParentBatchAssignedTrainers,
   uniqueById,
 } from './batch-relation-resolve';
 
@@ -21,55 +23,73 @@ describe('batch relation resolve', () => {
     expect(resolveAssignedCourses(course, [course])).toEqual([course]);
   });
 
-  it('merges batch trainers with course-level trainers like Admin', () => {
+  it('merges batch trainers with batch-course assignment trainers only', () => {
     const batchTrainer = { id: 't1', name: 'Batch Trainer' };
-    const courseTrainer = { id: 't2', name: 'Course Trainer' };
+    const assignmentTrainer = { id: 't2', name: 'Session Trainer' };
     expect(
-      resolveAssignedTrainers([batchTrainer], [], [courseTrainer]),
-    ).toEqual([batchTrainer, courseTrainer]);
+      resolveAssignedTrainers([batchTrainer], [assignmentTrainer]),
+    ).toEqual([batchTrainer, assignmentTrainer]);
   });
 
-  it('resolves TrainerCourse when BatchTrainer is empty', () => {
-    const courseTrainer = { id: 't2', firstName: 'Akshay', lastName: 'Badiger' };
-    expect(resolveAssignedTrainers([], [null], [courseTrainer])).toEqual([
-      courseTrainer,
-    ]);
+  it('resolveBranchBatchDisplayTrainers returns only branch assignments', () => {
+    const branchTrainer = { id: 't2', firstName: 'Priya', lastName: 'Nair' };
+
+    expect(
+      resolveBranchBatchDisplayTrainers([branchTrainer]).map((t) => t.id),
+    ).toEqual(['t2']);
+    expect(resolveBranchBatchDisplayTrainers([])).toEqual([]);
+  });
+
+  it('resolveParentBatchAssignedTrainers ignores course catalog trainers', () => {
+    const batchTrainer = { id: 't1', firstName: 'Akshay', lastName: 'Badiger' };
+    const batchCourseTrainer = {
+      id: 't1',
+      firstName: 'Akshay',
+      lastName: 'Badiger',
+    };
+    const branchTrainer = { id: 't3', firstName: 'Branch', lastName: 'Only' };
+
+    expect(
+      resolveParentBatchAssignedTrainers(
+        [batchTrainer],
+        [{ trainer: batchCourseTrainer }],
+        [branchTrainer],
+      ).map((t) => t.id),
+    ).toEqual(['t1', 't3']);
   });
 
   it('hydrates Faculty list course from BatchCourse when courseId is null', () => {
+    const assignmentTrainer = {
+      id: 'trainer-1',
+      firstName: 'Akshay',
+      lastName: 'Badiger',
+    };
     const result = hydrateFacultyBatchRelations({
       directCourse: null,
       assignmentCourses: [{ id: 'ca', title: 'CA Foundation' }],
       batchTrainers: [],
-      assignmentTrainers: [null],
-      courseTrainers: [
-        { id: 'trainer-1', firstName: 'Akshay', lastName: 'Badiger' },
-      ],
+      assignmentTrainers: [assignmentTrainer],
     });
 
     expect(result.course).toEqual({ id: 'ca', title: 'CA Foundation' });
-    expect(result.trainers).toEqual([
-      { id: 'trainer-1', firstName: 'Akshay', lastName: 'Badiger' },
-    ]);
+    expect(result.trainers).toEqual([assignmentTrainer]);
   });
 
-  it('hydrates Faculty list trainer from TrainerCourse for morning and evening shapes', () => {
+  it('hydrates batch trainers from BatchTrainer for morning and evening shapes', () => {
     const course = { id: 'ca', title: 'CA Foundation' };
     const trainer = { id: 'trainer-1', firstName: 'Akshay', lastName: 'Badiger' };
 
     const evening = hydrateFacultyBatchRelations({
       directCourse: null,
       assignmentCourses: [course],
-      batchTrainers: [],
-      assignmentTrainers: [null],
-      courseTrainers: [trainer],
+      batchTrainers: [trainer],
+      assignmentTrainers: [],
     });
     const morning = hydrateFacultyBatchRelations({
       directCourse: course,
       assignmentCourses: [course],
-      batchTrainers: [],
-      assignmentTrainers: [null],
-      courseTrainers: [trainer],
+      batchTrainers: [trainer],
+      assignmentTrainers: [],
     });
 
     expect(evening.course?.title).toBe('CA Foundation');

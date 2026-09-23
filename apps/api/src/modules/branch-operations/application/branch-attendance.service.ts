@@ -42,7 +42,11 @@ import {
   monthLabelFromKey,
   type AttendanceStatusCounts,
 } from './attendance-analytics.util';
-import { facultyBatchStudentWhere, facultyBatchTimingStudentWhere } from './faculty-batch-query';
+import {
+  facultyBatchStudentWhere,
+  facultyBatchTimingStudentWhere,
+  facultyBranchBatchWhere,
+} from './faculty-batch-query';
 
 const DAY_INDEX: Record<string, number> = {
   SUNDAY: 0,
@@ -165,7 +169,7 @@ export class BranchAttendanceService {
       where: {
         batchId,
         isDeleted: false,
-        batch: { branchId: user.branchId, isDeleted: false },
+        batch: facultyBranchBatchWhere(user.branchId),
       },
       include: {
         course: { select: { id: true, title: true, code: true } },
@@ -1131,7 +1135,7 @@ export class BranchAttendanceService {
     await this.access.assertFacultyCanAccessBatch(user, batchId);
 
     const batch = await this.prisma.batch.findFirst({
-      where: { id: batchId, isDeleted: false, branchId: user.branchId },
+      where: { id: batchId, ...facultyBranchBatchWhere(user.branchId) },
       select: {
         id: true,
         name: true,
@@ -1314,7 +1318,7 @@ export class BranchAttendanceService {
     await this.access.assertFacultyCanAccessBatch(user, batchId);
 
     const batch = await this.prisma.batch.findFirst({
-      where: { id: batchId, isDeleted: false, branchId: user.branchId },
+      where: { id: batchId, ...facultyBranchBatchWhere(user.branchId) },
       select: {
         id: true,
         name: true,
@@ -1364,7 +1368,7 @@ export class BranchAttendanceService {
           isDeleted: false,
           status: EnrollmentStatus.ADMITTED,
           student: { isDeleted: false },
-          batch: { branchId: user.branchId, isDeleted: false },
+          batch: facultyBranchBatchWhere(user.branchId),
         },
         _count: { _all: true },
       }),
@@ -2081,14 +2085,6 @@ export class BranchAttendanceService {
       );
     }
 
-    if (assignment.batch.branchId !== user.branchId) {
-      throw new BaseException(
-        ERROR_CODES.PERMISSION_DENIED,
-        'Branch access denied',
-        403,
-      );
-    }
-
     if (options.forWrite) {
       ensureBatchSelectableForAssignment({
         status: assignment.batch.status as BatchStatus,
@@ -2150,7 +2146,7 @@ export class BranchAttendanceService {
           where: {
             id: query.batchCourseId,
             isDeleted: false,
-            batch: { branchId: user.branchId, isDeleted: false },
+            batch: facultyBranchBatchWhere(user.branchId),
           },
           select: { id: true, batchId: true },
         });
@@ -2178,7 +2174,7 @@ export class BranchAttendanceService {
           where: {
             id: query.batchTimingId,
             isDeleted: false,
-            batch: { branchId: user.branchId, isDeleted: false },
+            batch: facultyBranchBatchWhere(user.branchId),
           },
           select: { id: true, batchId: true },
         });

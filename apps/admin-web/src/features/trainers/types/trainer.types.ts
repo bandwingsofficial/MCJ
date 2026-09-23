@@ -207,12 +207,16 @@ export interface CreateTrainerRequest {
   joinedAt?: string;
 }
 
+/**
+ * Update semantics: `undefined` (omitted) = leave unchanged,
+ * `null` = explicitly clear the optional field.
+ */
 export interface UpdateTrainerRequest {
   firstName?: string;
 
   profileImageFileId?: string | null;
 
-  lastName?: string;
+  lastName?: string | null;
 
   email?: string;
 
@@ -220,13 +224,13 @@ export interface UpdateTrainerRequest {
 
   gender?: TrainerGender;
 
-  bio?: string;
+  bio?: string | null;
 
-  qualification?: string;
+  qualification?: string | null;
 
-  experienceYears?: number;
+  experienceYears?: number | null;
 
-  specialization?: string;
+  specialization?: string | null;
 
   skills?: string[];
 
@@ -234,11 +238,11 @@ export interface UpdateTrainerRequest {
 
   trainerType?: TrainerType;
 
-  linkedInUrl?: string;
+  linkedInUrl?: string | null;
 
-  youtubeUrl?: string;
+  youtubeUrl?: string | null;
 
-  instagramUrl?: string;
+  instagramUrl?: string | null;
 
   branchId?: string | null;
 
@@ -248,7 +252,7 @@ export interface UpdateTrainerRequest {
 
   isFeatured?: boolean;
 
-  joinedAt?: string;
+  joinedAt?: string | null;
 
   courseIds?: string[];
 }

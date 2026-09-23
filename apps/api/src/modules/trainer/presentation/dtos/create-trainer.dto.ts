@@ -31,6 +31,10 @@ const toNumber = (value: unknown) =>
     ? Number(value)
     : undefined;
 
+/** Preserves an explicit `null` so PATCH can clear a nullable numeric column. */
+const toNullableNumber = (value: unknown) =>
+  value === null || value === '' ? null : toNumber(value);
+
 const emptyStringToUndefined = ({ value }: { value: unknown }) => {
   if (typeof value !== 'string') {
     return value;
@@ -131,13 +135,13 @@ export class CreateTrainerDto {
   @MaxLength(200)
   qualification?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @IsInt()
   @Min(0)
   @Max(80)
-  @Transform(({ value }) => toNumber(value))
-  experienceYears?: number;
+  @Transform(({ value }) => toNullableNumber(value))
+  experienceYears?: number | null;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -221,10 +225,10 @@ export class CreateTrainerDto {
   @IsEnum(TrainerStatus)
   status?: TrainerStatus;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @IsDateString()
-  joinedAt?: string;
+  joinedAt?: string | null;
 
   @ApiPropertyOptional({
     description: 'Comma-separated or JSON string array of course UUIDs',

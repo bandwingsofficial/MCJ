@@ -1,8 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 
-import { ERROR_CODES } from '@common/constants/error-codes';
 import type { BranchAuthUser } from '@common/decorators/current-branch-user.decorator';
-import { BaseException } from '@common/exceptions/base.exception';
 import type { BatchStatus } from '@modules/batch/domain/enums/batch-status.enum';
 import {
   ensureBatchSelectableForAssignment,
@@ -69,14 +67,6 @@ export async function resolveBranchBatchTimingContext(
 
   if (!timing) {
     throw new NotFoundException('Batch timing not found');
-  }
-
-  if (timing.batch.branchId !== user.branchId) {
-    throw new BaseException(
-      ERROR_CODES.BRANCH_ACCESS_DENIED,
-      'Branch access denied',
-      403,
-    );
   }
 
   if (options.forWrite) {

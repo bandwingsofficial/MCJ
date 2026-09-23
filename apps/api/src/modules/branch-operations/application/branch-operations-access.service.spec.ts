@@ -6,7 +6,6 @@ import type { BranchAuthUser } from '@common/decorators/current-branch-user.deco
 import { BranchOperationsAccessService } from './branch-operations-access.service';
 
 const MALLESWARAM = 'b4d1a2fd-42b1-4750-8622-f387116ba23a';
-const OTHER_BRANCH = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 
 function facultyUser(branchId = MALLESWARAM): BranchAuthUser {
   return {
@@ -20,15 +19,10 @@ function facultyUser(branchId = MALLESWARAM): BranchAuthUser {
 }
 
 describe('BranchOperationsAccessService', () => {
-  it('returns 403 when Faculty requests a batch from another branch', async () => {
+  it('returns 404 when Faculty requests a batch not assigned to their branch', async () => {
     const prisma = {
       batch: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: 'other-batch',
-          branchId: OTHER_BRANCH,
-          name: 'Other branch batch',
-          isActive: true,
-        }),
+        findFirst: jest.fn().mockResolvedValue(null),
       },
       batchFaculty: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -38,7 +32,7 @@ describe('BranchOperationsAccessService', () => {
 
     await expect(
       access.assertFacultyCanAccessBatch(facultyUser(), 'other-batch'),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('returns 404 when the batch does not exist', async () => {
@@ -54,7 +48,7 @@ describe('BranchOperationsAccessService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('scopes Faculty batch lists to the authenticated branchId', async () => {
+  it('scopes Faculty batch lists to BranchBatch assignments for the authenticated branchId', async () => {
     const prisma = {
       batchFaculty: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -63,18 +57,19 @@ describe('BranchOperationsAccessService', () => {
     const access = new BranchOperationsAccessService(prisma as never);
     const where = await access.branchBatchWhere(facultyUser());
 
-    expect(where.branchId).toBe(MALLESWARAM);
     expect(where.isDeleted).toBe(false);
+    expect(where.branchAssignments).toEqual({
+      some: { branchId: MALLESWARAM },
+    });
     expect(where.id).toBeUndefined();
   });
 
-  it('allows a student enrolled in the Faculty branch batch even if Student.branchId differs', async () => {
+  it('allows a student enrolled in the branch when Enrollment.branchId matches', async () => {
     const morningId = '863c57bc-648f-48f8-9c30-23f115b77f32';
     const prisma = {
       batch: {
         findFirst: jest.fn().mockResolvedValue({
           id: morningId,
-          branchId: MALLESWARAM,
           name: 'morning',
           isActive: true,
         }),
@@ -103,16 +98,16 @@ describe('BranchOperationsAccessService', () => {
 
     const where = prisma.enrollment.findFirst.mock.calls[0][0].where as {
       branchId?: string;
-      batch?: { branchId: string; isDeleted: boolean };
+      batch?: { branchAssignments: { some: { branchId: string } } };
       studentId: string;
       batchId: string;
     };
     expect(where.studentId).toBe('student-akshay');
     expect(where.batchId).toBe(morningId);
-    expect(where.branchId).toBeUndefined();
+    expect(where.branchId).toBe(MALLESWARAM);
     expect(where.batch).toEqual({
-      branchId: MALLESWARAM,
       isDeleted: false,
+      branchAssignments: { some: { branchId: MALLESWARAM } },
     });
   });
 });

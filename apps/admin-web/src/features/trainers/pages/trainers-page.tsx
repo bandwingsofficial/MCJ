@@ -644,8 +644,8 @@ export function TrainersPage() {
           onClose={() => {
             setIsEditOpen(false);
           }}
-          onSuccess={() => {
-            void refetch();
+          onSuccess={async () => {
+            await refetch();
           }}
         />
       ) : null}

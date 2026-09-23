@@ -22,10 +22,12 @@ export class PrismaTrainerRepository implements TrainerRepository {
     const data = TrainerMapper.toPersistence(trainer);
 
     await this.prisma.$transaction(async (tx) => {
+      const { id, ...updateData } = data;
+
       await tx.trainer.upsert({
         where: { id: trainer.id },
-        update: { ...data },
-        create: { ...data },
+        update: updateData,
+        create: data,
       });
 
       await tx.trainerCourse.deleteMany({

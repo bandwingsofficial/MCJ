@@ -3,7 +3,7 @@ import { BranchUserRole } from '@modules/branch-user/domain/enums/branch-user-ro
 /**
  * Faculty visibility:
  * - No BatchFaculty rows → all batches of the authenticated branch
- *   (Admin assigns batches to a branch via Batch.branchId; that is the source of truth.)
+ *   (Admin assigns batches via BranchBatch in Branch Management; that is the source of truth.)
  * - One or more BatchFaculty rows → only those assigned batches.
  * Branch Manager / staff always see all batches of their branch.
  */

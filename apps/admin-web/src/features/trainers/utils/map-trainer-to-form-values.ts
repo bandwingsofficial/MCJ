@@ -1,25 +1,34 @@
 import type { TrainerDetails } from "@/src/features/trainers/types/trainer.types";
 
 import { toDateInputValue } from "@/src/features/trainers/utils/trainer-date.util";
+import {
+  normalizeGender,
+  normalizePhoneForIndianForm,
+  normalizeTrainerType,
+} from "@/src/features/trainers/utils/trainer-form-normalize.utils";
 
 import type { CreateTrainerFormValues } from "@/src/features/trainers/schemas/trainer.schema";
 
 export function mapTrainerToFormValues(
-  trainer: TrainerDetails
+  trainer: TrainerDetails,
 ): CreateTrainerFormValues {
   return {
-    firstName: trainer.firstName,
+    firstName: trainer.firstName ?? "",
     lastName: trainer.lastName ?? "",
     email: trainer.email ?? "",
-    phone: trainer.phone ?? "",
-    gender: trainer.gender ?? "MALE",
+    phone: normalizePhoneForIndianForm(trainer.phone),
+    gender: normalizeGender(trainer.gender),
     bio: trainer.bio ?? "",
     qualification: trainer.qualification ?? "",
     specialization: trainer.specialization ?? "",
     skills: trainer.skills ?? [],
     employeeCode: trainer.employeeCode ?? "",
-    trainerType: trainer.trainerType,
-    experienceYears: trainer.experienceYears ?? 0,
+    trainerType: normalizeTrainerType(trainer.trainerType),
+    // The field is registered with `valueAsNumber`, which represents an empty
+    // input as NaN. Using NaN (not undefined) makes react-hook-form clear the
+    // DOM input on reset instead of keeping a stale value; the schema
+    // preprocess maps NaN back to "not provided".
+    experienceYears: trainer.experienceYears ?? Number.NaN,
     joinedAt: toDateInputValue(trainer.joinedAt),
     linkedInUrl: trainer.linkedInUrl ?? "",
     youtubeUrl: trainer.youtubeUrl ?? "",

@@ -22,6 +22,7 @@ import {
   summarizeAssessmentMarks,
 } from './assessment-analytics.util';
 import { BranchOperationsAccessService } from './branch-operations-access.service';
+import { facultyBranchEnrollmentWhere } from './faculty-batch-query';
 import {
   addUtcDays,
   getPeriodRange,
@@ -97,11 +98,12 @@ export class FacultyDashboardService {
     const analyticsRange = this.resolveAnalyticsRange(query.from, query.to);
 
     const enrollmentWhere: Prisma.EnrollmentWhereInput = {
-      isDeleted: false,
+      ...facultyBranchEnrollmentWhere(user.branchId, {
+        batchIds: batchIds.length ? batchIds : [],
+      }),
       status: {
         in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
       },
-      batchId: batchIds.length ? { in: batchIds } : { in: [] },
     };
 
     const activeStudents = batchIds.length
@@ -922,12 +924,13 @@ export class FacultyDashboardService {
 
     const allEnrollments = await this.prisma.enrollment.findMany({
       where: {
-        isDeleted: false,
+        ...facultyBranchEnrollmentWhere(user.branchId, {
+          batchId,
+          batchIds: batchId ? undefined : batchIds,
+        }),
         status: {
           in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
         },
-        batchId: batchId ? batchId : { in: batchIds },
-        batch: { branchId: user.branchId, isDeleted: false },
       },
       include: {
         student: {
