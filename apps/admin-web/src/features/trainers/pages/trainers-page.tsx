@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -112,6 +113,9 @@ function getEmptyMessage(filters: TrainerFiltersState): string {
 }
 
 export function TrainersPage() {
+  const searchParams = useSearchParams();
+  const openedTrainerFromQueryRef = useRef<string | null>(null);
+
   const {
     trainers,
     total,
@@ -185,6 +189,63 @@ export function TrainersPage() {
     () => getEmptyMessage(filters),
     [filters],
   );
+
+  useEffect(() => {
+    const trainerId = searchParams.get("trainerId")?.trim();
+
+    if (!trainerId || openedTrainerFromQueryRef.current === trainerId) {
+      return;
+    }
+
+    openedTrainerFromQueryRef.current = trainerId;
+
+    const fromList = trainers.find((trainer) => trainer.id === trainerId);
+
+    if (fromList) {
+      setSelectedTrainer(fromList);
+      setIsEditOpen(true);
+      return;
+    }
+
+    let cancelled = false;
+
+    void trainerService
+      .getTrainer(trainerId)
+      .then((response) => {
+        if (cancelled) {
+          return;
+        }
+
+        const trainer = response.data;
+        setSelectedTrainer({
+          id: trainer.id,
+          firstName: trainer.firstName,
+          lastName: trainer.lastName,
+          email: trainer.email,
+          phone: trainer.phone,
+          qualification: trainer.qualification,
+          specialization: trainer.specialization,
+          employeeCode: trainer.employeeCode,
+          trainerType: trainer.trainerType,
+          profileImageUrl: trainer.profileImageUrl,
+          branchId: trainer.branchId,
+          status: trainer.status,
+          displayOrder: trainer.displayOrder,
+          isDeleted: trainer.isDeleted,
+          deletedAt: trainer.deletedAt,
+          createdAt: trainer.createdAt,
+          updatedAt: trainer.updatedAt,
+        });
+        setIsEditOpen(true);
+      })
+      .catch(() => {
+        openedTrainerFromQueryRef.current = null;
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, trainers]);
 
   const bulkActionLoading =
     isBulkActivating ||

@@ -3,7 +3,8 @@
 
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 
 
@@ -357,6 +358,10 @@ function buildArchiveDescription(
 
 export function CategoriesPage() {
 
+  const searchParams = useSearchParams();
+
+  const openedCategoryFromQueryRef = useRef<string | null>(null);
+
   const {
 
     categories,
@@ -516,6 +521,90 @@ export function CategoriesPage() {
     setSelectedCategoryIds([]);
 
   }, [filters.page, filters.pageSize, filters.status, filters.search]);
+
+
+
+  useEffect(() => {
+
+    const categoryId = searchParams.get("categoryId")?.trim();
+
+    if (!categoryId || openedCategoryFromQueryRef.current === categoryId) {
+
+      return;
+
+    }
+
+    openedCategoryFromQueryRef.current = categoryId;
+
+    const fromList = categories.find((category) => category.id === categoryId);
+
+    if (fromList) {
+
+      setSelectedCategory(fromList);
+
+      setEditOpen(true);
+
+      return;
+
+    }
+
+    let cancelled = false;
+
+    void categoryService
+
+      .getCategory(categoryId)
+
+      .then((response) => {
+
+        if (cancelled) {
+
+          return;
+
+        }
+
+        const category = response.data;
+
+        setSelectedCategory({
+
+          id: category.id,
+
+          name: category.name,
+
+          slug: category.slug,
+
+          description: category.description,
+
+          status: category.status,
+
+          displayOrder: category.displayOrder,
+
+          isDeleted: category.isDeleted,
+
+          createdAt: category.createdAt,
+
+          updatedAt: category.updatedAt,
+
+          thumbnailUrl: category.thumbnailUrl,
+
+        });
+
+        setEditOpen(true);
+
+      })
+
+      .catch(() => {
+
+        openedCategoryFromQueryRef.current = null;
+
+      });
+
+    return () => {
+
+      cancelled = true;
+
+    };
+
+  }, [searchParams, categories]);
 
 
 

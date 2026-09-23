@@ -179,29 +179,67 @@ export function AdminSidebar() {
 
         <div
           className={cn(
-            "flex h-[88px] shrink-0 items-center",
-            collapsed ? "justify-center px-2" : "gap-3 px-5",
+            "flex h-[88px] w-full shrink-0 items-center justify-between border-b border-[#DCE8F5]/70",
+            collapsed ? "gap-1 px-1.5" : "gap-3 px-3",
           )}
         >
-          <div className="relative h-10 w-10 shrink-0">
-            <Image
-              src="/Logo/MCJ_logo.png"
-              alt="MCJ Academy"
-              fill
-              className="object-contain"
-            />
+          <div
+            className={cn(
+              "flex min-w-0 items-center overflow-hidden",
+              collapsed ? "shrink-0" : "min-w-0 flex-1 gap-3",
+            )}
+          >
+            <div
+              className={cn(
+                "relative shrink-0",
+                collapsed ? "h-7 w-7" : "h-10 w-10",
+              )}
+            >
+              <Image
+                src="/Logo/MCJ_logo.png"
+                alt="MCJ Academy"
+                fill
+                className="object-contain"
+              />
+            </div>
+
+            {!collapsed ? (
+              <div className="min-w-0 flex-1 pr-1">
+                <h2 className="truncate text-[15px] font-bold tracking-tight text-[#102A56]">
+                  MCJ Academy
+                </h2>
+                <p className="mt-0.5 truncate text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2563EB]">
+                  Admin Platform
+                </p>
+              </div>
+            ) : null}
           </div>
 
-          {!collapsed ? (
-            <div className="min-w-0">
-              <h2 className="text-[15px] font-bold tracking-tight text-[#102A56]">
-                MCJ Academy
-              </h2>
-              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2563EB]">
-                Admin Platform
-              </p>
-            </div>
-          ) : null}
+          <div
+            className={cn(
+              "flex shrink-0 items-center justify-end",
+              collapsed ? "w-7" : "w-8",
+            )}
+          >
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-expanded={!collapsed}
+              className={cn(
+                "flex shrink-0 items-center justify-center rounded-lg",
+                collapsed ? "h-7 w-7" : "h-8 w-8",
+                "border border-[#DCE8F5] bg-white text-[#102A56]",
+                "shadow-[0_1px_6px_rgba(16,42,86,0.06)] transition-colors hover:bg-[#F8FBFF]",
+              )}
+            >
+              {collapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
 
         <div
@@ -284,19 +322,6 @@ export function AdminSidebar() {
           </SidebarTooltip>
         </div>
 
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-expanded={!collapsed}
-          className="absolute -right-3 bottom-24 z-30 flex h-8 w-8 items-center justify-center rounded-full border border-[#DCE8F5] bg-white text-[#102A56] shadow-[0_2px_10px_rgba(16,42,86,0.08)] transition-colors hover:bg-[#F8FBFF]"
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </button>
       </aside>
 
       <ConfirmDialog
