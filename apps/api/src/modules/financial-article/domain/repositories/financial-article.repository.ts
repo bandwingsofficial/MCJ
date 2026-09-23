@@ -31,6 +31,9 @@ export interface FinancialArticleDetailView {
   bannerUrl: string | null;
   authorName: string;
   authorImage: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  metaKeywords: string | null;
   tags: string[];
   categoryId: string;
   category: FinancialArticleCategoryView;

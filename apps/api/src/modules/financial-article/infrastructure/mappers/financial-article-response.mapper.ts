@@ -5,6 +5,7 @@ import {
   FinancialArticleDetailView,
   FinancialArticleRelatedView,
 } from '../../domain/repositories/financial-article.repository';
+import { FINANCIAL_ARTICLE_DEFAULT_AUTHOR_IMAGE } from '../../domain/constants/financial-article.constants';
 import { FinancialArticleStatus } from '../../domain/enums/financial-article-status.enum';
 
 export const financialArticleDetailInclude = {
@@ -40,7 +41,10 @@ export class FinancialArticleResponseMapper {
       bannerFileId: record.bannerFileId,
       bannerUrl: record.bannerUrl,
       authorName: record.authorName,
-      authorImage: record.authorImage,
+      authorImage: FINANCIAL_ARTICLE_DEFAULT_AUTHOR_IMAGE,
+      metaTitle: record.metaTitle,
+      metaDescription: record.metaDescription,
+      metaKeywords: record.metaKeywords,
       tags: record.tags,
       categoryId: record.categoryId,
       category: this.toCategory(record.category),

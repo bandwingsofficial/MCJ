@@ -11,7 +11,10 @@ import { Checkbox } from "@/src/shared/components/ui/checkbox";
 import type { FinanceNewsListItem } from "@/src/features/finance-news/types/finance-news.types";
 import { withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 import { isArchivedFinanceNews } from "@/src/features/finance-news/utils/finance-news-bulk.utils";
-import { getFinanceNewsManagementStatus } from "@/src/features/finance-news/utils/finance-news-display.utils";
+import {
+  formatFinanceNewsDateTime,
+  getFinanceNewsManagementStatus,
+} from "@/src/features/finance-news/utils/finance-news-display.utils";
 import { FINANCE_ARTICLE_STATUS_LABELS } from "@/src/features/finance-news/constants/finance-news.constants";
 
 import { FinanceNewsStatusBadge } from "./finance-news-status-badge";
@@ -204,14 +207,14 @@ export function FinanceNewsTable({
             <th className="w-12 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Thumbnail
             </th>
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+            <th className="min-w-[12rem] !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Title
-            </th>
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Category
             </th>
             <th className="w-28 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Publish Status
+            </th>
+            <th className="w-36 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Published On
             </th>
             <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Status
@@ -321,7 +324,7 @@ export function FinanceNewsTable({
                     )}
                   </td>
 
-                  <td className="!px-4 !py-4 align-middle">
+                  <td className="min-w-[12rem] !px-4 !py-4 align-middle">
                     <p className="text-sm font-medium leading-snug text-[#102A56]">
                       {item.title}
                     </p>
@@ -332,14 +335,16 @@ export function FinanceNewsTable({
                     ) : null}
                   </td>
 
-                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
-                    {item.category?.name ?? "—"}
-                  </td>
-
                   <td className="!px-4 !py-4 align-middle">
                     <Badge variant="default" className="px-2 py-0 text-[11px] font-semibold leading-5">
                       {FINANCE_ARTICLE_STATUS_LABELS[item.status]}
                     </Badge>
+                  </td>
+
+                  <td className="!px-4 !py-4 align-middle text-xs text-slate-600">
+                    {item.status === "PUBLISHED"
+                      ? formatFinanceNewsDateTime(item.publishedAt)
+                      : "—"}
                   </td>
 
                   <td className="!px-4 !py-4 align-middle">

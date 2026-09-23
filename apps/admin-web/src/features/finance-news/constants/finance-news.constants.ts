@@ -6,6 +6,8 @@ export const FINANCE_NEWS_UPLOAD_FOLDER = "financial-articles";
 
 export const DEFAULT_AUTHOR_NAME = "MCJ Team";
 
+export const FINANCE_ARTICLE_AUTHOR_IMAGE_PATH = "/Logo/MCJ_logo.png";
+
 export const SHORT_DESCRIPTION_MAX_CHARS = 500;
 
 export const FINANCE_ARTICLE_STATUSES: FinanceArticleStatus[] = [

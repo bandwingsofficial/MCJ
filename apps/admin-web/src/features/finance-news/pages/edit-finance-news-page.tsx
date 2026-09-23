@@ -13,6 +13,7 @@ import { FinanceNewsForm } from "@/src/features/finance-news/components/finance-
 import { useUpdateFinanceNews } from "@/src/features/finance-news/hooks/use-update-finance-news";
 import { financeNewsService } from "@/src/features/finance-news/services/finance-news.service";
 import { mapFinanceNewsToFormValues } from "@/src/features/finance-news/utils/map-finance-news-to-form-values";
+import type { FinanceNewsDetails } from "@/src/features/finance-news/types/finance-news.types";
 
 import { withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 
@@ -115,6 +116,7 @@ export function EditFinanceNewsPage({ newsId }: EditFinanceNewsPageProps) {
           }
           isSubmitting={isPending}
           externalErrors={fieldErrors}
+          publishedAt={article.publishedAt}
           onCancel={() => router.push("/finance-news")}
           onSubmit={async (values, files) => {
             const success = await updateFinanceNews(

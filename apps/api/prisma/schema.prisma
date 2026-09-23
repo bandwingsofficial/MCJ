@@ -1487,6 +1487,9 @@ model FinancialArticle {
   bannerUrl        String?
   authorName       String                 @default("MCJ Team")
   authorImage      String?
+  metaTitle        String?
+  metaDescription  String?
+  metaKeywords     String?
   tags             String[]
   categoryId       String
   displayOrder     Int                    @default(0)

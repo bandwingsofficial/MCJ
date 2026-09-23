@@ -14,7 +14,6 @@ import type { FinanceNewsFormValues } from "@/src/features/finance-news/schemas/
 import type { UpdateFinanceNewsRequest } from "@/src/features/finance-news/types/finance-news.types";
 import type { FinanceNewsFormFieldErrors } from "@/src/features/finance-news/utils/finance-news-form-errors";
 
-import { normalizeFinanceNewsSlug } from "@/src/features/finance-news/schemas/finance-news.schema";
 import { DEFAULT_AUTHOR_NAME } from "@/src/features/finance-news/constants/finance-news.constants";
 
 import type { FinanceNewsUploadFiles } from "@/src/features/finance-news/hooks/use-create-finance-news";
@@ -36,18 +35,15 @@ function toUpdateRequest(
   thumbnailFileId?: string | null,
   bannerFileId?: string | null,
 ): UpdateFinanceNewsRequest {
-  const slug = values.slug?.trim()
-    ? normalizeFinanceNewsSlug(values.slug)
-    : undefined;
-
   return {
     title: values.title.trim(),
     categoryId: values.categoryId,
     content: values.content.trim(),
-    slug: slug || undefined,
     shortDescription: values.shortDescription?.trim() || undefined,
     authorName: values.authorName?.trim() || DEFAULT_AUTHOR_NAME,
-    authorImage: values.authorImage?.trim() || undefined,
+    metaTitle: values.metaTitle?.trim() || undefined,
+    metaDescription: values.metaDescription?.trim() || undefined,
+    metaKeywords: values.metaKeywords?.trim() || undefined,
     tags: values.tags,
     status: values.status,
     thumbnailFileId,

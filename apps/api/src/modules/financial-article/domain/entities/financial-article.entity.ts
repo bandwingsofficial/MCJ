@@ -19,6 +19,9 @@ export class FinancialArticle {
     public bannerUrl: string | null,
     public authorName: AuthorName,
     public authorImage: string | null,
+    public metaTitle: string | null,
+    public metaDescription: string | null,
+    public metaKeywords: string | null,
     public tags: string[],
     public categoryId: string,
     public displayOrder: number,
@@ -49,6 +52,9 @@ export class FinancialArticle {
       params.bannerUrl ?? null,
       AuthorName.create(params.authorName),
       params.authorImage ?? null,
+      params.metaTitle?.trim() || null,
+      params.metaDescription?.trim() || null,
+      params.metaKeywords?.trim() || null,
       Tag.createMany(params.tags),
       params.categoryId,
       params.displayOrder ?? 0,
@@ -80,6 +86,9 @@ export class FinancialArticle {
       params.bannerUrl,
       AuthorName.create(params.authorName),
       params.authorImage,
+      params.metaTitle,
+      params.metaDescription,
+      params.metaKeywords,
       params.tags,
       params.categoryId,
       params.displayOrder,
@@ -99,11 +108,7 @@ export class FinancialArticle {
   update(params: FinancialArticleUpdateParams) {
     if (params.title !== undefined) {
       this.title = Title.create(params.title);
-      this.slug = params.slug
-        ? Slug.create(params.slug)
-        : Slug.fromTitle(params.title);
-    } else if (params.slug !== undefined) {
-      this.slug = Slug.create(params.slug);
+      this.slug = Slug.fromTitle(params.title);
     }
 
     if (params.shortDescription !== undefined) {
@@ -131,6 +136,15 @@ export class FinancialArticle {
     }
     if (params.authorImage !== undefined) {
       this.authorImage = params.authorImage;
+    }
+    if (params.metaTitle !== undefined) {
+      this.metaTitle = params.metaTitle?.trim() || null;
+    }
+    if (params.metaDescription !== undefined) {
+      this.metaDescription = params.metaDescription?.trim() || null;
+    }
+    if (params.metaKeywords !== undefined) {
+      this.metaKeywords = params.metaKeywords?.trim() || null;
     }
     if (params.tags !== undefined) {
       this.tags = Tag.createMany(params.tags);
@@ -207,6 +221,9 @@ export interface FinancialArticleCreateParams {
   bannerUrl?: string | null;
   authorName?: string | null;
   authorImage?: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeywords?: string | null;
   tags?: string[];
   categoryId: string;
   displayOrder?: number;
@@ -235,6 +252,9 @@ export interface FinancialArticleReconstituteParams {
   bannerUrl: string | null;
   authorName: string;
   authorImage: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  metaKeywords: string | null;
   tags: string[];
   categoryId: string;
   displayOrder: number;

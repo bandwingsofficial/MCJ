@@ -29,13 +29,6 @@ export class CreateFinancialArticleDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @MaxLength(300)
-  @Transform(({ value }) => trimOrUndefined(value))
-  slug?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
   @MaxLength(500)
   shortDescription?: string;
 
@@ -63,7 +56,20 @@ export class CreateFinancialArticleDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  authorImage?: string;
+  @MaxLength(160)
+  metaTitle?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  metaDescription?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  metaKeywords?: string;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
@@ -88,13 +94,6 @@ export class UpdateFinancialArticleDto {
   @MaxLength(300)
   @Transform(({ value }) => trimOrUndefined(value))
   title?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(300)
-  @Transform(({ value }) => trimOrUndefined(value))
-  slug?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -137,7 +136,20 @@ export class UpdateFinancialArticleDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  authorImage?: string;
+  @MaxLength(160)
+  metaTitle?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  metaDescription?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  metaKeywords?: string;
 
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()

@@ -11,12 +11,13 @@ interface ApiErrorBody {
 
 export interface FinanceNewsFormFieldErrors {
   title?: string;
-  slug?: string;
   shortDescription?: string;
   content?: string;
   categoryId?: string;
   authorName?: string;
-  authorImage?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
   tags?: string;
   status?: string;
   thumbnail?: string;
@@ -51,10 +52,6 @@ export function mapFinanceNewsApiError(
     mapped.title = fieldErrors.title[0];
   }
 
-  if (fieldErrors.slug?.[0]) {
-    mapped.slug = fieldErrors.slug[0];
-  }
-
   if (fieldErrors.shortDescription?.[0]) {
     mapped.shortDescription = fieldErrors.shortDescription[0];
   }
@@ -71,8 +68,16 @@ export function mapFinanceNewsApiError(
     mapped.authorName = fieldErrors.authorName[0];
   }
 
-  if (fieldErrors.authorImage?.[0]) {
-    mapped.authorImage = fieldErrors.authorImage[0];
+  if (fieldErrors.metaTitle?.[0]) {
+    mapped.metaTitle = fieldErrors.metaTitle[0];
+  }
+
+  if (fieldErrors.metaDescription?.[0]) {
+    mapped.metaDescription = fieldErrors.metaDescription[0];
+  }
+
+  if (fieldErrors.metaKeywords?.[0]) {
+    mapped.metaKeywords = fieldErrors.metaKeywords[0];
   }
 
   if (fieldErrors.tags?.[0]) {
@@ -93,12 +98,13 @@ export function mapFinanceNewsApiError(
 
   if (
     !mapped.title &&
-    !mapped.slug &&
     !mapped.shortDescription &&
     !mapped.content &&
     !mapped.categoryId &&
     !mapped.authorName &&
-    !mapped.authorImage &&
+    !mapped.metaTitle &&
+    !mapped.metaDescription &&
+    !mapped.metaKeywords &&
     !mapped.tags &&
     !mapped.status &&
     !mapped.thumbnail &&

@@ -9,13 +9,14 @@ export function mapFinanceNewsToFormValues(
 ): FinanceNewsFormValues {
   return {
     title: article.title ?? defaultFinanceNewsFormValues.title,
-    slug: article.slug ?? "",
     shortDescription: article.shortDescription ?? "",
     content: article.content ?? "",
     categoryId: article.categoryId ?? article.category?.id ?? "",
     authorName: article.authorName ?? defaultFinanceNewsFormValues.authorName,
-    authorImage: article.authorImage ?? "",
     tags: article.tags ?? [],
     status: article.status ?? "DRAFT",
+    metaTitle: article.metaTitle ?? "",
+    metaDescription: article.metaDescription ?? "",
+    metaKeywords: article.metaKeywords ?? "",
   };
 }

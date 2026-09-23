@@ -40,6 +40,9 @@ export interface FinanceNewsDetails extends FinanceNewsListItem {
   bannerUrl: string | null;
   authorName: string;
   authorImage: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeywords?: string | null;
   tags: string[];
   categoryId: string;
   createdBy: string | null;
@@ -67,25 +70,27 @@ export interface CreateFinanceNewsRequest {
   title: string;
   categoryId: string;
   content: string;
-  slug?: string;
   shortDescription?: string;
   thumbnailFileId?: string;
   bannerFileId?: string;
   authorName?: string;
-  authorImage?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
   tags?: string[];
   status?: FinanceArticleStatus;
 }
 
 export interface UpdateFinanceNewsRequest {
   title?: string;
-  slug?: string;
   shortDescription?: string;
   content?: string;
   thumbnailFileId?: string | null;
   bannerFileId?: string | null;
   authorName?: string;
-  authorImage?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
   tags?: string[];
   categoryId?: string;
   status?: FinanceArticleStatus;

@@ -38,13 +38,7 @@ export class UpdateFinancialArticleHandler {
       );
     }
 
-    if (command.slug) {
-      await this.domainService.ensureSlugIsAvailable(
-        this.articleRepo,
-        Slug.create(command.slug).getValue(),
-        article.id,
-      );
-    } else if (command.title) {
+    if (command.title) {
       const slug = Slug.fromTitle(command.title).getValue();
       await this.domainService.ensureSlugIsAvailable(
         this.articleRepo,
@@ -55,11 +49,18 @@ export class UpdateFinancialArticleHandler {
 
     let publishedAt = article.publishedAt;
 
-    if (
-      command.status === FinancialArticleStatus.PUBLISHED &&
-      article.status !== FinancialArticleStatus.PUBLISHED
-    ) {
-      publishedAt = new Date();
+    if (command.status !== undefined) {
+      if (
+        command.status === FinancialArticleStatus.PUBLISHED &&
+        article.status !== FinancialArticleStatus.PUBLISHED
+      ) {
+        publishedAt = new Date();
+      } else if (
+        command.status === FinancialArticleStatus.DRAFT &&
+        article.status !== FinancialArticleStatus.DRAFT
+      ) {
+        publishedAt = null;
+      }
     }
 
     let nextThumbnailFileId = article.thumbnailFileId;
@@ -129,7 +130,6 @@ export class UpdateFinancialArticleHandler {
 
     article.update({
       title: command.title,
-      slug: command.slug,
       shortDescription: command.shortDescription,
       content: command.content,
       thumbnailFileId: nextThumbnailFileId,
@@ -137,7 +137,10 @@ export class UpdateFinancialArticleHandler {
       bannerFileId: nextBannerFileId,
       bannerUrl: nextBannerUrl,
       authorName: command.authorName,
-      authorImage: command.authorImage,
+      authorImage: null,
+      metaTitle: command.metaTitle,
+      metaDescription: command.metaDescription,
+      metaKeywords: command.metaKeywords,
       tags: command.tags,
       categoryId: command.categoryId,
       status: command.status,

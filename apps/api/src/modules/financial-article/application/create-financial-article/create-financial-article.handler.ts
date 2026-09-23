@@ -38,9 +38,7 @@ export class CreateFinancialArticleHandler {
       command.categoryId,
     );
 
-    const slug = command.slug
-      ? Slug.create(command.slug).getValue()
-      : Slug.fromTitle(command.title).getValue();
+    const slug = Slug.fromTitle(command.title).getValue();
 
     await this.domainService.ensureSlugIsAvailable(
       this.articleRepo,
@@ -95,7 +93,10 @@ export class CreateFinancialArticleHandler {
       bannerFileId,
       bannerUrl,
       authorName: command.authorName,
-      authorImage: command.authorImage,
+      authorImage: null,
+      metaTitle: command.metaTitle,
+      metaDescription: command.metaDescription,
+      metaKeywords: command.metaKeywords,
       tags: command.tags,
       categoryId: command.categoryId,
       displayOrder,
