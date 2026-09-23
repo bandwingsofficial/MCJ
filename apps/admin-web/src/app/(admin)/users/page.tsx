@@ -8,7 +8,7 @@ export default function UsersPage() {
       <p className="mt-2 text-[#647A9B]">
         Manage all system users including administrators, branch managers,
         faculty members, counselors, accountants, receptionists, students,
-        and other staff across the institute.
+        and other staff across MCJ Academy.
       </p>
 
       <div className="mt-6 rounded-2xl border border-dashed border-[#DCE8F5] bg-white p-8 text-center">
@@ -19,8 +19,8 @@ export default function UsersPage() {
         <p className="mt-2 text-[#647A9B]">
           This module will allow administrators to create, edit, activate,
           deactivate, assign roles and permissions, reset passwords, manage
-          user access, and monitor user activity across all branches of the
-          institute.
+          user access, and monitor user activity across all branches of MCJ
+          Academy.
         </p>
       </div>
     </div>

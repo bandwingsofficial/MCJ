@@ -51,11 +51,6 @@ const menu = [
         path: "/categories",
       },
       {
-        name: "Branches",
-        icon: GitBranch,
-        path: "/branches",
-      },
-      {
         name: "Trainers",
         icon: Users,
         path: "/trainers",
@@ -66,14 +61,19 @@ const menu = [
         path: "/courses",
       },
       {
+        name: "Batch Timings",
+        icon: ClipboardList,
+        path: "/batch-timings",
+      },
+      {
         name: "Batches",
         icon: Boxes,
         path: "/batches",
       },
       {
-        name: "Batch Timings",
-        icon: ClipboardList,
-        path: "/batch-timings",
+        name: "Branches",
+        icon: GitBranch,
+        path: "/branches",
       },
       {
         name: "Students",
@@ -186,7 +186,7 @@ export function AdminSidebar() {
           <div className="relative h-10 w-10 shrink-0">
             <Image
               src="/Logo/MCJ_logo.png"
-              alt="logo"
+              alt="MCJ Academy"
               fill
               className="object-contain"
             />
@@ -195,7 +195,7 @@ export function AdminSidebar() {
           {!collapsed ? (
             <div className="min-w-0">
               <h2 className="text-[15px] font-bold tracking-tight text-[#102A56]">
-                MCJ Institute
+                MCJ Academy
               </h2>
               <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2563EB]">
                 Admin Platform
