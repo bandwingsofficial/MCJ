@@ -69,15 +69,6 @@ export function AdminAuthShell({
               aria-hidden
             />
             <div
-              className="pointer-events-none absolute inset-0 opacity-[0.2]"
-              style={{
-                backgroundImage:
-                  "radial-gradient(rgba(37, 99, 235, 0.14) 1px, transparent 1px)",
-                backgroundSize: "20px 20px",
-              }}
-              aria-hidden
-            />
-            <div
               className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/45 via-black/15 to-transparent"
               aria-hidden
             />
@@ -85,17 +76,6 @@ export function AdminAuthShell({
               className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/50 via-black/20 to-transparent"
               aria-hidden
             />
-
-            <div className="relative z-[1] flex h-full min-h-0 flex-col justify-end p-5 sm:p-6">
-              <div className="flex max-w-[calc(100%-0.25rem)] items-center gap-2 rounded-xl bg-white/75 px-2.5 py-2 backdrop-blur-md ring-1 ring-white/60">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-emerald-50/95 text-emerald-600">
-                  <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.75} />
-                </div>
-                <p className="min-w-0 text-[10px] font-semibold leading-snug text-emerald-700">
-                  {footerNote}
-                </p>
-              </div>
-            </div>
           </aside>
         ) : (
           <aside className="relative hidden min-h-0 shrink-0 flex-col overflow-hidden border-[#E8F1FF] bg-gradient-to-br from-[#F8FBFF] via-[#EEF6FF] to-[#E4F2FF] lg:flex lg:w-[44%] lg:border-r">

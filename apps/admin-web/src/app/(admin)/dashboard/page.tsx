@@ -1,7 +1,5 @@
+import { AdminDashboardPage } from "@/src/features/dashboard/pages/admin-dashboard-page";
+
 export default function DashboardPage() {
-  return (
-    <h1 className="text-[30px] font-bold tracking-tight text-[#102A56]">
-      Dashboard
-    </h1>
-  );
+  return <AdminDashboardPage />;
 }

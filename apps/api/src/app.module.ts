@@ -27,6 +27,7 @@ import { ProfileModule } from './modules/profile/profile.module';
 import { StudentModule } from './modules/student/student.module';
 import { StudentPortalModule } from './modules/student-portal/student-portal.module';
 import { TrainerModule } from './modules/trainer/trainer.module';
+import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { TrainerModule } from './modules/trainer/trainer.module';
     CommunityPostModule,
     CommunityPostLikeModule,
     CommunityPostCommentModule,
+    AdminDashboardModule,
   ],
 })
 export class AppModule {}
