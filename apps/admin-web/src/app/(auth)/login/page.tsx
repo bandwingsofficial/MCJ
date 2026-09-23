@@ -4,7 +4,7 @@ import { GuestGuard } from "@/src/features/auth/components/guest-guard";
 export default function LoginPage() {
   return (
     <GuestGuard>
-      <main className="min-h-screen">
+      <main className="h-[100dvh] overflow-hidden">
         <LoginForm />
       </main>
     </GuestGuard>
