@@ -21,6 +21,9 @@ export class CommunityPost {
     public mentions: string[],
     public authorName: string,
     public location: Location,
+    public ctaEnabled: boolean,
+    public ctaLabel: string | null,
+    public ctaUrl: string | null,
     public viewCount: number,
     public likeCount: number,
     public commentCount: number,
@@ -50,6 +53,9 @@ export class CommunityPost {
       Mention.createMany(params.mentions),
       params.authorName?.trim() || "MCJ Community",
       Location.create(params.location),
+      params.ctaEnabled ?? false,
+      params.ctaEnabled ? params.ctaLabel?.trim() || null : null,
+      params.ctaEnabled ? params.ctaUrl?.trim() || null : null,
       0,
       0,
       0,
@@ -82,6 +88,9 @@ export class CommunityPost {
       params.mentions,
       params.authorName?.trim() || "MCJ Community",
       Location.create(params.location),
+      params.ctaEnabled,
+      params.ctaLabel,
+      params.ctaUrl,
       params.viewCount,
       params.likeCount,
       params.commentCount,
@@ -129,6 +138,19 @@ export class CommunityPost {
     }
     if (params.location !== undefined) {
       this.location = Location.create(params.location);
+    }
+    if (params.ctaEnabled !== undefined) {
+      this.ctaEnabled = params.ctaEnabled;
+      if (!params.ctaEnabled) {
+        this.ctaLabel = null;
+        this.ctaUrl = null;
+      }
+    }
+    if (params.ctaLabel !== undefined) {
+      this.ctaLabel = params.ctaLabel?.trim() || null;
+    }
+    if (params.ctaUrl !== undefined) {
+      this.ctaUrl = params.ctaUrl?.trim() || null;
     }
     if (params.status !== undefined) this.status = params.status;
 
@@ -189,6 +211,9 @@ export interface CommunityPostCreateParams {
   mentions?: string[];
   authorName?: string | null;
   location?: string | null;
+  ctaEnabled?: boolean;
+  ctaLabel?: string | null;
+  ctaUrl?: string | null;
   status?: CommunityPostStatus;
   isActive?: boolean;
   createdBy?: string | null;

@@ -1526,6 +1526,9 @@ model CommunityPost {
   mentions           String[]
   authorName         String                 @default("MCJ Community")
   location           String?
+  ctaEnabled         Boolean                @default(false)
+  ctaLabel           String?
+  ctaUrl             String?
   viewCount          Int                    @default(0)
   likeCount          Int                    @default(0)
   commentCount       Int                    @default(0)

@@ -55,6 +55,9 @@ export interface CommunityPostListItem {
   mentions: string[];
   authorName: string;
   location: string | null;
+  ctaEnabled?: boolean;
+  ctaLabel?: string | null;
+  ctaUrl?: string | null;
   viewCount: number;
   likeCount: number;
   commentCount: number;
@@ -106,6 +109,9 @@ export interface CreateCommunityPostRequest {
   mentions?: string[];
   authorName?: string;
   location?: string;
+  ctaEnabled?: boolean;
+  ctaLabel?: string;
+  ctaUrl?: string;
   status?: CommunityPostStatus;
 }
 
@@ -124,6 +130,9 @@ export interface UpdateCommunityPostRequest {
   hashtags?: string[];
   mentions?: string[];
   location?: string;
+  ctaEnabled?: boolean;
+  ctaLabel?: string | null;
+  ctaUrl?: string | null;
   status?: CommunityPostStatus;
 }
 

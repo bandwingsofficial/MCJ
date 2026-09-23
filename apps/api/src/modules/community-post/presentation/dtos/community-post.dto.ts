@@ -6,8 +6,11 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUrl,
   IsUUID,
   MaxLength,
+  MinLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -92,6 +95,24 @@ export class CreateCommunityPostDto {
   @IsString()
   location?: string;
 
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  ctaEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @ValidateIf((dto: CreateCommunityPostDto) => dto.ctaEnabled === true)
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  ctaLabel?: string;
+
+  @ApiPropertyOptional()
+  @ValidateIf((dto: CreateCommunityPostDto) => dto.ctaEnabled === true)
+  @IsUrl({ require_protocol: true })
+  @MaxLength(2048)
+  ctaUrl?: string;
+
   @ApiPropertyOptional({ enum: CommunityPostStatus })
   @IsOptional()
   @IsEnum(CommunityPostStatus)
@@ -143,6 +164,24 @@ export class UpdateCommunityPostDto {
   @IsOptional()
   @IsString()
   location?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  ctaEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @ValidateIf((dto: UpdateCommunityPostDto) => dto.ctaEnabled === true)
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  ctaLabel?: string;
+
+  @ApiPropertyOptional()
+  @ValidateIf((dto: UpdateCommunityPostDto) => dto.ctaEnabled === true)
+  @IsUrl({ require_protocol: true })
+  @MaxLength(2048)
+  ctaUrl?: string;
 
   @ApiPropertyOptional({ enum: CommunityPostStatus })
   @IsOptional()

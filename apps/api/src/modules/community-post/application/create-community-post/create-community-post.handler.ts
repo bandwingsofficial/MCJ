@@ -57,6 +57,9 @@ export class CreateCommunityPostHandler {
       mentions: command.mentions,
       authorName: command.authorName,
       location: command.location,
+      ctaEnabled: command.ctaEnabled ?? false,
+      ctaLabel: command.ctaEnabled ? command.ctaLabel : null,
+      ctaUrl: command.ctaEnabled ? command.ctaUrl : null,
       status: command.status,
       createdBy: command.createdBy,
     });

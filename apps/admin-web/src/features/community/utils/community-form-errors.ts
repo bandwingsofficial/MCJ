@@ -18,6 +18,8 @@ export interface CommunityFormFieldErrors {
   mentions?: string;
   location?: string;
   status?: string;
+  ctaButtonName?: string;
+  ctaButtonLink?: string;
   root?: string;
 }
 
@@ -80,6 +82,14 @@ export function mapCommunityApiError(
     mapped.status = fieldErrors.status[0];
   }
 
+  if (fieldErrors.ctaLabel?.[0]) {
+    mapped.ctaButtonName = fieldErrors.ctaLabel[0];
+  }
+
+  if (fieldErrors.ctaUrl?.[0]) {
+    mapped.ctaButtonLink = fieldErrors.ctaUrl[0];
+  }
+
   if (
     !mapped.type &&
     !mapped.caption &&
@@ -88,7 +98,9 @@ export function mapCommunityApiError(
     !mapped.hashtags &&
     !mapped.mentions &&
     !mapped.location &&
-    !mapped.status
+    !mapped.status &&
+    !mapped.ctaButtonName &&
+    !mapped.ctaButtonLink
   ) {
     mapped.root = message ?? "Request failed. Please try again.";
   }

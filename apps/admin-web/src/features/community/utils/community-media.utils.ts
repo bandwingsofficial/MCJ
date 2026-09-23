@@ -80,12 +80,22 @@ export function normalizePrimaryMediaFlags(
 export function reorderCommunityMediaItems(
   items: CommunityMediaFormItem[],
 ): CommunityMediaFormItem[] {
-  return normalizePrimaryMediaFlags(
-    items.map((item, index) => ({
-      ...item,
-      displayOrder: index,
-    })),
+  const withFlags = normalizePrimaryMediaFlags(items);
+  const primaryIndex = withFlags.findIndex(
+    (item) => item.isPrimary && item.mediaType === "IMAGE",
   );
+
+  let ordered = withFlags;
+  if (primaryIndex > 0) {
+    ordered = [...withFlags];
+    const [primary] = ordered.splice(primaryIndex, 1);
+    ordered.unshift(primary);
+  }
+
+  return ordered.map((item, index) => ({
+    ...item,
+    displayOrder: index,
+  }));
 }
 
 export function deriveCommunityPostTypeFromMedia(

@@ -13,6 +13,9 @@ export class CreateCommunityPostCommand {
     public readonly mentions?: string[],
     public readonly authorName?: string | null,
     public readonly location?: string | null,
+    public readonly ctaEnabled?: boolean,
+    public readonly ctaLabel?: string | null,
+    public readonly ctaUrl?: string | null,
     public readonly status?: CommunityPostStatus,
     public readonly createdBy?: string,
   ) {}

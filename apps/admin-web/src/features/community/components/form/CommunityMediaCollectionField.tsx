@@ -7,6 +7,7 @@ import {
   ArrowDown,
   ArrowUp,
   ImageIcon,
+  RefreshCw,
   Star,
   Trash2,
   Upload,
@@ -14,6 +15,8 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
+import { Switch } from "@/src/shared/components/ui/switch";
+import { Tooltip } from "@/src/shared/components/ui/tooltip";
 import { cn } from "@/src/shared/lib/cn";
 
 import type { CommunityMediaFormItem } from "@/src/features/community/utils/community-media.utils";
@@ -34,11 +37,10 @@ interface Props {
   onChange: (items: CommunityMediaFormItem[]) => void;
 }
 
-function MediaPreview({
-  item,
-}: {
-  item: CommunityMediaFormItem;
-}) {
+const iconButtonClass =
+  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#DCE8F5] bg-white text-[#102A56] transition-colors hover:bg-[#F8FBFF] disabled:cursor-not-allowed disabled:opacity-40";
+
+function MediaPreview({ item }: { item: CommunityMediaFormItem }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     item.previewUrl ?? item.url ?? null,
   );
@@ -58,7 +60,7 @@ function MediaPreview({
 
   if (!previewUrl) {
     return (
-      <div className="flex h-28 w-full items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-xs text-slate-500">
+      <div className="flex aspect-[4/3] w-full items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-xs text-slate-500">
         No preview
       </div>
     );
@@ -69,7 +71,7 @@ function MediaPreview({
       <video
         src={previewUrl}
         controls
-        className="h-28 w-full rounded-lg border border-slate-200 bg-black object-cover"
+        className="aspect-[4/3] w-full rounded-lg border border-slate-200 bg-black object-cover"
       />
     );
   }
@@ -79,8 +81,8 @@ function MediaPreview({
       src={previewUrl}
       alt=""
       width={320}
-      height={180}
-      className="h-28 w-full rounded-lg border border-slate-200 object-cover"
+      height={240}
+      className="aspect-[4/3] w-full rounded-lg border border-slate-200 object-cover"
     />
   );
 }
@@ -98,8 +100,7 @@ export function CommunityMediaCollectionField({
   const [isDragging, setIsDragging] = useState(false);
 
   const accept = useMemo(
-    () =>
-      [...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES].join(","),
+    () => [...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES].join(","),
     [],
   );
 
@@ -190,7 +191,7 @@ export function CommunityMediaCollectionField({
 
   const setPrimary = (clientId: string) => {
     onChange(
-      normalizePrimaryMediaFlags(
+      reorderCommunityMediaItems(
         items.map((item) => ({
           ...item,
           isPrimary:
@@ -198,6 +199,33 @@ export function CommunityMediaCollectionField({
         })),
       ),
     );
+  };
+
+  const handlePrimaryToggle = (
+    item: CommunityMediaFormItem,
+    checked: boolean,
+  ) => {
+    if (item.mediaType !== "IMAGE") {
+      return;
+    }
+
+    if (checked) {
+      setPrimary(item.clientId);
+      return;
+    }
+
+    if (!item.isPrimary) {
+      return;
+    }
+
+    const fallback = items.find(
+      (candidate) =>
+        candidate.clientId !== item.clientId &&
+        candidate.mediaType === "IMAGE",
+    );
+    if (fallback) {
+      setPrimary(fallback.clientId);
+    }
   };
 
   const moveItem = (clientId: string, direction: -1 | 1) => {
@@ -242,7 +270,10 @@ export function CommunityMediaCollectionField({
           }
         }}
       >
-        <Upload className="mx-auto mb-3 h-8 w-8 text-[#647A9B]" aria-hidden="true" />
+        <Upload
+          className="mx-auto mb-3 h-8 w-8 text-[#647A9B]"
+          aria-hidden="true"
+        />
         <p className="text-sm font-medium text-[#102A56]">
           Drag and drop images or videos here
         </p>
@@ -299,109 +330,121 @@ export function CommunityMediaCollectionField({
           No media selected yet.
         </p>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {items.map((item, index) => (
             <div
               key={item.clientId}
               className={cn(
-                "rounded-xl border p-3",
+                "flex min-w-0 flex-col rounded-xl border p-3",
                 item.isPrimary
                   ? "border-[#2563EB] bg-[#F8FBFF]"
                   : "border-slate-200 bg-white",
               )}
             >
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <div className="sm:w-44">
-                  <MediaPreview item={item} />
+              <MediaPreview item={item} />
+
+              <div className="mt-2 space-y-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                      item.mediaType === "VIDEO"
+                        ? "bg-violet-50 text-violet-700"
+                        : "bg-blue-50 text-blue-700",
+                    )}
+                  >
+                    {item.mediaType === "VIDEO" ? (
+                      <Video className="h-3 w-3" />
+                    ) : (
+                      <ImageIcon className="h-3 w-3" />
+                    )}
+                    {item.mediaType === "VIDEO" ? "Video" : "Image"}
+                  </span>
+                  {item.isPrimary ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#2563EB] px-2 py-0.5 text-[11px] font-semibold text-white">
+                      <Star className="h-3 w-3" />
+                      Primary
+                    </span>
+                  ) : null}
+                  {item.isUploading ? (
+                    <span className="text-[11px] text-[#647A9B]">
+                      Uploading...
+                    </span>
+                  ) : null}
                 </div>
 
-                <div className="min-w-0 flex-1 space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
-                        item.mediaType === "VIDEO"
-                          ? "bg-violet-50 text-violet-700"
-                          : "bg-blue-50 text-blue-700",
-                      )}
-                    >
-                      {item.mediaType === "VIDEO" ? (
-                        <Video className="h-3.5 w-3.5" />
-                      ) : (
-                        <ImageIcon className="h-3.5 w-3.5" />
-                      )}
-                      {item.mediaType === "VIDEO" ? "Video" : "Image"}
-                    </span>
-                    {item.isPrimary ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[#2563EB] px-2.5 py-1 text-xs font-semibold text-white">
-                        <Star className="h-3.5 w-3.5" />
-                        Primary Image
-                      </span>
-                    ) : null}
-                    {item.isUploading ? (
-                      <span className="text-xs text-[#647A9B]">Uploading...</span>
-                    ) : null}
-                  </div>
+                <p className="truncate text-xs text-[#102A56]">
+                  {item.file?.name ?? item.url ?? "Existing media"}
+                </p>
 
-                  <p className="truncate text-sm text-[#102A56]">
-                    {item.file?.name ?? item.url ?? "Existing media"}
-                  </p>
+                {item.uploadError ? (
+                  <p className="text-xs text-red-500">{item.uploadError}</p>
+                ) : null}
 
-                  {item.uploadError ? (
-                    <p className="text-sm text-red-500">{item.uploadError}</p>
-                  ) : null}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#EEF4FB] pt-2">
+                  {item.mediaType === "IMAGE" ? (
+                    <label className="flex items-center gap-2 text-xs font-medium text-[#102A56]">
+                      <span>Primary</span>
+                      <Switch
+                        checked={item.isPrimary}
+                        disabled={disabled}
+                        onCheckedChange={(checked) =>
+                          handlePrimaryToggle(item, checked)
+                        }
+                      />
+                    </label>
+                  ) : (
+                    <span className="text-[11px] text-[#647A9B]">Video</span>
+                  )}
 
-                  <div className="flex flex-wrap gap-2">
-                    {item.mediaType === "IMAGE" ? (
-                      <Button
+                  <div className="flex items-center gap-1">
+                    <Tooltip content="Move up">
+                      <button
                         type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={disabled || item.isPrimary}
-                        onClick={() => setPrimary(item.clientId)}
+                        disabled={disabled || index === 0}
+                        aria-label="Move up"
+                        className={iconButtonClass}
+                        onClick={() => moveItem(item.clientId, -1)}
                       >
-                        Set as Primary
-                      </Button>
-                    ) : null}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={disabled || index === 0}
-                      onClick={() => moveItem(item.clientId, -1)}
-                    >
-                      <ArrowUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={disabled || index === items.length - 1}
-                      onClick={() => moveItem(item.clientId, 1)}
-                    >
-                      <ArrowDown className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={disabled}
-                      onClick={() => {
-                        setReplaceTargetId(item.clientId);
-                        replaceInputRef.current?.click();
-                      }}
-                    >
-                      Replace
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={disabled}
-                      onClick={() => removeItem(item.clientId)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                        <ArrowUp className="h-4 w-4" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Move down">
+                      <button
+                        type="button"
+                        disabled={disabled || index === items.length - 1}
+                        aria-label="Move down"
+                        className={iconButtonClass}
+                        onClick={() => moveItem(item.clientId, 1)}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Replace file">
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        aria-label="Replace file"
+                        className={iconButtonClass}
+                        onClick={() => {
+                          setReplaceTargetId(item.clientId);
+                          replaceInputRef.current?.click();
+                        }}
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Remove">
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        aria-label="Remove"
+                        className={cn(iconButtonClass, "text-red-700 hover:bg-red-50")}
+                        onClick={() => removeItem(item.clientId)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               </div>

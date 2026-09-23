@@ -9,7 +9,7 @@ import {
 import { CommunityPostType } from '../../domain/enums/community-post-type.enum';
 import {
   deriveCommunityPostType,
-  normalizeCommunityPostMediaPrimaryFlags,
+  orderCommunityPostMediaWithPrimaryFirst,
   syncCommunityPostLegacyMediaFields,
 } from '../../domain/services/community-post-media.utils';
 
@@ -86,7 +86,7 @@ export async function resolveCommunityPostMediaCollection(params: {
     );
   }
 
-  const normalizedMedia = normalizeCommunityPostMediaPrimaryFlags(nextMedia);
+  const normalizedMedia = orderCommunityPostMediaWithPrimaryFirst(nextMedia);
   const legacyFields = syncCommunityPostLegacyMediaFields(normalizedMedia);
 
   return {

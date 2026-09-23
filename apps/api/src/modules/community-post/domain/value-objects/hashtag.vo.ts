@@ -39,7 +39,20 @@ export class Hashtag {
       return [];
     }
 
-    return values.map((value) => Hashtag.create(value).getValue());
+    const seen = new Set<string>();
+    const normalized: string[] = [];
+
+    for (const value of values) {
+      const tag = Hashtag.create(value).getValue();
+      if (seen.has(tag)) {
+        continue;
+      }
+
+      seen.add(tag);
+      normalized.push(tag);
+    }
+
+    return normalized;
   }
 
   getValue(): string {

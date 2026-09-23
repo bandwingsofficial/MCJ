@@ -31,6 +31,44 @@ export const communitySchema = z.object({
     .optional()
     .or(z.literal("")),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]),
+  ctaEnabled: z.boolean(),
+  ctaButtonName: z.string().trim().optional(),
+  ctaButtonLink: z.string().trim().optional(),
+}).superRefine((values, ctx) => {
+  if (!values.ctaEnabled) {
+    return;
+  }
+
+  if (!values.ctaButtonName?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["ctaButtonName"],
+      message: "Button name is required when Add Button is enabled",
+    });
+  }
+
+  const link = values.ctaButtonLink?.trim();
+  if (!link) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["ctaButtonLink"],
+      message: "Button link is required when Add Button is enabled",
+    });
+    return;
+  }
+
+  try {
+    const parsed = new URL(link);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error("invalid protocol");
+    }
+  } catch {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["ctaButtonLink"],
+      message: "Enter a valid URL starting with http:// or https://",
+    });
+  }
 });
 
 export type CommunityFormValues = z.infer<typeof communitySchema>;
@@ -41,6 +79,9 @@ export const defaultCommunityFormValues: CommunityFormValues = {
   hashtags: [],
   location: "",
   status: "DRAFT",
+  ctaEnabled: false,
+  ctaButtonName: "",
+  ctaButtonLink: "",
 };
 
 export function truncateToMaxChars(value: string, maxChars: number): string {

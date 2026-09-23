@@ -75,6 +75,11 @@ function toCreateRequest(
     authorName: values.authorName.trim(),
     hashtags: values.hashtags.length > 0 ? values.hashtags : undefined,
     location: values.location?.trim() || undefined,
+    ctaEnabled: values.ctaEnabled,
+    ctaLabel: values.ctaEnabled
+      ? values.ctaButtonName?.trim()
+      : undefined,
+    ctaUrl: values.ctaEnabled ? values.ctaButtonLink?.trim() : undefined,
     status: values.status,
     media: buildCommunityMediaPayload(mediaItems),
   };

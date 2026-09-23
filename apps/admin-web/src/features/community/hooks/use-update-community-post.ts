@@ -73,6 +73,13 @@ function toUpdateRequest(
     caption: values.caption.trim(),
     hashtags: values.hashtags,
     location: values.location?.trim() || undefined,
+    ctaEnabled: values.ctaEnabled,
+    ctaLabel: values.ctaEnabled
+      ? values.ctaButtonName?.trim() ?? null
+      : null,
+    ctaUrl: values.ctaEnabled
+      ? values.ctaButtonLink?.trim() ?? null
+      : null,
     status: values.status,
     media: buildCommunityMediaPayload(mediaItems),
   };

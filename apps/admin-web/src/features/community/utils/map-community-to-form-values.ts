@@ -11,5 +11,8 @@ export function mapCommunityToFormValues(
     hashtags: post.hashtags ?? [],
     location: post.location ?? "",
     status: post.status ?? "DRAFT",
+    ctaEnabled: post.ctaEnabled ?? false,
+    ctaButtonName: post.ctaLabel ?? "",
+    ctaButtonLink: post.ctaUrl ?? "",
   };
 }

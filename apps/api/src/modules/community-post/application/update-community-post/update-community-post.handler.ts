@@ -99,6 +99,13 @@ export class UpdateCommunityPostHandler {
       hashtags: command.hashtags,
       mentions: command.mentions,
       location: command.location,
+      ...(command.ctaEnabled !== undefined
+        ? {
+            ctaEnabled: command.ctaEnabled,
+            ctaLabel: command.ctaEnabled ? command.ctaLabel ?? null : null,
+            ctaUrl: command.ctaEnabled ? command.ctaUrl ?? null : null,
+          }
+        : {}),
       status: command.status,
       updatedBy: command.updatedBy,
     });

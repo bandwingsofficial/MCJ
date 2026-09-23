@@ -3,10 +3,10 @@
 import {
   Archive,
   CircleCheck,
-  Eye,
   Pencil,
   Power,
   RotateCcw,
+  Settings2,
   Trash2,
 } from "lucide-react";
 
@@ -56,7 +56,7 @@ export function CommunityPostActions({
             aria-label="Manage post"
             className={`${iconButtonClass} text-blue-900`}
           >
-            <Eye className={iconClass} />
+            <Settings2 className={iconClass} />
           </button>
         </Tooltip>
 
@@ -99,7 +99,7 @@ export function CommunityPostActions({
           aria-label="Manage post"
           className={`${iconButtonClass} text-blue-900`}
         >
-          <Eye className={iconClass} />
+          <Settings2 className={iconClass} />
         </button>
       </Tooltip>
 

@@ -13,6 +13,9 @@ export class UpdateCommunityPostCommand {
     public readonly hashtags?: string[],
     public readonly mentions?: string[],
     public readonly location?: string | null,
+    public readonly ctaEnabled?: boolean,
+    public readonly ctaLabel?: string | null,
+    public readonly ctaUrl?: string | null,
     public readonly status?: CommunityPostStatus,
     public readonly updatedBy?: string,
   ) {}

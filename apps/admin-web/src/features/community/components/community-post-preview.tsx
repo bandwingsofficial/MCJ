@@ -18,10 +18,7 @@ import { cn } from "@/src/shared/lib/cn";
 
 import { DEFAULT_COMMUNITY_AUTHOR_LABEL } from "@/src/features/community/constants/community.constants";
 import type { CommunityMediaFormItem } from "@/src/features/community/utils/community-media.utils";
-import {
-  getPrimaryMediaPreviewUrl,
-  reorderCommunityMediaItems,
-} from "@/src/features/community/utils/community-media.utils";
+import { reorderCommunityMediaItems } from "@/src/features/community/utils/community-media.utils";
 
 import type { CommunityPostType } from "@/src/features/community/types/community.types";
 
@@ -43,6 +40,9 @@ interface Props {
   mediaFile?: File | null;
   hashtags?: string[];
   location?: string;
+  ctaEnabled?: boolean;
+  ctaButtonName?: string;
+  ctaButtonLink?: string;
 }
 
 function resolvePreviewUrl(item: PreviewMediaItem): string | null {
@@ -98,6 +98,9 @@ export function CommunityPostPreview({
   mediaFile,
   hashtags = [],
   location,
+  ctaEnabled = false,
+  ctaButtonName = "",
+  ctaButtonLink = "",
 }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [objectUrls, setObjectUrls] = useState<Record<string, string>>({});
@@ -166,27 +169,20 @@ export function CommunityPostPreview({
     }
   }, [activeIndex, normalizedItems.length]);
 
-  const activeItem = normalizedItems[activeIndex] ?? null;
-  const coverUrl = getPrimaryMediaPreviewUrl(
-    normalizedItems.map((item) => ({
-      ...item,
-      clientId: item.clientId,
-      mediaType: item.mediaType,
-      previewUrl: objectUrls[item.clientId] ?? item.previewUrl ?? item.url,
-      url: item.url,
-      displayOrder: item.displayOrder,
-      isPrimary: item.isPrimary,
-    })),
-  );
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [normalizedItems[0]?.clientId]);
 
-  const captionWithHashtags = [
-    caption.trim(),
-    hashtags.length > 0
-      ? hashtags.map((tag) => `#${tag.replace(/^#/, "")}`).join(" ")
-      : "",
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+  const activeItem = normalizedItems[activeIndex] ?? null;
+
+  const hashtagLine = hashtags
+    .map((tag) => `#${tag.replace(/^#/, "")}`)
+    .join("  ");
+
+  const showCta =
+    ctaEnabled &&
+    ctaButtonName.trim().length > 0 &&
+    ctaButtonLink.trim().length > 0;
 
   return (
     <div className="mx-auto w-full max-w-sm overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
@@ -261,10 +257,17 @@ export function CommunityPostPreview({
         )}
       </div>
 
-      {coverUrl && normalizedItems.some((item) => item.isPrimary) ? (
-        <p className="border-b border-[#EEF4FB] px-3 py-2 text-[11px] text-[#647A9B]">
-          Primary image is used as the cover thumbnail.
-        </p>
+      {showCta ? (
+        <div className="border-b border-[#EEF4FB] px-3 py-3">
+          <a
+            href={ctaButtonLink.trim()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex w-full items-center justify-center rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-semibold text-white"
+          >
+            {ctaButtonName.trim()}
+          </a>
+        </div>
       ) : null}
 
       <div className="space-y-2 px-3 py-2.5">
@@ -279,10 +282,13 @@ export function CommunityPostPreview({
 
         <p className="whitespace-pre-wrap text-sm text-[#102A56]">
           <span className="mr-1 font-semibold">{displayName}</span>
-          {captionWithHashtags || (
+          {caption.trim() || (
             <span className="text-[#647A9B]">Caption preview</span>
           )}
         </p>
+        {hashtagLine ? (
+          <p className="text-sm text-[#2563EB]">{hashtagLine}</p>
+        ) : null}
       </div>
     </div>
   );

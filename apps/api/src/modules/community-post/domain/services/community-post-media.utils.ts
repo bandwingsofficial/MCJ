@@ -75,3 +75,22 @@ export function normalizeCommunityPostMediaPrimaryFlags(
     return item;
   });
 }
+
+export function orderCommunityPostMediaWithPrimaryFirst(
+  mediaItems: CommunityPostMedia[],
+): CommunityPostMedia[] {
+  const normalized = normalizeCommunityPostMediaPrimaryFlags([...mediaItems]);
+  const primaryIndex = normalized.findIndex(
+    (item) => item.isPrimary && item.mediaType === CommunityPostType.IMAGE,
+  );
+
+  if (primaryIndex > 0) {
+    const [primary] = normalized.splice(primaryIndex, 1);
+    normalized.unshift(primary);
+  }
+
+  return normalized.map((item, index) => {
+    item.displayOrder = index;
+    return item;
+  });
+}
