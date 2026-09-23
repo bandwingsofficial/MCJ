@@ -27,12 +27,13 @@ import {
 
 import { Input } from "@/src/shared/components/ui/input";
 import { Button } from "@/src/shared/components/ui/button";
-import { Label } from "@/src/shared/components/ui/label";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { ImageUploadField } from "@/src/shared/components/ui/image-upload-field";
 import { buildStudentQualificationSelectOptions } from "@mcj/shared-constants";
 import {
   FieldVisualState,
+  IconValidatedField,
+  iconDecorInputClass,
   ValidatedField,
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
@@ -57,21 +58,8 @@ import {
 import { withProfileImageCacheBust } from "@/src/features/trainers/utils/trainer-image.util";
 import type { TrainerDetails } from "@/src/features/trainers/types/trainer.types";
 
-function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
-  return (
-    <Icon
-      className="pointer-events-none absolute right-9 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
-      aria-hidden="true"
-    />
-  );
-}
-
 function iconInputClass(state: FieldVisualState, extra = "") {
-  return cn(validatedFieldInputClass(state, "w-full min-w-0 max-w-full"), "pr-16", extra);
-}
-
-function selectTriggerClass(state: FieldVisualState) {
-  return iconInputClass(state, "pr-16");
+  return iconDecorInputClass(state, cn("w-full min-w-0 max-w-full", extra));
 }
 
 type SyncFieldName = Exclude<
@@ -328,22 +316,21 @@ export function TrainerForm({
       type?: string;
     },
   ) => (
-    <ValidatedField
+    <IconValidatedField
       label={label}
       required={options?.required}
       state={field.state}
       errorMessage={field.errorMessage}
+      icon={icon}
     >
-      <div className="relative">
-        <Input
-          {...field.inputProps}
-          type={options?.type}
-          placeholder={placeholder}
-        />
-        <FieldIcon icon={icon} />
-      </div>
+      <Input
+        {...field.inputProps}
+        type={options?.type}
+        placeholder={placeholder}
+        className={iconInputClass(field.state)}
+      />
       {options?.footer}
-    </ValidatedField>
+    </IconValidatedField>
   );
 
   const handleKeyDown = (
@@ -617,8 +604,9 @@ export function TrainerForm({
           "Enter last name",
         )}
 
-        <ValidatedField
+        <IconValidatedField
           label="Trainer Code"
+          icon={Hash}
           state={
             isEdit
               ? "neutral"
@@ -630,18 +618,15 @@ export function TrainerForm({
             !isEdit && suggestedCode ? "Auto-generated" : undefined
           }
         >
-          <div className="relative">
-            <Input
-              value={trainerCode}
-              readOnly
-              placeholder={
-                isSuggestingCode ? "Generating code..." : "Trainer code"
-              }
-              className={iconInputClass(isEdit ? "neutral" : "valid")}
-            />
-            <FieldIcon icon={Hash} />
-          </div>
-        </ValidatedField>
+          <Input
+            value={trainerCode}
+            readOnly
+            placeholder={
+              isSuggestingCode ? "Generating code..." : "Trainer code"
+            }
+            className={iconInputClass(isEdit ? "neutral" : "valid")}
+          />
+        </IconValidatedField>
 
         {renderIconInput(
           "Email",
@@ -659,63 +644,71 @@ export function TrainerForm({
           { required: true },
         )}
 
-        <ValidatedField
+        <IconValidatedField
           label="Gender"
+          icon={User}
+          select
           state={genderFieldState}
           errorMessage={errors.gender?.message}
         >
-          <div className="relative">
-            <AppSelect
-              value={watch("gender")}
-              options={TRAINER_GENDERS.map((gender) => ({
-                label: gender,
-                value: gender,
-              }))}
-              triggerClassName={selectTriggerClass(genderFieldState)}
-              onValueChange={(value) => {
-                setValue("gender", value as never, {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
-                });
-              }}
-            />
-            <FieldIcon icon={User} />
-          </div>
-        </ValidatedField>
+          <AppSelect
+            value={watch("gender")}
+            placeholder="Select gender"
+            options={TRAINER_GENDERS.map((gender) => ({
+              label: gender,
+              value: gender,
+            }))}
+            triggerClassName={validatedFieldInputClass(
+              genderFieldState,
+              "w-full min-w-0 max-w-full",
+              { leftIcon: true, select: true },
+            )}
+            onValueChange={(value) => {
+              setValue("gender", value as never, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+              });
+            }}
+          />
+        </IconValidatedField>
 
-        <ValidatedField
+        <IconValidatedField
           label="Trainer Type"
+          icon={Briefcase}
+          select
           state={trainerTypeFieldState}
           errorMessage={errors.trainerType?.message}
         >
-          <div className="relative">
-            <AppSelect
-              value={watch("trainerType")}
-              options={TRAINER_TYPES.map((type) => ({
-                label: type.replaceAll("_", " "),
-                value: type,
-              }))}
-              triggerClassName={selectTriggerClass(trainerTypeFieldState)}
-              onValueChange={(value) => {
-                setValue("trainerType", value as never, {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
-                });
-              }}
-            />
-            <FieldIcon icon={Briefcase} />
-          </div>
-        </ValidatedField>
+          <AppSelect
+            value={watch("trainerType")}
+            placeholder="Select trainer type"
+            options={TRAINER_TYPES.map((type) => ({
+              label: type.replaceAll("_", " "),
+              value: type,
+            }))}
+            triggerClassName={validatedFieldInputClass(
+              trainerTypeFieldState,
+              "w-full min-w-0 max-w-full",
+              { leftIcon: true, select: true },
+            )}
+            onValueChange={(value) => {
+              setValue("trainerType", value as never, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+              });
+            }}
+          />
+        </IconValidatedField>
       </div>
 
       <div className="min-w-0">
-        <Label>
-          Skills{" "}
-          <span className="text-xs text-slate-400">(Press Enter to add)</span>
-        </Label>
-        <div className="relative">
+        <IconValidatedField
+          label="Skills (Press Enter to add)"
+          icon={Tag}
+          state="neutral"
+        >
           <Input
             placeholder="Type a skill and press Enter"
             className={iconInputClass("neutral")}
@@ -723,8 +716,7 @@ export function TrainerForm({
             onChange={(event) => setSkillInput(event.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <FieldIcon icon={Tag} />
-        </div>
+        </IconValidatedField>
         {currentSkills.length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-2">
             {currentSkills.map((skill) => (
@@ -764,28 +756,31 @@ export function TrainerForm({
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <ValidatedField
+        <IconValidatedField
           label="Qualification"
+          icon={GraduationCap}
+          select
           state={qualificationFieldState}
           errorMessage={errors.qualification?.message}
         >
-          <div className="relative">
-            <AppSelect
-              value={values.qualification || undefined}
-              placeholder="Select qualification"
-              options={qualificationOptions}
-              triggerClassName={selectTriggerClass(qualificationFieldState)}
-              onValueChange={(value) => {
-                setValue("qualification", value, {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
-                });
-              }}
-            />
-            <FieldIcon icon={GraduationCap} />
-          </div>
-        </ValidatedField>
+          <AppSelect
+            value={values.qualification || undefined}
+            placeholder="Select qualification"
+            options={qualificationOptions}
+            triggerClassName={validatedFieldInputClass(
+              qualificationFieldState,
+              "w-full min-w-0 max-w-full",
+              { leftIcon: true, select: true },
+            )}
+            onValueChange={(value) => {
+              setValue("qualification", value, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+              });
+            }}
+          />
+        </IconValidatedField>
 
         {renderIconInput(
           "Specialization",
@@ -794,32 +789,34 @@ export function TrainerForm({
           "e.g. Strength Training",
         )}
 
-        <ValidatedField
+        <IconValidatedField
           label="Experience (Years)"
+          icon={Hash}
           state={experienceYearsField.state}
           errorMessage={experienceYearsField.errorMessage}
         >
-          <div className="relative">
-            <Input
-              type="number"
-              min={0}
-              {...experienceYearsField.inputProps}
-              placeholder="0"
-            />
-            <FieldIcon icon={Hash} />
-          </div>
-        </ValidatedField>
+          <Input
+            type="number"
+            min={0}
+            {...experienceYearsField.inputProps}
+            placeholder="0"
+            className={iconInputClass(experienceYearsField.state)}
+          />
+        </IconValidatedField>
 
-        <ValidatedField
+        <IconValidatedField
           label="Joining Date"
+          icon={Calendar}
           state={joiningDateField.state}
           errorMessage={joiningDateField.errorMessage}
         >
-          <div className="relative">
-            <Input type="date" {...joiningDateField.inputProps} />
-            <FieldIcon icon={Calendar} />
-          </div>
-        </ValidatedField>
+          <Input
+            type="date"
+            placeholder="Select joining date"
+            {...joiningDateField.inputProps}
+            className={iconInputClass(joiningDateField.state)}
+          />
+        </IconValidatedField>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

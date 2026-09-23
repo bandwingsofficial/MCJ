@@ -40,6 +40,8 @@ import { Label } from "@/src/shared/components/ui/label";
 import { FormError } from "@/src/shared/components/ui/form-error";
 import {
   FieldVisualState,
+  IconValidatedField,
+  iconDecorInputClass,
   ValidatedField,
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
@@ -62,21 +64,8 @@ const ACCEPTED_TYPES = [
   "image/gif",
 ];
 
-function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
-  return (
-    <Icon
-      className="pointer-events-none absolute right-9 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
-      aria-hidden="true"
-    />
-  );
-}
-
 function iconInputClass(state: FieldVisualState, extra = "") {
-  return cn(
-    validatedFieldInputClass(state, "w-full min-w-0 max-w-full"),
-    "pr-16",
-    extra,
-  );
+  return iconDecorInputClass(state, cn("w-full min-w-0 max-w-full", extra));
 }
 
 function IconField({
@@ -87,6 +76,7 @@ function IconField({
   checkingMessage,
   successMessage,
   icon,
+  select,
   children,
 }: {
   label: string;
@@ -96,22 +86,22 @@ function IconField({
   checkingMessage?: string;
   successMessage?: string;
   icon: LucideIcon;
+  select?: boolean;
   children: ReactNode;
 }) {
   return (
-    <ValidatedField
+    <IconValidatedField
       label={label}
       required={required}
       state={state}
       errorMessage={errorMessage}
       checkingMessage={checkingMessage}
       successMessage={successMessage}
+      icon={icon}
+      select={select}
     >
-      <div className="relative">
-        {children}
-        <FieldIcon icon={icon} />
-      </div>
-    </ValidatedField>
+      {children}
+    </IconValidatedField>
   );
 }
 

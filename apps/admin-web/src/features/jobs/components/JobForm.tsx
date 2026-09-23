@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { Label } from "@/src/shared/components/ui/label";
 import { Input } from "@/src/shared/components/ui/input";
 import { Textarea } from "@/src/shared/components/ui/textarea";
 import { AppSelect } from "@/src/shared/components/ui/select";
@@ -69,13 +70,8 @@ interface JobFormProps {
 const GRID_CLASS =
   "grid w-full min-w-0 grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2";
 
-function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
-  return (
-    <Icon
-      className="pointer-events-none absolute left-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
-      aria-hidden="true"
-    />
-  );
+function fieldLeftIcon(Icon: LucideIcon) {
+  return <Icon className="h-4 w-4" aria-hidden />;
 }
 
 function SectionTitle({ children }: { children: string }) {
@@ -89,10 +85,12 @@ function SectionTitle({ children }: { children: string }) {
 function inputClass(
   state: ReturnType<typeof getSyncFieldState>,
   extra = "",
+  options?: Parameters<typeof validatedFieldInputClass>[2],
 ) {
   return validatedFieldInputClass(
     state,
     cn("h-[46px] w-full min-w-0 max-w-full", extra),
+    options,
   );
 }
 
@@ -214,14 +212,16 @@ export function JobForm({
         <ValidatedField
           label="Company Name"
           required
+          leftIcon={fieldLeftIcon(Building2)}
           state={fieldState("companyName")}
           errorMessage={errors.companyName?.message}
         >
-          <FieldIcon icon={Building2} />
           <Input
             placeholder="ABC Technologies"
             disabled={isSubmitting}
-            className={inputClass(fieldState("companyName"), "pl-10")}
+            className={inputClass(fieldState("companyName"), "", {
+              leftIcon: true,
+            })}
             {...register("companyName")}
           />
         </ValidatedField>
@@ -242,15 +242,17 @@ export function JobForm({
         <ValidatedField
           label="Company Email"
           required
+          leftIcon={fieldLeftIcon(Mail)}
           state={fieldState("companyEmail")}
           errorMessage={errors.companyEmail?.message}
         >
-          <FieldIcon icon={Mail} />
           <Input
             type="email"
             placeholder="hr@company.com"
             disabled={isSubmitting}
-            className={inputClass(fieldState("companyEmail"), "pl-10")}
+            className={inputClass(fieldState("companyEmail"), "", {
+              leftIcon: true,
+            })}
             {...register("companyEmail")}
           />
         </ValidatedField>
@@ -258,16 +260,17 @@ export function JobForm({
         <ValidatedField
           label="Company Phone"
           required={variant === "company"}
+          leftIcon={fieldLeftIcon(Phone)}
           state={fieldState("companyPhone", variant === "company")}
           errorMessage={errors.companyPhone?.message}
         >
-          <FieldIcon icon={Phone} />
           <Input
             placeholder="9876543210"
             disabled={isSubmitting}
             className={inputClass(
               fieldState("companyPhone", variant === "company"),
-              "pl-10",
+              "",
+              { leftIcon: true },
             )}
             {...register("companyPhone")}
           />
@@ -281,20 +284,23 @@ export function JobForm({
         <ValidatedField
           label="Job Title"
           required
+          leftIcon={fieldLeftIcon(Briefcase)}
           state={fieldState("title")}
           errorMessage={errors.title?.message}
         >
-          <FieldIcon icon={Briefcase} />
           <Input
             placeholder="Software Developer"
             disabled={isSubmitting}
-            className={inputClass(fieldState("title"), "pl-10")}
+            className={inputClass(fieldState("title"), "", { leftIcon: true })}
             {...register("title")}
           />
         </ValidatedField>
 
-        <ValidatedField label="Job Number" state="neutral">
-          <FieldIcon icon={Hash} />
+        <ValidatedField
+          label="Job Number"
+          state="neutral"
+          leftIcon={fieldLeftIcon(Hash)}
+        >
           <Input
             value={
               initialData?.jobNumber ??
@@ -304,7 +310,7 @@ export function JobForm({
             }
             readOnly
             disabled
-            className="h-[46px] pl-10"
+            className={inputClass("neutral", "", { leftIcon: true })}
             aria-label="Job number"
           />
         </ValidatedField>
@@ -312,10 +318,11 @@ export function JobForm({
         <ValidatedField
           label={variant === "company" ? "Job Category" : "Category"}
           required
+          select
+          leftIcon={fieldLeftIcon(Folder)}
           state={fieldState("category")}
           errorMessage={errors.category?.message}
         >
-          <FieldIcon icon={Folder} />
           <Controller
             name="category"
             control={control}
@@ -324,7 +331,10 @@ export function JobForm({
                 value={field.value || undefined}
                 disabled={isSubmitting}
                 placeholder="Select category"
-                triggerClassName={inputClass(fieldState("category"), "pl-10 pr-16")}
+                triggerClassName={inputClass(fieldState("category"), "", {
+                  leftIcon: true,
+                  select: true,
+                })}
                 onValueChange={field.onChange}
                 options={categoryOptions}
               />
@@ -335,6 +345,7 @@ export function JobForm({
         <ValidatedField
           label="Job Type"
           required
+          select
           state={fieldState("employmentType")}
           errorMessage={errors.employmentType?.message}
         >
@@ -345,7 +356,10 @@ export function JobForm({
               <AppSelect
                 value={field.value ?? ""}
                 disabled={isSubmitting}
-                triggerClassName={inputClass(fieldState("employmentType"))}
+                placeholder="Select job type"
+                triggerClassName={inputClass(fieldState("employmentType"), "", {
+                  select: true,
+                })}
                 onValueChange={field.onChange}
                 options={EMPLOYMENT_TYPES}
               />
@@ -356,6 +370,7 @@ export function JobForm({
         <ValidatedField
           label="Work Mode"
           required
+          select
           state={fieldState("workMode")}
           errorMessage={errors.workMode?.message}
         >
@@ -366,7 +381,10 @@ export function JobForm({
               <AppSelect
                 value={field.value ?? ""}
                 disabled={isSubmitting}
-                triggerClassName={inputClass(fieldState("workMode"))}
+                placeholder="Select work mode"
+                triggerClassName={inputClass(fieldState("workMode"), "", {
+                  select: true,
+                })}
                 onValueChange={field.onChange}
                 options={WORK_MODES}
               />
@@ -377,6 +395,7 @@ export function JobForm({
         <ValidatedField
           label="Working Days"
           required
+          select
           state={fieldState("workingDays")}
           errorMessage={errors.workingDays?.message}
         >
@@ -387,7 +406,10 @@ export function JobForm({
               <AppSelect
                 value={field.value ?? ""}
                 disabled={isSubmitting}
-                triggerClassName={inputClass(fieldState("workingDays"))}
+                placeholder="Select working days"
+                triggerClassName={inputClass(fieldState("workingDays"), "", {
+                  select: true,
+                })}
                 onValueChange={field.onChange}
                 options={WORKING_DAYS}
               />
@@ -398,14 +420,16 @@ export function JobForm({
         <ValidatedField
           label={variant === "company" ? "Work Location" : "Location"}
           required
+          leftIcon={fieldLeftIcon(MapPin)}
           state={fieldState("location")}
           errorMessage={errors.location?.message}
         >
-          <FieldIcon icon={MapPin} />
           <Input
             placeholder="Bengaluru"
             disabled={isSubmitting}
-            className={inputClass(fieldState("location"), "pl-10")}
+            className={inputClass(fieldState("location"), "", {
+              leftIcon: true,
+            })}
             {...register("location")}
           />
         </ValidatedField>
@@ -429,10 +453,10 @@ export function JobForm({
         <ValidatedField
           label="Minimum Salary"
           required
+          leftIcon={fieldLeftIcon(IndianRupee)}
           state={fieldState("minSalary")}
           errorMessage={errors.minSalary?.message}
         >
-          <FieldIcon icon={IndianRupee} />
           <Controller
             name="minSalary"
             control={control}
@@ -441,7 +465,9 @@ export function JobForm({
                 inputMode="numeric"
                 placeholder="15,000"
                 disabled={isSubmitting}
-                className={inputClass(fieldState("minSalary"), "pl-10")}
+                className={inputClass(fieldState("minSalary"), "", {
+                  leftIcon: true,
+                })}
                 value={formatSalaryInput(field.value) || ""}
                 onBlur={field.onBlur}
                 onChange={(event) => {
@@ -455,10 +481,10 @@ export function JobForm({
         <ValidatedField
           label="Maximum Salary"
           required
+          leftIcon={fieldLeftIcon(IndianRupee)}
           state={fieldState("maxSalary")}
           errorMessage={errors.maxSalary?.message}
         >
-          <FieldIcon icon={IndianRupee} />
           <Controller
             name="maxSalary"
             control={control}
@@ -467,7 +493,9 @@ export function JobForm({
                 inputMode="numeric"
                 placeholder="40,000"
                 disabled={isSubmitting}
-                className={inputClass(fieldState("maxSalary"), "pl-10")}
+                className={inputClass(fieldState("maxSalary"), "", {
+                  leftIcon: true,
+                })}
                 value={formatSalaryInput(field.value) || ""}
                 onBlur={field.onBlur}
                 onChange={(event) => {
@@ -496,10 +524,10 @@ export function JobForm({
         <ValidatedField
           label="Minimum Experience (years)"
           required
+          leftIcon={fieldLeftIcon(User)}
           state={fieldState("minExperience")}
           errorMessage={errors.minExperience?.message}
         >
-          <FieldIcon icon={User} />
           <Controller
             name="minExperience"
             control={control}
@@ -507,8 +535,11 @@ export function JobForm({
               <Input
                 type="number"
                 min={0}
+                placeholder="0"
                 disabled={isSubmitting}
-                className={inputClass(fieldState("minExperience"), "pl-10")}
+                className={inputClass(fieldState("minExperience"), "", {
+                  leftIcon: true,
+                })}
                 value={Number.isFinite(field.value) ? String(field.value) : "0"}
                 onBlur={field.onBlur}
                 onChange={(event) => {
@@ -549,12 +580,8 @@ export function JobForm({
         </ValidatedField>
       </div>
 
-      <ValidatedField
-        label="Minimum Required Qualification"
-        required
-        state={fieldState("qualifications")}
-        errorMessage={errors.qualifications?.message}
-      >
+      <div className="min-w-0">
+        <Label required>Minimum Required Qualification</Label>
         <Controller
           name="qualifications"
           control={control}
@@ -574,7 +601,7 @@ export function JobForm({
                   >
                     <input
                       type="checkbox"
-                      className="h-4 w-4"
+                      className="h-4 w-4 shrink-0"
                       checked={checked}
                       disabled={isSubmitting}
                       onBlur={field.onBlur}
@@ -586,14 +613,21 @@ export function JobForm({
                         );
                       }}
                     />
-                    {item}
+                    <span className="min-w-0 flex-1 text-left">{item}</span>
                   </label>
                 );
               })}
             </div>
           )}
         />
-      </ValidatedField>
+        <div className="mt-1 min-h-[1.25rem]">
+          {errors.qualifications?.message ? (
+            <p role="alert" className="text-sm text-red-500">
+              {errors.qualifications.message}
+            </p>
+          ) : null}
+        </div>
+      </div>
 
       <SectionTitle>Skills</SectionTitle>
       <ValidatedField
@@ -720,15 +754,17 @@ export function JobForm({
         <ValidatedField
           label="Job Expiry Date"
           required
+          leftIcon={fieldLeftIcon(Calendar)}
           state={fieldState("applicationDeadline")}
           errorMessage={errors.applicationDeadline?.message}
         >
-          <FieldIcon icon={Calendar} />
           <Input
             type="date"
             min={initialData ? undefined : tomorrowDateInputValue()}
             disabled={isSubmitting}
-            className={inputClass(fieldState("applicationDeadline"), "pl-10")}
+            className={inputClass(fieldState("applicationDeadline"), "", {
+              leftIcon: true,
+            })}
             {...register("applicationDeadline")}
           />
         </ValidatedField>

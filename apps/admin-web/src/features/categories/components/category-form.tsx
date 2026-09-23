@@ -31,6 +31,8 @@ import { Label } from "@/src/shared/components/ui/label";
 import { WordCount } from "@/src/shared/components/ui/word-count";
 import {
   FieldVisualState,
+  IconValidatedField,
+  iconDecorInputClass,
   ValidatedField,
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
@@ -55,30 +57,8 @@ const ACCEPTED_TYPES = [
   "image/gif",
 ];
 
-function FieldIcon({
-  icon: Icon,
-  alignTop = false,
-}: {
-  icon: LucideIcon;
-  alignTop?: boolean;
-}) {
-  return (
-    <Icon
-      className={cn(
-        "pointer-events-none absolute right-9 z-[1] h-4 w-4 text-slate-400",
-        alignTop ? "top-3" : "top-1/2 -translate-y-1/2",
-      )}
-      aria-hidden="true"
-    />
-  );
-}
-
 function iconInputClass(state: FieldVisualState, extra = "") {
-  return cn(
-    validatedFieldInputClass(state, "w-full min-w-0 max-w-full"),
-    "pr-16",
-    extra,
-  );
+  return iconDecorInputClass(state, cn("w-full min-w-0 max-w-full", extra));
 }
 
 function IconField({
@@ -89,6 +69,7 @@ function IconField({
   checkingMessage,
   successMessage,
   icon,
+  textarea,
   children,
 }: {
   label: string;
@@ -98,22 +79,23 @@ function IconField({
   checkingMessage?: string;
   successMessage?: string;
   icon: LucideIcon;
+  textarea?: boolean;
   children: ReactNode;
 }) {
   return (
-    <ValidatedField
+    <IconValidatedField
       label={label}
       required={required}
       state={state}
       errorMessage={errorMessage}
       checkingMessage={checkingMessage}
       successMessage={successMessage}
+      icon={icon}
+      textarea={textarea}
+      rightDecorAlignTop={textarea}
     >
-      <div className="relative">
-        {children}
-        <FieldIcon icon={icon} />
-      </div>
-    </ValidatedField>
+      {children}
+    </IconValidatedField>
   );
 }
 
@@ -703,26 +685,26 @@ export function CategoryForm({
 
       <ValidatedField
         label="Description"
+        textarea
+        rightDecorIcon={FileText}
+        rightDecorAlignTop
         state={descriptionField.state}
         errorMessage={descriptionField.errorMessage}
       >
-        <div className="relative">
-          <Textarea
-            {...descriptionField.inputProps}
-            placeholder="Enter category description"
-            disabled={isSubmitting}
-            className={cn(
-              iconInputClass(descriptionField.state),
-              "min-h-[96px] resize-y",
-            )}
-          />
-          <FieldIcon icon={FileText} alignTop />
-        </div>
-        <WordCount
-          value={values.description ?? ""}
-          maxWords={CATEGORY_DESCRIPTION_MAX_WORDS}
+        <Textarea
+          {...descriptionField.inputProps}
+          placeholder="Enter category description"
+          disabled={isSubmitting}
+          className={cn(
+            iconInputClass(descriptionField.state),
+            "min-h-[96px] resize-y",
+          )}
         />
       </ValidatedField>
+      <WordCount
+        value={values.description ?? ""}
+        maxWords={CATEGORY_DESCRIPTION_MAX_WORDS}
+      />
 
       <div className="min-w-0">
         <Label required>Category Image</Label>
@@ -832,8 +814,9 @@ export function CategoryForm({
 
       {isEdit ? (
         <>
-          <ValidatedField
+          <IconField
             label="Display Order"
+            icon={ListOrdered}
             state={displayOrderField.state}
             errorMessage={displayOrderField.errorMessage}
           >
@@ -858,8 +841,7 @@ export function CategoryForm({
                 displayOrderField.inputProps.onChange(event);
               }}
             />
-            <FieldIcon icon={ListOrdered} />
-          </ValidatedField>
+          </IconField>
           <p className="mt-1 text-xs text-slate-500">
             Lower numbers appear first in category lists.
           </p>

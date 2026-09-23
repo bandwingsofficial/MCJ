@@ -141,6 +141,7 @@ export function CommunityForm({
         fieldError("caption") ?? externalErrors.caption,
         caption,
       )}
+      textarea
       className="w-full"
     >
       <div className="relative w-full">
@@ -149,12 +150,14 @@ export function CommunityForm({
           placeholder="Write a caption..."
           disabled={isSubmitting}
           className={cn(
-            "w-full min-h-[96px] resize-y pr-16",
+            "w-full min-h-[96px] resize-y",
             validatedFieldInputClass(
               getFieldState(
                 fieldError("caption") ?? externalErrors.caption,
                 caption,
               ),
+              undefined,
+              { textarea: true },
             ),
           )}
           {...register("caption", {
@@ -206,6 +209,7 @@ export function CommunityForm({
     <ValidatedField
       label="Status"
       required
+      select
       errorMessage={fieldError("status")}
       state={getFieldState(fieldError("status"), status)}
     >
@@ -225,24 +229,21 @@ export function CommunityForm({
   const locationField = (
     <ValidatedField
       label="Location"
+      rightDecorIcon={MapPin}
       errorMessage={fieldError("location")}
       state={getFieldState(fieldError("location"), location)}
     >
-      <div className="relative">
-        <MapPin
-          className="pointer-events-none absolute right-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
-          aria-hidden="true"
-        />
-        <Input
-          placeholder="Enter location"
-          maxLength={MAX_LOCATION_LENGTH}
-          disabled={isSubmitting}
-          className={validatedFieldInputClass(
-            getFieldState(fieldError("location"), location),
-          )}
-          {...register("location")}
-        />
-      </div>
+      <Input
+        placeholder="Enter location"
+        maxLength={MAX_LOCATION_LENGTH}
+        disabled={isSubmitting}
+        className={validatedFieldInputClass(
+          getFieldState(fieldError("location"), location),
+          "w-full min-w-0",
+          { rightDecorIcon: true },
+        )}
+        {...register("location")}
+      />
     </ValidatedField>
   );
 
@@ -305,6 +306,7 @@ export function CommunityForm({
             label="Button Link"
             required
             className="min-w-0"
+            rightDecorIcon={Link2}
             errorMessage={
               fieldError("ctaButtonLink") ?? externalErrors.ctaButtonLink
             }
@@ -313,23 +315,19 @@ export function CommunityForm({
               ctaButtonLink,
             )}
           >
-            <div className="relative">
-              <Link2
-                className="pointer-events-none absolute right-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
-                aria-hidden="true"
-              />
-              <Input
-                placeholder="https://example.com/book"
-                disabled={isSubmitting}
-                className={validatedFieldInputClass(
-                  getFieldState(
-                    fieldError("ctaButtonLink") ?? externalErrors.ctaButtonLink,
-                    ctaButtonLink,
-                  ),
-                )}
-                {...register("ctaButtonLink")}
-              />
-            </div>
+            <Input
+              placeholder="https://example.com/book"
+              disabled={isSubmitting}
+              className={validatedFieldInputClass(
+                getFieldState(
+                  fieldError("ctaButtonLink") ?? externalErrors.ctaButtonLink,
+                  ctaButtonLink,
+                ),
+                "w-full min-w-0",
+                { rightDecorIcon: true },
+              )}
+              {...register("ctaButtonLink")}
+            />
           </ValidatedField>
         </div>
       ) : null}
@@ -340,23 +338,20 @@ export function CommunityForm({
     <ValidatedField
       label="Community Name"
       required
+      rightDecorIcon={User}
       errorMessage={fieldError("authorName")}
       state={getFieldState(fieldError("authorName"), authorName)}
     >
-      <div className="relative">
-        <User
-          className="pointer-events-none absolute right-3 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
-          aria-hidden="true"
-        />
-        <Input
-          placeholder="MCJ Community"
-          disabled={isSubmitting}
-          className={validatedFieldInputClass(
-            getFieldState(fieldError("authorName"), authorName),
-          )}
-          {...register("authorName")}
-        />
-      </div>
+      <Input
+        placeholder="MCJ Community"
+        disabled={isSubmitting}
+        className={validatedFieldInputClass(
+          getFieldState(fieldError("authorName"), authorName),
+          "w-full min-w-0",
+          { rightDecorIcon: true },
+        )}
+        {...register("authorName")}
+      />
     </ValidatedField>
   );
 

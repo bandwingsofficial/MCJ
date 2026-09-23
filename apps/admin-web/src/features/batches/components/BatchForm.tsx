@@ -30,6 +30,8 @@ import { AppSelect } from "@/src/shared/components/ui/select";
 import { Textarea } from "@/src/shared/components/ui/textarea";
 import { WordCount } from "@/src/shared/components/ui/word-count";
 import {
+  IconValidatedField,
+  iconDecorInputClass,
   ValidatedField,
   validatedFieldInputClass,
   type FieldVisualState,
@@ -119,21 +121,8 @@ const GRID_CLASS = "grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2";
 
 type SyncFieldName = keyof BatchFormValues;
 
-function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
-  return (
-    <Icon
-      className="pointer-events-none absolute right-9 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
-      aria-hidden="true"
-    />
-  );
-}
-
 function iconInputClass(state: FieldVisualState, extra = "") {
-  return cn(
-    validatedFieldInputClass(state, "w-full min-w-0 max-w-full"),
-    "pr-16",
-    extra,
-  );
+  return iconDecorInputClass(state, cn("w-full min-w-0 max-w-full", extra));
 }
 
 function plainInputClass(state: FieldVisualState, extra = "") {
@@ -154,6 +143,7 @@ function IconField({
   errorMessage,
   checkingMessage,
   icon,
+  select,
   children,
 }: {
   label: string;
@@ -162,18 +152,21 @@ function IconField({
   errorMessage?: string;
   checkingMessage?: string;
   icon: LucideIcon;
+  select?: boolean;
   children: ReactNode;
 }) {
   return (
-    <ValidatedField
+    <IconValidatedField
       label={label}
       required={required}
       state={state}
       errorMessage={errorMessage}
       checkingMessage={checkingMessage}
+      icon={icon}
+      select={select}
     >
-      <div className="relative">{children}</div>
-    </ValidatedField>
+      {children}
+    </IconValidatedField>
   );
 }
 
@@ -512,7 +505,6 @@ export function BatchForm({
           state={getFieldState("name")}
           errorMessage={errors.name?.message}
         >
-          <FieldIcon icon={Tag} />
           <Input
             placeholder="Enter batch name"
             autoComplete="off"
@@ -529,7 +521,6 @@ export function BatchForm({
           checkingMessage="Generating batch number..."
           errorMessage={errors.code?.message}
         >
-          <FieldIcon icon={Hash} />
           <Input
             readOnly
             placeholder="Auto-generated"
@@ -546,10 +537,10 @@ export function BatchForm({
           label="Course"
           required
           icon={GraduationCap}
+          select
           state={getFieldState("courseId")}
           errorMessage={errors.courseId?.message}
         >
-          <FieldIcon icon={GraduationCap} />
           <AppSelect
             value={values.courseId || undefined}
             onValueChange={(value) =>
@@ -572,10 +563,10 @@ export function BatchForm({
           label="Batch Type"
           required
           icon={BookOpen}
+          select
           state={getFieldState("mode")}
           errorMessage={errors.mode?.message}
         >
-          <FieldIcon icon={BookOpen} />
           <AppSelect
             value={values.mode}
             onValueChange={(value) =>
@@ -655,7 +646,6 @@ export function BatchForm({
               datesAreValid && totalWorkingDays !== null ? "valid" : "neutral"
             }
           >
-            <FieldIcon icon={CalendarDays} />
             <Input
               readOnly
               tabIndex={-1}
@@ -734,7 +724,6 @@ export function BatchForm({
           state={getFieldState("capacity")}
           errorMessage={errors.capacity?.message}
         >
-          <FieldIcon icon={Users} />
           <Input
             type="number"
             min={1}
@@ -754,7 +743,6 @@ export function BatchForm({
 
         {isEdit ? (
           <IconField label="Enrolled Count" icon={Users} state="neutral">
-            <FieldIcon icon={Users} />
             <Input
               type="number"
               min={0}
@@ -772,6 +760,7 @@ export function BatchForm({
         <ValidatedField
           label="Pricing Type"
           required
+          select
           state={getFieldState("isFree")}
           errorMessage={errors.isFree?.message}
         >
@@ -789,46 +778,48 @@ export function BatchForm({
           required={!pricesDisabled}
           state={getFieldState("originalPrice")}
           errorMessage={errors.originalPrice?.message}
+          leftIcon={
+            !pricesDisabled ? (
+              <span className="text-sm text-[#647A9B]">₹</span>
+            ) : undefined
+          }
+          rightDecorIcon={!pricesDisabled ? IndianRupee : undefined}
         >
-          <div className="relative">
-            {!pricesDisabled ? (
-              <span className="pointer-events-none absolute left-3 top-1/2 z-[1] -translate-y-1/2 text-sm text-[#647A9B]">
-                ₹
-              </span>
-            ) : null}
-            <Input
-              type="number"
-              min={0}
-              step="0.01"
-              disabled={pricesDisabled}
-              placeholder={
-                pricesDisabled ? "Free batch" : "Enter original price"
-              }
-              autoComplete="off"
-              className={plainInputClass(
-                getFieldState("originalPrice"),
-                pricesDisabled ? "" : "pl-7",
-              )}
-              {...register("originalPrice", {
-                valueAsNumber: true,
-                onChange: (event) => {
-                  const nextOriginal = Number(event.target.value) || 0;
-                  const percent = Number(values.discountPercent) || 0;
-                  if (percent > 0 && nextOriginal > 0) {
-                    const nextAmount =
-                      Math.round(((nextOriginal * percent) / 100) * 100) /
-                      100;
-                    setValue("discountAmount", nextAmount, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    });
-                  }
-                  void trigger("originalPrice");
-                },
-              })}
-            />
-            {!pricesDisabled ? <FieldIcon icon={IndianRupee} /> : null}
-          </div>
+          <Input
+            type="number"
+            min={0}
+            step="0.01"
+            disabled={pricesDisabled}
+            placeholder={
+              pricesDisabled ? "Free batch" : "Enter original price"
+            }
+            autoComplete="off"
+            className={validatedFieldInputClass(
+              getFieldState("originalPrice"),
+              "w-full min-w-0 max-w-full",
+              {
+                leftIcon: !pricesDisabled,
+                rightDecorIcon: !pricesDisabled,
+              },
+            )}
+            {...register("originalPrice", {
+              valueAsNumber: true,
+              onChange: (event) => {
+                const nextOriginal = Number(event.target.value) || 0;
+                const percent = Number(values.discountPercent) || 0;
+                if (percent > 0 && nextOriginal > 0) {
+                  const nextAmount =
+                    Math.round(((nextOriginal * percent) / 100) * 100) /
+                    100;
+                  setValue("discountAmount", nextAmount, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }
+                void trigger("originalPrice");
+              },
+            })}
+          />
         </ValidatedField>
 
         <ValidatedField

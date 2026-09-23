@@ -13,6 +13,8 @@ import { Button } from "@/src/shared/components/ui/button";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { ImageUploadField } from "@/src/shared/components/ui/image-upload-field";
 import {
+  IconValidatedField,
+  iconDecorInputClass,
   ValidatedField,
   validatedFieldInputClass,
   type FieldVisualState,
@@ -52,15 +54,6 @@ const ACCEPTED_TYPES = [
 
 const GRID_CLASS =
   "grid w-full min-w-0 grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2";
-
-function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
-  return (
-    <Icon
-      className="pointer-events-none absolute right-9 z-[1] h-4 w-4 text-slate-400"
-      aria-hidden="true"
-    />
-  );
-}
 
 function SectionTitle({ children }: { children: string }) {
   return (
@@ -357,28 +350,26 @@ export function FinanceNewsForm({
 
       <SectionTitle>Article Details</SectionTitle>
 
-      <ValidatedField
+      <IconValidatedField
         label="Title"
         required
+        icon={FileText}
         state={getFieldState(mergedErrors.title, titleValue)}
         errorMessage={mergedErrors.title}
       >
-        <div className="relative">
-          <Input
-            {...register("title")}
-            disabled={isSubmitting}
-            className={validatedFieldInputClass(
-              getFieldState(mergedErrors.title, titleValue),
-              "w-full pr-16",
-            )}
-            placeholder="Enter article title"
-          />
-          <FieldIcon icon={FileText} />
-        </div>
+        <Input
+          {...register("title")}
+          disabled={isSubmitting}
+          className={iconDecorInputClass(
+            getFieldState(mergedErrors.title, titleValue),
+            "w-full",
+          )}
+          placeholder="Enter article title"
+        />
         <p className="mt-1 text-xs text-[#647A9B]">
           URL slug is generated automatically from the title.
         </p>
-      </ValidatedField>
+      </IconValidatedField>
 
       <ValidatedField
         label="Short Description"
@@ -521,6 +512,7 @@ export function FinanceNewsForm({
         <ValidatedField
           label="Category"
           required
+          select
           state={getFieldState(mergedErrors.categoryId, watch("categoryId"))}
           errorMessage={mergedErrors.categoryId}
         >
@@ -534,6 +526,7 @@ export function FinanceNewsForm({
                 triggerClassName={validatedFieldInputClass(
                   getFieldState(mergedErrors.categoryId, field.value),
                   "h-[46px] w-full",
+                  { select: true },
                 )}
                 placeholder={
                   categoriesLoading ? "Loading categories..." : "Select category"
@@ -551,6 +544,7 @@ export function FinanceNewsForm({
         <ValidatedField
           label="Publish Status"
           required
+          select
           state={getFieldState(mergedErrors.status, watch("status"))}
           errorMessage={mergedErrors.status}
         >
@@ -561,9 +555,11 @@ export function FinanceNewsForm({
               <AppSelect
                 value={field.value}
                 disabled={isSubmitting}
+                placeholder="Select publish status"
                 triggerClassName={validatedFieldInputClass(
                   getFieldState(mergedErrors.status, field.value),
                   "h-[46px] w-full",
+                  { select: true },
                 )}
                 onValueChange={field.onChange}
                 options={FINANCE_ARTICLE_STATUSES.map((status) => ({
@@ -575,7 +571,7 @@ export function FinanceNewsForm({
           />
         </ValidatedField>
 
-        <ValidatedField label="Published On">
+        <ValidatedField label="Published On" state="neutral">
           <Input
             readOnly
             disabled
@@ -611,26 +607,24 @@ export function FinanceNewsForm({
       <SectionTitle>Author</SectionTitle>
 
       <div className={GRID_CLASS}>
-        <ValidatedField
+        <IconValidatedField
           label="Author Name"
+          icon={User}
           state={getFieldState(mergedErrors.authorName, watch("authorName"))}
           errorMessage={mergedErrors.authorName}
         >
-          <div className="relative">
-            <Input
-              {...register("authorName")}
-              disabled={isSubmitting}
-              className={validatedFieldInputClass(
-                getFieldState(mergedErrors.authorName, watch("authorName")),
-                "w-full pr-16",
-              )}
-              placeholder="MCJ Team"
-            />
-            <FieldIcon icon={User} />
-          </div>
-        </ValidatedField>
+          <Input
+            {...register("authorName")}
+            disabled={isSubmitting}
+            className={iconDecorInputClass(
+              getFieldState(mergedErrors.authorName, watch("authorName")),
+              "w-full",
+            )}
+            placeholder="MCJ Team"
+          />
+        </IconValidatedField>
 
-        <ValidatedField label="Author Image">
+        <ValidatedField label="Author Image" state="neutral">
           <div className="flex h-[46px] items-center gap-3 rounded-xl border border-[#DCE8F5] bg-white px-3">
             <Image
               src={FINANCE_ARTICLE_AUTHOR_IMAGE_PATH}

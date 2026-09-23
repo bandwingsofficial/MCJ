@@ -20,6 +20,8 @@ import { AppSelect } from "@/src/shared/components/ui/select";
 import { WordCount } from "@/src/shared/components/ui/word-count";
 import { ImageUploadField } from "@/src/shared/components/ui/image-upload-field";
 import {
+  IconValidatedField,
+  iconDecorInputClass,
   ValidatedField,
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
@@ -97,15 +99,6 @@ const CELL_CLASS = "min-w-0 w-full";
 const SECTION_CLASS = "rounded-xl border border-slate-200 bg-white p-4 space-y-4";
 const SECTION_TITLE_CLASS = "text-base font-semibold text-[#102A56]";
 
-function FieldIcon({ icon: Icon }: { icon: LucideIcon }) {
-  return (
-    <Icon
-      className="pointer-events-none absolute right-9 top-1/2 z-[1] h-4 w-4 -translate-y-1/2 text-slate-400"
-      aria-hidden="true"
-    />
-  );
-}
-
 type MetaFieldKey = "metaTitle" | "metaDescription" | "slug" | "metaKeywords";
 
 function formatLevelLabel(level: string) {
@@ -120,7 +113,7 @@ function iconInputClass(
   state: ReturnType<typeof getSyncFieldState>,
   extra = "",
 ) {
-  return cn(inputClass(state), "pr-16", extra);
+  return iconDecorInputClass(state, cn("w-full min-w-0 max-w-full", extra));
 }
 
 export function CourseForm({
@@ -543,20 +536,20 @@ export function CourseForm({
           </div>
 
           <div className={CELL_CLASS}>
-            <ValidatedField
+            <IconValidatedField
               label="Title"
               required
+              icon={BookOpen}
               state={titleState}
               errorMessage={errors.title?.message}
             >
               <Input
                 id="course-title"
-                placeholder="Course title"
+                placeholder="Enter course title"
                 className={iconInputClass(titleState)}
                 {...register("title")}
               />
-              <FieldIcon icon={BookOpen} />
-            </ValidatedField>
+            </IconValidatedField>
           </div>
 
           <div className={CELL_CLASS}>
@@ -575,9 +568,11 @@ export function CourseForm({
           </div>
 
           <div className={CELL_CLASS}>
-            <ValidatedField
+            <IconValidatedField
               label="Category"
               required
+              select
+              icon={FolderOpen}
               state={categoryState}
               errorMessage={errors.categoryId?.message}
             >
@@ -585,25 +580,28 @@ export function CourseForm({
                 control={control}
                 name="categoryId"
                 render={({ field }) => (
-                  <>
-                    <AppSelect
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      placeholder="Select Category"
-                      options={categoryOptions}
-                      triggerClassName={iconInputClass(categoryState)}
-                    />
-                    <FieldIcon icon={FolderOpen} />
-                  </>
+                  <AppSelect
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Select category"
+                    options={categoryOptions}
+                    triggerClassName={validatedFieldInputClass(
+                      categoryState,
+                      "w-full min-w-0 max-w-full",
+                      { leftIcon: true, select: true },
+                    )}
+                  />
                 )}
               />
-            </ValidatedField>
+            </IconValidatedField>
           </div>
 
           <div className={CELL_CLASS}>
-            <ValidatedField
+            <IconValidatedField
               label="Level"
               required
+              select
+              icon={GraduationCap}
               state={levelState}
               errorMessage={errors.level?.message}
             >
@@ -611,22 +609,23 @@ export function CourseForm({
                 control={control}
                 name="level"
                 render={({ field }) => (
-                  <>
-                    <AppSelect
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      placeholder="Select difficulty level"
-                      options={COURSE_LEVELS.map((level) => ({
-                        label: formatLevelLabel(level),
-                        value: level,
-                      }))}
-                      triggerClassName={iconInputClass(levelState)}
-                    />
-                    <FieldIcon icon={GraduationCap} />
-                  </>
+                  <AppSelect
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Select difficulty level"
+                    options={COURSE_LEVELS.map((level) => ({
+                      label: formatLevelLabel(level),
+                      value: level,
+                    }))}
+                    triggerClassName={validatedFieldInputClass(
+                      levelState,
+                      "w-full min-w-0 max-w-full",
+                      { leftIcon: true, select: true },
+                    )}
+                  />
                 )}
               />
-            </ValidatedField>
+            </IconValidatedField>
           </div>
 
           <div className={CELL_CLASS}>
@@ -767,8 +766,9 @@ export function CourseForm({
 
         <div className={GRID_CLASS}>
           <div className={CELL_CLASS}>
-            <ValidatedField
+            <IconValidatedField
               label="Rating"
+              icon={Star}
               state={averageRatingState}
               errorMessage={errors.averageRating?.message}
             >
@@ -783,8 +783,7 @@ export function CourseForm({
                   valueAsNumber: true,
                 })}
               />
-              <FieldIcon icon={Star} />
-            </ValidatedField>
+            </IconValidatedField>
           </div>
 
           <div className={CELL_CLASS}>

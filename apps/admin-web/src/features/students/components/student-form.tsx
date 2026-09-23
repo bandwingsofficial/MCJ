@@ -21,7 +21,6 @@ import {
   Phone,
   User,
   Users,
-  type LucideIcon,
 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
@@ -30,6 +29,8 @@ import { AppSelect } from "@/src/shared/components/ui/select";
 import { Textarea } from "@/src/shared/components/ui/textarea";
 import { ImageUploadField } from "@/src/shared/components/ui/image-upload-field";
 import {
+  IconValidatedField,
+  iconDecorInputClass,
   ValidatedField,
   validatedFieldInputClass,
   type FieldVisualState,
@@ -66,38 +67,15 @@ interface StudentFormProps {
 
 const GRID_CLASS = "grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2";
 
-function FieldIcon({
-  icon: Icon,
-  alignTop = false,
-}: {
-  icon: LucideIcon;
-  alignTop?: boolean;
-}) {
-  return (
-    <Icon
-      className={cn(
-        "pointer-events-none absolute right-9 z-[1] h-4 w-4 text-slate-400",
-        alignTop ? "top-3" : "top-1/2 -translate-y-1/2",
-      )}
-      aria-hidden="true"
-    />
-  );
-}
-
 function iconInputClass(state: FieldVisualState, extra = "") {
-  return cn(
-    validatedFieldInputClass(state, "w-full min-w-0 max-w-full"),
-    "pr-16",
-    extra,
-  );
+  return iconDecorInputClass(state, cn("w-full min-w-0 max-w-full", extra));
 }
 
 function selectTriggerClass(state: FieldVisualState) {
-  return iconInputClass(state, "pr-16");
-}
-
-function dateInputClass(state: FieldVisualState) {
-  return validatedFieldInputClass(state, "w-full min-w-0 max-w-full");
+  return validatedFieldInputClass(state, "w-full min-w-0 max-w-full", {
+    leftIcon: true,
+    select: true,
+  });
 }
 
 type SyncFieldName = keyof StudentFormValues;
@@ -313,7 +291,7 @@ export function StudentForm({
 
     return {
       ...registration,
-      className: dateInputClass(getFieldState(name)),
+      className: iconInputClass(getFieldState(name)),
       onBlur: (event: FocusEvent<HTMLInputElement>) => {
         registration.onBlur(event);
         void trigger(name);
@@ -361,12 +339,11 @@ export function StudentForm({
             </ValidatedField>
           </div>
 
-          <ValidatedField
+          <IconValidatedField
             label="Student Code"
             state={getFieldState("studentCode", { forceValid: true })}
             checkingMessage="Generating code..."
-          >
-            <div className="relative">
+           icon={Hash}>
               <Input
                 readOnly
                 value={studentCode}
@@ -379,80 +356,66 @@ export function StudentForm({
                   "bg-slate-50",
                 )}
               />
-              <FieldIcon icon={Hash} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="First Name"
             required
             state={getFieldState("firstName")}
             errorMessage={errors.firstName?.message}
-          >
-            <div className="relative">
+           icon={User}>
               <Input
                 placeholder="Enter first name"
                 autoComplete="off"
                 {...registerField("firstName")}
               />
-              <FieldIcon icon={User} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Last Name"
             state={getFieldState("lastName")}
             errorMessage={errors.lastName?.message}
-          >
-            <div className="relative">
+           icon={User}>
               <Input
                 placeholder="Enter last name"
                 autoComplete="off"
                 {...registerField("lastName")}
               />
-              <FieldIcon icon={User} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Email"
             state={getFieldState("email")}
             errorMessage={errors.email?.message}
-          >
-            <div className="relative">
+           icon={Mail}>
               <Input
                 type="email"
                 placeholder="Enter email"
                 autoComplete="off"
                 {...registerField("email")}
               />
-              <FieldIcon icon={Mail} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Phone"
             state={getFieldState("phone")}
             errorMessage={errors.phone?.message}
-          >
-            <div className="relative">
+           icon={Phone}>
               <Input
                 placeholder="Enter phone"
                 autoComplete="off"
                 {...registerField("phone")}
               />
-              <FieldIcon icon={Phone} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Gender"
             state={getFieldState("gender")}
             errorMessage={errors.gender?.message}
-          >
-            <div className="relative">
+           select icon={Users}>
               <AppSelect
                 value={values.gender}
+                placeholder="Select gender"
                 onValueChange={(value) =>
                   setValue("gender", value as StudentFormValues["gender"], {
                     shouldValidate: true,
@@ -462,12 +425,11 @@ export function StudentForm({
                 options={uniqueSelectOptions([...STUDENT_GENDER_OPTIONS])}
                 triggerClassName={selectTriggerClass(getFieldState("gender"))}
               />
-              <FieldIcon icon={Users} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Date of Birth"
+            icon={Calendar}
             state={getFieldState("dateOfBirth")}
             errorMessage={errors.dateOfBirth?.message}
           >
@@ -476,14 +438,13 @@ export function StudentForm({
               autoComplete="off"
               {...registerDateField("dateOfBirth")}
             />
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Qualification"
             state={getFieldState("qualification")}
             errorMessage={errors.qualification?.message}
-          >
-            <div className="relative">
+           select icon={GraduationCap}>
               <AppSelect
                 value={values.qualification || undefined}
                 placeholder="Select qualification"
@@ -500,208 +461,168 @@ export function StudentForm({
                   getFieldState("qualification"),
                 )}
               />
-              <FieldIcon icon={GraduationCap} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="College Name"
             state={getFieldState("collegeName")}
             errorMessage={errors.collegeName?.message}
-          >
-            <div className="relative">
+           icon={GraduationCap}>
               <Input
                 placeholder="College name"
                 autoComplete="off"
                 {...registerField("collegeName")}
               />
-              <FieldIcon icon={GraduationCap} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Specialization"
             state={getFieldState("specialization")}
             errorMessage={errors.specialization?.message}
-          >
-            <div className="relative">
+           icon={GraduationCap}>
               <Input
                 placeholder="Specialization"
                 autoComplete="off"
                 {...registerField("specialization")}
               />
-              <FieldIcon icon={GraduationCap} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Passing Year"
             state={getFieldState("passingYear")}
             errorMessage={errors.passingYear?.message}
-          >
-            <div className="relative">
+           icon={Calendar}>
               <Input
                 type="number"
                 autoComplete="off"
                 {...register("passingYear", { valueAsNumber: true })}
                 className={inputClass("passingYear")}
               />
-              <FieldIcon icon={Calendar} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Address Line 1"
             state={getFieldState("addressLine1")}
             errorMessage={errors.addressLine1?.message}
-          >
-            <div className="relative">
+           icon={MapPin}>
               <Input
                 placeholder="Address line 1"
                 autoComplete="off"
                 {...registerField("addressLine1")}
               />
-              <FieldIcon icon={MapPin} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Address Line 2"
             state={getFieldState("addressLine2")}
             errorMessage={errors.addressLine2?.message}
-          >
-            <div className="relative">
+           icon={MapPin}>
               <Input
                 placeholder="Address line 2"
                 autoComplete="off"
                 {...registerField("addressLine2")}
               />
-              <FieldIcon icon={MapPin} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="City"
             state={getFieldState("city")}
             errorMessage={errors.city?.message}
-          >
-            <div className="relative">
+           icon={MapPin}>
               <Input
                 placeholder="City"
                 autoComplete="off"
                 {...registerField("city")}
               />
-              <FieldIcon icon={MapPin} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="State"
             state={getFieldState("state")}
             errorMessage={errors.state?.message}
-          >
-            <div className="relative">
+           icon={MapPin}>
               <Input
                 placeholder="State"
                 autoComplete="off"
                 {...registerField("state")}
               />
-              <FieldIcon icon={MapPin} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Country"
             state={getFieldState("country")}
             errorMessage={errors.country?.message}
-          >
-            <div className="relative">
+           icon={MapPin}>
               <Input
                 placeholder="Country"
                 autoComplete="off"
                 {...registerField("country")}
               />
-              <FieldIcon icon={MapPin} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Postal Code"
             state={getFieldState("postalCode")}
             errorMessage={errors.postalCode?.message}
-          >
-            <div className="relative">
+           icon={MapPin}>
               <Input
                 placeholder="Postal code"
                 autoComplete="off"
                 {...registerField("postalCode")}
               />
-              <FieldIcon icon={MapPin} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Parent Name"
             state={getFieldState("parentName")}
             errorMessage={errors.parentName?.message}
-          >
-            <div className="relative">
+           icon={User}>
               <Input
                 placeholder="Parent name"
                 autoComplete="off"
                 {...registerField("parentName")}
               />
-              <FieldIcon icon={User} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Parent Phone"
             state={getFieldState("parentPhone")}
             errorMessage={errors.parentPhone?.message}
-          >
-            <div className="relative">
+           icon={Phone}>
               <Input
                 placeholder="Parent phone"
                 autoComplete="off"
                 {...registerField("parentPhone")}
               />
-              <FieldIcon icon={Phone} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Emergency Contact Name"
             state={getFieldState("emergencyContactName")}
             errorMessage={errors.emergencyContactName?.message}
-          >
-            <div className="relative">
+           icon={User}>
               <Input
                 placeholder="Emergency contact name"
                 autoComplete="off"
                 {...registerField("emergencyContactName")}
               />
-              <FieldIcon icon={User} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Emergency Contact Phone"
             state={getFieldState("emergencyContactPhone")}
             errorMessage={errors.emergencyContactPhone?.message}
-          >
-            <div className="relative">
+           icon={Phone}>
               <Input
                 placeholder="Emergency contact phone"
                 autoComplete="off"
                 {...registerField("emergencyContactPhone")}
               />
-              <FieldIcon icon={Phone} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Admission Date"
+            icon={Calendar}
             state={getFieldState("admissionDate")}
             errorMessage={errors.admissionDate?.message}
           >
@@ -710,14 +631,13 @@ export function StudentForm({
               autoComplete="off"
               {...registerDateField("admissionDate")}
             />
-          </ValidatedField>
+          </IconValidatedField>
 
-          <ValidatedField
+          <IconValidatedField
             label="Status"
             state={getFieldState("status")}
             errorMessage={errors.status?.message}
-          >
-            <div className="relative">
+           select icon={FileText}>
               <AppSelect
                 value={values.status}
                 onValueChange={(value) =>
@@ -729,26 +649,23 @@ export function StudentForm({
                 options={uniqueSelectOptions([...STUDENT_STATUSES])}
                 triggerClassName={selectTriggerClass(getFieldState("status"))}
               />
-              <FieldIcon icon={FileText} />
-            </div>
-          </ValidatedField>
+          </IconValidatedField>
 
           <div className="md:col-span-2">
-            <ValidatedField
+            <IconValidatedField
               label="Notes"
+              icon={FileText}
+              textarea
               state={getFieldState("notes")}
               errorMessage={errors.notes?.message}
             >
-              <div className="relative">
-                <Textarea
-                  placeholder="Notes"
-                  rows={4}
-                  autoComplete="off"
-                  {...register("notes")}
-                  className={cn(inputClass("notes"), "pr-16")}
-                />
-                <FieldIcon icon={FileText} alignTop />
-              </div>
+              <Textarea
+                placeholder="Add notes about this student"
+                rows={4}
+                autoComplete="off"
+                {...register("notes")}
+                className={cn(inputClass("notes"), "min-h-[96px] resize-y")}
+              />
               <p
                 className={`mt-1 text-right text-xs tabular-nums ${
                   notesLength > NOTES_MAX_LENGTH
@@ -759,7 +676,7 @@ export function StudentForm({
                 {Math.min(notesLength, NOTES_MAX_LENGTH)}/{NOTES_MAX_LENGTH}{" "}
                 characters
               </p>
-            </ValidatedField>
+            </IconValidatedField>
           </div>
         </div>
       </div>
