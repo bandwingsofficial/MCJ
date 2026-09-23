@@ -48,7 +48,7 @@ function resolveLessonContentType(
   return LessonContentType.LESSON;
 }
 
-/** Matches admin Module Management "Lessons" list (filterNormalLessons). */
+/** Matches admin Module Management "Lessons" list (root plain lessons, excluding resource-only shells). */
 export function countsTowardModuleLessonList(lesson: {
   parentLessonId: string | null;
   contentType: string;
@@ -58,10 +58,6 @@ export function countsTowardModuleLessonList(lesson: {
   hasQuiz: boolean;
 }): boolean {
   if (lesson.parentLessonId) {
-    return false;
-  }
-
-  if (lesson.hasQuiz) {
     return false;
   }
 

@@ -85,12 +85,8 @@ export function ModuleLiveRecordedVideosTab({
 
   const sourceRows = useMemo(() => {
     const sourceLessons = parentLessonId
-      ? filterChildLiveRecordedVideoLessons(
-          lessons,
-          parentLessonId,
-          quizLessonIds,
-        )
-      : filterLiveRecordedVideoLessons(lessons, quizLessonIds);
+      ? filterChildLiveRecordedVideoLessons(lessons, parentLessonId)
+      : filterLiveRecordedVideoLessons(lessons);
 
     return sourceLessons
       .map((lesson) => ({
@@ -98,7 +94,7 @@ export function ModuleLiveRecordedVideosTab({
         isArchived: Boolean(lesson.isDeleted || lesson.deletedAt),
       }))
       .sort((a, b) => a.displayOrder - b.displayOrder);
-  }, [lessons, quizLessonIds, parentLessonId]);
+  }, [lessons, parentLessonId]);
 
   const filteredRows = useMemo(() => {
     return sourceRows.filter((lesson) => {

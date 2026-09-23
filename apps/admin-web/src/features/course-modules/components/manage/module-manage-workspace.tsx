@@ -13,6 +13,7 @@ interface Props {
   courseTitle: string;
   courseCode: string;
   module: CourseModule;
+  onModuleRefresh?: () => Promise<void>;
 }
 
 export function ModuleManageWorkspace({
@@ -20,15 +21,22 @@ export function ModuleManageWorkspace({
   courseTitle,
   courseCode,
   module,
+  onModuleRefresh,
 }: Props) {
   const {
     lessons,
     quizLessonIds,
     resourceShellLessonIds,
+    lessonContentCountsByLessonId,
     isLoading,
     error,
     refetch,
   } = useModuleContentData(module.id);
+
+  const refreshModuleContent = async () => {
+    await refetch();
+    await onModuleRefresh?.();
+  };
 
   return (
     <div className="space-y-4">
@@ -56,7 +64,8 @@ export function ModuleManageWorkspace({
           lessons={lessons}
           quizLessonIds={quizLessonIds}
           resourceShellLessonIds={resourceShellLessonIds}
-          onRefresh={refetch}
+          lessonContentCountsByLessonId={lessonContentCountsByLessonId}
+          onRefresh={refreshModuleContent}
         />
       )}
     </div>

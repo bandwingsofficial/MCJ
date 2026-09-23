@@ -72,8 +72,8 @@ export function ModuleVideosTab({
 
   const sourceRows = useMemo(() => {
     const sourceLessons = parentLessonId
-      ? filterChildSelfPacedVideoLessons(lessons, parentLessonId, quizLessonIds)
-      : filterSelfPacedVideoLessons(lessons, quizLessonIds);
+      ? filterChildSelfPacedVideoLessons(lessons, parentLessonId)
+      : filterSelfPacedVideoLessons(lessons);
 
     return sourceLessons
       .map((lesson) => ({
@@ -81,7 +81,7 @@ export function ModuleVideosTab({
         isArchived: Boolean(lesson.isDeleted || lesson.deletedAt),
       }))
       .sort((a, b) => a.displayOrder - b.displayOrder);
-  }, [lessons, quizLessonIds, parentLessonId]);
+  }, [lessons, parentLessonId]);
 
   const filteredRows = useMemo(() => {
     return sourceRows.filter((lesson) => {

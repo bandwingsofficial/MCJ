@@ -42,22 +42,14 @@ export function useLessonContentData(
 
   const selfPacedVideos = useMemo(
     () =>
-      filterChildSelfPacedVideoLessons(
-        moduleData.lessons,
-        lessonId,
-        moduleData.quizLessonIds,
-      ),
-    [moduleData.lessons, lessonId, moduleData.quizLessonIds],
+      filterChildSelfPacedVideoLessons(moduleData.lessons, lessonId),
+    [moduleData.lessons, lessonId],
   );
 
   const liveRecordedVideos = useMemo(
     () =>
-      filterChildLiveRecordedVideoLessons(
-        moduleData.lessons,
-        lessonId,
-        moduleData.quizLessonIds,
-      ),
-    [moduleData.lessons, lessonId, moduleData.quizLessonIds],
+      filterChildLiveRecordedVideoLessons(moduleData.lessons, lessonId),
+    [moduleData.lessons, lessonId],
   );
 
   return {

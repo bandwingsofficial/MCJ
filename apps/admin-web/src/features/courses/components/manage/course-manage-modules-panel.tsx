@@ -54,6 +54,15 @@ export function CourseManageModulesPanel({
     includeDeleted: true,
   });
 
+  useEffect(() => {
+    const refreshFromServer = () => {
+      void refetch();
+    };
+
+    window.addEventListener("focus", refreshFromServer);
+    return () => window.removeEventListener("focus", refreshFromServer);
+  }, [refetch]);
+
   const { createCourseModule, isSubmitting: isCreating } =
     useCreateCourseModule();
   const { updateCourseModule, isSubmitting: isUpdating } =
@@ -287,9 +296,13 @@ export function CourseManageModulesPanel({
                           {" · "}
                           {counts.quizzes} Quiz
                           {counts.quizzes === 1 ? "" : "zes"}
-                          {" · "}
-                          {counts.assignments} Assignment
-                          {counts.assignments === 1 ? "" : "s"}
+                          {counts.assignments > 0 ? (
+                            <>
+                              {" · "}
+                              {counts.assignments} Assignment
+                              {counts.assignments === 1 ? "" : "s"}
+                            </>
+                          ) : null}
                         </p>
                         <div className="mt-2">
                           <CourseModuleStatusBadge module={module} />

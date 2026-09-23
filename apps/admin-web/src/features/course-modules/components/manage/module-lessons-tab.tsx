@@ -30,6 +30,11 @@ import { ModuleLessonForm } from "@/src/features/course-modules/components/manag
 import { paginateRows } from "@/src/features/course-modules/components/manage/module-content-pagination";
 import { ModuleContentTable } from "@/src/features/course-modules/components/manage/module-content-table";
 import { filterNormalLessons } from "@/src/features/course-modules/hooks/use-module-content-data";
+import {
+  emptyLessonContentSummaryCounts,
+  formatLessonContentSummary,
+  type LessonContentSummaryCounts,
+} from "@/src/features/course-modules/utils/lesson-content-summary.util";
 import { courseManageLessonPath } from "@/src/features/courses/utils/course-manage.routes";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { reorderByDrag } from "@/src/shared/utils/reorder-drag.utils";
@@ -40,6 +45,7 @@ interface Props {
   lessons: CourseLesson[];
   quizLessonIds: Set<string>;
   resourceShellLessonIds: Set<string>;
+  lessonContentCountsByLessonId: Map<string, LessonContentSummaryCounts>;
   onRefresh: () => Promise<void>;
 }
 
@@ -49,6 +55,7 @@ export function ModuleLessonsTab({
   lessons,
   quizLessonIds,
   resourceShellLessonIds,
+  lessonContentCountsByLessonId,
   onRefresh,
 }: Props) {
   const router = useRouter();
@@ -187,14 +194,26 @@ export function ModuleLessonsTab({
           {
             key: "title",
             header: "Lesson",
-            render: (row) => (
-              <div>
-                <p className="text-sm font-medium text-[#102A56]">{row.title}</p>
-                <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
-                  {row.description?.trim() || "—"}
-                </p>
-              </div>
-            ),
+            render: (row) => {
+              const contentSummary = formatLessonContentSummary(
+                lessonContentCountsByLessonId.get(row.id) ??
+                  emptyLessonContentSummaryCounts(),
+              );
+
+              return (
+                <div>
+                  <p className="text-sm font-medium text-[#102A56]">{row.title}</p>
+                  {contentSummary ? (
+                    <p className="mt-0.5 text-xs font-medium text-[#647A9B]">
+                      {contentSummary}
+                    </p>
+                  ) : null}
+                  <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
+                    {row.description?.trim() || "—"}
+                  </p>
+                </div>
+              );
+            },
           },
           {
             key: "previewAccess",

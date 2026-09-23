@@ -80,6 +80,7 @@ export function CourseModuleManagePage({
         courseTitle={course.title}
         courseCode={course.slug}
         module={module}
+        onModuleRefresh={loadModule}
       />
     </div>
   );
