@@ -53,6 +53,51 @@ export interface JobApplicationResume {
   size: number;
 }
 
+export interface JobApplicationBranchInterviewerAssignment {
+  id: string;
+  status: string;
+  result?: string | null;
+  evaluation?: string | null;
+  branchId: string;
+  interviewerId: string | null;
+  roundId?: string | null;
+  nextRoundId?: string | null;
+  scheduledAt: string | null;
+  mode?: string | null;
+  locationOrLink?: string | null;
+  roundNumber?: number;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  branch?: {
+    id: string;
+    branchName: string;
+    branchCode: string;
+    addressLine1?: string | null;
+    addressLine2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    country?: string | null;
+    postalCode?: string | null;
+  } | null;
+  interviewer?: {
+    id: string;
+    firstName: string;
+    lastName: string | null;
+    email: string;
+  } | null;
+  round?: {
+    id: string;
+    name: string;
+    sortOrder: number;
+  } | null;
+  nextRound?: {
+    id: string;
+    name: string;
+    sortOrder: number;
+  } | null;
+}
+
 export interface JobApplicationStudent {
   id: string;
   studentCode: string;
@@ -105,51 +150,10 @@ export interface JobApplication {
   user: JobApplicationUser | null;
   student: JobApplicationStudent | null;
   resolvedStudentCode?: string | null;
-  interviewAssignment?: {
-    id: string;
-    status: string;
-    result?: string | null;
-    evaluation?: string | null;
-    branchId: string;
-    interviewerId: string | null;
-    roundId?: string | null;
-    nextRoundId?: string | null;
-    scheduledAt: string | null;
-    mode?: string | null;
-    locationOrLink?: string | null;
-    roundNumber?: number;
-    notes?: string | null;
-    createdAt?: string;
-    updatedAt?: string;
-    branch?: {
-      id: string;
-      branchName: string;
-      branchCode: string;
-      addressLine1?: string | null;
-      addressLine2?: string | null;
-      city?: string | null;
-      state?: string | null;
-      country?: string | null;
-      postalCode?: string | null;
-    } | null;
-    interviewer?: {
-      id: string;
-      firstName: string;
-      lastName: string | null;
-      email: string;
-    } | null;
-    round?: {
-      id: string;
-      name: string;
-      sortOrder: number;
-    } | null;
-    nextRound?: {
-      id: string;
-      name: string;
-      sortOrder: number;
-    } | null;
-  } | null;
-  interviews?: Array<NonNullable<JobApplication["interviewAssignment"]>>;
+  interviewAssignment?: JobApplicationBranchInterviewerAssignment | null;
+  /** Active Branch + Interviewer assignment (separate from interview round display). */
+  branchInterviewerAssignment?: JobApplicationBranchInterviewerAssignment | null;
+  interviews?: Array<JobApplicationBranchInterviewerAssignment>;
   createdAt: string;
   updatedAt: string;
 }
@@ -485,16 +489,78 @@ export function canApproveApplication(status: JobApplicationStatus): boolean {
   );
 }
 
-export function isInterviewAssigned(application: {
-  interviewAssignment?: { id: string } | null;
-}): boolean {
-  return Boolean(application.interviewAssignment?.id);
+function isActiveBranchInterviewerAssignmentStatus(
+  status: string | null | undefined,
+): boolean {
+  const normalized = (status ?? "").trim().toUpperCase();
+  return normalized === "ASSIGNED" || normalized === "SCHEDULED";
+}
+
+/** Persisted Branch + Interviewer assignment (not interview outcome / rounds). */
+export function getBranchInterviewerAssignment(
+  application: Pick<
+    JobApplication,
+    "branchInterviewerAssignment" | "interviewAssignment" | "interviews"
+  >,
+): JobApplicationBranchInterviewerAssignment | null {
+  if (application.branchInterviewerAssignment?.id) {
+    return application.branchInterviewerAssignment;
+  }
+
+  const interviews = application.interviews ?? [];
+  for (let index = interviews.length - 1; index >= 0; index -= 1) {
+    const row = interviews[index];
+    if (isActiveBranchInterviewerAssignmentStatus(row.status)) {
+      return row;
+    }
+  }
+
+  const fallback = application.interviewAssignment;
+  if (
+    fallback?.id &&
+    isActiveBranchInterviewerAssignmentStatus(fallback.status)
+  ) {
+    return fallback;
+  }
+
+  return null;
+}
+
+export function getAssignedBranchName(
+  assignment: JobApplicationBranchInterviewerAssignment | null | undefined,
+): string {
+  const name = assignment?.branch?.branchName?.trim();
+  return name || "—";
+}
+
+export function getAssignedInterviewerName(
+  assignment: JobApplicationBranchInterviewerAssignment | null | undefined,
+): string {
+  const interviewer = assignment?.interviewer;
+  if (!interviewer) {
+    return "—";
+  }
+
+  const fullName = [interviewer.firstName, interviewer.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return fullName || interviewer.email?.trim() || "—";
+}
+
+export function isInterviewAssigned(application: Pick<
+  JobApplication,
+  "branchInterviewerAssignment" | "interviewAssignment" | "interviews"
+>): boolean {
+  return Boolean(getBranchInterviewerAssignment(application)?.id);
 }
 
 export function getAssignmentStatus(
-  application: {
-    interviewAssignment?: { id: string } | null;
-  },
+  application: Pick<
+    JobApplication,
+    "branchInterviewerAssignment" | "interviewAssignment" | "interviews"
+  >,
 ): "ASSIGNED" | "UNASSIGNED" {
   return isInterviewAssigned(application) ? "ASSIGNED" : "UNASSIGNED";
 }

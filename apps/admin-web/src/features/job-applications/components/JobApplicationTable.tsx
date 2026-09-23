@@ -6,7 +6,7 @@ import { Checkbox } from "@/src/shared/components/ui/checkbox";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import { JobApplicationActions } from "@/src/features/job-applications/components/JobApplicationActions";
-import { JobApplicationAssignmentStatusBadge } from "@/src/features/job-applications/components/JobApplicationAssignmentStatusBadge";
+import { JobApplicationAssignmentStatusCell } from "@/src/features/job-applications/components/JobApplicationAssignmentStatusCell";
 import { JobApplicationInterviewStatusBadge } from "@/src/features/job-applications/components/JobApplicationInterviewStatusBadge";
 import { JobApplicationStatusBadge } from "@/src/features/job-applications/components/JobApplicationStatusBadge";
 import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
@@ -236,7 +236,7 @@ export function JobApplicationTable({
                     />
                   </td>
                   <td className="!px-4 !py-4 align-middle">
-                    <JobApplicationAssignmentStatusBadge
+                    <JobApplicationAssignmentStatusCell
                       application={application}
                     />
                   </td>

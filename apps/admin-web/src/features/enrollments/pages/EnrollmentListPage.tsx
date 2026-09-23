@@ -90,24 +90,24 @@ export function EnrollmentListPage() {
   const emptyTitle = useMemo(() => {
     if (
       (filters.search ?? "").trim() ||
-      filters.status ||
-      filters.branchId
+      filters.branchId ||
+      filters.applicationType
     ) {
       return "No Enrolments Found";
     }
     return "No Enrolments Yet";
-  }, [filters.search, filters.status, filters.branchId]);
+  }, [filters.search, filters.branchId, filters.applicationType]);
 
   const emptyDescription = useMemo(() => {
     if (
       (filters.search ?? "").trim() ||
-      filters.status ||
-      filters.branchId
+      filters.branchId ||
+      filters.applicationType
     ) {
       return "Try adjusting your search or filter criteria.";
     }
     return "Create your first enrolment to get started.";
-  }, [filters.search, filters.status, filters.branchId]);
+  }, [filters.search, filters.branchId, filters.applicationType]);
 
   useEffect(() => {
     const loadBranches = async () => {

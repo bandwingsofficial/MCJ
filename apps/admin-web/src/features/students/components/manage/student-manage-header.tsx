@@ -91,7 +91,7 @@ export function StudentManageHeader({
 
       <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
         <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-0 flex-1 gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
             <div className="shrink-0">
               {student.profileImageUrl ? (
                 <Image
@@ -124,32 +124,28 @@ export function StudentManageHeader({
                 />
               </div>
 
-              <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/60 px-3 py-2">
-                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
-                    Student Code
-                  </dt>
-                  <dd className="mt-0.5 font-mono text-sm font-medium text-[#102A56]">
-                    {student.studentCode}
-                  </dd>
-                </div>
-                <div className="rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/60 px-3 py-2">
-                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
-                    Email
-                  </dt>
-                  <dd className="mt-0.5 truncate text-sm font-medium text-[#102A56]">
+              <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-snug text-[#102A56]">
+                <span>
+                  <span className="text-[#647A9B]">Student Code: </span>
+                  <span className="font-mono font-medium">{student.studentCode}</span>
+                </span>
+                <span className="text-[#647A9B]" aria-hidden="true">
+                  •
+                </span>
+                <span className="min-w-0">
+                  <span className="text-[#647A9B]">Email: </span>
+                  <span className="font-medium break-all">
                     {displayValue(student.email)}
-                  </dd>
-                </div>
-                <div className="rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/60 px-3 py-2 sm:col-span-2">
-                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
-                    Phone
-                  </dt>
-                  <dd className="mt-0.5 text-sm font-medium text-[#102A56]">
-                    {displayValue(student.phone)}
-                  </dd>
-                </div>
-              </dl>
+                  </span>
+                </span>
+                <span className="text-[#647A9B]" aria-hidden="true">
+                  •
+                </span>
+                <span>
+                  <span className="text-[#647A9B]">Phone: </span>
+                  <span className="font-medium">{displayValue(student.phone)}</span>
+                </span>
+              </p>
             </div>
           </div>
 

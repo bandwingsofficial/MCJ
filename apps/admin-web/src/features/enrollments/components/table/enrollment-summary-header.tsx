@@ -12,22 +12,9 @@ import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import {
   ApplicationType,
   EnrollmentFilters as Filters,
-  EnrollmentStatus,
 } from "@/src/features/enrollments/types";
 
 const ALL_VALUE = "ALL";
-
-const STATUS_OPTIONS = [
-  { label: "All Status", value: ALL_VALUE },
-  { label: "Pending", value: EnrollmentStatus.PENDING },
-  { label: "Pending Approval", value: EnrollmentStatus.PENDING_APPROVAL },
-  { label: "Admitted", value: EnrollmentStatus.ADMITTED },
-  { label: "Active", value: EnrollmentStatus.ACTIVE },
-  { label: "Completed", value: EnrollmentStatus.COMPLETED },
-  { label: "Cancelled", value: EnrollmentStatus.CANCELLED },
-  { label: "Dropped", value: EnrollmentStatus.DROPPED },
-  { label: "Rejected", value: EnrollmentStatus.REJECTED },
-];
 
 const APPLICATION_TYPE_OPTIONS = [
   { label: "All", value: ALL_VALUE },
@@ -77,11 +64,11 @@ export function EnrollmentSummaryHeader({
 
   return (
     <header className="px-1 py-1">
-      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
         <div className="min-w-0 space-y-1">
           <nav
             aria-label="Breadcrumb"
-            className="flex items-center gap-1 text-xs"
+            className="flex flex-wrap items-center gap-1 text-xs"
           >
             <Link
               href="/dashboard"
@@ -104,20 +91,19 @@ export function EnrollmentSummaryHeader({
           </nav>
 
           {isLoading ? (
-            <Skeleton className="h-8 w-52 rounded-md" />
+            <Skeleton className="h-8 w-52 max-w-full rounded-md" />
           ) : (
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+            <>
               <h1 className="text-[22px] font-bold tracking-tight text-[#102A56] sm:text-[26px]">
                 Enrolments
               </h1>
-
-              <span className="text-xs text-[#647A9B] sm:text-[13px]">
+              <p className="text-xs text-[#647A9B] sm:text-[13px]">
                 Total Enrolments:
                 <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
                   {total}
                 </span>
-              </span>
-            </div>
+              </p>
+            </>
           )}
         </div>
 
@@ -126,7 +112,7 @@ export function EnrollmentSummaryHeader({
             <>
               <Skeleton className="h-9 w-full rounded-lg sm:w-[280px]" />
               <Skeleton className="h-9 w-full rounded-lg sm:w-[140px]" />
-              <Skeleton className="h-9 w-full rounded-lg sm:w-[140px]" />
+              <Skeleton className="h-9 w-full rounded-lg sm:w-[120px]" />
               <Skeleton className="h-9 w-full rounded-lg sm:w-[150px]" />
             </>
           ) : (
@@ -158,24 +144,6 @@ export function EnrollmentSummaryHeader({
                     })
                   }
                   options={branchOptions}
-                />
-              </div>
-
-              <div className="w-full sm:w-[140px]">
-                <AppSelect
-                  value={filters.status ?? ALL_VALUE}
-                  triggerClassName="h-9 rounded-lg px-2.5 text-sm"
-                  onValueChange={(value) =>
-                    onFiltersChange({
-                      ...filters,
-                      status:
-                        value === ALL_VALUE
-                          ? undefined
-                          : (value as EnrollmentStatus),
-                      skip: 0,
-                    })
-                  }
-                  options={STATUS_OPTIONS}
                 />
               </div>
 

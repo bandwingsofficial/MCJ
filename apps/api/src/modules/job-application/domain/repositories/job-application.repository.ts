@@ -130,6 +130,8 @@ export interface JobApplicationDetailView {
   student: JobApplicationStudentView | null;
   resolvedStudentCode?: string | null;
   interviewAssignment?: JobApplicationInterviewAssignmentView | null;
+  /** Active Branch + Interviewer assignment (ASSIGNED or SCHEDULED interview row). */
+  branchInterviewerAssignment?: JobApplicationInterviewAssignmentView | null;
   /** Full persisted interview history for timeline / round progression. */
   interviews?: JobApplicationInterviewAssignmentView[];
   createdAt: Date;

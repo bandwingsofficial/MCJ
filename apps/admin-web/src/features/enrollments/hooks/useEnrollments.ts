@@ -54,9 +54,8 @@ export const useEnrollments =
     const [filters, setFilters] =
       useState<EnrollmentFilters>({
         skip: 0,
-take: 10,
+        take: 10,
         search: "",
-        status: undefined,
         paymentStatus:
           undefined,
         branchId: undefined,
@@ -76,9 +75,10 @@ take: 10,
           setError(null);
 
           const response =
-            await enrollmentService.getEnrollments(
-              filters,
-            );
+            await enrollmentService.getEnrollments({
+              ...filters,
+              status: undefined,
+            });
 
           const parsed = parseEnrollmentListResponse(response);
 

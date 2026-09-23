@@ -117,6 +117,22 @@ function mapInterviewAssignment(
   };
 }
 
+function pickBranchInterviewerAssignment(
+  interviews: JobApplicationWithRelations['interviews'],
+) {
+  for (let index = interviews.length - 1; index >= 0; index -= 1) {
+    const interview = interviews[index];
+    if (
+      interview.status === InterviewStatus.ASSIGNED ||
+      interview.status === InterviewStatus.SCHEDULED
+    ) {
+      return interview;
+    }
+  }
+
+  return null;
+}
+
 function pickInterviewAssignment(
   interviews: JobApplicationWithRelations['interviews'],
 ) {
@@ -159,6 +175,9 @@ export class JobApplicationResponseMapper {
     record: JobApplicationWithRelations,
   ): JobApplicationDetailView {
     const interview = pickInterviewAssignment(record.interviews);
+    const branchInterviewerAssignment = pickBranchInterviewerAssignment(
+      record.interviews,
+    );
 
     return {
       id: record.id,
@@ -188,6 +207,9 @@ export class JobApplicationResponseMapper {
       student: this.toStudent(record.Student),
       interviewAssignment: interview
         ? mapInterviewAssignment(interview)
+        : null,
+      branchInterviewerAssignment: branchInterviewerAssignment
+        ? mapInterviewAssignment(branchInterviewerAssignment)
         : null,
       interviews: record.interviews.map(mapInterviewAssignment),
       createdAt: record.createdAt,

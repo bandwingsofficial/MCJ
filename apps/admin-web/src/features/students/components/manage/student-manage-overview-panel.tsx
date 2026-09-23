@@ -1,24 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { FileText } from "lucide-react";
 
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
-import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
-import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
-import { paymentService } from "@/src/features/payments/services/payment.service";
 import { StudentOverviewInformation } from "@/src/features/students/components/manage/student-overview-information";
-import { StudentOverviewPrimaryMetrics } from "@/src/features/students/components/manage/student-overview-metrics";
 import { useStudentDocuments } from "@/src/features/students/hooks/useStudentDocuments";
 import type { Student } from "@/src/features/students/types/student.types";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
 import { formatStudentDocumentType } from "@/src/features/students/utils/student-document.utils";
-import {
-  computeStudentOverviewStats,
-  type StudentOverviewStats,
-} from "@/src/features/students/utils/student-overview.utils";
 
 import type { TabKey } from "./student-manage-workspace";
 
@@ -73,15 +64,6 @@ function InlineEmptyState({
   );
 }
 
-const EMPTY_STATS: StudentOverviewStats = {
-  activeBatchCount: 0,
-  totalEnrollments: 0,
-  activeCourseCount: 0,
-  attendancePercent: null,
-  totalPaid: 0,
-  pendingDue: 0,
-};
-
 export function StudentManageOverviewPanel({
   student,
   refreshKey = 0,
@@ -93,48 +75,8 @@ export function StudentManageOverviewPanel({
   });
   const previewDocuments = documents.slice(0, 3);
 
-  const [stats, setStats] = useState<StudentOverviewStats>(EMPTY_STATS);
-  const [statsLoading, setStatsLoading] = useState(true);
-
-  const loadOverviewStats = useCallback(async () => {
-    setStatsLoading(true);
-    try {
-      const [enrollmentResponse, paymentResponse] = await Promise.all([
-        enrollmentService.getEnrollments({
-          studentId: student.id,
-          skip: 0,
-          take: 100,
-        }),
-        paymentService.getPayments({
-          studentId: student.id,
-          skip: 0,
-          take: 100,
-          sortBy: "createdAt",
-          sortOrder: "desc",
-        }),
-      ]);
-
-      setStats(
-        computeStudentOverviewStats(
-          parseEnrollmentListResponse(enrollmentResponse).items,
-          paymentResponse.items ?? [],
-        ),
-      );
-    } catch {
-      setStats(EMPTY_STATS);
-    } finally {
-      setStatsLoading(false);
-    }
-  }, [student.id]);
-
-  useEffect(() => {
-    void loadOverviewStats();
-  }, [loadOverviewStats, refreshKey]);
-
   return (
     <div className="space-y-4">
-      <StudentOverviewPrimaryMetrics stats={stats} isLoading={statsLoading} />
-
       <StudentOverviewInformation student={student} />
 
       <SectionCard

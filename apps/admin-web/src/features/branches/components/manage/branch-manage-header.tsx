@@ -17,6 +17,14 @@ interface Props {
   actionsDisabled?: boolean;
 }
 
+function displayValue(value?: string | null) {
+  if (!value?.trim()) {
+    return "—";
+  }
+
+  return value.trim();
+}
+
 export function BranchManageHeader({
   branch,
   activeSection,
@@ -26,7 +34,6 @@ export function BranchManageHeader({
   actionsDisabled = false,
 }: Props) {
   const isArchived = Boolean(branch.deletedAt);
-  const location = [branch.city, branch.state].filter(Boolean).join(", ");
   const address = formatBranchAddressLine(branch);
 
   return (
@@ -56,7 +63,7 @@ export function BranchManageHeader({
       </nav>
 
       <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
-        <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-start gap-2">
                 <h1 className="min-w-0 text-xl font-bold tracking-tight text-[#102A56] sm:text-2xl">
@@ -68,39 +75,31 @@ export function BranchManageHeader({
                 />
               </div>
 
-              <p className="mt-1 text-sm text-[#647A9B]">
-                {[branch.branchCode, location].filter(Boolean).join(" · ")}
+              <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-snug text-[#102A56]">
+                <span>
+                  <span className="text-[#647A9B]">Branch Code: </span>
+                  <span className="font-mono font-medium">{branch.branchCode}</span>
+                </span>
+                <span className="text-[#647A9B]" aria-hidden="true">
+                  •
+                </span>
+                <span className="min-w-0">
+                  <span className="text-[#647A9B]">Email: </span>
+                  <span className="font-medium break-all">
+                    {displayValue(branch.email)}
+                  </span>
+                </span>
+                <span className="text-[#647A9B]" aria-hidden="true">
+                  •
+                </span>
+                <span>
+                  <span className="text-[#647A9B]">Phone: </span>
+                  <span className="font-medium">{displayValue(branch.phone)}</span>
+                </span>
               </p>
 
-              <dl className="mt-3 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/60 px-3 py-2">
-                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
-                    Branch Code
-                  </dt>
-                  <dd className="mt-0.5 font-mono text-sm font-medium text-[#102A56]">
-                    {branch.branchCode}
-                  </dd>
-                </div>
-                <div className="rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/60 px-3 py-2">
-                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
-                    Email
-                  </dt>
-                  <dd className="mt-0.5 truncate text-sm font-medium text-[#102A56]">
-                    {branch.email?.trim() || "—"}
-                  </dd>
-                </div>
-                <div className="rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/60 px-3 py-2">
-                  <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
-                    Phone
-                  </dt>
-                  <dd className="mt-0.5 text-sm font-medium text-[#102A56]">
-                    {branch.phone?.trim() || "—"}
-                  </dd>
-                </div>
-              </dl>
-
               {address ? (
-                <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">
+                <p className="mt-2 text-sm leading-relaxed text-[#526581]">
                   {address}
                 </p>
               ) : null}

@@ -17,7 +17,7 @@ import {
   BranchManageTableShell,
   TABLE_CELL_CLASS,
 } from "@/src/features/branches/components/manage/branch-manage-table-shell";
-import { JobApplicationAssignmentStatusBadge } from "@/src/features/job-applications/components/JobApplicationAssignmentStatusBadge";
+import { JobApplicationAssignmentStatusCell } from "@/src/features/job-applications/components/JobApplicationAssignmentStatusCell";
 import { JobApplicationDetailsDialog } from "@/src/features/job-applications/components/JobApplicationDetailsDialog";
 import { JobApplicationInterviewStatusBadge } from "@/src/features/job-applications/components/JobApplicationInterviewStatusBadge";
 import { JobApplicationStatusBadge } from "@/src/features/job-applications/components/JobApplicationStatusBadge";
@@ -224,7 +224,7 @@ export function StudentManageJobApplicationsPanel({ student }: Props) {
                   })}
                 </td>
                 <td className={TABLE_CELL_CLASS}>
-                  <JobApplicationAssignmentStatusBadge
+                  <JobApplicationAssignmentStatusCell
                     application={application}
                   />
                 </td>

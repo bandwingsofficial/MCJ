@@ -89,6 +89,41 @@ export function getApplicationNoticePeriod(
   return parsed.noticePeriod || "—";
 }
 
+export function getOptionalApplicationCourse(
+  application: JobApplication,
+): string | null {
+  const parsed = parseApplicationRemarks(application.remarks);
+  return parsed.course?.trim() || null;
+}
+
+export function getOptionalApplicationCompany(
+  application: JobApplication,
+): string | null {
+  const parsed = parseApplicationRemarks(application.remarks);
+  return parsed.company?.trim() || null;
+}
+
+export function getOptionalApplicationSkills(
+  application: JobApplication,
+): string | null {
+  const parsed = parseApplicationRemarks(application.remarks);
+  return parsed.skills?.trim() || null;
+}
+
+export function getOptionalApplicationNoticePeriod(
+  application: JobApplication,
+): string | null {
+  const parsed = parseApplicationRemarks(application.remarks);
+  return parsed.noticePeriod?.trim() || null;
+}
+
+export function getOptionalApplicationRemarksOther(
+  application: JobApplication,
+): string | null {
+  const parsed = parseApplicationRemarks(application.remarks);
+  return parsed.other?.trim() || null;
+}
+
 import type { ApplicationStatusFilter } from "@/src/features/job-applications/hooks/useJobApplications";
 import { JOB_APPLICATION_FILTER_ALL } from "@/src/features/job-applications/constants/job-application-filters.constants";
 

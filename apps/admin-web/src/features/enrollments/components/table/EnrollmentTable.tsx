@@ -2,7 +2,6 @@
 
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
 import { EnrollmentActions } from "@/src/features/enrollments/components/table/enrollment-actions";
-import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/table/EnrollmentStatusBadge";
 import type { Enrollment } from "@/src/features/enrollments/types";
 
 interface EnrollmentTableProps {
@@ -24,7 +23,7 @@ export function EnrollmentTable({
   onManage,
   onUnenroll,
 }: EnrollmentTableProps) {
-  const columnCount = 9;
+  const columnCount = 8;
 
   return (
     <div className="w-full overflow-x-auto">
@@ -51,9 +50,6 @@ export function EnrollmentTable({
             </th>
             <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Mode
-            </th>
-            <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Status
             </th>
             <th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
               Actions
@@ -122,12 +118,6 @@ export function EnrollmentTable({
                       : enrollment.mode === "ONLINE"
                         ? "Online"
                         : "Offline"}
-                  </td>
-                  <td className="!px-4 !py-4 align-middle">
-                    <EnrollmentStatusBadge
-                      status={enrollment.status}
-                      isDeleted={enrollment.isDeleted}
-                    />
                   </td>
                   <td className="!px-8 !py-4 text-right align-middle">
                     <EnrollmentActions
