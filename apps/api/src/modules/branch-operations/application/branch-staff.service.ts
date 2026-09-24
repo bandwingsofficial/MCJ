@@ -78,6 +78,16 @@ export class BranchStaffService {
         { lastName: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search, mode: 'insensitive' } },
+        {
+          linkedTrainer: {
+            firstName: { contains: search, mode: 'insensitive' },
+          },
+        },
+        {
+          linkedTrainer: {
+            lastName: { contains: search, mode: 'insensitive' },
+          },
+        },
       ];
     }
 
@@ -95,15 +105,37 @@ export class BranchStaffService {
           phone: true,
           role: true,
           branchId: true,
+          linkedTrainerId: true,
           isActive: true,
           createdAt: true,
           updatedAt: true,
+          linkedTrainer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
         },
       }),
       this.prisma.branchUser.count({ where }),
     ]);
 
-    return { items, count, skip, take };
+    return {
+      items: items.map(({ linkedTrainerId, linkedTrainer, ...rest }) => ({
+        ...rest,
+        trainerId: linkedTrainerId,
+        ...(linkedTrainer
+          ? {
+              firstName: linkedTrainer.firstName,
+              lastName: linkedTrainer.lastName,
+            }
+          : {}),
+      })),
+      count,
+      skip,
+      take,
+    };
   }
 
   async listTrainerAccountOptions(user: BranchAuthUser) {
@@ -145,17 +177,20 @@ export class BranchStaffService {
         },
         select: {
           id: true,
-          email: true,
-          phone: true,
-          firstName: true,
-          lastName: true,
+          linkedTrainerId: true,
           isActive: true,
         },
       }),
     ]);
 
+    const linkedByTrainerId = new Map(
+      branchUsers
+        .filter((row) => row.linkedTrainerId)
+        .map((row) => [row.linkedTrainerId as string, row]),
+    );
+
     return trainers.map((trainer) => {
-      const linkedBranchUser = this.findLinkedBranchUser(trainer, branchUsers);
+      const linkedBranchUser = linkedByTrainerId.get(trainer.id) ?? null;
       return {
         trainerId: trainer.id,
         firstName: trainer.firstName,
@@ -210,6 +245,17 @@ export class BranchStaffService {
       ),
     );
 
+    if (input.trainerId) {
+      await this.assertTrainerAvailableForAccountLink(
+        user.branchId,
+        input.trainerId,
+      );
+      await this.prisma.branchUser.update({
+        where: { id: created.id },
+        data: { linkedTrainerId: input.trainerId },
+      });
+    }
+
     await this.access.log({
       user,
       action: created.restored
@@ -217,7 +263,7 @@ export class BranchStaffService {
         : 'BRANCH_USER_CREATED',
       resourceType: 'BranchUser',
       resourceId: created.id,
-      metadata: { role },
+      metadata: { role, trainerId: input.trainerId ?? null },
     });
 
     return created;
@@ -258,7 +304,7 @@ export class BranchStaffService {
       phone = identity.phone;
     }
 
-    return this.updateHandler.execute(
+    const result = await this.updateHandler.execute(
       new UpdateBranchUserCommand(
         id,
         firstName,
@@ -273,6 +319,20 @@ export class BranchStaffService {
         user.sub,
       ),
     );
+
+    if (input.trainerId) {
+      await this.assertTrainerAvailableForAccountLink(
+        user.branchId,
+        input.trainerId,
+        id,
+      );
+      await this.prisma.branchUser.update({
+        where: { id },
+        data: { linkedTrainerId: input.trainerId },
+      });
+    }
+
+    return result;
   }
 
   async resetPassword(user: BranchAuthUser, id: string, newPassword: string) {
@@ -380,31 +440,47 @@ export class BranchStaffService {
     return role;
   }
 
-  private findLinkedBranchUser<
-    T extends {
-      email: string;
-      phone: string | null;
-    },
-  >(
-    trainer: { email: string | null; phone: string | null },
-    branchUsers: T[],
-  ): T | null {
-    const normalizedTrainerEmail = trainer.email?.trim().toLowerCase();
+  private async assertTrainerAvailableForAccountLink(
+    branchId: string,
+    trainerId: string,
+    exceptBranchUserId?: string,
+  ) {
+    const assigned = await this.prisma.branchTrainer.findFirst({
+      where: { branchId, trainerId },
+      select: { trainerId: true },
+    });
 
-    for (const branchUser of branchUsers) {
-      if (
-        normalizedTrainerEmail &&
-        branchUser.email.trim().toLowerCase() === normalizedTrainerEmail
-      ) {
-        return branchUser;
-      }
-
-      if (trainer.phone && branchUser.phone === trainer.phone) {
-        return branchUser;
-      }
+    if (!assigned) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Selected trainer is not assigned to this branch.',
+        400,
+        { field: 'trainerId' },
+      );
     }
 
-    return null;
+    const existing = await this.prisma.branchUser.findFirst({
+      where: {
+        branchId,
+        isDeleted: false,
+        linkedTrainerId: trainerId,
+        role: { in: BRANCH_MANAGER_CREATABLE_ROLES },
+        ...(exceptBranchUserId ? { id: { not: exceptBranchUserId } } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'This trainer already has a branch user account. Edit the existing user instead.',
+        409,
+        {
+          field: 'trainerId',
+          linkedBranchUserId: existing.id,
+        },
+      );
+    }
   }
 
   private async resolveCreateIdentityFromTrainer(
@@ -415,7 +491,7 @@ export class BranchStaffService {
       lastName?: string;
       phone?: string;
     },
-  ): Promise<{ firstName: string; lastName: string; phone: string }> {
+  ): Promise<{ firstName: string; lastName: string | undefined; phone: string }> {
     if (!input.trainerId) {
       if (!input.firstName?.trim() || !input.lastName?.trim() || !input.phone) {
         throw new BaseException(
@@ -470,34 +546,7 @@ export class BranchStaffService {
       );
     }
 
-    const branchUsers = await this.prisma.branchUser.findMany({
-      where: {
-        branchId,
-        isDeleted: false,
-        role: { in: BRANCH_MANAGER_CREATABLE_ROLES },
-      },
-      select: {
-        id: true,
-        email: true,
-        phone: true,
-        firstName: true,
-        lastName: true,
-        isActive: true,
-      },
-    });
-
-    const linked = this.findLinkedBranchUser(trainer, branchUsers);
-    if (linked) {
-      throw new BaseException(
-        ERROR_CODES.VALIDATION_ERROR,
-        'This trainer already has a branch user account. Edit the existing user instead.',
-        409,
-        {
-          field: 'trainerId',
-          linkedBranchUserId: linked.id,
-        },
-      );
-    }
+    await this.assertTrainerAvailableForAccountLink(branchId, input.trainerId);
 
     const phone = trainer.phone?.trim() || input.phone?.trim();
     if (!phone) {
@@ -509,9 +558,11 @@ export class BranchStaffService {
       );
     }
 
+    const lastName = (trainer.lastName ?? '').trim();
+
     return {
       firstName: trainer.firstName.trim(),
-      lastName: (trainer.lastName ?? '').trim() || 'Trainer',
+      lastName: lastName || undefined,
       phone,
     };
   }
@@ -521,7 +572,7 @@ export class BranchStaffService {
     branchUserId: string,
     trainerId: string,
     phoneInput?: string,
-  ): Promise<{ firstName: string; lastName: string; phone: string }> {
+  ): Promise<{ firstName: string; lastName: string | undefined; phone: string }> {
     const assigned = await this.prisma.branchTrainer.findFirst({
       where: { branchId, trainerId },
       select: { trainerId: true },
@@ -560,34 +611,11 @@ export class BranchStaffService {
       );
     }
 
-    const branchUsers = await this.prisma.branchUser.findMany({
-      where: {
-        branchId,
-        isDeleted: false,
-        role: { in: BRANCH_MANAGER_CREATABLE_ROLES },
-      },
-      select: {
-        id: true,
-        email: true,
-        phone: true,
-        firstName: true,
-        lastName: true,
-        isActive: true,
-      },
-    });
-
-    const linked = this.findLinkedBranchUser(trainer, branchUsers);
-    if (linked && linked.id !== branchUserId) {
-      throw new BaseException(
-        ERROR_CODES.VALIDATION_ERROR,
-        'This trainer already has a branch user account. Edit the existing user instead.',
-        409,
-        {
-          field: 'trainerId',
-          linkedBranchUserId: linked.id,
-        },
-      );
-    }
+    await this.assertTrainerAvailableForAccountLink(
+      branchId,
+      trainerId,
+      branchUserId,
+    );
 
     const phone = trainer.phone?.trim() || phoneInput?.trim();
     if (!phone) {
@@ -599,9 +627,11 @@ export class BranchStaffService {
       );
     }
 
+    const lastName = (trainer.lastName ?? '').trim();
+
     return {
       firstName: trainer.firstName.trim(),
-      lastName: (trainer.lastName ?? '').trim() || 'Trainer',
+      lastName: lastName || undefined,
       phone,
     };
   }

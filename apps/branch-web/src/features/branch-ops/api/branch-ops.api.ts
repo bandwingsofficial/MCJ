@@ -508,7 +508,13 @@ export const branchOpsApi = {
 
   userTrainerOptions: () =>
     unwrap<BranchTrainerUserOption[]>(
-      apiClient.get("/branch/users/trainer-options"),
+      apiClient.get("/branch/users/trainer-options", {
+        params: { _: Date.now() },
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+      }),
     ),
 
   createUser: (payload: {

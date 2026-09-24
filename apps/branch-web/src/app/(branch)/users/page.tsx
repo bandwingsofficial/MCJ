@@ -20,6 +20,7 @@ import {
 import { CreateBranchStaffModal } from "@/src/features/branch-ops/components/create-user-modal";
 import { ResetPasswordModal } from "@/src/features/branch-ops/components/reset-password-modal";
 import type { BranchUserItem } from "@/src/features/branch-ops/types";
+import { trainerDisplayNameFromParts } from "@/src/features/branch-ops/utils/trainer-display-name";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
 import { CategoryPagination } from "@/src/shared/components/ui/category-pagination";
@@ -77,6 +78,7 @@ export default function BranchUsersPage() {
     user: BranchUserItem;
   } | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [staffModalRefreshKey, setStaffModalRefreshKey] = useState(0);
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -222,6 +224,7 @@ export default function BranchUsersPage() {
               type="button"
               className="h-11 w-full shrink-0 border-0 bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] px-6 text-sm font-semibold text-white shadow-[0_3px_10px_rgba(37,99,235,0.25)] transition-all hover:from-[#0284C7] hover:to-[#1D4ED8] hover:shadow-[0_4px_12px_rgba(37,99,235,0.3)] sm:w-auto"
               onClick={() => {
+                setStaffModalRefreshKey((key) => key + 1);
                 setEditing(null);
                 setCreateOpen(true);
               }}
@@ -307,9 +310,10 @@ export default function BranchUsersPage() {
                   </tr>
                 ) : (
                   items.map((user) => {
-                    const name = [user.firstName, user.lastName]
-                      .filter(Boolean)
-                      .join(" ");
+                    const name = trainerDisplayNameFromParts(
+                      user.firstName,
+                      user.lastName,
+                    );
                     const initials = name
                       .split(" ")
                       .map((part) => part[0])
@@ -397,6 +401,7 @@ export default function BranchUsersPage() {
                                 className={`${iconButtonClass} text-blue-900`}
                                 aria-label="Edit user"
                                 onClick={() => {
+                                  setStaffModalRefreshKey((key) => key + 1);
                                   setEditing(user);
                                   setCreateOpen(true);
                                 }}
@@ -473,17 +478,20 @@ export default function BranchUsersPage() {
         </div>
       )}
 
-      <CreateBranchStaffModal
+        <CreateBranchStaffModal
         open={createOpen}
         user={editing}
+        refreshKey={staffModalRefreshKey}
         onClose={() => {
           setCreateOpen(false);
           setEditing(null);
         }}
         onSuccess={() => {
+          setStaffModalRefreshKey((key) => key + 1);
           void query.reload();
         }}
         onEditExistingUser={(userId) => {
+          setStaffModalRefreshKey((key) => key + 1);
           const fromList = items.find((item) => item.id === userId);
           if (fromList) {
             setEditing(fromList);

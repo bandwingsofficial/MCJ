@@ -30,6 +30,7 @@ import type {
 } from "@/src/features/branch-ops/types";
 import { appToast } from "@/src/shared/lib/toast";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
+import { trainerDisplayNameFromParts } from "@/src/features/branch-ops/utils/trainer-display-name";
 
 const passwordRegex =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
@@ -116,6 +117,8 @@ type FormValues = z.infer<typeof schema>;
 interface Props {
   open: boolean;
   user?: BranchUserItem | null;
+  /** Bumped after user list mutations so trainer options refetch fresh Trainer rows. */
+  refreshKey?: number;
   onClose: () => void;
   onSuccess: () => void;
   onEditExistingUser?: (userId: string) => void;
@@ -133,37 +136,25 @@ function fieldState(
   return "neutral";
 }
 
-function trainerLabel(trainer: BranchTrainerUserOption): string {
-  const name = [trainer.firstName, trainer.lastName].filter(Boolean).join(" ");
-  const code = trainer.employeeCode ? ` · ${trainer.employeeCode}` : "";
-  return `${name}${code}`;
+function trainerDisplayName(trainer: BranchTrainerUserOption): string {
+  return trainerDisplayNameFromParts(trainer.firstName, trainer.lastName);
 }
 
-function resolveLinkedTrainerId(
-  branchUser: BranchUserItem,
-  options: BranchTrainerUserOption[],
-): string {
-  const linked = options.find(
-    (trainer) => trainer.linkedBranchUserId === branchUser.id,
-  );
-  if (linked) return linked.trainerId;
-
-  const normalizedEmail = branchUser.email?.trim().toLowerCase();
-  const phone = branchUser.phone?.trim();
-
-  for (const trainer of options) {
-    if (
-      normalizedEmail &&
-      trainer.email?.trim().toLowerCase() === normalizedEmail
-    ) {
-      return trainer.trainerId;
-    }
-    if (phone && trainer.phone?.trim() === phone) {
-      return trainer.trainerId;
-    }
+function isTrainerSelectableForStaffAccount(
+  trainer: BranchTrainerUserOption,
+  editingUserId?: string,
+): boolean {
+  if (!trainer.hasAccount) {
+    return true;
   }
 
-  return "";
+  return Boolean(
+    editingUserId && trainer.linkedBranchUserId === editingUserId,
+  );
+}
+
+function resolveLinkedTrainerId(branchUser: BranchUserItem): string {
+  return branchUser.trainerId?.trim() ?? "";
 }
 
 function focusFirstInvalid(errors: FieldErrors<FormValues>) {
@@ -184,6 +175,7 @@ function focusFirstInvalid(errors: FieldErrors<FormValues>) {
 export function CreateBranchStaffModal({
   open,
   user,
+  refreshKey = 0,
   onClose,
   onSuccess,
   onEditExistingUser,
@@ -210,20 +202,38 @@ export function CreateBranchStaffModal({
     } as unknown as FormValues,
   });
 
-  useEffect(() => {
-    if (!open) return;
+  const emptyCreateValues = {
+    mode: "create",
+    trainerId: "",
+    email: "",
+    phone: "",
+    password: "",
+    role: "FACULTY",
+  } as FormValues;
 
-    if (!user) {
-      form.reset({
-        mode: "create",
-        trainerId: "",
-        email: "",
-        phone: "",
-        password: "",
-        role: "FACULTY",
-      } as FormValues);
+  useEffect(() => {
+    if (!open || user) {
+      return;
     }
-  }, [open, user, form]);
+
+    form.reset(emptyCreateValues, {
+      keepErrors: false,
+      keepDirty: false,
+      keepTouched: false,
+    });
+  }, [open, user, refreshKey, form]);
+
+  useEffect(() => {
+    if (open) {
+      return;
+    }
+
+    form.reset(emptyCreateValues, {
+      keepErrors: false,
+      keepDirty: false,
+      keepTouched: false,
+    });
+  }, [open, form]);
 
   useEffect(() => {
     if (!open) return;
@@ -248,14 +258,14 @@ export function CreateBranchStaffModal({
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, refreshKey]);
 
   useEffect(() => {
     if (!open || !user || trainersLoading) return;
 
     form.reset({
       mode: "edit",
-      trainerId: resolveLinkedTrainerId(user, trainerOptions),
+      trainerId: resolveLinkedTrainerId(user),
       email: user.email ?? "",
       phone: user.phone ?? "",
       password: "",
@@ -278,17 +288,33 @@ export function CreateBranchStaffModal({
     formState: { errors, touchedFields, isSubmitted, isSubmitting },
   } = form;
 
-  useEffect(() => {
-    if (!open || trainersLoading) return;
+  const selectedTrainerId = watch("trainerId") ?? "";
 
-    const mode = getValues("mode");
-    if (mode !== "create" && mode !== "edit") return;
+  const hasBranchAssignments =
+    !trainersLoading && trainerOptions.length > 0;
+
+  const hasSelectableTrainer = useMemo(
+    () =>
+      trainerOptions.some((trainer) =>
+        isTrainerSelectableForStaffAccount(trainer, user?.id),
+      ),
+    [trainerOptions, user?.id],
+  );
+
+  useEffect(() => {
+    if (!open || trainersLoading || isEdit) {
+      return;
+    }
 
     const currentTrainerId = getValues("trainerId");
+    const current = trainerOptions.find(
+      (trainer) => trainer.trainerId === currentTrainerId,
+    );
 
     if (
       currentTrainerId &&
-      !trainerOptions.some((trainer) => trainer.trainerId === currentTrainerId)
+      (!current ||
+        !isTrainerSelectableForStaffAccount(current, user?.id))
     ) {
       setValue("trainerId", "", {
         shouldValidate: false,
@@ -296,9 +322,7 @@ export function CreateBranchStaffModal({
         shouldTouch: false,
       });
     }
-  }, [open, trainersLoading, trainerOptions, getValues, setValue]);
-
-  const selectedTrainerId = watch("trainerId") ?? "";
+  }, [open, trainersLoading, isEdit, trainerOptions, user?.id, getValues, setValue]);
 
   const selectedTrainer = useMemo(
     () =>
@@ -308,26 +332,6 @@ export function CreateBranchStaffModal({
 
   const trainerNeedsPhone =
     selectedTrainer != null && !selectedTrainer.phone?.trim();
-
-  useEffect(() => {
-    if (!open || isEdit || !selectedTrainer) return;
-
-    if (selectedTrainer.email?.trim()) {
-      setValue("email", selectedTrainer.email.trim().toLowerCase(), {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-    }
-
-    if (selectedTrainer.phone?.trim()) {
-      setValue("phone", selectedTrainer.phone.trim(), {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-    } else {
-      setValue("phone", "", { shouldValidate: false, shouldDirty: false });
-    }
-  }, [open, isEdit, selectedTrainer, setValue]);
 
   const submitCreate = async (
     values: Extract<FormValues, { mode: "create" }>,
@@ -349,6 +353,11 @@ export function CreateBranchStaffModal({
           : "User created successfully.",
       );
       setRestoreValues(null);
+      form.reset(emptyCreateValues, {
+        keepErrors: false,
+        keepDirty: false,
+        keepTouched: false,
+      });
       onSuccess();
       onClose();
     } catch (error) {
@@ -522,23 +531,23 @@ export function CreateBranchStaffModal({
       String(watch(name as keyof FormValues) ?? ""),
     );
 
-  const hasAssignedTrainers =
-    !trainersLoading && trainerOptions.length > 0;
+  const trainerSelectOptions = useMemo(
+    () =>
+      trainerOptions.map((trainer) => {
+        const selectable = isTrainerSelectableForStaffAccount(
+          trainer,
+          user?.id,
+        );
+        const name = trainerDisplayName(trainer);
 
-  const trainerSelectOptions = trainerOptions.map((trainer) => {
-    const isCurrentUserTrainer =
-      isEdit && trainer.linkedBranchUserId === user?.id;
-    const takenByOther =
-      trainer.hasAccount && !isCurrentUserTrainer;
-
-    return {
-      value: trainer.trainerId,
-      label: takenByOther
-        ? `${trainerLabel(trainer)} (account exists)`
-        : trainerLabel(trainer),
-      disabled: takenByOther,
-    };
-  });
+        return {
+          value: trainer.trainerId,
+          label: selectable ? name : `${name} [Already assigned]`,
+          disabled: !selectable,
+        };
+      }),
+    [trainerOptions, user?.id],
+  );
 
   const trainerFieldBlock = (
     <>
@@ -546,11 +555,11 @@ export function CreateBranchStaffModal({
         htmlId="branch-staff-trainerId"
         label="Assigned trainer"
         required
-        select={hasAssignedTrainers}
+        select={hasBranchAssignments}
         leftIcon={<UserRound className="h-4 w-4" />}
-        state={hasAssignedTrainers ? visual("trainerId") : "neutral"}
+        state={hasBranchAssignments ? visual("trainerId") : "neutral"}
         errorMessage={
-          hasAssignedTrainers ? fieldMessage("trainerId") : undefined
+          hasBranchAssignments ? fieldMessage("trainerId") : undefined
         }
       >
         {trainersLoading ? (
@@ -561,9 +570,9 @@ export function CreateBranchStaffModal({
           >
             <span className="text-sm text-[#647A9B]">Loading trainers...</span>
           </div>
-        ) : hasAssignedTrainers ? (
+        ) : hasBranchAssignments ? (
           <AppSelect
-            value={selectedTrainerId || undefined}
+            value={selectedTrainerId ?? ""}
             placeholder="Select assigned trainer"
             disabled={trainersLoading}
             triggerClassName={validatedFieldInputClass(
@@ -634,30 +643,10 @@ export function CreateBranchStaffModal({
       {selectedTrainer ? (
         <div className="md:col-span-2 rounded-xl border border-[#E8EEF5] bg-[#F8FBFF] px-3 py-2.5 text-sm text-[#647A9B]">
           <p className="font-medium text-[#102A56]">
-            {trainerLabel(selectedTrainer)}
+            {trainerDisplayName(selectedTrainer)}
           </p>
           {selectedTrainer.phone ? (
             <p className="mt-0.5">Phone: {selectedTrainer.phone}</p>
-          ) : null}
-          {selectedTrainer.hasAccount &&
-          selectedTrainer.linkedBranchUserId !== user?.id ? (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <p className="text-xs text-amber-800">
-                This trainer already has a branch user account.
-              </p>
-              {selectedTrainer.linkedBranchUserId ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-8 text-xs"
-                  onClick={() => {
-                    onEditExistingUser?.(selectedTrainer.linkedBranchUserId!);
-                  }}
-                >
-                  Edit existing user
-                </Button>
-              ) : null}
-            </div>
           ) : null}
         </div>
       ) : null}
@@ -746,11 +735,8 @@ export function CreateBranchStaffModal({
               disabled={
                 isSubmitting ||
                 trainersLoading ||
-                !hasAssignedTrainers ||
-                (!isEdit && selectedTrainer?.hasAccount) ||
-                (isEdit &&
-                  selectedTrainer?.hasAccount &&
-                  selectedTrainer.linkedBranchUserId !== user?.id)
+                (!isEdit && !hasSelectableTrainer) ||
+                (isEdit && !selectedTrainerId)
               }
               onClick={handleSubmit(onSubmit, (formErrors) =>
                 focusFirstInvalid(formErrors),
@@ -762,6 +748,7 @@ export function CreateBranchStaffModal({
         }
       >
         <form
+          key={isEdit ? `edit-${user?.id ?? "unknown"}` : `create-${refreshKey}`}
           className="grid gap-x-4 md:grid-cols-2"
           onSubmit={handleSubmit(onSubmit, (formErrors) =>
             focusFirstInvalid(formErrors),

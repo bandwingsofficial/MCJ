@@ -190,6 +190,8 @@ model BranchUser {
   role                  BranchUserRole @default(STAFF)
   permissions           Permission[]   @default([])
   branchId              String
+  /// Branch staff account linked to this trainer (Create/Edit User flow).
+  linkedTrainerId       String?
   isActive              Boolean        @default(true)
   isDeleted             Boolean        @default(false)
   lastLoginAt           DateTime?
@@ -200,6 +202,7 @@ model BranchUser {
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
   branch                Branch         @relation(fields: [branchId], references: [id])
+  linkedTrainer         Trainer?       @relation("BranchStaffLinkedTrainer", fields: [linkedTrainerId], references: [id], onDelete: SetNull)
   facultyBatches        BatchFaculty[]
   recordedAttendance    Attendance[]
   recordedAssessments   AcademicAssessment[]
@@ -209,6 +212,8 @@ model BranchUser {
   @@index([branchId])
   @@index([branchId, isDeleted])
   @@index([branchId, isActive, isDeleted])
+  @@index([linkedTrainerId])
+  @@index([branchId, linkedTrainerId])
   @@index([email])
   @@index([phone])
   @@index([role])
@@ -647,6 +652,7 @@ model Trainer {
   profileImageUpload Upload?         @relation("TrainerProfileImage", fields: [profileImageFileId], references: [id], onDelete: SetNull)
   courses            TrainerCourse[]
   branchAssignments  BranchTrainer[]
+  branchStaffAccounts BranchUser[]   @relation("BranchStaffLinkedTrainer")
 
   @@index([firstName])
   @@index([lastName])

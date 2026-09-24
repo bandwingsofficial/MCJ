@@ -1093,6 +1093,8 @@ export interface BranchUserItem {
   role: string;
   branchId: string;
   branchName?: string;
+  /** Persisted link to Trainer.id (branch staff account). */
+  trainerId?: string | null;
   isActive: boolean;
 }
 
