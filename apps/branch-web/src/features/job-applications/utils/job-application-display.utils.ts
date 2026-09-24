@@ -376,6 +376,30 @@ export function pickBranchOpenAssignmentInterview(
   })[0];
 }
 
+/** Best interview row for read-only View Interview (same modal as /interviews). */
+export function pickBranchApplicationViewInterview(
+  application: JobApplicationItem,
+): JobApplicationBranchInterview | null {
+  const interviews = listBranchApplicationInterviews(application);
+  const fromList =
+    interviews.length > 0
+      ? [...interviews].sort((left, right) => {
+          const leftTime =
+            Date.parse(left.updatedAt ?? left.createdAt ?? "") || 0;
+          const rightTime =
+            Date.parse(right.updatedAt ?? right.createdAt ?? "") || 0;
+          return rightTime - leftTime;
+        })[0]
+      : null;
+
+  return (
+    pickBranchConductInterview(application, interviews) ??
+    pickBranchOpenAssignmentInterview(interviews) ??
+    application.latestInterview ??
+    fromList
+  );
+}
+
 export function toInterviewItemFromJobApplication(
   application: JobApplicationItem,
   interview: JobApplicationBranchInterview,

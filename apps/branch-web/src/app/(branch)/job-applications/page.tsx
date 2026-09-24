@@ -12,13 +12,13 @@ import type {
 import { BranchJobApplicationsFilterBar } from "@/src/features/job-applications/components/BranchJobApplicationsFilterBar";
 import { BranchJobApplicationTabs } from "@/src/features/job-applications/components/BranchJobApplicationTabs";
 import { BranchJobApplicationsTable } from "@/src/features/job-applications/components/BranchJobApplicationsTable";
-import { BranchInterviewWorkspaceModal } from "@/src/features/interviews/components/BranchInterviewWorkspaceModal";
+import { BranchViewInterviewModal } from "@/src/features/interviews/components/BranchViewInterviewModal";
 import { BranchScheduleInterviewModal } from "@/src/features/job-applications/components/BranchScheduleInterviewModal";
-import { BranchViewApplicationModal } from "@/src/features/job-applications/components/BranchViewApplicationModal";
 import {
-  pickBranchConductInterview,
+  pickBranchApplicationViewInterview,
   toInterviewItemFromJobApplication,
 } from "@/src/features/job-applications/utils/job-application-display.utils";
+import { appToast } from "@/src/shared/lib/toast";
 import type { InterviewItem } from "@/src/features/branch-ops/types";
 import {
   BRANCH_JOB_APPLICATION_PAGE_SIZES,
@@ -46,7 +46,6 @@ export default function JobApplicationsPage() {
   const [jobOptions, setJobOptions] = useState<JobApplicationJobOption[]>([]);
   const [selectedApplication, setSelectedApplication] =
     useState<JobApplicationItem | null>(null);
-  const [viewOpen, setViewOpen] = useState(false);
   const [interviewViewOpen, setInterviewViewOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [selectedInterview, setSelectedInterview] =
@@ -104,7 +103,6 @@ export default function JobApplicationsPage() {
     }
 
     setSelectedApplication(null);
-    setViewOpen(false);
     setInterviewViewOpen(false);
     setScheduleOpen(false);
     setSelectedInterview(null);
@@ -138,23 +136,19 @@ export default function JobApplicationsPage() {
   const openView = (application: JobApplicationItem) => {
     setSelectedApplication(application);
     setScheduleOpen(false);
-    const conductRow = pickBranchConductInterview(application);
-    if (conductRow) {
-      setViewOpen(false);
-      setSelectedInterview(
-        toInterviewItemFromJobApplication(application, conductRow),
-      );
-      setInterviewViewOpen(true);
+    const interviewRow = pickBranchApplicationViewInterview(application);
+    if (!interviewRow) {
+      appToast.error("No interview details are available for this application yet.");
       return;
     }
-    setInterviewViewOpen(false);
-    setSelectedInterview(null);
-    setViewOpen(true);
+    setSelectedInterview(
+      toInterviewItemFromJobApplication(application, interviewRow),
+    );
+    setInterviewViewOpen(true);
   };
 
   const openSchedule = (application: JobApplicationItem) => {
     setSelectedApplication(application);
-    setViewOpen(false);
     setInterviewViewOpen(false);
     setSelectedInterview(null);
     setScheduleOpen(true);
@@ -286,15 +280,6 @@ export default function JobApplicationsPage() {
         </div>
       )}
 
-      <BranchViewApplicationModal
-        open={viewOpen}
-        application={selectedApplication}
-        onClose={() => {
-          setViewOpen(false);
-          setSelectedApplication(null);
-        }}
-      />
-
       <BranchScheduleInterviewModal
         open={scheduleOpen}
         application={selectedApplication}
@@ -307,7 +292,7 @@ export default function JobApplicationsPage() {
         }}
       />
 
-      <BranchInterviewWorkspaceModal
+      <BranchViewInterviewModal
         open={interviewViewOpen}
         interview={selectedInterview}
         onClose={() => {

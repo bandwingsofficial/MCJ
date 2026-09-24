@@ -1,14 +1,17 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type {
-  ApplicationRoundProgress,
   InterviewItem,
+  JobApplicationBranchInterview,
 } from "@/src/features/branch-ops/types";
+import { BranchJobApplicationInterviewTimeline } from "@/src/features/interviews/components/BranchJobApplicationInterviewTimeline";
+import { listBranchApplicationInterviews } from "@/src/features/job-applications/utils/job-application-display.utils";
 import {
+  canShowJoinInterviewLink,
   formatInterviewDate,
   formatInterviewMode,
   formatInterviewResult,
@@ -17,6 +20,9 @@ import {
   getInterviewResultVariant,
   getInterviewStatusVariant,
   getInterviewerDisplayName,
+  isOfflineInterviewMode,
+  isOnlineInterviewMode,
+  isValidInterviewSchedule,
 } from "@/src/features/interviews/utils/interview-display.utils";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
@@ -31,6 +37,9 @@ type ApplicationDetail = {
   applicantPhone?: string | null;
   applicationNumber?: string;
   status?: string;
+  createdAt?: string;
+  rejectionReason?: string | null;
+  branchAssignedAt?: string | null;
   job?: {
     title?: string;
     companyName?: string;
@@ -46,7 +55,7 @@ type ApplicationDetail = {
     qualification?: string | null;
     collegeName?: string | null;
   } | null;
-  roundProgress?: ApplicationRoundProgress | null;
+  interviews?: JobApplicationBranchInterview[];
 };
 
 interface Props {
@@ -136,7 +145,18 @@ export function BranchViewInterviewModal({
     return () => {
       cancelled = true;
     };
-  }, [open, interview?.applicationId]);
+  }, [open, interview?.applicationId, interview?.id]);
+
+  const interviewRows = useMemo(
+    () =>
+      interview
+        ? listBranchApplicationInterviews(
+            { branchInterviews: undefined, latestInterview: null },
+            detail?.interviews,
+          )
+        : [],
+    [detail?.interviews, interview],
+  );
 
   if (!interview) {
     return null;
@@ -163,6 +183,10 @@ export function BranchViewInterviewModal({
     interview.round?.name ||
     (interview.roundNumber ? `Round ${interview.roundNumber}` : "—");
   const resultLabel = formatInterviewResult(interview.result);
+
+  const showJoin =
+    interview.status === "SCHEDULED" &&
+    canShowJoinInterviewLink(interview, { workflowActive: true });
 
   return (
     <Modal
@@ -194,7 +218,7 @@ export function BranchViewInterviewModal({
             >
               {formatInterviewStatusLabel(interview.status)}
             </Badge>
-            {resultLabel !== "—" ? (
+            {resultLabel !== "Pending" && resultLabel !== "—" ? (
               <Badge
                 variant={getInterviewResultVariant(interview.result)}
                 className={compactBadgeClass}
@@ -258,12 +282,38 @@ export function BranchViewInterviewModal({
                 label="Mode"
                 value={formatInterviewMode(interview.mode)}
               />
-              <Info
-                label={
-                  interview.mode === "ONLINE" ? "Meeting Link" : "Venue"
-                }
-                value={interview.locationOrLink}
-              />
+              {isValidInterviewSchedule(interview.scheduledAt) ? (
+                isOnlineInterviewMode(interview.mode) ? (
+                  <Info
+                    label="Meeting Link"
+                    value={
+                      showJoin ? (
+                        <a
+                          href={interview.locationOrLink?.trim() || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex h-8 items-center justify-center rounded-md bg-[#2563EB] px-3 text-sm font-medium text-white hover:bg-[#1D4ED8]"
+                        >
+                          Join Interview
+                        </a>
+                      ) : (
+                        interview.locationOrLink
+                      )
+                    }
+                  />
+                ) : isOfflineInterviewMode(interview.mode) ? (
+                  <Info label="Venue" value={interview.locationOrLink} />
+                ) : (
+                  <Info label="Location" value={interview.locationOrLink} />
+                )
+              ) : (
+                <Info
+                  label={
+                    interview.mode === "ONLINE" ? "Meeting Link" : "Venue"
+                  }
+                  value={interview.locationOrLink}
+                />
+              )}
               <Info
                 label="Interviewer"
                 value={getInterviewerDisplayName(interview)}
@@ -283,7 +333,7 @@ export function BranchViewInterviewModal({
               <Info
                 label="Result"
                 value={
-                  resultLabel === "—" ? (
+                  resultLabel === "Pending" || resultLabel === "—" ? (
                     "—"
                   ) : (
                     <Badge
@@ -298,6 +348,18 @@ export function BranchViewInterviewModal({
               <Info label="Notes" value={interview.notes} />
               <Info label="Feedback" value={interview.evaluation} />
             </div>
+          </Section>
+
+          <Section title="Interview Progress">
+            <BranchJobApplicationInterviewTimeline
+              application={{
+                status: detail?.status,
+                createdAt: detail?.createdAt,
+                rejectionReason: detail?.rejectionReason,
+                branchAssignedAt: detail?.branchAssignedAt,
+                interviews: interviewRows,
+              }}
+            />
           </Section>
         </div>
       )}
