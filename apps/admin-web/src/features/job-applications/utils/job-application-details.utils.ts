@@ -149,7 +149,7 @@ export function resolveApplicationWorkflowStateLabel(
     return "Scheduled";
   }
   if (pipeline.key === "SELECTED_FOR_NEXT_ROUND") {
-    return "Selected for Next Round";
+    return pipeline.label;
   }
   if (pipeline.key === "COMPLETED") {
     return "In Progress";

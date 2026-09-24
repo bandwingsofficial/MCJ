@@ -347,9 +347,20 @@ export type InterviewPipelineDisplayKey =
 type InterviewRecordLike = {
   status?: string | null;
   result?: string | null;
-  round?: { name?: string | null } | null;
-  nextRound?: { name?: string | null } | null;
+  round?: { name?: string | null; sortOrder?: number | null } | null;
+  nextRound?: { name?: string | null; sortOrder?: number | null } | null;
 };
+
+function formatPersistedNextRoundLabel(
+  nextRound?: { name?: string | null; sortOrder?: number | null } | null,
+): string | null {
+  const name = nextRound?.name?.trim();
+  if (!name) {
+    return null;
+  }
+  const order = nextRound?.sortOrder;
+  return order != null ? `${order}. ${name}` : name;
+}
 
 /**
  * Interview column status from the latest persisted Interview record
@@ -379,10 +390,11 @@ export function resolveInterviewPipelineDisplay(
 
   if (status === "COMPLETED") {
     if (result === "SELECTED_FOR_NEXT_ROUND") {
+      const nextRoundLabel = formatPersistedNextRoundLabel(interview.nextRound);
       return {
         key: "SELECTED_FOR_NEXT_ROUND",
-        label: "SELECTED FOR NEXT ROUND",
-        variant: "success",
+        label: nextRoundLabel ?? "NOT SCHEDULED",
+        variant: "info",
       };
     }
     if (result === "REJECTED") {
@@ -587,6 +599,19 @@ export function getBranchInterviewerAssignment(
   for (let index = interviews.length - 1; index >= 0; index -= 1) {
     const row = interviews[index];
     if (isActiveBranchInterviewerAssignmentStatus(row.status)) {
+      return row;
+    }
+  }
+
+  for (let index = interviews.length - 1; index >= 0; index -= 1) {
+    const row = interviews[index];
+    const result = (row.result ?? "").toString().trim().toUpperCase();
+    if (
+      row.status === "COMPLETED" &&
+      result === "SELECTED_FOR_NEXT_ROUND" &&
+      row.branchId &&
+      row.interviewerId
+    ) {
       return row;
     }
   }

@@ -1700,12 +1700,18 @@ export class BranchInterviewService {
         }
       }
 
+      const persistedNextRoundId = selectingNextRound
+        ? scheduleNext
+          ? nextRound!.id
+          : input.nextRoundId ?? null
+        : null;
+
       const completed = await tx.interview.update({
         where: { id },
         data: {
           status: InterviewStatus.COMPLETED,
           result: input.result,
-          nextRoundId: scheduleNext ? nextRound!.id : null,
+          nextRoundId: persistedNextRoundId,
           evaluation: input.evaluation?.trim() || existing.evaluation,
           notes: input.notes?.trim() || existing.notes,
           updatedBy: user.sub,
@@ -1819,7 +1825,12 @@ export class BranchInterviewService {
       metadata: {
         applicationId: existing.applicationId,
         result: input.result,
-        nextRoundId: scheduleNext ? nextRound!.id : null,
+        nextRoundId:
+          input.result === InterviewResult.SELECTED_FOR_NEXT_ROUND
+            ? scheduleNext
+              ? nextRound!.id
+              : input.nextRoundId ?? null
+            : null,
         nextInterviewId: outcome.next?.id ?? null,
       },
     });
