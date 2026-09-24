@@ -1,4 +1,6 @@
 import { UploadDomainService } from '@modules/uploads/domain/services/upload-domain.service';
+import { syncLinkedBranchUserNamesFromTrainer } from '@modules/branch-user/infrastructure/linked-trainer-display.util';
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import type { TrainerUpdateParams } from '../../domain/entities/trainer.entity';
 import type { TrainerRepository } from '../../domain/repositories/trainer.repository';
@@ -37,6 +39,7 @@ export class UpdateTrainerHandler {
     private readonly trainerRepo: TrainerRepository,
     private readonly uploadDomainService: UploadDomainService,
     private readonly domainService: TrainerDomainService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(
@@ -175,6 +178,10 @@ export class UpdateTrainerHandler {
     trainer.update(patch);
 
     await this.trainerRepo.save(trainer);
+
+    if (command.firstName !== undefined || lastName !== undefined) {
+      await syncLinkedBranchUserNamesFromTrainer(this.prisma, trainer.id);
+    }
 
     return GetTrainerResult.fromEntity(trainer);
   }

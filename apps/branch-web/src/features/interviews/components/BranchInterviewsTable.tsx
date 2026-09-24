@@ -3,14 +3,17 @@
 import type { InterviewItem } from "@/src/features/branch-ops/types";
 import { BranchInterviewActions } from "@/src/features/interviews/components/BranchInterviewActions";
 import {
+  getInterviewWhenLabel,
+  getInterviewWorkflowStatusVariant,
+  resolveInterviewWorkflowStatusLabel,
+} from "@/src/features/branch-interview-lifecycle/interview-presentation";
+import { useLifecycleNow } from "@/src/features/branch-interview-lifecycle/use-lifecycle-now";
+import {
   formatInterviewDate,
   formatInterviewMode,
   formatInterviewResult,
   formatInterviewTime,
-  formatInterviewWorkflowStatusLabel,
-  getInterviewRelativeLabel,
   getInterviewResultVariant,
-  getInterviewWorkflowStatusVariant,
   getInterviewerDisplayName,
   isValidInterviewSchedule,
 } from "@/src/features/interviews/utils/interview-display.utils";
@@ -22,7 +25,6 @@ interface Props {
   interviews: InterviewItem[];
   actionsDisabled?: boolean;
   onView: (interview: InterviewItem) => void;
-  onManage: (interview: InterviewItem) => void;
   onRecordResult: (interview: InterviewItem) => void;
 }
 
@@ -32,9 +34,10 @@ export function BranchInterviewsTable({
   interviews,
   actionsDisabled = false,
   onView,
-  onManage,
   onRecordResult,
 }: Props) {
+  const nowMs = useLifecycleNow();
+
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full min-w-full border-collapse text-sm">
@@ -132,11 +135,7 @@ export function BranchInterviewsTable({
                         {formatInterviewTime(interview.scheduledAt)}
                       </p>
                       <p className="mt-0.5 text-xs font-medium text-[#2563EB]">
-                        {getInterviewRelativeLabel(
-                          interview.scheduledAt,
-                          interview.status,
-                          interview.result,
-                        )}
+                        {getInterviewWhenLabel(interview, nowMs)}
                       </p>
                     </td>
                     <td className="!px-4 !py-4 align-middle text-sm text-[#102A56]">
@@ -145,15 +144,12 @@ export function BranchInterviewsTable({
                     <td className="!px-4 !py-4 align-middle">
                       <Badge
                         variant={getInterviewWorkflowStatusVariant(
-                          interview.status,
-                          interview.result,
+                          interview,
+                          nowMs,
                         )}
                         className={compactClass}
                       >
-                        {formatInterviewWorkflowStatusLabel(
-                          interview.status,
-                          interview.result,
-                        )}
+                        {resolveInterviewWorkflowStatusLabel(interview, nowMs)}
                       </Badge>
                     </td>
                     <td className="!px-4 !py-4 align-middle">
@@ -172,7 +168,6 @@ export function BranchInterviewsTable({
                         interview={interview}
                         disabled={actionsDisabled}
                         onView={onView}
-                        onManage={onManage}
                         onRecordResult={onRecordResult}
                       />
                     </td>

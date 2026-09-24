@@ -777,7 +777,9 @@ export class BranchOperationsController {
     @Query('jobId') jobId?: string,
     @Query('appliedFrom') appliedFrom?: string,
     @Query('appliedTo') appliedTo?: string,
-    @Query('interviewPhase') interviewPhase?: 'ASSIGNED' | 'SCHEDULED',
+    @Query('roundId') roundId?: string,
+    @Query('interviewPhase')
+    interviewPhase?: 'ASSIGNED' | 'NOT_SCHEDULED' | 'SCHEDULED',
     @Query('skip') skip?: string,
     @Query('take') take?: string,
   ) {
@@ -790,6 +792,7 @@ export class BranchOperationsController {
         jobId,
         appliedFrom,
         appliedTo,
+        roundId,
         interviewPhase,
         skip: skip ? Number(skip) : undefined,
         take: take ? Number(take) : undefined,
@@ -925,8 +928,6 @@ export class BranchOperationsController {
   @Permissions(Permission.INTERVIEW_READ)
   async listInterviews(
     @CurrentBranchUser() user: BranchAuthUser,
-    @Query('tab')
-    tab?: 'UPCOMING' | 'TODAY' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED',
     @Query('status') status?: InterviewStatus,
     @Query('search') search?: string,
     @Query('interviewerId') interviewerId?: string,
@@ -942,7 +943,6 @@ export class BranchOperationsController {
       success: true,
       message: 'Interviews fetched successfully',
       data: await this.interviews.listInterviews(user, {
-        tab,
         status,
         search,
         interviewerId,
@@ -958,6 +958,20 @@ export class BranchOperationsController {
         skip: skip ? Number(skip) : undefined,
         take: take ? Number(take) : undefined,
       }),
+    };
+  }
+
+  @Post('interviews/:id/request-reschedule')
+  @Roles(...InterviewOrManager)
+  @Permissions(Permission.INTERVIEW_WRITE)
+  async requestInterviewReschedule(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Param('id') id: string,
+  ) {
+    return {
+      success: true,
+      message: 'Interview marked for re-schedule',
+      data: await this.interviews.requestInterviewReschedule(user, id),
     };
   }
 

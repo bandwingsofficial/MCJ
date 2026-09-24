@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, ClipboardCheck, Eye } from "lucide-react";
+import { ClipboardCheck, Eye } from "lucide-react";
 
 import type { InterviewItem } from "@/src/features/branch-ops/types";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
@@ -14,7 +14,6 @@ interface Props {
   interview: InterviewItem;
   disabled?: boolean;
   onView: (interview: InterviewItem) => void;
-  onManage: (interview: InterviewItem) => void;
   onRecordResult: (interview: InterviewItem) => void;
 }
 
@@ -22,11 +21,8 @@ export function BranchInterviewActions({
   interview,
   disabled = false,
   onView,
-  onManage,
   onRecordResult,
 }: Props) {
-  const canManage =
-    interview.status === "SCHEDULED" || interview.status === "ASSIGNED";
   const canRecordResult = interview.status === "SCHEDULED";
 
   return (
@@ -57,25 +53,6 @@ export function BranchInterviewActions({
         </Tooltip>
       ) : null}
 
-      {canManage ? (
-        <Tooltip
-          content={
-            interview.status === "ASSIGNED"
-              ? "Schedule Interview"
-              : "Manage Interview"
-          }
-        >
-          <button
-            type="button"
-            disabled={disabled}
-            aria-label="Manage interview schedule"
-            className={`${iconButtonClass} text-indigo-800`}
-            onClick={() => onManage(interview)}
-          >
-            <CalendarClock className={iconClass} />
-          </button>
-        </Tooltip>
-      ) : null}
     </div>
   );
 }

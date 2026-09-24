@@ -10,13 +10,16 @@ import type {
   JobApplicationJobOption,
 } from "@/src/features/branch-ops/types";
 import { BranchJobApplicationsFilterBar } from "@/src/features/job-applications/components/BranchJobApplicationsFilterBar";
+import { BranchJobApplicationTabs } from "@/src/features/job-applications/components/BranchJobApplicationTabs";
 import { BranchJobApplicationsTable } from "@/src/features/job-applications/components/BranchJobApplicationsTable";
 import { BranchScheduleInterviewModal } from "@/src/features/job-applications/components/BranchScheduleInterviewModal";
 import { BranchViewApplicationModal } from "@/src/features/job-applications/components/BranchViewApplicationModal";
 import {
   BRANCH_JOB_APPLICATION_PAGE_SIZES,
   DEFAULT_BRANCH_JOB_APPLICATION_FILTERS,
+  DEFAULT_JOB_APPLICATION_SCHEDULE_COUNTS,
   type BranchJobApplicationFilters,
+  type JobApplicationScheduleTab,
 } from "@/src/features/job-applications/constants/job-application.constants";
 import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
@@ -48,29 +51,25 @@ export default function JobApplicationsPage() {
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
+  const scheduleTabParam =
+    filters.scheduleTab === "ALL" ? undefined : filters.scheduleTab;
+
   const query = useAsyncData(
     () =>
       branchOpsApi.jobApplications({
         search: debouncedSearch || undefined,
-        status: filters.status === "ALL" ? undefined : filters.status,
         jobId: filters.jobId === "ALL" ? undefined : filters.jobId,
-        interviewPhase:
-          filters.interviewPhase === "ALL"
-            ? undefined
-            : filters.interviewPhase,
-        appliedFrom: filters.appliedFrom || undefined,
-        appliedTo: filters.appliedTo || undefined,
+        interviewPhase: scheduleTabParam,
+        roundId: filters.roundId === "ALL" ? undefined : filters.roundId,
         skip: (filters.page - 1) * filters.pageSize,
         take: filters.pageSize,
       }),
     [
       branchId,
       debouncedSearch,
-      filters.status,
       filters.jobId,
-      filters.interviewPhase,
-      filters.appliedFrom,
-      filters.appliedTo,
+      filters.scheduleTab,
+      filters.roundId,
       filters.page,
       filters.pageSize,
     ],
@@ -92,11 +91,26 @@ export default function JobApplicationsPage() {
     );
     if (refreshed) {
       setSelectedApplication(refreshed);
+      return;
     }
+
+    setSelectedApplication(null);
+    setViewOpen(false);
+    setScheduleOpen(false);
   }, [query.data?.items, selectedApplication?.id]);
+
+  useEffect(() => {
+    const refetchOnFocus = () => {
+      void query.reload({ silent: true });
+    };
+    window.addEventListener("focus", refetchOnFocus);
+    return () => window.removeEventListener("focus", refetchOnFocus);
+  }, [query.reload]);
 
   const items = query.data?.items ?? [];
   const total = query.data?.total ?? 0;
+  const scheduleCounts =
+    query.data?.scheduleCounts ?? DEFAULT_JOB_APPLICATION_SCHEDULE_COUNTS;
   const totalPages = Math.max(1, Math.ceil(total / filters.pageSize));
   const from = total === 0 ? 0 : (filters.page - 1) * filters.pageSize + 1;
   const to = Math.min(filters.page * filters.pageSize, total);
@@ -158,6 +172,15 @@ export default function JobApplicationsPage() {
           </div>
         </div>
       </header>
+
+      <BranchJobApplicationTabs
+        counts={scheduleCounts}
+        activeTab={filters.scheduleTab}
+        disabled={query.loading}
+        onChange={(scheduleTab: JobApplicationScheduleTab) =>
+          setFilters((current) => ({ ...current, scheduleTab, page: 1 }))
+        }
+      />
 
       <BranchJobApplicationsFilterBar
         filters={{ ...filters, search: searchInput }}

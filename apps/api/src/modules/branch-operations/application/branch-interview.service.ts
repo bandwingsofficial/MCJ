@@ -23,8 +23,52 @@ import { GetJobApplicationHandler } from '@modules/job-application/application/g
 import { GetJobApplicationQuery } from '@modules/job-application/application/get-job-application/get-job-application.query';
 import { JobApplicationInterviewStatus } from '@modules/job-application/domain/enums/job-application-interview-status.enum';
 import { JobApplicationStatus as DomainJobApplicationStatus } from '@modules/job-application/domain/enums/job-application-status.enum';
+import {
+  formatInterviewerDisplayLabel,
+  jobApplicationInterviewerSelect,
+} from '@modules/job-application/infrastructure/mappers/map-interviewer-display.util';
+import {
+  findBranchUserForInterviewerRoleValidation,
+  findEligibleBranchInterviewerForBranch,
+  INTERVIEWER_ROLE_REQUIRED_MESSAGE,
+} from '@modules/branch-user/infrastructure/eligible-branch-interviewer.util';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BranchOperationsAccessService } from './branch-operations-access.service';
+import {
+  mapBranchJobApplicationInterviews,
+  serializeBranchJobApplicationInterview,
+} from './utils/branch-job-application-interview-list.util';
+import {
+  classifyBranchJobApplicationScheduleTab,
+} from './utils/branch-job-application-schedule-tab.util';
+import {
+  buildBranchApplicationInterviewIncludeScope,
+  buildCurrentBranchAssignmentInterviewScope,
+  resolveBranchAssignedAt,
+} from './utils/branch-job-application-assignment.util';
+import {
+  buildJobApplicationSchedulingSuggestion,
+  serializeJobApplicationSchedulingSuggestion,
+} from './utils/branch-job-application-scheduling-suggestion.util';
+import {
+  assertApplicationAssignedToBranch,
+  assertNoDuplicateRoundScheduling,
+  assertScheduledAtNotBeforeEligible,
+  assertSchedulingEligibleRound,
+  findLatestSelectedForNextRound,
+  findReusableUnassignedInterviewShell,
+  pickOpenInterviewForScheduling,
+  resolveBranchAssignedAtForApplication,
+  collectScheduleInterviewerCandidates,
+  resolveSchedulingEligibleFromMs,
+  shouldCreateInterviewForSelectedRound,
+} from './utils/branch-interview-schedule-validation.util';
+import { computeBranchJobApplicationWorkflowMetrics } from './utils/branch-job-application-workflow-metrics.util';
+import {
+  buildBranchInterviewWorkflowAlerts,
+  resolveApplicationInterviewWorkflow,
+  resolveScheduledInterviewLifecycle,
+} from '@mcj/shared-constants';
 
 @Injectable()
 export class BranchInterviewService {
@@ -43,7 +87,8 @@ export class BranchInterviewService {
       jobId?: string;
       appliedFrom?: string;
       appliedTo?: string;
-      interviewPhase?: 'ASSIGNED' | 'SCHEDULED';
+      roundId?: string;
+      interviewPhase?: 'ASSIGNED' | 'NOT_SCHEDULED' | 'SCHEDULED';
       skip?: number;
       take?: number;
     },
@@ -53,148 +98,268 @@ export class BranchInterviewService {
     const skip = query.skip ?? 0;
     const take = query.take ?? 20;
 
-    const interviewScope: Prisma.InterviewWhereInput =
-      this.access.isInterviewer(user)
-        ? { interviewerId: user.sub, branchId: user.branchId }
-        : { branchId: user.branchId };
+    const assignmentScope = buildCurrentBranchAssignmentInterviewScope({
+      branchId: user.branchId,
+      ...(this.access.isInterviewer(user) ? { interviewerId: user.sub } : {}),
+      ...(query.roundId ? { roundId: query.roundId } : {}),
+    });
 
-    const interviewMatch: Prisma.InterviewWhereInput = {
-      ...interviewScope,
-      ...(query.interviewPhase === 'ASSIGNED'
-        ? {
-            status: InterviewStatus.ASSIGNED,
-          }
-        : {}),
-      ...(query.interviewPhase === 'SCHEDULED'
-        ? {
-            status: InterviewStatus.SCHEDULED,
-            scheduledAt: { not: null },
-          }
-        : {}),
+    const interviewIncludeScope = buildBranchApplicationInterviewIncludeScope({
+      branchId: user.branchId,
+      ...(this.access.isInterviewer(user) ? { interviewerId: user.sub } : {}),
+      ...(query.roundId ? { roundId: query.roundId } : {}),
+    });
+
+    const listQuery = {
+      status: query.status,
+      search: query.search,
+      jobId: query.jobId,
+      appliedFrom: query.appliedFrom,
+      appliedTo: query.appliedTo,
     };
 
-    const where: Prisma.JobApplicationWhereInput = {
-      isDeleted: false,
-      ...(query.status ? { status: query.status } : {}),
-      ...(query.jobId ? { jobId: query.jobId } : {}),
-      ...(query.appliedFrom || query.appliedTo
-        ? {
-            createdAt: {
-              ...(query.appliedFrom
-                ? { gte: new Date(`${query.appliedFrom}T00:00:00.000Z`) }
-                : {}),
-              ...(query.appliedTo
-                ? { lte: new Date(`${query.appliedTo}T23:59:59.999Z`) }
-                : {}),
-            },
-          }
-        : {}),
-      interviews: { some: interviewMatch },
-      ...(query.search?.trim()
-        ? {
-            OR: [
-              {
-                applicationNumber: {
-                  contains: query.search.trim(),
-                  mode: 'insensitive',
-                },
-              },
-              {
-                applicantName: {
-                  contains: query.search.trim(),
-                  mode: 'insensitive',
-                },
-              },
-              {
-                applicantEmail: {
-                  contains: query.search.trim(),
-                  mode: 'insensitive',
-                },
-              },
-              {
-                job: {
-                  title: {
-                    contains: query.search.trim(),
-                    mode: 'insensitive',
-                  },
-                },
-              },
-            ],
-          }
-        : {}),
+    const baseWhere = this.buildBranchJobApplicationListWhere(
+      assignmentScope,
+      listQuery,
+    );
+
+    const interviewInclude = {
+      where: interviewIncludeScope,
+      orderBy: [
+        { roundNumber: 'desc' as const },
+        { createdAt: 'desc' as const },
+      ],
+      take: 20,
+      include: {
+        interviewer: {
+          select: jobApplicationInterviewerSelect,
+        },
+        branch: {
+          select: { id: true, branchName: true, branchCode: true },
+        },
+        round: {
+          select: {
+            id: true,
+            name: true,
+            sortOrder: true,
+            status: true,
+          },
+        },
+        nextRound: {
+          select: {
+            id: true,
+            name: true,
+            sortOrder: true,
+            status: true,
+          },
+        },
+      },
     };
 
-    const [records, total, jobOptions] = await Promise.all([
-      this.prisma.jobApplication.findMany({
-        where,
-        include: {
-          job: true,
-          Student: true,
-          interviews: {
-            where: interviewScope,
-            orderBy: [
-              { roundNumber: 'desc' },
-              { createdAt: 'desc' },
-            ],
-            take: 20,
-            include: {
-              interviewer: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  email: true,
-                },
-              },
-              branch: {
-                select: { id: true, branchName: true, branchCode: true },
-              },
-              round: {
-                select: {
-                  id: true,
-                  name: true,
-                  sortOrder: true,
-                  status: true,
-                },
-              },
-              nextRound: {
-                select: {
-                  id: true,
-                  name: true,
-                  sortOrder: true,
-                  status: true,
-                },
-              },
-            },
+    const candidatesPromise = this.prisma.jobApplication.findMany({
+      where: baseWhere,
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        interviews: interviewInclude,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const jobOptionsPromise = this.prisma.job.findMany({
+      where: {
+        applications: {
+          some: {
+            isDeleted: false,
+            interviews: { some: assignmentScope },
           },
         },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
-      }),
-      this.prisma.jobApplication.count({ where }),
-      this.prisma.job.findMany({
-        where: {
-          applications: {
-            some: {
-              isDeleted: false,
-              interviews: { some: interviewScope },
-            },
+      },
+      select: {
+        id: true,
+        title: true,
+        companyName: true,
+        jobNumber: true,
+      },
+      orderBy: { title: 'asc' },
+      take: 200,
+    });
+
+    type BranchJobApplicationListRecord = Prisma.JobApplicationGetPayload<{
+      include: {
+        job: true;
+        Student: true;
+        interviews: {
+          include: {
+            interviewer: {
+              select: typeof jobApplicationInterviewerSelect;
+            };
+            branch: {
+              select: { id: true; branchName: true; branchCode: true };
+            };
+            round: {
+              select: {
+                id: true;
+                name: true;
+                sortOrder: true;
+                status: true;
+              };
+            };
+            nextRound: {
+              select: {
+                id: true;
+                name: true;
+                sortOrder: true;
+                status: true;
+              };
+            };
+          };
+        };
+      };
+    }>;
+
+    let records: BranchJobApplicationListRecord[] = [];
+    let total = 0;
+
+    const phase = query.interviewPhase;
+
+    if (phase === 'NOT_SCHEDULED' || phase === 'SCHEDULED') {
+      const candidates = await candidatesPromise;
+      const filteredIds = candidates
+        .filter((candidate) => {
+          const branchInterviews = mapBranchJobApplicationInterviews(
+            candidate.interviews,
+          );
+          const tab = classifyBranchJobApplicationScheduleTab(
+            branchInterviews,
+            candidate.status,
+          );
+          return tab === phase;
+        })
+        .map((candidate) => candidate.id);
+
+      total = filteredIds.length;
+      const pageIds = filteredIds.slice(skip, skip + take);
+
+      if (pageIds.length) {
+        const pageRecords = await this.prisma.jobApplication.findMany({
+          where: { id: { in: pageIds } },
+          include: {
+            job: true,
+            Student: true,
+            interviews: interviewInclude,
           },
-        },
+        });
+        const byId = new Map(pageRecords.map((record) => [record.id, record]));
+        records = pageIds
+          .map((id) => byId.get(id))
+          .filter((record): record is NonNullable<typeof record> =>
+            Boolean(record),
+          );
+      }
+    } else {
+      [records, total] = await Promise.all([
+        this.prisma.jobApplication.findMany({
+          where: baseWhere,
+          include: {
+            job: true,
+            Student: true,
+            interviews: interviewInclude,
+          },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+        }),
+        this.prisma.jobApplication.count({ where: baseWhere }),
+      ]);
+    }
+
+    const [candidates, jobOptions, activeInterviewRounds] = await Promise.all([
+      candidatesPromise,
+      jobOptionsPromise,
+      this.prisma.interviewRound.findMany({
+        where: { status: InterviewRoundStatus.ACTIVE },
         select: {
           id: true,
-          title: true,
-          companyName: true,
-          jobNumber: true,
+          name: true,
+          sortOrder: true,
+          status: true,
         },
-        orderBy: { title: 'asc' },
-        take: 200,
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       }),
     ]);
 
+    let notScheduled = 0;
+    let scheduled = 0;
+    for (const candidate of candidates) {
+      const branchInterviews = mapBranchJobApplicationInterviews(
+        candidate.interviews,
+      );
+      const tab = classifyBranchJobApplicationScheduleTab(
+        branchInterviews,
+        candidate.status,
+      );
+      if (tab === 'NOT_SCHEDULED') {
+        notScheduled += 1;
+      } else if (tab === 'SCHEDULED') {
+        scheduled += 1;
+      }
+    }
+
+    const scheduleCounts = {
+      all: candidates.length,
+      notScheduled,
+      scheduled,
+    };
+
+    const { metrics: workflowMetrics, alerts: workflowAlerts } =
+      computeBranchJobApplicationWorkflowMetrics(
+        candidates.map((candidate) => ({
+          status: candidate.status,
+          createdAt: candidate.createdAt,
+          interviews: mapBranchJobApplicationInterviews(candidate.interviews),
+        })),
+      );
+
     const items = records.map((record) => {
+      const branchInterviews = mapBranchJobApplicationInterviews(
+        record.interviews,
+      );
+      const listScheduleTab = classifyBranchJobApplicationScheduleTab(
+        branchInterviews,
+        record.status,
+      );
+      const workflow = resolveApplicationInterviewWorkflow({
+        interviews: branchInterviews.map((item) => ({
+          id: item.id,
+          status: item.status,
+          result: item.result,
+          scheduledAt: item.scheduledAt,
+          durationMinutes: item.durationMinutes,
+          createdAt: item.createdAt,
+          roundNumber: item.roundNumber,
+          roundId: item.roundId,
+          nextRoundId: item.nextRoundId,
+          notes: item.notes,
+          round: item.round,
+          nextRound: item.nextRound,
+        })),
+        applicationStatus: record.status,
+        applicationCreatedAt: record.createdAt,
+      });
       const latest = this.pickLatestInterview(record.interviews);
+      const branchAssignedAt = resolveBranchAssignedAt(branchInterviews);
+      const interviewSchedulingSuggestion =
+        serializeJobApplicationSchedulingSuggestion(
+          buildJobApplicationSchedulingSuggestion({
+            activeRounds: activeInterviewRounds,
+            branchInterviews,
+            applicationStatus: record.status,
+            branchAssignedAt,
+          }),
+          activeInterviewRounds,
+        );
       const detail = {
         id: record.id,
         jobId: record.jobId,
@@ -228,35 +393,17 @@ export class BranchInterviewService {
         },
         createdAt: record.createdAt,
         updatedAt: record.updatedAt,
+        listScheduleTab,
+        interviewWorkflowPhase: workflow.phase,
+        branchAssignedAt: branchAssignedAt?.toISOString() ?? null,
+        interviewSchedulingSuggestion,
+        branchInterviews: branchInterviews.map((item) =>
+          serializeBranchJobApplicationInterview(item),
+        ),
         latestInterview: latest
-          ? {
-              id: latest.id,
-              scheduledAt: latest.scheduledAt,
-              mode: latest.mode,
-              locationOrLink: latest.locationOrLink,
-              roundId: latest.roundId,
-              nextRoundId: latest.nextRoundId,
-              roundNumber: latest.roundNumber,
-              result: latest.result,
-              status: latest.status,
-              notes: latest.notes,
-              interviewer: latest.interviewer,
-              branch: latest.branch,
-              round: latest.round
-                ? {
-                    id: latest.round.id,
-                    name: latest.round.name,
-                    sortOrder: latest.round.sortOrder,
-                  }
-                : null,
-              nextRound: latest.nextRound
-                ? {
-                    id: latest.nextRound.id,
-                    name: latest.nextRound.name,
-                    sortOrder: latest.nextRound.sortOrder,
-                  }
-                : null,
-            }
+          ? serializeBranchJobApplicationInterview(
+              branchInterviews.find((item) => item.id === latest.id)!,
+            )
           : null,
         interviewScheduleStatus: latest?.status ?? null,
         interviewScheduledAt: latest?.scheduledAt ?? null,
@@ -265,7 +412,76 @@ export class BranchInterviewService {
       return detail;
     });
 
-    return { items, total, jobOptions };
+    return {
+      items,
+      total,
+      jobOptions,
+      scheduleCounts,
+      workflowMetrics,
+      workflowAlerts,
+    };
+  }
+
+  private buildBranchJobApplicationListWhere(
+    interviewScope: Prisma.InterviewWhereInput,
+    query: {
+      status?: JobApplicationStatus;
+      search?: string;
+      jobId?: string;
+      appliedFrom?: string;
+      appliedTo?: string;
+    },
+  ): Prisma.JobApplicationWhereInput {
+    return {
+      isDeleted: false,
+      interviews: { some: interviewScope },
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.jobId ? { jobId: query.jobId } : {}),
+      ...(query.appliedFrom || query.appliedTo
+        ? {
+            createdAt: {
+              ...(query.appliedFrom
+                ? { gte: new Date(`${query.appliedFrom}T00:00:00.000Z`) }
+                : {}),
+              ...(query.appliedTo
+                ? { lte: new Date(`${query.appliedTo}T23:59:59.999Z`) }
+                : {}),
+            },
+          }
+        : {}),
+      ...(query.search?.trim()
+        ? {
+            OR: [
+              {
+                applicationNumber: {
+                  contains: query.search.trim(),
+                  mode: 'insensitive',
+                },
+              },
+              {
+                applicantName: {
+                  contains: query.search.trim(),
+                  mode: 'insensitive',
+                },
+              },
+              {
+                applicantEmail: {
+                  contains: query.search.trim(),
+                  mode: 'insensitive',
+                },
+              },
+              {
+                job: {
+                  title: {
+                    contains: query.search.trim(),
+                    mode: 'insensitive',
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
   }
 
   /**
@@ -274,6 +490,7 @@ export class BranchInterviewService {
    */
   private pickLatestInterview<
     T extends {
+      id: string;
       status: InterviewStatus;
       scheduledAt: Date | null;
       createdAt: Date;
@@ -336,15 +553,15 @@ export class BranchInterviewService {
   async getApplication(user: BranchAuthUser, id: string) {
     this.assertInterviewRole(user);
 
-    const interviewScope: Prisma.InterviewWhereInput =
-      this.access.isInterviewer(user)
-        ? { interviewerId: user.sub, branchId: user.branchId }
-        : { branchId: user.branchId };
+    const assignmentScope = buildCurrentBranchAssignmentInterviewScope({
+      branchId: user.branchId,
+      ...(this.access.isInterviewer(user) ? { interviewerId: user.sub } : {}),
+    });
 
     const owned = await this.prisma.interview.findFirst({
       where: {
         applicationId: id,
-        ...interviewScope,
+        ...assignmentScope,
       },
     });
 
@@ -358,14 +575,19 @@ export class BranchInterviewService {
       new GetJobApplicationQuery(id, false),
     );
 
+    const interviewIncludeScope = buildBranchApplicationInterviewIncludeScope({
+      branchId: user.branchId,
+      ...(this.access.isInterviewer(user) ? { interviewerId: user.sub } : {}),
+    });
+
     const interviews = await this.prisma.interview.findMany({
       where: {
         applicationId: id,
-        ...interviewScope,
+        ...interviewIncludeScope,
       },
       include: {
         interviewer: {
-          select: { id: true, firstName: true, lastName: true, email: true },
+          select: jobApplicationInterviewerSelect,
         },
         branch: {
           select: { id: true, branchName: true, branchCode: true },
@@ -458,10 +680,72 @@ export class BranchInterviewService {
     return result;
   }
 
+  async requestInterviewReschedule(user: BranchAuthUser, id: string) {
+    this.assertInterviewRole(user);
+
+    const existing = await this.prisma.interview.findFirst({
+      where: { id },
+      include: this.include(),
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Interview not found');
+    }
+
+    if (this.access.isInterviewer(user) && existing.interviewerId !== user.sub) {
+      throw new ForbiddenException('Interview is not assigned to you');
+    }
+
+    if (this.access.isManager(user) && existing.branchId !== user.branchId) {
+      throw new ForbiddenException('Branch access denied');
+    }
+
+    if (existing.status !== InterviewStatus.SCHEDULED) {
+      throw new BadRequestException(
+        'Only scheduled interviews can be marked for re-schedule',
+      );
+    }
+
+    const notePrefix = '[RESCHEDULE_REQUIRED]';
+    const mergedNotes = [notePrefix, existing.notes?.trim()]
+      .filter(Boolean)
+      .join(' ');
+
+    const updated = await this.prisma.interview.update({
+      where: { id },
+      data: {
+        status: InterviewStatus.ASSIGNED,
+        scheduledAt: null,
+        mode: null,
+        locationOrLink: null,
+        result: InterviewResult.PENDING,
+        notes: mergedNotes,
+        updatedBy: user.sub,
+      },
+      include: this.include(),
+    });
+
+    await this.prisma.jobApplication.update({
+      where: { id: existing.applicationId },
+      data: {
+        interviewStatus: JobApplicationInterviewStatus.NOT_YET,
+      },
+    });
+
+    await this.access.log({
+      user,
+      action: 'INTERVIEW_RESCHEDULE_REQUESTED',
+      resourceType: 'Interview',
+      resourceId: id,
+      metadata: { applicationId: existing.applicationId },
+    });
+
+    return this.toInterviewDto(updated);
+  }
+
   async listInterviews(
     user: BranchAuthUser,
     query: {
-      tab?: 'UPCOMING' | 'TODAY' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
       status?: InterviewStatus;
       search?: string;
       interviewerId?: string;
@@ -480,118 +764,17 @@ export class BranchInterviewService {
     const take = query.take ?? 20;
 
     const now = new Date();
-    const startOfToday = new Date(now);
-    startOfToday.setHours(0, 0, 0, 0);
-    const startOfTomorrow = new Date(startOfToday);
-    startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
 
     const scope: Prisma.InterviewWhereInput = this.access.isInterviewer(user)
       ? { interviewerId: user.sub, branchId: user.branchId }
       : { branchId: user.branchId };
 
-    // Only real schedules — never ASSIGNED / null / epoch placeholders.
-    const scheduledBase: Prisma.InterviewWhereInput = {
+    const workspaceBase: Prisma.InterviewWhereInput = {
       ...scope,
       scheduledAt: { not: null, gt: new Date('1970-01-02T00:00:00.000Z') },
-      status: {
-        in: [
-          InterviewStatus.SCHEDULED,
-          InterviewStatus.COMPLETED,
-          InterviewStatus.CANCELLED,
-          InterviewStatus.NO_SHOW,
-        ],
-      },
+      status: InterviewStatus.SCHEDULED,
+      roundId: { not: null },
     };
-
-    const latestIds = await this.latestInterviewIdsForScope(scope);
-    const latestIdFilter: Prisma.InterviewWhereInput =
-      latestIds.length > 0 ? { id: { in: latestIds } } : { id: { in: [] } };
-
-    const inProgressResults: InterviewResult[] = [
-      InterviewResult.SELECTED_FOR_NEXT_ROUND,
-      InterviewResult.ON_HOLD,
-      InterviewResult.NEED_FURTHER_REVIEW,
-      InterviewResult.PENDING,
-    ];
-    const finalResults: InterviewResult[] = [
-      InterviewResult.REJECTED,
-      InterviewResult.PLACED,
-    ];
-
-    const tabWhere = (
-      tab: typeof query.tab,
-    ): Prisma.InterviewWhereInput => {
-      if (tab === 'UPCOMING') {
-        return {
-          status: InterviewStatus.SCHEDULED,
-          scheduledAt: { gte: startOfTomorrow },
-        };
-      }
-      if (tab === 'TODAY') {
-        return {
-          status: InterviewStatus.SCHEDULED,
-          scheduledAt: { gte: startOfToday, lt: startOfTomorrow },
-        };
-      }
-      if (tab === 'IN_PROGRESS') {
-        // Latest interview only — intermediate results still need action.
-        return {
-          AND: [
-            latestIdFilter,
-            {
-              OR: [
-                {
-                  status: InterviewStatus.COMPLETED,
-                  result: { in: inProgressResults },
-                },
-                {
-                  status: InterviewStatus.SCHEDULED,
-                  scheduledAt: { lt: startOfToday },
-                },
-              ],
-            },
-          ],
-        };
-      }
-      if (tab === 'COMPLETED') {
-        // Final outcomes only (Rejected / Placed / No Show) on the latest interview.
-        return {
-          AND: [
-            latestIdFilter,
-            {
-              OR: [
-                {
-                  status: InterviewStatus.COMPLETED,
-                  result: { in: finalResults },
-                },
-                { status: InterviewStatus.NO_SHOW },
-              ],
-            },
-          ],
-        };
-      }
-      if (tab === 'CANCELLED') {
-        return { status: InterviewStatus.CANCELLED };
-      }
-      return {};
-    };
-
-    const andClauses: Prisma.InterviewWhereInput[] = [tabWhere(query.tab)];
-    if (query.status) {
-      andClauses.push({ status: query.status });
-    }
-    if (query.from || query.to) {
-      andClauses.push({
-        scheduledAt: {
-          ...(query.from
-            ? { gte: new Date(`${query.from}T00:00:00.000Z`) }
-            : {}),
-          ...(query.to
-            ? { lte: new Date(`${query.to}T23:59:59.999Z`) }
-            : {}),
-        },
-      });
-    }
 
     const roundFilter: Prisma.InterviewWhereInput = query.roundId
       ? { roundId: query.roundId }
@@ -599,11 +782,24 @@ export class BranchInterviewService {
         ? { roundNumber: query.roundNumber }
         : {};
 
-    const where: Prisma.InterviewWhereInput = {
-      ...scheduledBase,
+    const filterBase: Prisma.InterviewWhereInput = {
+      ...workspaceBase,
       ...roundFilter,
       ...(query.interviewerId ? { interviewerId: query.interviewerId } : {}),
       ...(query.mode ? { mode: query.mode } : {}),
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.from || query.to
+        ? {
+            scheduledAt: {
+              ...(query.from
+                ? { gte: new Date(`${query.from}T00:00:00.000Z`) }
+                : {}),
+              ...(query.to
+                ? { lte: new Date(`${query.to}T23:59:59.999Z`) }
+                : {}),
+            },
+          }
+        : {}),
       ...(query.search?.trim()
         ? {
             OR: [
@@ -634,48 +830,25 @@ export class BranchInterviewService {
             ],
           }
         : {}),
-      AND: andClauses,
     };
 
-    const countBase = scheduledBase;
-    const orderDesc =
-      query.tab === 'COMPLETED' || query.tab === 'IN_PROGRESS';
+    const total = await this.prisma.interview.count({ where: filterBase });
 
-    const [
-      records,
-      total,
-      upcoming,
-      today,
-      inProgress,
-      completed,
-      cancelled,
-      interviewers,
-      activeRounds,
-      usedRoundIds,
-    ] = await Promise.all([
-      this.prisma.interview.findMany({
-        where,
-        include: this.include(),
-        orderBy: { scheduledAt: orderDesc ? 'desc' : 'asc' },
-        skip,
-        take,
-      }),
-      this.prisma.interview.count({ where }),
-      this.prisma.interview.count({
-        where: { AND: [countBase, tabWhere('UPCOMING')] },
-      }),
-      this.prisma.interview.count({
-        where: { AND: [countBase, tabWhere('TODAY')] },
-      }),
-      this.prisma.interview.count({
-        where: { AND: [countBase, tabWhere('IN_PROGRESS')] },
-      }),
-      this.prisma.interview.count({
-        where: { AND: [countBase, tabWhere('COMPLETED')] },
-      }),
-      this.prisma.interview.count({
-        where: { AND: [countBase, tabWhere('CANCELLED')] },
-      }),
+    const pageRecordsOrdered = await this.prisma.interview.findMany({
+      where: filterBase,
+      include: this.include(),
+      orderBy: { scheduledAt: 'asc' },
+      skip,
+      take,
+    });
+
+    const countRows = await this.prisma.interview.groupBy({
+      by: ['roundId'],
+      where: workspaceBase,
+      _count: { _all: true },
+    });
+
+    const [interviewers, activeRounds, usedRoundIds] = await Promise.all([
       this.prisma.branchUser.findMany({
         where: {
           branchId: user.branchId,
@@ -683,12 +856,7 @@ export class BranchInterviewService {
           isActive: true,
           role: BranchUserRole.INTERVIEWER,
         },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-        },
+        select: jobApplicationInterviewerSelect,
         orderBy: { firstName: 'asc' },
         take: 200,
       }),
@@ -734,26 +902,50 @@ export class BranchInterviewService {
       (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
     );
 
-    const allScheduledTotal = await this.prisma.interview.count({
-      where: countBase,
+    const allCount = countRows.reduce((sum, row) => sum + row._count._all, 0);
+    const roundCounts = countRows
+      .filter((row): row is typeof row & { roundId: string } =>
+        Boolean(row.roundId),
+      )
+      .map((row) => ({
+        roundId: row.roundId,
+        count: row._count._all,
+      }));
+
+    const workflowAlerts = buildBranchInterviewWorkflowAlerts({
+      notScheduled: 0,
+      waitingToSchedule: 0,
+      scheduledUpcoming: allCount,
+      today: 0,
+      inProgress: 0,
+      expired: 0,
+      nextRoundPending: 0,
+      completedPending: 0,
+      placed: 0,
+      rejected: 0,
+      onHold: 0,
+      needFurtherReview: 0,
     });
 
     return {
-      items: records
+      items: pageRecordsOrdered
         .filter((item) => item.scheduledAt != null)
-        .map((item) => this.toInterviewDto(item)),
+        .map((item) => this.toInterviewDto(item, now)),
       total,
       counts: {
-        total: allScheduledTotal,
-        upcoming,
-        today,
-        inProgress,
-        completed,
-        cancelled,
+        total: allCount,
+        upcoming: allCount,
+        today: 0,
+        inProgress: 0,
+        expired: 0,
+        completed: 0,
+        cancelled: 0,
       },
+      roundCounts,
+      workflowAlerts,
       interviewerOptions: interviewers.map((person) => ({
         id: person.id,
-        name: [person.firstName, person.lastName].filter(Boolean).join(' '),
+        name: formatInterviewerDisplayLabel(person),
         email: person.email,
       })),
       roundOptions,
@@ -827,94 +1019,199 @@ export class BranchInterviewService {
       throw new NotFoundException('Application not found');
     }
 
-    const baseScope: Prisma.InterviewWhereInput =
-      this.access.isInterviewer(user)
+    const branchInterviewScope: Prisma.InterviewWhereInput = {
+      applicationId: application.id,
+      branchId: user.branchId,
+      ...(this.access.isInterviewer(user)
         ? {
-            applicationId: application.id,
-            interviewerId: user.sub,
-            branchId: user.branchId,
+            OR: [
+              { interviewerId: user.sub },
+              {
+                interviewerId: null,
+                status: InterviewStatus.ASSIGNED,
+              },
+            ],
           }
-        : {
-            applicationId: application.id,
-            branchId: user.branchId,
-          };
+        : {}),
+    };
 
-    // Prefer ASSIGNED (incl. next-round row) over SCHEDULED; never overwrite COMPLETED.
-    let existingAssignment = await this.prisma.interview.findFirst({
-      where: {
-        ...baseScope,
-        status: InterviewStatus.ASSIGNED,
+    const branchInterviewRecords = await this.prisma.interview.findMany({
+      where: branchInterviewScope,
+      include: {
+        interviewer: {
+          select: jobApplicationInterviewerSelect,
+        },
+        branch: {
+          select: { id: true, branchName: true, branchCode: true },
+        },
+        round: {
+          select: {
+            id: true,
+            name: true,
+            sortOrder: true,
+            status: true,
+          },
+        },
+        nextRound: {
+          select: {
+            id: true,
+            name: true,
+            sortOrder: true,
+            status: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ roundNumber: 'desc' }, { createdAt: 'desc' }],
     });
 
-    if (!existingAssignment) {
-      existingAssignment = await this.prisma.interview.findFirst({
-        where: {
-          ...baseScope,
-          status: InterviewStatus.SCHEDULED,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
+    const branchInterviews = mapBranchJobApplicationInterviews(
+      branchInterviewRecords,
+    );
+    assertApplicationAssignedToBranch(branchInterviews);
+
+    const activeRounds = await this.prisma.interviewRound.findMany({
+      where: { status: InterviewRoundStatus.ACTIVE },
+      select: { id: true, name: true, sortOrder: true, status: true },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    });
+
+    const branchAssignedAt =
+      resolveBranchAssignedAtForApplication(branchInterviews);
+
+    const roundId = input.roundId;
+    if (!roundId) {
+      throw new BadRequestException(
+        'Interview round is required. Select a round or create one first.',
+      );
     }
 
-    // After a completed round with a selected nextRoundId, create the next interview
-    // record when scheduling (same JobApplication — do not overwrite history).
+    assertSchedulingEligibleRound({
+      roundId,
+      branchInterviews,
+      applicationStatus: application.status,
+      branchAssignedAt,
+      activeRounds,
+    });
+
+    const scheduledAt = new Date(input.scheduledAt);
+    if (Number.isNaN(scheduledAt.getTime())) {
+      throw new BadRequestException('Invalid interview date');
+    }
+
+    assertScheduledAtNotBeforeEligible({
+      scheduledAt,
+      eligibleFromMs: resolveSchedulingEligibleFromMs({
+        branchInterviews,
+        applicationStatus: application.status,
+        branchAssignedAt,
+        activeRounds,
+      }),
+    });
+
+    const openListRow = pickOpenInterviewForScheduling(
+      branchInterviews,
+      roundId,
+    );
+    let existingAssignment =
+      openListRow != null
+        ? branchInterviewRecords.find((item) => item.id === openListRow.id) ??
+          null
+        : null;
+
     if (!existingAssignment) {
-      const completedWithNext = await this.prisma.interview.findFirst({
-        where: {
-          ...baseScope,
-          status: InterviewStatus.COMPLETED,
-          result: InterviewResult.SELECTED_FOR_NEXT_ROUND,
-          nextRoundId: { not: null },
-        },
-        orderBy: { createdAt: 'desc' },
+      const reusableShell =
+        findReusableUnassignedInterviewShell(branchInterviews);
+      if (reusableShell) {
+        existingAssignment =
+          branchInterviewRecords.find(
+            (item) => item.id === reusableShell.id,
+          ) ?? null;
+      }
+    }
+
+    if (!existingAssignment) {
+      if (
+        !shouldCreateInterviewForSelectedRound({
+          branchInterviews,
+          roundId,
+        })
+      ) {
+        throw new BadRequestException(
+          'No open interview assignment found for the selected round',
+        );
+      }
+
+      assertNoDuplicateRoundScheduling(branchInterviews, roundId);
+
+      const targetRound = await this.prisma.interviewRound.findUnique({
+        where: { id: roundId },
+      });
+      if (!targetRound) {
+        throw new NotFoundException('Interview round not found');
+      }
+      if (targetRound.status !== InterviewRoundStatus.ACTIVE) {
+        throw new BadRequestException('Interview round is not active');
+      }
+
+      const latestSelected = findLatestSelectedForNextRound(branchInterviews);
+      const seedRow =
+        branchInterviewRecords.find(
+          (item) => item.status === InterviewStatus.ASSIGNED,
+        ) ??
+        (latestSelected
+          ? branchInterviewRecords.find((item) => item.id === latestSelected.id)
+          : null) ??
+        branchInterviewRecords[0] ??
+        null;
+
+      const assignmentBranchId = user.branchId;
+      const interviewerId = await this.resolveValidatedScheduleInterviewerId({
+        user,
+        branchId: assignmentBranchId,
+        inputInterviewerId: input.interviewerId,
+        primaryExistingInterviewerId: seedRow?.interviewerId,
+        branchInterviews,
+        branchInterviewRecords,
       });
 
-      if (completedWithNext?.nextRoundId) {
-        const targetRoundId = input.roundId ?? completedWithNext.nextRoundId;
-        const targetRound = await this.prisma.interviewRound.findUnique({
-          where: { id: targetRoundId },
-        });
-
-        if (!targetRound) {
-          throw new NotFoundException('Interview round not found');
-        }
-
-        if (
-          targetRound.status !== InterviewRoundStatus.ACTIVE &&
-          targetRoundId !== completedWithNext.nextRoundId
-        ) {
-          throw new BadRequestException('Interview round is not active');
-        }
-
-        const interviewerId =
-          completedWithNext.interviewerId ??
-          (this.access.isInterviewer(user)
-            ? user.sub
-            : input.interviewerId ?? user.sub);
-
-        if (!interviewerId) {
-          throw new BadRequestException('Interviewer is required');
-        }
-
-        await this.assertInterviewerInBranch(interviewerId, user.branchId);
-
-        existingAssignment = await this.prisma.interview.create({
-          data: {
-            applicationId: application.id,
-            jobId: application.jobId,
-            branchId: user.branchId,
-            interviewerId,
-            roundId: targetRound.id,
-            roundNumber: targetRound.sortOrder,
-            status: InterviewStatus.ASSIGNED,
-            result: InterviewResult.PENDING,
-            createdBy: user.sub,
-            updatedBy: user.sub,
+      existingAssignment = await this.prisma.interview.create({
+        data: {
+          applicationId: application.id,
+          jobId: application.jobId,
+          branchId: assignmentBranchId,
+          interviewerId,
+          roundId: targetRound.id,
+          roundNumber: targetRound.sortOrder,
+          status: InterviewStatus.ASSIGNED,
+          result: InterviewResult.PENDING,
+          createdBy: user.sub,
+          updatedBy: user.sub,
+        },
+        include: {
+          interviewer: {
+            select: jobApplicationInterviewerSelect,
           },
-        });
-      }
+          branch: {
+            select: { id: true, branchName: true, branchCode: true },
+          },
+          round: {
+            select: {
+              id: true,
+              name: true,
+              sortOrder: true,
+              status: true,
+            },
+          },
+          nextRound: {
+            select: {
+              id: true,
+              name: true,
+              sortOrder: true,
+              status: true,
+            },
+          },
+        },
+      });
     }
 
     if (!existingAssignment) {
@@ -923,15 +1220,11 @@ export class BranchInterviewService {
       );
     }
 
-    const roundId =
-      input.roundId ??
-      existingAssignment.roundId ??
-      undefined;
-    if (!roundId) {
-      throw new BadRequestException(
-        'Interview round is required. Select a round or create one first.',
-      );
-    }
+    assertNoDuplicateRoundScheduling(
+      branchInterviews,
+      roundId,
+      existingAssignment.id,
+    );
 
     const round = await this.prisma.interviewRound.findUnique({
       where: { id: roundId },
@@ -948,22 +1241,19 @@ export class BranchInterviewService {
       throw new BadRequestException('Interview round is not active');
     }
 
-    const interviewerId =
-      existingAssignment.interviewerId ??
-      (this.access.isInterviewer(user)
-        ? user.sub
-        : input.interviewerId ?? user.sub);
-
-    if (!interviewerId) {
-      throw new BadRequestException('Interviewer is required');
+    const assignmentBranchId = existingAssignment.branchId;
+    if (assignmentBranchId !== user.branchId) {
+      throw new ForbiddenException('Branch access denied');
     }
 
-    await this.assertInterviewerInBranch(interviewerId, user.branchId);
-
-    const scheduledAt = new Date(input.scheduledAt);
-    if (Number.isNaN(scheduledAt.getTime())) {
-      throw new BadRequestException('Invalid interview date');
-    }
+    const interviewerId = await this.resolveValidatedScheduleInterviewerId({
+      user,
+      branchId: assignmentBranchId,
+      inputInterviewerId: input.interviewerId,
+      primaryExistingInterviewerId: existingAssignment.interviewerId,
+      branchInterviews,
+      branchInterviewRecords,
+    });
 
     const locationOrLink = input.locationOrLink?.trim() ?? '';
     if (
@@ -1246,9 +1536,6 @@ export class BranchInterviewService {
       );
     }
 
-    const scheduleNext =
-      input.result === InterviewResult.SELECTED_FOR_NEXT_ROUND;
-
     const nextSchedule = input.scheduleNext
       ? {
           scheduledAt: input.scheduleNext.scheduledAt,
@@ -1269,18 +1556,19 @@ export class BranchInterviewService {
           }
         : null;
 
+    const selectingNextRound =
+      input.result === InterviewResult.SELECTED_FOR_NEXT_ROUND;
+    const scheduleNext =
+      selectingNextRound && Boolean(nextSchedule?.scheduledAt);
+
+    if (selectingNextRound && !input.nextRoundId) {
+      throw new BadRequestException(
+        'Next round is required when selecting for next round',
+      );
+    }
+
     if (scheduleNext) {
-      if (!input.nextRoundId) {
-        throw new BadRequestException(
-          'Next round is required when selecting for next round',
-        );
-      }
-      if (!nextSchedule?.scheduledAt) {
-        throw new BadRequestException(
-          'Next interview date/time is required when selecting for next round',
-        );
-      }
-      if (!nextSchedule.mode) {
+      if (!nextSchedule?.mode) {
         throw new BadRequestException(
           'Next interview mode is required when selecting for next round',
         );
@@ -1451,6 +1739,9 @@ export class BranchInterviewService {
           where: { id: existing.applicationId },
           data: {
             interviewStatus: JobApplicationInterviewStatus.INTERVIEWED,
+            ...(selectingNextRound
+              ? { status: JobApplicationStatus.INTERVIEW }
+              : {}),
           },
         });
         return { completed, next: null };
@@ -1744,12 +2035,30 @@ export class BranchInterviewService {
       openInterview?.round ??
       (openInterview ? null : latestCompleted?.round ?? null);
 
-    // Prefer explicitly persisted nextRoundId over sortOrder inference.
-    const nextRound =
+    const activeRounds = await this.prisma.interviewRound.findMany({
+      where: { status: InterviewRoundStatus.ACTIVE },
+      select: { id: true, name: true, sortOrder: true, status: true },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    });
+
+    let nextRound =
       openInterview?.nextRound ??
       (latestCompleted?.result === InterviewResult.SELECTED_FOR_NEXT_ROUND
         ? latestCompleted.nextRound
         : null);
+
+    if (
+      !nextRound &&
+      latestCompleted?.result === InterviewResult.SELECTED_FOR_NEXT_ROUND &&
+      latestCompleted.round
+    ) {
+      const inferred = activeRounds.find(
+        (round) => round.sortOrder > latestCompleted.round!.sortOrder,
+      );
+      if (inferred) {
+        nextRound = inferred;
+      }
+    }
 
     return {
       currentRound: currentRound
@@ -1890,25 +2199,82 @@ export class BranchInterviewService {
     }
   }
 
+  private async findActiveBranchScheduleInterviewer(
+    interviewerId: string,
+    branchId: string,
+  ): Promise<boolean> {
+    const interviewer = await findEligibleBranchInterviewerForBranch(
+      this.prisma,
+      branchId,
+      interviewerId,
+    );
+    return Boolean(interviewer);
+  }
+
+  private async resolveValidatedScheduleInterviewerId(input: {
+    user: BranchAuthUser;
+    branchId: string;
+    inputInterviewerId?: string;
+    primaryExistingInterviewerId?: string | null;
+    branchInterviews: ReturnType<typeof mapBranchJobApplicationInterviews>;
+    branchInterviewRecords: Array<{ interviewerId: string | null }>;
+  }): Promise<string> {
+    const explicitId = input.inputInterviewerId?.trim();
+    if (explicitId) {
+      const selected = await findBranchUserForInterviewerRoleValidation(
+        this.prisma,
+        input.branchId,
+        explicitId,
+      );
+      if (selected && selected.role !== BranchUserRole.INTERVIEWER) {
+        throw new BadRequestException(INTERVIEWER_ROLE_REQUIRED_MESSAGE);
+      }
+    }
+
+    const candidates = collectScheduleInterviewerCandidates({
+      inputInterviewerId: input.inputInterviewerId,
+      existingInterviewerId: input.primaryExistingInterviewerId,
+      branchInterviews: input.branchInterviews,
+      userSub: input.user.sub,
+    });
+
+    for (const candidate of candidates) {
+      if (
+        await this.findActiveBranchScheduleInterviewer(
+          candidate,
+          input.branchId,
+        )
+      ) {
+        return candidate;
+      }
+    }
+
+    throw new BadRequestException(
+      'Interviewer must be an active branch user with the INTERVIEWER role.',
+    );
+  }
+
   private async assertInterviewerInBranch(
     interviewerId: string,
     branchId: string,
   ) {
-    const interviewer = await this.prisma.branchUser.findFirst({
-      where: {
-        id: interviewerId,
-        branchId,
-        isDeleted: false,
-        isActive: true,
-        role: {
-          in: [BranchUserRole.INTERVIEWER, BranchUserRole.BRANCH_MANAGER],
-        },
-      },
-    });
+    const selected = await findBranchUserForInterviewerRoleValidation(
+      this.prisma,
+      branchId,
+      interviewerId,
+    );
+    if (selected && selected.role !== BranchUserRole.INTERVIEWER) {
+      throw new BadRequestException(INTERVIEWER_ROLE_REQUIRED_MESSAGE);
+    }
 
-    if (!interviewer) {
+    const ok = await this.findActiveBranchScheduleInterviewer(
+      interviewerId,
+      branchId,
+    );
+
+    if (!ok) {
       throw new BadRequestException(
-        'Interviewer must belong to this branch',
+        'Interviewer must be an active branch user with the INTERVIEWER role.',
       );
     }
   }
@@ -1963,7 +2329,7 @@ export class BranchInterviewService {
       },
       job: { select: { id: true, title: true, companyName: true } },
       interviewer: {
-        select: { id: true, firstName: true, lastName: true, email: true },
+        select: jobApplicationInterviewerSelect,
       },
       branch: {
         select: { id: true, branchName: true, branchCode: true },
@@ -1987,7 +2353,8 @@ export class BranchInterviewService {
     } as const;
   }
 
-  private toInterviewDto(item: {
+  private toInterviewDto(
+    item: {
     id: string;
     applicationId: string;
     jobId: string;
@@ -2035,7 +2402,17 @@ export class BranchInterviewService {
       sortOrder: number;
       status?: InterviewRoundStatus;
     } | null;
-  }) {
+  },
+    now = new Date(),
+  ) {
+    const scheduleLifecycle = resolveScheduledInterviewLifecycle({
+      status: item.status,
+      result: item.result,
+      scheduledAt: item.scheduledAt,
+      durationMinutes: item.durationMinutes,
+      now,
+    });
+
     return {
       id: item.id,
       applicationId: item.applicationId,
@@ -2053,6 +2430,7 @@ export class BranchInterviewService {
       roundNumber: item.roundNumber ?? 1,
       result: item.result ?? InterviewResult.PENDING,
       status: item.status,
+      scheduleLifecyclePhase: scheduleLifecycle.phase,
       round: item.round
         ? {
             id: item.round.id,
@@ -2079,9 +2457,7 @@ export class BranchInterviewService {
       interviewer: item.interviewer
         ? {
             id: item.interviewer.id,
-            name: [item.interviewer.firstName, item.interviewer.lastName]
-              .filter(Boolean)
-              .join(' '),
+            name: formatInterviewerDisplayLabel(item.interviewer),
             email: item.interviewer.email,
           }
         : null,

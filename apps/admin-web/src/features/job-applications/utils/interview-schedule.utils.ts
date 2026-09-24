@@ -1,4 +1,5 @@
 import type { JobApplicationBranchInterviewerAssignment } from "@/src/features/job-applications/types/job-application.types";
+import { formatCanonicalInterviewerName } from "@/src/features/job-applications/utils/interviewer-display.utils";
 
 const EPOCH_GUARD_MS = Date.parse("1970-01-02T00:00:00.000Z");
 
@@ -54,13 +55,15 @@ export function formatInterviewerName(
   interviewer?: {
     firstName: string;
     lastName: string | null;
+    email?: string;
+    linkedTrainer?: {
+      firstName: string;
+      lastName?: string | null;
+    } | null;
   } | null,
 ): string | null {
   if (!interviewer) return null;
-  const name = [interviewer.firstName, interviewer.lastName]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
+  const name = formatCanonicalInterviewerName(interviewer, "");
   return name || null;
 }
 

@@ -1,5 +1,6 @@
 import { Inject, Logger } from '@nestjs/common';
 
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { BRANCH_USER_TOKENS } from '../../branch-user.tokens';
 import type { BranchUserRepository } from '../../domain/repositories/branch-user.repository';
 import { BranchUserDomainService } from '../../domain/services/branch-user-domain.service';
@@ -18,6 +19,8 @@ export class UpdateBranchUserHandler {
     private readonly branchUserRepo: BranchUserRepository,
 
     private readonly domainService: BranchUserDomainService,
+
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(
@@ -76,9 +79,31 @@ export class UpdateBranchUserHandler {
       }
     }
 
+    let firstName = command.firstName;
+    let lastName = command.lastName;
+
+    const linked = await this.prisma.branchUser.findFirst({
+      where: { id: command.branchUserId, isDeleted: false },
+      select: {
+        linkedTrainerId: true,
+        linkedTrainer: {
+          select: { firstName: true, lastName: true, isDeleted: true },
+        },
+      },
+    });
+
+    if (
+      linked?.linkedTrainerId &&
+      linked.linkedTrainer &&
+      !linked.linkedTrainer.isDeleted
+    ) {
+      firstName = linked.linkedTrainer.firstName.trim();
+      lastName = linked.linkedTrainer.lastName?.trim() || null;
+    }
+
     branchUser.updateProfile({
-      firstName: command.firstName,
-      lastName: command.lastName,
+      firstName,
+      lastName,
       email: command.email,
       phone: command.phone,
       branchId: command.branchId,

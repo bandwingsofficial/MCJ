@@ -1,25 +1,27 @@
 "use client";
 
-import type { InterviewListCounts } from "@/src/features/branch-ops/types";
-import type { InterviewTab } from "@/src/features/interviews/constants/interview.constants";
+import type { JobApplicationScheduleCounts } from "@/src/features/branch-ops/types";
+import type { JobApplicationScheduleTab } from "@/src/features/job-applications/constants/job-application.constants";
 import { cn } from "@/src/shared/lib/cn";
 
 interface Props {
-  counts: InterviewListCounts;
-  activeTab: InterviewTab;
+  counts: JobApplicationScheduleCounts;
+  activeTab: JobApplicationScheduleTab;
   disabled?: boolean;
-  onChange: (tab: InterviewTab) => void;
+  onChange: (tab: JobApplicationScheduleTab) => void;
 }
 
-const TABS: Array<{ value: InterviewTab; label: string; countKey: keyof InterviewListCounts }> = [
-  { value: "UPCOMING", label: "Upcoming", countKey: "upcoming" },
-  { value: "TODAY", label: "Today", countKey: "today" },
-  { value: "IN_PROGRESS", label: "In Progress", countKey: "inProgress" },
-  { value: "COMPLETED", label: "Completed", countKey: "completed" },
-  { value: "CANCELLED", label: "Cancelled", countKey: "cancelled" },
+const TABS: Array<{
+  value: JobApplicationScheduleTab;
+  label: string;
+  countKey: keyof JobApplicationScheduleCounts;
+}> = [
+  { value: "ALL", label: "All Applications", countKey: "all" },
+  { value: "NOT_SCHEDULED", label: "Not Scheduled", countKey: "notScheduled" },
+  { value: "SCHEDULED", label: "Scheduled", countKey: "scheduled" },
 ];
 
-export function BranchInterviewTabs({
+export function BranchJobApplicationTabs({
   counts,
   activeTab,
   disabled = false,

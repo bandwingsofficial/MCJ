@@ -359,8 +359,7 @@ export const branchOpsApi = {
     status?: string;
     search?: string;
     jobId?: string;
-    appliedFrom?: string;
-    appliedTo?: string;
+    roundId?: string;
     interviewPhase?: string;
     skip?: number;
     take?: number;
@@ -465,6 +464,11 @@ export const branchOpsApi = {
       roundNumber?: number;
     },
   ) => unwrap<InterviewItem>(apiClient.patch(`/branch/interviews/${id}`, payload)),
+
+  requestInterviewReschedule: (id: string) =>
+    unwrap<InterviewItem>(
+      apiClient.post(`/branch/interviews/${id}/request-reschedule`),
+    ),
 
   completeInterview: (
     id: string,

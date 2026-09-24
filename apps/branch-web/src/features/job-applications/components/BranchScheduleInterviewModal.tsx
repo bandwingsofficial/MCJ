@@ -10,12 +10,15 @@ import type {
 import {
   getInterviewerName,
   isInterviewScheduled,
+  resolveScheduleInterviewerId,
 } from "@/src/features/job-applications/utils/job-application-display.utils";
 import { Button } from "@/src/shared/components/ui/button";
 import { Input } from "@/src/shared/components/ui/input";
 import { Modal } from "@/src/shared/components/ui/model";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { Textarea } from "@/src/shared/components/ui/textarea";
+import { formatInterviewRoundOrderLabel } from "@/src/features/interviews/utils/interview-round-accent.utils";
+import { getApiErrorMessage } from "@/src/shared/lib/api-error";
 import { appToast } from "@/src/shared/components/ui/toast";
 
 interface Props {
@@ -37,6 +40,20 @@ function toDateInputValue(value?: string | null) {
 function toTimeInputValue(value?: string | null) {
   if (!value) return "";
   const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toTimeString().slice(0, 5);
+}
+
+function toLocalDateInputValueFromMs(ms: number) {
+  const date = new Date(ms);
+  if (Number.isNaN(date.getTime())) return "";
+  const offset = date.getTimezoneOffset();
+  const local = new Date(date.getTime() - offset * 60_000);
+  return local.toISOString().slice(0, 10);
+}
+
+function toLocalTimeInputValueFromMs(ms: number) {
+  const date = new Date(ms);
   if (Number.isNaN(date.getTime())) return "";
   return date.toTimeString().slice(0, 5);
 }
@@ -83,10 +100,11 @@ export function BranchScheduleInterviewModal({
         setRounds(active);
 
         const preferred =
-          interview?.status === "COMPLETED" &&
+          application?.interviewSchedulingSuggestion?.roundId ||
+          (interview?.status === "COMPLETED" &&
           (interview.nextRoundId || interview.nextRound?.id)
             ? interview.nextRoundId || interview.nextRound?.id || ""
-            : interview?.roundId || interview?.round?.id || "";
+            : interview?.roundId || interview?.round?.id || "");
         setRoundId(preferred);
       } catch (error) {
         if (!cancelled) {
@@ -120,6 +138,21 @@ export function BranchScheduleInterviewModal({
     return null;
   }
 
+  const eligibleFromMs = application?.interviewSchedulingSuggestion?.waitingSince
+    ? Date.parse(application.interviewSchedulingSuggestion.waitingSince)
+    : null;
+  const minScheduleDate =
+    eligibleFromMs != null && Number.isFinite(eligibleFromMs)
+      ? toLocalDateInputValueFromMs(eligibleFromMs)
+      : undefined;
+  const minScheduleTime =
+    eligibleFromMs != null &&
+    Number.isFinite(eligibleFromMs) &&
+    interviewDate &&
+    minScheduleDate &&
+    interviewDate === minScheduleDate
+      ? toLocalTimeInputValueFromMs(eligibleFromMs)
+      : undefined;
   const canSubmit =
     Boolean(interviewDate) &&
     Boolean(interviewTime) &&
@@ -139,8 +172,20 @@ export function BranchScheduleInterviewModal({
       return;
     }
 
+    if (
+      eligibleFromMs != null &&
+      Number.isFinite(eligibleFromMs) &&
+      scheduledAt.getTime() < eligibleFromMs
+    ) {
+      appToast.error(
+        "Interview date and time cannot be before the assignment or previous round clearance time.",
+      );
+      return;
+    }
+
     try {
       setSubmitting(true);
+      const interviewerId = resolveScheduleInterviewerId(application, roundId);
       await branchOpsApi.scheduleInterview({
         applicationId: application.id,
         scheduledAt: scheduledAt.toISOString(),
@@ -148,6 +193,7 @@ export function BranchScheduleInterviewModal({
         locationOrLink: locationOrLink.trim(),
         notes: notes.trim() || undefined,
         roundId,
+        ...(interviewerId ? { interviewerId } : {}),
       });
       appToast.success(
         scheduled
@@ -158,9 +204,7 @@ export function BranchScheduleInterviewModal({
       onClose();
     } catch (error) {
       appToast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to schedule interview.",
+        getApiErrorMessage(error, "Unable to schedule interview."),
       );
     } finally {
       setSubmitting(false);
@@ -231,6 +275,7 @@ export function BranchScheduleInterviewModal({
             <Input
               type="date"
               value={interviewDate}
+              min={minScheduleDate}
               disabled={submitting}
               onChange={(event) => setInterviewDate(event.target.value)}
             />
@@ -242,6 +287,7 @@ export function BranchScheduleInterviewModal({
             <Input
               type="time"
               value={interviewTime}
+              min={minScheduleTime}
               disabled={submitting}
               onChange={(event) => setInterviewTime(event.target.value)}
             />
@@ -258,10 +304,15 @@ export function BranchScheduleInterviewModal({
                     ? "No active rounds"
                     : "Select round"
               }
-              options={rounds.map((round) => ({
-                label: round.name,
-                value: round.id,
-              }))}
+              options={[...rounds]
+                .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+                .map((round) => ({
+                  label: formatInterviewRoundOrderLabel({
+                    sortOrder: round.sortOrder,
+                    name: round.name,
+                  }),
+                  value: round.id,
+                }))}
               onValueChange={setRoundId}
             />
           </div>

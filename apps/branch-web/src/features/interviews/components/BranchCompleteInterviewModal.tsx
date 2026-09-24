@@ -255,46 +255,14 @@ export function BranchCompleteInterviewModal({
     interview.round?.name ||
     (interview.roundNumber ? `Round ${interview.roundNumber}` : "—");
 
-  const scheduleValid =
-    Boolean(nextRoundId) &&
-    Boolean(nextDate) &&
-    Boolean(nextTime) &&
-    Boolean(nextLocationOrLink.trim()) &&
-    Boolean(nextInterviewerId);
-
   const canSubmit =
     Boolean(result) &&
     !submitting &&
     !loading &&
-    (!needsNextRound || scheduleValid);
+    (!needsNextRound || Boolean(nextRoundId));
 
   const handleSubmit = async () => {
     if (!result || !canSubmit) return;
-
-    let scheduleNext:
-      | {
-          scheduledAt: string;
-          mode: "ONLINE" | "OFFLINE";
-          locationOrLink: string;
-          interviewerId: string;
-          notes?: string;
-        }
-      | undefined;
-
-    if (needsNextRound) {
-      const scheduledAt = new Date(`${nextDate}T${nextTime}:00`);
-      if (Number.isNaN(scheduledAt.getTime())) {
-        appToast.error("Enter a valid next-round date and time.");
-        return;
-      }
-      scheduleNext = {
-        scheduledAt: scheduledAt.toISOString(),
-        mode: nextMode,
-        locationOrLink: nextLocationOrLink.trim(),
-        interviewerId: nextInterviewerId,
-        notes: nextRemarks.trim() || undefined,
-      };
-    }
 
     try {
       setSubmitting(true);
@@ -303,11 +271,10 @@ export function BranchCompleteInterviewModal({
         nextRoundId: needsNextRound ? nextRoundId : undefined,
         evaluation: evaluation.trim() || undefined,
         notes: notes.trim() || undefined,
-        scheduleNext,
       });
       appToast.success(
         needsNextRound
-          ? "Result saved and next round scheduled"
+          ? "Result saved — schedule the next round from Job Applications"
           : "Interview result recorded",
       );
       await onSuccess(updated, result);
@@ -322,8 +289,8 @@ export function BranchCompleteInterviewModal({
   return (
     <Modal
       open={open}
-      title="Record Interview Result & Schedule Next Round"
-      description="Capture the outcome and optionally schedule the next round"
+      title="Record Interview Result"
+      description="Capture the outcome for this interview round"
       onClose={onClose}
       contentClassName="!max-w-[760px]"
       footer={
@@ -481,8 +448,12 @@ export function BranchCompleteInterviewModal({
           </NumberedSection>
 
           {needsNextRound ? (
-            <NumberedSection step={5} title="Schedule Next Round">
+            <NumberedSection step={5} title="Next Round">
               <div className="space-y-3">
+                <p className="rounded-lg border border-[#DCE8F5] bg-white px-3 py-2 text-sm text-[#526581]">
+                  Select the next round. Schedule it later from Job Applications →
+                  Not Scheduled.
+                </p>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-[#647A9B]">
                     Next Round
@@ -505,107 +476,43 @@ export function BranchCompleteInterviewModal({
                     />
                   )}
                 </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[#647A9B]">
-                      Date
-                    </label>
-                    <Input
-                      type="date"
-                      value={nextDate}
-                      disabled={submitting}
-                      className="bg-white"
-                      onChange={(event) => setNextDate(event.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[#647A9B]">
-                      Time
-                    </label>
-                    <Input
-                      type="time"
-                      value={nextTime}
-                      disabled={submitting}
-                      className="bg-white"
-                      onChange={(event) => setNextTime(event.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[#647A9B]">
-                    Mode
-                  </label>
-                  <AppSelect
-                    value={nextMode}
-                    disabled={submitting}
-                    options={[
-                      { label: "Online", value: "ONLINE" },
-                      { label: "Offline", value: "OFFLINE" },
-                    ]}
-                    onValueChange={(value) =>
-                      setNextMode(value as "ONLINE" | "OFFLINE")
-                    }
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[#647A9B]">
-                    {nextMode === "ONLINE" ? "Meeting Link" : "Venue"}
-                  </label>
-                  <Input
-                    value={nextLocationOrLink}
-                    disabled={submitting}
-                    className="bg-white"
-                    placeholder={
-                      nextMode === "ONLINE"
-                        ? "https://meet.example.com/..."
-                        : "Office address / room"
-                    }
-                    onChange={(event) =>
-                      setNextLocationOrLink(event.target.value)
-                    }
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[#647A9B]">
-                    Interviewer
-                  </label>
-                  {interviewers.length === 0 ? (
-                    <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                      No active interviewers found for this branch.
-                    </p>
-                  ) : (
-                    <AppSelect
-                      value={nextInterviewerId || undefined}
-                      disabled={submitting}
-                      placeholder="Select interviewer"
-                      options={interviewers.map((user) => ({
-                        label: interviewerLabel(user),
-                        value: user.id,
-                      }))}
-                      onValueChange={setNextInterviewerId}
-                    />
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[#647A9B]">
-                    Remarks (optional)
-                  </label>
-                  <Textarea
-                    value={nextRemarks}
-                    disabled={submitting}
-                    className="min-h-16 bg-white"
-                    placeholder="Notes for the next round..."
-                    onChange={(event) => setNextRemarks(event.target.value)}
-                  />
-                </div>
               </div>
             </NumberedSection>
           ) : null}
+
+          {interview.status === "SCHEDULED" ? (
+            <NumberedSection step={needsNextRound ? 6 : 5} title="Re-Schedule">
+              <p className="mb-3 text-sm text-[#526581]">
+                Return this round to Job Applications scheduling without recording
+                a final result.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={submitting}
+                onClick={async () => {
+                  if (!interview) return;
+                  try {
+                    setSubmitting(true);
+                    await branchOpsApi.requestInterviewReschedule(interview.id);
+                    appToast.success("Interview marked for re-schedule");
+                    await onSuccess(
+                      interview as CompleteInterviewResult,
+                      "PENDING",
+                    );
+                    onClose();
+                  } catch (error) {
+                    appToast.error(userFacingApiMessage(parseBranchOpsError(error)));
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+              >
+                Mark Re-Schedule Required
+              </Button>
+            </NumberedSection>
+          ) : null}
+
         </div>
       )}
     </Modal>

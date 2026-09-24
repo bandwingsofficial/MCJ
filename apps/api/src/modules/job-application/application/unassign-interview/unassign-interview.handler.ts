@@ -5,9 +5,9 @@ import {
 import { InterviewStatus } from '@prisma/client';
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
-import { JobApplicationStatus as DomainJobApplicationStatus } from '../../domain/enums/job-application-status.enum';
 import { JobApplicationDomainService } from '../../domain/services/job-application-domain.service';
 import type { JobApplicationRepository } from '../../domain/repositories/job-application.repository';
+import { assertCanManageBranchInterviewerAssignment } from '../assign-interview/job-application-branch-assignment.util';
 import { UnassignInterviewCommand } from './unassign-interview.command';
 
 @Injectable()
@@ -24,17 +24,10 @@ export class UnassignInterviewHandler {
     );
     this.domainService.ensureNotDeleted(application);
 
-    if (
-      application.status !== DomainJobApplicationStatus.SHORTLISTED &&
-      !(
-        application.status === DomainJobApplicationStatus.SELECTED &&
-        application.interviewStatus === 'NOT_YET'
-      )
-    ) {
-      throw new BadRequestException(
-        'Only shortlisted applications can be unassigned',
-      );
-    }
+    assertCanManageBranchInterviewerAssignment({
+      status: application.status,
+      interviewStatus: application.interviewStatus,
+    });
 
     const activeAssignments = await this.prisma.interview.findMany({
       where: {

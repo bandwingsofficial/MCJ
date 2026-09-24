@@ -234,6 +234,7 @@ export function toJobApplicationLike(interview: InterviewItem) {
     latestInterview: {
       id: interview.id,
       scheduledAt: interview.scheduledAt,
+      durationMinutes: interview.durationMinutes,
       mode: interview.mode,
       locationOrLink: interview.locationOrLink,
       roundId: interview.roundId ?? interview.round?.id ?? null,

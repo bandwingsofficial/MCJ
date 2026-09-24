@@ -23,6 +23,7 @@ import { UpdateBranchUserCommand } from '@modules/branch-user/application/update
 import { UpdateBranchUserHandler } from '@modules/branch-user/application/update-branch-user/update-branch-user.handler';
 import { UpdateBranchUserStatusCommand } from '@modules/branch-user/application/update-branch-user-status/update-branch-user-status.command';
 import { UpdateBranchUserStatusHandler } from '@modules/branch-user/application/update-branch-user-status/update-branch-user-status.handler';
+import { syncLinkedBranchUserNamesFromTrainer } from '@modules/branch-user/infrastructure/linked-trainer-display.util';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BranchOperationsAccessService } from './branch-operations-access.service';
 
@@ -254,6 +255,10 @@ export class BranchStaffService {
         where: { id: created.id },
         data: { linkedTrainerId: input.trainerId },
       });
+      await syncLinkedBranchUserNamesFromTrainer(
+        this.prisma,
+        input.trainerId,
+      );
     }
 
     await this.access.log({
@@ -330,6 +335,10 @@ export class BranchStaffService {
         where: { id },
         data: { linkedTrainerId: input.trainerId },
       });
+      await syncLinkedBranchUserNamesFromTrainer(
+        this.prisma,
+        input.trainerId,
+      );
     }
 
     return result;

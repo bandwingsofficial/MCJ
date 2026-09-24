@@ -2,9 +2,14 @@ import { Inject, Logger } from '@nestjs/common';
 
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { BRANCH_USER_TOKENS } from '../../branch-user.tokens';
 import type { BranchUserRepository } from '../../domain/repositories/branch-user.repository';
+import {
+  applyLinkedTrainerDisplay,
+  loadLinkedTrainerDisplayByBranchUserIds,
+} from '../../infrastructure/linked-trainer-display.util';
 import { ListBranchUsersQuery } from './list-branch-users.query';
 import {
   ListBranchUserItemResult,
@@ -24,6 +29,8 @@ export class ListBranchUsersHandler {
 
     @Inject(BRANCH_TOKENS.BRANCH_REPOSITORY)
     private readonly branchRepo: BranchRepository,
+
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(
@@ -63,13 +70,19 @@ export class ListBranchUsersHandler {
       this.branchUserRepo.count(filters),
     ]);
 
+    const linkedDisplayByUserId =
+      await loadLinkedTrainerDisplayByBranchUserIds(
+        this.prisma,
+        branchUsers.map((branchUser) => branchUser.id),
+      );
+
     const items = await Promise.all(
       branchUsers.map(async (branchUser) => {
         const branch = await this.branchRepo.findByIdIncludingDeleted(
           branchUser.branchId,
         );
 
-        return new ListBranchUserItemResult(
+        const base = new ListBranchUserItemResult(
           branchUser.id,
           branchUser.firstName.getValue(),
           branchUser.lastName?.getValue() ?? null,
@@ -86,6 +99,8 @@ export class ListBranchUsersHandler {
           branchUser.createdAt,
           branchUser.updatedAt,
         );
+
+        return applyLinkedTrainerDisplay(base, linkedDisplayByUserId);
       }),
     );
 

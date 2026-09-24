@@ -5,14 +5,10 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
-import type {
-  InterviewItem,
-  InterviewRoundOption,
-  JobApplicationItem,
-} from "@/src/features/branch-ops/types";
-import { BranchScheduleInterviewModal } from "@/src/features/job-applications/components/BranchScheduleInterviewModal";
+import type { InterviewItem, InterviewRoundOption } from "@/src/features/branch-ops/types";
+import { BranchInterviewWorkflowAlerts } from "@/src/features/branch-interview-lifecycle/BranchInterviewWorkflowAlerts";
 import { BranchCompleteInterviewModal } from "@/src/features/interviews/components/BranchCompleteInterviewModal";
-import { BranchInterviewTabs } from "@/src/features/interviews/components/BranchInterviewTabs";
+import { BranchInterviewRoundTabs } from "@/src/features/interviews/components/BranchInterviewRoundTabs";
 import { BranchInterviewsFilterBar } from "@/src/features/interviews/components/BranchInterviewsFilterBar";
 import { BranchInterviewsTable } from "@/src/features/interviews/components/BranchInterviewsTable";
 import { BranchViewInterviewModal } from "@/src/features/interviews/components/BranchViewInterviewModal";
@@ -20,9 +16,8 @@ import {
   BRANCH_INTERVIEW_PAGE_SIZES,
   DEFAULT_BRANCH_INTERVIEW_FILTERS,
   type BranchInterviewFilters,
-  type InterviewTab,
+  type InterviewRoundTab,
 } from "@/src/features/interviews/constants/interview.constants";
-import { toJobApplicationLike } from "@/src/features/interviews/utils/interview-display.utils";
 import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { formatRoleLabel } from "@/src/core/auth/roles";
@@ -46,7 +41,6 @@ export default function InterviewsPage() {
   const [selectedInterview, setSelectedInterview] =
     useState<InterviewItem | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
 
   useEffect(() => {
@@ -57,15 +51,17 @@ export default function InterviewsPage() {
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
+  const listRoundId =
+    filters.roundTab === "ALL" ? undefined : filters.roundTab;
+
   const query = useAsyncData(
     () =>
       branchOpsApi.interviews({
-        tab: filters.tab,
         search: debouncedSearch || undefined,
         interviewerId:
           filters.interviewerId === "ALL" ? undefined : filters.interviewerId,
         mode: filters.mode === "ALL" ? undefined : filters.mode,
-        roundId: filters.roundId === "ALL" ? undefined : filters.roundId,
+        roundId: listRoundId,
         status: filters.status === "ALL" ? undefined : filters.status,
         from: filters.from || undefined,
         to: filters.to || undefined,
@@ -75,10 +71,9 @@ export default function InterviewsPage() {
     [
       branchId,
       debouncedSearch,
-      filters.tab,
+      filters.roundTab,
       filters.interviewerId,
       filters.mode,
-      filters.roundId,
       filters.status,
       filters.from,
       filters.to,
@@ -101,22 +96,13 @@ export default function InterviewsPage() {
 
   const items = query.data?.items ?? [];
   const total = query.data?.total ?? 0;
-  const counts = query.data?.counts ?? {
-    total: 0,
-    upcoming: 0,
-    today: 0,
-    inProgress: 0,
-    completed: 0,
-    cancelled: 0,
-  };
+  const totalCount = query.data?.counts?.total ?? 0;
+  const roundCounts = query.data?.roundCounts ?? [];
+  const workflowAlerts = query.data?.workflowAlerts ?? [];
   const totalPages = Math.max(1, Math.ceil(total / filters.pageSize));
   const from = total === 0 ? 0 : (filters.page - 1) * filters.pageSize + 1;
   const to = Math.min(filters.page * filters.pageSize, total);
   const isInitialLoading = query.loading && !query.data;
-
-  const selectedAsApplication = selectedInterview
-    ? (toJobApplicationLike(selectedInterview) as JobApplicationItem)
-    : null;
 
   const handleFiltersChange = (next: BranchInterviewFilters) => {
     setSearchInput(next.search);
@@ -126,8 +112,8 @@ export default function InterviewsPage() {
     }
   };
 
-  const handleTabChange = (tab: InterviewTab) => {
-    setFilters((current) => ({ ...current, tab, page: 1 }));
+  const handleRoundTabChange = (roundTab: InterviewRoundTab) => {
+    setFilters((current) => ({ ...current, roundTab, page: 1 }));
   };
 
   const clearSelection = () => {
@@ -136,22 +122,13 @@ export default function InterviewsPage() {
 
   const openView = (interview: InterviewItem) => {
     setSelectedInterview(interview);
-    setScheduleOpen(false);
     setCompleteOpen(false);
     setViewOpen(true);
-  };
-
-  const openManage = (interview: InterviewItem) => {
-    setSelectedInterview(interview);
-    setViewOpen(false);
-    setCompleteOpen(false);
-    setScheduleOpen(true);
   };
 
   const openRecordResult = (interview: InterviewItem) => {
     setSelectedInterview(interview);
     setViewOpen(false);
-    setScheduleOpen(false);
     setCompleteOpen(true);
   };
 
@@ -187,21 +164,25 @@ export default function InterviewsPage() {
               Interviews
             </h1>
             <span className="text-xs text-[#647A9B] sm:text-[13px]">
-              Total Interviews:
+              Scheduled Interviews:
               <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
-                {isInitialLoading ? "—" : counts.total}
+                {isInitialLoading ? "—" : totalCount}
               </span>
             </span>
           </div>
         </div>
       </header>
 
-      <BranchInterviewTabs
-        counts={counts}
-        activeTab={filters.tab}
+      <BranchInterviewRoundTabs
+        rounds={roundOptions}
+        roundCounts={roundCounts}
+        totalCount={totalCount}
+        activeRoundId={filters.roundTab}
         disabled={query.loading}
-        onChange={handleTabChange}
+        onChange={handleRoundTabChange}
       />
+
+      <BranchInterviewWorkflowAlerts alerts={workflowAlerts} />
 
       <BranchInterviewsFilterBar
         filters={{ ...filters, search: searchInput }}
@@ -242,7 +223,6 @@ export default function InterviewsPage() {
               interviews={items}
               actionsDisabled={query.loading}
               onView={openView}
-              onManage={openManage}
               onRecordResult={openRecordResult}
             />
           </div>
@@ -291,18 +271,6 @@ export default function InterviewsPage() {
         onClose={() => {
           setViewOpen(false);
           clearSelection();
-        }}
-      />
-
-      <BranchScheduleInterviewModal
-        open={scheduleOpen}
-        application={selectedAsApplication}
-        onClose={() => {
-          setScheduleOpen(false);
-          clearSelection();
-        }}
-        onSuccess={async () => {
-          await query.reload();
         }}
       />
 

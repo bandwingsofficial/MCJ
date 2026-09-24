@@ -1,3 +1,5 @@
+import { formatCanonicalInterviewerName } from "@/src/features/job-applications/utils/interviewer-display.utils";
+
 export type JobApplicationStatus =
   | "APPLIED"
   | "UNDER_REVIEW"
@@ -536,17 +538,7 @@ export function getAssignedBranchName(
 export function getAssignedInterviewerName(
   assignment: JobApplicationBranchInterviewerAssignment | null | undefined,
 ): string {
-  const interviewer = assignment?.interviewer;
-  if (!interviewer) {
-    return "—";
-  }
-
-  const fullName = [interviewer.firstName, interviewer.lastName]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-
-  return fullName || interviewer.email?.trim() || "—";
+  return formatCanonicalInterviewerName(assignment?.interviewer, "—");
 }
 
 export function isInterviewAssigned(application: Pick<

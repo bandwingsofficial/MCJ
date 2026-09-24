@@ -95,14 +95,17 @@ import { BranchModule } from '../branch/branch.module';
       useFactory: (
         branchUserRepo: BranchUserRepository,
         branchRepo: BranchRepository,
+        prisma: PrismaService,
       ) =>
         new ListBranchUsersHandler(
           branchUserRepo,
           branchRepo,
+          prisma,
         ),
       inject: [
         BRANCH_USER_TOKENS.BRANCH_USER_REPOSITORY,
         BRANCH_TOKENS.BRANCH_REPOSITORY,
+        PrismaService,
       ],
     },
 
@@ -112,16 +115,19 @@ import { BranchModule } from '../branch/branch.module';
         branchUserRepo: BranchUserRepository,
         branchRepo: BranchRepository,
         domainService: BranchUserDomainService,
+        prisma: PrismaService,
       ) =>
         new GetBranchUserHandler(
           branchUserRepo,
           branchRepo,
           domainService,
+          prisma,
         ),
       inject: [
         BRANCH_USER_TOKENS.BRANCH_USER_REPOSITORY,
         BRANCH_TOKENS.BRANCH_REPOSITORY,
         BranchUserDomainService,
+        PrismaService,
       ],
     },
 
@@ -130,14 +136,17 @@ import { BranchModule } from '../branch/branch.module';
       useFactory: (
         branchUserRepo: BranchUserRepository,
         domainService: BranchUserDomainService,
+        prisma: PrismaService,
       ) =>
         new UpdateBranchUserHandler(
           branchUserRepo,
           domainService,
+          prisma,
         ),
       inject: [
         BRANCH_USER_TOKENS.BRANCH_USER_REPOSITORY,
         BranchUserDomainService,
+        PrismaService,
       ],
     },
 

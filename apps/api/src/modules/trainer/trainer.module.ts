@@ -94,16 +94,19 @@ import { BranchModule } from '../branch/branch.module';
         trainerRepo: TrainerRepository,
         uploadDomainService: UploadDomainService,
         domainService: TrainerDomainService,
+        prisma: PrismaService,
       ) =>
         new UpdateTrainerHandler(
           trainerRepo,
           uploadDomainService,
           domainService,
+          prisma,
         ),
       inject: [
         TRAINER_TOKENS.TRAINER_REPOSITORY,
         UploadDomainService,
         TrainerDomainService,
+        PrismaService,
       ],
     },
 

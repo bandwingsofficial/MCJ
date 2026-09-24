@@ -916,40 +916,61 @@ export interface JobApplicationItem {
   interviewStatus: string | null;
   interviewScheduleStatus?: string | null;
   interviewScheduledAt: string | null;
-  latestInterview?: {
-    id: string;
-    scheduledAt?: string | null;
-    mode?: string | null;
-    locationOrLink?: string | null;
-    roundId?: string | null;
-    nextRoundId?: string | null;
-    roundNumber?: number;
-    result?: InterviewResult | null;
-    status: string;
-    notes?: string | null;
-    round?: {
-      id: string;
-      name: string;
-      sortOrder: number;
-    } | null;
-    nextRound?: {
-      id: string;
-      name: string;
-      sortOrder: number;
-    } | null;
-    interviewer?: {
-      id: string;
-      firstName?: string;
-      lastName?: string | null;
-      email?: string;
-    } | null;
-    branch?: {
-      id: string;
-      branchName: string;
-      branchCode: string;
-    } | null;
-  } | null;
+  latestInterview?: JobApplicationBranchInterview | null;
+  branchInterviews?: JobApplicationBranchInterview[];
+  listScheduleTab?: "NOT_SCHEDULED" | "SCHEDULED" | "FINAL";
+  interviewWorkflowPhase?: string;
+  branchAssignedAt?: string | null;
+  interviewSchedulingSuggestion?: JobApplicationInterviewSchedulingSuggestion | null;
   roundProgress?: ApplicationRoundProgress | null;
+}
+
+export interface JobApplicationInterviewSchedulingSuggestion {
+  roundId: string;
+  roundName: string;
+  roundSortOrder?: number | null;
+  waitingSince: string;
+  waitingKind: "BRANCH_ASSIGNED" | "PREVIOUS_ROUND_CLEARED" | "RESCHEDULE";
+  previousRoundName?: string | null;
+  previousRoundClearedAt?: string | null;
+  scheduleActionLabel: string;
+}
+
+export interface JobApplicationBranchInterview {
+  id: string;
+  scheduledAt?: string | null;
+  durationMinutes?: number;
+  mode?: string | null;
+  locationOrLink?: string | null;
+  roundId?: string | null;
+  nextRoundId?: string | null;
+  roundNumber?: number;
+  result?: InterviewResult | null;
+  status: string;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  round?: {
+    id: string;
+    name: string;
+    sortOrder: number;
+  } | null;
+  nextRound?: {
+    id: string;
+    name: string;
+    sortOrder: number;
+  } | null;
+  interviewer?: {
+    id: string;
+    firstName?: string;
+    lastName?: string | null;
+    email?: string;
+  } | null;
+  branch?: {
+    id: string;
+    branchName: string;
+    branchCode: string;
+  } | null;
 }
 
 export type InterviewResult =
@@ -1009,17 +1030,53 @@ export interface JobApplicationJobOption {
   jobNumber?: string | null;
 }
 
+export interface JobApplicationScheduleCounts {
+  all: number;
+  notScheduled: number;
+  scheduled: number;
+}
+
+export interface BranchInterviewWorkflowAlertItem {
+  key: string;
+  message: string;
+  severity: "info" | "warning";
+}
+
+export interface BranchInterviewWorkflowMetrics {
+  notScheduled: number;
+  waitingToSchedule: number;
+  scheduledUpcoming: number;
+  today: number;
+  inProgress: number;
+  expired: number;
+  nextRoundPending: number;
+  completedPending: number;
+  placed: number;
+  rejected: number;
+  onHold: number;
+  needFurtherReview: number;
+}
+
 export interface JobApplicationListResult {
   items: JobApplicationItem[];
   total: number;
   jobOptions?: JobApplicationJobOption[];
+  scheduleCounts?: JobApplicationScheduleCounts;
+  workflowMetrics?: BranchInterviewWorkflowMetrics;
+  workflowAlerts?: BranchInterviewWorkflowAlertItem[];
 }
 
 export interface InterviewItem {
   id: string;
   applicationId: string;
   scheduledAt: string | null;
-  durationMinutes: number;
+  durationMinutes?: number;
+  scheduleLifecyclePhase?:
+    | "NONE"
+    | "UPCOMING"
+    | "TODAY_UPCOMING"
+    | "IN_PROGRESS"
+    | "EXPIRED";
   mode: string | null;
   locationOrLink: string | null;
   notes: string | null;
@@ -1057,14 +1114,22 @@ export interface InterviewListCounts {
   upcoming: number;
   today: number;
   inProgress: number;
+  expired: number;
   completed: number;
   cancelled: number;
+}
+
+export interface InterviewRoundCount {
+  roundId: string;
+  count: number;
 }
 
 export interface InterviewListResult {
   items: InterviewItem[];
   total: number;
   counts: InterviewListCounts;
+  roundCounts?: InterviewRoundCount[];
+  workflowAlerts?: BranchInterviewWorkflowAlertItem[];
   interviewerOptions?: Array<{
     id: string;
     name: string;

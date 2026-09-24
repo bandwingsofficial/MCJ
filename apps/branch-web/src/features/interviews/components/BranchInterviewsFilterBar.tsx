@@ -151,7 +151,7 @@ export function BranchInterviewsFilterBar({
         onClick={() =>
           onChange({
             ...DEFAULT_BRANCH_INTERVIEW_FILTERS,
-            tab: filters.tab,
+            roundTab: filters.roundTab,
             pageSize: filters.pageSize,
           })
         }

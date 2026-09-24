@@ -1,22 +1,10 @@
-export type BranchJobApplicationStatus =
-  | "APPLIED"
-  | "UNDER_REVIEW"
-  | "SHORTLISTED"
-  | "ASSESSMENT"
-  | "INTERVIEW"
-  | "SELECTED"
-  | "PLACED"
-  | "REJECTED";
-
-export type InterviewPhaseFilter = "ALL" | "ASSIGNED" | "SCHEDULED";
+export type JobApplicationScheduleTab = "ALL" | "NOT_SCHEDULED" | "SCHEDULED";
 
 export interface BranchJobApplicationFilters {
   search: string;
-  status: string;
   jobId: string;
-  interviewPhase: InterviewPhaseFilter;
-  appliedFrom: string;
-  appliedTo: string;
+  roundId: string;
+  scheduleTab: JobApplicationScheduleTab;
   page: number;
   pageSize: number;
 }
@@ -24,31 +12,17 @@ export interface BranchJobApplicationFilters {
 export const DEFAULT_BRANCH_JOB_APPLICATION_FILTERS: BranchJobApplicationFilters =
   {
     search: "",
-    status: "ALL",
     jobId: "ALL",
-    interviewPhase: "ALL",
-    appliedFrom: "",
-    appliedTo: "",
+    roundId: "ALL",
+    scheduleTab: "ALL",
     page: 1,
     pageSize: 20,
   };
 
-export const BRANCH_JOB_APPLICATION_STATUS_OPTIONS = [
-  { label: "All Statuses", value: "ALL" },
-  { label: "Shortlisted", value: "SHORTLISTED" },
-  { label: "Interview", value: "INTERVIEW" },
-  { label: "Selected", value: "SELECTED" },
-  { label: "Rejected", value: "REJECTED" },
-  { label: "Placed", value: "PLACED" },
-  { label: "Under Review", value: "UNDER_REVIEW" },
-  { label: "Applied", value: "APPLIED" },
-  { label: "Assessment", value: "ASSESSMENT" },
-] as const;
-
-export const BRANCH_INTERVIEW_PHASE_OPTIONS = [
-  { label: "All Assignment / Interview", value: "ALL" },
-  { label: "Assigned (Not Scheduled)", value: "ASSIGNED" },
-  { label: "Scheduled", value: "SCHEDULED" },
-] as const;
-
 export const BRANCH_JOB_APPLICATION_PAGE_SIZES = [10, 20, 50, 100] as const;
+
+export const DEFAULT_JOB_APPLICATION_SCHEDULE_COUNTS = {
+  all: 0,
+  notScheduled: 0,
+  scheduled: 0,
+} as const;

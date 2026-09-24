@@ -1,9 +1,4 @@
-export type InterviewTab =
-  | "UPCOMING"
-  | "TODAY"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "CANCELLED";
+export type InterviewRoundTab = "ALL" | string;
 
 export interface BranchInterviewFilters {
   search: string;
@@ -13,7 +8,7 @@ export interface BranchInterviewFilters {
   status: string;
   from: string;
   to: string;
-  tab: InterviewTab;
+  roundTab: InterviewRoundTab;
   page: number;
   pageSize: number;
 }
@@ -26,7 +21,7 @@ export const DEFAULT_BRANCH_INTERVIEW_FILTERS: BranchInterviewFilters = {
   status: "ALL",
   from: "",
   to: "",
-  tab: "UPCOMING",
+  roundTab: "ALL",
   page: 1,
   pageSize: 20,
 };

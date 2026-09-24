@@ -16,6 +16,7 @@ import {
   getApplicantName,
   isInterviewAssigned,
 } from "@/src/features/job-applications/types/job-application.types";
+import { formatCanonicalInterviewerName } from "@/src/features/job-applications/utils/interviewer-display.utils";
 
 interface AssignInterviewDialogProps {
   open: boolean;
@@ -136,9 +137,7 @@ export function AssignInterviewDialog({
         }
         const options = (response.data.items ?? []).map((user) => ({
           id: user.id,
-          label:
-            [user.firstName, user.lastName].filter(Boolean).join(" ") ||
-            user.email,
+          label: formatCanonicalInterviewerName(user, user.email),
         }));
         setInterviewers(options);
 
@@ -289,7 +288,7 @@ export function AssignInterviewDialog({
                     ? "Loading interviewers..."
                     : interviewers.length
                       ? "Select interviewer"
-                      : "No active interviewers"
+                      : "No interviewers"
               }
               disabled={
                 !branchId ||
@@ -305,7 +304,7 @@ export function AssignInterviewDialog({
             />
             {branchId && !loadingInterviewers && interviewers.length === 0 ? (
               <p className="text-xs text-amber-700">
-                No active interviewers are assigned to this branch.
+                No user with the INTERVIEWER role is available for this branch.
               </p>
             ) : null}
           </div>

@@ -1,17 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
+import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
+import type {
+  InterviewRoundItem,
+  JobApplicationJobOption,
+} from "@/src/features/branch-ops/types";
+import {
+  DEFAULT_BRANCH_JOB_APPLICATION_FILTERS,
+  type BranchJobApplicationFilters,
+} from "@/src/features/job-applications/constants/job-application.constants";
+import { formatInterviewRoundOrderLabel } from "@/src/features/interviews/utils/interview-round-accent.utils";
 import { Button } from "@/src/shared/components/ui/button";
 import { SearchInput } from "@/src/shared/components/ui/search-input";
 import { AppSelect } from "@/src/shared/components/ui/select";
-import type { JobApplicationJobOption } from "@/src/features/branch-ops/types";
-import {
-  BRANCH_INTERVIEW_PHASE_OPTIONS,
-  BRANCH_JOB_APPLICATION_STATUS_OPTIONS,
-  DEFAULT_BRANCH_JOB_APPLICATION_FILTERS,
-  type BranchJobApplicationFilters,
-  type InterviewPhaseFilter,
-} from "@/src/features/job-applications/constants/job-application.constants";
-
 interface Props {
   filters: BranchJobApplicationFilters;
   jobOptions: JobApplicationJobOption[];
@@ -25,16 +28,31 @@ export function BranchJobApplicationsFilterBar({
   disabled = false,
   onChange,
 }: Props) {
+  const [roundOptions, setRoundOptions] = useState<InterviewRoundItem[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void branchOpsApi
+      .activeInterviewRounds()
+      .then((rounds) => {
+        if (!cancelled) {
+          setRoundOptions(rounds);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setRoundOptions([]);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const hasActiveFilters =
     Boolean(filters.search.trim()) ||
-    filters.status !== "ALL" ||
     filters.jobId !== "ALL" ||
-    filters.interviewPhase !== "ALL" ||
-    Boolean(filters.appliedFrom) ||
-    Boolean(filters.appliedTo);
-
-  const dateInputClass =
-    "h-9 w-full rounded-lg border border-[#DCE8F5] bg-white px-2.5 text-sm text-[#102A56]";
+    filters.roundId !== "ALL";
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -69,65 +87,30 @@ export function BranchJobApplicationsFilterBar({
         />
       </div>
 
-      <div className="w-full sm:w-[160px]">
-        <AppSelect
-          value={filters.status}
-          disabled={disabled}
-          triggerClassName="h-9 rounded-lg px-2.5 text-sm"
-          onValueChange={(value) =>
-            onChange({ ...filters, status: value, page: 1 })
-          }
-          options={[...BRANCH_JOB_APPLICATION_STATUS_OPTIONS]}
-        />
-      </div>
-
       <div className="w-full sm:w-[200px]">
         <AppSelect
-          value={filters.interviewPhase}
+          value={filters.roundId}
           disabled={disabled}
           triggerClassName="h-9 rounded-lg px-2.5 text-sm"
+          placeholder="Interview Rounds"
           onValueChange={(value) =>
-            onChange({
-              ...filters,
-              interviewPhase: value as InterviewPhaseFilter,
-              page: 1,
-            })
+            onChange({ ...filters, roundId: value, page: 1 })
           }
-          options={[...BRANCH_INTERVIEW_PHASE_OPTIONS]}
-        />
-      </div>
-
-      <div className="w-full sm:w-[140px]">
-        <input
-          type="date"
-          className={dateInputClass}
-          value={filters.appliedFrom}
-          disabled={disabled}
-          aria-label="Applied from"
-          onChange={(event) =>
-            onChange({
-              ...filters,
-              appliedFrom: event.target.value,
-              page: 1,
-            })
-          }
-        />
-      </div>
-
-      <div className="w-full sm:w-[140px]">
-        <input
-          type="date"
-          className={dateInputClass}
-          value={filters.appliedTo}
-          disabled={disabled}
-          aria-label="Applied to"
-          onChange={(event) =>
-            onChange({
-              ...filters,
-              appliedTo: event.target.value,
-              page: 1,
-            })
-          }
+          options={[
+            { label: "Interview Rounds", value: "ALL" },
+            ...[...roundOptions]
+              .sort(
+                (a, b) =>
+                  a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
+              )
+              .map((round) => ({
+                label: formatInterviewRoundOrderLabel({
+                  sortOrder: round.sortOrder,
+                  name: round.name,
+                }),
+                value: round.id,
+              })),
+          ]}
         />
       </div>
 
@@ -139,6 +122,7 @@ export function BranchJobApplicationsFilterBar({
         onClick={() =>
           onChange({
             ...DEFAULT_BRANCH_JOB_APPLICATION_FILTERS,
+            scheduleTab: filters.scheduleTab,
             pageSize: filters.pageSize,
           })
         }

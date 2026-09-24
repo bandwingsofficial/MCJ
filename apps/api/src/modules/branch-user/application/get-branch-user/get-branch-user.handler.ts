@@ -1,8 +1,10 @@
 import { Inject, Logger } from '@nestjs/common';
 
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { BRANCH_USER_TOKENS } from '../../branch-user.tokens';
 import type { BranchUserRepository } from '../../domain/repositories/branch-user.repository';
 import { BranchUserDomainService } from '../../domain/services/branch-user-domain.service';
+import { reconcileBranchUserNamesWithLinkedTrainer } from '../../infrastructure/linked-trainer-display.util';
 import { GetBranchUserQuery } from './get-branch-user.query';
 import { GetBranchUserResult } from './get-branch-user.result';
 
@@ -22,6 +24,8 @@ export class GetBranchUserHandler {
     private readonly branchRepo: BranchRepository,
 
     private readonly domainService: BranchUserDomainService,
+
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(query: GetBranchUserQuery): Promise<GetBranchUserResult> {
@@ -43,10 +47,19 @@ export class GetBranchUserHandler {
       );
     }
 
+    const linked = await reconcileBranchUserNamesWithLinkedTrainer(
+      this.prisma,
+      branchUser.id,
+    );
+
+    const firstName = linked?.firstName ?? branchUser.firstName.getValue();
+    const lastName =
+      linked?.lastName ?? branchUser.lastName?.getValue() ?? null;
+
     return new GetBranchUserResult(
       branchUser.id,
-      branchUser.firstName.getValue(),
-      branchUser.lastName?.getValue() ?? null,
+      firstName,
+      lastName,
       branchUser.email.getValue(),
       branchUser.phone?.getValue() ?? null,
       branchUser.role,

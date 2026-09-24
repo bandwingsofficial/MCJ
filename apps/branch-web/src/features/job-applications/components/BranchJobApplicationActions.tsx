@@ -5,6 +5,11 @@ import { CalendarClock, Eye } from "lucide-react";
 import type { JobApplicationItem } from "@/src/features/branch-ops/types";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 import { isInterviewScheduled } from "@/src/features/job-applications/utils/job-application-display.utils";
+import {
+  isJobApplicationScheduleBlocked,
+  resolveJobApplicationListPresentation,
+} from "@/src/features/job-applications/utils/job-application-workflow.utils";
+import { useLifecycleNow } from "@/src/features/branch-interview-lifecycle/use-lifecycle-now";
 
 const iconButtonClass =
   "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40";
@@ -24,10 +29,16 @@ export function BranchJobApplicationActions({
   onView,
   onSchedule,
 }: Props) {
+  const nowMs = useLifecycleNow();
   const scheduled = isInterviewScheduled(application.latestInterview);
+  const scheduleBlocked = isJobApplicationScheduleBlocked(application, nowMs);
+  const presentation = resolveJobApplicationListPresentation(application, nowMs);
+  const scheduleLabel =
+    presentation.scheduleActionLabel ??
+    (scheduled ? "Manage Interview" : "Schedule Interview");
 
   return (
-    <div className="flex items-center justify-end gap-2">
+    <div className="flex items-center justify-end gap-1.5">
       <Tooltip content="View">
         <button
           type="button"
@@ -40,11 +51,19 @@ export function BranchJobApplicationActions({
         </button>
       </Tooltip>
 
-      <Tooltip content={scheduled ? "Manage Interview" : "Schedule Interview"}>
+      <Tooltip
+        content={
+          scheduleBlocked
+            ? "Interview scheduling is not available for this application"
+            : scheduleLabel
+        }
+      >
         <button
           type="button"
-          disabled={disabled}
-          aria-label={scheduled ? "Manage interview" : "Schedule interview"}
+          disabled={disabled || scheduleBlocked}
+          aria-label={
+            scheduleBlocked ? "Interview scheduling unavailable" : scheduleLabel
+          }
           className={`${iconButtonClass} text-indigo-800`}
           onClick={() => onSchedule(application)}
         >

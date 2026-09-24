@@ -284,6 +284,22 @@ export class PrismaBranchUserRepository
             contains: search,
           },
         },
+        {
+          linkedTrainer: {
+            firstName: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
+          linkedTrainer: {
+            lastName: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
       ];
     }
 

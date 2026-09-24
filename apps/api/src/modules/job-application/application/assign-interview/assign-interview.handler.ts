@@ -4,24 +4,29 @@ import {
 } from '@nestjs/common';
 import { InterviewStatus } from '@prisma/client';
 
-import { BranchUserRole } from '@modules/branch-user/domain/enums/branch-user-role.enum';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
-import { JobApplicationStatus as DomainJobApplicationStatus } from '../../domain/enums/job-application-status.enum';
 import { JobApplicationDomainService } from '../../domain/services/job-application-domain.service';
 import type { JobApplicationRepository } from '../../domain/repositories/job-application.repository';
 import { AssignInterviewCommand } from './assign-interview.command';
+import { BranchUserRole } from '@modules/branch-user/domain/enums/branch-user-role.enum';
+import {
+  countEligibleInterviewersForBranch,
+  findBranchUserForInterviewerValidation,
+  findEligibleInterviewerForBranch,
+  INTERVIEWER_ROLE_REQUIRED_MESSAGE,
+} from './assign-interview-interviewer.util';
+import { assertCanManageBranchInterviewerAssignment } from './job-application-branch-assignment.util';
+import {
+  jobApplicationInterviewerSelect,
+  mapInterviewerDisplayName,
+} from '../../infrastructure/mappers/map-interviewer-display.util';
 
 const interviewInclude = {
   branch: {
     select: { id: true, branchName: true, branchCode: true },
   },
   interviewer: {
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-    },
+    select: jobApplicationInterviewerSelect,
   },
   job: {
     select: {
@@ -55,17 +60,10 @@ export class AssignInterviewHandler {
     );
     this.domainService.ensureNotDeleted(application);
 
-    if (
-      application.status !== DomainJobApplicationStatus.SHORTLISTED &&
-      !(
-        application.status === DomainJobApplicationStatus.SELECTED &&
-        application.interviewStatus === 'NOT_YET'
-      )
-    ) {
-      throw new BadRequestException(
-        'Only shortlisted applications can be assigned an interviewer',
-      );
-    }
+    assertCanManageBranchInterviewerAssignment({
+      status: application.status,
+      interviewStatus: application.interviewStatus,
+    });
 
     const branch = await this.prisma.branch.findFirst({
       where: {
@@ -79,19 +77,36 @@ export class AssignInterviewHandler {
       throw new BadRequestException('Selected branch is not available');
     }
 
-    const interviewer = await this.prisma.branchUser.findFirst({
-      where: {
-        id: command.interviewerId,
-        branchId: command.branchId,
-        isDeleted: false,
-        isActive: true,
-        role: BranchUserRole.INTERVIEWER,
-      },
-    });
+    const eligibleCount = await countEligibleInterviewersForBranch(
+      this.prisma,
+      command.branchId,
+    );
+
+    if (eligibleCount === 0) {
+      throw new BadRequestException(
+        'No interviewer with the INTERVIEWER role is available for this branch.',
+      );
+    }
+
+    const interviewer = await findEligibleInterviewerForBranch(
+      this.prisma,
+      command.branchId,
+      command.interviewerId,
+    );
 
     if (!interviewer) {
+      const selected = await findBranchUserForInterviewerValidation(
+        this.prisma,
+        command.branchId,
+        command.interviewerId,
+      );
+
+      if (selected && selected.role !== BranchUserRole.INTERVIEWER) {
+        throw new BadRequestException(INTERVIEWER_ROLE_REQUIRED_MESSAGE);
+      }
+
       throw new BadRequestException(
-        'Selected interviewer must be an active interviewer on the selected branch',
+        'Selected interviewer must be an active branch user with the INTERVIEWER role.',
       );
     }
 
@@ -154,7 +169,7 @@ export class AssignInterviewHandler {
       roundNumber: interview.roundNumber,
       status: interview.status,
       branch: interview.branch,
-      interviewer: interview.interviewer,
+      interviewer: mapInterviewerDisplayName(interview.interviewer),
       job: interview.job,
       application: interview.application,
     };

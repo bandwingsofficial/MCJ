@@ -9,6 +9,10 @@ import type {
   JobApplicationUserProfileView,
   JobApplicationUserView,
 } from '../../domain/repositories/job-application.repository';
+import {
+  jobApplicationInterviewerSelect,
+  mapInterviewerDisplayName,
+} from './map-interviewer-display.util';
 
 export const jobApplicationDetailInclude = {
   job: true,
@@ -60,12 +64,7 @@ export const jobApplicationDetailInclude = {
         },
       },
       interviewer: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-        },
+        select: jobApplicationInterviewerSelect,
       },
       round: {
         select: {
@@ -111,7 +110,7 @@ function mapInterviewAssignment(
     createdAt: interview.createdAt,
     updatedAt: interview.updatedAt,
     branch: interview.branch,
-    interviewer: interview.interviewer,
+    interviewer: mapInterviewerDisplayName(interview.interviewer),
     round: interview.round ?? null,
     nextRound: interview.nextRound ?? null,
   };
@@ -140,16 +139,24 @@ function pickInterviewAssignment(
     return null;
   }
 
-  // Prefer the latest currently scheduled interview.
-  for (let index = interviews.length - 1; index >= 0; index -= 1) {
-    const interview = interviews[index];
+  // Prefer the highest-round currently scheduled interview (e.g. HR over Technical).
+  let scheduledPick: JobApplicationWithRelations['interviews'][number] | null =
+    null;
+  for (const interview of interviews) {
     if (
       interview.status === InterviewStatus.SCHEDULED &&
       interview.scheduledAt &&
-      interview.scheduledAt.getTime() > SCHEDULE_EPOCH_GUARD_MS
+      interview.scheduledAt.getTime() > SCHEDULE_EPOCH_GUARD_MS &&
+      (!scheduledPick ||
+        interview.roundNumber > scheduledPick.roundNumber ||
+        (interview.roundNumber === scheduledPick.roundNumber &&
+          interview.createdAt.getTime() > scheduledPick.createdAt.getTime()))
     ) {
-      return interview;
+      scheduledPick = interview;
     }
+  }
+  if (scheduledPick) {
+    return scheduledPick;
   }
 
   // Then the latest assignment awaiting schedule.
