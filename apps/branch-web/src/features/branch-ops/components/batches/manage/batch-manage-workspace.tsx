@@ -1,6 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  Clock3,
+  FileText,
+  LayoutDashboard,
+} from "lucide-react";
 
 import {
   Tabs,
@@ -26,26 +34,29 @@ export type { BatchManageTabKey };
 interface Props {
   batch: BatchListItem;
   summary: BatchSummary | null;
+  summaryLoading?: boolean;
   onTabChange?: (tab: BatchManageTabKey) => void;
 }
 
 export const BATCH_MANAGE_TABS: {
   value: BatchManageTabKey;
   label: string;
+  icon: LucideIcon;
 }[] = [
-  { value: "overview", label: "Overview" },
-  { value: "course", label: "Course" },
-  { value: "details", label: "Batch Details" },
-  { value: "timings", label: "Batch Timings" },
-  { value: "calendar", label: "Calendar Management" },
+  { value: "overview", label: "Overview", icon: LayoutDashboard },
+  { value: "course", label: "Course", icon: BookOpen },
+  { value: "details", label: "Batch Details", icon: FileText },
+  { value: "timings", label: "Student & Enrolled", icon: Clock3 },
+  { value: "calendar", label: "Calendar Management", icon: CalendarDays },
 ];
 
 const TAB_CLASS =
-  "rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
+  "inline-flex items-center rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
 
 export function BatchManageWorkspace({
   batch,
   summary,
+  summaryLoading = false,
   onTabChange,
 }: Props) {
   const [tab, setTab] = useState<BatchManageTabKey>("overview");
@@ -60,15 +71,20 @@ export function BatchManageWorkspace({
       }}
     >
       <TabsList className="mb-3 flex h-auto w-full flex-wrap justify-start gap-0.5 rounded-none border-b border-slate-200 bg-transparent p-0">
-        {BATCH_MANAGE_TABS.map(({ value, label }) => (
+        {BATCH_MANAGE_TABS.map(({ value, label, icon: Icon }) => (
           <TabsTrigger key={value} value={value} className={TAB_CLASS}>
+            <Icon className="mr-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
             {label}
           </TabsTrigger>
         ))}
       </TabsList>
 
-      <TabsContent value="overview" className="space-y-3">
-        <BatchManageOverviewPanel batch={batch} summary={summary} />
+      <TabsContent value="overview" className="space-y-4">
+        <BatchManageOverviewPanel
+          batch={batch}
+          summary={summary}
+          summaryLoading={summaryLoading}
+        />
       </TabsContent>
 
       <TabsContent value="course">

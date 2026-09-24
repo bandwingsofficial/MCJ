@@ -58,15 +58,17 @@ export function BranchBatchManagePage({ batchId }: BatchPageProps) {
   if (!data) return <EmptyState title="Batch not found." />;
 
   return (
-    <div className="min-h-full min-w-0 space-y-4">
+    <div className="min-h-full min-w-0">
       <BatchManageHeader batch={data} activeSection={activeSection} />
-      <BatchManageWorkspace
-        batch={data}
-        summary={summary}
-        onTabChange={(tab) => {
-          setActiveSection(BATCH_TAB_LABELS[tab]);
-        }}
-      />
+      <div className="mt-4">
+        <BatchManageWorkspace
+          batch={data}
+          summary={summary}
+          onTabChange={(tab) => {
+            setActiveSection(BATCH_TAB_LABELS[tab]);
+          }}
+        />
+      </div>
     </div>
   );
 }

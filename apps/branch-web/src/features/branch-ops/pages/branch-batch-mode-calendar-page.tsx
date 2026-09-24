@@ -1,26 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { BatchCalendarDateDialog } from "@/src/features/branch-ops/components/batches/calendar/batch-calendar-date-dialog";
+import { BatchCalendarPageHeader } from "@/src/features/branch-ops/components/batches/calendar/batch-calendar-page-header";
 import { BatchCalendarSummaryPanel } from "@/src/features/branch-ops/components/batches/calendar/batch-calendar-summary-panel";
 import { BatchModeCalendarView } from "@/src/features/branch-ops/components/batches/calendar/batch-mode-calendar-view";
+import { BatchManageEmptyState } from "@/src/features/branch-ops/components/batches/manage/batch-manage-section";
 import type { BatchCalendarViewResponse } from "@/src/features/branch-ops/types";
+import { parseBatchModeParam } from "@/src/features/branch-ops/utils/batch-manage.routes";
 import {
-  batchManagePath,
-  parseBatchModeParam,
-} from "@/src/features/branch-ops/utils/batch-manage.routes";
-import {
-  formatBatchCalendarDate,
+  currentCalendarMonthKey,
   initialCalendarMonthKey,
 } from "@/src/features/branch-ops/utils/batch-calendar-display.utils";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
-import { appToast } from "@/src/shared/components/ui/toast";
-import { currentMonthKey } from "@/src/features/branch-ops/utils/attendance-calendar.utils";
+import { appToast } from "@/src/shared/lib/toast";
 
 function resolveError(err: unknown, fallback: string): string {
   if (err && typeof err === "object" && "response" in err) {
@@ -87,19 +84,45 @@ export function BranchBatchModeCalendarPage({ batchId, modeParam }: Props) {
     data?.days.find((day) => day.dateKey === selectedDateKey) ?? null;
 
   if (!mode) {
-    return <ErrorState description="Invalid learning mode." />;
+    return (
+      <div className="mx-auto min-h-full max-w-6xl space-y-4 px-4 py-5 sm:px-6">
+        <ErrorState
+          title="Invalid Learning Mode"
+          description="The calendar route must include a valid learning mode: offline, online, or recorded."
+        />
+      </div>
+    );
   }
 
   if (loading && !data) {
-    return <Loader />;
+    return (
+      <div className="mx-auto min-h-full max-w-6xl space-y-4 px-4 py-5 sm:px-6">
+        <Loader />
+      </div>
+    );
   }
 
   if (error && !data) {
-    return <ErrorState description={error} />;
+    return (
+      <div className="mx-auto min-h-full max-w-6xl space-y-4 px-4 py-5 sm:px-6">
+        <ErrorState
+          title="Unable to Load Calendar"
+          description={error}
+        />
+      </div>
+    );
   }
 
   if (!data) {
-    return <ErrorState description="Calendar not available." />;
+    return (
+      <div className="mx-auto min-h-full max-w-6xl space-y-4 px-4 py-5 sm:px-6">
+        <BatchManageEmptyState
+          icon={CalendarDays}
+          title="Calendar Not Available"
+          description="No calendar data could be loaded for this batch and learning mode."
+        />
+      </div>
+    );
   }
 
   const reloadMonth = async (nextMonthKey: string) => {
@@ -118,41 +141,40 @@ export function BranchBatchModeCalendarPage({ batchId, modeParam }: Props) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Link
-            href={batchManagePath(batchId)}
-            className="inline-flex items-center gap-1 text-sm font-medium text-[#2563EB] hover:underline"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Batch Management
-          </Link>
-          <h1 className="mt-2 text-xl font-semibold text-[#102A56]">
-            {data.batch.name} · {data.modeLabel}
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {data.scheduleLabel} · {formatBatchCalendarDate(data.batch.startDate)}
-            {data.batch.endDate
-              ? ` – ${formatBatchCalendarDate(data.batch.endDate)}`
-              : ""}
-          </p>
-        </div>
-      </div>
-
-      <BatchCalendarSummaryPanel summary={data.summary} />
-
-      <BatchModeCalendarView
-        monthLabel={data.monthLabel}
-        days={data.days}
-        loading={loading}
-        selectedDateKey={selectedDateKey}
-        onSelectDate={setSelectedDateKey}
-        onPreviousMonth={() => reloadMonth(data.previousMonthKey)}
-        onNextMonth={() => reloadMonth(data.nextMonthKey)}
-        showToday={data.monthKey !== currentMonthKey()}
-        onToday={() => reloadMonth(currentMonthKey())}
+    <div className="mx-auto min-h-full max-w-6xl space-y-4 px-4 py-5 sm:px-6">
+      <BatchCalendarPageHeader
+        batchId={batchId}
+        batchName={data.batch.name}
+        batchCode={data.batch.code}
+        mode={data.mode}
+        modeLabel={data.modeLabel}
+        scheduleLabel={data.scheduleLabel}
+        startDate={data.batch.startDate}
+        endDate={data.batch.endDate}
       />
+
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
+        <div className="min-w-0 flex-1">
+          <BatchModeCalendarView
+            monthLabel={data.monthLabel}
+            days={data.days}
+            loading={loading}
+            selectedDateKey={selectedDateKey}
+            onSelectDate={setSelectedDateKey}
+            onPreviousMonth={() => reloadMonth(data.previousMonthKey)}
+            onNextMonth={() => reloadMonth(data.nextMonthKey)}
+            showToday={data.monthKey !== currentCalendarMonthKey()}
+            onToday={() => reloadMonth(currentCalendarMonthKey())}
+          />
+        </div>
+
+        <aside className="min-w-0 xl:w-[22rem] xl:shrink-0">
+          <BatchCalendarSummaryPanel
+            summary={data.summary}
+            modeLabel={data.modeLabel}
+          />
+        </aside>
+      </div>
 
       <BatchCalendarDateDialog
         open={selectedDateKey != null}
