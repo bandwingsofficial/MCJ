@@ -112,6 +112,19 @@ export class EnrollmentDomainService {
     }
   }
 
+  /** Archived (soft-deleted) or terminal lifecycle enrollments may be hard-deleted. */
+  ensureEligibleForPermanentDelete(enrollment: Enrollment): void {
+    if (enrollment.isDeleted) {
+      return;
+    }
+
+    if (!enrollment.isCurrent()) {
+      return;
+    }
+
+    throw new EnrollmentNotDeletedException();
+  }
+
   ensureValidStatusTransition(
     from: EnrollmentStatus,
     to: EnrollmentStatus,
@@ -637,5 +650,30 @@ export class EnrollmentDomainService {
       default:
         return null;
     }
+  }
+
+  /** Derives student status from all non-deleted enrollments for that student. */
+  resolveStudentStatusFromEnrollmentStatuses(
+    statuses: EnrollmentStatus[],
+  ): StudentStatus {
+    if (
+      statuses.some(
+        (status) =>
+          status === EnrollmentStatus.ADMITTED ||
+          status === EnrollmentStatus.ACTIVE,
+      )
+    ) {
+      return StudentStatus.ADMITTED;
+    }
+
+    if (statuses.some((status) => status === EnrollmentStatus.COMPLETED)) {
+      return StudentStatus.COMPLETED;
+    }
+
+    if (statuses.some((status) => status === EnrollmentStatus.DROPPED)) {
+      return StudentStatus.DROPPED;
+    }
+
+    return StudentStatus.LEAD;
   }
 }

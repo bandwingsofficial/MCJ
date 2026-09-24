@@ -29,12 +29,18 @@ import {
   getEligibleActivateIds,
   getEligibleArchiveIds,
   getEligibleDeactivateIds,
+  getEligibleExpiredCatalogPermanentDeleteIds,
   getEligiblePermanentDeleteIds,
   getEligibleRestoreIds,
 } from "@/src/features/jobs/utils/job-bulk.utils";
 import { useJobApplications } from "@/src/features/job-applications/hooks/useJobApplications";
 
-type ConfirmAction = "activate" | "deactivate" | "archive" | "restore";
+type ConfirmAction =
+  | "activate"
+  | "deactivate"
+  | "archive"
+  | "restore"
+  | "permanent-delete";
 
 function resolveTab(value: string | null): JobsModuleTab {
   if (value === "onboarding") {
@@ -145,6 +151,12 @@ export function JobsPage() {
           title: "Restore Job",
           description: "This job will be restored to the active catalog.",
         };
+      case "permanent-delete":
+        return {
+          title: "Delete Job Permanently?",
+          description:
+            "This will permanently remove the job and its job-specific records from the database. This action cannot be undone.",
+        };
       default:
         return { title: "", description: "" };
     }
@@ -165,11 +177,13 @@ export function JobsPage() {
       case "restore":
         return getEligibleRestoreIds(jobs, selectedIds);
       case "permanent-delete":
-        return getEligiblePermanentDeleteIds(jobs, selectedIds);
+        return tab === "expired"
+          ? getEligibleExpiredCatalogPermanentDeleteIds(jobs, selectedIds)
+          : getEligiblePermanentDeleteIds(jobs, selectedIds);
       default:
         return [];
     }
-  }, [bulkConfirmAction, jobs, selectedIds]);
+  }, [bulkConfirmAction, jobs, selectedIds, tab]);
 
   const bulkDialogCopy = useMemo(() => {
     const count = eligibleBulkIds.length;
@@ -349,9 +363,12 @@ export function JobsPage() {
       } else if (confirmAction === "archive") {
         await jobService.deleteJob(selectedJob.id);
         appToast.success("Job archived successfully.");
-      } else {
+      } else if (confirmAction === "restore") {
         await jobService.restoreJob(selectedJob.id);
         appToast.success("Job restored successfully.");
+      } else {
+        await jobService.permanentlyDeleteJob(selectedJob.id);
+        appToast.success("Job permanently deleted.");
       }
 
       setConfirmAction(null);
@@ -438,10 +455,21 @@ export function JobsPage() {
       setSelectedJob(job);
       setConfirmAction("archive");
     },
-    onRestore: (job: Job) => {
-      setSelectedJob(job);
-      setConfirmAction("restore");
-    },
+    onRestore:
+      tab === "expired"
+        ? undefined
+        : (job: Job) => {
+            setSelectedJob(job);
+            setConfirmAction("restore");
+          },
+    onPermanentDelete:
+      tab === "expired"
+        ? (job: Job) => {
+            setSelectedJob(job);
+            setConfirmAction("permanent-delete");
+          }
+        : undefined,
+    expiredCatalog: tab === "expired",
   };
 
   return (
@@ -563,7 +591,8 @@ export function JobsPage() {
         confirmVariant={
           confirmAction === "activate" || confirmAction === "restore"
             ? "success"
-            : confirmAction === "archive"
+            : confirmAction === "archive" ||
+                confirmAction === "permanent-delete"
               ? "danger"
               : "primary"
         }

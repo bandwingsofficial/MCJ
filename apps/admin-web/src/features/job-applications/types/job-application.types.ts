@@ -1,4 +1,5 @@
 import { formatCanonicalInterviewerName } from "@/src/features/job-applications/utils/interviewer-display.utils";
+import { isValidInterviewSchedule } from "@/src/features/job-applications/utils/interview-schedule.utils";
 
 export type JobApplicationStatus =
   | "APPLIED"
@@ -190,6 +191,21 @@ export interface AssignInterviewRequest {
 export interface DeleteJobApplicationResponse {
   success: boolean;
   message: string;
+}
+
+export interface PermanentDeleteJobApplicationResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    id: string;
+    success: boolean;
+  };
+}
+
+export function canPermanentlyDeleteRejectedApplication(
+  application: Pick<JobApplication, "status" | "isDeleted">,
+): boolean {
+  return application.status === "REJECTED" && !application.isDeleted;
 }
 
 export interface RestoreJobApplicationResponse {
@@ -397,6 +413,64 @@ export function resolveInterviewPipelineDisplay(
   }
 
   return { key: "NOT_YET", label: "NOT YET", variant: "default" };
+}
+
+function compareScheduledInterviewPriority(
+  left: JobApplicationBranchInterviewerAssignment,
+  right: JobApplicationBranchInterviewerAssignment,
+): number {
+  const sortLeft = left.round?.sortOrder ?? left.roundNumber ?? 0;
+  const sortRight = right.round?.sortOrder ?? right.roundNumber ?? 0;
+  if (sortRight !== sortLeft) {
+    return sortRight - sortLeft;
+  }
+  const roundNumDelta = (right.roundNumber ?? 0) - (left.roundNumber ?? 0);
+  if (roundNumDelta !== 0) {
+    return roundNumDelta;
+  }
+  const leftTime = Date.parse(left.createdAt ?? "") || 0;
+  const rightTime = Date.parse(right.createdAt ?? "") || 0;
+  return rightTime - leftTime;
+}
+
+/** Latest persisted SCHEDULED interview (highest round order). */
+export function pickCurrentScheduledInterview(
+  application: Pick<
+    JobApplication,
+    "interviewAssignment" | "interviews"
+  >,
+): JobApplicationBranchInterviewerAssignment | null {
+  const scheduled = (application.interviews ?? []).filter(
+    (item) =>
+      item.status === "SCHEDULED" &&
+      isValidInterviewSchedule(item.scheduledAt),
+  );
+
+  if (scheduled.length) {
+    return [...scheduled].sort(compareScheduledInterviewPriority)[0] ?? null;
+  }
+
+  const assignment = application.interviewAssignment;
+  if (
+    assignment?.status === "SCHEDULED" &&
+    isValidInterviewSchedule(assignment.scheduledAt)
+  ) {
+    return assignment;
+  }
+
+  return null;
+}
+
+export function formatScheduledRoundLabel(
+  interview: JobApplicationBranchInterviewerAssignment,
+): string | null {
+  const name = interview.round?.name?.trim();
+  const order = interview.round?.sortOrder ?? interview.roundNumber;
+  if (order == null && !name) {
+    return null;
+  }
+  const orderPrefix = order != null ? `${order}. ` : "";
+  return `${orderPrefix}${name || "Interview Round"}`;
 }
 
 export function resolveApplicationInterviewDisplay(application: {

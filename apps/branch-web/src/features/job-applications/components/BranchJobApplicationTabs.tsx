@@ -16,9 +16,9 @@ const TABS: Array<{
   label: string;
   countKey: keyof JobApplicationScheduleCounts;
 }> = [
-  { value: "ALL", label: "All Applications", countKey: "all" },
   { value: "NOT_SCHEDULED", label: "Not Scheduled", countKey: "notScheduled" },
   { value: "SCHEDULED", label: "Scheduled", countKey: "scheduled" },
+  { value: "ALL", label: "All Applications", countKey: "all" },
 ];
 
 export function BranchJobApplicationTabs({

@@ -8,6 +8,7 @@ import type {
   Student,
   StudentFilters,
 } from "@/src/features/students/types/student.types";
+import { enrichStudentsWithJobStatusFromApplications } from "@/src/features/students/utils/student-job-status.utils";
 import { parseStudentListResponse } from "@/src/features/students/utils/student-list.utils";
 import { DEFAULT_STUDENT_FILTERS } from "@/src/features/students/constants/student.constants";
 
@@ -100,7 +101,10 @@ export const useStudents = (): UseStudentsReturn => {
       }
 
       const payload = parseStudentListResponse(response.data);
-      setStudents(payload.items);
+      const items = await enrichStudentsWithJobStatusFromApplications(
+        payload.items,
+      );
+      setStudents(items);
       setTotal(payload.count);
       hasLoadedRef.current = true;
     } catch (err) {

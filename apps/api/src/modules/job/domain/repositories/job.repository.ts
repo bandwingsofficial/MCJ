@@ -36,5 +36,5 @@ export interface JobRepository {
     excludeId?: string,
   ): Promise<boolean>;
   hasApplications(jobId: string): Promise<boolean>;
-  deletePermanent(id: string): Promise<void>;
+  deletePermanent(id: string): Promise<string[]>;
 }

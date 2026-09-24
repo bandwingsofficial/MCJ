@@ -58,7 +58,6 @@ export function StudentManageEnrollmentsPanel({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Enrollment | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Enrollment | null>(null);
-  const [restoreTarget, setRestoreTarget] = useState<Enrollment | null>(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] =
     useState<Enrollment | null>(null);
   const [unenrollTarget, setUnenrollTarget] =
@@ -153,26 +152,6 @@ export function StudentManageEnrollmentsPanel({
       await enrollmentService.deleteEnrollment(deleteTarget.id);
       appToast.success("Enrollment deleted successfully");
       setDeleteTarget(null);
-      await refetch();
-      await onStudentRefresh?.();
-      await onEnrollmentMutation?.();
-    } catch (err) {
-      appToast.error(getErrorMessage(err));
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
-
-  const handleRestore = async () => {
-    if (!restoreTarget) {
-      return;
-    }
-
-    try {
-      setIsActionLoading(true);
-      await enrollmentService.restoreEnrollment(restoreTarget.id);
-      appToast.success("Enrollment restored successfully");
-      setRestoreTarget(null);
       await refetch();
       await onStudentRefresh?.();
       await onEnrollmentMutation?.();
@@ -291,7 +270,6 @@ export function StudentManageEnrollmentsPanel({
                 void handleEdit(enrollment);
               }}
               onManageDelete={setDeleteTarget}
-              onManageRestore={setRestoreTarget}
               onManagePermanentDelete={setPermanentDeleteTarget}
               onUnenroll={(enrollment) => {
                 setUnenrollTarget({
@@ -372,24 +350,12 @@ export function StudentManageEnrollmentsPanel({
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title="Delete enrollment?"
-        description="This enrollment will be archived and can be restored later."
+        description="This enrollment will be archived. You can permanently delete it from archived enrollments."
         confirmLabel="Delete"
         loading={isActionLoading}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={() => {
           void handleDelete();
-        }}
-      />
-
-      <ConfirmDialog
-        open={Boolean(restoreTarget)}
-        title="Restore enrollment?"
-        description="Restore this archived enrollment?"
-        confirmLabel="Restore"
-        loading={isActionLoading}
-        onCancel={() => setRestoreTarget(null)}
-        onConfirm={() => {
-          void handleRestore();
         }}
       />
 

@@ -20,7 +20,7 @@ export class PermanentDeleteJobApplicationHandler {
       await this.applicationRepo.findById(command.id, true),
     );
 
-    this.domainService.ensureDeleted(application);
+    this.domainService.ensureEligibleForPermanentDelete(application);
 
     const resumeFileId = application.resumeFileId;
 

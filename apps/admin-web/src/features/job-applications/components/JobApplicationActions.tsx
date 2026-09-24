@@ -1,6 +1,14 @@
 "use client";
 
-import { CalendarPlus, CircleCheck, Eye, UserCog, UserMinus, X } from "lucide-react";
+import {
+  CalendarPlus,
+  CircleCheck,
+  Eye,
+  Trash2,
+  UserCog,
+  UserMinus,
+  X,
+} from "lucide-react";
 
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
@@ -8,6 +16,7 @@ import type { JobApplication } from "@/src/features/job-applications/types/job-a
 import {
   canApproveApplication,
   canManageAssignment,
+  canPermanentlyDeleteRejectedApplication,
   canRejectApplication,
   isInterviewAssigned,
 } from "@/src/features/job-applications/types/job-application.types";
@@ -25,6 +34,7 @@ interface JobApplicationActionsProps {
   onReject: (application: JobApplication) => void;
   onAssignInterview?: (application: JobApplication) => void;
   onUnassignInterview?: (application: JobApplication) => void;
+  onPermanentDelete?: (application: JobApplication) => void;
 }
 
 export function JobApplicationActions({
@@ -35,6 +45,7 @@ export function JobApplicationActions({
   onReject,
   onAssignInterview,
   onUnassignInterview,
+  onPermanentDelete,
 }: JobApplicationActionsProps) {
   const assigned = isInterviewAssigned(application);
   const showManage = canManageAssignment(application) && onAssignInterview;
@@ -109,6 +120,21 @@ export function JobApplicationActions({
             className={`${iconButtonClass} text-red-800`}
           >
             <X className={iconClass} />
+          </button>
+        </Tooltip>
+      ) : null}
+
+      {onPermanentDelete &&
+      canPermanentlyDeleteRejectedApplication(application) ? (
+        <Tooltip content="Permanently delete">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onPermanentDelete(application)}
+            aria-label="Permanently delete application"
+            className={`${iconButtonClass} text-red-800`}
+          >
+            <Trash2 className={iconClass} />
           </button>
         </Tooltip>
       ) : null}

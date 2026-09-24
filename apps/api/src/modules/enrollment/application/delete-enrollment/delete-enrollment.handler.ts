@@ -34,6 +34,11 @@ export class DeleteEnrollmentHandler {
     enrollment.softDelete(command.deletedBy);
     await this.enrollmentRepo.save(enrollment);
 
+    await this.sideEffects.syncStudentStatusForStudentId(
+      enrollment.studentId,
+      command.deletedBy,
+    );
+
     return new DeleteEnrollmentResult(
       enrollment.id,
       true,

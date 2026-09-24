@@ -7,12 +7,14 @@ import {
   Pencil,
   Power,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import { getJobLifecycleStatus } from "@/src/features/jobs/hooks/useJobs";
 import type { Job } from "@/src/features/jobs/types/job.types";
+import { canPermanentlyDeleteFromExpiredCatalog } from "@/src/features/jobs/utils/job-bulk.utils";
 
 const iconButtonClass =
   "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40";
@@ -27,7 +29,9 @@ interface JobActionsProps {
   onActivate: (job: Job) => void;
   onDeactivate: (job: Job) => void;
   onArchive: (job: Job) => void;
-  onRestore: (job: Job) => void;
+  onRestore?: (job: Job) => void;
+  onPermanentDelete?: (job: Job) => void;
+  expiredCatalog?: boolean;
 }
 
 export function JobActions({
@@ -39,10 +43,45 @@ export function JobActions({
   onDeactivate,
   onArchive,
   onRestore,
+  onPermanentDelete,
+  expiredCatalog = false,
 }: JobActionsProps) {
   const status = getJobLifecycleStatus(job);
 
-  if (status === "ARCHIVED") {
+  if (expiredCatalog && onPermanentDelete) {
+    if (!canPermanentlyDeleteFromExpiredCatalog(job)) {
+      return null;
+    }
+
+    return (
+      <div className="flex items-center justify-end gap-2">
+        <Tooltip content="View job">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onView(job)}
+            aria-label="View job"
+            className={`${iconButtonClass} text-blue-900`}
+          >
+            <Eye className={iconClass} />
+          </button>
+        </Tooltip>
+        <Tooltip content="Permanently delete">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onPermanentDelete(job)}
+            aria-label="Permanently delete job"
+            className={`${iconButtonClass} text-red-800`}
+          >
+            <Trash2 className={iconClass} />
+          </button>
+        </Tooltip>
+      </div>
+    );
+  }
+
+  if (status === "ARCHIVED" && onRestore) {
     return (
       <div className="flex items-center justify-end gap-2">
         <Tooltip content="Restore job">

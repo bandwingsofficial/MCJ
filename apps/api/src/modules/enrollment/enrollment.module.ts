@@ -421,14 +421,17 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
       useFactory: (
         enrollmentRepo: EnrollmentRepository,
         domainService: EnrollmentDomainService,
+        sideEffects: EnrollmentSideEffectsService,
       ) =>
         new PermanentDeleteEnrollmentHandler(
           enrollmentRepo,
           domainService,
+          sideEffects,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
         EnrollmentDomainService,
+        EnrollmentSideEffectsService,
       ],
     },
   ],

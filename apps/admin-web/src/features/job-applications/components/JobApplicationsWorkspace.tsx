@@ -13,6 +13,7 @@ import { JobApplicationDetailsDialog } from "@/src/features/job-applications/com
 import { JobApplicationsFilterBar } from "@/src/features/job-applications/components/JobApplicationsFilterBar";
 import { JobApplicationTable } from "@/src/features/job-applications/components/JobApplicationTable";
 import { AssignInterviewDialog } from "@/src/features/job-applications/components/AssignInterviewDialog";
+import { JobApplicationPermanentDeleteDialog } from "@/src/features/job-applications/components/JobApplicationPermanentDeleteDialog";
 import { RejectJobApplicationDialog } from "@/src/features/job-applications/components/RejectJobApplicationDialog";
 import type {
   ApplicationStatusCounts,
@@ -50,14 +51,16 @@ export function JobApplicationsWorkspace({
   refetch,
   actionsDisabled = false,
 }: JobApplicationsWorkspaceProps) {
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedApplication, setSelectedApplication] =
     useState<JobApplication | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"approve" | "unassign" | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [permanentDeleteOpen, setPermanentDeleteOpen] = useState(false);
   const [isActing, setIsActing] = useState(false);
+
+  const isRejectedTab = filters.status === "REJECTED";
 
   const page = filters.page ?? 1;
   const pageSize = filters.pageSize ?? 20;
@@ -113,6 +116,11 @@ export function JobApplicationsWorkspace({
     setSelectedApplication(application);
     setAssignOpen(false);
     setConfirmAction("unassign");
+  };
+
+  const requestPermanentDelete = (application: JobApplication) => {
+    setSelectedApplication(application);
+    setPermanentDeleteOpen(true);
   };
 
   const runApprove = async () => {
@@ -256,8 +264,6 @@ export function JobApplicationsWorkspace({
                 ) : null}
                 <JobApplicationTable
                   applications={applications}
-                  selectedIds={selectedIds}
-                  onSelectionChange={setSelectedIds}
                   actionsDisabled={actionsDisabled || isActing || isFetching}
                   emptyTitle={emptyState.title}
                   emptyDescription={emptyState.description}
@@ -266,6 +272,9 @@ export function JobApplicationsWorkspace({
                   onReject={requestReject}
                   onAssignInterview={requestAssignInterview}
                   onUnassignInterview={requestUnassignInterview}
+                  onPermanentDelete={
+                    isRejectedTab ? requestPermanentDelete : undefined
+                  }
                 />
               </div>
 
@@ -358,6 +367,25 @@ export function JobApplicationsWorkspace({
             return;
           }
           setRejectOpen(false);
+        }}
+      />
+
+      <JobApplicationPermanentDeleteDialog
+        open={permanentDeleteOpen}
+        application={selectedApplication}
+        loading={isActing}
+        onClose={() => {
+          if (isActing) {
+            return;
+          }
+          setPermanentDeleteOpen(false);
+        }}
+        onLoadingChange={setIsActing}
+        onSuccess={async () => {
+          setPermanentDeleteOpen(false);
+          setDetailsOpen(false);
+          setSelectedApplication(null);
+          await refetch();
         }}
       />
 

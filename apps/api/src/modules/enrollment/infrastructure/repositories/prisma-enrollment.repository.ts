@@ -218,8 +218,13 @@ export class PrismaEnrollmentRepository
   }
 
   async deletePermanent(id: string): Promise<void> {
-    await this.prisma.enrollment.delete({
-      where: { id },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.payment.deleteMany({
+        where: { enrollmentId: id },
+      });
+      await tx.enrollment.delete({
+        where: { id },
+      });
     });
   }
 

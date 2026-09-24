@@ -421,14 +421,11 @@ export const branchOpsApi = {
 
   interviews: (params?: {
     tab?: string;
-    status?: string;
     search?: string;
     interviewerId?: string;
     mode?: string;
     roundId?: string;
     roundNumber?: number | string;
-    from?: string;
-    to?: string;
     skip?: number;
     take?: number;
   }) =>

@@ -109,6 +109,26 @@ export function canUnenrollEnrollment(enrollment: {
   return isCurrentEnrollmentRecord(enrollment);
 }
 
+export function canArchiveEnrollmentFromList(enrollment: {
+  status?: string | null;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+}): boolean {
+  return isCurrentEnrollmentRecord(enrollment);
+}
+
+export function canPermanentlyDeleteEnrollmentFromList(enrollment: {
+  status?: string | null;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+}): boolean {
+  if (isArchivedEnrollment(enrollment)) {
+    return true;
+  }
+
+  return isTerminalEnrollmentStatus(enrollment.status);
+}
+
 export function formatEnrollmentLocation(enrollment: {
   branch?: { branchName?: string | null } | null;
   batch?: { name?: string | null; code?: string | null } | null;

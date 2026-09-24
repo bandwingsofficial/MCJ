@@ -50,6 +50,19 @@ export class JobApplicationDomainService {
     }
   }
 
+  /** Soft-deleted rows, or active rejected applications (admin rejected tab purge). */
+  ensureEligibleForPermanentDelete(application: JobApplication): void {
+    if (application.isDeleted) {
+      return;
+    }
+
+    if (application.status === JobApplicationStatus.REJECTED) {
+      return;
+    }
+
+    throw new JobApplicationNotDeletedException();
+  }
+
   async ensureNotDuplicate(
     repo: JobApplicationRepository,
     jobId: string,

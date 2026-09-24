@@ -3,6 +3,7 @@ import type {
   BulkJobOperationResult,
   Job,
 } from "@/src/features/jobs/types/job.types";
+import { isJobExpired } from "@/src/features/jobs/types/job.types";
 
 export function isArchivedJob(job: Pick<Job, "isDeleted">): boolean {
   return Boolean(job.isDeleted);
@@ -67,6 +68,21 @@ export function getEligiblePermanentDeleteIds(
   selectedIds: string[],
 ): string[] {
   return getEligibleRestoreIds(jobs, selectedIds);
+}
+
+/** Expired catalog: any selected row (list is already expired-only). */
+export function getEligibleExpiredCatalogPermanentDeleteIds(
+  jobs: Job[],
+  selectedIds: string[],
+): string[] {
+  const selected = new Set(selectedIds);
+  return jobs.filter((job) => selected.has(job.id)).map((job) => job.id);
+}
+
+export function canPermanentlyDeleteFromExpiredCatalog(
+  job: Pick<Job, "applicationDeadline" | "isExpired" | "isDeleted">,
+): boolean {
+  return isJobExpired(job) || Boolean(job.isDeleted);
 }
 
 export function formatBulkResultToast(

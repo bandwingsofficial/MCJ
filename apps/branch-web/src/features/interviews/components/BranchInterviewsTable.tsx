@@ -2,24 +2,15 @@
 
 import type { InterviewItem } from "@/src/features/branch-ops/types";
 import { BranchInterviewActions } from "@/src/features/interviews/components/BranchInterviewActions";
-import {
-  getInterviewWhenLabel,
-  getInterviewWorkflowStatusVariant,
-  resolveInterviewWorkflowStatusLabel,
-} from "@/src/features/branch-interview-lifecycle/interview-presentation";
+import { getInterviewWhenLabel } from "@/src/features/branch-interview-lifecycle/interview-presentation";
 import { useLifecycleNow } from "@/src/features/branch-interview-lifecycle/use-lifecycle-now";
 import {
   formatInterviewDate,
   formatInterviewMode,
-  formatInterviewResult,
   formatInterviewTime,
-  getInterviewResultVariant,
   getInterviewerDisplayName,
   isValidInterviewSchedule,
 } from "@/src/features/interviews/utils/interview-display.utils";
-import { Badge } from "@/src/shared/components/ui/badge";
-
-const compactClass = "px-2 py-0 text-[11px] font-semibold leading-5";
 
 interface Props {
   interviews: InterviewItem[];
@@ -28,7 +19,22 @@ interface Props {
   onRecordResult: (interview: InterviewItem) => void;
 }
 
-const COLUMN_COUNT = 10;
+const COLUMN_COUNT = 8;
+
+const cellClass =
+  "min-w-0 max-w-0 overflow-hidden !px-3 !py-3 align-middle";
+const cellInnerClass = "min-w-0 max-w-full overflow-hidden";
+
+const COL_WIDTHS = [
+  "9rem",   // Interview
+  "14%",    // Candidate
+  "13%",    // Job
+  "18%",    // Company
+  "14%",    // Interviewer
+  "17%",    // Round / schedule
+  "5.5rem", // Mode
+  "4.75rem", // Actions
+] as const;
 
 export function BranchInterviewsTable({
   interviews,
@@ -40,37 +46,52 @@ export function BranchInterviewsTable({
 
   return (
     <div className="w-full overflow-x-auto">
-      <table className="w-full min-w-full border-collapse text-sm">
+      <table className="w-full table-fixed border-collapse text-sm">
+        <colgroup>
+          {COL_WIDTHS.map((width, index) => (
+            <col key={index} style={{ width }} />
+          ))}
+        </colgroup>
         <thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]">
           <tr>
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+            <th
+              className={`${cellClass} text-left text-[11px] font-semibold tracking-wide`}
+            >
               Interview
             </th>
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+            <th
+              className={`${cellClass} text-left text-[11px] font-semibold tracking-wide`}
+            >
               Candidate
             </th>
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+            <th
+              className={`${cellClass} text-left text-[11px] font-semibold tracking-wide`}
+            >
               Job
             </th>
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+            <th
+              className={`${cellClass} text-left text-[11px] font-semibold tracking-wide`}
+            >
+              Company
+            </th>
+            <th
+              className={`${cellClass} text-left text-[11px] font-semibold tracking-wide`}
+            >
               Interviewer
             </th>
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+            <th
+              className={`${cellClass} text-left text-[11px] font-semibold tracking-wide`}
+            >
               Round
             </th>
-            <th className="min-w-[10rem] !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              When
-            </th>
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+            <th
+              className={`${cellClass} text-left text-[11px] font-semibold tracking-wide`}
+            >
               Mode
             </th>
-            <th className="w-28 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Status
-            </th>
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Result
-            </th>
-            <th className="w-[7.5rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
+            <th
+              className={`${cellClass} !px-2 text-right text-[11px] font-semibold tracking-wide text-slate-500`}
+            >
               Actions
             </th>
           </tr>
@@ -100,68 +121,65 @@ export function BranchInterviewsTable({
                     className="cursor-pointer border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
                     onClick={() => onView(interview)}
                   >
-                    <td className="!px-4 !py-4 align-middle">
-                      <p className="font-mono text-sm font-medium text-[#102A56]">
-                        {interview.application?.applicationNumber ??
-                          interview.applicationId.slice(0, 8)}
-                      </p>
-                    </td>
-                    <td className="!px-4 !py-4 align-middle">
-                      <p className="text-sm font-medium leading-snug text-[#102A56]">
-                        {interview.application?.candidateName ?? "—"}
-                      </p>
-                    </td>
-                    <td className="!px-4 !py-4 align-middle">
-                      <p className="text-sm text-[#102A56]">
-                        {interview.job?.title ?? "—"}
-                      </p>
-                      {interview.job?.companyName ? (
-                        <p className="text-xs text-[#647A9B]">
-                          {interview.job.companyName}
+                    <td className={cellClass}>
+                      <div className={cellInnerClass}>
+                        <p className="truncate font-mono text-sm font-medium text-[#102A56]">
+                          {interview.application?.applicationNumber ??
+                            interview.applicationId.slice(0, 8)}
                         </p>
-                      ) : null}
+                      </div>
                     </td>
-                    <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
-                      {getInterviewerDisplayName(interview)}
+                    <td className={cellClass}>
+                      <div className={cellInnerClass}>
+                        <p className="truncate text-sm font-medium leading-snug text-[#102A56]">
+                          {interview.application?.candidateName ?? "—"}
+                        </p>
+                      </div>
                     </td>
-                    <td className="!px-4 !py-4 align-middle text-sm text-[#102A56]">
-                      {interview.round?.name ?? "—"}
+                    <td className={cellClass}>
+                      <div className={cellInnerClass}>
+                        <p className="truncate text-sm text-[#102A56]">
+                          {interview.job?.title ?? "—"}
+                        </p>
+                      </div>
                     </td>
-                    <td className="!px-4 !py-4 align-middle">
-                      <p className="text-sm text-[#102A56]">
-                        {formatInterviewDate(interview.scheduledAt)}
-                      </p>
-                      <p className="text-xs text-[#647A9B]">
-                        {formatInterviewTime(interview.scheduledAt)}
-                      </p>
-                      <p className="mt-0.5 text-xs font-medium text-[#2563EB]">
-                        {getInterviewWhenLabel(interview, nowMs)}
-                      </p>
+                    <td className={cellClass}>
+                      <div className={cellInnerClass}>
+                        <p className="truncate text-sm text-slate-700">
+                          {interview.job?.companyName ?? "—"}
+                        </p>
+                      </div>
                     </td>
-                    <td className="!px-4 !py-4 align-middle text-sm text-[#102A56]">
-                      {formatInterviewMode(interview.mode)}
+                    <td className={cellClass}>
+                      <div className={cellInnerClass}>
+                        <p className="truncate text-sm text-slate-700">
+                          {getInterviewerDisplayName(interview)}
+                        </p>
+                      </div>
                     </td>
-                    <td className="!px-4 !py-4 align-middle">
-                      <Badge
-                        variant={getInterviewWorkflowStatusVariant(
-                          interview,
-                          nowMs,
-                        )}
-                        className={compactClass}
-                      >
-                        {resolveInterviewWorkflowStatusLabel(interview, nowMs)}
-                      </Badge>
+                    <td className={cellClass}>
+                      <div className={cellInnerClass}>
+                        <p className="truncate text-sm font-medium text-[#102A56]">
+                          {interview.round?.name ?? "—"}
+                        </p>
+                        <p className="truncate text-xs text-[#647A9B]">
+                          {formatInterviewDate(interview.scheduledAt)}{" "}
+                          {formatInterviewTime(interview.scheduledAt)}
+                        </p>
+                        <p className="mt-0.5 truncate text-xs font-medium text-[#2563EB]">
+                          {getInterviewWhenLabel(interview, nowMs)}
+                        </p>
+                      </div>
                     </td>
-                    <td className="!px-4 !py-4 align-middle">
-                      <Badge
-                        variant={getInterviewResultVariant(interview.result)}
-                        className={compactClass}
-                      >
-                        {formatInterviewResult(interview.result)}
-                      </Badge>
+                    <td className={cellClass}>
+                      <div className={cellInnerClass}>
+                        <p className="truncate text-sm text-[#102A56]">
+                          {formatInterviewMode(interview.mode)}
+                        </p>
+                      </div>
                     </td>
                     <td
-                      className="!px-8 !py-4 text-right align-middle"
+                      className={`${cellClass} !px-2 text-right`}
                       onClick={(event) => event.stopPropagation()}
                     >
                       <BranchInterviewActions

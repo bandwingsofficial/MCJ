@@ -1,12 +1,14 @@
 "use client";
 
-import { Pencil, Settings2, UserMinus } from "lucide-react";
+import { Pencil, Settings2, Trash2, UserMinus } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { Enrollment } from "@/src/features/enrollments/types";
 import {
+  canArchiveEnrollmentFromList,
+  canPermanentlyDeleteEnrollmentFromList,
   canUnenrollEnrollment,
   isCurrentEnrollmentRecord,
 } from "@/src/features/enrollments/utils/current-enrollment";
@@ -21,6 +23,8 @@ interface Props {
   onEdit: (enrollment: Enrollment) => void;
   onManage: (enrollment: Enrollment) => void;
   onUnenroll?: (enrollment: Enrollment) => void;
+  onArchive?: (enrollment: Enrollment) => void;
+  onPermanentDelete?: (enrollment: Enrollment) => void;
 }
 
 export function EnrollmentActions({
@@ -29,10 +33,17 @@ export function EnrollmentActions({
   onEdit,
   onManage,
   onUnenroll,
+  onArchive,
+  onPermanentDelete,
 }: Props) {
   const isCurrent = isCurrentEnrollmentRecord(enrollment);
   const showUnenroll =
     isCurrent && onUnenroll && canUnenrollEnrollment(enrollment);
+  const showArchive =
+    onArchive && canArchiveEnrollmentFromList(enrollment);
+  const showPermanentDelete =
+    onPermanentDelete &&
+    canPermanentlyDeleteEnrollmentFromList(enrollment);
 
   return (
     <div className="flex shrink-0 items-center justify-end gap-1">
@@ -48,6 +59,38 @@ export function EnrollmentActions({
             className={`${iconBtnClass} text-rose-600 hover:bg-rose-50 hover:text-rose-700`}
           >
             <UserMinus className={iconClass} />
+          </Button>
+        </Tooltip>
+      ) : null}
+
+      {showArchive ? (
+        <Tooltip content="Delete enrollment">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={() => onArchive(enrollment)}
+            aria-label="Delete enrollment"
+            className={`${iconBtnClass} text-red-700 hover:bg-red-50 hover:text-red-800`}
+          >
+            <Trash2 className={iconClass} />
+          </Button>
+        </Tooltip>
+      ) : null}
+
+      {showPermanentDelete ? (
+        <Tooltip content="Delete permanently">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={() => onPermanentDelete(enrollment)}
+            aria-label="Delete enrollment permanently"
+            className={`${iconBtnClass} text-red-700 hover:bg-red-50 hover:text-red-800`}
+          >
+            <Trash2 className={iconClass} />
           </Button>
         </Tooltip>
       ) : null}

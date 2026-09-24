@@ -36,7 +36,52 @@ export class EnrollmentSideEffectsService {
       enrollment,
       previousStatus,
     );
-    await this.syncStudentStatus(enrollment, actorId);
+    await this.syncStudentBranchFromEnrollment(enrollment, actorId);
+    await this.syncStudentStatusForStudentId(
+      enrollment.studentId,
+      actorId,
+    );
+  }
+
+  async syncStudentStatusForStudentId(
+    studentId: string,
+    actorId?: string | null,
+    excludeEnrollmentId?: string,
+  ): Promise<void> {
+    const records = await this.prisma.enrollment.findMany({
+      where: {
+        studentId,
+        isDeleted: false,
+        ...(excludeEnrollmentId
+          ? { id: { not: excludeEnrollmentId } }
+          : {}),
+      },
+      select: { status: true },
+    });
+
+    const statuses = records.map(
+      (record) => record.status as EnrollmentStatus,
+    );
+    const nextStatus =
+      this.domainService.resolveStudentStatusFromEnrollmentStatuses(
+        statuses,
+      );
+
+    const student = await this.studentRepo.findById(studentId);
+    if (!student) {
+      return;
+    }
+
+    if (student.status === nextStatus) {
+      return;
+    }
+
+    student.update({
+      status: nextStatus,
+      updatedBy: actorId,
+    });
+
+    await this.studentRepo.save(student);
   }
 
   async assertCapacityForTransition(
@@ -172,37 +217,21 @@ export class EnrollmentSideEffectsService {
     );
   }
 
-  private async syncStudentStatus(
+  async syncStudentBranchFromEnrollment(
     enrollment: Enrollment,
     actorId?: string | null,
   ): Promise<void> {
-    const studentStatus = this.domainService.resolveStudentStatus(
-      enrollment.status,
-    );
-
-    const student = await this.studentRepo.findById(
-      enrollment.studentId,
-    );
+    const student = await this.studentRepo.findById(enrollment.studentId);
     if (!student) {
       return;
     }
 
-    const nextBranchId =
-      student.branchId === enrollment.branchId
-        ? undefined
-        : enrollment.branchId;
-    const nextStatus =
-      studentStatus && student.status !== studentStatus
-        ? studentStatus
-        : undefined;
-
-    if (!nextBranchId && !nextStatus) {
+    if (student.branchId === enrollment.branchId) {
       return;
     }
 
     student.update({
-      ...(nextStatus ? { status: nextStatus } : {}),
-      ...(nextBranchId ? { branchId: nextBranchId } : {}),
+      branchId: enrollment.branchId,
       updatedBy: actorId,
     });
 

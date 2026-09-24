@@ -30,6 +30,10 @@ interface EnrollmentTableProps {
 
   onUnenroll?: (enrollment: Enrollment) => void;
 
+  onArchive?: (enrollment: Enrollment) => void;
+
+  onPermanentDelete?: (enrollment: Enrollment) => void;
+
 }
 
 
@@ -49,6 +53,10 @@ export function EnrollmentTable({
   onManage,
 
   onUnenroll,
+
+  onArchive,
+
+  onPermanentDelete,
 
 }: EnrollmentTableProps) {
 
@@ -275,6 +283,10 @@ export function EnrollmentTable({
                       onManage={onManage}
 
                       onUnenroll={onUnenroll}
+
+                      onArchive={onArchive}
+
+                      onPermanentDelete={onPermanentDelete}
 
                     />
 

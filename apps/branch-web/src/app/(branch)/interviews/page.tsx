@@ -6,7 +6,6 @@ import { ChevronRight } from "lucide-react";
 
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type { InterviewItem, InterviewRoundOption } from "@/src/features/branch-ops/types";
-import { BranchInterviewWorkflowAlerts } from "@/src/features/branch-interview-lifecycle/BranchInterviewWorkflowAlerts";
 import { BranchCompleteInterviewModal } from "@/src/features/interviews/components/BranchCompleteInterviewModal";
 import { BranchInterviewRoundTabs } from "@/src/features/interviews/components/BranchInterviewRoundTabs";
 import { BranchInterviewsFilterBar } from "@/src/features/interviews/components/BranchInterviewsFilterBar";
@@ -62,9 +61,6 @@ export default function InterviewsPage() {
           filters.interviewerId === "ALL" ? undefined : filters.interviewerId,
         mode: filters.mode === "ALL" ? undefined : filters.mode,
         roundId: listRoundId,
-        status: filters.status === "ALL" ? undefined : filters.status,
-        from: filters.from || undefined,
-        to: filters.to || undefined,
         skip: (filters.page - 1) * filters.pageSize,
         take: filters.pageSize,
       }),
@@ -74,9 +70,6 @@ export default function InterviewsPage() {
       filters.roundTab,
       filters.interviewerId,
       filters.mode,
-      filters.status,
-      filters.from,
-      filters.to,
       filters.page,
       filters.pageSize,
     ],
@@ -98,7 +91,6 @@ export default function InterviewsPage() {
   const total = query.data?.total ?? 0;
   const totalCount = query.data?.counts?.total ?? 0;
   const roundCounts = query.data?.roundCounts ?? [];
-  const workflowAlerts = query.data?.workflowAlerts ?? [];
   const totalPages = Math.max(1, Math.ceil(total / filters.pageSize));
   const from = total === 0 ? 0 : (filters.page - 1) * filters.pageSize + 1;
   const to = Math.min(filters.page * filters.pageSize, total);
@@ -181,8 +173,6 @@ export default function InterviewsPage() {
         disabled={query.loading}
         onChange={handleRoundTabChange}
       />
-
-      <BranchInterviewWorkflowAlerts alerts={workflowAlerts} />
 
       <BranchInterviewsFilterBar
         filters={{ ...filters, search: searchInput }}

@@ -115,8 +115,24 @@ export class PrismaJobRepository implements JobRepository {
     return count > 0;
   }
 
-  async deletePermanent(id: string): Promise<void> {
-    await this.prisma.job.delete({ where: { id } });
+  async deletePermanent(id: string): Promise<string[]> {
+    return this.prisma.$transaction(async (tx) => {
+      const applications = await tx.jobApplication.findMany({
+        where: { jobId: id },
+        select: { resumeFileId: true },
+      });
+
+      const resumeFileIds = applications
+        .map((item) => item.resumeFileId)
+        .filter((fileId): fileId is string => Boolean(fileId));
+
+      await tx.interview.deleteMany({ where: { jobId: id } });
+      await tx.placement.deleteMany({ where: { jobId: id } });
+      await tx.jobApplication.deleteMany({ where: { jobId: id } });
+      await tx.job.delete({ where: { id } });
+
+      return resumeFileIds;
+    });
   }
 
   private buildWhere(filters: JobListFilters): Prisma.JobWhereInput {

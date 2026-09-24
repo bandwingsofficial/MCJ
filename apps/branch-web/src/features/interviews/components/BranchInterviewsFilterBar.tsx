@@ -5,7 +5,6 @@ import { SearchInput } from "@/src/shared/components/ui/search-input";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import {
   BRANCH_INTERVIEW_MODE_OPTIONS,
-  BRANCH_INTERVIEW_STATUS_OPTIONS,
   DEFAULT_BRANCH_INTERVIEW_FILTERS,
   type BranchInterviewFilters,
 } from "@/src/features/interviews/constants/interview.constants";
@@ -36,13 +35,7 @@ export function BranchInterviewsFilterBar({
     Boolean(filters.search.trim()) ||
     filters.interviewerId !== "ALL" ||
     filters.mode !== "ALL" ||
-    filters.roundId !== "ALL" ||
-    filters.status !== "ALL" ||
-    Boolean(filters.from) ||
-    Boolean(filters.to);
-
-  const dateInputClass =
-    "h-9 w-full rounded-lg border border-[#DCE8F5] bg-white px-2.5 text-sm text-[#102A56]";
+    filters.roundId !== "ALL";
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -102,44 +95,6 @@ export function BranchInterviewsFilterBar({
               value: round.id,
             })),
           ]}
-        />
-      </div>
-
-      <div className="w-full sm:w-[150px]">
-        <AppSelect
-          value={filters.status}
-          disabled={disabled}
-          triggerClassName="h-9 rounded-lg px-2.5 text-sm"
-          onValueChange={(value) =>
-            onChange({ ...filters, status: value, page: 1 })
-          }
-          options={[...BRANCH_INTERVIEW_STATUS_OPTIONS]}
-        />
-      </div>
-
-      <div className="w-full sm:w-[140px]">
-        <input
-          type="date"
-          className={dateInputClass}
-          value={filters.from}
-          disabled={disabled}
-          aria-label="Date from"
-          onChange={(event) =>
-            onChange({ ...filters, from: event.target.value, page: 1 })
-          }
-        />
-      </div>
-
-      <div className="w-full sm:w-[140px]">
-        <input
-          type="date"
-          className={dateInputClass}
-          value={filters.to}
-          disabled={disabled}
-          aria-label="Date to"
-          onChange={(event) =>
-            onChange({ ...filters, to: event.target.value, page: 1 })
-          }
         />
       </div>
 

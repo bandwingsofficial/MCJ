@@ -22,7 +22,7 @@ export function DeleteEnrollmentDialog({
     <ConfirmDialog
       open={open}
       title="Delete Enrollment"
-      description="Are you sure you want to delete this enrollment?"
+      description="This enrollment will be archived. You can permanently delete it afterward."
       onCancel={onClose}
       onConfirm={onConfirm}
       loading={isLoading}

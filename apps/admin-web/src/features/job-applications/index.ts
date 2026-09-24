@@ -2,6 +2,7 @@ export * from "./api/job-application.api";
 
 export * from "./components/JobApplicationActions";
 export * from "./components/JobApplicationDeleteDialog";
+export * from "./components/JobApplicationPermanentDeleteDialog";
 export * from "./components/JobApplicationDetailsDialog";
 export * from "./components/JobApplicationEmpty";
 export * from "./components/JobApplicationRestoreDialog";

@@ -39,6 +39,19 @@ export class JobDomainService {
     }
   }
 
+  /** Soft-deleted (archived) jobs, or jobs past application deadline (expired catalog). */
+  ensureEligibleForPermanentDelete(job: Job): void {
+    if (job.isDeleted) {
+      return;
+    }
+
+    if (job.isExpired()) {
+      return;
+    }
+
+    throw new JobNotDeletedException();
+  }
+
   ensurePubliclyVisible(job: Job): void {
     this.ensureNotDeleted(job);
 

@@ -1,28 +1,17 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-
-import { Checkbox } from "@/src/shared/components/ui/checkbox";
-import { Tooltip } from "@/src/shared/components/ui/tooltip";
-
 import { JobApplicationActions } from "@/src/features/job-applications/components/JobApplicationActions";
 import { JobApplicationAssignmentStatusCell } from "@/src/features/job-applications/components/JobApplicationAssignmentStatusCell";
 import { JobApplicationInterviewStatusBadge } from "@/src/features/job-applications/components/JobApplicationInterviewStatusBadge";
-import { JobApplicationStatusBadge } from "@/src/features/job-applications/components/JobApplicationStatusBadge";
 import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
 import {
   getApplicantEmail,
   getApplicantName,
-  getApplicantPhone,
-  getCurrentRoundName,
-  getNextRoundName,
   getStudentCode,
 } from "@/src/features/job-applications/types/job-application.types";
 
 interface JobApplicationTableProps {
   applications: JobApplication[];
-  selectedIds?: string[];
-  onSelectionChange?: (ids: string[]) => void;
   actionsDisabled?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
@@ -31,12 +20,19 @@ interface JobApplicationTableProps {
   onReject: (application: JobApplication) => void;
   onAssignInterview?: (application: JobApplication) => void;
   onUnassignInterview?: (application: JobApplication) => void;
+  onPermanentDelete?: (application: JobApplication) => void;
+}
+
+function formatAppliedDateLabel(createdAt: string): string {
+  return new Date(createdAt).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 export function JobApplicationTable({
   applications,
-  selectedIds = [],
-  onSelectionChange,
   actionsDisabled = false,
   emptyTitle = "No Applications Found",
   emptyDescription = "Applications submitted from public job links will appear here.",
@@ -45,67 +41,15 @@ export function JobApplicationTable({
   onReject,
   onAssignInterview,
   onUnassignInterview,
+  onPermanentDelete,
 }: JobApplicationTableProps) {
-  const selectAllRef = useRef<HTMLInputElement | null>(null);
-  const columnCount = 14;
-  const visibleIds = applications.map((application) => application.id);
-  const selectedVisibleCount = visibleIds.filter((id) =>
-    selectedIds.includes(id),
-  ).length;
-  const allVisibleSelected =
-    visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
-  const someVisibleSelected =
-    selectedVisibleCount > 0 && !allVisibleSelected;
-
-  useEffect(() => {
-    if (selectAllRef.current) {
-      selectAllRef.current.indeterminate = someVisibleSelected;
-    }
-  }, [someVisibleSelected]);
-
-  const toggleRow = (id: string, checked: boolean) => {
-    if (!onSelectionChange) {
-      return;
-    }
-
-    onSelectionChange(
-      checked
-        ? Array.from(new Set([...selectedIds, id]))
-        : selectedIds.filter((value) => value !== id),
-    );
-  };
-
-  const toggleAllVisible = (checked: boolean) => {
-    if (!onSelectionChange) {
-      return;
-    }
-
-    if (!checked) {
-      onSelectionChange(selectedIds.filter((id) => !visibleIds.includes(id)));
-      return;
-    }
-
-    onSelectionChange(Array.from(new Set([...selectedIds, ...visibleIds])));
-  };
+  const columnCount = 6;
 
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full min-w-full border-collapse text-sm">
         <thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]">
           <tr>
-            <th className="w-9 !px-6 !py-4 text-left">
-              <input
-                ref={selectAllRef}
-                type="checkbox"
-                className="h-3.5 w-3.5 rounded border-slate-300"
-                checked={allVisibleSelected}
-                onChange={(event) => toggleAllVisible(event.target.checked)}
-                aria-label="Select all applications on this page"
-              />
-            </th>
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Student ID
-            </th>
             <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Candidate
             </th>
@@ -115,29 +59,11 @@ export function JobApplicationTable({
             <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Company
             </th>
-            <th className="max-w-[9rem] !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Email
-            </th>
-            <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Phone
-            </th>
-            <th className="whitespace-nowrap !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Applied Date
-            </th>
-            <th className="w-28 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Application Status
-            </th>
             <th className="w-28 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Assignment Status
             </th>
             <th className="w-32 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Interview Status
-            </th>
-            <th className="whitespace-nowrap !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Current Round
-            </th>
-            <th className="whitespace-nowrap !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Next Round
             </th>
             <th className="w-[6.75rem] !px-8 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
               Actions
@@ -158,8 +84,11 @@ export function JobApplicationTable({
             </tr>
           ) : (
             applications.map((application) => {
-              const currentRound = getCurrentRoundName(application);
-              const nextRound = getNextRoundName(application);
+              const candidateName = getApplicantName(application);
+              const candidateEmail = getApplicantEmail(application);
+              const studentCode = getStudentCode(application);
+              const companyName = application.job?.companyName?.trim() || "—";
+              const appliedLabel = formatAppliedDateLabel(application.createdAt);
 
               return (
                 <tr
@@ -167,25 +96,15 @@ export function JobApplicationTable({
                   className="cursor-pointer border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
                   onClick={() => onView(application)}
                 >
-                  <td
-                    className="!px-6 !py-4 align-middle"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <Checkbox
-                      checked={selectedIds.includes(application.id)}
-                      onCheckedChange={(checked) =>
-                        toggleRow(application.id, Boolean(checked))
-                      }
-                    />
-                  </td>
                   <td className="!px-4 !py-4 align-middle">
-                    <p className="font-mono text-sm font-medium text-[#2563D9]">
-                      {getStudentCode(application)}
+                    <p className="text-sm font-semibold leading-snug text-[#102A56]">
+                      {candidateName}
                     </p>
-                  </td>
-                  <td className="!px-4 !py-4 align-middle">
-                    <p className="text-sm font-medium leading-snug text-[#102A56]">
-                      {getApplicantName(application)}
+                    <p className="mt-0.5 truncate text-xs text-[#647A9B]">
+                      {candidateEmail}
+                    </p>
+                    <p className="mt-0.5 font-mono text-xs font-medium text-[#2563D9]">
+                      {studentCode}
                     </p>
                   </td>
                   <td className="!px-4 !py-4 align-middle">
@@ -198,42 +117,11 @@ export function JobApplicationTable({
                       </p>
                     ) : null}
                   </td>
-                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
-                    {application.job?.companyName ?? "—"}
-                  </td>
-                  <td className="max-w-[9rem] !px-4 !py-4 align-middle text-sm text-slate-700">
-                    {(() => {
-                      const email = getApplicantEmail(application);
-
-                      if (email === "—") {
-                        return email;
-                      }
-
-                      return (
-                        <Tooltip content={email}>
-                          <span className="block truncate">{email}</span>
-                        </Tooltip>
-                      );
-                    })()}
-                  </td>
-                  <td className="whitespace-nowrap !px-4 !py-4 align-middle text-sm text-slate-700">
-                    {getApplicantPhone(application)}
-                  </td>
-                  <td className="whitespace-nowrap !px-4 !py-4 align-middle text-sm text-[#647A9B]">
-                    {new Date(application.createdAt).toLocaleDateString(
-                      "en-IN",
-                      {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      },
-                    )}
-                  </td>
                   <td className="!px-4 !py-4 align-middle">
-                    <JobApplicationStatusBadge
-                      status={application.status}
-                      interviewStatus={application.interviewStatus}
-                    />
+                    <p className="text-sm text-slate-700">{companyName}</p>
+                    <p className="mt-0.5 text-xs text-[#647A9B]">
+                      Applied: {appliedLabel}
+                    </p>
                   </td>
                   <td className="!px-4 !py-4 align-middle">
                     <JobApplicationAssignmentStatusCell
@@ -244,12 +132,6 @@ export function JobApplicationTable({
                     <JobApplicationInterviewStatusBadge
                       application={application}
                     />
-                  </td>
-                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
-                    {currentRound}
-                  </td>
-                  <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
-                    {nextRound}
                   </td>
                   <td
                     className="!px-8 !py-4 text-right align-middle"
@@ -263,6 +145,7 @@ export function JobApplicationTable({
                       onReject={onReject}
                       onAssignInterview={onAssignInterview}
                       onUnassignInterview={onUnassignInterview}
+                      onPermanentDelete={onPermanentDelete}
                     />
                   </td>
                 </tr>

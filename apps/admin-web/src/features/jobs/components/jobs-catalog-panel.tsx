@@ -30,7 +30,9 @@ interface JobsCatalogPanelProps {
   onActivate: (job: Job) => void;
   onDeactivate: (job: Job) => void;
   onArchive: (job: Job) => void;
-  onRestore: (job: Job) => void;
+  onRestore?: (job: Job) => void;
+  onPermanentDelete?: (job: Job) => void;
+  expiredCatalog?: boolean;
 }
 
 export function JobsCatalogPanel({
@@ -52,6 +54,8 @@ export function JobsCatalogPanel({
   onDeactivate,
   onArchive,
   onRestore,
+  onPermanentDelete,
+  expiredCatalog = false,
 }: JobsCatalogPanelProps) {
   const page = filters.page ?? 1;
   const pageSize = filters.pageSize ?? DEFAULT_JOB_PAGE_SIZE;
@@ -70,6 +74,7 @@ export function JobsCatalogPanel({
             selectedJobIds={selectedIds}
             disabled={actionLoading || isFetching}
             onAction={onBulkAction}
+            expiredCatalog={expiredCatalog}
           />
 
           {error ? (
@@ -103,6 +108,8 @@ export function JobsCatalogPanel({
               onDeactivate={onDeactivate}
               onArchive={onArchive}
               onRestore={onRestore}
+              onPermanentDelete={onPermanentDelete}
+              expiredCatalog={expiredCatalog}
             />
           </div>
 

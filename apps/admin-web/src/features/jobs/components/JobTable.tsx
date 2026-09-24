@@ -23,7 +23,9 @@ interface JobTableProps {
   onActivate: (job: Job) => void;
   onDeactivate: (job: Job) => void;
   onArchive: (job: Job) => void;
-  onRestore: (job: Job) => void;
+  onRestore?: (job: Job) => void;
+  onPermanentDelete?: (job: Job) => void;
+  expiredCatalog?: boolean;
 }
 
 function salaryLabel(job: Job) {
@@ -64,6 +66,8 @@ export function JobTable({
   onDeactivate,
   onArchive,
   onRestore,
+  onPermanentDelete,
+  expiredCatalog = false,
 }: JobTableProps) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
   const columnCount = 10;
@@ -227,6 +231,8 @@ export function JobTable({
                       onDeactivate={onDeactivate}
                       onArchive={onArchive}
                       onRestore={onRestore}
+                      onPermanentDelete={onPermanentDelete}
+                      expiredCatalog={expiredCatalog}
                     />
                   </td>
                 </tr>

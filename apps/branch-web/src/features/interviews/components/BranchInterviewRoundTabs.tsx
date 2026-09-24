@@ -26,13 +26,19 @@ export function BranchInterviewRoundTabs({
     roundCounts.map((entry) => [entry.roundId, entry.count]),
   );
 
+  const orderedRounds = [...rounds].sort(
+    (left, right) =>
+      left.sortOrder - right.sortOrder ||
+      left.name.localeCompare(right.name),
+  );
+
   const tabs: Array<{ id: InterviewRoundTab; label: string; count: number }> = [
-    { id: "ALL", label: "All", count: totalCount },
-    ...rounds.map((round) => ({
+    ...orderedRounds.map((round) => ({
       id: round.id,
       label: round.name,
       count: countByRound.get(round.id) ?? 0,
     })),
+    { id: "ALL", label: "All", count: totalCount },
   ];
 
   return (

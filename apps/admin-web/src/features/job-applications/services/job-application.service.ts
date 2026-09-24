@@ -3,6 +3,7 @@ import { apiClient } from "@/src/core/api/axios";
 import type {
   AssignInterviewRequest,
   DeleteJobApplicationResponse,
+  PermanentDeleteJobApplicationResponse,
   JobApplicationInterviewStatus,
   JobApplicationListResponse,
   JobApplicationResponse,
@@ -125,6 +126,15 @@ class JobApplicationService {
     const { data } = await apiClient.delete<DeleteJobApplicationResponse>(
       `/admin/job-applications/${id}`,
     );
+
+    return data;
+  }
+
+  async permanentDeleteJobApplication(id: string) {
+    const { data } =
+      await apiClient.delete<PermanentDeleteJobApplicationResponse>(
+        `/admin/job-applications/${id}/permanent`,
+      );
 
     return data;
   }

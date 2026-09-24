@@ -115,20 +115,20 @@ export const TotpForm = () => {
               className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-[#2563EB]/55"
               aria-hidden
             />
-            <Input
+                    <Input
               id="admin-totp-code"
-              inputMode="numeric"
+                      inputMode="numeric"
               autoComplete="one-time-code"
-              maxLength={6}
+                      maxLength={6}
               className={authInputClass}
-              placeholder="Enter 6-digit code"
-              {...register("totpCode")}
-            />
-          </div>
-          <FormError message={errors.totpCode?.message} />
-        </div>
+                      placeholder="Enter 6-digit code"
+                      {...register("totpCode")}
+                    />
+                  </div>
+                  <FormError message={errors.totpCode?.message} />
+                </div>
 
-        <FormError message={errors.root?.message} />
+                <FormError message={errors.root?.message} />
 
         <Button
           type="submit"
@@ -136,21 +136,21 @@ export const TotpForm = () => {
           className="h-11 w-full rounded-xl border-0 bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] text-sm font-semibold text-white shadow-[0_4px_18px_rgba(37,99,235,0.28)] hover:from-[#2860D4] hover:to-[#1A3F96]"
         >
           Verify and continue
-        </Button>
+                  </Button>
 
         <div className="text-center">
-          <button
-            type="button"
+                  <button
+                    type="button"
             className="text-sm font-medium text-[#2563EB] underline-offset-2 transition-colors hover:text-[#1D4ED8] hover:underline"
-            onClick={() => {
-              AuthStorage.clearMfaToken();
-              router.replace("/login");
-            }}
-          >
-            Back to login
-          </button>
-        </div>
-      </form>
+                    onClick={() => {
+                      AuthStorage.clearMfaToken();
+                      router.replace("/login");
+                    }}
+                  >
+                    Back to login
+                  </button>
+                </div>
+              </form>
     </AdminAuthShell>
   );
 };

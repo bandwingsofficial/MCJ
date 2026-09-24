@@ -39,6 +39,10 @@ import { EnrollmentSummaryHeader } from "@/src/features/enrollments/components/t
 import { EnrollmentTable } from "@/src/features/enrollments/components/table/EnrollmentTable";
 import { useEnrollment } from "@/src/features/enrollments/hooks/useEnrollment";
 import { useEnrollments } from "@/src/features/enrollments/hooks/useEnrollments";
+import { DeleteEnrollmentDialog } from "@/src/features/enrollments/components/dialogs/DeleteEnrollmentDialog";
+import { PermanentDeleteEnrollmentDialog } from "@/src/features/enrollments/components/dialogs/PermanentDeleteEnrollmentDialog";
+import { useDeleteEnrollment } from "@/src/features/enrollments/hooks/useDeleteEnrollment";
+import { usePermanentDeleteEnrollment } from "@/src/features/enrollments/hooks/usePermanentDeleteEnrollment";
 import { useUnenrollEnrollment } from "@/src/features/enrollments/hooks/useUnenrollEnrollment";
 import type { Enrollment } from "@/src/features/enrollments/types";
 import { enrollmentManagePath } from "@/src/features/enrollments/utils/enrollment-manage.routes";
@@ -62,8 +66,14 @@ export function EnrollmentListPage() {
     useState<Enrollment | null>(null);
   const [unenrollTarget, setUnenrollTarget] =
     useState<UnenrollEnrollmentTarget | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<Enrollment | null>(null);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] =
+    useState<Enrollment | null>(null);
   const { unenrollEnrollment, isLoading: isUnenrolling } =
     useUnenrollEnrollment();
+  const { deleteEnrollment, isLoading: isArchiving } = useDeleteEnrollment();
+  const { permanentDeleteEnrollment, isLoading: isPermanentDeleting } =
+    usePermanentDeleteEnrollment();
   const [branches, setBranches] = useState<
     Array<{ id: string; branchName: string; branchCode: string }>
   >([]);
@@ -206,6 +216,8 @@ export function EnrollmentListPage() {
                       courseTitle: item.course?.title ?? undefined,
                     });
                   }}
+                  onArchive={setArchiveTarget}
+                  onPermanentDelete={setPermanentDeleteTarget}
                 />
               </div>
 
@@ -298,6 +310,44 @@ export function EnrollmentListPage() {
         }}
       />
       ) : null}
+
+      <DeleteEnrollmentDialog
+        open={Boolean(archiveTarget)}
+        isLoading={isArchiving}
+        onClose={() => setArchiveTarget(null)}
+        onConfirm={async () => {
+          if (!archiveTarget) {
+            return;
+          }
+
+          try {
+            await deleteEnrollment(archiveTarget.id);
+            setArchiveTarget(null);
+            void refetch();
+          } catch {
+            // Toast handled in hook.
+          }
+        }}
+      />
+
+      <PermanentDeleteEnrollmentDialog
+        open={Boolean(permanentDeleteTarget)}
+        isLoading={isPermanentDeleting}
+        onClose={() => setPermanentDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!permanentDeleteTarget) {
+            return;
+          }
+
+          try {
+            await permanentDeleteEnrollment(permanentDeleteTarget.id);
+            setPermanentDeleteTarget(null);
+            void refetch();
+          } catch {
+            // Toast handled in hook.
+          }
+        }}
+      />
     </div>
   );
 }

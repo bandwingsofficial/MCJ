@@ -214,8 +214,16 @@ export class PrismaJobApplicationRepository
   }
 
   async deletePermanent(id: string): Promise<void> {
-    await this.prisma.jobApplication.delete({
-      where: { id },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.interview.deleteMany({
+        where: { applicationId: id },
+      });
+      await tx.placement.deleteMany({
+        where: { applicationId: id },
+      });
+      await tx.jobApplication.delete({
+        where: { id },
+      });
     });
   }
 

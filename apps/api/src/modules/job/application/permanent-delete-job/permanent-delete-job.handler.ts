@@ -1,6 +1,7 @@
+import { UploadDomainService } from '@modules/uploads/domain/services/upload-domain.service';
+
 import type { JobRepository } from '../../domain/repositories/job.repository';
 import { JobDomainService } from '../../domain/services/job-domain.service';
-import { JobHasApplicationsException } from '../../domain/errors/job-business.exception';
 import { PermanentDeleteJobCommand } from './permanent-delete-job.command';
 import { PermanentDeleteJobResult } from './permanent-delete-job.result';
 
@@ -8,6 +9,7 @@ export class PermanentDeleteJobHandler {
   constructor(
     private readonly jobRepo: JobRepository,
     private readonly domainService: JobDomainService,
+    private readonly uploadDomainService: UploadDomainService,
   ) {}
 
   async execute(
@@ -17,13 +19,13 @@ export class PermanentDeleteJobHandler {
       await this.jobRepo.findById(command.id, true),
     );
 
-    this.domainService.ensureDeleted(job);
+    this.domainService.ensureEligibleForPermanentDelete(job);
 
-    if (await this.jobRepo.hasApplications(job.id)) {
-      throw new JobHasApplicationsException();
+    const resumeFileIds = await this.jobRepo.deletePermanent(job.id);
+
+    for (const resumeFileId of resumeFileIds) {
+      await this.uploadDomainService.permanentDelete(resumeFileId);
     }
-
-    await this.jobRepo.deletePermanent(job.id);
 
     return new PermanentDeleteJobResult(job.id, true);
   }

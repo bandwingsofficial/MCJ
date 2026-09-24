@@ -7,6 +7,7 @@ import {
   getEligibleActivateIds,
   getEligibleArchiveIds,
   getEligibleDeactivateIds,
+  getEligibleExpiredCatalogPermanentDeleteIds,
   getEligiblePermanentDeleteIds,
   getEligibleRestoreIds,
 } from "@/src/features/jobs/utils/job-bulk.utils";
@@ -23,6 +24,7 @@ interface JobBulkActionsToolbarProps {
   selectedJobIds: string[];
   disabled?: boolean;
   onAction: (action: BulkJobAction) => void;
+  expiredCatalog?: boolean;
 }
 
 export function JobBulkActionsToolbar({
@@ -30,6 +32,7 @@ export function JobBulkActionsToolbar({
   selectedJobIds = [],
   disabled = false,
   onAction,
+  expiredCatalog = false,
 }: JobBulkActionsToolbarProps) {
   const selectedCount = selectedJobIds.length;
 
@@ -41,10 +44,9 @@ export function JobBulkActionsToolbar({
   const deactivateCount = getEligibleDeactivateIds(jobs, selectedJobIds).length;
   const archiveCount = getEligibleArchiveIds(jobs, selectedJobIds).length;
   const restoreCount = getEligibleRestoreIds(jobs, selectedJobIds).length;
-  const permanentDeleteCount = getEligiblePermanentDeleteIds(
-    jobs,
-    selectedJobIds,
-  ).length;
+  const permanentDeleteCount = expiredCatalog
+    ? getEligibleExpiredCatalogPermanentDeleteIds(jobs, selectedJobIds).length
+    : getEligiblePermanentDeleteIds(jobs, selectedJobIds).length;
 
   return (
     <div className="flex flex-col gap-1.5 border-b border-[#2563EB]/15 bg-[#2563EB]/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -53,55 +55,69 @@ export function JobBulkActionsToolbar({
       </p>
 
       <div className="flex flex-wrap gap-1.5">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-7 px-2.5 text-xs"
-          disabled={disabled || activateCount === 0}
-          onClick={() => onAction("activate")}
-        >
-          Activate
-        </Button>
+        {expiredCatalog ? (
+          <Button
+            type="button"
+            variant="danger"
+            className="h-7 px-2.5 text-xs"
+            disabled={disabled || permanentDeleteCount === 0}
+            onClick={() => onAction("permanent-delete")}
+          >
+            Permanent Delete
+          </Button>
+        ) : (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-7 px-2.5 text-xs"
+              disabled={disabled || activateCount === 0}
+              onClick={() => onAction("activate")}
+            >
+              Activate
+            </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="h-7 px-2.5 text-xs"
-          disabled={disabled || deactivateCount === 0}
-          onClick={() => onAction("deactivate")}
-        >
-          Deactivate
-        </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-7 px-2.5 text-xs"
+              disabled={disabled || deactivateCount === 0}
+              onClick={() => onAction("deactivate")}
+            >
+              Deactivate
+            </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="h-7 px-2.5 text-xs"
-          disabled={disabled || archiveCount === 0}
-          onClick={() => onAction("archive")}
-        >
-          Archive
-        </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-7 px-2.5 text-xs"
+              disabled={disabled || archiveCount === 0}
+              onClick={() => onAction("archive")}
+            >
+              Archive
+            </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="h-7 px-2.5 text-xs"
-          disabled={disabled || restoreCount === 0}
-          onClick={() => onAction("restore")}
-        >
-          Restore
-        </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-7 px-2.5 text-xs"
+              disabled={disabled || restoreCount === 0}
+              onClick={() => onAction("restore")}
+            >
+              Restore
+            </Button>
 
-        <Button
-          type="button"
-          variant="danger"
-          className="h-7 px-2.5 text-xs"
-          disabled={disabled || permanentDeleteCount === 0}
-          onClick={() => onAction("permanent-delete")}
-        >
-          Permanent Delete
-        </Button>
+            <Button
+              type="button"
+              variant="danger"
+              className="h-7 px-2.5 text-xs"
+              disabled={disabled || permanentDeleteCount === 0}
+              onClick={() => onAction("permanent-delete")}
+            >
+              Permanent Delete
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

@@ -4,69 +4,48 @@ import type { ReactNode } from "react";
 
 import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
 import {
+  buildInterviewTimelineByRound,
+  pickWorkflowActiveInterviewId,
+} from "@/src/features/job-applications/utils/job-application-interview-timeline.utils";
+import {
   formatBranchAddress,
-  formatInterviewDateLabel,
+  formatInterviewDateTimeLabel,
+  formatInterviewLifecycleStatusLabel,
   formatInterviewModeLabel,
   formatInterviewResultLabel,
-  formatInterviewTimeLabel,
   formatInterviewerName,
-  hasScheduledInterview,
   isOfflineInterviewMode,
   isOnlineInterviewMode,
   isValidInterviewSchedule,
 } from "@/src/features/job-applications/utils/interview-schedule.utils";
 
 type TimelineMarker = "done" | "current" | "pending";
+type InterviewRow = NonNullable<JobApplication["interviews"]>[number];
 
-function formatTimelineDate(value?: string | null): string | null {
-  if (!value) return null;
-  const time = Date.parse(value);
-  if (!Number.isFinite(time) || time <= Date.parse("1970-01-02T00:00:00.000Z")) {
-    return null;
-  }
-  return new Date(time).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function roundTitle(
-  interview: NonNullable<JobApplication["interviews"]>[number],
-): string {
-  const name = interview.round?.name?.trim();
-  return name || "Interview Round";
+function roundStepTitle(interview: InterviewRow, displayOrder: number): string {
+  const order =
+    interview.round?.sortOrder ?? interview.roundNumber ?? displayOrder;
+  const name = interview.round?.name?.trim() || "Interview Round";
+  return `${order}. ${name}`;
 }
 
 function interviewPhase(
-  interview: NonNullable<JobApplication["interviews"]>[number],
+  interview: InterviewRow,
+  currentActiveId: string | null,
 ): TimelineMarker {
+  if (currentActiveId && interview.id === currentActiveId) {
+    return "current";
+  }
   if (interview.status === "COMPLETED" || interview.status === "NO_SHOW") {
     return "done";
-  }
-  if (interview.status === "SCHEDULED" || interview.status === "ASSIGNED") {
-    return "current";
   }
   if (interview.status === "CANCELLED") {
     return "done";
   }
+  if (interview.status === "SCHEDULED" || interview.status === "ASSIGNED") {
+    return "pending";
+  }
   return "pending";
-}
-
-function phaseSubtitle(
-  interview: NonNullable<JobApplication["interviews"]>[number],
-  state: TimelineMarker,
-): string | null {
-  if (state === "done") {
-    if (interview.status === "CANCELLED") return "Cancelled";
-    if (interview.status === "NO_SHOW") return "No Show";
-    if (interview.status === "COMPLETED") return "Completed";
-  }
-  if (state === "current") {
-    if (interview.status === "ASSIGNED") return "Assigned";
-    if (interview.status === "SCHEDULED") return "Scheduled";
-  }
-  return null;
 }
 
 function Marker({ state }: { state: TimelineMarker }) {
@@ -114,15 +93,21 @@ function DetailLine({ label, value }: { label: string; value: string }) {
 function InterviewRoundBody({
   interview,
   state,
+  historical,
 }: {
-  interview: NonNullable<JobApplication["interviews"]>[number];
+  interview: InterviewRow;
   state: TimelineMarker;
+  historical?: boolean;
 }) {
   const resultLabel = formatInterviewResultLabel(interview.result);
   const interviewerName = formatInterviewerName(interview.interviewer);
   const modeLabel = formatInterviewModeLabel(interview.mode);
-  const dateLabel = formatInterviewDateLabel(interview.scheduledAt);
-  const timeLabel = formatInterviewTimeLabel(interview.scheduledAt);
+  const scheduledLabel = formatInterviewDateTimeLabel(interview.scheduledAt);
+  const statusLabel = formatInterviewLifecycleStatusLabel(interview.status);
+  const clearedAt =
+    interview.status === "COMPLETED" && interview.updatedAt
+      ? formatInterviewDateTimeLabel(interview.updatedAt)
+      : null;
   const isOnline = isOnlineInterviewMode(interview.mode);
   const isOffline = isOfflineInterviewMode(interview.mode);
   const meetingLink =
@@ -137,18 +122,16 @@ function InterviewRoundBody({
       : null;
   const remarks = interview.notes?.trim() || null;
   const feedback = interview.evaluation?.trim() || null;
+  const nextRoundName = interview.nextRound?.name?.trim() || null;
 
-  const showSchedule =
-    hasScheduledInterview(interview) ||
-    (interview.status === "COMPLETED" &&
-      isValidInterviewSchedule(interview.scheduledAt));
+  const showSchedule = isValidInterviewSchedule(interview.scheduledAt);
 
   const lines: ReactNode[] = [];
 
-  if (showSchedule) {
-    if (dateLabel) lines.push(<DetailLine key="date" label="Date" value={dateLabel} />);
-    if (timeLabel) lines.push(<DetailLine key="time" label="Time" value={timeLabel} />);
-    if (modeLabel) lines.push(<DetailLine key="mode" label="Mode" value={modeLabel} />);
+  if (showSchedule && scheduledLabel) {
+    lines.push(
+      <DetailLine key="scheduled" label="Scheduled At" value={scheduledLabel} />,
+    );
   }
 
   if (interviewerName) {
@@ -157,17 +140,28 @@ function InterviewRoundBody({
     );
   }
 
+  if (modeLabel) {
+    lines.push(<DetailLine key="mode" label="Mode" value={modeLabel} />);
+  }
+
+  if (
+    statusLabel &&
+    interview.status !== "COMPLETED" &&
+    interview.status !== "NO_SHOW"
+  ) {
+    lines.push(<DetailLine key="status" label="Status" value={statusLabel} />);
+  }
+
   if (isOnline && meetingLink) {
     lines.push(
       <p key="link" className="text-sm text-[#102A56]">
-        <span className="text-[#647A9B]">Meeting Link: </span>
         <a
           href={meetingLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="break-all text-[#2563EB] underline-offset-2 hover:underline"
+          className="inline-flex h-8 items-center justify-center rounded-md bg-[#2563EB] px-3 text-sm font-medium text-white shadow-[0_4px_14px_rgba(37,99,235,0.2)] hover:bg-[#1D4ED8]"
         >
-          {meetingLink}
+          Join Interview
         </a>
       </p>,
     );
@@ -189,6 +183,27 @@ function InterviewRoundBody({
 
   if (resultLabel) {
     lines.push(<DetailLine key="result" label="Result" value={resultLabel} />);
+  }
+
+  if (
+    nextRoundName &&
+    interview.result === "SELECTED_FOR_NEXT_ROUND"
+  ) {
+    lines.push(
+      <DetailLine key="next-round" label="Next Round" value={nextRoundName} />,
+    );
+  }
+
+  if (clearedAt) {
+    lines.push(
+      <DetailLine
+        key="cleared"
+        label={
+          interview.result === "REJECTED" ? "Rejected At" : "Result Recorded At"
+        }
+        value={clearedAt}
+      />,
+    );
   }
 
   if (feedback && interview.status === "COMPLETED") {
@@ -216,11 +231,18 @@ function InterviewRoundBody({
   return (
     <div
       className={`mt-2 space-y-1.5 rounded-lg border px-3 py-2.5 ${
-        state === "current"
-          ? "border-sky-200 bg-sky-50/60"
-          : "border-slate-100 bg-slate-50/80"
+        historical
+          ? "border-slate-200 bg-slate-100/70"
+          : state === "current"
+            ? "border-sky-200 bg-sky-50/60"
+            : "border-slate-100 bg-slate-50/80"
       }`}
     >
+      {historical ? (
+        <p className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+          Previous schedule
+        </p>
+      ) : null}
       {lines}
     </div>
   );
@@ -229,13 +251,11 @@ function InterviewRoundBody({
 function TimelineStep({
   state,
   title,
-  subtitle,
   children,
   isLast,
 }: {
   state: TimelineMarker;
   title: string;
-  subtitle?: string | null;
   children?: ReactNode;
   isLast?: boolean;
 }) {
@@ -248,31 +268,16 @@ function TimelineStep({
         ) : null}
       </div>
       <div className={`min-w-0 flex-1 ${isLast ? "pb-0" : "pb-5"}`}>
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <p
-            className={`text-sm font-semibold ${
-              state === "current" ? "text-sky-900" : "text-[#102A56]"
-            }`}
-          >
-            {title}
-          </p>
-          {subtitle ? (
-            <p className="text-xs text-[#647A9B]">{subtitle}</p>
-          ) : null}
-        </div>
+        <p
+          className={`text-sm font-semibold ${
+            state === "current" ? "text-sky-900" : "text-[#102A56]"
+          }`}
+        >
+          {title}
+        </p>
         {children}
       </div>
     </div>
-  );
-}
-
-function isShortlistedPipeline(status: JobApplication["status"]): boolean {
-  return (
-    status === "SHORTLISTED" ||
-    status === "INTERVIEW" ||
-    status === "ASSESSMENT" ||
-    status === "SELECTED" ||
-    status === "PLACED"
   );
 }
 
@@ -281,91 +286,81 @@ interface Props {
 }
 
 export function JobApplicationInterviewTimeline({ application }: Props) {
-  const interviews = [...(application.interviews ?? [])].sort((a, b) => {
-    const roundDiff = (a.roundNumber ?? 0) - (b.roundNumber ?? 0);
-    if (roundDiff !== 0) return roundDiff;
-    const sortA = a.round?.sortOrder ?? 0;
-    const sortB = b.round?.sortOrder ?? 0;
-    if (sortA !== sortB) return sortA - sortB;
-    const aTime = a.scheduledAt
-      ? Date.parse(a.scheduledAt)
-      : a.createdAt
-        ? Date.parse(a.createdAt)
-        : 0;
-    const bTime = b.scheduledAt
-      ? Date.parse(b.scheduledAt)
-      : b.createdAt
-        ? Date.parse(b.createdAt)
-        : 0;
-    return aTime - bTime;
-  });
-
-  const appliedSubtitle = formatTimelineDate(application.createdAt);
+  const roundEntries = buildInterviewTimelineByRound(
+    application.interviews ?? [],
+  );
+  const currentActiveId = pickWorkflowActiveInterviewId(application);
 
   const steps: Array<{
     key: string;
     state: TimelineMarker;
     title: string;
-    subtitle?: string | null;
     body?: ReactNode;
-  }> = [
-    {
-      key: "applied",
-      state: "done",
-      title: "Applied",
-      subtitle: appliedSubtitle,
-    },
-  ];
+  }> = [];
 
-  if (isShortlistedPipeline(application.status)) {
+  roundEntries.forEach((entry, index) => {
+    const interview = entry.primary;
+    const state = interviewPhase(interview, currentActiveId);
     steps.push({
-      key: "shortlisted",
-      state: "done",
-      title: "Shortlisted",
-      subtitle: formatTimelineDate(application.updatedAt),
-    });
-  }
-
-  for (const interview of interviews) {
-    if (
-      interview.status === "CANCELLED" &&
-      !isValidInterviewSchedule(interview.scheduledAt)
-    ) {
-      continue;
-    }
-
-    const state = interviewPhase(interview);
-    const body = <InterviewRoundBody interview={interview} state={state} />;
-
-    steps.push({
-      key: interview.id,
+      key: entry.roundKey,
       state,
-      title: roundTitle(interview),
-      subtitle: phaseSubtitle(interview, state),
-      body,
+      title: roundStepTitle(interview, index + 1),
+      body: (
+        <div className="space-y-2">
+          <InterviewRoundBody interview={interview} state={state} />
+          {entry.historical.map((historicalInterview) => (
+            <InterviewRoundBody
+              key={historicalInterview.id}
+              interview={historicalInterview}
+              state="done"
+              historical
+            />
+          ))}
+        </div>
+      ),
     });
-  }
+  });
 
-  if (application.status === "PLACED") {
+  const canonicalInterviews = roundEntries.map((entry) => entry.primary);
+  const hasPlacedResult = canonicalInterviews.some(
+    (item) => item.status === "COMPLETED" && item.result === "PLACED",
+  );
+  const hasRejectedResult = canonicalInterviews.some(
+    (item) => item.status === "COMPLETED" && item.result === "REJECTED",
+  );
+
+  if (application.status === "PLACED" || hasPlacedResult) {
     steps.push({
       key: "final-placed",
       state: "done",
-      title: "Final Result",
-      subtitle: "Placed",
+      title: "Final Outcome",
+      body: (
+        <div className="mt-2 rounded-lg border border-emerald-100 bg-emerald-50/60 px-3 py-2.5">
+          <DetailLine label="Result" value="Placed" />
+        </div>
+      ),
     });
-  } else if (application.status === "REJECTED") {
+  } else if (application.status === "REJECTED" || hasRejectedResult) {
     const reason = application.rejectionReason?.trim();
     steps.push({
       key: "final-rejected",
       state: "done",
-      title: "Final Result",
-      subtitle: "Rejected",
-      body: reason ? (
+      title: "Final Outcome",
+      body: (
         <div className="mt-2 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2.5">
-          <DetailLine label="Reason" value={reason} />
+          <DetailLine label="Result" value="Rejected" />
+          {reason ? <DetailLine label="Reason" value={reason} /> : null}
         </div>
-      ) : null,
+      ),
     });
+  }
+
+  if (steps.length === 0) {
+    return (
+      <p className="text-sm text-[#647A9B]">
+        No interview rounds recorded yet for this application.
+      </p>
+    );
   }
 
   return (
@@ -375,7 +370,6 @@ export function JobApplicationInterviewTimeline({ application }: Props) {
           key={step.key}
           state={step.state}
           title={step.title}
-          subtitle={step.subtitle}
           isLast={index === steps.length - 1}
         >
           {step.body}

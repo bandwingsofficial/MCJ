@@ -33,7 +33,6 @@ interface Props {
   disabled?: boolean;
   onManageEdit: (enrollment: Enrollment) => void;
   onManageDelete: (enrollment: Enrollment) => void;
-  onManageRestore: (enrollment: Enrollment) => void;
   onManagePermanentDelete: (enrollment: Enrollment) => void;
   onUnenroll?: (enrollment: Enrollment) => void;
   onActivate: (enrollment: Enrollment) => void;
@@ -47,7 +46,6 @@ export function StudentEnrollmentTable({
   disabled = false,
   onManageEdit,
   onManageDelete,
-  onManageRestore,
   onManagePermanentDelete,
   onUnenroll,
   onActivate,
@@ -114,7 +112,6 @@ export function StudentEnrollmentTable({
                 disabled={disabled}
                 onManageEdit={onManageEdit}
                 onManageDelete={onManageDelete}
-                onManageRestore={onManageRestore}
                 onManagePermanentDelete={onManagePermanentDelete}
                 onUnenroll={onUnenroll}
                 onActivate={onActivate}

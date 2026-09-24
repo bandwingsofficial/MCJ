@@ -23,7 +23,6 @@ interface Props {
   disabled?: boolean;
   onManageEdit: (enrollment: Enrollment) => void;
   onManageDelete: (enrollment: Enrollment) => void;
-  onManageRestore: (enrollment: Enrollment) => void;
   onManagePermanentDelete: (enrollment: Enrollment) => void;
   onUnenroll?: (enrollment: Enrollment) => void;
   onActivate: (enrollment: Enrollment) => void;
@@ -35,7 +34,6 @@ export function StudentEnrollmentRowActions({
   disabled = false,
   onManageEdit,
   onManageDelete,
-  onManageRestore,
   onManagePermanentDelete,
   onUnenroll,
   onActivate,
@@ -50,11 +48,7 @@ export function StudentEnrollmentRowActions({
   const manageItems = archived
     ? [
         {
-          label: "Restore",
-          onClick: () => onManageRestore(enrollment),
-        },
-        {
-          label: "Permanent Delete",
+          label: "Delete Permanently",
           onClick: () => onManagePermanentDelete(enrollment),
           destructive: true,
         },

@@ -181,6 +181,7 @@ describe('UnenrollEnrollmentHandler', () => {
     batchRepo = {
       findById: jest.fn(),
       save: jest.fn(),
+      isAssignedToBranch: jest.fn().mockResolvedValue(false),
     } as unknown as jest.Mocked<BatchRepository>;
 
     sideEffects = {
@@ -342,9 +343,7 @@ describe('Unenroll enables re-enrollment (one active enrollment rule)', () => {
     } as unknown as EnrollmentRepository;
 
     await expect(
-      domainService.ensureNoCurrentEnrollment(enrollmentRepo, STUDENT_ID, {
-        intendedBatchId: BATCH_B,
-      }),
+      domainService.ensureNoCurrentEnrollment(enrollmentRepo, STUDENT_ID),
     ).rejects.toBeInstanceOf(EnrollmentAlreadyExistsException);
   });
 });
@@ -368,6 +367,9 @@ describe('EnrollmentSideEffectsService seat release', () => {
       studentRepo,
       new EnrollmentDomainService(),
       {
+        enrollment: {
+          findMany: jest.fn().mockResolvedValue([]),
+        },
         batchTiming: {
           findFirst: jest.fn().mockResolvedValue(null),
           update: jest.fn(),

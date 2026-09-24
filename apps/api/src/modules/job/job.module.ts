@@ -5,6 +5,7 @@ import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { AuthModule } from '../auth/auth.module';
 import { UploadsModule } from '../uploads/uploads.module';
+import { UploadDomainService } from '../uploads/domain/services/upload-domain.service';
 
 import { JOB_TOKENS } from './job.tokens';
 import { ApproveJobHandler } from './application/approve-job/approve-job.handler';
@@ -100,8 +101,18 @@ import { PublicCompanyJobController } from './presentation/controllers/public-co
       useFactory: (
         jobRepo: JobRepository,
         domainService: JobDomainService,
-      ) => new PermanentDeleteJobHandler(jobRepo, domainService),
-      inject: [JOB_TOKENS.JOB_REPOSITORY, JobDomainService],
+        uploadDomainService: UploadDomainService,
+      ) =>
+        new PermanentDeleteJobHandler(
+          jobRepo,
+          domainService,
+          uploadDomainService,
+        ),
+      inject: [
+        JOB_TOKENS.JOB_REPOSITORY,
+        JobDomainService,
+        UploadDomainService,
+      ],
     },
     {
       provide: UpdateJobActivationHandler,

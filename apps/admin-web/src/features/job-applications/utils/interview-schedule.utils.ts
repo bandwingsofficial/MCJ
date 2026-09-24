@@ -51,6 +51,32 @@ export function formatInterviewTimeLabel(
   });
 }
 
+export function formatInterviewDateTimeLabel(
+  value?: string | Date | null,
+): string | null {
+  const date = formatInterviewDateLabel(value);
+  const time = formatInterviewTimeLabel(value);
+  if (date && time) {
+    return `${date} · ${time}`;
+  }
+  return date || time || null;
+}
+
+export function formatInterviewLifecycleStatusLabel(
+  status?: string | null,
+): string | null {
+  if (!status) return null;
+  if (status === "SCHEDULED") return "Scheduled";
+  if (status === "ASSIGNED") return "Assigned";
+  if (status === "COMPLETED") return "Completed";
+  if (status === "CANCELLED") return "Cancelled";
+  if (status === "NO_SHOW") return "No Show";
+  return status
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .replace(/^\w/, (char) => char.toUpperCase());
+}
+
 export function formatInterviewerName(
   interviewer?: {
     firstName: string;
