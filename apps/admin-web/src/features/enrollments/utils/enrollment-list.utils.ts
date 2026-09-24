@@ -1,5 +1,6 @@
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import type { EnrollmentListResponse } from "@/src/features/enrollments/types/enrollment.dto";
+import { normalizeEnrollmentStatus } from "@/src/features/enrollments/utils/current-enrollment";
 import { normalizeMoney } from "@/src/features/enrollments/utils/format-payment";
 
 export interface ParsedEnrollmentList {
@@ -7,7 +8,65 @@ export interface ParsedEnrollmentList {
   total: number;
 }
 
-function normalizeEnrollmentFinancials(enrollment: Enrollment): Enrollment {
+function unwrapEnrollmentListData(
+  payload: unknown,
+): { items: unknown[]; total: number } | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const root = payload as Record<string, unknown>;
+
+  const nested = root.data;
+  if (nested && typeof nested === "object") {
+    const data = nested as Record<string, unknown>;
+    if (Array.isArray(data.items)) {
+      return {
+        items: data.items,
+        total: typeof data.total === "number" ? data.total : data.items.length,
+      };
+    }
+    if (Array.isArray(data.enrollments)) {
+      return {
+        items: data.enrollments,
+        total:
+          typeof data.total === "number" ? data.total : data.enrollments.length,
+      };
+    }
+  }
+
+  if (Array.isArray(root.items)) {
+    return {
+      items: root.items,
+      total: typeof root.total === "number" ? root.total : root.items.length,
+    };
+  }
+
+  return null;
+}
+
+function normalizeEnrollmentListItem(raw: unknown): Enrollment {
+  const record =
+    raw && typeof raw === "object"
+      ? (raw as Record<string, unknown>)
+      : ({} as Record<string, unknown>);
+
+  const statusRaw =
+    record.status ??
+    record.enrollmentStatus ??
+    record.enrollment_status;
+
+  const normalizedStatus = normalizeEnrollmentStatus(
+    typeof statusRaw === "string" ? statusRaw : null,
+  );
+
+  const enrollment = {
+    ...(record as Enrollment),
+    status: (normalizedStatus ??
+      (typeof statusRaw === "string" ? statusRaw : undefined)) as Enrollment["status"],
+    isDeleted: Boolean(record.isDeleted ?? record.is_deleted),
+  };
+
   return {
     ...enrollment,
     feeAmount: normalizeMoney(enrollment.feeAmount),
@@ -21,21 +80,15 @@ function normalizeEnrollmentFinancials(enrollment: Enrollment): Enrollment {
 export function parseEnrollmentListResponse(
   payload: EnrollmentListResponse | { data?: EnrollmentListResponse["data"] } | unknown,
 ): ParsedEnrollmentList {
-  if (!payload || typeof payload !== "object") {
+  const unwrapped = unwrapEnrollmentListData(payload);
+  if (!unwrapped) {
     return { items: [], total: 0 };
   }
 
-  const root = payload as EnrollmentListResponse;
-  const data = root.data;
+  const items = unwrapped.items.map((item) => normalizeEnrollmentListItem(item));
 
-  if (!data || typeof data !== "object") {
-    return { items: [], total: 0 };
-  }
-
-  const items = Array.isArray(data.items)
-    ? data.items.map((item) => normalizeEnrollmentFinancials(item))
-    : [];
-  const total = typeof data.total === "number" ? data.total : items.length;
-
-  return { items, total };
+  return {
+    items,
+    total: unwrapped.total,
+  };
 }
