@@ -42,10 +42,10 @@ export function BatchModeCalendarView({
   const todayKey = currentCalendarDateKey();
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
+    <div className="box-border w-full min-w-0 overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
       <div className="border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-4 py-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 flex-1 items-center justify-between gap-2 sm:justify-start">
+          <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:flex-1">
             <Button
               type="button"
               variant="outline"
@@ -93,7 +93,7 @@ export function BatchModeCalendarView({
         </div>
       </div>
 
-      <div className="space-y-4 p-4">
+      <div className="box-border min-w-0 w-full space-y-4 p-4">
         <div className="flex flex-wrap gap-2">
           {BATCH_CALENDAR_LEGEND.map((item) => (
             <div
@@ -116,15 +116,16 @@ export function BatchModeCalendarView({
           <CalendarSkeleton />
         ) : (
           <>
-            <div className="grid grid-cols-7 gap-1 rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/50 p-2 text-center text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
+            <div className="batch-calendar-grid-wrap space-y-1.5">
+            <div className="batch-calendar-grid grid w-full min-w-0 grid-cols-7 gap-1 rounded-lg border border-[#E8F0FA] bg-[#F8FBFF]/50 p-2 text-center text-[11px] font-semibold uppercase tracking-wide text-[#647A9B]">
               {WEEKDAY_LABELS.map((label) => (
-                <div key={label} className="py-1">
+                <div key={label} className="min-w-0 py-1">
                   {label}
                 </div>
               ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-1.5">
+            <div className="batch-calendar-grid grid w-full min-w-0 grid-cols-7 gap-1.5">
               {days.map((day) => (
                 <CalendarDayCell
                   key={day.dateKey}
@@ -134,6 +135,7 @@ export function BatchModeCalendarView({
                   onSelect={() => onSelectDate(day.dateKey)}
                 />
               ))}
+            </div>
             </div>
           </>
         )}
@@ -146,7 +148,7 @@ function CalendarSkeleton() {
   return (
     <div className="space-y-3">
       <Skeleton className="h-8 w-full rounded-lg" />
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="batch-calendar-grid grid w-full min-w-0 grid-cols-7 gap-1.5">
         {Array.from({ length: 35 }).map((_, index) => (
           <Skeleton key={index} className="min-h-[5.25rem] rounded-xl" />
         ))}
@@ -176,7 +178,7 @@ function CalendarDayCell({
     return (
       <div
         aria-hidden
-        className="min-h-[5.25rem] rounded-xl border border-transparent bg-transparent"
+        className="min-h-[5.25rem] min-w-0 w-full rounded-xl border border-transparent bg-transparent"
       />
     );
   }
@@ -195,14 +197,14 @@ function CalendarDayCell({
       }
       aria-current={isToday ? "date" : undefined}
       className={cn(
-        "group relative flex min-h-[5.25rem] flex-col rounded-xl border px-2 py-2 text-left shadow-sm transition-all",
+        "group relative box-border flex min-h-[5.25rem] min-w-0 w-full max-w-full flex-col overflow-hidden rounded-xl border px-2 py-2 text-left shadow-sm transition-shadow",
         batchCalendarDayCellClass(day.dayType),
         clickable &&
-          "cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:ring-2 hover:ring-[#2563EB]/20",
-        selected && "ring-2 ring-[#2563EB] ring-offset-2",
+          "cursor-pointer hover:shadow-md hover:ring-2 hover:ring-inset hover:ring-[#2563EB]/25",
+        selected && "ring-2 ring-inset ring-[#2563EB]",
         !selected &&
           isToday &&
-          "ring-2 ring-[#2563EB]/40 ring-offset-1",
+          "ring-2 ring-inset ring-[#2563EB]/40",
         !clickable && "cursor-default opacity-85",
       )}
     >

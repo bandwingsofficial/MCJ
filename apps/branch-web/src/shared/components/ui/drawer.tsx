@@ -28,7 +28,7 @@ export function Drawer({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/50" />
 
-        <Dialog.Content className="fixed right-0 top-0 z-50 h-screen w-full max-w-xl bg-white shadow-2xl">
+        <Dialog.Content className="admin-app-viewport fixed right-0 top-0 z-50 w-full max-w-xl bg-white shadow-2xl">
           <div className="flex items-center justify-between border-b p-5">
   <Dialog.Title className="text-lg font-semibold">
     {title}

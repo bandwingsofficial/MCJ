@@ -132,7 +132,7 @@ export function BranchSidebar() {
     <>
       <aside
         style={{ width: sidebarWidth }}
-        className="admin-sidebar relative flex h-screen shrink-0 flex-col border-r border-[#DCE8F5] text-[#102A56] transition-[width] duration-200 ease-in-out"
+        className="admin-sidebar admin-app-viewport relative flex shrink-0 flex-col border-r border-[#DCE8F5] text-[#102A56] transition-[width] duration-200 ease-in-out"
       >
         <div className="admin-sidebar-wash" aria-hidden="true" />
 

@@ -59,7 +59,7 @@ export function AppSelect({
           sideOffset={4}
           collisionPadding={12}
           avoidCollisions
-          className="z-[100] max-h-60 w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-[0_8px_24px_rgba(16,42,86,0.08)]"
+          className="z-[100] max-h-60 w-[var(--radix-select-trigger-width)] min-w-0 max-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-[0_8px_24px_rgba(16,42,86,0.08)]"
         >
           <SelectPrimitive.Viewport className="max-h-60 overflow-y-auto p-1">
             {options.map((option) => (

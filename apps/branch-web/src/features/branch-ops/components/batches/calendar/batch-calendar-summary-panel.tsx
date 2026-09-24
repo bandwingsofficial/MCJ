@@ -15,7 +15,7 @@ export function BatchCalendarSummaryPanel({ summary, modeLabel }: Props) {
   const metrics = batchCalendarSummaryMetrics(summary);
 
   return (
-    <div className="space-y-4">
+    <div className="box-border w-full min-w-0 space-y-4">
       <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
         <div className="border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-4 py-3">
           <h2 className="text-base font-semibold text-[#102A56]">
@@ -28,13 +28,13 @@ export function BatchCalendarSummaryPanel({ summary, modeLabel }: Props) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-2.5 p-4 sm:grid-cols-2">
+        <div className="grid min-w-0 grid-cols-1 gap-2.5 p-4 sm:grid-cols-2">
           {metrics.map(({ key, label, value, icon: Icon, iconClass, iconBgClass, cardClass }) => (
             <div
               key={key}
               className={cn(
                 METRIC_CARD_HEIGHT,
-                "rounded-xl border p-3 shadow-sm",
+                "min-w-0 rounded-xl border p-3 shadow-sm",
                 cardClass,
               )}
             >

@@ -58,7 +58,7 @@ export function BranchBatchManagePage({ batchId }: BatchPageProps) {
   if (!data) return <EmptyState title="Batch not found." />;
 
   return (
-    <div className="min-h-full min-w-0">
+    <div className="admin-page min-h-full">
       <BatchManageHeader batch={data} activeSection={activeSection} />
       <div className="mt-4">
         <BatchManageWorkspace
@@ -143,7 +143,7 @@ export function BranchBatchTimingManagePage({
   }
 
   return (
-    <div className="min-h-full min-w-0 space-y-4">
+    <div className="admin-page min-h-full space-y-4">
       <BatchTimingManageHeader
         batch={data}
         timing={timing}

@@ -73,15 +73,15 @@ export function AdminHeader() {
     .toUpperCase();
 
   return (
-    <header className="flex h-[72px] shrink-0 items-center justify-between rounded-b-2xl border-b border-[#DCE8F5] bg-white px-8">
-      <div className="min-w-0 w-full max-w-[420px]">
+    <header className="flex h-[72px] min-w-0 shrink-0 items-center justify-between gap-4 rounded-b-2xl border-b border-[#DCE8F5] bg-white px-8">
+      <div className="min-w-0 flex-1 basis-0 max-w-[420px]">
         <Input
           placeholder="Search modules, students or batches..."
           className="h-[46px] rounded-xl border-[#DCE8F5] bg-[#FBFDFF] placeholder:text-[#8AA0BB] shadow-[0_1px_6px_rgba(16,42,86,0.04)]"
         />
       </div>
 
-      <div className="flex items-center gap-5">
+      <div className="flex shrink-0 items-center gap-5">
         <div className="text-sm font-medium text-[#102A56]">{time}</div>
         <div className="text-sm text-[#647A9B]">{date}</div>
 

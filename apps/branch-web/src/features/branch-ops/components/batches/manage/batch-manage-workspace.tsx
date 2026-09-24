@@ -63,6 +63,7 @@ export function BatchManageWorkspace({
 
   return (
     <Tabs
+      className="min-w-0 w-full"
       value={tab}
       onValueChange={(value) => {
         const nextTab = value as BatchManageTabKey;

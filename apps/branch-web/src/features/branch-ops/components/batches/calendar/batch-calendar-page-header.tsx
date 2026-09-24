@@ -34,7 +34,7 @@ export function BatchCalendarPageHeader({
     : formatBatchCalendarDate(startDate);
 
   return (
-    <div className="space-y-3">
+    <div className="box-border w-full min-w-0 space-y-3">
       <nav
         aria-label="Breadcrumb"
         className="flex flex-wrap items-center gap-1 text-xs"
@@ -58,7 +58,7 @@ export function BatchCalendarPageHeader({
         <span className="font-medium text-slate-700">{modeLabel}</span>
       </nav>
 
-      <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
+      <div className="box-border w-full min-w-0 overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
         <div className="bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB]">
           <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0 flex-1">

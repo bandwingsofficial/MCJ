@@ -85,7 +85,7 @@ export function BatchModeCalendarPage({ batchId, modeParam }: Props) {
 
   if (loading && !data) {
     return (
-      <div className="mx-auto min-h-full max-w-6xl space-y-4 px-4 py-5 sm:px-6">
+      <div className="min-h-full min-w-0 space-y-4">
         <Loader />
       </div>
     );
@@ -93,7 +93,7 @@ export function BatchModeCalendarPage({ batchId, modeParam }: Props) {
 
   if (error && !data) {
     return (
-      <div className="mx-auto min-h-full max-w-6xl space-y-4 px-4 py-5 sm:px-6">
+      <div className="min-h-full min-w-0 space-y-4">
         <ErrorState
           title="Unable to Load Calendar"
           description={error}
@@ -104,7 +104,7 @@ export function BatchModeCalendarPage({ batchId, modeParam }: Props) {
 
   if (!data) {
     return (
-      <div className="mx-auto min-h-full max-w-6xl space-y-4 px-4 py-5 sm:px-6">
+      <div className="min-h-full min-w-0 space-y-4">
         <BatchManageEmptyState
           icon={CalendarDays}
           title="Calendar Not Available"
@@ -130,7 +130,7 @@ export function BatchModeCalendarPage({ batchId, modeParam }: Props) {
   };
 
   return (
-    <div className="mx-auto min-h-full max-w-6xl space-y-4 px-4 py-5 sm:px-6">
+    <div className="min-h-full min-w-0 space-y-4">
       <BatchCalendarPageHeader
         batchId={batchId}
         batchName={data.batch.name}
@@ -142,8 +142,9 @@ export function BatchModeCalendarPage({ batchId, modeParam }: Props) {
         endDate={data.batch.endDate}
       />
 
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
-        <div className="min-w-0 flex-1">
+      <div className="batch-calendar-page-container">
+        <div className="batch-calendar-page-layout">
+        <div className="batch-calendar-page-layout__main">
           <BatchModeCalendarView
             monthLabel={data.monthLabel}
             days={data.days}
@@ -157,12 +158,13 @@ export function BatchModeCalendarPage({ batchId, modeParam }: Props) {
           />
         </div>
 
-        <aside className="min-w-0 xl:w-[22rem] xl:shrink-0">
+        <aside className="batch-calendar-page-layout__aside">
           <BatchCalendarSummaryPanel
             summary={data.summary}
             modeLabel={data.modeLabel}
           />
         </aside>
+        </div>
       </div>
 
       <BatchCalendarDateDialog
