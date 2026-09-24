@@ -15,11 +15,14 @@ import {
   formatInterviewMode,
   formatInterviewTime,
   formatInterviewerName,
-  hasScheduledInterview,
   isOfflineInterviewMode,
   isOnlineInterviewMode,
   isValidInterviewSchedule,
 } from "@/src/features/student-jobs/utils/interview-schedule.utils";
+import {
+  buildInterviewTimelineByRound,
+  historicalInterviewStepLabel,
+} from "@/src/features/student-jobs/utils/job-application-interview.utils";
 import {
   isShortlistedStatus,
   resolveCustomerApplicationStatus,
@@ -176,8 +179,11 @@ function InterviewRoundDetails({
       ? interview.locationOrLink.trim()
       : null;
   const showSchedule =
-    hasScheduledInterview(interview) ||
+    (interview.status === "SCHEDULED" &&
+      isValidInterviewSchedule(interview.scheduledAt)) ||
     (interview.status === "COMPLETED" &&
+      isValidInterviewSchedule(interview.scheduledAt)) ||
+    (interview.status === "CANCELLED" &&
       isValidInterviewSchedule(interview.scheduledAt));
 
   return (
@@ -277,16 +283,35 @@ function InterviewRoundDetails({
   );
 }
 
+function interviewTimelineSubtitle(
+  interview: JobApplicationInterviewAssignment,
+  state: TimelineMarker,
+  historical: boolean,
+): string {
+  if (historical) {
+    return historicalInterviewStepLabel(interview);
+  }
+  if (state === "done") {
+    if (interview.status === "CANCELLED") {
+      return "Cancelled";
+    }
+    if (interview.status === "NO_SHOW") {
+      return "No Show";
+    }
+    return "Completed";
+  }
+  if (state === "current") {
+    return interview.status === "ASSIGNED" ? "Assigned" : "Scheduled";
+  }
+  return "Not Started";
+}
+
 export function ApplicationTimeline({
   application,
 }: ApplicationTimelineProps) {
-  const interviews = [...(application.interviews ?? [])].sort((a, b) => {
-    const roundDiff = (a.roundNumber ?? 0) - (b.roundNumber ?? 0);
-    if (roundDiff !== 0) return roundDiff;
-    const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
-    const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
-    return aTime - bTime;
-  });
+  const roundEntries = buildInterviewTimelineByRound(
+    application.interviews ?? [],
+  );
 
   const statusKey = resolveCustomerApplicationStatus(
     application.status,
@@ -325,36 +350,44 @@ export function ApplicationTimeline({
     });
   }
 
-  for (const interview of interviews) {
-    // Skip cancelled rows that never had a real schedule — keep completed/scheduled history.
-    if (
-      interview.status === "CANCELLED" &&
-      !isValidInterviewSchedule(interview.scheduledAt)
-    ) {
-      continue;
-    }
-
-    const state = interviewPhase(interview);
-    const phaseLabel =
-      state === "done"
-        ? interview.status === "CANCELLED"
-          ? "Cancelled"
-          : interview.status === "NO_SHOW"
-            ? "No Show"
-            : "Completed"
-        : state === "current"
-          ? interview.status === "ASSIGNED"
-            ? "Assigned"
-            : "Scheduled"
-          : "Not Started";
-
-    steps.push({
-      key: interview.id,
-      state,
-      title: roundTitle(interview),
-      subtitle: phaseLabel,
-      body: <InterviewRoundDetails interview={interview} state={state} />,
+  for (const entry of roundEntries) {
+    const historicalSorted = [...entry.historical].sort((a, b) => {
+      const aTime = Date.parse(a.createdAt ?? "") || 0;
+      const bTime = Date.parse(b.createdAt ?? "") || 0;
+      return aTime - bTime;
     });
+
+    const pushInterviewStep = (
+      interview: JobApplicationInterviewAssignment,
+      isHistoricalRow: boolean,
+    ) => {
+      if (
+        interview.status === "CANCELLED" &&
+        !isValidInterviewSchedule(interview.scheduledAt) &&
+        isHistoricalRow
+      ) {
+        return;
+      }
+
+      const state = interviewPhase(interview);
+
+      steps.push({
+        key: interview.id,
+        state,
+        title: roundTitle(interview),
+        subtitle: interviewTimelineSubtitle(
+          interview,
+          state,
+          isHistoricalRow,
+        ),
+        body: <InterviewRoundDetails interview={interview} state={state} />,
+      });
+    };
+
+    for (const interview of historicalSorted) {
+      pushInterviewStep(interview, true);
+    }
+    pushInterviewStep(entry.primary, false);
   }
 
   if (statusKey === "PLACED") {

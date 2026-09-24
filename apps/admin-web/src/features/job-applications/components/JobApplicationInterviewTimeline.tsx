@@ -17,6 +17,7 @@ import {
   isOfflineInterviewMode,
   isOnlineInterviewMode,
   isValidInterviewSchedule,
+  canShowJoinInterviewLink,
 } from "@/src/features/job-applications/utils/interview-schedule.utils";
 
 type TimelineMarker = "done" | "current" | "pending";
@@ -94,10 +95,12 @@ function InterviewRoundBody({
   interview,
   state,
   historical,
+  workflowActive,
 }: {
   interview: InterviewRow;
   state: TimelineMarker;
   historical?: boolean;
+  workflowActive?: boolean;
 }) {
   const resultLabel = formatInterviewResultLabel(interview.result);
   const interviewerName = formatInterviewerName(interview.interviewer);
@@ -152,7 +155,13 @@ function InterviewRoundBody({
     lines.push(<DetailLine key="status" label="Status" value={statusLabel} />);
   }
 
-  if (isOnline && meetingLink) {
+  if (
+    meetingLink &&
+    canShowJoinInterviewLink(interview, {
+      historical,
+      workflowActive,
+    })
+  ) {
     lines.push(
       <p key="link" className="text-sm text-[#102A56]">
         <a
@@ -307,15 +316,26 @@ export function JobApplicationInterviewTimeline({ application }: Props) {
       title: roundStepTitle(interview, index + 1),
       body: (
         <div className="space-y-2">
-          <InterviewRoundBody interview={interview} state={state} />
-          {entry.historical.map((historicalInterview) => (
-            <InterviewRoundBody
-              key={historicalInterview.id}
-              interview={historicalInterview}
-              state="done"
-              historical
-            />
-          ))}
+          <InterviewRoundBody
+            interview={interview}
+            state={state}
+            workflowActive={interview.id === currentActiveId}
+          />
+          {[...entry.historical]
+            .sort(
+              (left, right) =>
+                (Date.parse(left.createdAt ?? "") || 0) -
+                (Date.parse(right.createdAt ?? "") || 0),
+            )
+            .map((historicalInterview) => (
+              <InterviewRoundBody
+                key={historicalInterview.id}
+                interview={historicalInterview}
+                state="done"
+                historical
+                workflowActive={false}
+              />
+            ))}
         </div>
       ),
     });

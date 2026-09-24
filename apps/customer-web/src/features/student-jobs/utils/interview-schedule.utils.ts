@@ -13,12 +13,12 @@ export function isValidInterviewSchedule(
   return Number.isFinite(time) && time > EPOCH_GUARD_MS;
 }
 
-/** True only when Branch-web has persisted a real schedule (not assignment-only). */
+/** True only for a current SCHEDULED row with a real date/time (not cancelled/history). */
 export function hasScheduledInterview(
   assignment?: JobApplicationInterviewAssignment | null,
 ): assignment is JobApplicationInterviewAssignment {
   if (!assignment) return false;
-  if (assignment.status === "ASSIGNED") return false;
+  if (assignment.status !== "SCHEDULED") return false;
   return isValidInterviewSchedule(assignment.scheduledAt);
 }
 

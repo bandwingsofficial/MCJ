@@ -23,49 +23,7 @@ import { JobApplicationInterviewStatusBadge } from "@/src/features/job-applicati
 import { JobApplicationStatusBadge } from "@/src/features/job-applications/components/JobApplicationStatusBadge";
 import { jobApplicationService } from "@/src/features/job-applications/services/job-application.service";
 import type { JobApplication } from "@/src/features/job-applications/types/job-application.types";
-import {
-  getCurrentRoundName,
-  getNextRoundName,
-} from "@/src/features/job-applications/types/job-application.types";
 import type { Student } from "@/src/features/students/types/student.types";
-
-const EPOCH_GUARD_MS = Date.parse("1970-01-02T00:00:00.000Z");
-
-function isValidInterviewSchedule(
-  scheduledAt?: string | null,
-): scheduledAt is string {
-  if (!scheduledAt) return false;
-  const time = Date.parse(scheduledAt);
-  return Number.isFinite(time) && time > EPOCH_GUARD_MS;
-}
-
-function hasScheduledInterview(application: JobApplication): boolean {
-  const assignment = application.interviewAssignment;
-  if (!assignment) return false;
-  if (assignment.status === "ASSIGNED") return false;
-  return isValidInterviewSchedule(assignment.scheduledAt);
-}
-
-function formatScheduleSummary(application: JobApplication): string | null {
-  if (!hasScheduledInterview(application)) {
-    return null;
-  }
-
-  const scheduledAt = application.interviewAssignment!.scheduledAt!;
-  const when = new Date(scheduledAt);
-  const date = when.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-  const time = when.toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-  const roundName = application.interviewAssignment?.round?.name?.trim();
-  const roundLabel = roundName ? `${roundName} · ` : "";
-  return `${roundLabel}${date} · ${time}`;
-}
 
 const JOB_APPLICATION_COLUMNS = [
   { key: "applicationNumber", label: "Application #" },
@@ -75,8 +33,6 @@ const JOB_APPLICATION_COLUMNS = [
   { key: "appliedDate", label: "Applied Date" },
   { key: "assignmentStatus", label: "Assignment Status" },
   { key: "interviewStatus", label: "Interview Status" },
-  { key: "currentRound", label: "Current Round" },
-  { key: "nextRound", label: "Next Round" },
   { key: "actions", label: "Actions", className: "w-24 text-right" },
 ];
 
@@ -192,10 +148,6 @@ export function StudentManageJobApplicationsPanel({ student }: Props) {
           embedded
         >
           {paginatedApplications.map((application) => {
-            const scheduleSummary = formatScheduleSummary(application);
-            const currentRound = getCurrentRoundName(application);
-            const nextRound = getNextRoundName(application);
-
             return (
               <tr
                 key={application.id}
@@ -229,20 +181,9 @@ export function StudentManageJobApplicationsPanel({ student }: Props) {
                   />
                 </td>
                 <td className={TABLE_CELL_CLASS}>
-                  <div className="flex flex-col gap-1.5">
-                    <JobApplicationInterviewStatusBadge
-                      application={application}
-                    />
-                    {scheduleSummary ? (
-                      <p className="text-xs text-[#526581]">{scheduleSummary}</p>
-                    ) : null}
-                  </div>
-                </td>
-                <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
-                  {currentRound}
-                </td>
-                <td className={`${TABLE_CELL_CLASS} text-slate-700`}>
-                  {nextRound}
+                  <JobApplicationInterviewStatusBadge
+                    application={application}
+                  />
                 </td>
                 <td className={`${TABLE_CELL_CLASS} text-right`}>
                   <Tooltip content="View application details">

@@ -14,6 +14,10 @@ import {
   isOfflineInterviewMode,
   isOnlineInterviewMode,
 } from "@/src/features/student-jobs/utils/interview-schedule.utils";
+import {
+  resolveCustomerActiveInterviewAssignment,
+  resolveCustomerInterviewStatusForDisplay,
+} from "@/src/features/student-jobs/utils/job-application-interview.utils";
 
 import type { JobApplication } from "@/src/features/student-jobs/types";
 
@@ -27,11 +31,14 @@ export function ApplicationInterviewDetails({
   application,
   compact = false,
 }: ApplicationInterviewDetailsProps) {
-  const assignment = application.interviewAssignment;
+  const assignment = resolveCustomerActiveInterviewAssignment(application);
 
   if (!hasScheduledInterview(assignment)) {
     return null;
   }
+
+  const interviewStatusBadge =
+    resolveCustomerInterviewStatusForDisplay(application);
 
   const branchName = assignment.branch?.branchName ?? null;
   const branchAddress = formatBranchAddress(assignment.branch);
@@ -69,9 +76,7 @@ export function ApplicationInterviewDetails({
         <div>
           <p className="text-muted-foreground">Interview Status</p>
           <div className="mt-1">
-            <ApplicationInterviewStatusBadge
-              status={application.interviewStatus ?? "INTERVIEW_SCHEDULED"}
-            />
+            <ApplicationInterviewStatusBadge status={interviewStatusBadge} />
           </div>
         </div>
 

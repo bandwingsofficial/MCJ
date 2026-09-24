@@ -18,8 +18,31 @@ export function hasScheduledInterview(
   interview?: JobApplicationBranchInterviewerAssignment | null,
 ): interview is JobApplicationBranchInterviewerAssignment {
   if (!interview) return false;
-  if (interview.status === "ASSIGNED") return false;
+  if (interview.status !== "SCHEDULED") return false;
   return isValidInterviewSchedule(interview.scheduledAt);
+}
+
+/** Join link only for the active scheduled row (never cancelled/historical). */
+export function canShowJoinInterviewLink(
+  interview: JobApplicationBranchInterviewerAssignment,
+  options?: { historical?: boolean; workflowActive?: boolean },
+): boolean {
+  if (options?.historical) {
+    return false;
+  }
+  if (options?.workflowActive === false) {
+    return false;
+  }
+  if (interview.status !== "SCHEDULED") {
+    return false;
+  }
+  if (!isValidInterviewSchedule(interview.scheduledAt)) {
+    return false;
+  }
+  if (!isOnlineInterviewMode(interview.mode)) {
+    return false;
+  }
+  return Boolean(interview.locationOrLink?.trim());
 }
 
 export function formatInterviewModeLabel(mode?: string | null): string | null {

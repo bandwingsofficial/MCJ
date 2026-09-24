@@ -53,6 +53,54 @@ export function pickActiveInterviewForDetails(
   return pickCurrentScheduledInterview(application);
 }
 
+/** Cancelled / superseded schedules for the current round (same round key as active schedule). */
+export function pickHistoricalSchedulesForDetails(
+  application: JobApplication,
+  currentScheduled: JobApplicationBranchInterviewerAssignment | null,
+): JobApplicationBranchInterviewerAssignment[] {
+  const entries = buildInterviewTimelineByRound(application.interviews ?? []);
+
+  if (currentScheduled) {
+    const entry = entries.find(
+      (item) =>
+        item.primary.id === currentScheduled.id ||
+        item.historical.some((row) => row.id === currentScheduled.id),
+    );
+    if (!entry) {
+      return [];
+    }
+    return [...entry.historical].sort(
+      (left, right) =>
+        (Date.parse(left.createdAt ?? "") || 0) -
+        (Date.parse(right.createdAt ?? "") || 0),
+    );
+  }
+
+  const cancelledHistory: JobApplicationBranchInterviewerAssignment[] = [];
+  for (const entry of entries) {
+    if (
+      entry.primary.status === "CANCELLED" &&
+      isValidInterviewSchedule(entry.primary.scheduledAt)
+    ) {
+      cancelledHistory.push(entry.primary);
+    }
+    for (const row of entry.historical) {
+      if (
+        row.status === "CANCELLED" &&
+        isValidInterviewSchedule(row.scheduledAt)
+      ) {
+        cancelledHistory.push(row);
+      }
+    }
+  }
+
+  return cancelledHistory.sort(
+    (left, right) =>
+      (Date.parse(left.createdAt ?? "") || 0) -
+      (Date.parse(right.createdAt ?? "") || 0),
+  );
+}
+
 export function pickPreviousRoundInterview(
   application: JobApplication,
   active: JobApplicationBranchInterviewerAssignment | null,

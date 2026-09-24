@@ -33,18 +33,20 @@ import {
   formatDetailDateTime,
   formatRoundHeading,
   pickActiveInterviewForDetails,
-  pickPreviousRoundInterview,
+  pickHistoricalSchedulesForDetails,
   resolveApplicationWorkflowStateLabel,
 } from "@/src/features/job-applications/utils/job-application-details.utils";
 import {
   formatBranchAddress,
   formatInterviewDateTimeLabel,
+  formatInterviewLifecycleStatusLabel,
   formatInterviewModeLabel,
   formatInterviewResultLabel,
   formatInterviewerName,
-  isOnlineInterviewMode,
+  canShowJoinInterviewLink,
   isOfflineInterviewMode,
 } from "@/src/features/job-applications/utils/interview-schedule.utils";
+import { pickCurrentScheduledInterview } from "@/src/features/job-applications/types/job-application.types";
 
 function hasText(value: unknown): value is string {
   return typeof value === "string" && value.trim() !== "" && value.trim() !== "—";
@@ -80,13 +82,18 @@ function RoundSummaryCard({
   title,
   interview,
   emphasizeCurrent,
+  emphasizePrevious,
+  showJoinInterview,
 }: {
   title: string;
   interview: JobApplicationBranchInterviewerAssignment;
   emphasizeCurrent?: boolean;
+  emphasizePrevious?: boolean;
+  showJoinInterview?: boolean;
 }) {
   const resultLabel = formatInterviewResultLabel(interview.result);
   const pipeline = resolveInterviewPipelineDisplay(interview);
+  const lifecycleStatus = formatInterviewLifecycleStatusLabel(interview.status);
   const scheduledLabel = formatInterviewDateTimeLabel(interview.scheduledAt);
   const recordedAt =
     interview.status === "COMPLETED"
@@ -95,12 +102,11 @@ function RoundSummaryCard({
   const feedback = interview.evaluation?.trim() || null;
   const modeLabel = formatInterviewModeLabel(interview.mode);
   const interviewerName = formatInterviewerName(interview.interviewer);
-  const isOnline = isOnlineInterviewMode(interview.mode);
   const isOffline = isOfflineInterviewMode(interview.mode);
-  const meetingLink =
-    isOnline && interview.locationOrLink?.trim()
-      ? interview.locationOrLink.trim()
-      : null;
+  const meetingLink = interview.locationOrLink?.trim() || null;
+  const allowJoin =
+    showJoinInterview ??
+    canShowJoinInterviewLink(interview, { historical: emphasizePrevious });
   const venue =
     isOffline && interview.locationOrLink?.trim()
       ? interview.locationOrLink.trim()
@@ -112,12 +118,32 @@ function RoundSummaryCard({
       className={`rounded-lg border px-3 py-3 ${
         emphasizeCurrent
           ? "border-sky-200 bg-sky-50/50"
-          : "border-slate-100 bg-slate-50/80"
+          : emphasizePrevious
+            ? "border-slate-200 bg-slate-100/70"
+            : "border-slate-100 bg-slate-50/80"
       }`}
     >
+      {emphasizePrevious ? (
+        <p className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+          Previous schedule
+        </p>
+      ) : emphasizeCurrent ? (
+        <p className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
+          Current schedule
+        </p>
+      ) : null}
       <p className="text-sm font-semibold text-[#102A56]">{title}</p>
       <div className="mt-2 grid gap-3 sm:grid-cols-2">
-        <Info label="Status" value={pipeline.label} />
+        <Info
+          label="Status"
+          value={
+            interview.status === "SCHEDULED" ||
+            interview.status === "CANCELLED" ||
+            interview.status === "ASSIGNED"
+              ? lifecycleStatus ?? pipeline.label
+              : pipeline.label
+          }
+        />
         {scheduledLabel ? (
           <Info label="Scheduled" value={scheduledLabel} />
         ) : null}
@@ -147,7 +173,7 @@ function RoundSummaryCard({
           <Info label="Address" value={branchAddress} />
         ) : null}
       </div>
-      {isOnline && meetingLink ? (
+      {allowJoin && meetingLink ? (
         <div className="mt-3">
           <a
             href={meetingLink}
@@ -169,11 +195,13 @@ interface Props {
 
 export function JobApplicationDetailsContent({ application }: Props) {
   const assignment = getBranchInterviewerAssignment(application);
-  const activeInterview = pickActiveInterviewForDetails(application);
-  const previousInterview = pickPreviousRoundInterview(
+  const currentScheduled = pickCurrentScheduledInterview(application);
+  const historicalSchedules = pickHistoricalSchedulesForDetails(
     application,
-    activeInterview,
+    currentScheduled,
   );
+  const activeInterview =
+    currentScheduled ?? pickActiveInterviewForDetails(application);
   const workflowLabel = resolveApplicationWorkflowStateLabel(application);
   const interviewDisplay = resolveApplicationInterviewDisplay(application);
 
@@ -315,23 +343,36 @@ export function JobApplicationDetailsContent({ application }: Props) {
       </Section>
 
       <Section title="Current Interview">
-        {activeInterview ? (
+        {activeInterview || historicalSchedules.length > 0 ? (
           <div className="space-y-3">
-            {previousInterview ? (
+            {currentScheduled ? (
               <RoundSummaryCard
-                title={formatRoundHeading(previousInterview)}
-                interview={previousInterview}
+                title={formatRoundHeading(currentScheduled)}
+                interview={currentScheduled}
+                emphasizeCurrent
+                showJoinInterview
+              />
+            ) : activeInterview &&
+              activeInterview.status !== "CANCELLED" &&
+              !historicalSchedules.some(
+                (row) => row.id === activeInterview.id,
+              ) ? (
+              <RoundSummaryCard
+                title={formatRoundHeading(activeInterview)}
+                interview={activeInterview}
+                emphasizeCurrent
+                showJoinInterview={false}
               />
             ) : null}
-            <RoundSummaryCard
-              title={
-                previousInterview
-                  ? `Current Round: ${formatRoundHeading(activeInterview)}`
-                  : formatRoundHeading(activeInterview)
-              }
-              interview={activeInterview}
-              emphasizeCurrent
-            />
+            {historicalSchedules.map((interview) => (
+              <RoundSummaryCard
+                key={interview.id}
+                title={formatRoundHeading(interview)}
+                interview={interview}
+                emphasizePrevious
+                showJoinInterview={false}
+              />
+            ))}
           </div>
         ) : (
           <p className="text-sm text-[#647A9B]">

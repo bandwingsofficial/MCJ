@@ -11,6 +11,7 @@ import {
   canReapplyToJob,
   isUnderReviewStatus,
 } from "@/src/features/student-jobs/utils/job-application-status.utils";
+import { resolveCustomerInterviewStatusForDisplay } from "@/src/features/student-jobs/utils/job-application-interview.utils";
 
 import type {
   JobApplication,
@@ -26,6 +27,8 @@ export function ApplicationStatus({
   const router = useRouter();
   const showReapply = canReapplyToJob(application.status);
   const jobSlug = application.job.slug;
+  const interviewStatusDisplay =
+    resolveCustomerInterviewStatusForDisplay(application);
 
   return (
     <Card className="space-y-4 p-6">
@@ -51,9 +54,7 @@ export function ApplicationStatus({
             Interview Status
           </p>
           <div className="mt-1">
-            <ApplicationInterviewStatusBadge
-              status={application.interviewStatus ?? "NOT_YET"}
-            />
+            <ApplicationInterviewStatusBadge status={interviewStatusDisplay} />
           </div>
         </div>
 
