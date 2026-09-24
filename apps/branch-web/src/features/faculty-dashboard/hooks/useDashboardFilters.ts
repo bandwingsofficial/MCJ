@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { formatBatchLabel } from "@/src/features/branch-ops/utils/batch-display";
 import { useAsyncData } from "@/src/shared/hooks/use-async-data";
@@ -22,6 +23,7 @@ const DEFAULT_FILTERS = (): DashboardFilterState => ({
 });
 
 export function useDashboardFilters() {
+  const branchId = useCurrentBranchId();
   const [filters, setFilters] = useState<DashboardFilterState>(DEFAULT_FILTERS);
 
   const dateRange = useMemo(
@@ -53,14 +55,14 @@ export function useDashboardFilters() {
     ],
   );
 
-  const batchesQuery = useAsyncData(() => branchOpsApi.batches(), []);
+  const batchesQuery = useAsyncData(() => branchOpsApi.batches(), [branchId]);
 
   const sessionsQuery = useAsyncData(
     () =>
       filters.batchId !== "ALL"
         ? branchOpsApi.batchSessions(filters.batchId)
         : Promise.resolve([]),
-    [filters.batchId],
+    [branchId, filters.batchId],
   );
 
   const batchOptions = useMemo(

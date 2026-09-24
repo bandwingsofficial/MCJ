@@ -2,6 +2,7 @@
 
 import { FileText, Link2, PlayCircle } from "lucide-react";
 
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { trainerNames } from "@/src/features/branch-ops/utils/batch-display";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
@@ -30,9 +31,10 @@ function resourceIcon(type: string) {
 }
 
 export function BatchCoursePanel({ batchId }: Props) {
+  const branchId = useCurrentBranchId();
   const { data, loading, error, reload } = useAsyncData(
     () => branchOpsApi.batchCourse(batchId),
-    [batchId],
+    [branchId, batchId],
   );
 
   if (loading) return <Loader />;

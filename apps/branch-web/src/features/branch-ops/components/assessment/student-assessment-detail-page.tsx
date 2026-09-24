@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
+import {
+  useCurrentBranch,
+  useCurrentBranchId,
+} from "@/src/features/auth/hooks/use-current-branch";
+import { resolvePortalBranchName } from "@/src/features/auth/utils/current-branch-display.util";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type { StudentTimingAssessmentDetail } from "@/src/features/branch-ops/types";
 import { formatAttendanceDisplayDate } from "@/src/features/branch-ops/utils/attendance-date.utils";
@@ -43,6 +48,8 @@ export function StudentAssessmentDetailPage({
   timingId,
   studentId,
 }: Props) {
+  const currentBranch = useCurrentBranch();
+  const branchId = useCurrentBranchId();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<StudentTimingAssessmentDetail | null>(null);
@@ -74,7 +81,7 @@ export function StudentAssessmentDetailPage({
     return () => {
       cancelled = true;
     };
-  }, [batchId, timingId, studentId]);
+  }, [branchId, batchId, timingId, studentId]);
 
   if (loading && !data) return <Loader />;
   if (error && !data) return <ErrorState description={error} />;
@@ -102,7 +109,10 @@ export function StudentAssessmentDetailPage({
       <Card className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
         <Field label="Student" value={`${data.student.name} (${data.student.studentCode})`} />
         <Field label="Student Code" value={data.student.studentCode} />
-        <Field label="Branch" value={data.branch.branchName} />
+        <Field
+          label="Branch"
+          value={resolvePortalBranchName(currentBranch, data.branch)}
+        />
         <Field label="Batch" value={`${data.batch.name} (${data.batch.code})`} />
         <Field
           label="Learning Mode"

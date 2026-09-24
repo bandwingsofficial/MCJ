@@ -29,6 +29,11 @@ import {
   paginationParams,
 } from "@/src/features/branch-ops/utils/pagination.utils";
 import { formatRoleLabel } from "@/src/core/auth/roles";
+import {
+  useCurrentBranch,
+  useCurrentBranchId,
+} from "@/src/features/auth/hooks/use-current-branch";
+import { resolvePortalBranchName } from "@/src/features/auth/utils/current-branch-display.util";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { Avatar } from "@/src/shared/components/ui/avatar";
 import { Badge } from "@/src/shared/components/ui/badge";
@@ -138,7 +143,9 @@ function StudentProfileHeader({
   student: StudentDetail;
   enrollmentDate: string | null;
 }) {
+  const currentBranch = useCurrentBranch();
   const name = studentName(student);
+  const branchLabel = resolvePortalBranchName(currentBranch, student.branch);
 
   return (
     <Card className="rounded-2xl border border-[#E1EBF5] bg-white p-4 sm:p-5">
@@ -169,7 +176,7 @@ function StudentProfileHeader({
               <span>
                 Branch:{" "}
                 <span className="font-medium text-[#102A56]">
-                  {student.branch?.branchName ?? "—"}
+                  {branchLabel}
                 </span>
               </span>
               <span>
@@ -192,11 +199,12 @@ interface Props {
 
 export function StudentDetailsPage({ studentId }: Props) {
   const role = useAuthStore((state) => state.user?.role);
+  const branchId = useCurrentBranchId();
   const [tab, setTab] = useState("overview");
 
   const studentQuery = useAsyncData(
     () => branchOpsApi.student(studentId),
-    [studentId],
+    [branchId, studentId],
   );
 
   const enrollmentsQuery = useAsyncData(
@@ -205,7 +213,7 @@ export function StudentDetailsPage({ studentId }: Props) {
         studentId,
         take: MAX_LIST_TAKE,
       }),
-    [studentId],
+    [branchId, studentId],
   );
 
   const activeEnrollment = useMemo(() => {
@@ -324,9 +332,10 @@ export function StudentDetailsPage({ studentId }: Props) {
 }
 
 function StudentAssessmentsTab({ studentId }: { studentId: string }) {
+  const branchId = useCurrentBranchId();
   const query = useAsyncData(
     () => branchOpsApi.studentAssessments(studentId),
-    [studentId],
+    [branchId, studentId],
   );
 
   if (query.loading && !query.data) return <Loader />;
@@ -343,9 +352,10 @@ function StudentAssessmentsTab({ studentId }: { studentId: string }) {
 }
 
 function StudentReportsTab({ studentId }: { studentId: string }) {
+  const branchId = useCurrentBranchId();
   const query = useAsyncData(
     () => branchOpsApi.studentAssessments(studentId),
-    [studentId],
+    [branchId, studentId],
   );
 
   if (query.loading && !query.data) return <Loader />;
@@ -414,13 +424,15 @@ function StudentOverviewTab({
   studentId: string;
   activeEnrollmentId?: string;
 }) {
+  const currentBranch = useCurrentBranch();
+  const branchId = useCurrentBranchId();
   const enrollmentsQuery = useAsyncData(
     () =>
       branchOpsApi.enrollments({
         studentId,
         take: MAX_LIST_TAKE,
       }),
-    [studentId],
+    [branchId, studentId],
   );
 
   const feesQuery = useAsyncData(
@@ -429,7 +441,7 @@ function StudentOverviewTab({
         ...(activeEnrollmentId ? { enrollmentId: activeEnrollmentId } : {}),
         ...paginationParams(1, 1),
       }),
-    [studentId, activeEnrollmentId],
+    [branchId, studentId, activeEnrollmentId],
   );
 
   const enrolledCourses = useMemo(() => {
@@ -477,7 +489,7 @@ function StudentOverviewTab({
           />
           <DetailField
             label="Branch"
-            value={student.branch?.branchName ?? "—"}
+            value={resolvePortalBranchName(currentBranch, student.branch)}
           />
           <DetailField
             label="Status"
@@ -572,9 +584,11 @@ function StudentAttendanceTab({ studentId }: { studentId: string }) {
       .enrollments({ studentId, take: MAX_LIST_TAKE })
       .then(async (result) => {
         const enrollments = (result.items ?? []).filter(
-          (item) => item.batch?.id,
+          (item) =>
+            item.batch?.id &&
+            !["PENDING", "PENDING_APPROVAL", "REJECTED"].includes(item.status),
         );
-        const summaries = await Promise.all(
+        const settled = await Promise.allSettled(
           enrollments.map(async (enrollment) => {
             const detail = await branchOpsApi.studentBatchAttendance(
               enrollment.batch!.id,
@@ -583,6 +597,16 @@ function StudentAttendanceTab({ studentId }: { studentId: string }) {
             return { enrollment, detail };
           }),
         );
+        const summaries = settled
+          .filter(
+            (
+              entry,
+            ): entry is PromiseFulfilledResult<{
+              enrollment: EnrollmentItem;
+              detail: StudentBatchAttendanceDetail;
+            }> => entry.status === "fulfilled",
+          )
+          .map((entry) => entry.value);
         if (!cancelled) setRows(summaries);
       })
       .catch((err: unknown) => {
@@ -693,6 +717,7 @@ function StudentEnrollmentsTab({
   student: StudentDetail;
   studentId: string;
 }) {
+  const branchId = useCurrentBranchId();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
@@ -702,7 +727,7 @@ function StudentEnrollmentsTab({
         studentId,
         ...paginationParams(page, pageSize),
       }),
-    [studentId, page, pageSize],
+    [branchId, studentId, page, pageSize],
   );
 
   const items = query.data?.items ?? [];

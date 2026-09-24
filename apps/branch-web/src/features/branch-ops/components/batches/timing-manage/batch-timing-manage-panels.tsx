@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  useCurrentBranch,
+  useCurrentBranchId,
+} from "@/src/features/auth/hooks/use-current-branch";
+import { resolvePortalBranchName } from "@/src/features/auth/utils/current-branch-display.util";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/enrollment-status-badge";
 import {
@@ -282,6 +287,8 @@ interface StudentsProps {
 }
 
 export function BatchTimingStudentsPanel({ batchId, timing }: StudentsProps) {
+  const currentBranch = useCurrentBranch();
+  const branchId = useCurrentBranchId();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] =
     useState<StudentStatusFilter>("ADMITTED");
@@ -355,6 +362,7 @@ export function BatchTimingStudentsPanel({ batchId, timing }: StudentsProps) {
       cancelled = true;
     };
   }, [
+    branchId,
     batchId,
     page,
     pageSize,
@@ -458,16 +466,13 @@ export function BatchTimingStudentsPanel({ batchId, timing }: StudentsProps) {
                       <TableCell className="font-mono text-sm text-slate-700">
                         {enrollment.student.studentCode}
                       </TableCell>
-                      <TableCell
-                        className="max-w-[160px] truncate text-sm text-slate-700"
-                        title={formatBranchLabel(enrollment.branch)}
-                      >
-                        {formatBranchLabel(enrollment.branch)}
+                      <TableCell className="max-w-[160px] truncate text-sm text-slate-700">
+                        {resolvePortalBranchName(
+                          currentBranch,
+                          enrollment.branch,
+                        )}
                       </TableCell>
-                      <TableCell
-                        className="max-w-[180px] truncate text-sm text-slate-700"
-                        title={enrollment.student.email ?? undefined}
-                      >
+                      <TableCell className="max-w-[180px] truncate text-sm text-slate-700">
                         {enrollment.student.email ?? "—"}
                       </TableCell>
                       <TableCell className="text-sm text-slate-700">

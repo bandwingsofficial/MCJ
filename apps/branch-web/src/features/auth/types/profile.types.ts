@@ -1,3 +1,11 @@
+export interface CurrentBranchProfile {
+  id: string;
+  branchName: string;
+  branchCode: string;
+  city?: string | null;
+  phone?: string | null;
+}
+
 export interface ProfileDto {
   id: string;
 
@@ -14,6 +22,8 @@ export interface ProfileDto {
   permissions: string[];
 
   branchId: string;
+
+  branch?: CurrentBranchProfile | null;
 
   isActive: boolean;
 

@@ -6,6 +6,8 @@ import {
   parseBranchOpsError,
   userFacingApiMessage,
 } from "@/src/features/branch-ops/api/parse-api-error";
+import { useCurrentBranch } from "@/src/features/auth/hooks/use-current-branch";
+import { resolvePortalBranchName } from "@/src/features/auth/utils/current-branch-display.util";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type { AttendanceItem } from "@/src/features/branch-ops/types";
 import {
@@ -46,6 +48,7 @@ export function ManageAttendanceModal({
   onClose,
   onSaved,
 }: Props) {
+  const currentBranch = useCurrentBranch();
   const [status, setStatus] = useState<MarkStatus>("PRESENT");
   const [saving, setSaving] = useState(false);
 
@@ -124,7 +127,7 @@ export function ManageAttendanceModal({
               />
               <Detail
                 label="Branch"
-                value={record.branch?.branchName ?? "—"}
+                value={resolvePortalBranchName(currentBranch, record.branch)}
               />
               <Detail
                 label="Main Batch"

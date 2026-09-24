@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 
 
 
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 
 import { StudentActivityModal } from "@/src/features/branch-ops/components/batches/student-activity-modal";
@@ -103,12 +104,11 @@ export function BatchStudentsPanel({ batchId, onStudentsChanged }: Props) {
 
 
 
+  const branchId = useCurrentBranchId();
+
   const { data, loading, error, reload } = useAsyncData(
-
     () => branchOpsApi.batchStudents(batchId),
-
-    [batchId],
-
+    [branchId, batchId],
   );
 
 

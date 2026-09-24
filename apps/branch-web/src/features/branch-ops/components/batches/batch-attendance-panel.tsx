@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { StatCard } from "@/src/features/branch-ops/components/stat-card";
 import type { BatchAttendanceStudentRow } from "@/src/features/branch-ops/types";
@@ -51,11 +52,12 @@ function AttendanceBar({ percentage }: { percentage: number | null }) {
 }
 
 export function BatchAttendancePanel({ batchId }: Props) {
+  const branchId = useCurrentBranchId();
   const [search, setSearch] = useState("");
 
   const { data, loading, error, reload } = useAsyncData(
     () => branchOpsApi.batchAttendanceSummary(batchId),
-    [batchId],
+    [branchId, batchId],
   );
 
   const students = useMemo(() => {

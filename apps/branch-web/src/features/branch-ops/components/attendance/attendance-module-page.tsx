@@ -27,6 +27,7 @@ import {
   getTimingsForMode,
 } from "@/src/features/branch-ops/utils/batch-mode.utils";
 import { formatRoleLabel } from "@/src/core/auth/roles";
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
@@ -137,7 +138,11 @@ export function AttendanceModulePage() {
     [filters.datePreset, filters.from, filters.to],
   );
 
-  const batchesQuery = useAsyncData(() => branchOpsApi.batches(), []);
+  const branchId = useCurrentBranchId();
+  const batchesQuery = useAsyncData(
+    () => branchOpsApi.batches(),
+    [branchId],
+  );
   const batches = batchesQuery.data ?? [];
 
   const selectedBatch = useMemo(
@@ -215,6 +220,7 @@ export function AttendanceModulePage() {
   const reportQuery = useAsyncData(
     () => branchOpsApi.attendanceReport(reportParams),
     [
+      branchId,
       reportParams.batchId,
       reportParams.batchTimingId,
       reportParams.mode,

@@ -1,6 +1,8 @@
 "use client";
 
 import { BatchStatusBadge } from "@/src/features/branch-ops/components/batches/batch-status-badge";
+import { useCurrentBranch } from "@/src/features/auth/hooks/use-current-branch";
+import { resolvePortalBranchName } from "@/src/features/auth/utils/current-branch-display.util";
 import type { BatchListItem } from "@/src/features/branch-ops/types";
 import { courseTitle } from "@/src/features/branch-ops/utils/batch-display";
 import {
@@ -46,6 +48,7 @@ function formatTimingLabel(name: string, timingRange: string): string {
 }
 
 export function BatchManageDetailsPanel({ batch }: Props) {
+  const currentBranch = useCurrentBranch();
   const aggregateStats = getBatchAggregateStats(batch);
   const timings = getBatchTimings(batch);
 
@@ -61,7 +64,7 @@ export function BatchManageDetailsPanel({ batch }: Props) {
           <BatchManageField label="Course" value={courseTitle(batch.course)} />
           <BatchManageField
             label="Branch"
-            value={batch.branch?.branchName?.trim() || "—"}
+            value={resolvePortalBranchName(currentBranch, batch.branch)}
           />
           <BatchManageField
             label="Duration"

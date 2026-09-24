@@ -15,6 +15,7 @@ import {
   Tag,
 } from "lucide-react";
 
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type {
   BatchCourseContent,
@@ -575,9 +576,10 @@ function CourseMaterials({
 }
 
 export function BatchManageCoursePanel({ batch }: Props) {
+  const branchId = useCurrentBranchId();
   const { data, loading, error, reload } = useAsyncData(
     () => branchOpsApi.batchCourse(batch.id),
-    [batch.id],
+    [branchId, batch.id],
   );
 
   const courses = useMemo(() => {

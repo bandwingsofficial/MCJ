@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronRight, ListFilter, Plus, Settings2 } from "lucide-react";
 
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { getAssessmentTypeBadgeClass } from "@/src/features/branch-ops/constants/assessment.constants";
 import { AddAssessmentModal } from "@/src/features/branch-ops/components/assessment/add-assessment-modal";
@@ -190,7 +191,8 @@ export function AssessmentsModulePage() {
     [filters.datePreset, filters.from, filters.to],
   );
 
-  const batchesQuery = useAsyncData(() => branchOpsApi.batches(), []);
+  const branchId = useCurrentBranchId();
+  const batchesQuery = useAsyncData(() => branchOpsApi.batches(), [branchId]);
   const batches = batchesQuery.data ?? [];
 
   const selectedBatch = useMemo(
@@ -247,7 +249,7 @@ export function AssessmentsModulePage() {
             take: 500,
           })
         : Promise.resolve(null),
-    [useTimingScope, filters.batchId],
+    [branchId, useTimingScope, filters.batchId],
   );
 
   const timingStudentIds = useMemo(() => {
@@ -313,6 +315,7 @@ export function AssessmentsModulePage() {
         ? Promise.resolve({ items: [], total: 0 })
         : branchOpsApi.assessmentReport(reportParams),
     [
+      branchId,
       useTimingScope,
       reportParams.batchId,
       reportParams.type,
@@ -345,6 +348,7 @@ export function AssessmentsModulePage() {
       };
     },
     [
+      branchId,
       useTimingScope,
       timingStudentIds,
       sharedQueryParams.batchId,

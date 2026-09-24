@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type { StudentFeePayment } from "@/src/features/branch-ops/types";
 import {
@@ -43,6 +44,7 @@ interface Props {
 }
 
 export function StudentFeesTab({ studentId }: Props) {
+  const branchId = useCurrentBranchId();
   const [enrollmentOverride, setEnrollmentOverride] = useState<
     string | undefined
   >();
@@ -55,7 +57,7 @@ export function StudentFeesTab({ studentId }: Props) {
         ...(enrollmentOverride ? { enrollmentId: enrollmentOverride } : {}),
         ...paginationParams(page, pageSize),
       }),
-    [studentId, enrollmentOverride, page, pageSize],
+    [branchId, studentId, enrollmentOverride, page, pageSize],
   );
 
   if (query.loading && !query.data) {

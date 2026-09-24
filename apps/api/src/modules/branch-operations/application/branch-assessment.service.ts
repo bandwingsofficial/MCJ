@@ -23,6 +23,7 @@ import {
   summarizeAssessmentMarks,
 } from './assessment-analytics.util';
 import { resolveBranchBatchTimingContext } from './utils/resolve-branch-timing-context.util';
+import { findPortalBranch } from './utils/portal-branch.util';
 import {
   formatAttendanceSessionLabel,
   toAttendanceSessionDto,
@@ -1439,8 +1440,13 @@ export class BranchAssessmentService {
       });
     }
 
+    const portalBranch = await findPortalBranch(this.prisma, user.branchId);
+    if (!portalBranch) {
+      throw new NotFoundException('Branch not found');
+    }
+
     return {
-      branch: assignment.batch.branch,
+      branch: portalBranch,
       batch: {
         id: assignment.batch.id,
         name: assignment.batch.name,

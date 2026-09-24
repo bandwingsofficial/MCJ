@@ -11,6 +11,7 @@ import {
   Power,
 } from "lucide-react";
 
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import {
   parseBranchOpsError,
@@ -60,6 +61,7 @@ function RoundStatusBadge({ status }: { status: string }) {
 }
 
 export default function InterviewRoundsPage() {
+  const branchId = useCurrentBranchId();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("ALL");
@@ -89,7 +91,7 @@ export default function InterviewRoundsPage() {
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-    [debouncedSearch, status, page, pageSize],
+    [branchId, debouncedSearch, status, page, pageSize],
   );
 
   const items = query.data?.items ?? [];

@@ -21,6 +21,11 @@ import {
   type AttendanceCalendarDayMeta,
 } from "@/src/features/branch-ops/utils/attendance-calendar.utils";
 import { formatRoleLabel } from "@/src/core/auth/roles";
+import {
+  useCurrentBranch,
+  useCurrentBranchId,
+} from "@/src/features/auth/hooks/use-current-branch";
+import { resolvePortalBranchName } from "@/src/features/auth/utils/current-branch-display.util";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Card } from "@/src/shared/components/ui/card";
@@ -49,6 +54,8 @@ export function AttendanceDetailsPage({
   studentId,
 }: Props) {
   const role = useAuthStore((state) => state.user?.role);
+  const currentBranch = useCurrentBranch();
+  const branchId = useCurrentBranchId();
 
   const [loading, setLoading] = useState(true);
   const [calendarLoading, setCalendarLoading] = useState(false);
@@ -103,7 +110,7 @@ export function AttendanceDetailsPage({
     } finally {
       setLoading(false);
     }
-  }, [batchId, studentId, tableQueryParams]);
+  }, [branchId, batchId, studentId, tableQueryParams]);
 
   const loadCalendar = useCallback(async () => {
     setCalendarLoading(true);
@@ -139,7 +146,7 @@ export function AttendanceDetailsPage({
     } finally {
       setCalendarLoading(false);
     }
-  }, [batchId, studentId, calendarQueryParams, calendarMonth]);
+  }, [branchId, batchId, studentId, calendarQueryParams, calendarMonth]);
 
   useEffect(() => {
     void loadTable();
@@ -205,7 +212,10 @@ export function AttendanceDetailsPage({
           value={`${data.student.name} (${data.student.studentCode})`}
         />
         <Field label="Student Code" value={data.student.studentCode} />
-        <Field label="Branch" value={data.branch.branchName} />
+        <Field
+          label="Branch"
+          value={resolvePortalBranchName(currentBranch, data.branch)}
+        />
         <Field
           label="Batch"
           value={`${data.batch.name} (${data.batch.code})`}

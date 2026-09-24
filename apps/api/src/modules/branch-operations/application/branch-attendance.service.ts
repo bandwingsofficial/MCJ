@@ -46,7 +46,9 @@ import {
   facultyBatchStudentWhere,
   facultyBatchTimingStudentWhere,
   facultyBranchBatchWhere,
+  facultyBranchEnrollmentWhere,
 } from './faculty-batch-query';
+import { findPortalBranch } from './utils/portal-branch.util';
 
 const DAY_INDEX: Record<string, number> = {
   SUNDAY: 0,
@@ -86,10 +88,10 @@ const enrollmentAttendanceInclude = {
       startDate: true,
       endDate: true,
       daysOfWeek: true,
-      branch: {
-        select: { id: true, branchName: true, branchCode: true },
-      },
     },
+  },
+  branch: {
+    select: { id: true, branchName: true, branchCode: true },
   },
   batchTiming: {
     select: { id: true, name: true, mode: true },
@@ -1134,6 +1136,11 @@ export class BranchAttendanceService {
   async getBatchAttendanceAnalytics(user: BranchAuthUser, batchId: string) {
     await this.access.assertFacultyCanAccessBatch(user, batchId);
 
+    const portalBranch = await findPortalBranch(this.prisma, user.branchId);
+    if (!portalBranch) {
+      throw new NotFoundException('Branch not found');
+    }
+
     const batch = await this.prisma.batch.findFirst({
       where: { id: batchId, ...facultyBranchBatchWhere(user.branchId) },
       select: {
@@ -1291,7 +1298,7 @@ export class BranchAttendanceService {
         name: batch.name,
         code: batch.code,
       },
-      branch: batch.branch,
+      branch: portalBranch,
       overview: {
         workingDays,
         sessionsConducted: conductedSessions,
@@ -1316,6 +1323,11 @@ export class BranchAttendanceService {
     batchId: string,
   ) {
     await this.access.assertFacultyCanAccessBatch(user, batchId);
+
+    const portalBranch = await findPortalBranch(this.prisma, user.branchId);
+    if (!portalBranch) {
+      throw new NotFoundException('Branch not found');
+    }
 
     const batch = await this.prisma.batch.findFirst({
       where: { id: batchId, ...facultyBranchBatchWhere(user.branchId) },
@@ -1348,7 +1360,7 @@ export class BranchAttendanceService {
     if (!timingIds.length) {
       return {
         batch: { id: batch.id, name: batch.name, code: batch.code },
-        branch: batch.branch,
+        branch: portalBranch,
         modes: [],
       };
     }
@@ -1457,7 +1469,7 @@ export class BranchAttendanceService {
 
     return {
       batch: { id: batch.id, name: batch.name, code: batch.code },
-      branch: batch.branch,
+      branch: portalBranch,
       modes,
     };
   }
@@ -1614,7 +1626,7 @@ export class BranchAttendanceService {
 
     const enrollment = await this.prisma.enrollment.findFirst({
       where: {
-        ...facultyBatchStudentWhere(batchId, user.branchId),
+        ...facultyBranchEnrollmentWhere(user.branchId, { batchId }),
         studentId,
       },
       include: enrollmentAttendanceInclude,
@@ -1864,7 +1876,7 @@ export class BranchAttendanceService {
         endDate: enrollment.batch.endDate,
         daysOfWeek: enrollment.batch.daysOfWeek,
       },
-      branch: enrollment.batch.branch,
+      branch: enrollment.branch,
       enrollmentId: enrollment.id,
       enrollmentStatus: enrollment.status,
       batchTiming: enrollment.batchTiming
@@ -2095,13 +2107,18 @@ export class BranchAttendanceService {
       });
     }
 
+    const portalBranch = await findPortalBranch(this.prisma, user.branchId);
+    if (!portalBranch) {
+      throw new NotFoundException('Branch not found');
+    }
+
     return {
       batch: {
         id: assignment.batch.id,
         name: assignment.batch.name,
         code: assignment.batch.code,
       },
-      branch: assignment.batch.branch,
+      branch: portalBranch,
       session: toAttendanceSessionDto({
         batchCourseId: assignment.id,
         sessionId: assignment.session?.id,

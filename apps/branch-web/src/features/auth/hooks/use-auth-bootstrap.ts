@@ -6,6 +6,7 @@ import {
 } from "react";
 
 import { authService } from "@/src/features/auth/services/auth.service";
+import { mapBranchUserMeToProfile } from "@/src/features/auth/utils/profile.mapper";
 
 import { TokenStorage } from "@/src/core/storage/token-storage";
 
@@ -36,9 +37,7 @@ export const useAuthBootstrap =
             const response =
               await authService.getProfile();
 
-            setUser(
-              response.data
-            );
+            setUser(mapBranchUserMeToProfile(response.data));
           } catch {
             TokenStorage.clear();
 

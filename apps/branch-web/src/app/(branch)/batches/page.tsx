@@ -23,6 +23,7 @@ import {
   type BatchDateLifecycleTab,
 } from "@/src/features/branch-ops/utils/batch-selection.utils";
 import { formatRoleLabel } from "@/src/core/auth/roles";
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { CategoryPagination } from "@/src/shared/components/ui/category-pagination";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -43,6 +44,7 @@ const columnCount = 7;
 
 export default function BatchesPage() {
   const role = useAuthStore((state) => state.user?.role);
+  const branchId = useCurrentBranchId();
   const isFaculty = role === "FACULTY";
   const [search, setSearch] = useState("");
   const [lifecycleTab, setLifecycleTab] =
@@ -62,7 +64,7 @@ export default function BatchesPage() {
 
   const { data, loading, error, reload } = useAsyncData(
     () => branchOpsApi.batches(),
-    [],
+    [branchId],
   );
 
   const lifecycleCounts = useMemo(() => {

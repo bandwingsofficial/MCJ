@@ -6,6 +6,8 @@ import { MonitorPlay } from "lucide-react";
 import { cn } from "@/src/shared/lib/cn";
 
 import { BatchModeBadge } from "@/src/features/branch-ops/components/batches/batch-mode-badge";
+import { useCurrentBranch } from "@/src/features/auth/hooks/use-current-branch";
+import { resolvePortalBranchName } from "@/src/features/auth/utils/current-branch-display.util";
 import type {
   BatchListItem,
   BatchSummary,
@@ -66,6 +68,7 @@ export function BatchManageOverviewPanel({
   summary,
   summaryLoading = false,
 }: Props) {
+  const currentBranch = useCurrentBranch();
   const modeSummaries = useMemo(() => getBatchModeSummaries(batch), [batch]);
   const aggregateStats = useMemo(
     () => getBatchAggregateStats(batch),
@@ -194,7 +197,7 @@ export function BatchManageOverviewPanel({
         <dl className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <BatchManageField
             label="Branch"
-            value={batch.branch?.branchName?.trim() || "—"}
+            value={resolvePortalBranchName(currentBranch, batch.branch)}
           />
           <BatchManageField
             label="Course"

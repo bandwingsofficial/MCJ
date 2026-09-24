@@ -18,6 +18,7 @@ import {
   DEFAULT_BRANCH_JOB_APPLICATION_FILTERS,
   type BranchJobApplicationFilters,
 } from "@/src/features/job-applications/constants/job-application.constants";
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { formatRoleLabel } from "@/src/core/auth/roles";
 import { CategoryPagination } from "@/src/shared/components/ui/category-pagination";
@@ -27,6 +28,7 @@ import { useAsyncData } from "@/src/shared/hooks/use-async-data";
 
 export default function JobApplicationsPage() {
   const role = useAuthStore((state) => state.user?.role);
+  const branchId = useCurrentBranchId();
   const [filters, setFilters] = useState<BranchJobApplicationFilters>(
     DEFAULT_BRANCH_JOB_APPLICATION_FILTERS,
   );
@@ -62,6 +64,7 @@ export default function JobApplicationsPage() {
         take: filters.pageSize,
       }),
     [
+      branchId,
       debouncedSearch,
       filters.status,
       filters.jobId,

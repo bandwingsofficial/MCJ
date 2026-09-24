@@ -23,6 +23,7 @@ import {
   type InterviewTab,
 } from "@/src/features/interviews/constants/interview.constants";
 import { toJobApplicationLike } from "@/src/features/interviews/utils/interview-display.utils";
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { formatRoleLabel } from "@/src/core/auth/roles";
 import { CategoryPagination } from "@/src/shared/components/ui/category-pagination";
@@ -32,6 +33,7 @@ import { useAsyncData } from "@/src/shared/hooks/use-async-data";
 
 export default function InterviewsPage() {
   const role = useAuthStore((state) => state.user?.role);
+  const branchId = useCurrentBranchId();
   const [filters, setFilters] = useState<BranchInterviewFilters>(
     DEFAULT_BRANCH_INTERVIEW_FILTERS,
   );
@@ -71,6 +73,7 @@ export default function InterviewsPage() {
         take: filters.pageSize,
       }),
     [
+      branchId,
       debouncedSearch,
       filters.tab,
       filters.interviewerId,

@@ -15,14 +15,16 @@ import {
   TableRow,
 } from "@/src/shared/components/ui/table";
 import { useAsyncData } from "@/src/shared/hooks/use-async-data";
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { formatRoleLabel } from "@/src/core/auth/roles";
 
 export default function PlacementsPage() {
   const role = useAuthStore((state) => state.user?.role);
+  const branchId = useCurrentBranchId();
   const { data, loading, error, reload } = useAsyncData(
     () => branchOpsApi.placementActivity(),
-    [],
+    [branchId],
   );
 
   if (loading) return <Loader />;

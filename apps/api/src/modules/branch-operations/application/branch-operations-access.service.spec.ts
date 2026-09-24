@@ -24,6 +24,9 @@ describe('BranchOperationsAccessService', () => {
       batch: {
         findFirst: jest.fn().mockResolvedValue(null),
       },
+      branchUser: {
+        findFirst: jest.fn().mockResolvedValue({ linkedTrainerId: null }),
+      },
       batchFaculty: {
         findMany: jest.fn().mockResolvedValue([]),
       },
@@ -50,6 +53,9 @@ describe('BranchOperationsAccessService', () => {
 
   it('scopes Faculty batch lists to BranchBatch assignments for the authenticated branchId', async () => {
     const prisma = {
+      branchUser: {
+        findFirst: jest.fn().mockResolvedValue({ linkedTrainerId: null }),
+      },
       batchFaculty: {
         findMany: jest.fn().mockResolvedValue([]),
       },
@@ -73,6 +79,9 @@ describe('BranchOperationsAccessService', () => {
           name: 'morning',
           isActive: true,
         }),
+      },
+      branchUser: {
+        findFirst: jest.fn().mockResolvedValue({ linkedTrainerId: null }),
       },
       batchFaculty: {
         findMany: jest.fn().mockResolvedValue([]),

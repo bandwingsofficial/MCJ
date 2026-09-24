@@ -1,11 +1,11 @@
 import { BranchUserRole } from '@modules/branch-user/domain/enums/branch-user-role.enum';
 
 /**
- * Faculty visibility:
- * - No BatchFaculty rows → all batches of the authenticated branch
- *   (Admin assigns batches via BranchBatch in Branch Management; that is the source of truth.)
- * - One or more BatchFaculty rows → only those assigned batches.
- * Branch Manager / staff always see all batches of their branch.
+ * Faculty (trainer-linked branch user) batch visibility:
+ * - Branch Manager / staff → all batches assigned to the branch (BranchBatch).
+ * - No explicit trainer batch scope → all branch-assigned batches.
+ * - BranchTrainer COURSE_BATCH rows with batchId → only those batches.
+ * Legacy BatchFaculty rows apply only when the user has no linkedTrainerId.
  */
 export function resolveFacultyBatchScope(
   role: string,

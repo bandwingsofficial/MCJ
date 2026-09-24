@@ -10,6 +10,7 @@ import { resolveBatchTimingScope } from '@modules/batch/infrastructure/utils/res
 import type { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { toAttendanceSessionDto } from '../attendance-session.util';
 import type { BranchOperationsAccessService } from '../branch-operations-access.service';
+import { findPortalBranch } from './portal-branch.util';
 
 type ResolveBranchTimingContextOptions = {
   forWrite: boolean;
@@ -35,6 +36,11 @@ export async function resolveBranchBatchTimingContext(
 
   await access.assertFacultyCanAccessBatch(user, scope.batchId);
 
+  const portalBranch = await findPortalBranch(prisma, user.branchId);
+  if (!portalBranch) {
+    throw new NotFoundException('Branch not found');
+  }
+
   const timing = await prisma.batchTiming.findFirst({
     where: {
       id: scope.timingId,
@@ -54,9 +60,6 @@ export async function resolveBranchBatchTimingContext(
           endDate: true,
           isActive: true,
           isDeleted: true,
-          branch: {
-            select: { id: true, branchName: true, branchCode: true },
-          },
           course: {
             select: { id: true, title: true, code: true },
           },
@@ -109,7 +112,7 @@ export async function resolveBranchBatchTimingContext(
       name: timing.batch.name,
       code: timing.batch.code,
     },
-    branch: timing.batch.branch,
+    branch: portalBranch,
     timing: {
       id: timing.id,
       name: timing.name,

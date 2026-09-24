@@ -12,6 +12,7 @@ import {
   Power,
 } from "lucide-react";
 
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import {
   parseBranchOpsError,
@@ -63,6 +64,7 @@ function UserStatusBadge({ isActive }: { isActive: boolean }) {
 }
 
 export default function BranchUsersPage() {
+  const branchId = useCurrentBranchId();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [role, setRole] = useState("ALL");
@@ -98,7 +100,7 @@ export default function BranchUsersPage() {
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-    [debouncedSearch, role, status, page, pageSize],
+    [branchId, debouncedSearch, role, status, page, pageSize],
   );
 
   const items = query.data?.items ?? [];

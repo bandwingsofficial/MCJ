@@ -265,14 +265,17 @@ import { BranchModule } from '../branch/branch.module';
       useFactory: (
         branchUserRepo: BranchUserRepository,
         domainService: BranchUserDomainService,
+        prisma: PrismaService,
       ) =>
         new GetBranchUserMeHandler(
           branchUserRepo,
           domainService,
+          prisma,
         ),
       inject: [
         BRANCH_USER_TOKENS.BRANCH_USER_REPOSITORY,
         BranchUserDomainService,
+        PrismaService,
       ],
     },
   ],

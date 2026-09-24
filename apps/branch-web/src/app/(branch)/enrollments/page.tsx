@@ -7,6 +7,7 @@ import { ChevronRight, Eye } from "lucide-react";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/enrollment-status-badge";
 import { formatRoleLabel } from "@/src/core/auth/roles";
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { CategoryPagination } from "@/src/shared/components/ui/category-pagination";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -36,6 +37,7 @@ const columnCount = 7;
 
 export default function EnrollmentsPage() {
   const role = useAuthStore((state) => state.user?.role);
+  const branchId = useCurrentBranchId();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [batchId, setBatchId] = useState("ALL");
@@ -51,7 +53,12 @@ export default function EnrollmentsPage() {
     return () => window.clearTimeout(timer);
   }, [search]);
 
-  const batchesQuery = useAsyncData(() => branchOpsApi.batches(), []);
+  useEffect(() => {
+    setBatchId("ALL");
+    setPage(1);
+  }, [branchId]);
+
+  const batchesQuery = useAsyncData(() => branchOpsApi.batches(), [branchId]);
   const query = useAsyncData(
     () =>
       branchOpsApi.enrollments({
@@ -61,7 +68,7 @@ export default function EnrollmentsPage() {
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-    [debouncedSearch, batchId, status, page, pageSize],
+    [branchId, debouncedSearch, batchId, status, page, pageSize],
   );
 
   const items = query.data?.items ?? [];

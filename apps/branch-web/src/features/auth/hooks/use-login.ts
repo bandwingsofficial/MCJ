@@ -7,6 +7,7 @@ import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 
 import { authService } from "@/src/features/auth/services/auth.service";
+import { mapBranchUserMeToProfile } from "@/src/features/auth/utils/profile.mapper";
 
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
 
@@ -44,35 +45,9 @@ export const useLogin = () => {
           values
         );
 
-      setUser({
-        id:
-          response.data.id,
+      const profileResponse = await authService.getProfile();
 
-        firstName:
-          response.data.firstName,
-
-        lastName:
-          response.data.lastName,
-
-        email:
-          response.data.email,
-
-        phone:
-          response.data.phone,
-
-        role:
-          response.data.role,
-
-        permissions:
-          response.data.permissions,
-
-        branchId:
-          response.data.branchId,
-
-        isActive: true,
-
-        lastLoginAt: null,
-      });
+      setUser(mapBranchUserMeToProfile(profileResponse.data));
 
       appToast.success(
         response.message ??

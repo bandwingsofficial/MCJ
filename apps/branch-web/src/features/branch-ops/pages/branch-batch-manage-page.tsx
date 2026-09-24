@@ -25,6 +25,7 @@ import type { BatchListItem } from "@/src/features/branch-ops/types";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
+import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
 import { useAsyncData } from "@/src/shared/hooks/use-async-data";
 
 const BATCH_TAB_LABELS = Object.fromEntries(
@@ -40,9 +41,10 @@ interface BatchPageProps {
 }
 
 export function BranchBatchManagePage({ batchId }: BatchPageProps) {
+  const branchId = useCurrentBranchId();
   const { data, loading, error, reload } = useAsyncData(
     () => branchOpsApi.batch(batchId),
-    [batchId],
+    [branchId, batchId],
   );
   const [activeSection, setActiveSection] = useState<string | undefined>(
     BATCH_TAB_LABELS[BATCH_MANAGE_DEFAULT_TAB],

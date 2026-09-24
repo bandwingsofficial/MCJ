@@ -35,6 +35,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/shared/components/ui/table";
+import {
+  useCurrentBranch,
+  useCurrentBranchId,
+} from "@/src/features/auth/hooks/use-current-branch";
 import { useAsyncData } from "@/src/shared/hooks/use-async-data";
 import { cn } from "@/src/shared/lib/cn";
 import { appToast } from "@/src/shared/lib/toast";
@@ -68,6 +72,8 @@ export function TakeAttendanceModal({
     {},
   );
   const [saving, setSaving] = useState(false);
+  const currentBranch = useCurrentBranch();
+  const branchId = useCurrentBranchId();
 
   const assignmentBatches = useMemo(
     () => batches.filter((batch) => isBatchSelectableForAssignment(batch)),
@@ -97,10 +103,6 @@ export function TakeAttendanceModal({
   const selectedBatch =
     selectableBatches.find((batch) => batch.id === batchId) ?? null;
 
-  const branchInfo = useMemo(() => {
-    return selectedBatch?.branch ?? selectableBatches[0]?.branch ?? null;
-  }, [selectedBatch, selectableBatches]);
-
   const modeOptions = useMemo(() => {
     if (!selectedBatch) return [];
     return getConfiguredBatchModes(selectedBatch).map((item) => ({
@@ -127,7 +129,7 @@ export function TakeAttendanceModal({
       batchId && batchTimingId && date
         ? branchOpsApi.attendanceSheet({ batchId, batchTimingId, date })
         : Promise.resolve(null),
-    [batchId, batchTimingId, date],
+    [branchId, batchId, batchTimingId, date],
   );
 
   useEffect(() => {
@@ -270,7 +272,7 @@ export function TakeAttendanceModal({
       }
     >
       <div className="space-y-5">
-        {branchInfo ? (
+        {currentBranch ? (
           <div className="rounded-xl border border-slate-200 bg-[#F8FBFF] px-4 py-3 text-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Branch
@@ -278,22 +280,22 @@ export function TakeAttendanceModal({
             <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[#102A56]">
               <span>
                 <span className="text-slate-500">Name:</span>{" "}
-                <span className="font-medium">{branchInfo.branchName}</span>
+                <span className="font-medium">{currentBranch.branchName}</span>
               </span>
               <span>
                 <span className="text-slate-500">Code:</span>{" "}
-                <span className="font-medium">{branchInfo.branchCode}</span>
+                <span className="font-medium">{currentBranch.branchCode}</span>
               </span>
-              {branchInfo.city ? (
+              {currentBranch.city ? (
                 <span>
                   <span className="text-slate-500">City:</span>{" "}
-                  <span className="font-medium">{branchInfo.city}</span>
+                  <span className="font-medium">{currentBranch.city}</span>
                 </span>
               ) : null}
-              {branchInfo.phone ? (
+              {currentBranch.phone ? (
                 <span>
                   <span className="text-slate-500">Phone:</span>{" "}
-                  <span className="font-medium">{branchInfo.phone}</span>
+                  <span className="font-medium">{currentBranch.phone}</span>
                 </span>
               ) : null}
             </div>
@@ -358,7 +360,11 @@ export function TakeAttendanceModal({
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               <Meta
                 label="Branch"
-                value={sheetQuery.data.branch.branchName}
+                value={
+                  currentBranch?.branchName ??
+                  sheetQuery.data.branch?.branchName ??
+                  "—"
+                }
               />
               <Meta
                 label="Attendance Date"

@@ -1,5 +1,7 @@
 "use client";
 
+import { useCurrentBranch } from "@/src/features/auth/hooks/use-current-branch";
+import { resolvePortalBranchName } from "@/src/features/auth/utils/current-branch-display.util";
 import type { BatchListItem } from "@/src/features/branch-ops/types";
 import {
   assignedLabel,
@@ -46,8 +48,12 @@ function Field({ label, value }: { label: string; value: string }) {
 }
 
 export function BatchOverviewPanel({ batch }: Props) {
+  const currentBranch = useCurrentBranch();
   const trainers = batch.trainers ?? [];
   const branch = batch.branch;
+  const branchName = resolvePortalBranchName(currentBranch, branch);
+  const branchCode =
+    currentBranch?.branchCode?.trim() || branch?.branchCode?.trim() || "—";
   const branchLocation = [branch?.addressLine1, branch?.city, branch?.state]
     .filter(Boolean)
     .join(", ");
@@ -169,16 +175,13 @@ export function BatchOverviewPanel({ batch }: Props) {
 
       <Section title="Branch">
         <dl className="grid gap-4 sm:grid-cols-2">
-          <Field
-            label="Branch name"
-            value={assignedLabel(branch?.branchName)}
-          />
-          <Field
-            label="Branch code"
-            value={assignedLabel(branch?.branchCode)}
-          />
+          <Field label="Branch name" value={assignedLabel(branchName)} />
+          <Field label="Branch code" value={assignedLabel(branchCode)} />
           <Field label="Location" value={assignedLabel(branchLocation)} />
-          <Field label="Phone" value={assignedLabel(branch?.phone)} />
+          <Field
+            label="Phone"
+            value={assignedLabel(currentBranch?.phone ?? branch?.phone)}
+          />
           <Field label="Email" value={assignedLabel(branch?.email)} />
         </dl>
       </Section>

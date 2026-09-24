@@ -35,6 +35,10 @@ import {
   facultyBranchEnrollmentWhere,
 } from './faculty-batch-query';
 import { formatAttendanceSessionLabel } from './attendance-session.util';
+import {
+  findPortalBranch,
+  type PortalBranchSnapshot,
+} from './utils/portal-branch.util';
 import { buildSessionSummaryFromAttendanceRows } from './attendance-analytics.util';
 
 const VISIBLE_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
@@ -150,11 +154,13 @@ export class BranchBatchOpsService {
       admittedCounts,
       branchCourseIds,
       branchBatchTrainersByBatchId,
+      portalBranch,
     ] = await Promise.all([
       this.assignmentsByBatchId(batchIds),
       this.admittedEnrollmentCounts(batchIds),
       this.branchLinkedCourseIdSet(user.branchId),
       this.branchBatchAssignmentTrainersByBatchId(user.branchId, batchIds),
+      findPortalBranch(this.prisma, user.branchId),
     ]);
 
     return batches.map((batch) =>
@@ -165,6 +171,7 @@ export class BranchBatchOpsService {
         branchBatchTrainers:
           branchBatchTrainersByBatchId.get(batch.id) ?? [],
         branchCourseIds,
+        portalBranch,
       }),
     );
   }
@@ -190,12 +197,14 @@ export class BranchBatchOpsService {
       admittedCounts,
       branchBatchTrainersByBatchId,
       branchCourseIds,
+      portalBranch,
     ] = await Promise.all([
       this.listBatchStudents(user, batchId),
       this.batchCourseRepo.findByBatchId(batchId),
       this.admittedEnrollmentCounts([batchId]),
       this.branchBatchAssignmentTrainersByBatchId(user.branchId, [batchId]),
       this.branchLinkedCourseIdSet(user.branchId),
+      findPortalBranch(this.prisma, user.branchId),
     ]);
 
     return {
@@ -207,6 +216,7 @@ export class BranchBatchOpsService {
         branchBatchTrainers:
           branchBatchTrainersByBatchId.get(batchId) ?? [],
         branchCourseIds,
+        portalBranch,
       }),
       students,
     };
@@ -252,6 +262,7 @@ export class BranchBatchOpsService {
       admittedCounts,
       branchBatchTrainersByBatchId,
       branchCourseIds,
+      portalBranch,
     ] = await Promise.all([
       this.batchCourseRepo.findByBatchId(scope.batchId),
       this.admittedEnrollmentCounts([scope.batchId]),
@@ -259,6 +270,7 @@ export class BranchBatchOpsService {
         scope.batchId,
       ]),
       this.branchLinkedCourseIdSet(user.branchId),
+      findPortalBranch(this.prisma, user.branchId),
     ]);
 
     const admittedByTiming = admittedCounts.byTiming;
@@ -272,6 +284,7 @@ export class BranchBatchOpsService {
         branchBatchTrainers:
           branchBatchTrainersByBatchId.get(scope.batchId) ?? [],
         branchCourseIds,
+        portalBranch,
       }),
       timing: {
         id: timing.id,
@@ -1424,6 +1437,7 @@ export class BranchBatchOpsService {
       admittedByBatch?: Map<string, number>;
       branchBatchTrainers?: TrainerLike[];
       branchCourseIds?: Set<string>;
+      portalBranch?: PortalBranchSnapshot | null;
     },
   ) {
     const assignments = options?.assignments ?? [];
@@ -1578,7 +1592,7 @@ export class BranchBatchOpsService {
             category: detailedCourse.category ?? batch.category ?? null,
           }
         : null,
-      branch: batch.branch,
+      branch: options?.portalBranch ?? batch.branch,
       trainers,
       faculty: batch.facultyAssignments.map((item) => ({
         id: item.faculty.id,

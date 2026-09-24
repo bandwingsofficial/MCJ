@@ -6,6 +6,11 @@ import {
   parseBranchOpsError,
   userFacingApiMessage,
 } from "@/src/features/branch-ops/api/parse-api-error";
+import {
+  useCurrentBranch,
+  useCurrentBranchId,
+} from "@/src/features/auth/hooks/use-current-branch";
+import { resolvePortalBranchName } from "@/src/features/auth/utils/current-branch-display.util";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import {
   ASSESSMENT_REMARK_OPTIONS,
@@ -94,6 +99,8 @@ export function AddAssessmentModal({
   const [remarks, setRemarks] = useState<Record<string, string>>({});
   const [markErrors, setMarkErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const currentBranch = useCurrentBranch();
+  const branchId = useCurrentBranchId();
 
   const assignmentBatches = useMemo(
     () => batches.filter((batch) => isBatchSelectableForAssignment(batch)),
@@ -152,7 +159,7 @@ export function AddAssessmentModal({
       batchId && batchTimingId
         ? branchOpsApi.assessmentSheet({ batchId, batchTimingId })
         : Promise.resolve(null),
-    [batchId, batchTimingId],
+    [branchId, batchId, batchTimingId],
   );
 
   useEffect(() => {
@@ -511,7 +518,10 @@ export function AddAssessmentModal({
         {canShowStudents && sheet ? (
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <Meta label="Branch" value={sheet.branch.branchName} />
+              <Meta
+                label="Branch"
+                value={resolvePortalBranchName(currentBranch, sheet.branch)}
+              />
               <Meta
                 label="Assessment Date"
                 value={formatAttendanceDisplayDate(date)}
