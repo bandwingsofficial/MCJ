@@ -14,6 +14,7 @@ export interface EnrollmentListFilters {
   batchId?: string;
   batchTimingId?: string;
   status?: EnrollmentStatus;
+  statusIn?: EnrollmentStatus[];
   currentOnly?: boolean;
   paymentStatus?: PaymentStatus;
   source?: EnrollmentSource;

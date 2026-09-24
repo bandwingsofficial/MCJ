@@ -14,6 +14,9 @@ export interface EnrollmentFilters {
 
   status?: EnrollmentStatus;
 
+  /** Comma-separated statuses (e.g. ADMITTED,CANCELLED). */
+  statusIn?: string;
+
   paymentStatus?: PaymentStatus;
 
   applicationType?: ApplicationType;

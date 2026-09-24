@@ -14,6 +14,7 @@ export class ListEnrollmentsQuery {
     public readonly batchId?: string,
     public readonly batchTimingId?: string,
     public readonly status?: EnrollmentStatus,
+    public readonly statusIn?: EnrollmentStatus[],
     public readonly paymentStatus?: PaymentStatus,
     public readonly source?: EnrollmentSource,
     public readonly isActive?: boolean,

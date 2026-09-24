@@ -784,8 +784,21 @@ export class EnrollmentListQueryDto {
   courseId?: string;
 
   @IsOptional()
+  @IsUUID()
+  batchTimingId?: string;
+
+  @IsOptional()
   @IsEnum(EnrollmentStatus)
   status?: EnrollmentStatus;
+
+  /** Comma-separated enrollment statuses (e.g. ADMITTED,CANCELLED). */
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @MaxLength(200)
+  statusIn?: string;
 
   @IsOptional()
   @Type(() => Number)

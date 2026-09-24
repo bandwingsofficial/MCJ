@@ -64,6 +64,16 @@ export class ListEnrollmentsQueryDto extends PaginationQueryDto {
   @IsEnum(EnrollmentStatus)
   status?: EnrollmentStatus;
 
+  @ApiPropertyOptional({
+    description: 'Comma-separated enrollment statuses (e.g. ADMITTED,CANCELLED)',
+  })
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  statusIn?: string;
+
   @ApiPropertyOptional({ enum: PaymentStatus })
   @IsOptional()
   @IsEnum(PaymentStatus)

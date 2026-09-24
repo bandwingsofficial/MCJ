@@ -496,6 +496,7 @@ export interface BatchTimingListItem {
 export interface BatchStudentItem {
   id: string;
   enrollmentId: string;
+  enrollmentNumber?: string;
   firstName: string;
   lastName: string | null;
   email: string | null;
@@ -1131,6 +1132,11 @@ export interface EnrollmentItem {
     mode: string;
   } | null;
   course: { id: string; title: string } | null;
+  branch?: {
+    id: string;
+    branchName: string;
+    branchCode?: string | null;
+  } | null;
 }
 
 export interface PaginatedList<T> {

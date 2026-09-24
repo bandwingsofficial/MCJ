@@ -23,6 +23,7 @@ export class ListEnrollmentsHandler {
       batchId: query.batchId,
       batchTimingId: query.batchTimingId,
       status: query.status,
+      statusIn: query.statusIn,
       paymentStatus: query.paymentStatus,
       source: query.source,
       applicationType: query.applicationType,

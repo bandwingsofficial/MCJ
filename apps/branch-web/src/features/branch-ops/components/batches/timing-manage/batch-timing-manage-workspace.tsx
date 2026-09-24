@@ -83,7 +83,7 @@ export function BatchTimingManageWorkspace({
       </TabsContent>
 
       <TabsContent value="students">
-        <BatchTimingStudentsPanel batchId={batch.id} timingId={timing.id} />
+        <BatchTimingStudentsPanel batchId={batch.id} timing={timing} />
       </TabsContent>
     </Tabs>
   );

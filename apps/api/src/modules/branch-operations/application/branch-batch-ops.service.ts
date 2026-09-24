@@ -362,6 +362,7 @@ export class BranchBatchOpsService {
       return {
         id: item.student.id,
         enrollmentId: item.id,
+        enrollmentNumber: item.enrollmentNumber,
         firstName: item.student.firstName,
         lastName: item.student.lastName,
         email: item.student.email,
@@ -973,8 +974,10 @@ export class BranchBatchOpsService {
       search?: string;
       studentId?: string;
       batchId?: string;
+      batchTimingId?: string;
       courseId?: string;
       status?: EnrollmentStatus;
+      statusIn?: string;
       skip?: number;
       take?: number;
     },
@@ -1003,7 +1006,21 @@ export class BranchBatchOpsService {
       }),
       ...(query.studentId ? { studentId: query.studentId } : {}),
       ...(query.courseId ? { courseId: query.courseId } : {}),
-      ...(query.status ? { status: query.status } : {}),
+      ...(query.batchTimingId
+        ? { batchTimingId: query.batchTimingId }
+        : {}),
+      ...(query.status
+        ? { status: query.status }
+        : query.statusIn
+          ? {
+              status: {
+                in: query.statusIn
+                  .split(',')
+                  .map((value) => value.trim())
+                  .filter(Boolean) as EnrollmentStatus[],
+              },
+            }
+          : {}),
     };
 
     if (search) {
@@ -1040,6 +1057,9 @@ export class BranchBatchOpsService {
             select: { id: true, name: true, mode: true },
           },
           course: { select: { id: true, title: true } },
+          branch: {
+            select: { id: true, branchName: true, branchCode: true },
+          },
         },
       }),
       this.prisma.enrollment.count({ where }),
@@ -1055,6 +1075,7 @@ export class BranchBatchOpsService {
         batch: item.batch,
         batchTiming: item.batchTiming,
         course: item.course,
+        branch: item.branch,
       })),
       count,
       skip,

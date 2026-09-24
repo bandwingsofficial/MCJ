@@ -30,6 +30,7 @@ import { ApproveEnrollmentHandler } from '../../application/approve-enrollment/a
 import { CreateEnrollmentCommand } from '../../application/create-enrollment/create-enrollment.command';
 import { CreateEnrollmentHandler } from '../../application/create-enrollment/create-enrollment.handler';
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
+import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { DeleteEnrollmentCommand } from '../../application/delete-enrollment/delete-enrollment.command';
 import { DeleteEnrollmentHandler } from '../../application/delete-enrollment/delete-enrollment.handler';
 import { GetEnrollmentHandler } from '../../application/get-enrollment/get-enrollment.handler';
@@ -64,6 +65,19 @@ type EnrollmentAdminUser = AuthUser & {
 
 const toDate = (value?: string) =>
   value ? new Date(value) : undefined;
+
+const parseEnrollmentStatusIn = (
+  value?: string,
+): EnrollmentStatus[] | undefined => {
+  if (!value?.trim()) {
+    return undefined;
+  }
+
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean) as EnrollmentStatus[];
+};
 
 @ApiTags('Admin Enrollments')
 @ApiBearerAuth()
@@ -148,6 +162,7 @@ export class AdminEnrollmentController {
         query.batchId,
         query.batchTimingId,
         query.status,
+        parseEnrollmentStatusIn(query.statusIn),
         query.paymentStatus,
         query.source,
         query.isActive,

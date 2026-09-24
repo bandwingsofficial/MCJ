@@ -282,6 +282,8 @@ export class PrismaEnrollmentRepository
 
     if (filters.status !== undefined) {
       where.status = filters.status;
+    } else if (filters.statusIn?.length) {
+      where.status = { in: filters.statusIn };
     } else if (filters.currentOnly) {
       where.status = { in: Enrollment.currentStatuses() };
     }
