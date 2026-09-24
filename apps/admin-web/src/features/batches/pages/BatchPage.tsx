@@ -89,7 +89,6 @@ export function BatchPage() {
   );
   const [permanentDeleteTarget, setPermanentDeleteTarget] =
     useState<BatchListItem | null>(null);
-  const [isReordering, setIsReordering] = useState(false);
   const [isBulkLoading, setIsBulkLoading] = useState(false);
   const [courses, setCourses] = useState<CourseOption[]>([]);
 
@@ -101,24 +100,12 @@ export function BatchPage() {
 
   const isArchivedOnlyView = filters.isDeleted === true;
 
-  const hasActiveFilters = Boolean(
-    (filters.search ?? "").trim() ||
-      filters.courseId ||
-      filters.isDeleted !== undefined,
-  );
-
   const actionLoading =
     isActivating ||
     isDeactivating ||
     isRestoring ||
     isPermanentDeleting ||
-    isReordering ||
     isBulkLoading;
-
-  const reorderDisabled =
-    hasActiveFilters ||
-    isFetching ||
-    selectedBatchIds.length > 0;
 
   useEffect(() => {
     void batchService
@@ -168,23 +155,6 @@ export function BatchPage() {
         return [];
     }
   }, [bulkConfirmAction, batches, selectedBatchIds]);
-
-  const handleReorder = async (payload: {
-    batchId: string;
-    newDisplayOrder: number;
-  }) => {
-    try {
-      setIsReordering(true);
-      await batchService.reorderBatches(payload);
-      appToast.success("Batch order updated");
-      await refetch();
-    } catch (err) {
-      appToast.error(getErrorMessage(err));
-      throw err;
-    } finally {
-      setIsReordering(false);
-    }
-  };
 
   const handleBulkConfirm = async () => {
     if (!bulkConfirmAction || eligibleBulkIds.length === 0) {
@@ -364,7 +334,6 @@ export function BatchPage() {
                 onSelectionChange={setSelectedBatchIds}
                 actionsDisabled={actionLoading || isFetching}
                 selectionDisabled={actionLoading || isFetching}
-                reorderDisabled={reorderDisabled}
                 onActivate={(batch) =>
                   setStatusTarget({ batch, action: "activate" })
                 }
@@ -377,7 +346,6 @@ export function BatchPage() {
                 }}
                 onRestore={setRestoreTarget}
                 onPermanentDelete={setPermanentDeleteTarget}
-                onReorder={handleReorder}
               />
             </div>
 

@@ -1,16 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-
-import { GripVertical } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
 
 import type { BatchListItem } from "@/src/features/batches/types/batch.types";
-import {
-  canReorderBatch,
-  isArchivedBatch,
-} from "@/src/features/batches/utils/batch-bulk.utils";
+import { isArchivedBatch } from "@/src/features/batches/utils/batch-bulk.utils";
 import {
   getBatchDisplayStatus,
   isBatchSelectableInBulkList,
@@ -19,6 +14,7 @@ import { formatBatchDateRange } from "@/src/features/batches/utils/batch.helper"
 import {
   formatBatchTimingNames,
   formatBatchTimingsSummary,
+  getBatchListStudentCount,
 } from "@/src/features/batches/utils/batch-timing.utils";
 
 import { BatchStatusBadge } from "./BatchStatusBadge";
@@ -31,17 +27,12 @@ interface Props {
   onSelectionChange?: (ids: string[]) => void;
   actionsDisabled?: boolean;
   selectionDisabled?: boolean;
-  reorderDisabled?: boolean;
   emptyMessage?: string;
   onActivate: (batch: BatchListItem) => void;
   onDeactivate: (batch: BatchListItem) => void;
   onEdit: (batch: BatchListItem) => void;
   onRestore: (batch: BatchListItem) => void;
   onPermanentDelete: (batch: BatchListItem) => void;
-  onReorder: (payload: {
-    batchId: string;
-    newDisplayOrder: number;
-  }) => Promise<void>;
 }
 
 export function BatchTable({
@@ -50,27 +41,21 @@ export function BatchTable({
   onSelectionChange,
   actionsDisabled = false,
   selectionDisabled = false,
-  reorderDisabled = false,
   emptyMessage = "No batches found.",
   onActivate,
   onDeactivate,
   onEdit,
   onRestore,
   onPermanentDelete,
-  onReorder,
 }: Props) {
-  const [rows, setRows] = useState(batches);
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
-  const [isSavingOrder, setIsSavingOrder] = useState(false);
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
   const safeSelectedIds = selectedBatchIds ?? [];
   const selectionEnabled = Boolean(onSelectionChange);
-  const selectableVisibleIds = rows
+  const selectableVisibleIds = batches
     .filter((batch) => isBatchSelectableInBulkList(batch))
     .map((batch) => batch.id);
-  const visibleIds = rows.map((batch) => batch.id);
+  const visibleIds = batches.map((batch) => batch.id);
   const selectedVisibleCount = selectableVisibleIds.filter((id) =>
     safeSelectedIds.includes(id),
   ).length;
@@ -81,10 +66,6 @@ export function BatchTable({
     selectedVisibleCount > 0 && !allVisibleSelected;
 
   const columnCount = selectionEnabled ? 7 : 6;
-
-  useEffect(() => {
-    setRows(batches);
-  }, [batches]);
 
   useEffect(() => {
     if (selectAllRef.current) {
@@ -121,66 +102,6 @@ export function BatchTable({
     );
   };
 
-  const handleDrop = async (targetId: string) => {
-    if (
-      !dragId ||
-      dragId === targetId ||
-      isSavingOrder ||
-      reorderDisabled ||
-      safeSelectedIds.length > 0
-    ) {
-      setDragId(null);
-      setDropTargetId(null);
-      return;
-    }
-
-    const previous = rows;
-    const next = [...rows];
-    const fromIndex = next.findIndex((item) => item.id === dragId);
-    const toIndex = next.findIndex((item) => item.id === targetId);
-
-    if (fromIndex < 0 || toIndex < 0) {
-      setDragId(null);
-      setDropTargetId(null);
-      return;
-    }
-
-    const source = next[fromIndex];
-    const target = next[toIndex];
-
-    if (
-      !canReorderBatch(source) ||
-      !canReorderBatch(target) ||
-      target.displayOrder == null
-    ) {
-      setDragId(null);
-      setDropTargetId(null);
-      return;
-    }
-
-    const newDisplayOrder = target.displayOrder;
-    const [moved] = next.splice(fromIndex, 1);
-    next.splice(toIndex, 0, moved);
-    setRows(next);
-
-    try {
-      setIsSavingOrder(true);
-      await onReorder({
-        batchId: source.id,
-        newDisplayOrder,
-      });
-    } catch {
-      setRows(previous);
-    } finally {
-      setIsSavingOrder(false);
-      setDragId(null);
-      setDropTargetId(null);
-    }
-  };
-
-  const dragDisabled =
-    reorderDisabled || isSavingOrder || safeSelectedIds.length > 0;
-
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full min-w-full border-collapse text-sm">
@@ -204,9 +125,6 @@ export function BatchTable({
               </th>
             ) : null}
 
-            <th className="w-8 !px-4 !py-4">
-              <span className="sr-only">Reorder</span>
-            </th>
             <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Batch Name
             </th>
@@ -215,6 +133,9 @@ export function BatchTable({
             </th>
             <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Schedule
+            </th>
+            <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Students
             </th>
             <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Status
@@ -226,7 +147,7 @@ export function BatchTable({
         </thead>
 
         <tbody className="divide-y divide-slate-100">
-          {rows.length === 0 ? (
+          {batches.length === 0 ? (
             <tr>
               <td
                 colSpan={columnCount}
@@ -237,14 +158,13 @@ export function BatchTable({
                     No Batches Found
                   </h3>
                   <p className="mt-1 max-w-md text-sm text-[#647A9B]">
-                    Create your first batch or adjust your filters.
+                    {emptyMessage}
                   </p>
                 </div>
               </td>
             </tr>
           ) : (
-            rows.map((batch) => {
-              const draggable = canReorderBatch(batch) && !dragDisabled;
+            batches.map((batch) => {
               const isArchived = isArchivedBatch(batch);
               const displayStatus = getBatchDisplayStatus(batch);
               const rowSelectable = isBatchSelectableInBulkList(batch);
@@ -257,37 +177,8 @@ export function BatchTable({
               return (
                 <tr
                   key={batch.id}
-                  draggable={draggable}
-                  onDragStart={() => {
-                    if (!draggable) {
-                      return;
-                    }
-                    setDragId(batch.id);
-                  }}
-                  onDragOver={(event) => {
-                    if (!draggable || !dragId) {
-                      return;
-                    }
-                    event.preventDefault();
-                    setDropTargetId(batch.id);
-                  }}
-                  onDragLeave={() => {
-                    if (dropTargetId === batch.id) {
-                      setDropTargetId(null);
-                    }
-                  }}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    void handleDrop(batch.id);
-                  }}
-                  onDragEnd={() => {
-                    setDragId(null);
-                    setDropTargetId(null);
-                  }}
                   className={cn(
                     "border-b border-slate-100 transition-colors hover:bg-slate-50",
-                    dropTargetId === batch.id && "bg-blue-50/60",
-                    dragId === batch.id && "opacity-60",
                     isLifecycleBlocked || isArchived
                       ? "bg-slate-50/40 text-slate-500"
                       : "bg-white",
@@ -307,14 +198,6 @@ export function BatchTable({
                       />
                     </td>
                   ) : null}
-
-                  <td className="w-8 !px-4 !py-4 align-middle">
-                    {draggable ? (
-                      <GripVertical className="h-3.5 w-3.5 cursor-grab text-slate-400 active:cursor-grabbing" />
-                    ) : (
-                      <span className="inline-block w-3.5" />
-                    )}
-                  </td>
 
                   <td
                     className={cn(
@@ -364,6 +247,15 @@ export function BatchTable({
                     </div>
                   </td>
 
+                  <td
+                    className={cn(
+                      "!px-4 !py-4 align-middle text-sm tabular-nums",
+                      isLifecycleBlocked ? "text-slate-400" : "text-slate-700",
+                    )}
+                  >
+                    {getBatchListStudentCount(batch)}
+                  </td>
+
                   <td className="!px-4 !py-4 align-middle">
                     <BatchStatusBadge
                       displayStatus={displayStatus}
@@ -378,7 +270,7 @@ export function BatchTable({
                   <td className="!px-8 !py-4 align-middle">
                     <BatchActions
                       batch={batch}
-                      disabled={actionsDisabled || isSavingOrder}
+                      disabled={actionsDisabled}
                       onActivate={onActivate}
                       onDeactivate={onDeactivate}
                       onEdit={onEdit}

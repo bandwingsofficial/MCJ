@@ -125,6 +125,19 @@ export function getBatchTotalEnrolled(
   );
 }
 
+/** Admitted students for batch list rows (timing totals, else stored batch count). */
+export function getBatchListStudentCount(
+  batch: Batch | null | undefined,
+): number {
+  const timings = getBatchTimings(batch);
+
+  if (timings.length > 0) {
+    return getBatchTotalEnrolled(batch);
+  }
+
+  return batch?.enrolledCount ?? 0;
+}
+
 export function getBatchTotalAvailableSeats(
   batch: Batch | null | undefined,
 ): number {
