@@ -8,7 +8,6 @@ import type {
   ApplicationRoundProgress,
   InterviewItem,
 } from "@/src/features/branch-ops/types";
-import { BranchInterviewProgressTimeline } from "@/src/features/interviews/components/BranchInterviewProgressTimeline";
 import {
   formatInterviewDate,
   formatInterviewMode,
@@ -299,12 +298,6 @@ export function BranchViewInterviewModal({
               <Info label="Notes" value={interview.notes} />
               <Info label="Feedback" value={interview.evaluation} />
             </div>
-          </Section>
-
-          <Section title="Interview Progress">
-            <BranchInterviewProgressTimeline
-              roundProgress={detail?.roundProgress}
-            />
           </Section>
         </div>
       )}

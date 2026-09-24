@@ -12,8 +12,14 @@ import type {
 import { BranchJobApplicationsFilterBar } from "@/src/features/job-applications/components/BranchJobApplicationsFilterBar";
 import { BranchJobApplicationTabs } from "@/src/features/job-applications/components/BranchJobApplicationTabs";
 import { BranchJobApplicationsTable } from "@/src/features/job-applications/components/BranchJobApplicationsTable";
+import { BranchInterviewWorkspaceModal } from "@/src/features/interviews/components/BranchInterviewWorkspaceModal";
 import { BranchScheduleInterviewModal } from "@/src/features/job-applications/components/BranchScheduleInterviewModal";
 import { BranchViewApplicationModal } from "@/src/features/job-applications/components/BranchViewApplicationModal";
+import {
+  pickBranchConductInterview,
+  toInterviewItemFromJobApplication,
+} from "@/src/features/job-applications/utils/job-application-display.utils";
+import type { InterviewItem } from "@/src/features/branch-ops/types";
 import {
   BRANCH_JOB_APPLICATION_PAGE_SIZES,
   DEFAULT_BRANCH_JOB_APPLICATION_FILTERS,
@@ -41,7 +47,10 @@ export default function JobApplicationsPage() {
   const [selectedApplication, setSelectedApplication] =
     useState<JobApplicationItem | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
+  const [interviewViewOpen, setInterviewViewOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [selectedInterview, setSelectedInterview] =
+    useState<InterviewItem | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -96,7 +105,9 @@ export default function JobApplicationsPage() {
 
     setSelectedApplication(null);
     setViewOpen(false);
+    setInterviewViewOpen(false);
     setScheduleOpen(false);
+    setSelectedInterview(null);
   }, [query.data?.items, selectedApplication?.id]);
 
   useEffect(() => {
@@ -127,12 +138,25 @@ export default function JobApplicationsPage() {
   const openView = (application: JobApplicationItem) => {
     setSelectedApplication(application);
     setScheduleOpen(false);
+    const conductRow = pickBranchConductInterview(application);
+    if (conductRow) {
+      setViewOpen(false);
+      setSelectedInterview(
+        toInterviewItemFromJobApplication(application, conductRow),
+      );
+      setInterviewViewOpen(true);
+      return;
+    }
+    setInterviewViewOpen(false);
+    setSelectedInterview(null);
     setViewOpen(true);
   };
 
   const openSchedule = (application: JobApplicationItem) => {
     setSelectedApplication(application);
     setViewOpen(false);
+    setInterviewViewOpen(false);
+    setSelectedInterview(null);
     setScheduleOpen(true);
   };
 
@@ -280,6 +304,16 @@ export default function JobApplicationsPage() {
         }}
         onSuccess={async () => {
           await query.reload();
+        }}
+      />
+
+      <BranchInterviewWorkspaceModal
+        open={interviewViewOpen}
+        interview={selectedInterview}
+        onClose={() => {
+          setInterviewViewOpen(false);
+          setSelectedInterview(null);
+          setSelectedApplication(null);
         }}
       />
     </div>

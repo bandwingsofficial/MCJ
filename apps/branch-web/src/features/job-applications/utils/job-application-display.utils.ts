@@ -1,4 +1,13 @@
-import type { JobApplicationItem } from "@/src/features/branch-ops/types";
+import {
+  findActiveScheduledInterview,
+  findExpiredScheduledInterview,
+} from "@mcj/shared-constants";
+
+import type {
+  InterviewItem,
+  JobApplicationBranchInterview,
+  JobApplicationItem,
+} from "@/src/features/branch-ops/types";
 
 export function formatApplicationStatusLabel(status?: string | null): string {
   if (!status) return "—";
@@ -312,4 +321,106 @@ export function resolveScheduleInterviewerId(
     application.latestInterview?.interviewer?.id ??
     undefined
   );
+}
+
+export function listBranchApplicationInterviews(
+  application: Pick<
+    JobApplicationItem,
+    "branchInterviews" | "latestInterview"
+  >,
+  detailInterviews?: JobApplicationBranchInterview[],
+): JobApplicationBranchInterview[] {
+  if (detailInterviews?.length) {
+    return detailInterviews;
+  }
+  if (application.branchInterviews?.length) {
+    return application.branchInterviews;
+  }
+  if (application.latestInterview) {
+    return [application.latestInterview];
+  }
+  return [];
+}
+
+/** Current SCHEDULED row for conduct / interview workspace (never cancelled/history). */
+export function pickBranchConductInterview(
+  application: Pick<
+    JobApplicationItem,
+    "branchInterviews" | "latestInterview"
+  >,
+  detailInterviews?: JobApplicationBranchInterview[],
+  nowMs = Date.now(),
+): JobApplicationBranchInterview | null {
+  const interviews = listBranchApplicationInterviews(
+    application,
+    detailInterviews,
+  );
+  const now = new Date(nowMs);
+  const active =
+    findActiveScheduledInterview(interviews, now) ??
+    findExpiredScheduledInterview(interviews, now);
+  return (active as JobApplicationBranchInterview | null) ?? null;
+}
+
+export function pickBranchOpenAssignmentInterview(
+  interviews: JobApplicationBranchInterview[],
+): JobApplicationBranchInterview | null {
+  const assigned = interviews.filter((item) => item.status === "ASSIGNED");
+  if (!assigned.length) {
+    return null;
+  }
+  return [...assigned].sort((left, right) => {
+    const leftTime = Date.parse(left.updatedAt ?? left.createdAt ?? "") || 0;
+    const rightTime = Date.parse(right.updatedAt ?? right.createdAt ?? "") || 0;
+    return rightTime - leftTime;
+  })[0];
+}
+
+export function toInterviewItemFromJobApplication(
+  application: JobApplicationItem,
+  interview: JobApplicationBranchInterview,
+): InterviewItem {
+  const interviewerName = getInterviewerName(
+    interview as JobApplicationItem["latestInterview"],
+  );
+
+  return {
+    id: interview.id,
+    applicationId: application.id,
+    scheduledAt: interview.scheduledAt ?? null,
+    durationMinutes: interview.durationMinutes,
+    mode: interview.mode ?? null,
+    locationOrLink: interview.locationOrLink ?? null,
+    notes: interview.notes ?? null,
+    evaluation: null,
+    status: interview.status,
+    roundId: interview.roundId ?? null,
+    nextRoundId: interview.nextRoundId ?? null,
+    roundNumber: interview.roundNumber,
+    result: interview.result ?? null,
+    interviewerId: interview.interviewer?.id ?? null,
+    round: interview.round ?? null,
+    nextRound: interview.nextRound ?? null,
+    application: {
+      id: application.id,
+      applicationNumber: application.applicationNumber,
+      candidateName: application.applicantName,
+      status: application.status,
+    },
+    job: application.job?.id
+      ? {
+          id: application.job.id,
+          title: application.job.title,
+          companyName: application.job.companyName,
+        }
+      : undefined,
+    interviewer: interview.interviewer?.id
+      ? {
+          id: interview.interviewer.id,
+          name: interviewerName ?? interview.interviewer.email ?? "—",
+          email: interview.interviewer.email ?? "",
+        }
+      : null,
+    branch: interview.branch ?? null,
+  };
 }

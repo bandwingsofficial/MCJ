@@ -9,29 +9,32 @@ import {
   userFacingApiMessage,
 } from "@/src/features/branch-ops/api/parse-api-error";
 import type {
-  ApplicationRoundProgress,
   BranchUserItem,
   CompleteInterviewResult,
   InterviewItem,
   InterviewResult,
   InterviewRoundItem,
 } from "@/src/features/branch-ops/types";
-import { BranchInterviewProgressTimeline } from "@/src/features/interviews/components/BranchInterviewProgressTimeline";
+import { BranchJobApplicationStatusBadge } from "@/src/features/job-applications/components/BranchJobApplicationStatusBadge";
 import {
+  canShowJoinInterviewLink,
   formatInterviewDate,
   formatInterviewMode,
   formatInterviewStatusLabel,
   formatInterviewTime,
   getInterviewerDisplayName,
+  isOfflineInterviewMode,
+  isOnlineInterviewMode,
   isValidInterviewSchedule,
 } from "@/src/features/interviews/utils/interview-display.utils";
+import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
-import { Input } from "@/src/shared/components/ui/input";
 import { Loader } from "@/src/shared/components/ui/loader";
 import { Modal } from "@/src/shared/components/ui/model";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { Textarea } from "@/src/shared/components/ui/textarea";
 import { appToast } from "@/src/shared/lib/toast";
+import { CalendarClock } from "lucide-react";
 
 const RESULT_OPTIONS: Array<{ label: string; value: InterviewResult }> = [
   { label: "Selected for Next Round", value: "SELECTED_FOR_NEXT_ROUND" },
@@ -59,7 +62,7 @@ type ApplicationDetail = {
     phone?: string | null;
     studentCode?: string;
   } | null;
-  roundProgress?: ApplicationRoundProgress | null;
+  roundProgress?: { nextRound?: { id: string } | null };
 };
 
 interface Props {
@@ -72,24 +75,40 @@ interface Props {
   ) => Promise<void>;
 }
 
+const compactBadgeClass = "px-2 py-0 text-[11px] font-semibold leading-5";
+
+const fieldLabelClass =
+  "text-xs font-medium uppercase tracking-wide text-[#647A9B]";
+
 function NumberedSection({
   step,
   title,
+  accent,
   children,
 }: {
   step: number;
   title: string;
+  accent?: "default" | "primary" | "muted";
   children: ReactNode;
 }) {
+  const headerBg =
+    accent === "primary"
+      ? "from-[#EFF6FF] to-white"
+      : accent === "muted"
+        ? "from-[#F8FAFC] to-white"
+        : "from-[#F8FBFF] to-white";
+
   return (
-    <section className="rounded-xl border border-[#E1EBF5] bg-[#F8FBFF] p-4">
-      <div className="mb-3 flex items-center gap-2.5">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#2563EB] text-[11px] font-semibold text-white">
+    <section className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white shadow-sm">
+      <div
+        className={`flex items-center gap-2.5 border-b border-[#E1EBF5] bg-gradient-to-r ${headerBg} px-4 py-3`}
+      >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2563EB] text-xs font-semibold text-white shadow-[0_2px_8px_rgba(37,99,235,0.25)]">
           {step}
         </span>
         <h3 className="text-sm font-semibold text-[#102A56]">{title}</h3>
       </div>
-      {children}
+      <div className="p-4">{children}</div>
     </section>
   );
 }
@@ -102,18 +121,28 @@ function Info({
   value?: ReactNode;
 }) {
   return (
-    <div className="min-w-0">
-      <p className="text-xs font-medium uppercase tracking-wide text-[#647A9B]">
-        {label}
-      </p>
-      <div className="mt-1 text-sm text-[#102A56]">{value || "—"}</div>
+    <div className="min-w-0 rounded-lg border border-[#EEF4FB] bg-[#FAFCFF] px-3 py-2.5">
+      <p className={fieldLabelClass}>{label}</p>
+      <div className="mt-1 text-sm font-medium text-[#102A56]">
+        {value || "—"}
+      </div>
     </div>
   );
 }
 
-function interviewerLabel(user: BranchUserItem): string {
-  const name = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-  return name ? `${name} (${user.email})` : user.email;
+function FormField({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className={fieldLabelClass}>{label}</label>
+      {children}
+    </div>
+  );
 }
 
 export function BranchCompleteInterviewModal({
@@ -146,6 +175,8 @@ export function BranchCompleteInterviewModal({
       .filter((round) => round.id !== currentId)
       .sort((a, b) => a.sortOrder - b.sortOrder);
   }, [rounds, interview?.roundId, interview?.round?.id]);
+
+  const rescheduleStep = needsNextRound ? 5 : 4;
 
   useEffect(() => {
     if (!open || !interview) {
@@ -255,6 +286,10 @@ export function BranchCompleteInterviewModal({
     interview.round?.name ||
     (interview.roundNumber ? `Round ${interview.roundNumber}` : "—");
 
+  const showJoin =
+    interview.status === "SCHEDULED" &&
+    canShowJoinInterviewLink(interview, { workflowActive: true });
+
   const canSubmit =
     Boolean(result) &&
     !submitting &&
@@ -324,6 +359,19 @@ export function BranchCompleteInterviewModal({
         </div>
       ) : (
         <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[#E1EBF5] bg-[#F8FBFF] px-3 py-2.5">
+            <BranchJobApplicationStatusBadge status={detail?.status} />
+            <Badge variant="info" className={compactBadgeClass}>
+              {formatInterviewStatusLabel(interview.status)}
+            </Badge>
+            <span className="text-xs text-[#647A9B]">
+              {currentRoundLabel}
+              {isValidInterviewSchedule(interview.scheduledAt)
+                ? ` · ${formatInterviewDate(interview.scheduledAt)} ${formatInterviewTime(interview.scheduledAt)}`
+                : ""}
+            </span>
+          </div>
+
           <NumberedSection step={1} title="Candidate & Job">
             <div className="grid gap-3 sm:grid-cols-2">
               <Info label="Candidate" value={candidateName} />
@@ -381,28 +429,39 @@ export function BranchCompleteInterviewModal({
                 value={formatInterviewStatusLabel(interview.status)}
               />
               {isValidInterviewSchedule(interview.scheduledAt) ? (
-                <Info
-                  label={
-                    interview.mode === "ONLINE" ? "Meeting Link" : "Venue"
-                  }
-                  value={interview.locationOrLink}
-                />
+                isOnlineInterviewMode(interview.mode) ? (
+                  <Info
+                    label="Meeting Link"
+                    value={
+                      showJoin ? (
+                        <a
+                          href={interview.locationOrLink?.trim() || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex h-8 items-center justify-center rounded-md bg-[#2563EB] px-3 text-sm font-medium text-white hover:bg-[#1D4ED8]"
+                        >
+                          Join Interview
+                        </a>
+                      ) : (
+                        interview.locationOrLink
+                      )
+                    }
+                  />
+                ) : isOfflineInterviewMode(interview.mode) ? (
+                  <Info label="Venue" value={interview.locationOrLink} />
+                ) : (
+                  <Info
+                    label="Location"
+                    value={interview.locationOrLink}
+                  />
+                )
               ) : null}
             </div>
           </NumberedSection>
 
-          <NumberedSection step={3} title="Interview Progress">
-            <BranchInterviewProgressTimeline
-              roundProgress={detail?.roundProgress}
-            />
-          </NumberedSection>
-
-          <NumberedSection step={4} title="Interview Result">
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#647A9B]">
-                  Result
-                </label>
+          <NumberedSection step={3} title="Interview Result" accent="primary">
+            <div className="space-y-4">
+              <FormField label="Result">
                 <AppSelect
                   value={result || undefined}
                   disabled={submitting}
@@ -419,47 +478,41 @@ export function BranchCompleteInterviewModal({
                     }
                   }}
                 />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#647A9B]">
-                  Feedback (optional)
-                </label>
+              </FormField>
+              <FormField label="Feedback (optional)">
                 <Textarea
                   value={evaluation}
                   disabled={submitting}
-                  className="min-h-24 bg-white"
+                  className="min-h-24 border-[#DCE8F5] bg-white"
                   placeholder="Evaluation notes for this interview..."
                   onChange={(event) => setEvaluation(event.target.value)}
                 />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#647A9B]">
-                  Internal notes (optional)
-                </label>
+              </FormField>
+              <FormField label="Internal notes (optional)">
                 <Textarea
                   value={notes}
                   disabled={submitting}
-                  className="min-h-16 bg-white"
+                  className="min-h-16 border-[#DCE8F5] bg-white"
                   placeholder="Internal notes..."
                   onChange={(event) => setNotes(event.target.value)}
                 />
-              </div>
+              </FormField>
             </div>
           </NumberedSection>
 
           {needsNextRound ? (
-            <NumberedSection step={5} title="Next Round">
+            <NumberedSection step={4} title="Next Round">
               <div className="space-y-3">
-                <p className="rounded-lg border border-[#DCE8F5] bg-white px-3 py-2 text-sm text-[#526581]">
-                  Select the next round. Schedule it later from Job Applications →
-                  Not Scheduled.
+                <p className="rounded-lg border border-[#DCE8F5] bg-[#F8FBFF] px-3 py-2.5 text-sm leading-relaxed text-[#526581]">
+                  Select the next round. Schedule it later from{" "}
+                  <span className="font-medium text-[#102A56]">
+                    Job Applications → Not Scheduled
+                  </span>
+                  .
                 </p>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[#647A9B]">
-                    Next Round
-                  </label>
+                <FormField label="Next Round">
                   {nextRoundOptions.length === 0 ? (
-                    <p className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
                       No other active rounds are configured. Add another round
                       first.
                     </p>
@@ -475,44 +528,64 @@ export function BranchCompleteInterviewModal({
                       onValueChange={setNextRoundId}
                     />
                   )}
-                </div>
+                </FormField>
               </div>
             </NumberedSection>
           ) : null}
 
           {interview.status === "SCHEDULED" ? (
-            <NumberedSection step={needsNextRound ? 6 : 5} title="Re-Schedule">
-              <p className="mb-3 text-sm text-[#526581]">
-                Return this round to Job Applications scheduling without recording
-                a final result.
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={submitting}
-                onClick={async () => {
-                  if (!interview) return;
-                  try {
-                    setSubmitting(true);
-                    await branchOpsApi.requestInterviewReschedule(interview.id);
-                    appToast.success("Interview marked for re-schedule");
-                    await onSuccess(
-                      interview as CompleteInterviewResult,
-                      "PENDING",
-                    );
-                    onClose();
-                  } catch (error) {
-                    appToast.error(userFacingApiMessage(parseBranchOpsError(error)));
-                  } finally {
-                    setSubmitting(false);
-                  }
-                }}
-              >
-                Mark Re-Schedule Required
-              </Button>
+            <NumberedSection
+              step={rescheduleStep}
+              title="Re-Schedule"
+              accent="muted"
+            >
+              <div className="flex flex-col gap-3 rounded-lg border border-dashed border-[#CBD5E1] bg-[#F8FAFC] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#647A9B] shadow-sm">
+                    <CalendarClock className="h-5 w-5" aria-hidden />
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-[#102A56]">
+                      Return to scheduling
+                    </p>
+                    <p className="mt-0.5 text-sm text-[#647A9B]">
+                      Send this round back to Job Applications without recording a
+                      final result.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="shrink-0 border-[#CBD5E1] bg-white"
+                  disabled={submitting}
+                  onClick={async () => {
+                    if (!interview) return;
+                    try {
+                      setSubmitting(true);
+                      await branchOpsApi.requestInterviewReschedule(
+                        interview.id,
+                      );
+                      appToast.success("Interview marked for re-schedule");
+                      await onSuccess(
+                        interview as CompleteInterviewResult,
+                        "PENDING",
+                      );
+                      onClose();
+                    } catch (error) {
+                      appToast.error(
+                        userFacingApiMessage(parseBranchOpsError(error)),
+                      );
+                    } finally {
+                      setSubmitting(false);
+                    }
+                  }}
+                >
+                  Mark Re-Schedule Required
+                </Button>
+              </div>
             </NumberedSection>
           ) : null}
-
         </div>
       )}
     </Modal>

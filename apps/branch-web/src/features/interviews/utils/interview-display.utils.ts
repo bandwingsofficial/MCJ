@@ -215,6 +215,39 @@ export function getInterviewerDisplayName(
   return interview?.interviewer?.name || interview?.interviewer?.email || "—";
 }
 
+export function isOnlineInterviewMode(mode?: string | null): boolean {
+  return (mode ?? "").toUpperCase() === "ONLINE";
+}
+
+export function isOfflineInterviewMode(mode?: string | null): boolean {
+  return (mode ?? "").toUpperCase() === "OFFLINE";
+}
+
+/** Join link only for the active scheduled row (never cancelled/historical). */
+export function canShowJoinInterviewLink(
+  interview: {
+    status?: string | null;
+    scheduledAt?: string | null;
+    mode?: string | null;
+    locationOrLink?: string | null;
+  },
+  options?: { historical?: boolean; workflowActive?: boolean },
+): boolean {
+  if (options?.historical) return false;
+  if (options?.workflowActive === false) return false;
+  if ((interview.status ?? "").toUpperCase() !== "SCHEDULED") return false;
+  if (!isValidInterviewSchedule(interview.scheduledAt)) return false;
+  if (!isOnlineInterviewMode(interview.mode)) return false;
+  return Boolean(interview.locationOrLink?.trim());
+}
+
+export function formatInterviewDateTimeLabel(
+  value?: string | null,
+): string | null {
+  if (!isValidInterviewSchedule(value)) return null;
+  return `${formatInterviewDate(value)} · ${formatInterviewTime(value)}`;
+}
+
 export function toJobApplicationLike(interview: InterviewItem) {
   return {
     id: interview.applicationId,

@@ -948,6 +948,7 @@ export interface JobApplicationBranchInterview {
   result?: InterviewResult | null;
   status: string;
   notes?: string | null;
+  evaluation?: string | null;
   createdAt?: string;
   updatedAt?: string;
   round?: {

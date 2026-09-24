@@ -8,9 +8,9 @@ import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type { InterviewItem, InterviewRoundOption } from "@/src/features/branch-ops/types";
 import { BranchCompleteInterviewModal } from "@/src/features/interviews/components/BranchCompleteInterviewModal";
 import { BranchInterviewRoundTabs } from "@/src/features/interviews/components/BranchInterviewRoundTabs";
+import { BranchInterviewWorkspaceModal } from "@/src/features/interviews/components/BranchInterviewWorkspaceModal";
 import { BranchInterviewsFilterBar } from "@/src/features/interviews/components/BranchInterviewsFilterBar";
 import { BranchInterviewsTable } from "@/src/features/interviews/components/BranchInterviewsTable";
-import { BranchViewInterviewModal } from "@/src/features/interviews/components/BranchViewInterviewModal";
 import {
   BRANCH_INTERVIEW_PAGE_SIZES,
   DEFAULT_BRANCH_INTERVIEW_FILTERS,
@@ -255,7 +255,7 @@ export default function InterviewsPage() {
         </div>
       )}
 
-      <BranchViewInterviewModal
+      <BranchInterviewWorkspaceModal
         open={viewOpen}
         interview={selectedInterview}
         onClose={() => {
@@ -271,7 +271,9 @@ export default function InterviewsPage() {
           setCompleteOpen(false);
           clearSelection();
         }}
-        onSuccess={handleCompleteSuccess}
+        onSuccess={async () => {
+          await handleCompleteSuccess();
+        }}
       />
     </div>
   );

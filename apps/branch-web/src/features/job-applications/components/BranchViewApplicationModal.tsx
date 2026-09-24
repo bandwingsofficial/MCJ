@@ -7,6 +7,7 @@ import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import type {
   ApplicationRoundProgress,
   InterviewResult,
+  JobApplicationBranchInterview,
   JobApplicationItem,
 } from "@/src/features/branch-ops/types";
 import { BranchInterviewProgressTimeline } from "@/src/features/interviews/components/BranchInterviewProgressTimeline";
@@ -18,6 +19,9 @@ import {
   getBranchNextRoundLabel,
   getInterviewerName,
   isInterviewScheduled,
+  listBranchApplicationInterviews,
+  pickBranchConductInterview,
+  pickBranchOpenAssignmentInterview,
   resolveBranchInterviewDisplay,
 } from "@/src/features/job-applications/utils/job-application-display.utils";
 import {
@@ -197,65 +201,57 @@ export function BranchViewApplicationModal({
     };
   }, [open, application?.id]);
 
-  const activeInterview = useMemo(() => {
-    if (!detail?.interviews?.length) {
-      return application?.latestInterview
-        ? {
-            id: application.latestInterview.id,
-            scheduledAt: application.latestInterview.scheduledAt,
-            status: application.latestInterview.status,
-            mode: application.latestInterview.mode,
-            locationOrLink: application.latestInterview.locationOrLink,
-            notes: application.latestInterview.notes,
-            roundId: application.latestInterview.roundId,
-            nextRoundId: application.latestInterview.nextRoundId,
-            roundNumber: application.latestInterview.roundNumber,
-            result: application.latestInterview.result,
-            round: application.latestInterview.round,
-            nextRound: application.latestInterview.nextRound,
-            branch: application.latestInterview.branch,
-            interviewer: application.latestInterview.interviewer
-              ? {
-                  name: getInterviewerName(application.latestInterview) ?? undefined,
-                  email: application.latestInterview.interviewer.email,
-                }
-              : null,
-          }
-        : null;
-    }
+  const interviewRows = useMemo(() => {
+    const fromDetail = detail?.interviews?.length
+      ? (detail.interviews as JobApplicationBranchInterview[])
+      : undefined;
 
-    const interviews = detail.interviews;
-    const scheduledOpen = interviews.find((item) => item.status === "SCHEDULED");
-    if (scheduledOpen) return scheduledOpen;
-    const assignedOpen = interviews.find((item) => item.status === "ASSIGNED");
-    if (assignedOpen) return assignedOpen;
-    const completed = [...interviews]
-      .filter((item) => item.status === "COMPLETED")
-      .sort(
-        (a, b) =>
-          (b.roundNumber ?? 0) - (a.roundNumber ?? 0) ||
-          String(b.scheduledAt ?? "").localeCompare(String(a.scheduledAt ?? "")),
-      )[0];
-    return completed ?? interviews[interviews.length - 1] ?? interviews[0];
-  }, [detail, application]);
+    return listBranchApplicationInterviews(
+      {
+        branchInterviews: application?.branchInterviews,
+        latestInterview: application?.latestInterview,
+      },
+      fromDetail,
+    );
+  }, [detail?.interviews, application?.branchInterviews, application?.latestInterview]);
 
-  const scheduled = isInterviewScheduled(activeInterview);
+  const scheduledInterview = useMemo(
+    () =>
+      pickBranchConductInterview(
+        {
+          branchInterviews: application?.branchInterviews,
+          latestInterview: application?.latestInterview,
+        },
+        interviewRows,
+      ),
+    [application, interviewRows],
+  );
+
+  const assignmentInterview = useMemo(
+    () => pickBranchOpenAssignmentInterview(interviewRows),
+    [interviewRows],
+  );
+
+  const activeInterview = scheduledInterview ?? assignmentInterview;
+
+  const focusInterview = scheduledInterview ?? activeInterview;
+  const scheduled = isInterviewScheduled(scheduledInterview);
   const interviewDisplay = resolveBranchInterviewDisplay(
-    activeInterview
+    focusInterview
       ? {
-          id: activeInterview.id,
-          status: activeInterview.status,
-          result: activeInterview.result ?? null,
-          scheduledAt: activeInterview.scheduledAt,
-          roundNumber: activeInterview.roundNumber,
-          round: activeInterview.round,
-          nextRound: activeInterview.nextRound ?? null,
+          id: focusInterview.id,
+          status: focusInterview.status,
+          result: focusInterview.result ?? null,
+          scheduledAt: focusInterview.scheduledAt,
+          roundNumber: focusInterview.roundNumber,
+          round: focusInterview.round,
+          nextRound: focusInterview.nextRound ?? null,
         }
       : null,
   );
   const currentRoundLabel =
-    activeInterview?.round?.name?.trim() ||
-    (activeInterview ? "Not Set" : "Not Started");
+    focusInterview?.round?.name?.trim() ||
+    (focusInterview ? "Not Set" : "Not Started");
   const nextRoundLabel = getBranchNextRoundLabel({
     id: application?.id ?? "",
     applicationNumber: application?.applicationNumber ?? "",
@@ -265,15 +261,15 @@ export function BranchViewApplicationModal({
     job: application?.job ?? { title: "", companyName: "" },
     interviewStatus: application?.interviewStatus ?? null,
     interviewScheduledAt: application?.interviewScheduledAt ?? null,
-    latestInterview: activeInterview
+    latestInterview: focusInterview
       ? {
-          id: activeInterview.id,
-          status: activeInterview.status,
-          result: activeInterview.result ?? null,
-          scheduledAt: activeInterview.scheduledAt,
-          roundNumber: activeInterview.roundNumber,
-          round: activeInterview.round,
-          nextRound: activeInterview.nextRound ?? null,
+          id: focusInterview.id,
+          status: focusInterview.status,
+          result: focusInterview.result ?? null,
+          scheduledAt: focusInterview.scheduledAt,
+          roundNumber: focusInterview.roundNumber,
+          round: focusInterview.round,
+          nextRound: focusInterview.nextRound ?? null,
         }
       : null,
   });
@@ -286,11 +282,12 @@ export function BranchViewApplicationModal({
     application?.applicantName;
 
   const roundLabel =
-    activeInterview?.round?.name ??
-    (activeInterview?.roundNumber
-      ? `Round ${activeInterview.roundNumber}`
+    focusInterview?.round?.name ??
+    (focusInterview?.roundNumber
+      ? `Round ${focusInterview.roundNumber}`
       : null);
-  const resultLabel = formatInterviewResult(activeInterview?.result);
+  const resultLabel = formatInterviewResult(focusInterview?.result);
+  const assignmentRow = assignmentInterview ?? scheduledInterview;
 
   return (
     <Modal
@@ -319,7 +316,7 @@ export function BranchViewApplicationModal({
             <BranchJobApplicationStatusBadge
               status={detail?.status || application?.status}
             />
-            {activeInterview ? (
+            {focusInterview ? (
               <Badge
                 variant={interviewDisplay.variant}
                 className={compactBadgeClass}
@@ -484,23 +481,23 @@ export function BranchViewApplicationModal({
           </Section>
 
           <Section title="Assignment Information">
-            {activeInterview ? (
+            {assignmentRow ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 <Info
                   label="Assigned Branch"
                   value={
-                    activeInterview.branch
-                      ? `${activeInterview.branch.branchName} (${activeInterview.branch.branchCode})`
+                    assignmentRow.branch
+                      ? `${assignmentRow.branch.branchName} (${assignmentRow.branch.branchCode})`
                       : null
                   }
                 />
                 <Info
                   label="Assigned Interviewer"
                   value={
-                    activeInterview.interviewer
-                      ? `${activeInterview.interviewer.name ?? "—"}${
-                          activeInterview.interviewer.email
-                            ? ` · ${activeInterview.interviewer.email}`
+                    assignmentRow.interviewer
+                      ? `${getInterviewerName(assignmentRow as JobApplicationItem["latestInterview"]) ?? "—"}${
+                          assignmentRow.interviewer.email
+                            ? ` · ${assignmentRow.interviewer.email}`
                             : ""
                         }`
                       : null
@@ -514,7 +511,7 @@ export function BranchViewApplicationModal({
           </Section>
 
           <Section title="Interview Information">
-            {activeInterview ? (
+            {focusInterview ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 <Info
                   label="Interview Status"
@@ -525,9 +522,9 @@ export function BranchViewApplicationModal({
                 <Info
                   label="Interview Date"
                   value={
-                    isValidInterviewSchedule(activeInterview.scheduledAt)
+                    isValidInterviewSchedule(focusInterview.scheduledAt)
                       ? new Date(
-                          activeInterview.scheduledAt,
+                          focusInterview.scheduledAt!,
                         ).toLocaleDateString("en-IN")
                       : null
                   }
@@ -535,9 +532,9 @@ export function BranchViewApplicationModal({
                 <Info
                   label="Interview Time"
                   value={
-                    isValidInterviewSchedule(activeInterview.scheduledAt)
+                    isValidInterviewSchedule(focusInterview.scheduledAt)
                       ? new Date(
-                          activeInterview.scheduledAt,
+                          focusInterview.scheduledAt!,
                         ).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -554,7 +551,7 @@ export function BranchViewApplicationModal({
                     ) : (
                       <Badge
                         variant={getInterviewResultVariant(
-                          activeInterview.result,
+                          focusInterview.result,
                         )}
                         className={compactBadgeClass}
                       >
@@ -565,21 +562,21 @@ export function BranchViewApplicationModal({
                 />
                 <Info
                   label="Interview Mode"
-                  value={formatInterviewMode(activeInterview.mode)}
+                  value={formatInterviewMode(focusInterview.mode)}
                 />
                 <Info
                   label={
-                    activeInterview.mode === "ONLINE"
+                    focusInterview.mode === "ONLINE"
                       ? "Meeting Link"
                       : "Venue"
                   }
-                  value={activeInterview.locationOrLink}
+                  value={focusInterview.locationOrLink}
                 />
                 <Info
                   label="Date & Time"
-                  value={safeScheduleLabel(activeInterview.scheduledAt)}
+                  value={safeScheduleLabel(focusInterview.scheduledAt)}
                 />
-                <Info label="Remarks" value={activeInterview.notes} />
+                <Info label="Remarks" value={focusInterview.notes} />
               </div>
             ) : (
               <p className="text-sm text-[#647A9B]">
