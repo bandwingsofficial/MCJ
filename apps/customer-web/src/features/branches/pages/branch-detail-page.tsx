@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { FaLinkedin } from "react-icons/fa";
 
-import { BranchUpcomingBatchesSection } from "@/src/features/branches/components/branch-upcoming-batches-section";
 import { useBranchBySlugOrId } from "@/src/features/branches/hooks/useBranch";
 import {
   useBranchBatches,
@@ -352,10 +351,6 @@ export function BranchDetailPage({ branchSlugOrId }: Props) {
 
   const courses = coursesQuery.data ?? [];
   const heroImage = branch?.thumbnailUrl ?? null;
-  const courseSlugById = useMemo(
-    () => new Map(courses.map((course) => [course.id, course.slug])),
-    [courses],
-  );
 
   if (isLoading) {
     return (
@@ -427,14 +422,6 @@ export function BranchDetailPage({ branchSlugOrId }: Props) {
           )}
         </div>
       </section>
-
-      <BranchUpcomingBatchesSection
-        branchName={branch.branchName}
-        branchId={branch.id}
-        batches={batchesQuery.data ?? []}
-        courseSlugById={courseSlugById}
-        isLoading={batchesQuery.isLoading}
-      />
 
       <section className="py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
