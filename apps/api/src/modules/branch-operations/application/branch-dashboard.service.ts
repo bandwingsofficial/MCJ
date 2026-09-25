@@ -6,14 +6,19 @@ import {
   AttendanceStatus,
   EnrollmentStatus,
   InterviewStatus,
-  JobApplicationStatus,
 } from '@prisma/client';
 
 import type { BranchAuthUser } from '@common/decorators/current-branch-user.decorator';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BranchOperationsAccessService } from './branch-operations-access.service';
 import { BranchManagerDashboardService } from './branch-manager-dashboard.service';
-import { buildBranchJobApplicationListInterviewScope } from './utils/branch-job-application-assignment.util';
+import { computeBranchJobApplicationWorkflowMetrics } from './utils/branch-job-application-workflow-metrics.util';
+import {
+  buildBranchApplicationInterviewIncludeScope,
+  buildBranchJobApplicationListInterviewScope,
+} from './utils/branch-job-application-assignment.util';
+import { mapBranchJobApplicationInterviews } from './utils/branch-job-application-interview-list.util';
+import { jobApplicationInterviewerSelect } from '@modules/job-application/infrastructure/mappers/map-interviewer-display.util';
 import {
   addUtcDays,
   parseDateOnly,
@@ -149,37 +154,84 @@ export class BranchDashboardService {
 
   private async getInterviewerDashboard(user: BranchAuthUser) {
     const today = startOfUtcDay(new Date());
-    const tomorrow = addUtcDays(today, 1);
-
     const branchId = user.branchId;
+    const branchScopeInput = {
+      branchId,
+      interviewerId: user.sub,
+    };
+    const listInterviewScope = buildBranchJobApplicationListInterviewScope(
+      branchScopeInput,
+    );
+    const interviewIncludeScope =
+      buildBranchApplicationInterviewIncludeScope(branchScopeInput);
+
     const interviewerFilter = {
       branchId,
       interviewerId: user.sub,
     };
-    const jobApplicationScope = buildBranchJobApplicationListInterviewScope({
-      branchId,
-      interviewerId: user.sub,
-    });
+
+    const interviewInclude = {
+      where: interviewIncludeScope,
+      orderBy: [
+        { roundNumber: 'desc' as const },
+        { createdAt: 'desc' as const },
+      ],
+      include: {
+        interviewer: {
+          select: jobApplicationInterviewerSelect,
+        },
+        branch: {
+          select: { id: true, branchName: true, branchCode: true },
+        },
+        round: {
+          select: {
+            id: true,
+            name: true,
+            sortOrder: true,
+            status: true,
+          },
+        },
+        nextRound: {
+          select: {
+            id: true,
+            name: true,
+            sortOrder: true,
+            status: true,
+          },
+        },
+      },
+    };
 
     const [
-      newApplications,
-      pendingInterviews,
-      todaysInterviews,
-      upcomingInterviews,
+      branch,
+      candidates,
       completedInterviews,
-      selectedCandidates,
-      rejectedCandidates,
+      pendingOpenInterviews,
+      upcomingInterviewRows,
     ] = await Promise.all([
-      this.prisma.jobApplication.count({
+      this.prisma.branch.findFirst({
+        where: { id: branchId, deletedAt: null },
+        select: { id: true, branchName: true, branchCode: true },
+      }),
+      this.prisma.jobApplication.findMany({
         where: {
           isDeleted: false,
-          interviews: { some: jobApplicationScope },
-          status: {
-            in: [
-              JobApplicationStatus.UNDER_REVIEW,
-              JobApplicationStatus.APPLIED,
-            ],
-          },
+          interviews: { some: listInterviewScope },
+        },
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+          applicationNumber: true,
+          applicantName: true,
+          interviews: interviewInclude,
+        },
+        orderBy: { updatedAt: 'desc' },
+      }),
+      this.prisma.interview.count({
+        where: {
+          ...interviewerFilter,
+          status: InterviewStatus.COMPLETED,
         },
       }),
       this.prisma.interview.count({
@@ -190,47 +242,86 @@ export class BranchDashboardService {
           },
         },
       }),
-      this.prisma.interview.count({
-        where: {
-          ...interviewerFilter,
-          scheduledAt: { gte: today, lt: tomorrow },
-        },
-      }),
-      this.prisma.interview.count({
+      this.prisma.interview.findMany({
         where: {
           ...interviewerFilter,
           status: InterviewStatus.SCHEDULED,
-          scheduledAt: { gte: tomorrow },
+          scheduledAt: { gte: today },
         },
-      }),
-      this.prisma.interview.count({
-        where: { ...interviewerFilter, status: InterviewStatus.COMPLETED },
-      }),
-      this.prisma.jobApplication.count({
-        where: {
-          isDeleted: false,
-          interviews: { some: jobApplicationScope },
-          status: JobApplicationStatus.SELECTED,
-        },
-      }),
-      this.prisma.jobApplication.count({
-        where: {
-          isDeleted: false,
-          interviews: { some: jobApplicationScope },
-          status: JobApplicationStatus.REJECTED,
+        orderBy: { scheduledAt: 'asc' },
+        take: 8,
+        select: {
+          id: true,
+          applicationId: true,
+          scheduledAt: true,
+          application: {
+            select: {
+              applicantName: true,
+              applicationNumber: true,
+            },
+          },
+          job: { select: { title: true } },
+          round: { select: { name: true, sortOrder: true } },
         },
       }),
     ]);
 
+    const { metrics: workflow, alerts } =
+      computeBranchJobApplicationWorkflowMetrics(
+        candidates.map((candidate) => ({
+          status: candidate.status,
+          createdAt: candidate.createdAt,
+          interviews: mapBranchJobApplicationInterviews(candidate.interviews),
+        })),
+      );
+
     return {
       role: user.role,
-      newApplications,
-      pendingInterviews,
-      todaysInterviews,
-      upcomingInterviews,
-      completedInterviews,
-      selectedCandidates,
-      rejectedCandidates,
+      branch: branch
+        ? {
+            id: branch.id,
+            branchName: branch.branchName,
+            branchCode: branch.branchCode,
+          }
+        : { id: branchId, branchName: '', branchCode: '' },
+      metrics: {
+        newApplications: workflow.notScheduled + workflow.waitingToSchedule,
+        pendingInterviews: pendingOpenInterviews,
+        scheduledInterviews:
+          workflow.scheduledUpcoming + workflow.today + workflow.inProgress,
+        todaysInterviews: workflow.today,
+        upcomingInterviews: workflow.scheduledUpcoming,
+        completedInterviews,
+        selectedNextRound: workflow.nextRoundPending,
+        rejectedCandidates: workflow.rejected,
+        placedCandidates: workflow.placed,
+        onHold: workflow.onHold,
+        needFurtherReview: workflow.needFurtherReview,
+      },
+      workflow,
+      alerts,
+      upcomingSchedule: upcomingInterviewRows
+        .filter((row) => row.scheduledAt)
+        .map((row) => ({
+          id: row.id,
+          applicationId: row.applicationId,
+          title:
+            row.application.applicantName?.trim() ||
+            row.application.applicationNumber,
+          subtitle: row.job.title,
+          roundLabel: row.round
+            ? `${row.round.sortOrder}. ${row.round.name}`
+            : null,
+          scheduledAt: row.scheduledAt!.toISOString(),
+          href: `/job-applications/${row.applicationId}`,
+        })),
+      // Legacy flat fields for older clients
+      newApplications: workflow.notScheduled + workflow.waitingToSchedule,
+      pendingInterviews: pendingOpenInterviews,
+      todaysInterviews: workflow.today,
+      upcomingInterviews: workflow.scheduledUpcoming,
+      selectedCandidates: workflow.nextRoundPending,
+      rejectedCandidates: workflow.rejected,
     };
   }
 

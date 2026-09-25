@@ -12,12 +12,14 @@ import {
 } from "lucide-react";
 
 import { useCurrentBranchId } from "@/src/features/auth/hooks/use-current-branch";
+import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { branchOpsApi } from "@/src/features/branch-ops/api/branch-ops.api";
 import {
   parseBranchOpsError,
   userFacingApiMessage,
 } from "@/src/features/branch-ops/api/parse-api-error";
 import type { InterviewRoundItem } from "@/src/features/branch-ops/types";
+import { formatInterviewRoundOrderLabel } from "@/src/features/interviews/utils/interview-round-accent.utils";
 import { BranchInterviewRoundFormModal } from "@/src/features/interviews/components/BranchInterviewRoundFormModal";
 import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
@@ -61,6 +63,8 @@ function RoundStatusBadge({ status }: { status: string }) {
 }
 
 export default function InterviewRoundsPage() {
+  const role = useAuthStore((state) => state.user?.role);
+  const isReadOnly = role === "INTERVIEWER";
   const branchId = useCurrentBranchId();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -138,7 +142,7 @@ export default function InterviewRoundsPage() {
             href="/dashboard"
             className="text-[#647A9B] transition-colors hover:text-[#2563EB]"
           >
-            Branch Manager
+            {isReadOnly ? "Interviewer" : "Branch Manager"}
           </Link>
           <ChevronRight
             className="h-3.5 w-3.5 text-slate-400"
@@ -154,6 +158,11 @@ export default function InterviewRoundsPage() {
             <h1 className="text-[22px] font-bold tracking-tight text-[#102A56] sm:text-[26px]">
               Interview Rounds
             </h1>
+            {isReadOnly ? (
+              <p className="w-full text-xs text-[#647A9B] sm:text-[13px]">
+                Read-only view of interview rounds for conducting interviews.
+              </p>
+            ) : null}
             <span className="text-xs text-[#647A9B] sm:text-[13px]">
               Total Rounds:
               <span className="ml-1 font-semibold tabular-nums text-[#647A9B]">
@@ -186,17 +195,19 @@ export default function InterviewRoundsPage() {
                 ]}
               />
             </div>
-            <Button
-              type="button"
-              className="h-11 w-full shrink-0 border-0 bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] px-6 text-sm font-semibold text-white shadow-[0_3px_10px_rgba(37,99,235,0.25)] transition-all hover:from-[#0284C7] hover:to-[#1D4ED8] hover:shadow-[0_4px_12px_rgba(37,99,235,0.3)] sm:w-auto"
-              onClick={() => {
-                setEditing(null);
-                setFormOpen(true);
-              }}
-            >
-              <Plus className="mr-1 h-4 w-4" aria-hidden="true" />
-              Create Round
-            </Button>
+            {!isReadOnly ? (
+              <Button
+                type="button"
+                className="h-11 w-full shrink-0 border-0 bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] px-6 text-sm font-semibold text-white shadow-[0_3px_10px_rgba(37,99,235,0.25)] transition-all hover:from-[#0284C7] hover:to-[#1D4ED8] hover:shadow-[0_4px_12px_rgba(37,99,235,0.3)] sm:w-auto"
+                onClick={() => {
+                  setEditing(null);
+                  setFormOpen(true);
+                }}
+              >
+                <Plus className="mr-1 h-4 w-4" aria-hidden="true" />
+                Create Round
+              </Button>
+            ) : null}
           </div>
         </div>
       </header>
@@ -232,16 +243,18 @@ export default function InterviewRoundsPage() {
                   <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
                     Status
                   </th>
-                  <th className="w-[8.5rem] !px-4 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
-                    Actions
-                  </th>
+                  {!isReadOnly ? (
+                    <th className="w-[8.5rem] !px-4 !py-4 text-right text-[11px] font-semibold tracking-wide text-slate-500">
+                      Actions
+                    </th>
+                  ) : null}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {items.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={COLUMN_COUNT}
+                      colSpan={isReadOnly ? COLUMN_COUNT - 1 : COLUMN_COUNT}
                       className="!px-4 !py-4 align-middle"
                     >
                       <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-4 text-center">
@@ -249,8 +262,9 @@ export default function InterviewRoundsPage() {
                           No Interview Rounds Found
                         </h3>
                         <p className="mt-1 max-w-md text-sm text-[#647A9B]">
-                          Create your first interview round or adjust your
-                          filters.
+                          {isReadOnly
+                            ? "No interview rounds are configured yet."
+                            : "Create your first interview round or adjust your filters."}
                         </p>
                       </div>
                     </td>
@@ -266,7 +280,10 @@ export default function InterviewRoundsPage() {
                           className="truncate text-sm font-medium leading-snug text-[#102A56]"
                           title={round.name}
                         >
-                          {round.name}
+                          {formatInterviewRoundOrderLabel({
+                            sortOrder: round.sortOrder,
+                            name: round.name,
+                          })}
                         </span>
                       </td>
                       <td className="!px-4 !py-4 align-middle text-sm tabular-nums text-slate-700">
@@ -283,72 +300,74 @@ export default function InterviewRoundsPage() {
                       <td className="!px-4 !py-4 align-middle">
                         <RoundStatusBadge status={round.status} />
                       </td>
-                      <td className="!px-4 !py-4 align-middle">
-                        <div className="flex items-center justify-end gap-2">
-                          <Tooltip
-                            content={
-                              round.status === "ACTIVE"
-                                ? "Deactivate round"
-                                : "Activate round"
-                            }
-                          >
-                            <button
-                              type="button"
-                              className={`${iconButtonClass} text-orange-700`}
-                              aria-label={
+                      {!isReadOnly ? (
+                        <td className="!px-4 !py-4 align-middle">
+                          <div className="flex items-center justify-end gap-2">
+                            <Tooltip
+                              content={
                                 round.status === "ACTIVE"
                                   ? "Deactivate round"
                                   : "Activate round"
                               }
-                              onClick={() =>
-                                setConfirm({
-                                  type:
-                                    round.status === "ACTIVE"
-                                      ? "deactivate"
-                                      : "activate",
-                                  round,
-                                })
-                              }
                             >
-                              {round.status === "ACTIVE" ? (
-                                <Power className={iconClass} />
-                              ) : (
-                                <CircleCheck className={iconClass} />
-                              )}
-                            </button>
-                          </Tooltip>
+                              <button
+                                type="button"
+                                className={`${iconButtonClass} text-orange-700`}
+                                aria-label={
+                                  round.status === "ACTIVE"
+                                    ? "Deactivate round"
+                                    : "Activate round"
+                                }
+                                onClick={() =>
+                                  setConfirm({
+                                    type:
+                                      round.status === "ACTIVE"
+                                        ? "deactivate"
+                                        : "activate",
+                                    round,
+                                  })
+                                }
+                              >
+                                {round.status === "ACTIVE" ? (
+                                  <Power className={iconClass} />
+                                ) : (
+                                  <CircleCheck className={iconClass} />
+                                )}
+                              </button>
+                            </Tooltip>
 
-                          <Tooltip content="Edit round">
-                            <button
-                              type="button"
-                              className={`${iconButtonClass} text-blue-900`}
-                              aria-label="Edit round"
-                              onClick={() => {
-                                setEditing(round);
-                                setFormOpen(true);
-                              }}
-                            >
-                              <Pencil className={iconClass} />
-                            </button>
-                          </Tooltip>
+                            <Tooltip content="Edit round">
+                              <button
+                                type="button"
+                                className={`${iconButtonClass} text-blue-900`}
+                                aria-label="Edit round"
+                                onClick={() => {
+                                  setEditing(round);
+                                  setFormOpen(true);
+                                }}
+                              >
+                                <Pencil className={iconClass} />
+                              </button>
+                            </Tooltip>
 
-                          <Tooltip content="Delete round">
-                            <button
-                              type="button"
-                              className={`${iconButtonClass} text-red-800`}
-                              aria-label="Delete round"
-                              onClick={() =>
-                                setConfirm({
-                                  type: "delete",
-                                  round,
-                                })
-                              }
-                            >
-                              <Archive className={iconClass} />
-                            </button>
-                          </Tooltip>
-                        </div>
-                      </td>
+                            <Tooltip content="Delete round">
+                              <button
+                                type="button"
+                                className={`${iconButtonClass} text-red-800`}
+                                aria-label="Delete round"
+                                onClick={() =>
+                                  setConfirm({
+                                    type: "delete",
+                                    round,
+                                  })
+                                }
+                              >
+                                <Archive className={iconClass} />
+                              </button>
+                            </Tooltip>
+                          </div>
+                        </td>
+                      ) : null}
                     </tr>
                   ))
                 )}
@@ -388,48 +407,52 @@ export default function InterviewRoundsPage() {
         </div>
       )}
 
-      <BranchInterviewRoundFormModal
-        open={formOpen}
-        round={editing}
-        onClose={() => {
-          setFormOpen(false);
-          setEditing(null);
-        }}
-        onSuccess={() => {
-          void query.reload();
-        }}
-      />
+      {!isReadOnly ? (
+        <>
+          <BranchInterviewRoundFormModal
+            open={formOpen}
+            round={editing}
+            onClose={() => {
+              setFormOpen(false);
+              setEditing(null);
+            }}
+            onSuccess={() => {
+              void query.reload();
+            }}
+          />
 
-      <ConfirmDialog
-        open={Boolean(confirm)}
-        title={
-          confirm?.type === "activate"
-            ? "Activate round"
-            : confirm?.type === "delete"
-              ? "Delete Round?"
-              : "Deactivate round"
-        }
-        description={
-          confirm?.type === "activate"
-            ? "This round will be available when scheduling interviews."
-            : confirm?.type === "delete"
-              ? "This round will be permanently removed. Rounds already used by interviews cannot be deleted."
-              : "This round will no longer appear in scheduling dropdowns."
-        }
-        confirmLabel={
-          confirm?.type === "activate"
-            ? "Activate"
-            : confirm?.type === "delete"
-              ? "Delete"
-              : "Deactivate"
-        }
-        confirmVariant={confirm?.type === "activate" ? "primary" : "danger"}
-        loading={confirmLoading}
-        onConfirm={() => {
-          void runConfirm();
-        }}
-        onCancel={() => setConfirm(null)}
-      />
+          <ConfirmDialog
+            open={Boolean(confirm)}
+            title={
+              confirm?.type === "activate"
+                ? "Activate round"
+                : confirm?.type === "delete"
+                  ? "Delete Round?"
+                  : "Deactivate round"
+            }
+            description={
+              confirm?.type === "activate"
+                ? "This round will be available when scheduling interviews."
+                : confirm?.type === "delete"
+                  ? "This round will be permanently removed. Rounds already used by interviews cannot be deleted."
+                  : "This round will no longer appear in scheduling dropdowns."
+            }
+            confirmLabel={
+              confirm?.type === "activate"
+                ? "Activate"
+                : confirm?.type === "delete"
+                  ? "Delete"
+                  : "Deactivate"
+            }
+            confirmVariant={confirm?.type === "activate" ? "primary" : "danger"}
+            loading={confirmLoading}
+            onConfirm={() => {
+              void runConfirm();
+            }}
+            onCancel={() => setConfirm(null)}
+          />
+        </>
+      ) : null}
     </div>
   );
 }

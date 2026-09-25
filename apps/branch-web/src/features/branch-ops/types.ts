@@ -47,6 +47,60 @@ export interface DashboardData {
   rejectedCandidates?: number;
   batches?: number;
   placements?: number;
+  branch?: {
+    id: string;
+    branchName: string;
+    branchCode: string;
+  };
+  metrics?: InterviewerDashboardMetrics;
+  workflow?: InterviewerDashboardWorkflow;
+  alerts?: InterviewerDashboardAlert[];
+  upcomingSchedule?: InterviewerDashboardScheduleItem[];
+}
+
+export interface InterviewerDashboardMetrics {
+  newApplications: number;
+  pendingInterviews: number;
+  scheduledInterviews: number;
+  todaysInterviews: number;
+  upcomingInterviews: number;
+  completedInterviews: number;
+  selectedNextRound: number;
+  rejectedCandidates: number;
+  placedCandidates: number;
+  onHold: number;
+  needFurtherReview: number;
+}
+
+export interface InterviewerDashboardWorkflow {
+  notScheduled: number;
+  waitingToSchedule: number;
+  scheduledUpcoming: number;
+  today: number;
+  inProgress: number;
+  expired: number;
+  nextRoundPending: number;
+  completedPending: number;
+  placed: number;
+  rejected: number;
+  onHold: number;
+  needFurtherReview: number;
+}
+
+export interface InterviewerDashboardAlert {
+  key: string;
+  message: string;
+  severity: "info" | "warning";
+}
+
+export interface InterviewerDashboardScheduleItem {
+  id: string;
+  applicationId: string;
+  title: string;
+  subtitle: string;
+  roundLabel: string | null;
+  scheduledAt: string;
+  href: string;
 }
 
 export interface FacultyDashboardSummary {

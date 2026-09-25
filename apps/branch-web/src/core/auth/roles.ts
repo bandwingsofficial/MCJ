@@ -33,6 +33,7 @@ const INTERVIEWER_PREFIXES = [
   "/dashboard",
   "/job-applications",
   "/interviews",
+  "/interview-rounds",
   "/forbidden",
 ];
 

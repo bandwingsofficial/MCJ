@@ -78,6 +78,7 @@ export function AdminHeader() {
   const canOpenSettings = user?.role === "BRANCH_MANAGER";
   const currentBranch = useCurrentBranch();
   const branchDisplayName = resolvePortalBranchName(currentBranch);
+  const isInterviewer = user?.role === "INTERVIEWER";
 
   const initials = displayName
     .split(" ")
@@ -103,8 +104,15 @@ export function AdminHeader() {
             Welcome back, {displayName}
           </p>
           <p className="truncate text-xs text-[#647A9B]">
-            Manage {branchDisplayName} branch from one place
+            {isInterviewer
+              ? "Manage your interviews and applications"
+              : `Manage ${branchDisplayName} branch from one place`}
           </p>
+          {isInterviewer && branchDisplayName !== "—" ? (
+            <p className="truncate text-[11px] font-semibold text-[#2563EB]">
+              {branchDisplayName}
+            </p>
+          ) : null}
         </div>
 
         <BranchGlobalSearch className="min-w-0 flex-1 basis-full sm:basis-0 sm:min-w-[220px] lg:max-w-xl" />

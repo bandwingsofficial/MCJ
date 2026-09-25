@@ -92,6 +92,7 @@ const INTERVIEWER_MENU: MenuSection[] = [
     items: [
       { name: "Job Applications", icon: FileText, path: "/job-applications" },
       { name: "Interviews", icon: CalendarClock, path: "/interviews" },
+      { name: "Interview Rounds", icon: ListOrdered, path: "/interview-rounds" },
     ],
   },
 ];
