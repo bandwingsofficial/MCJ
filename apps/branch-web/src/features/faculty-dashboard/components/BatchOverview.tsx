@@ -16,7 +16,7 @@ import {
 } from "./DashboardSection";
 
 function buildNextSessionMap(sessions: FacultyUpcomingSession[]) {
-  const map = new Map<string, { date: string; startTime: string }>();
+  const map = new Map<string, FacultyUpcomingSession>();
   for (const session of sessions) {
     const existing = map.get(session.batchId);
     if (
@@ -25,10 +25,7 @@ function buildNextSessionMap(sessions: FacultyUpcomingSession[]) {
       (session.date === existing.date &&
         session.startTime < existing.startTime)
     ) {
-      map.set(session.batchId, {
-        date: session.date,
-        startTime: session.startTime,
-      });
+      map.set(session.batchId, session);
     }
   }
   return map;
@@ -45,7 +42,7 @@ export function BatchOverview({ batches, upcomingSessions = [] }: Props) {
 
   return (
     <DashboardSection
-      title="Batch Overview"
+      title="Assigned Batches"
       viewAllHref={DASHBOARD_ROUTES.batches}
       className="h-full"
     >
@@ -54,17 +51,19 @@ export function BatchOverview({ batches, upcomingSessions = [] }: Props) {
       ) : (
         <table className={DASHBOARD_TABLE}>
           <colgroup>
-            <col className="w-[38%]" />
+            <col className="w-[28%]" />
+            <col className="w-[22%]" />
             <col className="w-[14%]" />
-            <col className="w-[16%]" />
-            <col className="w-[32%]" />
+            <col className="w-[10%]" />
+            <col className="w-[26%]" />
           </colgroup>
           <thead>
             <tr className={DASHBOARD_TABLE_HEAD}>
               <th className="pb-2 pr-2 font-semibold">Batch</th>
+              <th className="pb-2 pr-2 font-semibold">Session</th>
+              <th className="pb-2 pr-2 font-semibold">Timing</th>
               <th className="pb-2 pr-2 font-semibold">Students</th>
-              <th className="pb-2 pr-2 font-semibold">Attendance</th>
-              <th className="pb-2 font-semibold">Next Session</th>
+              <th className="pb-2 font-semibold">Next class</th>
             </tr>
           </thead>
           <tbody>

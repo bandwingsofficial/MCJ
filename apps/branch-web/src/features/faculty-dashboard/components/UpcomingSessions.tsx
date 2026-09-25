@@ -22,7 +22,7 @@ export function UpcomingSessions({ sessions }: Props) {
   return (
     <DashboardSection
       title="Upcoming Sessions"
-      viewAllHref={DASHBOARD_ROUTES.batches}
+      viewAllHref={DASHBOARD_ROUTES.attendance}
       className="h-full"
     >
       {!rows.length ? (
@@ -30,17 +30,19 @@ export function UpcomingSessions({ sessions }: Props) {
       ) : (
         <table className={DASHBOARD_TABLE}>
           <colgroup>
+            <col className="w-[16%]" />
             <col className="w-[18%]" />
-            <col className="w-[18%]" />
-            <col className="w-[34%]" />
-            <col className="w-[30%]" />
+            <col className="w-[28%]" />
+            <col className="w-[24%]" />
+            <col className="w-[14%]" />
           </colgroup>
           <thead>
             <tr className={DASHBOARD_TABLE_HEAD}>
               <th className="pb-2 pr-2 font-semibold">Date</th>
               <th className="pb-2 pr-2 font-semibold">Time</th>
               <th className="pb-2 pr-2 font-semibold">Session</th>
-              <th className="pb-2 font-semibold">Batch</th>
+              <th className="pb-2 pr-2 font-semibold">Batch</th>
+              <th className="pb-2 font-semibold">Status</th>
             </tr>
           </thead>
           <tbody>

@@ -2,83 +2,90 @@
 
 import {
   CalendarClock,
-  ClipboardList,
+  CalendarDays,
   Clock,
+  History,
   Layers,
-  UserCheck,
-  Users,
+  Sparkles,
 } from "lucide-react";
 
-import type { FacultyDashboardSummary } from "../types/facultyDashboard.types";
+import type {
+  FacultyActivityItem,
+  FacultyBatchOverviewItem,
+  FacultyDashboardSummary,
+  FacultyUpcomingSession,
+} from "../types/facultyDashboard.types";
 import { DASHBOARD_COLORS, DASHBOARD_ROUTES } from "../constants";
+import { deriveFacultyDashboardMetrics } from "../utils/faculty-dashboard-metrics.utils";
 import { KpiCard } from "./KpiCard";
 
 interface Props {
   summary: FacultyDashboardSummary;
+  batchOverview: FacultyBatchOverviewItem[];
+  upcomingSessions: FacultyUpcomingSession[];
+  recentActivity: FacultyActivityItem[];
 }
 
-function formatTodaysAttendance(summary: FacultyDashboardSummary) {
-  const marked = summary.todaysAttendanceMarked ?? summary.todaysAttendance;
-  const expected = summary.todaysAttendanceExpected ?? 0;
-  if (expected > 0) {
-    return `${marked} / ${expected}`;
-  }
-  return String(marked);
-}
+export function DashboardKpiGrid({
+  summary,
+  batchOverview,
+  upcomingSessions,
+  recentActivity,
+}: Props) {
+  const metrics = deriveFacultyDashboardMetrics(
+    summary,
+    batchOverview,
+    upcomingSessions,
+    recentActivity,
+  );
 
-function formatTodaysAttendanceHint(summary: FacultyDashboardSummary) {
-  const expected = summary.todaysAttendanceExpected ?? 0;
-  if (expected <= 0) return "No sessions today";
-  const percent = summary.todaysAttendanceMarkedPercent ?? 0;
-  return `${percent}% marked`;
-}
-
-export function DashboardKpiGrid({ summary }: Props) {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
       <KpiCard
         label="Assigned Batches"
-        value={summary.assignedBatches}
-        hint="Active assignments"
+        value={metrics.assignedBatches}
+        hint="Your assignments"
         href={DASHBOARD_ROUTES.batches}
         icon={Layers}
       />
       <KpiCard
-        label="Active Students"
-        value={summary.activeStudents}
-        hint="Currently enrolled"
-        href={DASHBOARD_ROUTES.enrollments}
-        icon={Users}
+        label="Active Batches"
+        value={metrics.activeBatches}
+        hint="With students or sessions"
+        href={DASHBOARD_ROUTES.batches}
+        icon={Sparkles}
+        accent="#7C3AED"
       />
       <KpiCard
-        label="Today's Attendance"
-        value={formatTodaysAttendance(summary)}
-        hint={formatTodaysAttendanceHint(summary)}
+        label="Today's Sessions"
+        value={metrics.todaysSessions}
+        hint="Scheduled today"
         href={DASHBOARD_ROUTES.attendance}
-        icon={UserCheck}
-        accent={DASHBOARD_COLORS.present}
+        icon={CalendarDays}
+        accent={DASHBOARD_COLORS.primary}
       />
       <KpiCard
         label="Pending Attendance"
-        value={summary.pendingAttendance}
+        value={metrics.pendingAttendance}
         hint="Sessions awaiting marking"
         href={DASHBOARD_ROUTES.attendance}
         icon={Clock}
         accent={DASHBOARD_COLORS.pending}
       />
       <KpiCard
-        label="Upcoming Assessments"
-        value={summary.upcomingAssessments}
+        label="Upcoming Sessions"
+        value={metrics.upcomingSessions}
         hint="Next 14 days"
-        href={DASHBOARD_ROUTES.assessments}
+        href={DASHBOARD_ROUTES.batches}
         icon={CalendarClock}
       />
       <KpiCard
-        label="Recent Assessments"
-        value={summary.recentAssessmentsCount}
-        hint="Last 30 days"
-        href={DASHBOARD_ROUTES.assessments}
-        icon={ClipboardList}
+        label="Recent Sessions"
+        value={metrics.recentSessions}
+        hint="In selected period"
+        href={DASHBOARD_ROUTES.attendance}
+        icon={History}
+        accent={DASHBOARD_COLORS.present}
       />
     </div>
   );

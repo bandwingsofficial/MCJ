@@ -44,7 +44,7 @@ export function FacultyDashboard() {
 
   if (dashboardQuery.loading && !data) {
     return (
-      <div className="space-y-5">
+      <div className="mx-auto max-w-[1400px] space-y-5 pb-4">
         <DashboardHeader
           refreshing={dashboardQuery.loading}
           onRefresh={() => void dashboardQuery.reload()}
@@ -75,9 +75,13 @@ export function FacultyDashboard() {
     );
   }
 
+  const batchOverview = data.batchOverview ?? [];
+  const upcomingSessions = data.upcomingSessions ?? [];
+  const recentActivity = data.recentActivity ?? [];
+
   return (
     <div
-      className={`space-y-5 transition-opacity ${dashboardQuery.loading ? "opacity-80" : ""}`}
+      className={`mx-auto max-w-[1400px] pb-4 transition-opacity ${dashboardQuery.loading ? "opacity-80" : ""}`}
     >
       <DashboardHeader
         lastUpdated={data.lastUpdated}
@@ -85,35 +89,42 @@ export function FacultyDashboard() {
         onRefresh={() => void dashboardQuery.reload()}
       />
 
-      <DashboardFilters
-        filters={filters}
-        batchOptions={batchOptions}
-        sessionOptions={sessionOptions}
-        assessmentTypeOptions={assessmentTypeOptions}
-        onChange={updateFilters}
-        onClear={clearFilters}
-      />
-
-      <DashboardKpiGrid summary={data.summary} />
-
-      <div className="grid gap-5 lg:grid-cols-2">
-        <BatchOverview
-          batches={data.batchOverview ?? []}
-          upcomingSessions={data.upcomingSessions ?? []}
+      <div className="mt-5 space-y-5">
+        <DashboardFilters
+          filters={filters}
+          batchOptions={batchOptions}
+          sessionOptions={sessionOptions}
+          assessmentTypeOptions={assessmentTypeOptions}
+          onChange={updateFilters}
+          onClear={clearFilters}
         />
-        <UpcomingSessions sessions={data.upcomingSessions ?? []} />
+
+        <DashboardKpiGrid
+          summary={data.summary}
+          batchOverview={batchOverview}
+          upcomingSessions={upcomingSessions}
+          recentActivity={recentActivity}
+        />
+
+        <div className="grid gap-5 lg:grid-cols-2">
+          <BatchOverview
+            batches={batchOverview}
+            upcomingSessions={upcomingSessions}
+          />
+          <UpcomingSessions sessions={upcomingSessions} />
+        </div>
+
+        <StudentsAttention students={data.studentsRequiringAttention ?? []} />
+
+        <AttendanceOverview
+          trend={data.attendanceTrend ?? []}
+          summary={data.attendanceSummary}
+        />
+
+        <AssessmentPerformance performance={data.assessmentPerformance} />
+
+        <RecentActivity items={recentActivity} />
       </div>
-
-      <StudentsAttention students={data.studentsRequiringAttention ?? []} />
-
-      <AttendanceOverview
-        trend={data.attendanceTrend ?? []}
-        summary={data.attendanceSummary}
-      />
-
-      <AssessmentPerformance performance={data.assessmentPerformance} />
-
-      <RecentActivity items={data.recentActivity ?? []} />
     </div>
   );
 }

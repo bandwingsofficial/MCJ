@@ -8,8 +8,12 @@ import {
   formatBatchTime,
 } from "@/src/features/branch-ops/utils/batch-display";
 
-import type { FacultyBatchOverviewItem } from "../types/facultyDashboard.types";
+import type {
+  FacultyBatchOverviewItem,
+  FacultyUpcomingSession,
+} from "../types/facultyDashboard.types";
 import { DASHBOARD_ROUTES } from "../constants";
+import { formatSessionTime } from "../utils/dashboard-date.utils";
 import {
   DASHBOARD_TABLE_CELL,
   DASHBOARD_TABLE_ROW,
@@ -18,16 +22,35 @@ import {
 
 interface Props {
   batch: FacultyBatchOverviewItem;
-  nextSession?: { date: string; startTime: string } | null;
+  nextSession?: FacultyUpcomingSession | null;
+}
+
+function formatNextClassLabel(
+  nextSession: FacultyUpcomingSession | null | undefined,
+  fallbackDate: string | null,
+) {
+  if (nextSession) {
+    const datePart = formatBatchDate(nextSession.date).replace(/ \d{4}$/, "");
+    return `${datePart}, ${formatSessionTime(nextSession.startTime)}`;
+  }
+  if (fallbackDate) {
+    return formatBatchDate(fallbackDate);
+  }
+  return "—";
+}
+
+function formatTimingLabel(nextSession: FacultyUpcomingSession | null | undefined) {
+  if (!nextSession) return "—";
+  const start = formatSessionTime(nextSession.startTime);
+  const end = formatSessionTime(nextSession.endTime);
+  return `${start} – ${end}`;
 }
 
 export function BatchOverviewRow({ batch, nextSession }: Props) {
   const batchLabel = formatBatchLabel(batch.name, batch.code);
-  const nextSessionLabel = nextSession
-    ? `${formatBatchDate(nextSession.date).replace(/ \d{4}$/, "")}, ${formatBatchTime(nextSession.startTime)}`
-    : batch.upcomingSession
-      ? formatBatchDate(batch.upcomingSession)
-      : "—";
+  const nextClassLabel = formatNextClassLabel(nextSession, batch.upcomingSession);
+  const sessionLabel = nextSession?.sessionLabel ?? batch.courseTitle ?? "—";
+  const timingLabel = formatTimingLabel(nextSession);
 
   return (
     <tr className={DASHBOARD_TABLE_ROW}>
@@ -49,16 +72,27 @@ export function BatchOverviewRow({ batch, nextSession }: Props) {
           </TruncatedCell>
         ) : null}
       </td>
+      <td className={DASHBOARD_TABLE_CELL}>
+        <TruncatedCell
+          className="text-sm text-[#102A56]"
+          title={sessionLabel}
+        >
+          {sessionLabel}
+        </TruncatedCell>
+      </td>
+      <td className={`${DASHBOARD_TABLE_CELL} text-sm text-[#647A9B]`}>
+        <TruncatedCell title={timingLabel}>{timingLabel}</TruncatedCell>
+      </td>
       <td className={`${DASHBOARD_TABLE_CELL} text-sm tabular-nums text-[#102A56]`}>
         {batch.activeStudents}
       </td>
-      <td className={`${DASHBOARD_TABLE_CELL} text-sm font-medium tabular-nums text-[#102A56]`}>
-        {batch.attendancePercentage != null
-          ? `${batch.attendancePercentage}%`
-          : "—"}
-      </td>
       <td className={`${DASHBOARD_TABLE_CELL} text-sm text-[#647A9B]`}>
-        <TruncatedCell title={nextSessionLabel}>{nextSessionLabel}</TruncatedCell>
+        <TruncatedCell title={nextClassLabel}>{nextClassLabel}</TruncatedCell>
+        {batch.pendingAttendance > 0 ? (
+          <p className="mt-0.5 text-[11px] font-medium text-[#EA580C]">
+            {batch.pendingAttendance} pending attendance
+          </p>
+        ) : null}
       </td>
     </tr>
   );

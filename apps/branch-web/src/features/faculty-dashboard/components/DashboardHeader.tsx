@@ -38,7 +38,7 @@ export function DashboardHeader({
         type="button"
         variant="outline"
         size="sm"
-        className="h-9 shrink-0 rounded-lg"
+        className="h-9 shrink-0 rounded-lg sm:mt-1"
         disabled={refreshing}
         onClick={onRefresh}
       >

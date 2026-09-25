@@ -44,18 +44,18 @@ export function KpiCard({
     </div>
   );
 
+  const surfaceClass = `${DASHBOARD_CARD} bg-gradient-to-br from-[#F8FBFF] to-white px-3 py-2.5`;
+
   if (href) {
     return (
       <Link
         href={href}
-        className={`block ${DASHBOARD_CARD} px-3 py-2.5 transition-colors hover:border-[#2563EB]/25 hover:bg-[#F8FBFF]`}
+        className={`block ${surfaceClass} transition-colors hover:border-[#2563EB]/25 hover:from-[#F0F7FF]`}
       >
         {content}
       </Link>
     );
   }
 
-  return (
-    <div className={`${DASHBOARD_CARD} px-3 py-2.5`}>{content}</div>
-  );
+  return <div className={surfaceClass}>{content}</div>;
 }

@@ -15,11 +15,39 @@ interface Props {
   session: FacultyUpcomingSession;
 }
 
+function AttendanceStatusPill({
+  status,
+}: {
+  status: FacultyUpcomingSession["attendanceStatus"];
+}) {
+  const styles =
+    status === "COMPLETE"
+      ? "bg-[#DCFCE7] text-[#166534]"
+      : status === "PARTIAL"
+        ? "bg-[#FEF3C7] text-[#92400E]"
+        : "bg-[#FFEDD5] text-[#9A3412]";
+
+  const label =
+    status === "COMPLETE"
+      ? "Marked"
+      : status === "PARTIAL"
+        ? "Partial"
+        : "Pending";
+
+  return (
+    <span
+      className={`inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold ${styles}`}
+    >
+      {label}
+    </span>
+  );
+}
+
 export function UpcomingSessionRow({ session }: Props) {
   const formattedDate = formatAttendanceDisplayDate(session.date);
   const [day, month] = formattedDate.split(" ");
   const batchLabel = formatBatchLabel(session.batchName, session.batchCode);
-  const timeLabel = formatSessionTime(session.startTime);
+  const timeLabel = `${formatSessionTime(session.startTime)} – ${formatSessionTime(session.endTime)}`;
 
   return (
     <tr className={DASHBOARD_TABLE_ROW}>
@@ -48,6 +76,9 @@ export function UpcomingSessionRow({ session }: Props) {
         >
           {batchLabel}
         </TruncatedCell>
+      </td>
+      <td className={DASHBOARD_TABLE_CELL}>
+        <AttendanceStatusPill status={session.attendanceStatus} />
       </td>
     </tr>
   );
