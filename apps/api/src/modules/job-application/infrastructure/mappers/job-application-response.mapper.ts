@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { InterviewResult, InterviewStatus } from '@prisma/client';
+import { InterviewStatus } from '@prisma/client';
 
 import { JobApplicationInterviewStatus } from '../../domain/enums/job-application-interview-status.enum';
 import { JobApplicationStatus } from '../../domain/enums/job-application-status.enum';
@@ -129,13 +129,11 @@ function pickBranchInterviewerAssignment(
     }
   }
 
-  // Cleared for next round: branch/interviewer assignment is unchanged on the
-  // completed interview row — not an admin unassign.
+  // Interview results stay on COMPLETED rows; assignment is not cleared until admin unassign.
   for (let index = interviews.length - 1; index >= 0; index -= 1) {
     const interview = interviews[index];
     if (
       interview.status === InterviewStatus.COMPLETED &&
-      interview.result === InterviewResult.SELECTED_FOR_NEXT_ROUND &&
       interview.branchId &&
       interview.interviewerId
     ) {

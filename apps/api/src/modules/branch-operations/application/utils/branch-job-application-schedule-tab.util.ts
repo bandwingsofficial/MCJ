@@ -96,7 +96,10 @@ export function classifyBranchJobApplicationScheduleTab(
       durationMinutes: item.durationMinutes,
       createdAt: item.createdAt,
       roundNumber: item.roundNumber,
+      roundId: item.roundId,
+      nextRoundId: item.nextRoundId,
       round: item.round,
+      nextRound: item.nextRound,
     })),
     applicationStatus,
     now: new Date(),
@@ -112,11 +115,21 @@ export function classifyBranchJobApplicationScheduleTab(
   }
 
   if (
+    workflow.phase === 'PLACED' ||
+    workflow.phase === 'REJECTED'
+  ) {
+    return 'FINAL';
+  }
+
+  if (
     workflow.phase === 'NOT_YET_STARTED' ||
     workflow.phase === 'NOT_SCHEDULED' ||
     workflow.phase === 'WAITING_TO_SCHEDULE' ||
     workflow.phase === 'RESCHEDULE_REQUIRED' ||
-    workflow.phase === 'NEXT_ROUND_PENDING'
+    workflow.phase === 'NEXT_ROUND_PENDING' ||
+    workflow.phase === 'ON_HOLD' ||
+    workflow.phase === 'NEED_FURTHER_REVIEW' ||
+    workflow.phase === 'COMPLETED_PENDING'
   ) {
     return 'NOT_SCHEDULED';
   }

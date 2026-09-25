@@ -376,6 +376,40 @@ export function resolveJobApplicationListPresentation(
   }
 
   if (
+    workflow.phase === "NEXT_ROUND_PENDING" &&
+    !hasActiveSchedule &&
+    !suggestion &&
+    focus
+  ) {
+    const nextRound = focus.nextRound;
+    const clearedAtMs = resultRecordedAtMs(focus);
+    const waitingLine =
+      clearedAtMs != null
+        ? formatDelayedByLabel(clearedAtMs, nowMs, {
+            allowAssignedToday: false,
+          })
+        : "";
+    const roundLabel = formatInterviewRoundOrderLabel({
+      sortOrder: nextRound?.sortOrder ?? null,
+      name: nextRound?.name?.trim() || "Next round",
+    });
+    return {
+      statusLabel: waitingLine || "Waiting to schedule",
+      statusVariant: "danger",
+      statusDisplayMode: "delay",
+      scheduleBlocked: false,
+      scheduleActionLabel: "Schedule interview",
+      interviewPrimary: roundLabel,
+      interviewPrimaryRoundId: nextRound?.id ?? focus.nextRoundId ?? null,
+      interviewPrimaryRoundSortOrder: nextRound?.sortOrder ?? null,
+      interviewSecondary: clearedAtMs
+        ? formatPersistedDateTime(new Date(clearedAtMs).toISOString())
+        : null,
+      interviewTertiary: null,
+    };
+  }
+
+  if (
     (workflow.phase === "NOT_YET_STARTED" ||
       workflow.phase === "NOT_SCHEDULED" ||
       workflow.phase === "WAITING_TO_SCHEDULE" ||

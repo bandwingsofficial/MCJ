@@ -362,18 +362,32 @@ export function pickBranchConductInterview(
   return (active as JobApplicationBranchInterview | null) ?? null;
 }
 
-export function pickBranchOpenAssignmentInterview(
+function pickLatestBranchInterviewByRecency(
   interviews: JobApplicationBranchInterview[],
+  statuses: string[],
 ): JobApplicationBranchInterview | null {
-  const assigned = interviews.filter((item) => item.status === "ASSIGNED");
-  if (!assigned.length) {
+  const matches = interviews.filter((item) =>
+    statuses.includes((item.status ?? "").toString().trim().toUpperCase()),
+  );
+  if (!matches.length) {
     return null;
   }
-  return [...assigned].sort((left, right) => {
+  return [...matches].sort((left, right) => {
     const leftTime = Date.parse(left.updatedAt ?? left.createdAt ?? "") || 0;
     const rightTime = Date.parse(right.updatedAt ?? right.createdAt ?? "") || 0;
     return rightTime - leftTime;
   })[0];
+}
+
+/** Open assignment row, or latest scheduled/completed row (interview results do not unassign). */
+export function pickBranchOpenAssignmentInterview(
+  interviews: JobApplicationBranchInterview[],
+): JobApplicationBranchInterview | null {
+  return (
+    pickLatestBranchInterviewByRecency(interviews, ["ASSIGNED"]) ??
+    pickLatestBranchInterviewByRecency(interviews, ["SCHEDULED"]) ??
+    pickLatestBranchInterviewByRecency(interviews, ["COMPLETED"])
+  );
 }
 
 /** Best interview row for read-only View Interview (same modal as /interviews). */

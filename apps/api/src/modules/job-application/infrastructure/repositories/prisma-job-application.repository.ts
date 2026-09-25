@@ -259,17 +259,25 @@ export class PrismaJobApplicationRepository
         in: ['APPLIED', 'UNDER_REVIEW'],
       };
     } else if (filters.statusGroup === 'SHORTLISTED') {
-      // Shortlisted pipeline includes apps currently in interview rounds.
+      // Shortlist / interview pipeline — include post-interview outcomes (Placed, etc.).
       where.OR = [
         { status: 'SHORTLISTED' },
         { status: 'INTERVIEW' },
+        { status: 'ASSESSMENT' },
+        { status: 'PLACED' },
         {
           status: 'SELECTED',
           interviewStatus: 'NOT_YET',
         },
       ];
     } else if (filters.statusGroup === 'REJECTED') {
-      where.status = 'REJECTED';
+      where.OR = [
+        { status: 'REJECTED' },
+        {
+          status: { in: ['SHORTLISTED', 'INTERVIEW', 'ASSESSMENT'] },
+          interviewStatus: 'REJECTED',
+        },
+      ];
     } else if (filters.status) {
       where.status = filters.status;
     }

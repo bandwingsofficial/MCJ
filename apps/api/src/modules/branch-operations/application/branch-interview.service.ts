@@ -43,7 +43,7 @@ import {
 } from './utils/branch-job-application-schedule-tab.util';
 import {
   buildBranchApplicationInterviewIncludeScope,
-  buildCurrentBranchAssignmentInterviewScope,
+  buildBranchJobApplicationListInterviewScope,
   resolveBranchAssignedAt,
 } from './utils/branch-job-application-assignment.util';
 import {
@@ -98,15 +98,16 @@ export class BranchInterviewService {
     const skip = query.skip ?? 0;
     const take = query.take ?? 20;
 
-    const assignmentScope = buildCurrentBranchAssignmentInterviewScope({
+    const branchScopeInput = {
       branchId: user.branchId,
       ...(this.access.isInterviewer(user) ? { interviewerId: user.sub } : {}),
-      ...(query.roundId ? { roundId: query.roundId } : {}),
-    });
+    };
 
-    const interviewIncludeScope = buildBranchApplicationInterviewIncludeScope({
-      branchId: user.branchId,
-      ...(this.access.isInterviewer(user) ? { interviewerId: user.sub } : {}),
+    const interviewIncludeScope =
+      buildBranchApplicationInterviewIncludeScope(branchScopeInput);
+
+    const listInterviewScope = buildBranchJobApplicationListInterviewScope({
+      ...branchScopeInput,
       ...(query.roundId ? { roundId: query.roundId } : {}),
     });
 
@@ -119,7 +120,7 @@ export class BranchInterviewService {
     };
 
     const baseWhere = this.buildBranchJobApplicationListWhere(
-      assignmentScope,
+      listInterviewScope,
       listQuery,
     );
 
@@ -172,7 +173,7 @@ export class BranchInterviewService {
         applications: {
           some: {
             isDeleted: false,
-            interviews: { some: assignmentScope },
+            interviews: { some: listInterviewScope },
           },
         },
       },
@@ -553,7 +554,7 @@ export class BranchInterviewService {
   async getApplication(user: BranchAuthUser, id: string) {
     this.assertInterviewRole(user);
 
-    const assignmentScope = buildCurrentBranchAssignmentInterviewScope({
+    const listInterviewScope = buildBranchApplicationInterviewIncludeScope({
       branchId: user.branchId,
       ...(this.access.isInterviewer(user) ? { interviewerId: user.sub } : {}),
     });
@@ -561,7 +562,7 @@ export class BranchInterviewService {
     const owned = await this.prisma.interview.findFirst({
       where: {
         applicationId: id,
-        ...assignmentScope,
+        ...listInterviewScope,
       },
     });
 

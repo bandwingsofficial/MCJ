@@ -33,6 +33,7 @@ export interface JobApplicationFilters {
 }
 
 export interface ApplicationStatusCounts {
+  all: number;
   pending: number;
   approved: number;
   rejected: number;
@@ -93,11 +94,21 @@ async function fetchGlobalStatusGroupTotal(
   return response.total;
 }
 
+async function fetchGlobalAllApplicationsTotal(): Promise<number> {
+  const response = await jobApplicationService.getJobApplications({
+    skip: 0,
+    take: 1,
+  });
+
+  return response.total;
+}
+
 export const useJobApplications = (): UseJobApplicationsReturn => {
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
   const [total, setTotal] = useState(0);
   const [catalogTotal, setCatalogTotal] = useState(0);
   const [statusCounts, setStatusCounts] = useState<ApplicationStatusCounts>({
+    all: 0,
     pending: 0,
     approved: 0,
     rejected: 0,
@@ -189,13 +200,14 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
           activeFilters.pageSize ?? DEFAULT_APPLICATION_PAGE_SIZE;
         const baseQuery = buildListQuery(activeFilters, activeSearch);
 
-        const [response, pendingTotal, approvedTotal, rejectedTotal] =
+        const [response, allTotal, pendingTotal, approvedTotal, rejectedTotal] =
           await Promise.all([
             jobApplicationService.getJobApplications({
               ...baseQuery,
               skip: (page - 1) * pageSize,
               take: pageSize,
             }),
+            fetchGlobalAllApplicationsTotal(),
             fetchGlobalStatusGroupTotal("PENDING"),
             fetchGlobalStatusGroupTotal("SHORTLISTED"),
             fetchGlobalStatusGroupTotal("REJECTED"),
@@ -209,11 +221,12 @@ export const useJobApplications = (): UseJobApplicationsReturn => {
         setTotal(response.total);
 
         setStatusCounts({
+          all: allTotal,
           pending: pendingTotal,
           approved: approvedTotal,
           rejected: rejectedTotal,
         });
-        setCatalogTotal(pendingTotal + approvedTotal + rejectedTotal);
+        setCatalogTotal(allTotal);
 
         setError(null);
         hasLoadedRef.current = true;

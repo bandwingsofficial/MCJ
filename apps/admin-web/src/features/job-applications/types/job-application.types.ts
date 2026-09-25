@@ -347,6 +347,7 @@ export type InterviewPipelineDisplayKey =
 type InterviewRecordLike = {
   status?: string | null;
   result?: string | null;
+  notes?: string | null;
   round?: { name?: string | null; sortOrder?: number | null } | null;
   nextRound?: { name?: string | null; sortOrder?: number | null } | null;
 };
@@ -381,6 +382,14 @@ export function resolveInterviewPipelineDisplay(
   const result = (interview.result ?? "").toString().trim().toUpperCase();
 
   if (status === "ASSIGNED") {
+    const notes = (interview.notes ?? "").toString();
+    if (notes.includes("[RESCHEDULE_REQUIRED]")) {
+      return {
+        key: "COMPLETED",
+        label: "RE-SCHEDULE REQUIRED",
+        variant: "warning",
+      };
+    }
     return { key: "NOT_YET", label: "NOT YET", variant: "default" };
   }
 
@@ -605,10 +614,8 @@ export function getBranchInterviewerAssignment(
 
   for (let index = interviews.length - 1; index >= 0; index -= 1) {
     const row = interviews[index];
-    const result = (row.result ?? "").toString().trim().toUpperCase();
     if (
       row.status === "COMPLETED" &&
-      result === "SELECTED_FOR_NEXT_ROUND" &&
       row.branchId &&
       row.interviewerId
     ) {
@@ -756,6 +763,8 @@ export function canManageAssignment(application: {
   return (
     application.status === "SHORTLISTED" ||
     application.status === "INTERVIEW" ||
+    application.status === "ASSESSMENT" ||
+    application.status === "PLACED" ||
     isLegacyShortlistedSelected(
       application.status,
       application.interviewStatus,

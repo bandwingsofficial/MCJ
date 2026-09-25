@@ -21,17 +21,40 @@ export function buildCurrentBranchAssignmentInterviewScope(input: {
   };
 }
 
-/** Branch-scoped interview rows shown with an application (excludes cancelled/unassigned). */
+/** Non-cancelled branch interviews (includes COMPLETED / NO_SHOW; excludes admin unassign). */
 export function buildBranchApplicationInterviewIncludeScope(input: {
   branchId: string;
   interviewerId?: string;
-  roundId?: string;
 }): Prisma.InterviewWhereInput {
   return {
     branchId: input.branchId,
     status: { not: InterviewStatus.CANCELLED },
     ...(input.interviewerId ? { interviewerId: input.interviewerId } : {}),
-    ...(input.roundId ? { roundId: input.roundId } : {}),
+  };
+}
+
+/**
+ * Which Job Applications appear in Branch-Web → Job Applications.
+ * Must not require open ASSIGNED/SCHEDULED rows — completed interview results stay listed.
+ */
+export function buildBranchJobApplicationListInterviewScope(input: {
+  branchId: string;
+  interviewerId?: string;
+  roundId?: string;
+}): Prisma.InterviewWhereInput {
+  const base: Prisma.InterviewWhereInput = {
+    branchId: input.branchId,
+    status: { not: InterviewStatus.CANCELLED },
+    ...(input.interviewerId ? { interviewerId: input.interviewerId } : {}),
+  };
+
+  if (!input.roundId) {
+    return base;
+  }
+
+  return {
+    ...base,
+    OR: [{ roundId: input.roundId }, { nextRoundId: input.roundId }],
   };
 }
 

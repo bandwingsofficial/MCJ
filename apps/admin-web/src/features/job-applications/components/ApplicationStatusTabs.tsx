@@ -17,10 +17,11 @@ export function ApplicationStatusTabs({
   onChange,
 }: ApplicationStatusTabsProps) {
   const tabs: {
-    value: Exclude<ApplicationStatusFilter, typeof JOB_APPLICATION_FILTER_ALL>;
+    value: ApplicationStatusFilter;
     label: string;
     count: number;
   }[] = [
+    { value: JOB_APPLICATION_FILTER_ALL, label: "All", count: counts.all },
     { value: "PENDING", label: "Pending", count: counts.pending },
     { value: "ACCEPTED", label: "Shortlisted", count: counts.approved },
     { value: "REJECTED", label: "Rejected", count: counts.rejected },
@@ -29,9 +30,7 @@ export function ApplicationStatusTabs({
   return (
     <div className="flex flex-wrap gap-1.5 border-b border-slate-200 pb-2">
       {tabs.map((tab) => {
-        const isActive =
-          activeStatus !== JOB_APPLICATION_FILTER_ALL &&
-          activeStatus === tab.value;
+        const isActive = activeStatus === tab.value;
 
         return (
           <button

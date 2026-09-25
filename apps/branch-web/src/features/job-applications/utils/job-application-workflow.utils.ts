@@ -61,7 +61,10 @@ export function resolveJobApplicationScheduleTab(
     workflow.phase === "NOT_SCHEDULED" ||
     workflow.phase === "WAITING_TO_SCHEDULE" ||
     workflow.phase === "RESCHEDULE_REQUIRED" ||
-    workflow.phase === "NEXT_ROUND_PENDING"
+    workflow.phase === "NEXT_ROUND_PENDING" ||
+    workflow.phase === "ON_HOLD" ||
+    workflow.phase === "NEED_FURTHER_REVIEW" ||
+    workflow.phase === "COMPLETED_PENDING"
   ) {
     return "NOT_SCHEDULED";
   }
