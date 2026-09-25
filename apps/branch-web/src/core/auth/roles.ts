@@ -33,7 +33,6 @@ const INTERVIEWER_PREFIXES = [
   "/dashboard",
   "/job-applications",
   "/interviews",
-  "/placements",
   "/forbidden",
 ];
 
@@ -46,7 +45,6 @@ const MANAGER_PREFIXES = [
   "/job-applications",
   "/interview-rounds",
   "/interviews",
-  "/placements",
   "/users",
   "/settings",
   "/students",

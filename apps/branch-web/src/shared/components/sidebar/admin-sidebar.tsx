@@ -13,7 +13,6 @@ import {
   ClipboardCheck,
   GraduationCap,
   CalendarClock,
-  Briefcase,
   UserCog,
   Settings,
   ChevronLeft,
@@ -49,7 +48,6 @@ const MANAGER_MENU: MenuItem[] = [
   { name: "Job Applications", icon: FileText, path: "/job-applications" },
   { name: "Interview Rounds", icon: ListOrdered, path: "/interview-rounds" },
   { name: "Interviews", icon: CalendarClock, path: "/interviews" },
-  { name: "Placement Activities", icon: Briefcase, path: "/placements" },
   { name: "Settings", icon: Settings, path: "/settings" },
 ];
 
@@ -65,7 +63,6 @@ const INTERVIEWER_MENU: MenuItem[] = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
   { name: "Job Applications", icon: FileText, path: "/job-applications" },
   { name: "Interviews", icon: CalendarClock, path: "/interviews" },
-  { name: "Placement Activities", icon: Briefcase, path: "/placements" },
 ];
 
 const STAFF_MENU: MenuItem[] = [

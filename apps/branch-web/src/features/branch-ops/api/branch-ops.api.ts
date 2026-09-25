@@ -37,7 +37,6 @@ import type {
   JobApplicationItem,
   JobApplicationListResult,
   PaginatedList,
-  PlacementActivityItem,
   StudentBatchActivity,
   StudentBatchAttendanceDetail,
   StudentDetail,
@@ -495,11 +494,6 @@ export const branchOpsApi = {
   }) =>
     unwrap<InterviewItem>(
       apiClient.post("/branch/interviews/next-round", payload),
-    ),
-
-  placementActivity: () =>
-    unwrap<PlacementActivityItem[]>(
-      apiClient.get("/branch/placement-activity"),
     ),
 
   users: (params?: Record<string, string | number | undefined>) =>

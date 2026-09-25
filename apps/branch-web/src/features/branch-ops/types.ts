@@ -1139,18 +1139,6 @@ export interface InterviewListResult {
   roundOptions?: InterviewRoundOption[];
 }
 
-export interface PlacementActivityItem {
-  id: string;
-  applicationNumber: string;
-  candidateName: string | null;
-  jobTitle: string;
-  companyName: string;
-  status: string;
-  interviewStatus: string | null;
-  placementStatus: string | null;
-  updatedAt: string;
-}
-
 export interface BranchUserItem {
   id: string;
   firstName: string;
