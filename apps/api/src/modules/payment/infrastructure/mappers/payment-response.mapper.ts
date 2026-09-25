@@ -41,7 +41,9 @@ export class PaymentResponseMapper {
       paidAt: record.paidAt,
       isDeleted: record.isDeleted,
       deletedAt: record.deletedAt,
-      enrollment: this.toEnrollment(record.enrollment),
+      enrollment: record.enrollment
+        ? this.toEnrollment(record.enrollment)
+        : null,
       student: this.toStudent(record.student),
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
@@ -61,11 +63,17 @@ export class PaymentResponseMapper {
       gateway: record.gateway as PaymentGateway,
       paidAt: record.paidAt,
       createdAt: record.createdAt,
-      enrollment: {
-        id: record.enrollment.id,
-        enrollmentNumber: record.enrollment.enrollmentNumber,
-        courseTitle: record.enrollment.course.title,
-      },
+      enrollment: record.enrollment
+        ? {
+            id: record.enrollment.id,
+            enrollmentNumber: record.enrollment.enrollmentNumber,
+            courseTitle: record.enrollment.course.title,
+          }
+        : {
+            id: '',
+            enrollmentNumber: '',
+            courseTitle: '',
+          },
       student: {
         id: record.student.id,
         studentCode: record.student.studentCode,
@@ -76,7 +84,7 @@ export class PaymentResponseMapper {
   }
 
   private static toEnrollment(
-    enrollment: PaymentWithRelations['enrollment'],
+    enrollment: NonNullable<PaymentWithRelations['enrollment']>,
   ): PaymentEnrollmentView {
     return {
       id: enrollment.id,

@@ -1,4 +1,5 @@
 const ADMITTED_STATUS = "ADMITTED";
+const ADVANCED_STATUS = "ADVANCED";
 
 export const VALID_LEARNING_ENROLLMENT_STATUSES = [
   "ADMITTED",
@@ -35,10 +36,14 @@ export function resolveCustomerStudentAccess(input: {
     isAdmittedStudentStatus(input.studentStatus) &&
     input.hasValidEnrollment;
 
+  const advancedEnrollmentAccess =
+    input.hasStudentRecord &&
+    input.studentStatus === ADVANCED_STATUS;
+
   return {
     showProfile: true,
     showMyApplications: input.hasStudentRecord,
     showMyCourses: admittedLearningAccess,
-    showMyEnrollment: admittedLearningAccess,
+    showMyEnrollment: admittedLearningAccess || advancedEnrollmentAccess,
   };
 }

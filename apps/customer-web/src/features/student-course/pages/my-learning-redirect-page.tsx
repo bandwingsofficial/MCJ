@@ -3,26 +3,9 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import { env } from "@/src/core/config/env";
-import { tokenStorage } from "@/src/core/storage/token-storage";
 import { useStudentPortalNavigation } from "@/src/features/student/context/StudentPortalNavigationProvider";
+import { buildStudentWebHandoffUrl } from "@/src/features/student-course/utils/student-web-handoff.utils";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
-
-function buildStudentWebHandoffUrl(): string {
-  const accessToken = tokenStorage.getAccessToken();
-  const refreshToken = tokenStorage.getRefreshToken();
-  const handoffUrl = new URL("/auth/handoff", env.STUDENT_WEB_URL);
-
-  if (accessToken) {
-    const hash = new URLSearchParams({
-      access: accessToken,
-      ...(refreshToken ? { refresh: refreshToken } : {}),
-    }).toString();
-    handoffUrl.hash = hash;
-  }
-
-  return handoffUrl.toString();
-}
 
 export function MyLearningRedirectPage() {
   const router = useRouter();
@@ -38,7 +21,7 @@ export function MyLearningRedirectPage() {
       return;
     }
 
-    window.location.href = buildStudentWebHandoffUrl();
+    window.location.href = buildStudentWebHandoffUrl("/student/learning");
   }, [navigation.isLoading, navigation.showMyCourses, router]);
 
   return (

@@ -278,6 +278,7 @@ export const EnrollmentStudentInfo = forwardRef<
           <Input
             id="enrollment-first-name"
             className="mt-1.5"
+            placeholder="Enter first name"
             value={values.firstName}
             disabled={personalLocked || isSubmitting}
             onChange={(event) => updateField("firstName", event.target.value)}
@@ -293,6 +294,7 @@ export const EnrollmentStudentInfo = forwardRef<
           <Input
             id="enrollment-last-name"
             className="mt-1.5"
+            placeholder="Enter last name"
             value={values.lastName ?? ""}
             disabled={personalLocked || isSubmitting}
             onChange={(event) => updateField("lastName", event.target.value)}
@@ -308,6 +310,7 @@ export const EnrollmentStudentInfo = forwardRef<
             id="enrollment-email"
             type="email"
             className="mt-1.5"
+            placeholder="Enter email address"
             value={values.email}
             disabled={personalLocked || isSubmitting}
             onChange={(event) => updateField("email", event.target.value)}
@@ -325,6 +328,7 @@ export const EnrollmentStudentInfo = forwardRef<
           <Input
             id="enrollment-phone"
             className="mt-1.5"
+            placeholder="Enter phone number"
             value={values.phone}
             disabled={personalLocked || isSubmitting}
             onChange={(event) => updateField("phone", event.target.value)}
@@ -354,6 +358,7 @@ export const EnrollmentStudentInfo = forwardRef<
           <Input
             id="enrollment-college"
             className="mt-1.5"
+            placeholder="Enter college or institution name"
             value={values.collegeName ?? ""}
             disabled={isSubmitting}
             onChange={(event) => updateField("collegeName", event.target.value)}
@@ -365,6 +370,7 @@ export const EnrollmentStudentInfo = forwardRef<
           <Input
             id="enrollment-specialization"
             className="mt-1.5"
+            placeholder="Enter specialization"
             value={values.specialization ?? ""}
             disabled={isSubmitting}
             onChange={(event) =>
@@ -378,6 +384,7 @@ export const EnrollmentStudentInfo = forwardRef<
           <Input
             id="enrollment-parent-name"
             className="mt-1.5"
+            placeholder="Enter parent or guardian name"
             value={values.parentName ?? ""}
             disabled={isSubmitting}
             onChange={(event) => updateField("parentName", event.target.value)}
@@ -389,6 +396,7 @@ export const EnrollmentStudentInfo = forwardRef<
           <Input
             id="enrollment-parent-phone"
             className="mt-1.5"
+            placeholder="Enter parent or guardian phone"
             value={values.parentPhone ?? ""}
             disabled={isSubmitting}
             onChange={(event) => updateField("parentPhone", event.target.value)}
@@ -403,6 +411,7 @@ export const EnrollmentStudentInfo = forwardRef<
           <Input
             id="enrollment-emergency-name"
             className="mt-1.5"
+            placeholder="Enter emergency contact name"
             value={values.emergencyContactName ?? ""}
             disabled={isSubmitting}
             onChange={(event) =>
@@ -418,6 +427,7 @@ export const EnrollmentStudentInfo = forwardRef<
           <Input
             id="enrollment-emergency-phone"
             className="mt-1.5"
+            placeholder="Enter emergency contact phone"
             value={values.emergencyContactPhone ?? ""}
             disabled={isSubmitting}
             onChange={(event) =>

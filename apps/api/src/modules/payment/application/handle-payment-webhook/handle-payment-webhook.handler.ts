@@ -6,6 +6,7 @@ import { BaseException } from '@common/exceptions/base.exception';
 import { InvalidWebhookSignatureException } from '../../domain/errors/payment-business.exception';
 import type { PaymentRepository } from '../../domain/repositories/payment.repository';
 import type { PaymentGatewayPort } from '../../domain/services/payment-gateway.port';
+import { FinalizePublicEnrollmentOnPaymentService } from '@modules/enrollment/application/shared/finalize-public-enrollment-on-payment.service';
 import { PaymentEnrollmentSyncService } from '../shared/payment-enrollment-sync.service';
 
 import { HandlePaymentWebhookCommand } from './handle-payment-webhook.command';
@@ -34,6 +35,7 @@ export class HandlePaymentWebhookHandler {
     private readonly paymentRepo: PaymentRepository,
     private readonly gateway: PaymentGatewayPort,
     private readonly enrollmentSync: PaymentEnrollmentSyncService,
+    private readonly finalizePublicEnrollment: FinalizePublicEnrollmentOnPaymentService,
   ) {}
 
   async execute(
@@ -99,7 +101,12 @@ export class HandlePaymentWebhookHandler {
     });
 
     await this.paymentRepo.save(payment);
-    await this.enrollmentSync.applyPaymentSuccess(payment);
+
+    if (payment.isEnrollmentCheckout()) {
+      await this.finalizePublicEnrollment.finalizeIfNeeded(payment);
+    } else if (payment.enrollmentId) {
+      await this.enrollmentSync.applyPaymentSuccess(payment);
+    }
 
     this.logger.log(
       `✅ Webhook captured payment: ${payment.id}`,

@@ -4,6 +4,10 @@ import { ResolveAuthenticatedStudentService } from '@modules/student/domain/serv
 
 import type { EnrollmentRepository } from '../../domain/repositories/enrollment.repository';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
+import { shouldExposeEnrollmentInCustomerAndAdminLists } from '../../domain/utils/public-enrollment-visibility.util';
+import { ApplicationType } from '../../domain/enums/application-type.enum';
+import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
+import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
 
 import { GetMyEnrollmentByIdQuery } from './get-my-enrollment-by-id.query';
@@ -39,6 +43,23 @@ export class GetMyEnrollmentByIdHandler {
     );
 
     if (enrollment.student.id !== student.id) {
+      throw new BaseException(
+        ERROR_CODES.ENROLLMENT_NOT_FOUND,
+        'Enrollment not found.',
+        404,
+      );
+    }
+
+    if (
+      !shouldExposeEnrollmentInCustomerAndAdminLists({
+        source: enrollment.source as EnrollmentSource,
+        applicationType: enrollment.applicationType as ApplicationType,
+        status: enrollment.status as EnrollmentStatus,
+        finalAmount: enrollment.finalAmount,
+        paidAmount: enrollment.paidAmount,
+        isDeleted: enrollment.isDeleted,
+      })
+    ) {
       throw new BaseException(
         ERROR_CODES.ENROLLMENT_NOT_FOUND,
         'Enrollment not found.',

@@ -2,8 +2,9 @@ import { studentCourseApi } from "@/src/features/student-course/api/student-cour
 
 import { CourseMapper } from "@/src/features/student-course/mappers/course.mapper";
 
-import type { StudentCourse } from "@/src/features/student-course/types/course.types";
 import type { StudentCourseProgressDto } from "@/src/features/student-course/types/api.types";
+import type { StudentCourseResponseDto } from "@/src/features/student-course/types/api.types";
+import type { StudentCourse } from "@/src/features/student-course/types/course.types";
 
 export interface StudentCourseWithProgress {
   course: StudentCourse;
@@ -15,9 +16,31 @@ class StudentCourseService {
     const response = await studentCourseApi.getCourse(courseId);
     const payload = response.data.data;
 
+    const courseDto =
+      payload &&
+      typeof payload === "object" &&
+      "course" in payload &&
+      payload.course
+        ? payload.course
+        : payload;
+
+    const progress =
+      payload &&
+      typeof payload === "object" &&
+      "progress" in payload &&
+      payload.progress
+        ? payload.progress
+        : {
+            courseId,
+            totalLessons: 0,
+            completedLessons: 0,
+            completionPercentage: 0,
+            items: [],
+          };
+
     return {
-      course: CourseMapper.toDomain(payload.course),
-      progress: payload.progress,
+      course: CourseMapper.toDomain(courseDto as StudentCourseResponseDto),
+      progress,
     };
   }
 }

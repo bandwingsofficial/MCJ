@@ -1,10 +1,16 @@
 import { Logger } from '@nestjs/common';
 
+import { EnrollmentCoinService } from '@modules/enrollment/application/shared/enrollment-coin.service';
 import { EnrollmentSideEffectsService } from '@modules/enrollment/application/shared/enrollment-side-effects.service';
 import { ApplicationType } from '@modules/enrollment/domain/enums/application-type.enum';
 import { EnrollmentSource } from '@modules/enrollment/domain/enums/enrollment-source.enum';
 import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-status.enum';
 import type { EnrollmentRepository } from '@modules/enrollment/domain/repositories/enrollment.repository';
+import {
+  hasPaidPublicOnlineAdvance,
+  isPublicOnlineAdvanceEnrollment,
+  PUBLIC_ONLINE_ADVANCE_AMOUNT,
+} from '@modules/enrollment/domain/utils/public-online-advance.util';
 import { ApplicationType as StudentApplicationType } from '@modules/student/domain/enums/application-type.enum';
 import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
 
@@ -13,8 +19,6 @@ import { PaymentStatus as EnrollmentPaymentStatus } from '@modules/enrollment/do
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
-// Propagates successful/refunded payments onto the owning Enrollment aggregate:
-// updates paidAmount/dueAmount and auto-admits paid public/online enrollments.
 export class PaymentEnrollmentSyncService {
   private readonly logger = new Logger(
     PaymentEnrollmentSyncService.name,
@@ -24,9 +28,14 @@ export class PaymentEnrollmentSyncService {
     private readonly enrollmentRepo: EnrollmentRepository,
     private readonly sideEffects: EnrollmentSideEffectsService,
     private readonly studentRepo: StudentRepository,
+    private readonly enrollmentCoinService: EnrollmentCoinService,
   ) {}
 
   async applyPaymentSuccess(payment: Payment): Promise<void> {
+    if (!payment.enrollmentId) {
+      return;
+    }
+
     const enrollment = await this.enrollmentRepo.findById(
       payment.enrollmentId,
       true,
@@ -39,8 +48,22 @@ export class PaymentEnrollmentSyncService {
       return;
     }
 
-    // Idempotent retry: already fully paid and admitted.
+    const isAdvanceFlow = isPublicOnlineAdvanceEnrollment({
+      source: enrollment.source,
+      applicationType: enrollment.applicationType,
+      finalAmount: enrollment.finalAmount,
+    });
+
     if (
+      isAdvanceFlow &&
+      enrollment.status === EnrollmentStatus.ADVANCED &&
+      hasPaidPublicOnlineAdvance(enrollment.paidAmount)
+    ) {
+      return;
+    }
+
+    if (
+      !isAdvanceFlow &&
       enrollment.paymentStatus === EnrollmentPaymentStatus.PAID &&
       (enrollment.status === EnrollmentStatus.ADMITTED ||
         enrollment.status === EnrollmentStatus.ACTIVE)
@@ -58,14 +81,24 @@ export class PaymentEnrollmentSyncService {
     const willBeFullyPaid = newPaid >= enrollment.finalAmount;
 
     const isOnlinePublicFlow =
-      enrollment.source !== EnrollmentSource.ADMIN ||
+      enrollment.source === EnrollmentSource.PUBLIC ||
       enrollment.applicationType === ApplicationType.ONLINE;
 
     let status: EnrollmentStatus | undefined;
     let admissionDate: Date | undefined;
     let isActive: boolean | undefined;
 
-    if (
+    if (isAdvanceFlow) {
+      if (
+        newPaid >=
+          Math.min(PUBLIC_ONLINE_ADVANCE_AMOUNT, enrollment.finalAmount) &&
+        (previousStatus === EnrollmentStatus.PENDING ||
+          previousStatus === EnrollmentStatus.PENDING_APPROVAL)
+      ) {
+        status = EnrollmentStatus.ADVANCED;
+        isActive = false;
+      }
+    } else if (
       isOnlinePublicFlow &&
       willBeFullyPaid &&
       (previousStatus === EnrollmentStatus.PENDING ||
@@ -82,7 +115,7 @@ export class PaymentEnrollmentSyncService {
       status,
       isActive,
       applicationType:
-        isOnlinePublicFlow && willBeFullyPaid
+        !isAdvanceFlow && isOnlinePublicFlow && willBeFullyPaid
           ? ApplicationType.ONLINE
           : undefined,
       updatedBy: payment.createdBy,
@@ -96,6 +129,14 @@ export class PaymentEnrollmentSyncService {
     }
 
     await this.enrollmentRepo.save(enrollment);
+
+    if (
+      isAdvanceFlow &&
+      status === EnrollmentStatus.ADVANCED &&
+      enrollment.redeemedCoins > 0
+    ) {
+      await this.enrollmentCoinService.commitCoinsForEnrollment(enrollment);
+    }
 
     if (status === EnrollmentStatus.ADMITTED) {
       await this.sideEffects.apply(
@@ -117,10 +158,19 @@ export class PaymentEnrollmentSyncService {
         });
         await this.studentRepo.save(student);
       }
+    } else if (status === EnrollmentStatus.ADVANCED) {
+      await this.sideEffects.syncStudentStatusForStudentId(
+        enrollment.studentId,
+        payment.createdBy,
+      );
     }
   }
 
   async applyRefund(payment: Payment): Promise<void> {
+    if (!payment.enrollmentId) {
+      return;
+    }
+
     const enrollment = await this.enrollmentRepo.findById(
       payment.enrollmentId,
       true,

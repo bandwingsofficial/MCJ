@@ -8,14 +8,14 @@ import {
   Monitor,
 } from "lucide-react";
 
+import type { Batch } from "@/src/features/batches/types/batch.types";
+import { formatEnrollmentDuration } from "@/src/features/batches/utils/batch-duration.utils";
 import type { Course } from "@/src/features/courses/types/course.types";
-import {
-  formatCourseMode,
-  formatDuration,
-} from "@/src/features/courses/utils/course-display.utils";
+import { formatCourseMode } from "@/src/features/courses/utils/course-display.utils";
 
 interface EnrollmentCourseSummaryProps {
   course: Course;
+  batch?: Batch | null;
   learningMode?: string | null;
   batchName?: string | null;
 }
@@ -48,6 +48,7 @@ function MetaItem({
 
 export function EnrollmentCourseSummary({
   course,
+  batch,
   learningMode,
   batchName,
 }: EnrollmentCourseSummaryProps) {
@@ -56,7 +57,7 @@ export function EnrollmentCourseSummary({
     course.shortDescription?.trim() ||
     null;
 
-  const duration = formatDuration(course.duration, course.durationType);
+  const duration = formatEnrollmentDuration(batch, course);
   const modeLabel = formatCourseMode(learningMode);
 
   return (

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { studentCourseService } from "@/src/features/student-course/services/student-course.service";
 
 import type { StudentCourseProgressDto } from "@/src/features/student-course/types/api.types";
@@ -39,9 +40,7 @@ export function useStudentCourse(courseId: string): UseStudentCourseReturn {
     } catch (err) {
       setCourse(null);
       setProgress(null);
-      setError(
-        err instanceof Error ? err.message : "Failed to load course.",
-      );
+      setError(getErrorMessage(err) || "Failed to load course.");
     } finally {
       setIsLoading(false);
     }

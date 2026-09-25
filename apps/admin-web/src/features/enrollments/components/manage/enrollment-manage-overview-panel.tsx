@@ -5,6 +5,7 @@ import { BookOpen, CalendarDays, CreditCard, GraduationCap } from "lucide-react"
 import { EnrollmentDetailItem } from "@/src/features/enrollments/components/manage/enrollment-detail-item";
 import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/table/EnrollmentStatusBadge";
 import { PaymentStatusBadge } from "@/src/features/enrollments/components/table/PaymentStatusBadge";
+import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { formatCurrency } from "@/src/features/enrollments/utils/format-payment";
 import {
@@ -35,6 +36,7 @@ interface Props {
 
 export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
   const totalFee = formatEnrollmentOverviewTotalFee(enrollment);
+  const isAdvanced = enrollment.status === EnrollmentStatus.ADVANCED;
 
   const metrics: OverviewMetricItem[] = [
     {
@@ -51,8 +53,8 @@ export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
     },
     {
       key: "paid",
-      label: "Amount Paid",
-      hint: "Collected so far",
+      label: isAdvanced ? "Advance Paid" : "Amount Paid",
+      hint: isAdvanced ? "Online advance received" : "Collected so far",
       value: formatCurrency(enrollment.paidAmount),
       icon: CreditCard,
       iconClass: "text-rose-600",
@@ -63,8 +65,8 @@ export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
     },
     {
       key: "due",
-      label: "Remaining Amount",
-      hint: "Balance due",
+      label: isAdvanced ? "Due Amount" : "Remaining Amount",
+      hint: isAdvanced ? "Payable offline after joining" : "Balance due",
       value: formatCurrency(enrollment.dueAmount),
       icon: CalendarDays,
       iconClass: "text-amber-600",

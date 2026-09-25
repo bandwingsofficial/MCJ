@@ -105,6 +105,9 @@ export interface Batch {
 
   mode: BatchMode;
 
+  durationValue?: number | null;
+  durationType?: string | null;
+
   timings?: BatchTiming[];
 
   timingsCount?: number;

@@ -63,6 +63,24 @@ export class EnrollmentAlreadyExistsException extends BaseException {
     );
   }
 
+  static forCannotCreateAnotherEnrollment(
+    detail?: EnrollmentDetailView | null,
+  ): EnrollmentAlreadyExistsException {
+    const message =
+      'You are already enrolled in a course. You cannot create another enrollment at this time.';
+
+    return new EnrollmentAlreadyExistsException(
+      ERROR_CODES.STUDENT_ALREADY_ENROLLED,
+      message,
+      detail
+        ? {
+            existingEnrollment: toExistingEnrollmentMeta(detail),
+            reason: 'ACTIVE_ENROLLMENT',
+          }
+        : { reason: 'ACTIVE_ENROLLMENT' },
+    );
+  }
+
   static forActiveCourseEnrollment(
     detail: EnrollmentDetailView,
   ): EnrollmentAlreadyExistsException {

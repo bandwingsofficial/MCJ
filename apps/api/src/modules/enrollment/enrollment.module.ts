@@ -23,6 +23,7 @@ import { CourseModule } from '../course/course.module';
 import type { CourseRepository } from '../course/domain/repositories/course.repository';
 import { PaymentEnrollmentSyncService } from '../payment/application/shared/payment-enrollment-sync.service';
 import { PaymentModule } from '../payment/payment.module';
+import { ReferralRewardsModule } from '../referral-rewards/referral-rewards.module';
 import { PAYMENT_TOKENS } from '../payment/payment.tokens';
 import type { PaymentRepository } from '../payment/domain/repositories/payment.repository';
 import { PaymentDomainService } from '../payment/domain/services/payment-domain.service';
@@ -33,7 +34,14 @@ import { ResolveAuthenticatedStudentService } from '../student/domain/services/r
 import { ENROLLMENT_TOKENS } from './enrollment.tokens';
 import { ApproveEnrollmentHandler } from './application/approve-enrollment/approve-enrollment.handler';
 import { CreateEnrollmentHandler } from './application/create-enrollment/create-enrollment.handler';
+import { ApplyEnrollmentCoinsHandler } from './application/apply-enrollment-coins/apply-enrollment-coins.handler';
+import { RemoveEnrollmentCoinsHandler } from './application/remove-enrollment-coins/remove-enrollment-coins.handler';
 import { CreatePublicEnrollmentHandler } from './application/create-public-enrollment/create-public-enrollment.handler';
+import { CreatePublicEnrollmentCheckoutHandler } from './application/create-public-enrollment-checkout/create-public-enrollment-checkout.handler';
+import { CancelUnpaidPublicEnrollmentService } from './application/shared/cancel-unpaid-public-enrollment.service';
+import { FinalizePublicEnrollmentOnPaymentService } from './application/shared/finalize-public-enrollment-on-payment.service';
+import type { PaymentGatewayPort } from '../payment/domain/services/payment-gateway.port';
+import { EnrollmentCoinService } from './application/shared/enrollment-coin.service';
 import { DeleteEnrollmentHandler } from './application/delete-enrollment/delete-enrollment.handler';
 import { GetEnrollmentHandler } from './application/get-enrollment/get-enrollment.handler';
 import { GetMyEnrollmentByIdHandler } from './application/get-my-enrollment-by-id/get-my-enrollment-by-id.handler';
@@ -67,6 +75,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
     forwardRef(() => BatchModule),
     StudentModule,
     forwardRef(() => PaymentModule),
+    ReferralRewardsModule,
   ],
 
   controllers: [
@@ -76,6 +85,9 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
 
   providers: [
     EnrollmentDomainService,
+    EnrollmentCoinService,
+    CancelUnpaidPublicEnrollmentService,
+    FinalizePublicEnrollmentOnPaymentService,
     SuperAdminGuard,
     JwtOrBranchJwtAuthGuard,
     AdminOrBranchRoleGuard,
@@ -205,6 +217,96 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
         EnrollmentSideEffectsService,
         PrismaService,
+      ],
+    },
+
+    {
+      provide: CreatePublicEnrollmentCheckoutHandler,
+      useFactory: (
+        paymentRepo: PaymentRepository,
+        enrollmentRepo: EnrollmentRepository,
+        studentRepo: StudentRepository,
+        branchRepo: BranchRepository,
+        categoryRepo: CategoryRepository,
+        courseRepo: CourseRepository,
+        batchRepo: BatchRepository,
+        domainService: EnrollmentDomainService,
+        paymentDomainService: PaymentDomainService,
+        resolveAuthenticatedStudent: ResolveAuthenticatedStudentService,
+        gateway: PaymentGatewayPort,
+        enrollmentCoinService: EnrollmentCoinService,
+        cancelUnpaidPublicEnrollment: CancelUnpaidPublicEnrollmentService,
+        prisma: PrismaService,
+      ) =>
+        new CreatePublicEnrollmentCheckoutHandler(
+          paymentRepo,
+          enrollmentRepo,
+          studentRepo,
+          branchRepo,
+          categoryRepo,
+          courseRepo,
+          batchRepo,
+          domainService,
+          paymentDomainService,
+          resolveAuthenticatedStudent,
+          gateway,
+          enrollmentCoinService,
+          cancelUnpaidPublicEnrollment,
+          prisma,
+        ),
+      inject: [
+        PAYMENT_TOKENS.PAYMENT_REPOSITORY,
+        ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        BRANCH_TOKENS.BRANCH_REPOSITORY,
+        CATEGORY_TOKENS.CATEGORY_REPOSITORY,
+        COURSE_TOKENS.COURSE_REPOSITORY,
+        BATCH_TOKENS.BATCH_REPOSITORY,
+        EnrollmentDomainService,
+        PaymentDomainService,
+        STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
+        PAYMENT_TOKENS.PAYMENT_GATEWAY,
+        EnrollmentCoinService,
+        CancelUnpaidPublicEnrollmentService,
+        PrismaService,
+      ],
+    },
+
+    {
+      provide: ApplyEnrollmentCoinsHandler,
+      useFactory: (
+        enrollmentRepo: EnrollmentRepository,
+        domainService: EnrollmentDomainService,
+        coinService: EnrollmentCoinService,
+      ) =>
+        new ApplyEnrollmentCoinsHandler(
+          enrollmentRepo,
+          domainService,
+          coinService,
+        ),
+      inject: [
+        ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+        EnrollmentDomainService,
+        EnrollmentCoinService,
+      ],
+    },
+
+    {
+      provide: RemoveEnrollmentCoinsHandler,
+      useFactory: (
+        enrollmentRepo: EnrollmentRepository,
+        domainService: EnrollmentDomainService,
+        coinService: EnrollmentCoinService,
+      ) =>
+        new RemoveEnrollmentCoinsHandler(
+          enrollmentRepo,
+          domainService,
+          coinService,
+        ),
+      inject: [
+        ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+        EnrollmentDomainService,
+        EnrollmentCoinService,
       ],
     },
 
@@ -363,18 +465,21 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         batchRepo: BatchRepository,
         domainService: EnrollmentDomainService,
         sideEffects: EnrollmentSideEffectsService,
+        coinService: EnrollmentCoinService,
       ) =>
         new UnenrollEnrollmentHandler(
           enrollmentRepo,
           batchRepo,
           domainService,
           sideEffects,
+          coinService,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
         BATCH_TOKENS.BATCH_REPOSITORY,
         EnrollmentDomainService,
         EnrollmentSideEffectsService,
+        EnrollmentCoinService,
       ],
     },
 
@@ -440,6 +545,8 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
     ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
     EnrollmentDomainService,
     EnrollmentSideEffectsService,
+    EnrollmentCoinService,
+    FinalizePublicEnrollmentOnPaymentService,
   ],
 })
 export class EnrollmentModule {}

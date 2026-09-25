@@ -38,6 +38,13 @@ export function EnrollmentStatusBadge({
         </Badge>
       );
 
+    case EnrollmentStatus.ADVANCED:
+      return (
+        <Badge variant="warning" className={compactClass}>
+          Advanced
+        </Badge>
+      );
+
     case EnrollmentStatus.ADMITTED:
       return (
         <Badge variant="info" className={compactClass}>

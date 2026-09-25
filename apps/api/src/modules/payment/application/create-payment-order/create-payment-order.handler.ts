@@ -13,6 +13,13 @@ import { PaymentStatus } from '../../domain/enums/payment-status.enum';
 import { EnrollmentAlreadyPaidException } from '../../domain/errors/payment-business.exception';
 import type { PaymentRepository } from '../../domain/repositories/payment.repository';
 import type { PaymentGatewayPort } from '../../domain/services/payment-gateway.port';
+import { ApplicationType } from '@modules/enrollment/domain/enums/application-type.enum';
+import { EnrollmentSource } from '@modules/enrollment/domain/enums/enrollment-source.enum';
+import {
+  hasPaidPublicOnlineAdvance,
+  isPublicOnlineAdvanceEnrollment,
+  resolvePublicOnlineOrderAmount,
+} from '@modules/enrollment/domain/utils/public-online-advance.util';
 import { PaymentDomainService } from '../../domain/services/payment-domain.service';
 
 import { CreatePaymentOrderCommand } from './create-payment-order.command';
@@ -66,9 +73,28 @@ export class CreatePaymentOrderHandler {
       student.id,
     );
 
-    const dueAmount = enrollment.dueAmount;
+    const isAdvanceFlow = isPublicOnlineAdvanceEnrollment({
+      source: enrollment.source as EnrollmentSource,
+      applicationType: enrollment.applicationType as ApplicationType,
+      finalAmount: enrollment.finalAmount,
+    });
 
-    if (dueAmount <= 0) {
+    if (
+      isAdvanceFlow &&
+      hasPaidPublicOnlineAdvance(enrollment.paidAmount)
+    ) {
+      throw new EnrollmentAlreadyPaidException();
+    }
+
+    const orderAmount = resolvePublicOnlineOrderAmount({
+      dueAmount: enrollment.dueAmount,
+      paidAmount: enrollment.paidAmount,
+      finalAmount: enrollment.finalAmount,
+      source: enrollment.source as EnrollmentSource,
+      applicationType: enrollment.applicationType as ApplicationType,
+    });
+
+    if (orderAmount <= 0) {
       throw new EnrollmentAlreadyPaidException();
     }
 
@@ -93,7 +119,7 @@ export class CreatePaymentOrderHandler {
     const currency = enrollment.batch.pricing.currency || 'INR';
 
     const order = await this.gateway.createOrder({
-      amount: dueAmount,
+      amount: orderAmount,
       currency,
       receipt: enrollment.enrollmentNumber,
       notes: {
@@ -112,7 +138,7 @@ export class CreatePaymentOrderHandler {
       paymentNumber,
       enrollmentId: enrollment.id,
       studentId: student.id,
-      amount: dueAmount,
+      amount: orderAmount,
       currency,
       paymentMethod: PaymentMethod.RAZORPAY,
       paymentStatus: PaymentStatus.PENDING,

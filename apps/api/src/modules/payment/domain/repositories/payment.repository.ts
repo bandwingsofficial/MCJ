@@ -60,7 +60,7 @@ export interface PaymentDetailView {
   paidAt: Date | null;
   isDeleted: boolean;
   deletedAt: Date | null;
-  enrollment: PaymentEnrollmentView;
+  enrollment: PaymentEnrollmentView | null;
   student: PaymentStudentView;
   createdAt: Date;
   updatedAt: Date;
@@ -107,6 +107,10 @@ export interface PaymentRepository {
   findPendingByEnrollmentId(
     enrollmentId: string,
   ): Promise<Payment | null>;
+
+  findPendingEnrollmentCheckoutsByStudentId(
+    studentId: string,
+  ): Promise<Payment[]>;
   findDetailById(
     id: string,
     includeDeleted?: boolean,

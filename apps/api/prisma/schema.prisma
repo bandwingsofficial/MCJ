@@ -1060,6 +1060,8 @@ model Enrollment {
   expectedCompletionDate DateTime?
   feeAmount              Decimal          @default(0) @db.Decimal(12, 2)
   discountAmount         Decimal          @default(0) @db.Decimal(12, 2)
+  coinDiscountAmount     Decimal          @default(0) @db.Decimal(12, 2)
+  redeemedCoins          Int              @default(0)
   finalAmount            Decimal          @default(0) @db.Decimal(12, 2)
   paidAmount             Decimal          @default(0) @db.Decimal(12, 2)
   dueAmount              Decimal          @default(0) @db.Decimal(12, 2)
@@ -1150,7 +1152,8 @@ model LessonQuizAttempt {
 model Payment {
   id               String                   @id @default(uuid())
   paymentNumber    String                   @unique
-  enrollmentId     String
+  enrollmentId     String?
+  checkoutPayload  Json?
   studentId        String
   amount           Decimal                  @default(0) @db.Decimal(12, 2)
   currency         String                   @default("INR")
@@ -1170,7 +1173,7 @@ model Payment {
   deletedBy        String?
   createdAt        DateTime                 @default(now())
   updatedAt        DateTime                 @updatedAt
-  enrollment       Enrollment               @relation(fields: [enrollmentId], references: [id])
+  enrollment       Enrollment?              @relation(fields: [enrollmentId], references: [id])
   student          Student                  @relation(fields: [studentId], references: [id])
 
   @@index([enrollmentId])
@@ -1884,6 +1887,7 @@ enum BatchCalendarExceptionStatus {
 enum StudentStatus {
   LEAD
   ENQUIRED
+  ADVANCED
   ADMITTED
   COMPLETED
   DROPPED
@@ -1906,6 +1910,7 @@ enum StudentDocumentType {
 enum EnrollmentStatus {
   PENDING
   PENDING_APPROVAL
+  ADVANCED
   ADMITTED
   ACTIVE
   COMPLETED

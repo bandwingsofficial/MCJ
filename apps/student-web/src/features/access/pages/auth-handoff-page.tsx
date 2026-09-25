@@ -23,7 +23,14 @@ export function AuthHandoffPage() {
       tokenStorage.setRefreshToken(refreshToken);
     }
 
-    window.location.replace(getStudentLearningUrl("/student/learning"));
+    const searchParams = new URLSearchParams(window.location.search);
+    const requestedNext = searchParams.get("next");
+    const nextPath =
+      requestedNext?.startsWith("/student/") === true
+        ? requestedNext
+        : "/student/learning";
+
+    window.location.replace(getStudentLearningUrl(nextPath));
   }, []);
 
   return (

@@ -77,7 +77,7 @@ export class PublicPaymentController {
     const result = await this.verifyPaymentHandler.execute(
       new VerifyPaymentCommand(
         user.sub,
-        dto.enrollmentId,
+        dto.enrollmentId ?? null,
         dto.razorpayOrderId,
         dto.razorpayPaymentId,
         dto.razorpaySignature,

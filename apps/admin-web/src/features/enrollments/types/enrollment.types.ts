@@ -132,6 +132,8 @@ export interface Enrollment {
 
   feeAmount: number;
   discountAmount: number;
+  coinDiscountAmount?: number;
+  redeemedCoins?: number;
   finalAmount: number;
   paidAmount: number;
   dueAmount: number;

@@ -22,6 +22,8 @@ import { StudentStatus } from '@modules/student/domain/enums/student-status.enum
 import { ERROR_CODES } from '@common/constants/error-codes';
 
 import { Enrollment } from '../entities/enrollment.entity';
+import { ApplicationType } from '../enums/application-type.enum';
+import { EnrollmentSource } from '../enums/enrollment-source.enum';
 import { EnrollmentStatus } from '../enums/enrollment-status.enum';
 import { BatchFullException } from '../errors/batch-full.exception';
 import {
@@ -60,6 +62,11 @@ import type {
   EnrollmentRepository,
 } from '../repositories/enrollment.repository';
 import { isActiveCourseEnrollmentBlocking } from '../utils/active-course-enrollment.util';
+import {
+  hasPaidPublicOnlineAdvance,
+  isPublicOnlineAdvanceEnrollment,
+} from '../utils/public-online-advance.util';
+import type { PublicEnrollmentCheckoutPayload } from '../types/public-enrollment-checkout-payload.type';
 
 export interface EnrollmentHierarchy {
   student: Student;
@@ -144,6 +151,10 @@ export class EnrollmentDomainService {
       [EnrollmentStatus.PENDING_APPROVAL]: [
         EnrollmentStatus.ADMITTED,
         EnrollmentStatus.REJECTED,
+        EnrollmentStatus.CANCELLED,
+      ],
+      [EnrollmentStatus.ADVANCED]: [
+        EnrollmentStatus.ADMITTED,
         EnrollmentStatus.CANCELLED,
       ],
       [EnrollmentStatus.ADMITTED]: [
@@ -300,6 +311,49 @@ export class EnrollmentDomainService {
    * replaces an existing enrollment. Any other active same-course attempt
    * is rejected.
    */
+  /**
+   * Blocks new public checkout when the student already has a real active enrollment.
+   * Legacy unpaid public PENDING rows for the same batch/timing are ignored (checkout replaces them).
+   */
+  async ensureNoActiveEnrollmentForPublicCheckout(
+    enrollmentRepo: EnrollmentRepository,
+    studentId: string,
+    payload: PublicEnrollmentCheckoutPayload,
+  ): Promise<void> {
+    const current = await enrollmentRepo.findCurrentDetailByStudentId(
+      studentId,
+    );
+
+    if (!current) {
+      return;
+    }
+
+    const sameBatchAndTiming =
+      current.batch.id === payload.batchId &&
+      current.batchTimingId === payload.batchTimingId;
+
+    const legacyUnpaidCheckout =
+      sameBatchAndTiming &&
+      isPublicOnlineAdvanceEnrollment({
+        source: current.source as EnrollmentSource,
+        applicationType: current.applicationType as ApplicationType,
+        finalAmount: current.finalAmount,
+      }) &&
+      (current.status === EnrollmentStatus.PENDING ||
+        current.status === EnrollmentStatus.PENDING_APPROVAL) &&
+      !hasPaidPublicOnlineAdvance(current.paidAmount);
+
+    if (legacyUnpaidCheckout) {
+      return;
+    }
+
+    if (isActiveCourseEnrollmentBlocking(current)) {
+      throw EnrollmentAlreadyExistsException.forCannotCreateAnotherEnrollment(
+        current,
+      );
+    }
+  }
+
   async findResumableCourseEnrollment(
     enrollmentRepo: EnrollmentRepository,
     studentId: string,
@@ -640,6 +694,8 @@ export class EnrollmentDomainService {
     status: EnrollmentStatus,
   ): StudentStatus | null {
     switch (status) {
+      case EnrollmentStatus.ADVANCED:
+        return StudentStatus.ADVANCED;
       case EnrollmentStatus.ADMITTED:
       case EnrollmentStatus.ACTIVE:
         return StudentStatus.ADMITTED;
@@ -664,6 +720,10 @@ export class EnrollmentDomainService {
       )
     ) {
       return StudentStatus.ADMITTED;
+    }
+
+    if (statuses.some((status) => status === EnrollmentStatus.ADVANCED)) {
+      return StudentStatus.ADVANCED;
     }
 
     if (statuses.some((status) => status === EnrollmentStatus.COMPLETED)) {

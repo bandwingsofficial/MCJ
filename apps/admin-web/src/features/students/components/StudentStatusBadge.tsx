@@ -16,6 +16,7 @@ const STATUS_VARIANTS: Record<
 > = {
   LEAD: "warning",
   ENQUIRED: "warning",
+  ADVANCED: "info",
   ADMITTED: "info",
   COMPLETED: "default",
   DROPPED: "danger",
@@ -25,6 +26,7 @@ const STATUS_VARIANTS: Record<
 const STATUS_LABELS: Record<StudentStatus, string> = {
   LEAD: "Lead",
   ENQUIRED: "Enquired",
+  ADVANCED: "Advanced",
   ADMITTED: "Admitted",
   COMPLETED: "Completed",
   DROPPED: "Dropped",

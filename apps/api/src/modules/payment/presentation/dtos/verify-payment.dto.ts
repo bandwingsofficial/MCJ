@@ -1,14 +1,18 @@
 import { Transform } from 'class-transformer';
-import { IsString, IsUUID, MaxLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 const trim = (value: unknown) =>
   typeof value === 'string' ? value.trim() : value;
 
 export class VerifyPaymentDto {
-  @ApiProperty()
+  @ApiPropertyOptional({
+    description:
+      'Required for legacy enrollment-first payments. Omit for enrollment checkout payments.',
+  })
+  @IsOptional()
   @IsUUID()
-  enrollmentId!: string;
+  enrollmentId?: string;
 
   @ApiProperty()
   @IsString()

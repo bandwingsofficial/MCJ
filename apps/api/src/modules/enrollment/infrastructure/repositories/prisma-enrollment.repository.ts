@@ -313,6 +313,18 @@ export class PrismaEnrollmentRepository
       where.isActive = filters.isActive;
     }
 
+    if (filters.excludeUnpaidPublicCheckout !== false) {
+      where.NOT = {
+        AND: [
+          { source: 'PUBLIC' },
+          { applicationType: 'ONLINE' },
+          { status: { in: ['PENDING', 'PENDING_APPROVAL'] } },
+          { finalAmount: { gt: 0 } },
+          { paidAmount: { lt: 500 } },
+        ],
+      };
+    }
+
     if (
       filters.admissionDateFrom !== undefined ||
       filters.admissionDateTo !== undefined

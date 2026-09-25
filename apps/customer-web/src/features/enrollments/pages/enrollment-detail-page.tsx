@@ -14,6 +14,12 @@ import { PaymentButton } from "@/src/features/payments/components/PaymentButton"
 import { EnrollmentRejectedBanner } from "@/src/features/enrollments/components/enrollment-checkout-panels";
 import { useEnrollment } from "@/src/features/enrollments/hooks/useEnrollment";
 import {
+  canPayEnrollmentAdvance,
+  getEnrollmentPaymentStatusLabel,
+  getEnrollmentStatusLabel,
+  isAdvancedEnrollment,
+} from "@/src/features/enrollments/utils/enrollment-status.utils";
+import {
   formatBatchDays,
   formatEnrollmentDate,
   formatEnrollmentTime,
@@ -41,26 +47,6 @@ function getStatusVariant(
     default:
       return "default";
   }
-}
-
-function getStatusLabel(status: string, paymentStatus: string): string {
-  if (status === "ADMITTED" || status === "ACTIVE") {
-    return "Admitted";
-  }
-
-  if (status === "PENDING_APPROVAL") {
-    return "Pending Approval";
-  }
-
-  if (status === "PENDING" && paymentStatus === "PAID") {
-    return "Admitted";
-  }
-
-  if (status === "REJECTED") {
-    return "Rejected";
-  }
-
-  return status.replaceAll("_", " ");
 }
 
 function formatCurrency(amount: number): string {
@@ -93,8 +79,8 @@ export function EnrollmentDetailPage({
     );
   }
 
-  const canPay =
-    enrollment.status === "PENDING" && enrollment.paymentStatus === "UNPAID";
+  const canPay = canPayEnrollmentAdvance(enrollment);
+  const coinDiscount = enrollment.coinDiscountAmount ?? 0;
 
   return (
     <main className="container mx-auto space-y-8 px-4 py-0">
@@ -121,13 +107,10 @@ export function EnrollmentDetailPage({
               </div>
               <div className="flex flex-wrap gap-2">
                 <Badge variant={getStatusVariant(enrollment.status)}>
-                  {getStatusLabel(
-                    enrollment.status,
-                    enrollment.paymentStatus,
-                  )}
+                  {getEnrollmentStatusLabel(enrollment)}
                 </Badge>
                 <Badge variant={getStatusVariant(enrollment.paymentStatus)}>
-                  {enrollment.paymentStatus}
+                  {getEnrollmentPaymentStatusLabel(enrollment)}
                 </Badge>
               </div>
             </div>
@@ -251,25 +234,54 @@ export function EnrollmentDetailPage({
             </h3>
             <div className="mt-4 space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-500">Original Price</span>
-                <span>{formatCurrency(enrollment.feeAmount)}</span>
+                <span className="text-slate-500">Course Fee</span>
+                <span>
+                  {formatCurrency(
+                    enrollment.feeAmount - enrollment.discountAmount,
+                  )}
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Discount</span>
-                <span>-{formatCurrency(enrollment.discountAmount)}</span>
-              </div>
+              {coinDiscount > 0 ? (
+                <div className="flex justify-between text-emerald-700">
+                  <span>Coin Discount</span>
+                  <span>-{formatCurrency(coinDiscount)}</span>
+                </div>
+              ) : null}
               <Separator />
               <div className="flex justify-between font-semibold text-slate-900">
-                <span>Final Amount</span>
+                <span>Grand Total</span>
                 <span>{formatCurrency(enrollment.finalAmount)}</span>
               </div>
+              {isAdvancedEnrollment(enrollment) ? (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Advance Paid</span>
+                    <span>{formatCurrency(enrollment.paidAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Amount Due</span>
+                    <span>{formatCurrency(enrollment.dueAmount)}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Paid</span>
+                    <span>{formatCurrency(enrollment.paidAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Due</span>
+                    <span>{formatCurrency(enrollment.dueAmount)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between">
-                <span className="text-slate-500">Paid</span>
-                <span>{formatCurrency(enrollment.paidAmount)}</span>
+                <span className="text-slate-500">Payment Status</span>
+                <span>{getEnrollmentPaymentStatusLabel(enrollment)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Due</span>
-                <span>{formatCurrency(enrollment.dueAmount)}</span>
+                <span className="text-slate-500">Student Status</span>
+                <span>{enrollment.student?.status ?? "—"}</span>
               </div>
             </div>
 

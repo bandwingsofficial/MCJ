@@ -134,6 +134,7 @@ export function StudentCoursePage({ courseId }: StudentCoursePageProps) {
           </div>
 
           <LockedCurriculum
+            courseId={courseId}
             modules={previewModules}
             moduleCount={course.moduleCount}
             lessonCount={course.lessonCount}

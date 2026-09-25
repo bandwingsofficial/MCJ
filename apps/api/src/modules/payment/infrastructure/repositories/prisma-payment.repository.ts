@@ -108,6 +108,24 @@ export class PrismaPaymentRepository implements PaymentRepository {
     return record ? PaymentMapper.toDomain(record) : null;
   }
 
+  async findPendingEnrollmentCheckoutsByStudentId(
+    studentId: string,
+  ): Promise<Payment[]> {
+    const records = await this.prisma.payment.findMany({
+      where: {
+        studentId,
+        enrollmentId: null,
+        checkoutPayload: { not: Prisma.DbNull },
+        paymentStatus: 'PENDING',
+        isDeleted: false,
+        gatewayOrderId: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return records.map((record) => PaymentMapper.toDomain(record));
+  }
+
   async findDetailById(
     id: string,
     includeDeleted = false,

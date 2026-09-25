@@ -11,6 +11,7 @@ import { AuthModule } from '../auth/auth.module';
 import { BranchUserModule } from '../branch-user/branch-user.module';
 import { ENROLLMENT_TOKENS } from '../enrollment/enrollment.tokens';
 import { EnrollmentModule } from '../enrollment/enrollment.module';
+import { EnrollmentCoinService } from '../enrollment/application/shared/enrollment-coin.service';
 import { EnrollmentSideEffectsService } from '../enrollment/application/shared/enrollment-side-effects.service';
 import type { EnrollmentRepository } from '../enrollment/domain/repositories/enrollment.repository';
 import { STUDENT_TOKENS } from '../student/student.tokens';
@@ -29,6 +30,7 @@ import { ListPaymentsHandler } from './application/list-payments/list-payments.h
 import { PaymentEnrollmentSyncService } from './application/shared/payment-enrollment-sync.service';
 import { UpdatePaymentHandler } from './application/update-payment/update-payment.handler';
 import { VerifyPaymentHandler } from './application/verify-payment/verify-payment.handler';
+import { FinalizePublicEnrollmentOnPaymentService } from '../enrollment/application/shared/finalize-public-enrollment-on-payment.service';
 import type { PaymentRepository } from './domain/repositories/payment.repository';
 import type { PaymentGatewayPort } from './domain/services/payment-gateway.port';
 import { PaymentDomainService } from './domain/services/payment-domain.service';
@@ -74,16 +76,19 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
         enrollmentRepo: EnrollmentRepository,
         sideEffects: EnrollmentSideEffectsService,
         studentRepo: StudentRepository,
+        enrollmentCoinService: EnrollmentCoinService,
       ) =>
         new PaymentEnrollmentSyncService(
           enrollmentRepo,
           sideEffects,
           studentRepo,
+          enrollmentCoinService,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
         EnrollmentSideEffectsService,
         STUDENT_TOKENS.STUDENT_REPOSITORY,
+        EnrollmentCoinService,
       ],
     },
 
@@ -120,6 +125,7 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
         gateway: PaymentGatewayPort,
         domainService: PaymentDomainService,
         enrollmentSync: PaymentEnrollmentSyncService,
+        finalizePublicEnrollment: FinalizePublicEnrollmentOnPaymentService,
       ) =>
         new VerifyPaymentHandler(
           paymentRepo,
@@ -127,6 +133,7 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
           gateway,
           domainService,
           enrollmentSync,
+          finalizePublicEnrollment,
         ),
       inject: [
         PAYMENT_TOKENS.PAYMENT_REPOSITORY,
@@ -134,6 +141,7 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
         PAYMENT_TOKENS.PAYMENT_GATEWAY,
         PaymentDomainService,
         PaymentEnrollmentSyncService,
+        FinalizePublicEnrollmentOnPaymentService,
       ],
     },
 
@@ -143,16 +151,19 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
         paymentRepo: PaymentRepository,
         gateway: PaymentGatewayPort,
         enrollmentSync: PaymentEnrollmentSyncService,
+        finalizePublicEnrollment: FinalizePublicEnrollmentOnPaymentService,
       ) =>
         new HandlePaymentWebhookHandler(
           paymentRepo,
           gateway,
           enrollmentSync,
+          finalizePublicEnrollment,
         ),
       inject: [
         PAYMENT_TOKENS.PAYMENT_REPOSITORY,
         PAYMENT_TOKENS.PAYMENT_GATEWAY,
         PaymentEnrollmentSyncService,
+        FinalizePublicEnrollmentOnPaymentService,
       ],
     },
 
@@ -254,6 +265,7 @@ import { PublicPaymentController } from './presentation/controllers/public-payme
 
   exports: [
     PAYMENT_TOKENS.PAYMENT_REPOSITORY,
+    PAYMENT_TOKENS.PAYMENT_GATEWAY,
     PaymentDomainService,
     PaymentEnrollmentSyncService,
   ],

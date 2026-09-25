@@ -9,6 +9,12 @@ import { Separator } from "@/src/shared/components/ui/separator";
 import { PaymentButton } from "@/src/features/payments/components/PaymentButton";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { formatEnrollmentTime } from "@/src/features/enrollments/utils/enrollment-batch.utils";
+import {
+  canPayEnrollmentAdvance,
+  getEnrollmentPaymentStatusLabel,
+  getEnrollmentStatusLabel,
+  isAdvancedEnrollment,
+} from "@/src/features/enrollments/utils/enrollment-status.utils";
 
 interface EnrollmentCardProps {
   enrollment: Enrollment;
@@ -23,6 +29,7 @@ function getStatusVariant(
       return "success";
     case "PENDING":
     case "PENDING_APPROVAL":
+    case "ADVANCED":
       return "warning";
     case "REJECTED":
     case "CANCELLED":
@@ -51,25 +58,10 @@ function getPaymentVariant(
   }
 }
 
-function getEnrollmentStatusLabel(enrollment: Enrollment): string {
-  if (enrollment.status === "ADMITTED" || enrollment.status === "ACTIVE") {
-    return "Admitted";
-  }
-
-  if (enrollment.status === "PENDING_APPROVAL") {
-    return "Pending Approval";
-  }
-
-  if (enrollment.status === "PENDING" && enrollment.paymentStatus === "PAID") {
-    return "Admitted";
-  }
-
-  return enrollment.status.replaceAll("_", " ");
-}
-
 export function EnrollmentCard({ enrollment }: EnrollmentCardProps) {
-  const canPay =
-    enrollment.status === "PENDING" && enrollment.paymentStatus === "UNPAID";
+  const canPay = canPayEnrollmentAdvance(enrollment);
+  const coinDiscount = enrollment.coinDiscountAmount ?? 0;
+  const primaryPayment = enrollment.payments?.[0];
 
   return (
     <Card className="overflow-hidden border-slate-200 shadow-sm transition-all hover:shadow-md">
@@ -171,43 +163,62 @@ export function EnrollmentCard({ enrollment }: EnrollmentCardProps) {
           ))}
         </div>
 
-        {enrollment.payments && enrollment.payments.length > 0 ? (
+        {enrollment.finalAmount > 0 ||
+        (enrollment.payments && enrollment.payments.length > 0) ? (
           <>
             <div className="my-6">
               <Separator />
             </div>
             <div>
               <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Payment Details
+                Payment Summary
               </p>
               <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
                 {[
                   {
                     label: "Payment Status",
-                    value: enrollment.paymentStatus,
+                    value: getEnrollmentPaymentStatusLabel(enrollment),
                   },
                   {
-                    label: "Amount",
+                    label: "Grand Total",
                     value: `₹${Number(enrollment.finalAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
                   },
+                  ...(coinDiscount > 0
+                    ? [
+                        {
+                          label: "Coin Discount",
+                          value: `-₹${Number(coinDiscount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+                        },
+                      ]
+                    : []),
+                  ...(isAdvancedEnrollment(enrollment)
+                    ? [
+                        {
+                          label: "Advance Paid",
+                          value: `₹${Number(enrollment.paidAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+                        },
+                        {
+                          label: "Amount Due",
+                          value: `₹${Number(enrollment.dueAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+                        },
+                      ]
+                    : []),
                   {
                     label: "Payment Method",
-                    value: enrollment.payments[0]?.paymentMethod ?? "—",
+                    value: primaryPayment?.paymentMethod ?? "—",
                   },
                   {
                     label: "Payment ID",
-                    value: enrollment.payments[0]?.gatewayPaymentId ?? "—",
+                    value: primaryPayment?.gatewayPaymentId ?? "—",
                   },
                   {
                     label: "Order ID",
-                    value: enrollment.payments[0]?.gatewayOrderId ?? "—",
+                    value: primaryPayment?.gatewayOrderId ?? "—",
                   },
                   {
                     label: "Payment Date",
-                    value: enrollment.payments[0]?.paidAt
-                      ? new Date(
-                          enrollment.payments[0].paidAt,
-                        ).toLocaleDateString()
+                    value: primaryPayment?.paidAt
+                      ? new Date(primaryPayment.paidAt).toLocaleDateString()
                       : "—",
                   },
                 ].map((item) => (

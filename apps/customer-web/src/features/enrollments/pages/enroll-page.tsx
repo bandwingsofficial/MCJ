@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, Lock } from "lucide-react";
 
@@ -32,7 +32,12 @@ import {
 } from "@/src/features/enrollments/components/enrollment-checkout-panels";
 import { EnrollmentCourseSummary } from "@/src/features/enrollments/components/enrollment-course-summary";
 import { EnrollmentMissingBatch } from "@/src/features/enrollments/components/enrollment-missing-batch";
+import {
+  EnrollmentCoinRedemption,
+  type EnrollmentCoinRedemptionConfig,
+} from "@/src/features/enrollments/components/enrollment-coin-redemption";
 import { EnrollmentOrderSummary } from "@/src/features/enrollments/components/enrollment-order-summary";
+import { ONLINE_ENROLLMENT_ADVANCE_AMOUNT } from "@/src/features/enrollments/constants/enrollment-payment.constants";
 import { EnrollmentPageSkeleton } from "@/src/features/enrollments/components/enrollment-page-skeleton";
 import { EnrollmentSelectedConfiguration } from "@/src/features/enrollments/components/enrollment-selected-configuration";
 import {
@@ -40,11 +45,16 @@ import {
   type EnrollmentStudentInfoHandle,
 } from "@/src/features/enrollments/components/enrollment-student-info";
 import { useEnrollmentCheckout } from "@/src/features/enrollments/hooks/use-enrollment-checkout";
+import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import { useMyEnrollments } from "@/src/features/enrollments/hooks/useMyEnrollments";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import {
+  findAnyBlockingEnrollment,
   findBlockingCourseEnrollment,
   getActiveCourseEnrollmentBlockCopy,
+  getActiveEnrollmentBlockPresentation,
+  getGlobalActiveEnrollmentBlockCopy,
+  getMyLearningCoursePath,
   resolveEnrollmentBatchEndDate,
 } from "@/src/features/enrollments/utils/active-course-enrollment.utils";
 import {
@@ -59,6 +69,7 @@ import {
   readEnrollmentSelection,
   selectionMatchesIds,
 } from "@/src/features/enrollments/utils/enrollment-selection-storage";
+import { referralRewardsService } from "@/src/features/referral-rewards/services/referral-rewards.service";
 import { useStudentProfile } from "@/src/features/student/hooks";
 
 type EnrollmentPageView =
@@ -120,10 +131,53 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     readEnrollmentSelection(),
   );
   const studentInfoRef = useRef<EnrollmentStudentInfoHandle>(null);
+  const [coinConfig, setCoinConfig] =
+    useState<EnrollmentCoinRedemptionConfig | null>(null);
+  const [appliedCoins, setAppliedCoins] = useState(0);
+  const [appliedCoinDiscount, setAppliedCoinDiscount] = useState(0);
+  const [coinLockedEnrollmentId, setCoinLockedEnrollmentId] = useState<
+    string | null
+  >(null);
+
+  const refreshCoinWallet = useCallback(async () => {
+    if (!hasSession) {
+      return;
+    }
+
+    try {
+      const [settings, rewards] = await Promise.all([
+        referralRewardsService.getPublicSettings(),
+        referralRewardsService.getMe(),
+      ]);
+
+      setCoinConfig({
+        availableCoins: rewards.wallet?.availableCoins ?? 0,
+        coinsPerRupee: settings.coinsPerRupee,
+        minRedemptionCoins: settings.minRedemptionCoins,
+        maxRedemptionCoins: settings.maxRedemptionCoins,
+        redemptionEnabled: settings.redemptionEnabled,
+      });
+    } catch {
+      setCoinConfig(null);
+    }
+  }, [hasSession]);
 
   useEffect(() => {
     setSelectionSnapshot(readEnrollmentSelection());
   }, [urlBatchId, urlBranchId, urlBatchTimingId, urlCourseId]);
+
+  useEffect(() => {
+    void refreshCoinWallet();
+  }, [refreshCoinWallet]);
+
+  const syncCoinHoldFromEnrollment = useCallback((enrollment: Enrollment) => {
+    const coins = enrollment.redeemedCoins ?? 0;
+    if (coins > 0) {
+      setCoinLockedEnrollmentId(enrollment.id);
+      setAppliedCoins(coins);
+      setAppliedCoinDiscount(enrollment.coinDiscountAmount ?? 0);
+    }
+  }, []);
 
   const {
     data: course,
@@ -330,8 +384,18 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       return "Complete Enrollment";
     }
 
-    return `Pay ${formatCurrency(pricing.discountedPrice, pricing.currency)}`;
-  }, [pricing]);
+    const grandTotal = Math.max(0, pricing.discountedPrice - appliedCoinDiscount);
+    const advance = Math.min(ONLINE_ENROLLMENT_ADVANCE_AMOUNT, grandTotal);
+
+    const advanceLabel = new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: pricing.currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(advance);
+
+    return `Pay ${advanceLabel} Advance`;
+  }, [appliedCoinDiscount, pricing]);
 
   const handlePayNow = async () => {
     if (!course || !selectedBatchId || !selectedBranchId || !selectedBatch) {
@@ -343,16 +407,19 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       return;
     }
 
+    const globalBlock = findAnyBlockingEnrollment(myEnrollments);
     const activeEnrollment = findBlockingCourseEnrollment(
       myEnrollments,
       course.id,
     );
-    if (course.isEnrolled || activeEnrollment) {
-      const block = getActiveCourseEnrollmentBlockCopy(
-        activeEnrollment
-          ? resolveEnrollmentBatchEndDate(activeEnrollment)
-          : null,
-      );
+    if (course.isEnrolled || globalBlock || activeEnrollment) {
+      const block = globalBlock
+        ? getGlobalActiveEnrollmentBlockCopy()
+        : getActiveCourseEnrollmentBlockCopy(
+            activeEnrollment
+              ? resolveEnrollmentBatchEndDate(activeEnrollment)
+              : null,
+          );
       appToast.error(`${block.title} ${block.description}`);
       return;
     }
@@ -397,6 +464,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       courseId: course.id,
       batchTimingId: selectedBatchTimingId,
       isFree: batchPricing.isFree,
+      coinsToApply: appliedCoins > 0 ? appliedCoins : undefined,
     });
 
     if (!result) {
@@ -410,7 +478,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       appToast.success(
         result.status === "success_free"
           ? "Enrollment confirmed successfully."
-          : "Payment verified. Your enrollment is confirmed.",
+          : "Advance payment verified. Your enrollment status is Advanced.",
       );
       return;
     }
@@ -461,17 +529,32 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     );
   }
 
+  const globalBlockingEnrollment = findAnyBlockingEnrollment(myEnrollments);
   const blockingEnrollment = findBlockingCourseEnrollment(
     myEnrollments,
     course.id,
   );
   const hasActiveCourseEnrollment =
-    Boolean(course.isEnrolled) || Boolean(blockingEnrollment);
-  const activeEnrollmentBlock = getActiveCourseEnrollmentBlockCopy(
-    blockingEnrollment
-      ? resolveEnrollmentBatchEndDate(blockingEnrollment)
-      : null,
-  );
+    Boolean(course.isEnrolled) ||
+    Boolean(globalBlockingEnrollment) ||
+    Boolean(blockingEnrollment);
+  const blockingEnrollmentForUi =
+    globalBlockingEnrollment ?? blockingEnrollment;
+  const activeEnrollmentPresentation = blockingEnrollmentForUi
+    ? getActiveEnrollmentBlockPresentation(
+        blockingEnrollmentForUi,
+        course.id,
+      )
+    : course.isEnrolled
+      ? {
+          sectionLabel: "YOUR LEARNING",
+          title: "You're already enrolled in this course.",
+          description:
+            "Continue where you left off in your learning portal.",
+          buttonLabel: "Continue Learning",
+          href: getMyLearningCoursePath(course.id),
+        }
+      : null;
 
   const batchErrorMessage =
     batchValidationError === "wrong_course"
@@ -546,25 +629,29 @@ export function EnrollPage({ slug }: EnrollPageProps) {
             <div className="space-y-6">
               <EnrollmentCourseSummary
                 course={course}
+                batch={selectedBatch}
                 learningMode={
                   selectedSchedule.learningMode ?? selectedBatch?.mode ?? null
                 }
                 batchName={selectedBatch?.name ?? null}
               />
 
-              {hasActiveCourseEnrollment ? (
+              {hasActiveCourseEnrollment && activeEnrollmentPresentation ? (
                 <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-6">
-                  <h3 className="text-base font-semibold text-slate-900">
-                    {activeEnrollmentBlock.title}
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#2563D9]">
+                    {activeEnrollmentPresentation.sectionLabel}
+                  </p>
+                  <h3 className="mt-2 text-base font-semibold text-slate-900">
+                    {activeEnrollmentPresentation.title}
                   </h3>
                   <p className="mt-2 text-sm text-slate-600">
-                    {activeEnrollmentBlock.description}
+                    {activeEnrollmentPresentation.description}
                   </p>
                   <Link
-                    href={`/student/courses/${course.id}`}
+                    href={activeEnrollmentPresentation.href}
                     className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-6 text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
                   >
-                    Continue Learning
+                    {activeEnrollmentPresentation.buttonLabel}
                   </Link>
                 </div>
               ) : !selectedBatchId || !selectedBranchId ? (
@@ -600,7 +687,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
             </div>
 
             <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-              {selectedBatchId && selectedBranchId ? (
+              {hasActiveCourseEnrollment ? null : selectedBatchId && selectedBranchId ? (
                 <EnrollmentSelectedConfiguration
                   course={course}
                   batch={selectedBatch}
@@ -614,11 +701,46 @@ export function EnrollPage({ slug }: EnrollPageProps) {
                 />
               ) : null}
 
-              <EnrollmentOrderSummary
-                selectedBatch={selectedBatch}
-                learningMode={selectedSchedule.learningMode}
-                isBatchLoading={isBatchResolving}
-              />
+              {!hasActiveCourseEnrollment && pricing && !pricing.isFree ? (
+                <EnrollmentCoinRedemption
+                  config={coinConfig}
+                  currency={pricing.currency}
+                  maxCoinDiscountRupees={pricing.discountedPrice}
+                  appliedCoins={appliedCoins}
+                  appliedDiscount={appliedCoinDiscount}
+                  disabled={isProcessing}
+                  onApply={async (coins) => {
+                    if (!coinConfig) {
+                      return;
+                    }
+                    const discount =
+                      Math.round((coins / coinConfig.coinsPerRupee) * 100) /
+                      100;
+                    setAppliedCoins(coins);
+                    setAppliedCoinDiscount(discount);
+                  }}
+                  onRemove={async () => {
+                    if (coinLockedEnrollmentId) {
+                      await enrollmentService.removeAppliedCoins(
+                        coinLockedEnrollmentId,
+                      );
+                      setCoinLockedEnrollmentId(null);
+                      await refreshCoinWallet();
+                    }
+                    setAppliedCoins(0);
+                    setAppliedCoinDiscount(0);
+                  }}
+                />
+              ) : null}
+
+              {!hasActiveCourseEnrollment ? (
+                <EnrollmentOrderSummary
+                  selectedBatch={selectedBatch}
+                  learningMode={selectedSchedule.learningMode}
+                  isBatchLoading={isBatchResolving}
+                  coinDiscount={appliedCoinDiscount}
+                />
+              ) : null}
 
               {!hasActiveCourseEnrollment && selectedBatchId && selectedBranchId ? (
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

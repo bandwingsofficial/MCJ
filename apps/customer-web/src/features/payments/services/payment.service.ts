@@ -2,6 +2,7 @@ import { paymentApi } from "@/src/features/payments/api/payment.api";
 
 import type {
   CreatePaymentOrderRequest,
+  VerifyPaymentDetail,
   VerifyPaymentRequest,
 } from "@/src/features/payments/types/payment.types";
 
@@ -19,7 +20,7 @@ class PaymentService {
 
   async verifyPayment(
     payload: VerifyPaymentRequest,
-  ) {
+  ): Promise<VerifyPaymentDetail> {
     const response =
       await paymentApi.verifyPayment(
         payload,

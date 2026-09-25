@@ -8,34 +8,22 @@ import { Button } from "@/src/shared/components/ui/button";
 import type { Course } from "@/src/features/courses/types/course.types";
 import { formatCurrency } from "@/src/features/batches/utils/batch-pricing.utils";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
+import {
+  getEnrollmentPaymentStatusLabel,
+  getEnrollmentStatusLabel,
+  isAdvancedEnrollment,
+} from "@/src/features/enrollments/utils/enrollment-status.utils";
 
 interface EnrollmentSuccessViewProps {
   course: Course;
   enrollment: Enrollment;
 }
 
-function getEnrollmentStatusLabel(enrollment: Enrollment): string {
-  switch (enrollment.status) {
-    case "ADMITTED":
-    case "ACTIVE":
-      return "Admitted";
-    case "PENDING_APPROVAL":
-      return "Pending Approval";
-    case "REJECTED":
-      return "Rejected";
-    case "PENDING":
-      return enrollment.paymentStatus === "PAID"
-        ? "Admitted"
-        : "Pending Payment";
-    default:
-      return enrollment.status;
-  }
-}
-
 export function EnrollmentSuccessView({
   course,
   enrollment,
 }: EnrollmentSuccessViewProps) {
+  const isAdvanced = isAdvancedEnrollment(enrollment);
   const isAdmitted =
     enrollment.status === "ADMITTED" ||
     enrollment.status === "ACTIVE" ||
@@ -60,7 +48,9 @@ export function EnrollmentSuccessView({
       className={`rounded-2xl border p-8 text-center shadow-sm ${
         isAdmitted
           ? "border-emerald-200 bg-emerald-50/40"
-          : "border-blue-200 bg-blue-50/40"
+          : isAdvanced
+            ? "border-amber-200 bg-amber-50/40"
+            : "border-blue-200 bg-blue-50/40"
       }`}
     >
       <div
@@ -78,15 +68,21 @@ export function EnrollmentSuccessView({
       </div>
 
       <h2 className="mt-5 text-2xl font-bold text-slate-900">
-        {isAdmitted ? "Enrollment Successful" : "Enrollment Submitted"}
+        {isAdmitted
+          ? "Enrollment Successful"
+          : isAdvanced
+            ? "Advance Payment Received"
+            : "Enrollment Submitted"}
       </h2>
 
       <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-slate-600">
         {isAdmitted
           ? "Your payment has been successfully verified and your enrollment has been confirmed."
-          : isFree
-            ? "Your enrollment has been recorded."
-            : "Your enrollment request has been recorded."}
+          : isAdvanced
+            ? "Your advance payment is verified. Remaining fees are payable offline after you join."
+            : isFree
+              ? "Your enrollment has been recorded."
+              : "Your enrollment request has been recorded."}
       </p>
 
       <div className="mx-auto mt-6 max-w-md space-y-2 rounded-xl border border-white bg-white p-4 text-left text-sm">
@@ -120,12 +116,37 @@ export function EnrollmentSuccessView({
               : "—"}
         </p>
         {!isFree ? (
-          <p className="text-slate-600">
-            Payment Amount: {formatCurrency(enrollment.finalAmount, currency)}
-          </p>
+          <>
+            <p className="text-slate-600">
+              Course Fee: {formatCurrency(enrollment.feeAmount, currency)}
+            </p>
+            {(enrollment.coinDiscountAmount ?? 0) > 0 ? (
+              <p className="text-slate-600">
+                Coin Discount: -
+                {formatCurrency(enrollment.coinDiscountAmount ?? 0, currency)}
+              </p>
+            ) : null}
+            <p className="text-slate-600">
+              Grand Total: {formatCurrency(enrollment.finalAmount, currency)}
+            </p>
+            {isAdvanced ? (
+              <>
+                <p className="text-slate-600">
+                  Advance Paid:{" "}
+                  {formatCurrency(enrollment.paidAmount, currency)}
+                </p>
+                <p className="text-slate-600">
+                  Amount Due: {formatCurrency(enrollment.dueAmount, currency)}
+                </p>
+              </>
+            ) : null}
+          </>
         ) : null}
         <p className="text-slate-600">
-          Payment Status: {enrollment.paymentStatus}
+          Payment Status: {getEnrollmentPaymentStatusLabel(enrollment)}
+        </p>
+        <p className="text-slate-600">
+          Student Status: {enrollment.student?.status ?? "—"}
         </p>
         {payment?.gatewayPaymentId ? (
           <p className="text-slate-600">
@@ -219,8 +240,8 @@ export function EnrollmentSecurePaymentNote() {
             Your payment will be securely processed through Razorpay.
           </p>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            After successful payment verification, your enrollment is confirmed
-            immediately and course access is enabled.
+            Online checkout collects the advance only. The remaining balance is
+            settled offline when you join the institute.
           </p>
         </div>
       </div>

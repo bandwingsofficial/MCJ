@@ -30,6 +30,7 @@ export const STUDENT_STATUSES: ReadonlyArray<{
 }> = [
   { label: "Lead", value: "LEAD" },
   { label: "Enquired", value: "ENQUIRED" },
+  { label: "Advanced", value: "ADVANCED" },
   { label: "Admitted", value: "ADMITTED" },
   { label: "Completed", value: "COMPLETED" },
   { label: "Dropped", value: "DROPPED" },

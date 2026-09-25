@@ -4,6 +4,7 @@ import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.en
 export const CURRENT_ENROLLMENT_STATUSES = [
   "PENDING",
   "PENDING_APPROVAL",
+  "ADVANCED",
   "ADMITTED",
   "ACTIVE",
 ] as const;

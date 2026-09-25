@@ -16,6 +16,12 @@ export class PaymentMapper {
       id: record.id,
       paymentNumber: record.paymentNumber,
       enrollmentId: record.enrollmentId,
+      checkoutPayload:
+        record.checkoutPayload &&
+        typeof record.checkoutPayload === 'object' &&
+        !Array.isArray(record.checkoutPayload)
+          ? (record.checkoutPayload as Record<string, unknown>)
+          : null,
       studentId: record.studentId,
       amount: toNumber(record.amount),
       currency: record.currency,
@@ -45,6 +51,10 @@ export class PaymentMapper {
       id: payment.id,
       paymentNumber: payment.paymentNumber.getValue(),
       enrollmentId: payment.enrollmentId,
+      checkoutPayload:
+        payment.checkoutPayload === null
+          ? Prisma.DbNull
+          : (payment.checkoutPayload as Prisma.InputJsonValue),
       studentId: payment.studentId,
       amount: new Prisma.Decimal(payment.amount),
       currency: payment.currency,

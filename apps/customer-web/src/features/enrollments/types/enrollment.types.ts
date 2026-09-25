@@ -7,6 +7,7 @@ export type EnrollmentMode = "OFFLINE" | "ONLINE" | "SELF_PACED";
 export type EnrollmentStatus =
   | "PENDING"
   | "PENDING_APPROVAL"
+  | "ADVANCED"
   | "ADMITTED"
   | "ACTIVE"
   | "REJECTED"
@@ -156,6 +157,8 @@ export interface Enrollment {
 
   feeAmount: number;
   discountAmount: number;
+  coinDiscountAmount?: number;
+  redeemedCoins?: number;
   finalAmount: number;
   paidAmount: number;
   dueAmount: number;

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Lock } from "lucide-react";
 
 import type { CoursePreviewModule } from "@/src/features/courses/types/course.types";
@@ -8,6 +9,7 @@ interface Props {
   modules: CoursePreviewModule[];
   moduleCount?: number;
   lessonCount?: number;
+  courseId?: string;
 }
 
 function formatModuleNumber(order: number): string {
@@ -18,6 +20,7 @@ export function LockedCurriculum({
   modules,
   moduleCount,
   lessonCount,
+  courseId,
 }: Props) {
   if (!modules.length) {
     return (
@@ -80,9 +83,20 @@ export function LockedCurriculum({
                       <span className="font-medium text-slate-500">
                         {formatModuleNumber(lesson.displayOrder)}.
                       </span>{" "}
-                      {lesson.title}
+                      {courseId ? (
+                        <Link
+                          href={`/student/learning/${courseId}/lessons/${lesson.id}`}
+                          className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+                        >
+                          {lesson.title}
+                        </Link>
+                      ) : (
+                        lesson.title
+                      )}
                     </p>
-                    <Lock className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                    {!courseId ? (
+                      <Lock className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                    ) : null}
                   </div>
                 ))}
               </div>

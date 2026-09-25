@@ -11,6 +11,7 @@ import { EnrollmentAlreadyUnenrolledException } from '../../domain/errors/enroll
 import type { EnrollmentRepository } from '../../domain/repositories/enrollment.repository';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
 import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
+import { EnrollmentCoinService } from '../shared/enrollment-coin.service';
 import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
 
 import { UnenrollEnrollmentCommand } from './unenroll-enrollment.command';
@@ -21,6 +22,7 @@ export class UnenrollEnrollmentHandler {
     private readonly batchRepo: BatchRepository,
     private readonly domainService: EnrollmentDomainService,
     private readonly sideEffects: EnrollmentSideEffectsService,
+    private readonly coinService: EnrollmentCoinService,
   ) {}
 
   async execute(
@@ -71,6 +73,10 @@ export class UnenrollEnrollmentHandler {
     });
 
     await this.enrollmentRepo.save(enrollment);
+
+    if (enrollment.redeemedCoins > 0) {
+      await this.coinService.releaseCoinsForEnrollment(enrollment);
+    }
 
     await this.sideEffects.apply(
       enrollment,

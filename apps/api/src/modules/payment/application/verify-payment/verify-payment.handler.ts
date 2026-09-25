@@ -9,6 +9,7 @@ import { InvalidPaymentSignatureException } from '../../domain/errors/payment-bu
 import type { PaymentRepository } from '../../domain/repositories/payment.repository';
 import type { PaymentGatewayPort } from '../../domain/services/payment-gateway.port';
 import { PaymentDomainService } from '../../domain/services/payment-domain.service';
+import { FinalizePublicEnrollmentOnPaymentService } from '@modules/enrollment/application/shared/finalize-public-enrollment-on-payment.service';
 import { PaymentEnrollmentSyncService } from '../shared/payment-enrollment-sync.service';
 import { GetPaymentResult } from '../get-payment/get-payment.result';
 
@@ -25,6 +26,7 @@ export class VerifyPaymentHandler {
     private readonly gateway: PaymentGatewayPort,
     private readonly domainService: PaymentDomainService,
     private readonly enrollmentSync: PaymentEnrollmentSyncService,
+    private readonly finalizePublicEnrollment: FinalizePublicEnrollmentOnPaymentService,
   ) {}
 
   async execute(
@@ -52,12 +54,23 @@ export class VerifyPaymentHandler {
 
     this.domainService.ensureStudentOwnership(payment, student.id);
 
-    if (payment.enrollmentId !== command.enrollmentId) {
+    if (payment.enrollmentId) {
+      if (
+        command.enrollmentId &&
+        payment.enrollmentId !== command.enrollmentId
+      ) {
+        throw new PaymentAccessDeniedException();
+      }
+    } else if (command.enrollmentId) {
       throw new PaymentAccessDeniedException();
     }
 
     // Idempotent: a payment already captured is simply returned as-is.
     if (payment.isSuccessful()) {
+      if (payment.isEnrollmentCheckout() && !payment.enrollmentId) {
+        await this.finalizePublicEnrollment.finalizeIfNeeded(payment);
+      }
+
       return this.domainService.ensureDetailExists(
         await this.paymentRepo.findDetailById(payment.id, true),
       );
@@ -82,7 +95,11 @@ export class VerifyPaymentHandler {
 
     await this.paymentRepo.save(payment);
 
-    await this.enrollmentSync.applyPaymentSuccess(payment);
+    if (payment.isEnrollmentCheckout()) {
+      await this.finalizePublicEnrollment.finalizeIfNeeded(payment);
+    } else if (payment.enrollmentId) {
+      await this.enrollmentSync.applyPaymentSuccess(payment);
+    }
 
     this.logger.log(
       `✅ Payment verified and captured: ${payment.id}`,

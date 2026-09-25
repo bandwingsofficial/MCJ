@@ -9,7 +9,8 @@ export class Payment {
   private constructor(
     public readonly id: string,
     public paymentNumber: PaymentNumber,
-    public readonly enrollmentId: string,
+    public enrollmentId: string | null,
+    public checkoutPayload: Record<string, unknown> | null,
     public readonly studentId: string,
     public amount: number,
     public currency: string,
@@ -37,7 +38,8 @@ export class Payment {
     return new Payment(
       params.id,
       PaymentNumber.create(params.paymentNumber),
-      params.enrollmentId,
+      params.enrollmentId ?? null,
+      params.checkoutPayload ?? null,
       params.studentId,
       amount,
       params.currency?.trim() || 'INR',
@@ -64,7 +66,8 @@ export class Payment {
     return new Payment(
       params.id,
       PaymentNumber.create(params.paymentNumber),
-      params.enrollmentId,
+      params.enrollmentId ?? null,
+      params.checkoutPayload ?? null,
       params.studentId,
       params.amount,
       params.currency,
@@ -147,6 +150,16 @@ export class Payment {
     this.touch();
   }
 
+  attachEnrollment(enrollmentId: string, updatedBy?: string | null) {
+    this.enrollmentId = enrollmentId;
+    this.updatedBy = updatedBy ?? this.updatedBy;
+    this.touch();
+  }
+
+  isEnrollmentCheckout(): boolean {
+    return !this.enrollmentId && this.checkoutPayload != null;
+  }
+
   softDelete(deletedBy?: string | null) {
     this.isDeleted = true;
     this.deletedAt = new Date();
@@ -178,7 +191,8 @@ interface MarkSuccessParams {
 export interface PaymentCreateParams {
   id: string;
   paymentNumber: string;
-  enrollmentId: string;
+  enrollmentId?: string | null;
+  checkoutPayload?: Record<string, unknown> | null;
   studentId: string;
   amount: number;
   currency?: string;
@@ -204,7 +218,8 @@ export interface PaymentUpdateParams {
 export interface PaymentReconstituteParams {
   id: string;
   paymentNumber: string;
-  enrollmentId: string;
+  enrollmentId: string | null;
+  checkoutPayload: Record<string, unknown> | null;
   studentId: string;
   amount: number;
   currency: string;

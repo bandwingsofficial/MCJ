@@ -94,17 +94,16 @@ export class CreatePublicEnrollmentHandler {
       command.batchTimingId,
     );
 
-    const resumable =
-      await this.domainService.findResumableCourseEnrollment(
-        this.enrollmentRepo,
-        student.id,
-        hierarchy.courseId,
-        command.batchId,
-        batchTiming.id,
-      );
+    const pricing = hierarchy.batch.getPricing();
+    const isComplimentary =
+      pricing.isFree || pricing.discountedPrice <= 0;
 
-    if (resumable) {
-      return resumable;
+    if (!isComplimentary) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Paid enrollments must complete the ₹500 advance payment before an enrollment is created.',
+        400,
+      );
     }
 
     await assertBatchTimingHasLiveCapacity(this.prisma, batchTiming.id);
@@ -115,20 +114,15 @@ export class CreatePublicEnrollmentHandler {
       hierarchy.courseId,
     );
 
-    await this.domainService.ensureNotDuplicate(
+    await this.domainService.ensureNoCurrentEnrollment(
       this.enrollmentRepo,
       student.id,
-      command.batchId,
     );
 
     const enrollmentNumber =
       await this.domainService.generateUniqueEnrollmentNumber(
         this.enrollmentRepo,
       );
-
-    const pricing = hierarchy.batch.getPricing();
-    const isComplimentary =
-      pricing.isFree || pricing.discountedPrice <= 0;
 
     const mode = mapCourseModeToEnrollmentMode(batchTiming.mode);
 
@@ -147,9 +141,7 @@ export class CreatePublicEnrollmentHandler {
       feeAmount: pricing.originalPrice,
       discountAmount: pricing.discountAmount,
       paidAmount: 0,
-      status: isComplimentary
-        ? EnrollmentStatus.ADMITTED
-        : EnrollmentStatus.PENDING,
+      status: EnrollmentStatus.ADMITTED,
       source: EnrollmentSource.PUBLIC,
       applicationType: ApplicationType.ONLINE,
       mode,

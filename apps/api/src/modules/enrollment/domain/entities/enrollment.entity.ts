@@ -25,6 +25,8 @@ export class Enrollment {
     public expectedCompletionDate: Date | null,
     public feeAmount: number,
     public discountAmount: number,
+    public coinDiscountAmount: number,
+    public redeemedCoins: number,
     public finalAmount: number,
     public paidAmount: number,
     public dueAmount: number,
@@ -66,6 +68,8 @@ export class Enrollment {
       params.expectedCompletionDate ?? null,
       feeAmount,
       discountAmount,
+      Money.create(params.coinDiscountAmount ?? 0).getValue(),
+      params.redeemedCoins ?? 0,
       0,
       paidAmount,
       0,
@@ -108,6 +112,8 @@ export class Enrollment {
       params.expectedCompletionDate,
       params.feeAmount,
       params.discountAmount,
+      params.coinDiscountAmount,
+      params.redeemedCoins,
       params.finalAmount,
       params.paidAmount,
       params.dueAmount,
@@ -151,6 +157,12 @@ export class Enrollment {
       this.discountAmount = Money.create(
         params.discountAmount,
       ).getValue();
+    if (params.coinDiscountAmount !== undefined)
+      this.coinDiscountAmount = Money.create(
+        params.coinDiscountAmount,
+      ).getValue();
+    if (params.redeemedCoins !== undefined)
+      this.redeemedCoins = params.redeemedCoins;
     if (params.paidAmount !== undefined)
       this.paidAmount = Money.create(params.paidAmount).getValue();
 
@@ -227,6 +239,7 @@ export class Enrollment {
     return [
       EnrollmentStatus.PENDING,
       EnrollmentStatus.PENDING_APPROVAL,
+      EnrollmentStatus.ADVANCED,
       EnrollmentStatus.ADMITTED,
       EnrollmentStatus.ACTIVE,
     ];
@@ -241,11 +254,15 @@ export class Enrollment {
   }
 
   private recalculateFinancials() {
-    if (this.discountAmount > this.feeAmount) {
+    const totalDiscount = round(
+      this.discountAmount + this.coinDiscountAmount,
+    );
+
+    if (totalDiscount > this.feeAmount) {
       throw new InvalidDiscountException();
     }
 
-    this.finalAmount = round(this.feeAmount - this.discountAmount);
+    this.finalAmount = round(this.feeAmount - totalDiscount);
 
     if (this.paidAmount > this.finalAmount) {
       throw new InvalidPaymentAmountException();
@@ -287,6 +304,8 @@ export interface EnrollmentCreateParams {
   expectedCompletionDate?: Date | null;
   feeAmount?: number | null;
   discountAmount?: number | null;
+  coinDiscountAmount?: number | null;
+  redeemedCoins?: number | null;
   paidAmount?: number | null;
   status?: EnrollmentStatus;
   source?: EnrollmentSource;
@@ -309,6 +328,8 @@ export interface EnrollmentUpdateParams {
   expectedCompletionDate?: Date | null;
   feeAmount?: number;
   discountAmount?: number;
+  coinDiscountAmount?: number;
+  redeemedCoins?: number;
   paidAmount?: number;
   remarks?: string | null;
   rejectionReason?: string | null;
@@ -333,6 +354,8 @@ export interface EnrollmentReconstituteParams {
   expectedCompletionDate: Date | null;
   feeAmount: number;
   discountAmount: number;
+  coinDiscountAmount: number;
+  redeemedCoins: number;
   finalAmount: number;
   paidAmount: number;
   dueAmount: number;

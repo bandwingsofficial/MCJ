@@ -32,13 +32,18 @@ export interface CreatePaymentOrderResponse {
 }
 
 export interface VerifyPaymentRequest {
-  enrollmentId: string;
+  enrollmentId?: string;
 
   razorpayOrderId: string;
 
   razorpayPaymentId: string;
 
   razorpaySignature: string;
+}
+
+export interface VerifyPaymentDetail {
+  id: string;
+  enrollment: PaymentEnrollmentSummary | null;
 }
 
 export interface VerifyPaymentResponse {

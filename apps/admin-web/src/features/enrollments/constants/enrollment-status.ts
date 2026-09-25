@@ -12,6 +12,10 @@ export const ENROLLMENT_STATUS_OPTIONS = [
     value: EnrollmentStatus.PENDING_APPROVAL,
   },
   {
+    label: "Advanced",
+    value: EnrollmentStatus.ADVANCED,
+  },
+  {
     label: "Admitted",
     value: EnrollmentStatus.ADMITTED,
   },
@@ -40,6 +44,7 @@ export const ENROLLMENT_STATUS_OPTIONS = [
 export const ENROLLMENT_STATUS_BADGE_VARIANTS = {
   [EnrollmentStatus.PENDING]: "warning",
   [EnrollmentStatus.PENDING_APPROVAL]: "warning",
+  [EnrollmentStatus.ADVANCED]: "warning",
   [EnrollmentStatus.ADMITTED]: "info",
   [EnrollmentStatus.ACTIVE]: "success",
   [EnrollmentStatus.COMPLETED]: "success",

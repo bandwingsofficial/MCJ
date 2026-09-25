@@ -9,6 +9,7 @@ import { Button } from "@/src/shared/components/ui/button";
 import type { Course } from "@/src/features/courses/types/course.types";
 
 import { getCourseBatchesSectionPath } from "@/src/features/courses/utils/course-route.utils";
+import { getMyLearningCoursePath } from "@/src/features/enrollments/utils/active-course-enrollment.utils";
 
 interface CourseDetailPricingCardProps {
   course: Course;
@@ -36,6 +37,11 @@ export function CourseDetailPricingCard({
       return;
     }
 
+    if (isEnrolled) {
+      router.push(getMyLearningCoursePath(course.id));
+      return;
+    }
+
     router.push(
       `/contact?course=${encodeURIComponent(course.slug)}&courseId=${course.id}`,
     );
@@ -48,7 +54,7 @@ export function CourseDetailPricingCard({
     }
 
     if (isEnrolled) {
-      router.push(`/student/courses/${course.id}`);
+      router.push(getMyLearningCoursePath(course.id));
       return;
     }
 

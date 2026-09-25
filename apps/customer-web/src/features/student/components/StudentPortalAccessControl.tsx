@@ -37,6 +37,10 @@ function getRedirectPath(input: {
     return input.showMyCourses ? null : "/student/profile";
   }
 
+  if (matchesRoute(pathname, "/student/learning")) {
+    return input.showMyCourses ? null : "/student/profile";
+  }
+
   if (matchesRoute(pathname, "/student/enrollments")) {
     return input.showMyEnrollment ? null : "/student/profile";
   }

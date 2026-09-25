@@ -19,8 +19,11 @@ import type { Lesson } from "@/src/features/student-course/types/lesson.types";
 
 export class CourseMapper {
   static toDomain(dto: StudentCourseResponseDto): StudentCourse {
-    const modules = (dto.modules?.length ? dto.modules : dto.previewModules ?? [])
-      .map(this.toModule)
+    const moduleDtos =
+      dto.modules?.length ? dto.modules : (dto.previewModules ?? []);
+
+    const modules = moduleDtos
+      .map((module) => CourseMapper.toModule(module))
       .sort((first, second) => first.displayOrder - second.displayOrder);
 
     return {
@@ -36,8 +39,8 @@ export class CourseMapper {
         dto.updatedAt,
       ),
       duration: dto.duration,
-      durationType: this.toDurationType(dto.durationType),
-      level: this.toCourseLevel(dto.level),
+      durationType: CourseMapper.toDurationType(dto.durationType),
+      level: CourseMapper.toCourseLevel(dto.level),
       language: dto.language,
       averageRating: dto.averageRating,
       totalReviews: dto.totalReviews,
@@ -45,10 +48,12 @@ export class CourseMapper {
       isPopular: dto.isPopular,
       metaTitle: dto.metaTitle,
       metaDescription: dto.metaDescription,
-      metaKeywords: this.toKeywords(dto.metaKeywords),
+      metaKeywords: CourseMapper.toKeywords(dto.metaKeywords),
       categoryId: dto.categoryId,
-      branches: dto.branches.map(this.toBranch),
-      status: this.toCourseStatus(dto.status),
+      branches: (dto.branches ?? []).map((branch) =>
+        CourseMapper.toBranch(branch),
+      ),
+      status: CourseMapper.toCourseStatus(dto.status),
       modules,
       moduleCount: dto.moduleCount ?? modules.length,
       lessonCount:
@@ -74,10 +79,10 @@ export class CourseMapper {
       id: dto.id,
       title: dto.title,
       description: dto.description,
-      keySkills: dto.keySkills,
+      keySkills: dto.keySkills ?? [],
       displayOrder: dto.displayOrder,
-      lessons: dto.lessons
-        .map(this.toLesson)
+      lessons: (dto.lessons ?? [])
+        .map((lesson) => CourseMapper.toLesson(lesson))
         .sort((first, second) => first.displayOrder - second.displayOrder),
     };
   }
@@ -91,7 +96,11 @@ export class CourseMapper {
     };
   }
 
-  private static toKeywords(keywords: string): string[] {
+  private static toKeywords(keywords: string | null | undefined): string[] {
+    if (!keywords?.trim()) {
+      return [];
+    }
+
     return keywords
       .split(",")
       .map((keyword) => keyword.trim())

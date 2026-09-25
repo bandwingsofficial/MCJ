@@ -16,6 +16,11 @@ const transitions: Record<
     EnrollmentStatus.REJECTED,
   ],
 
+  [EnrollmentStatus.ADVANCED]: [
+    EnrollmentStatus.ADMITTED,
+    EnrollmentStatus.CANCELLED,
+  ],
+
   [EnrollmentStatus.ADMITTED]: [
     EnrollmentStatus.ACTIVE,
     EnrollmentStatus.CANCELLED,

@@ -30,6 +30,8 @@ export interface EnrollmentListFilters {
   take?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  /** Hide unpaid public online checkout ghost rows (default true in admin lists). */
+  excludeUnpaidPublicCheckout?: boolean;
 }
 
 // =====================
@@ -170,6 +172,8 @@ export interface EnrollmentDetailView {
   mode: EnrollmentMode;
   feeAmount: number;
   discountAmount: number;
+  coinDiscountAmount: number;
+  redeemedCoins: number;
   finalAmount: number;
   paidAmount: number;
   dueAmount: number;
@@ -208,6 +212,8 @@ export interface EnrollmentSummaryView {
   mode: EnrollmentMode;
   feeAmount: number;
   discountAmount: number;
+  coinDiscountAmount: number;
+  redeemedCoins: number;
   finalAmount: number;
   paidAmount: number;
   dueAmount: number;

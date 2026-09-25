@@ -30,9 +30,9 @@ import {
 import { getCourseEnrollPath } from "@/src/features/courses/utils/course-route.utils";
 import { useMyEnrollments } from "@/src/features/enrollments/hooks/useMyEnrollments";
 import {
-  findBlockingCourseEnrollment,
-  getActiveCourseEnrollmentBlockCopy,
-  resolveEnrollmentBatchEndDate,
+  findAnyBlockingEnrollment,
+  getActiveEnrollmentBlockPresentation,
+  getMyLearningCoursePath,
 } from "@/src/features/enrollments/utils/active-course-enrollment.utils";
 import { saveEnrollmentSelection } from "@/src/features/enrollments/utils/enrollment-selection-storage";
 import {
@@ -279,17 +279,21 @@ export function CourseEnrollmentSidebar({
   const { enrollments: myEnrollments } = useMyEnrollments({
     enabled: hasSession,
   });
-  const blockingEnrollment = findBlockingCourseEnrollment(
-    myEnrollments,
-    courseId,
-  );
+  const activeEnrollment = findAnyBlockingEnrollment(myEnrollments);
   const hasActiveCourseEnrollment =
-    Boolean(isEnrolled) || Boolean(blockingEnrollment);
-  const activeEnrollmentBlock = getActiveCourseEnrollmentBlockCopy(
-    blockingEnrollment
-      ? resolveEnrollmentBatchEndDate(blockingEnrollment)
-      : null,
-  );
+    Boolean(activeEnrollment) || Boolean(isEnrolled);
+  const activeEnrollmentPresentation = activeEnrollment
+    ? getActiveEnrollmentBlockPresentation(activeEnrollment, courseId)
+    : isEnrolled
+      ? {
+          sectionLabel: "YOUR LEARNING",
+          title: "You're already enrolled in this course.",
+          description:
+            "Continue where you left off in your learning portal.",
+          buttonLabel: "Continue Learning",
+          href: getMyLearningCoursePath(courseId),
+        }
+      : null;
 
   const publicBranchNames = useMemo(() => {
     const map = new Map<string, string>();
@@ -485,24 +489,24 @@ export function CourseEnrollmentSidebar({
     );
   }
 
-  if (hasActiveCourseEnrollment) {
+  if (hasActiveCourseEnrollment && activeEnrollmentPresentation) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_40px_-24px_rgba(11,31,58,0.35)]">
         <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#2563D9]">
-          Your enrollment
+          {activeEnrollmentPresentation.sectionLabel}
         </p>
         <p className="mt-2 text-sm font-semibold text-[#0B1F3A]">
-          {activeEnrollmentBlock.title}
+          {activeEnrollmentPresentation.title}
         </p>
         <p className="mt-2 text-sm text-slate-600">
-          {activeEnrollmentBlock.description}
+          {activeEnrollmentPresentation.description}
         </p>
-        <Link href={`/student/courses/${courseId}`} className="mt-5 block">
+        <Link href={activeEnrollmentPresentation.href} className="mt-5 block">
           <Button
             type="button"
             className="h-11 w-full rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
           >
-            Continue Learning
+            {activeEnrollmentPresentation.buttonLabel}
             <ArrowRight className="ml-1.5 h-4 w-4" />
           </Button>
         </Link>
