@@ -20,6 +20,12 @@ model User {
   lastLoginAt           DateTime?
   lastPasswordChangeAt  DateTime?
   deletedAt             DateTime?
+  suspendedAt           DateTime?
+  suspendedByUserId     String?
+  suspensionReason      String?
+  deletedByUserId       String?
+  deletionReason        String?
+  deletionSource        String?
   mfaEnabled            Boolean                @default(false)
   mfaSecret             String?
   mfaVerifiedAt         DateTime?
@@ -32,8 +38,18 @@ model User {
   profile               Profile?
   sessions              Session[]
   student Student?
+  referralCode         String?              @unique
+  coinWallet           CoinWallet?
+  referralsAsReferrer  Referral[]           @relation("ReferralReferrer")
+  referralAsReferred   Referral?            @relation("ReferralReferred")
+  coinTransactions     CoinTransaction[]    @relation("CoinTransactionUser")
+  coinTransactionsActed CoinTransaction[]   @relation("CoinTransactionActor")
+  redemptionRequests   RedemptionRequest[]
+  userDeletionRecord   UserDeletionRecord?
 
   @@index([email])
+  @@index([suspendedAt])
+  @@index([referralCode])
   @@index([phone])
   @@index([role])
   @@index([status])
@@ -2063,4 +2079,186 @@ enum InterviewMode {
   ONLINE
   OFFLINE
   PHONE
+}
+
+enum ReferralStatus {
+  PENDING
+  QUALIFIED
+  REWARDED
+  REJECTED
+  EXPIRED
+}
+
+enum ReferralQualificationCondition {
+  REGISTRATION
+  EMAIL_VERIFICATION
+  PHONE_VERIFICATION
+  ENROLLMENT
+  PAID_ENROLLMENT
+}
+
+enum CoinTransactionType {
+  REFERRAL_REWARD
+  ADMIN_CREDIT
+  ADMIN_DEBIT
+  REDEMPTION
+  REDEMPTION_REVERSAL
+  BONUS
+  EXPIRATION
+  ADJUSTMENT
+}
+
+enum CoinTransactionDirection {
+  CREDIT
+  DEBIT
+}
+
+enum RedemptionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSED
+  CANCELLED
+}
+
+model CoinWallet {
+  id              String              @id @default(uuid())
+  userId          String              @unique
+  availableCoins  Int                 @default(0)
+  lockedCoins     Int                 @default(0)
+  totalEarned     Int                 @default(0)
+  totalRedeemed   Int                 @default(0)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    CoinTransaction[]
+  redemptions     RedemptionRequest[]
+
+  @@index([userId])
+}
+
+model Referral {
+  id                 String         @id @default(uuid())
+  publicId           String         @unique
+  referrerUserId     String
+  referredUserId     String         @unique
+  referralCodeUsed   String
+  status             ReferralStatus @default(PENDING)
+  rewardCoins        Int            @default(0)
+  qualifiedAt        DateTime?
+  rewardedAt         DateTime?
+  rejectedAt         DateTime?
+  expiredAt          DateTime?
+  rejectionReason    String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  referrer           User           @relation("ReferralReferrer", fields: [referrerUserId], references: [id], onDelete: Cascade)
+  referred           User           @relation("ReferralReferred", fields: [referredUserId], references: [id], onDelete: Cascade)
+  coinTransactions   CoinTransaction[]
+
+  @@index([referrerUserId])
+  @@index([status])
+  @@index([referralCodeUsed])
+  @@index([createdAt])
+}
+
+model CoinTransaction {
+  id                       String                   @id @default(uuid())
+  publicId                 String                   @unique
+  walletId                 String
+  userId                   String
+  type                     CoinTransactionType
+  direction                CoinTransactionDirection
+  amount                   Int
+  availableBefore          Int
+  availableAfter           Int
+  lockedBefore             Int
+  lockedAfter              Int
+  referenceType            String?
+  referenceId              String?
+  description              String?
+  referralId               String?
+  redemptionId             String?
+  actorUserId              String?
+  idempotencyKey           String?                  @unique
+  createdAt                DateTime                 @default(now())
+  wallet                   CoinWallet               @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  user                     User                     @relation("CoinTransactionUser", fields: [userId], references: [id], onDelete: Cascade)
+  actor                    User?                    @relation("CoinTransactionActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  referral                 Referral?                @relation(fields: [referralId], references: [id], onDelete: SetNull)
+  redemption               RedemptionRequest?       @relation(fields: [redemptionId], references: [id], onDelete: SetNull)
+
+  @@unique([referralId, type])
+  @@index([userId])
+  @@index([walletId])
+  @@index([type])
+  @@index([direction])
+  @@index([createdAt])
+  @@index([referenceType, referenceId])
+}
+
+model RedemptionRequest {
+  id                    String           @id @default(uuid())
+  publicId              String           @unique
+  userId                String
+  walletId              String
+  coins                 Int
+  moneyValuePaise       Int
+  coinsPerRupeeSnapshot Int
+  status                RedemptionStatus @default(PENDING)
+  rejectionReason       String?
+  requestedAt           DateTime         @default(now())
+  approvedAt            DateTime?
+  rejectedAt            DateTime?
+  processedAt           DateTime?
+  approvedByUserId      String?
+  processedByUserId     String?
+  rejectedByUserId      String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallet                CoinWallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  coinTransactions      CoinTransaction[]
+
+  @@index([userId])
+  @@index([walletId])
+  @@index([status])
+  @@index([requestedAt])
+}
+
+model UserDeletionRecord {
+  id                      String   @id @default(uuid())
+  userId                  String   @unique
+  originalEmailNormalized String   @unique
+  originalPhone           String?  @unique
+  deletedAt               DateTime @default(now())
+  deletedByUserId         String?
+  deletionReason          String?
+  deletionSource          String?
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([deletedAt])
+}
+
+model ReferralRewardSettings {
+  id                         String                         @id @default(cuid())
+  name                       String                         @default("Default Rewards")
+  isActive                   Boolean                        @default(false)
+  referralEnabled            Boolean                        @default(true)
+  rewardCoinsPerReferral     Int                            @default(100)
+  qualificationCondition     ReferralQualificationCondition @default(REGISTRATION)
+  referralExpiryDays         Int?
+  maxReferralsPerReferrer    Int?
+  redemptionEnabled          Boolean                        @default(true)
+  coinsPerRupee              Int                            @default(10)
+  minRedemptionCoins         Int                            @default(500)
+  maxRedemptionCoins         Int?
+  nextReferralPublicNumber   Int                            @default(1)
+  nextRedemptionPublicNumber Int                            @default(1)
+  nextTransactionPublicNumber Int                           @default(1)
+  createdAt                  DateTime                       @default(now())
+  updatedAt                  DateTime                       @updatedAt
+  updatedByUserId            String?
+
+  @@index([isActive])
 }

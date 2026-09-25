@@ -36,6 +36,13 @@ export const registerSchema = z.object({
       6,
       "Password must be at least 6 characters"
     ),
+
+  referralCode: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9]{6,12}$/, "Invalid referral code")
+    .optional()
+    .or(z.literal("")),
 });
 
 export type RegisterFormValues =

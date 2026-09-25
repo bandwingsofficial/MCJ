@@ -28,6 +28,8 @@ import { StudentModule } from './modules/student/student.module';
 import { StudentPortalModule } from './modules/student-portal/student-portal.module';
 import { TrainerModule } from './modules/trainer/trainer.module';
 import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
+import { ReferralRewardsModule } from './modules/referral-rewards/referral-rewards.module';
+import { AdminUserManagementModule } from './modules/admin-user-management/admin-user-management.module';
 
 @Module({
   imports: [
@@ -61,6 +63,8 @@ import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.
     CommunityPostLikeModule,
     CommunityPostCommentModule,
     AdminDashboardModule,
+    ReferralRewardsModule,
+    AdminUserManagementModule,
   ],
 })
 export class AppModule {}

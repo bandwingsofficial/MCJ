@@ -17,8 +17,10 @@ import {
 
 export function RegisterForm({
   redirectTo,
+  initialReferralCode,
 }: {
   redirectTo?: string;
+  initialReferralCode?: string;
 }) {
   const registerMutation = useRegister(redirectTo);
 
@@ -28,10 +30,17 @@ export function RegisterForm({
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      referralCode: initialReferralCode ?? "",
+    },
   });
 
   const onSubmit = (data: RegisterFormValues) => {
-    registerMutation.mutate(data);
+    const referralCode = data.referralCode?.trim();
+    registerMutation.mutate({
+      ...data,
+      referralCode: referralCode || undefined,
+    });
   };
 
   return (
@@ -151,6 +160,17 @@ export function RegisterForm({
             <Input placeholder="Enter phone number" {...register("phone")} />
           </div>
           <FormError message={errors.phone?.message} />
+        </div>
+
+        {/* Referral Code */}
+        <div className="mcj-field">
+          <label className="mcj-label">
+            Referral Code <span className="font-normal normal-case tracking-normal text-stone-400">(Optional)</span>
+          </label>
+          <div className="mcj-input-wrap">
+            <Input placeholder="AKS7X92P" {...register("referralCode")} />
+          </div>
+          <FormError message={errors.referralCode?.message} />
         </div>
 
         {/* Password */}

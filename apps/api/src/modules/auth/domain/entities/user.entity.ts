@@ -248,9 +248,13 @@ export class User {
 
   canLogin(): boolean {
     if (this.status === AccountStatus.BLOCKED) {
-      throw new DomainError(ERROR_CODES.ACCOUNT_BLOCKED, 'Account is blocked', {
-        userId: this.id,
-      });
+      throw new DomainError(
+        ERROR_CODES.ACCOUNT_BLOCKED,
+        'Your account has been suspended. Please contact support.',
+        {
+          userId: this.id,
+        },
+      );
     }
 
     if (this.status === AccountStatus.INACTIVE) {

@@ -1,6 +1,6 @@
 // application/register/register-user.handler.ts
 
-import { Inject } from '@nestjs/common';
+import { ConflictException, Inject } from '@nestjs/common';
 
 import { randomUUID } from 'crypto';
 import { Role } from '@prisma/client';
@@ -29,6 +29,11 @@ import { ValidationError } from '../errors/validation.error';
 
 import { AUTH_TOKENS } from '../../auth.tokens';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
+import {
+  InvalidReferralCodeError,
+  ReferralRegistrationService,
+} from '../../../referral-rewards/application/referral-registration.service';
+import { UserAccountLifecycleService } from '../../../admin-user-management/application/user-account-lifecycle.service';
 
 export class RegisterUserHandler {
   constructor(
@@ -42,6 +47,10 @@ export class RegisterUserHandler {
     private readonly passwordHasher: PasswordHasherPort,
 
     private readonly prisma: PrismaService,
+
+    private readonly referralRegistration: ReferralRegistrationService,
+
+    private readonly accountLifecycle: UserAccountLifecycleService,
   ) {}
 
   async execute(command: RegisterUserCommand): Promise<RegisterUserResult> {
@@ -51,6 +60,18 @@ export class RegisterUserHandler {
 
       const emailVO = Email.create(normalizedEmail);
       const phoneVO = normalizedPhone ? Phone.create(normalizedPhone) : null;
+
+      await this.accountLifecycle.assertRegistrationAllowed(
+        normalizedEmail,
+        normalizedPhone,
+      );
+
+      if (command.referralCode?.trim()) {
+        await this.referralRegistration.validateReferralCodeForRegistration(
+          command.referralCode,
+          normalizedEmail,
+        );
+      }
 
       const existingUser = await this.prisma.user.findFirst({
         where: {
@@ -125,6 +146,15 @@ export class RegisterUserHandler {
 
       await this.linkExistingStudentByEmail(user.id, normalizedEmail);
 
+      await this.prisma.$transaction(async (tx) => {
+        await this.referralRegistration.ensureUserReferralAssets(
+          tx,
+          user.id,
+          normalizedEmail,
+          command.referralCode,
+        );
+      });
+
       await this.auditRepo.create(
         AuditLog.create({
           id: randomUUID(),
@@ -144,6 +174,12 @@ export class RegisterUserHandler {
         user.createdAt,
       );
     } catch (error) {
+      if (error instanceof InvalidReferralCodeError) {
+        throw new ValidationError(error.message, 'INVALID_REFERRAL_CODE');
+      }
+      if (error instanceof ConflictException) {
+        throw new ValidationError(error.message, 'REGISTRATION_REJECTED');
+      }
       if (error instanceof DomainError) {
         throw new ValidationError(error.message, error.code);
       }

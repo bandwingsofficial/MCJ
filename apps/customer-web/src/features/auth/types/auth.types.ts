@@ -25,6 +25,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   phone: string;
+  referralCode?: string;
 }
 
 export interface RegisterResponse {

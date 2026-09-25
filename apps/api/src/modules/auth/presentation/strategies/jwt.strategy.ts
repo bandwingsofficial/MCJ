@@ -1,6 +1,11 @@
 // presentation/strategies/jwt.strategy.ts
 
-import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+  Inject,
+} from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
@@ -8,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 import { AUTH_TOKENS } from '../../auth.tokens';
 import type { SessionRepository } from '../../domain/repositories/session.repository';
 import { Role } from '../../domain/enums/role.enum';
+import { UserAccountLifecycleService } from '../../../admin-user-management/application/user-account-lifecycle.service';
 
 interface JwtPayload {
   sub: string;
@@ -25,6 +31,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     @Inject(AUTH_TOKENS.SESSION_REPOSITORY)
     private readonly sessionRepo: SessionRepository,
+
+    private readonly accountLifecycle: UserAccountLifecycleService,
   ) {
     const secret = configService.get<string>('JWT_ACCESS_SECRET');
 
@@ -69,6 +77,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (!session.isActive()) {
       throw new UnauthorizedException('Session is not active');
+    }
+
+    try {
+      await this.accountLifecycle.assertLoginAllowed(payload.sub);
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw new UnauthorizedException(error.message);
+      }
+      throw error;
     }
 
     return {

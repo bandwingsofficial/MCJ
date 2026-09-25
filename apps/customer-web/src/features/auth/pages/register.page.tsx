@@ -19,6 +19,7 @@ function getSafeRedirect(value: string | null): string | undefined {
 function RegisterPageContent() {
   const searchParams = useSearchParams();
   const redirectTo = getSafeRedirect(searchParams.get("redirect"));
+  const initialReferralCode = searchParams.get("ref")?.trim() ?? "";
 
   const loginHref = redirectTo
     ? `/login?redirect=${encodeURIComponent(redirectTo)}`
@@ -31,7 +32,10 @@ function RegisterPageContent() {
         description="Register to access MCJ LMS"
       >
         <div className="space-y-6">
-          <RegisterForm redirectTo={redirectTo} />
+          <RegisterForm
+            redirectTo={redirectTo}
+            initialReferralCode={initialReferralCode}
+          />
 
           <div className="text-center text-sm">
             <Link

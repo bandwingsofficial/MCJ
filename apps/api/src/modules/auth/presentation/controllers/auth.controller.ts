@@ -134,6 +134,8 @@ export class AuthController {
         getClientIp(req),
 
         getUserAgent(req),
+
+        dto.referralCode,
       ),
     );
 

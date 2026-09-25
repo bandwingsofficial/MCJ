@@ -4,9 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  BriefcaseBusiness,
   ChevronDown,
-  LayoutDashboard,
+  Gift,
   LogOut,
   Menu,
   Search,
@@ -86,10 +85,10 @@ export function Header() {
     }
   };
 
-  const showMyApplications =
-    !navigation.isLoading && navigation.showMyApplications;
   const showMyCourses =
     !navigation.isLoading && navigation.showMyCourses;
+  const showMyApplications =
+    !navigation.isLoading && navigation.showMyApplications;
   const showMyEnrollment =
     !navigation.isLoading && navigation.showMyEnrollment;
 
@@ -204,33 +203,11 @@ export function Header() {
                           onClick={() => navigateFromDropdown("/student/profile")}
                         />
                       ) : null}
-                      {showMyApplications ? (
-                        <AccountDropdownItem
-                          label="My Applications"
-                          icon={BriefcaseBusiness}
-                          onClick={() =>
-                            navigateFromDropdown("/student/applications")
-                          }
-                        />
-                      ) : null}
-                      {showMyCourses ? (
-                        <AccountDropdownItem
-                          label="My Course"
-                          icon={LayoutDashboard}
-                          onClick={() =>
-                            navigateFromDropdown("/student/my-learning")
-                          }
-                        />
-                      ) : null}
-                      {showMyEnrollment ? (
-                        <AccountDropdownItem
-                          label="My Enrollment"
-                          icon={LayoutDashboard}
-                          onClick={() =>
-                            navigateFromDropdown("/student/enrollments")
-                          }
-                        />
-                      ) : null}
+                      <AccountDropdownItem
+                        label="Referral & Rewards"
+                        icon={Gift}
+                        onClick={() => navigateFromDropdown("/student/rewards")}
+                      />
                     </div>
                     <div className="mt-1 border-t border-slate-100 pt-1">
                       <button
@@ -283,6 +260,65 @@ export function Header() {
                 >
                   My Learning
                 </button>
+              ) : null}
+              {user ? (
+                <>
+                  <div className="my-2 border-t border-slate-100 pt-2" />
+                  {navigation.showProfile ? (
+                    <button
+                      type="button"
+                      onClick={() => handleProtectedRoute("/student/profile")}
+                      className={cn(
+                        "rounded-xl px-3 py-2.5 text-left text-sm font-medium",
+                        isActive("/student/profile")
+                          ? "bg-blue-50 text-[#2563EB]"
+                          : "text-slate-700 hover:bg-slate-50",
+                      )}
+                    >
+                      Profile
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => handleProtectedRoute("/student/rewards")}
+                    className={cn(
+                      "rounded-xl px-3 py-2.5 text-left text-sm font-medium",
+                      isActive("/student/rewards")
+                        ? "bg-blue-50 text-[#2563EB]"
+                        : "text-slate-700 hover:bg-slate-50",
+                    )}
+                  >
+                    Referral & Rewards
+                  </button>
+                  {showMyApplications ? (
+                    <button
+                      type="button"
+                      onClick={() => handleProtectedRoute("/student/applications")}
+                      className="rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      My Applications
+                    </button>
+                  ) : null}
+                  {showMyEnrollment ? (
+                    <button
+                      type="button"
+                      onClick={() => handleProtectedRoute("/student/enrollments")}
+                      className="rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      My Enrollment
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleLogout();
+                      setMobileOpen(false);
+                    }}
+                    className="rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 hover:bg-red-50"
+                  >
+                    Logout
+                  </button>
+                </>
               ) : null}
               <button
                 type="button"

@@ -16,6 +16,7 @@ import {
 
 import { useStudentProfile } from "@/src/features/student/hooks";
 import { useStudentPortalNavigation } from "@/src/features/student/context/StudentPortalNavigationProvider";
+import { DeleteAccountSection } from "@/src/features/account/components/DeleteAccountSection";
 
 export function StudentProfileView() {
   const { profile, isLoading, error, refetch } = useStudentProfile();
@@ -62,6 +63,7 @@ export function StudentProfileView() {
             <StudentProfileGuardian profile={profile} />
           </>
         ) : null}
+        <DeleteAccountSection />
       </div>
 
       <Modal

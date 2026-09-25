@@ -24,6 +24,7 @@ import {
   Newspaper,
   Briefcase,
   ClipboardList,
+  Gift,
   Settings,
   LogOut,
   ChevronLeft,
@@ -81,9 +82,19 @@ const menu = [
         path: "/students",
       },
       {
+        name: "Users",
+        icon: Users,
+        path: "/users",
+      },
+      {
         name: "Enrollments",
         icon: ClipboardList,
         path: "/enrollments",
+      },
+      {
+        name: "Referral & Rewards",
+        icon: Gift,
+        path: "/referral-rewards",
       },
     ],
   },

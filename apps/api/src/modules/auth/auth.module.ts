@@ -1,6 +1,6 @@
 // auth.module.ts
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { JwtModule, JwtService } from '@nestjs/jwt';
 
@@ -80,6 +80,10 @@ import { UserDomainService } from './domain/services/user-domain.service';
 
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { ReferralRewardsModule } from '../referral-rewards/referral-rewards.module';
+import { AdminUserManagementModule } from '../admin-user-management/admin-user-management.module';
+import { ReferralRegistrationService } from '../referral-rewards/application/referral-registration.service';
+import { UserAccountLifecycleService } from '../admin-user-management/application/user-account-lifecycle.service';
 
 // =====================
 // TOKENS
@@ -98,6 +102,8 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 @Module({
   imports: [
     PrismaModule,
+    forwardRef(() => ReferralRewardsModule),
+    forwardRef(() => AdminUserManagementModule),
 
     ConfigModule,
 
@@ -228,12 +234,16 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
         auditRepo: AuditLogRepository,
         passwordHasher: PasswordHasherPort,
         prisma: PrismaService,
+        referralRegistration: ReferralRegistrationService,
+        accountLifecycle: UserAccountLifecycleService,
       ) =>
         new RegisterUserHandler(
           userRepo,
           auditRepo,
           passwordHasher,
           prisma,
+          referralRegistration,
+          accountLifecycle,
         ),
 
       inject: [
@@ -244,6 +254,8 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
         AUTH_TOKENS.PASSWORD_HASHER,
 
         PrismaService,
+        ReferralRegistrationService,
+        UserAccountLifecycleService,
       ],
     },
 
@@ -258,6 +270,8 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
         domainService: UserDomainService,
         passwordHasher: PasswordHasherPort,
         rateLimiter: AuthRateLimiterPort,
+        accountLifecycle: UserAccountLifecycleService,
+        prisma: PrismaService,
       ) =>
         new LoginUserHandler(
           userRepo,
@@ -267,6 +281,8 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
           domainService,
           passwordHasher,
           rateLimiter,
+          accountLifecycle,
+          prisma,
         ),
 
       inject: [
@@ -283,6 +299,8 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
         AUTH_TOKENS.PASSWORD_HASHER,
 
         AUTH_TOKENS.AUTH_RATE_LIMITER,
+        UserAccountLifecycleService,
+        PrismaService,
       ],
     },
 

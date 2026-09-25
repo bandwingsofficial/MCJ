@@ -2,6 +2,7 @@
 
 import {
   BriefcaseBusiness,
+  Gift,
   User,
 } from "lucide-react";
 
@@ -225,6 +226,11 @@ export function StudentSidebar() {
               label="My Enrollment"
             />
           ) : null}
+          <StudentSidebarItem
+            href="/student/rewards"
+            icon={Gift}
+            label="Referral & Rewards"
+          />
         </nav>
 
         <div className="stu-sidebar-footer">

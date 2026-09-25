@@ -2,7 +2,7 @@
 
 import { randomUUID } from 'crypto';
 
-import { Inject, Logger } from '@nestjs/common';
+import { BadRequestException, Inject, Logger } from '@nestjs/common';
 
 import { LoginUserCommand } from './login-user.command';
 import { LoginUserResult } from './login-user.result';
@@ -33,6 +33,8 @@ import { ERROR_CODES } from '../../domain/errors/error-codes';
 import { UnauthorizedError } from '../errors/unauthorized.error';
 
 import { AUTH_TOKENS } from '../../auth.tokens';
+import { UserAccountLifecycleService } from '../../../admin-user-management/application/user-account-lifecycle.service';
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { isEmail, normalizePhone } from '../utils/phone.util';
 import { hashToken } from '../utils/token.util';
@@ -66,6 +68,10 @@ export class LoginUserHandler {
 
     @Inject(AUTH_TOKENS.AUTH_RATE_LIMITER)
     private readonly rateLimiter: AuthRateLimiterPort,
+
+    private readonly accountLifecycle: UserAccountLifecycleService,
+
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(command: LoginUserCommand): Promise<LoginUserResult> {
@@ -159,6 +165,29 @@ export class LoginUserHandler {
       // =====================
       // 4️⃣ DOMAIN CHECK
       // =====================
+
+      const dbUser = await this.prisma.user.findUnique({
+        where: { id: user.id },
+        select: { deletedAt: true },
+      });
+      if (dbUser?.deletedAt) {
+        throw new UnauthorizedError(
+          'Account has been deleted',
+          ERROR_CODES.ACCOUNT_INACTIVE,
+        );
+      }
+
+      try {
+        await this.accountLifecycle.assertLoginAllowed(user.id);
+      } catch (error) {
+        if (error instanceof BadRequestException) {
+          throw new UnauthorizedError(
+            error.message,
+            ERROR_CODES.ACCOUNT_BLOCKED,
+          );
+        }
+        throw error;
+      }
 
       user.canLogin();
 

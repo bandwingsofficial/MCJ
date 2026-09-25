@@ -7,5 +7,6 @@ export class RegisterUserCommand {
     public readonly phone?: string,
     public readonly ipAddress?: string,
     public readonly userAgent?: string,
+    public readonly referralCode?: string,
   ) {}
 }

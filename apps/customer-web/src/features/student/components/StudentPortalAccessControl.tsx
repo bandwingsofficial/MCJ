@@ -25,6 +25,10 @@ function getRedirectPath(input: {
     return null;
   }
 
+  if (matchesRoute(pathname, "/student/rewards")) {
+    return null;
+  }
+
   if (matchesRoute(pathname, "/student/applications")) {
     return input.showMyApplications ? null : "/student/profile";
   }

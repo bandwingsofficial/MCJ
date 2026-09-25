@@ -56,4 +56,14 @@ export class RegisterDto {
     message: 'Invalid phone number format',
   })
   phone?: string;
+
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === '') return undefined;
+    return typeof value === 'string' ? value.trim() : value;
+  })
+  @Matches(/^[A-Za-z0-9]{6,12}$/, {
+    message: 'Invalid referral code format',
+  })
+  referralCode?: string;
 }
