@@ -835,6 +835,10 @@ export class StudentFeesQueryDto {
 
 export class FacultyDashboardQueryDto {
   @IsOptional()
+  @IsString()
+  preset?: string;
+
+  @IsOptional()
   @IsDateString()
   from?: string;
 

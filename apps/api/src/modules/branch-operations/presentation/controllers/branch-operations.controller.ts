@@ -154,7 +154,11 @@ export class BranchOperationsController {
     return {
       success: true,
       message: 'Dashboard fetched successfully',
-      data: await this.dashboard.getDashboard(user),
+      data: await this.dashboard.getDashboard(user, {
+        preset: query.preset,
+        from: query.from,
+        to: query.to,
+      }),
     };
   }
 

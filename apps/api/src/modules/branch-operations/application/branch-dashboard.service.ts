@@ -12,7 +12,8 @@ import {
 import type { BranchAuthUser } from '@common/decorators/current-branch-user.decorator';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BranchOperationsAccessService } from './branch-operations-access.service';
-import { facultyBranchBatchWhere } from './faculty-batch-query';
+import { BranchManagerDashboardService } from './branch-manager-dashboard.service';
+import { buildBranchJobApplicationListInterviewScope } from './utils/branch-job-application-assignment.util';
 import {
   addUtcDays,
   parseDateOnly,
@@ -24,9 +25,13 @@ export class BranchDashboardService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly access: BranchOperationsAccessService,
+    private readonly managerDashboard: BranchManagerDashboardService,
   ) {}
 
-  async getDashboard(user: BranchAuthUser) {
+  async getDashboard(
+    user: BranchAuthUser,
+    query?: { preset?: string; from?: string; to?: string },
+  ) {
     if (this.access.isFaculty(user)) {
       return this.getFacultyDashboard(user);
     }
@@ -35,7 +40,7 @@ export class BranchDashboardService {
       return this.getInterviewerDashboard(user);
     }
 
-    return this.getManagerDashboard(user);
+    return this.managerDashboard.getAnalytics(user, query ?? {});
   }
 
   private async getFacultyDashboard(user: BranchAuthUser) {
@@ -146,7 +151,15 @@ export class BranchDashboardService {
     const today = startOfUtcDay(new Date());
     const tomorrow = addUtcDays(today, 1);
 
-    const interviewerFilter = { interviewerId: user.sub };
+    const branchId = user.branchId;
+    const interviewerFilter = {
+      branchId,
+      interviewerId: user.sub,
+    };
+    const jobApplicationScope = buildBranchJobApplicationListInterviewScope({
+      branchId,
+      interviewerId: user.sub,
+    });
 
     const [
       newApplications,
@@ -160,6 +173,7 @@ export class BranchDashboardService {
       this.prisma.jobApplication.count({
         where: {
           isDeleted: false,
+          interviews: { some: jobApplicationScope },
           status: {
             in: [
               JobApplicationStatus.UNDER_REVIEW,
@@ -193,10 +207,18 @@ export class BranchDashboardService {
         where: { ...interviewerFilter, status: InterviewStatus.COMPLETED },
       }),
       this.prisma.jobApplication.count({
-        where: { isDeleted: false, status: JobApplicationStatus.SELECTED },
+        where: {
+          isDeleted: false,
+          interviews: { some: jobApplicationScope },
+          status: JobApplicationStatus.SELECTED,
+        },
       }),
       this.prisma.jobApplication.count({
-        where: { isDeleted: false, status: JobApplicationStatus.REJECTED },
+        where: {
+          isDeleted: false,
+          interviews: { some: jobApplicationScope },
+          status: JobApplicationStatus.REJECTED,
+        },
       }),
     ]);
 
@@ -209,51 +231,6 @@ export class BranchDashboardService {
       completedInterviews,
       selectedCandidates,
       rejectedCandidates,
-    };
-  }
-
-  private async getManagerDashboard(user: BranchAuthUser) {
-    const branchId = user.branchId;
-    const today = startOfUtcDay(new Date());
-    const tomorrow = addUtcDays(today, 1);
-
-    const [
-      students,
-      batches,
-      todaysAttendance,
-      pendingInterviews,
-      placements,
-    ] = await Promise.all([
-      this.prisma.student.count({
-        where: { branchId, isDeleted: false },
-      }),
-      this.prisma.batch.count({
-        where: facultyBranchBatchWhere(branchId),
-      }),
-      this.prisma.attendance.count({
-        where: { branchId, date: today },
-      }),
-      this.prisma.interview.count({
-        where: {
-          branchId,
-          status: InterviewStatus.SCHEDULED,
-          scheduledAt: { gte: today },
-        },
-      }),
-      this.prisma.placement.count({
-        where: { Student: { branchId } },
-      }),
-    ]);
-
-    void tomorrow;
-
-    return {
-      role: user.role,
-      students,
-      batches,
-      todaysAttendance,
-      pendingInterviews,
-      placements,
     };
   }
 

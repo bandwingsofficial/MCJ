@@ -9,6 +9,8 @@ import { useAuth } from "@/src/features/auth/hooks/use-auth";
 import { appToast } from "@/src/shared/lib/toast";
 import { formatRoleLabel } from "@/src/core/auth/roles";
 import { cn } from "@/src/shared/lib/cn";
+import { useCurrentBranch } from "@/src/features/auth/hooks/use-current-branch";
+import { resolvePortalBranchName } from "@/src/features/auth/utils/current-branch-display.util";
 import { BranchGlobalSearch } from "@/src/shared/components/header/branch-global-search";
 
 const iconActionClass = cn(
@@ -74,6 +76,8 @@ export function AdminHeader() {
     : "Branch User";
   const roleLabel = formatRoleLabel(user?.role) || "Branch Portal";
   const canOpenSettings = user?.role === "BRANCH_MANAGER";
+  const currentBranch = useCurrentBranch();
+  const branchDisplayName = resolvePortalBranchName(currentBranch);
 
   const initials = displayName
     .split(" ")
@@ -99,7 +103,7 @@ export function AdminHeader() {
             Welcome back, {displayName}
           </p>
           <p className="truncate text-xs text-[#647A9B]">
-            Manage your branch from one place
+            Manage {branchDisplayName} branch from one place
           </p>
         </div>
 
