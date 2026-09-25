@@ -5,12 +5,12 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronDown,
-  Gift,
   LogOut,
   Menu,
   Search,
   User,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -18,6 +18,7 @@ import { useAuthStore } from "@/src/features/auth/store/auth.store";
 import { AUTH_ROUTES } from "@/src/features/auth/constants/auth.constants";
 import { useLogout } from "@/src/features/auth/hooks/use-logout";
 import { useStudentPortalNavigation } from "@/src/features/student/context/StudentPortalNavigationProvider";
+import { getVisibleStudentPortalNavItems } from "@/src/features/student/config/student-portal-nav-items";
 import { MCJ_NAV_ITEMS } from "@/src/shared/constants/site.constants";
 import { Button } from "@/src/shared/components/ui/button";
 import { cn } from "@/src/shared/lib/cn";
@@ -27,18 +28,31 @@ import { SiteSearchDialog } from "./site-search-dialog";
 function AccountDropdownItem({
   label,
   icon: Icon,
+  active = false,
   onClick,
 }: {
   label: string;
-  icon: typeof User;
+  icon: LucideIcon;
+  active?: boolean;
   onClick: () => void;
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-blue-50 hover:pl-4 hover:text-[#2563EB]"
+      className={cn(
+        "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+        active
+          ? "bg-blue-50 pl-4 text-[#2563EB]"
+          : "text-gray-700 hover:bg-blue-50 hover:pl-4 hover:text-[#2563EB]",
+      )}
     >
-      <Icon className="h-4 w-4 text-gray-400 transition-colors group-hover:text-[#2563EB]" />
+      <Icon
+        className={cn(
+          "h-4 w-4 transition-colors",
+          active ? "text-[#2563EB]" : "text-gray-400 group-hover:text-[#2563EB]",
+        )}
+      />
       {label}
     </button>
   );
@@ -87,10 +101,6 @@ export function Header() {
 
   const showMyCourses =
     !navigation.isLoading && navigation.showMyCourses;
-  const showMyApplications =
-    !navigation.isLoading && navigation.showMyApplications;
-  const showMyEnrollment =
-    !navigation.isLoading && navigation.showMyEnrollment;
 
   const navigateFromDropdown = (href: string) => {
     router.push(href);
@@ -99,6 +109,8 @@ export function Header() {
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  const studentPortalNavItems = getVisibleStudentPortalNavItems(navigation);
 
   return (
     <>
@@ -196,18 +208,15 @@ export function Header() {
                 {open ? (
                   <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-100 bg-white p-2 shadow-xl">
                     <div className="space-y-0.5">
-                      {navigation.showProfile ? (
+                      {studentPortalNavItems.map((item) => (
                         <AccountDropdownItem
-                          label="Profile"
-                          icon={User}
-                          onClick={() => navigateFromDropdown("/student/profile")}
+                          key={item.id}
+                          label={item.label}
+                          icon={item.icon}
+                          active={isActive(item.href)}
+                          onClick={() => navigateFromDropdown(item.href)}
                         />
-                      ) : null}
-                      <AccountDropdownItem
-                        label="Referral & Rewards"
-                        icon={Gift}
-                        onClick={() => navigateFromDropdown("/student/rewards")}
-                      />
+                      ))}
                     </div>
                     <div className="mt-1 border-t border-slate-100 pt-1">
                       <button
@@ -264,50 +273,21 @@ export function Header() {
               {user ? (
                 <>
                   <div className="my-2 border-t border-slate-100 pt-2" />
-                  {navigation.showProfile ? (
+                  {studentPortalNavItems.map((item) => (
                     <button
+                      key={item.id}
                       type="button"
-                      onClick={() => handleProtectedRoute("/student/profile")}
+                      onClick={() => handleProtectedRoute(item.href)}
                       className={cn(
                         "rounded-xl px-3 py-2.5 text-left text-sm font-medium",
-                        isActive("/student/profile")
+                        isActive(item.href)
                           ? "bg-blue-50 text-[#2563EB]"
                           : "text-slate-700 hover:bg-slate-50",
                       )}
                     >
-                      Profile
+                      {item.label}
                     </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => handleProtectedRoute("/student/rewards")}
-                    className={cn(
-                      "rounded-xl px-3 py-2.5 text-left text-sm font-medium",
-                      isActive("/student/rewards")
-                        ? "bg-blue-50 text-[#2563EB]"
-                        : "text-slate-700 hover:bg-slate-50",
-                    )}
-                  >
-                    Referral & Rewards
-                  </button>
-                  {showMyApplications ? (
-                    <button
-                      type="button"
-                      onClick={() => handleProtectedRoute("/student/applications")}
-                      className="rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
-                    >
-                      My Applications
-                    </button>
-                  ) : null}
-                  {showMyEnrollment ? (
-                    <button
-                      type="button"
-                      onClick={() => handleProtectedRoute("/student/enrollments")}
-                      className="rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
-                    >
-                      My Enrollment
-                    </button>
-                  ) : null}
+                  ))}
                   <button
                     type="button"
                     onClick={() => {

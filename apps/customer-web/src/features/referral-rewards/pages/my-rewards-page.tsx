@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -22,7 +22,6 @@ import {
 import { toast } from "sonner";
 
 import { Button } from "@/src/shared/components/ui/button";
-import { Input } from "@/src/shared/components/ui/input";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { cn } from "@/src/shared/lib/cn";
 import { referralRewardsQueryKeys } from "@/src/features/referral-rewards/constants/query-keys";
@@ -30,7 +29,6 @@ import { useReferralRewardsSummary } from "@/src/features/referral-rewards/hooks
 import {
   referralRewardsService,
   type CoinTransactionItem,
-  type PublicReferralSettings,
   type RedemptionHistoryItem,
 } from "@/src/features/referral-rewards/services/referral-rewards.service";
 import {
@@ -126,17 +124,7 @@ function EmptyState({
 }
 
 export function MyRewardsPage() {
-  const queryClient = useQueryClient();
-  const [redeemAmount, setRedeemAmount] = useState("");
-  const [redeemError, setRedeemError] = useState<string | null>(null);
-
   const summaryQuery = useReferralRewardsSummary();
-
-  const settingsQuery = useQuery({
-    queryKey: referralRewardsQueryKeys.settings,
-    queryFn: (): Promise<PublicReferralSettings> =>
-      referralRewardsService.getPublicSettings(),
-  });
 
   const txQuery = useQuery({
     queryKey: referralRewardsQueryKeys.transactions("ALL"),
@@ -153,19 +141,6 @@ export function MyRewardsPage() {
       referralRewardsService.listRedemptions(),
   });
 
-  const redeemMutation = useMutation({
-    mutationFn: (coins: number) => referralRewardsService.createRedemption(coins),
-    onSuccess: () => {
-      toast.success("Redemption request submitted");
-      setRedeemAmount("");
-      setRedeemError(null);
-      void queryClient.invalidateQueries({ queryKey: referralRewardsQueryKeys.root });
-    },
-    onError: (error: { response?: { data?: { message?: string } } }) => {
-      toast.error(error.response?.data?.message ?? "Redemption failed");
-    },
-  });
-
   const referralCode = summaryQuery.data?.referralCode ?? null;
   const referralLink = useMemo(
     () => (referralCode ? buildReferralRegisterUrl(referralCode) : ""),
@@ -173,40 +148,7 @@ export function MyRewardsPage() {
   );
 
   const wallet = summaryQuery.data?.wallet;
-  const settings = settingsQuery.data;
   const stats = summaryQuery.data?.stats;
-
-  const redeemCoins = Number(redeemAmount) || 0;
-  const redeemValuePreview = useMemo(() => {
-    if (!settings || redeemCoins <= 0) return formatInrFromPaise(0);
-    return formatInrFromPaise(
-      Math.floor((redeemCoins / settings.coinsPerRupee) * 100),
-    );
-  }, [redeemCoins, settings]);
-
-  const handleRedeemSubmit = () => {
-    if (!settings?.redemptionEnabled) {
-      setRedeemError("Redemption is currently disabled.");
-      return;
-    }
-    if (redeemCoins < settings.minRedemptionCoins) {
-      setRedeemError(`Minimum redemption is ${settings.minRedemptionCoins} coins.`);
-      return;
-    }
-    if (
-      settings.maxRedemptionCoins != null &&
-      redeemCoins > settings.maxRedemptionCoins
-    ) {
-      setRedeemError(`Maximum redemption is ${settings.maxRedemptionCoins} coins.`);
-      return;
-    }
-    if (redeemCoins > (wallet?.availableCoins ?? 0)) {
-      setRedeemError("Amount exceeds your available coins.");
-      return;
-    }
-    setRedeemError(null);
-    redeemMutation.mutate(redeemCoins);
-  };
 
   const copyCode = async () => {
     if (!referralCode) return;
@@ -255,37 +197,6 @@ export function MyRewardsPage() {
 
   return (
     <div className="space-y-6 pb-4">
-      <nav
-        aria-label="Breadcrumb"
-        className="flex items-center gap-1 text-xs text-slate-500"
-      >
-        <Link href="/" className="transition-colors hover:text-[#2563EB]">
-          Home
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span className="text-slate-400">Student</span>
-        <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span aria-current="page" className="font-medium text-[#0B1F3A]">
-          Referral & Rewards
-        </span>
-      </nav>
-
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#2563EB]">
-            <Gift className="h-3.5 w-3.5" aria-hidden />
-            Rewards
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#0B1F3A] sm:text-[28px]">
-            Referral & Rewards
-          </h1>
-          <p className="mt-1 max-w-xl text-sm text-slate-500 sm:text-[15px]">
-            Earn coins by sharing MCJ Academy with your friends.
-          </p>
-        </div>
-      </header>
-
-      {/* Hero referral card */}
       <div className="relative overflow-hidden rounded-xl border border-blue-100/80 bg-gradient-to-br from-[#1E49A8] via-[#2563EB] to-[#2F6BE5] p-5 text-white shadow-md sm:p-6">
         <div
           className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10"
@@ -295,16 +206,44 @@ export function MyRewardsPage() {
           className="pointer-events-none absolute -bottom-12 -left-6 h-32 w-32 rounded-full bg-white/5"
           aria-hidden
         />
-        <div className="relative">
+        <div className="relative space-y-4">
+          <nav
+            aria-label="Breadcrumb"
+            className="flex flex-wrap items-center gap-1 text-xs text-blue-100/90"
+          >
+            <Link
+              href="/"
+              className="transition-colors hover:text-white"
+            >
+              Home
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+            <span className="text-blue-100/75">Student</span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+            <span aria-current="page" className="font-medium text-white">
+              Referral & Rewards
+            </span>
+          </nav>
+
+          <div>
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
+              <Gift className="h-3.5 w-3.5" aria-hidden />
+              Rewards
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-[28px]">
+              Referral & Rewards
+            </h1>
+            <p className="mt-1 max-w-xl text-sm text-blue-100/95 sm:text-[15px]">
+              Earn coins by sharing MCJ Academy with your friends.
+            </p>
+          </div>
+
+          <div className="border-t border-white/15 pt-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-blue-100">
             Your Referral Code
           </p>
           <p className="mt-2 font-mono text-3xl font-bold tracking-[0.2em] sm:text-4xl">
             {referralCode ?? "—"}
-          </p>
-          <p className="mt-3 max-w-lg text-sm leading-relaxed text-blue-100/95">
-            Invite friends to MCJ Academy and earn coins when their referral
-            qualifies.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
@@ -346,6 +285,7 @@ export function MyRewardsPage() {
                 <Copy className="h-4 w-4" />
               </button>
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -449,62 +389,16 @@ export function MyRewardsPage() {
           )}
         </Panel>
 
-        <Panel title="Redeem Your Coins" className="lg:col-span-1">
-          <div className="space-y-4">
-            {settings ? (
-              <dl className="space-y-2.5 rounded-lg border border-slate-100 bg-slate-50/80 p-3 text-sm">
-                <Row label="Available" value={`${wallet?.availableCoins ?? 0} Coins`} />
-                <Row
-                  label="Conversion"
-                  value={`${settings.coinsPerRupee} Coins = ₹1`}
-                />
-                <Row label="Minimum" value={`${settings.minRedemptionCoins} Coins`} />
-                {settings.maxRedemptionCoins != null ? (
-                  <Row label="Maximum" value={`${settings.maxRedemptionCoins} Coins`} />
-                ) : null}
-              </dl>
-            ) : (
-              <Skeleton className="h-24 w-full rounded-lg" />
-            )}
-            <div>
-              <label
-                htmlFor="redeem-coins-input"
-                className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
-              >
-                Coins to Redeem
-              </label>
-              <Input
-                id="redeem-coins-input"
-                type="number"
-                min={settings?.minRedemptionCoins ?? 1}
-                max={settings?.maxRedemptionCoins ?? undefined}
-                value={redeemAmount}
-                onChange={(e) => {
-                  setRedeemAmount(e.target.value);
-                  setRedeemError(null);
-                }}
-                placeholder={String(settings?.minRedemptionCoins ?? 500)}
-                className="h-10 rounded-lg"
-              />
-              <p className="mt-2 text-sm text-slate-600">
-                Calculated value:{" "}
-                <span className="font-semibold text-[#0B1F3A]">
-                  {redeemValuePreview}
-                </span>
-              </p>
-              {redeemError ? (
-                <p className="mt-1 text-xs text-red-600">{redeemError}</p>
-              ) : null}
-            </div>
-            <Button
-              type="button"
-              className="w-full rounded-lg bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] font-semibold text-white hover:opacity-95"
-              loading={redeemMutation.isPending}
-              disabled={!settings?.redemptionEnabled || (wallet?.availableCoins ?? 0) < 1}
-              onClick={handleRedeemSubmit}
-            >
-              Redeem Coins
-            </Button>
+        <Panel title="Coin Redemption" className="lg:col-span-1">
+          <div className="space-y-3 text-sm leading-relaxed text-slate-600">
+            <p className="font-medium text-[#0B1F3A]">
+              Your coins are safely stored in your wallet.
+            </p>
+            <p>
+              Coin redemption is currently handled through the MCJ Academy rewards
+              process. You can continue to view your available coins, earned coins,
+              transactions, and redemption history here.
+            </p>
           </div>
         </Panel>
       </div>
@@ -679,15 +573,6 @@ function StatChip({
           {value.toLocaleString("en-IN")}
         </p>
       </div>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-2">
-      <dt className="text-slate-500">{label}</dt>
-      <dd className="font-medium text-[#0B1F3A]">{value}</dd>
     </div>
   );
 }

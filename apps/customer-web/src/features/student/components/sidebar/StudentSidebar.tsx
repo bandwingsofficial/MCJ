@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  BriefcaseBusiness,
-  Gift,
-  User,
-} from "lucide-react";
-
 import { useStudentPortalNavigation } from "@/src/features/student/context/StudentPortalNavigationProvider";
+import { getVisibleStudentPortalNavItems } from "@/src/features/student/config/student-portal-nav-items";
 import { StudentSidebarItem } from "./StudentSidebarItem";
 
 /**
@@ -198,39 +193,14 @@ export function StudentSidebar() {
 
         <nav className="stu-nav">
           <div className="stu-section-label">Core</div>
-          {navigation.showProfile ? (
+          {getVisibleStudentPortalNavItems(navigation).map((item) => (
             <StudentSidebarItem
-              href="/student/profile"
-              icon={User}
-              label="Profile"
+              key={item.id}
+              href={item.href}
+              icon={item.icon}
+              label={item.label}
             />
-          ) : null}
-          {navigation.showMyApplications ? (
-            <StudentSidebarItem
-              href="/student/applications"
-              icon={BriefcaseBusiness}
-              label="My Applications"
-            />
-          ) : null}
-          {navigation.showMyCourses ? (
-            <StudentSidebarItem
-              href="/student/my-learning"
-              icon={BriefcaseBusiness}
-              label="My Course"
-            />
-          ) : null}
-          {navigation.showMyEnrollment ? (
-            <StudentSidebarItem
-              href="/student/enrollments"
-              icon={BriefcaseBusiness}
-              label="My Enrollment"
-            />
-          ) : null}
-          <StudentSidebarItem
-            href="/student/rewards"
-            icon={Gift}
-            label="Referral & Rewards"
-          />
+          ))}
         </nav>
 
         <div className="stu-sidebar-footer">
