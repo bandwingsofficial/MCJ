@@ -4,17 +4,24 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Bell, ChevronDown, LogOut, Settings } from "lucide-react";
 
-import { Input } from "@/src/shared/components/ui/input";
 import { Avatar } from "@/src/shared/components/ui/avatar";
 import { useAuth } from "@/src/features/auth/hooks/use-auth";
 import { appToast } from "@/src/shared/lib/toast";
 import { formatRoleLabel } from "@/src/core/auth/roles";
+import { cn } from "@/src/shared/lib/cn";
+import { BranchGlobalSearch } from "@/src/shared/components/header/branch-global-search";
+
+const iconActionClass = cn(
+  "flex h-10 w-10 items-center justify-center rounded-lg",
+  "bg-transparent text-[#2563EB]",
+  "transition-colors hover:bg-[#2563EB]/8 hover:text-[#102A56]",
+);
 
 export function AdminHeader() {
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
   const { logout, user } = useAuth();
 
   useEffect(() => {
@@ -40,6 +47,19 @@ export function AdminHeader() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -49,23 +69,13 @@ export function AdminHeader() {
     }
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const displayName = user
+    ? `${user.firstName} ${user.lastName ?? ""}`.trim() || "Branch User"
+    : "Branch User";
+  const roleLabel = formatRoleLabel(user?.role) || "Branch Portal";
+  const canOpenSettings = user?.role === "BRANCH_MANAGER";
 
-  const userName = user
-    ? `${user.firstName} ${user.lastName ?? ""}`.trim()
-    : "Branch";
-  const initials = (userName || "B")
+  const initials = displayName
     .split(" ")
     .map((part) => part[0])
     .join("")
@@ -73,81 +83,130 @@ export function AdminHeader() {
     .toUpperCase();
 
   return (
-    <header className="flex h-[72px] min-w-0 shrink-0 items-center justify-between gap-4 rounded-b-2xl border-b border-[#DCE8F5] bg-white px-8">
-      <div className="min-w-0 flex-1 basis-0 max-w-[420px]">
-        <Input
-          placeholder="Search modules, students or batches..."
-          className="h-[46px] rounded-xl border-[#DCE8F5] bg-[#FBFDFF] placeholder:text-[#8AA0BB] shadow-[0_1px_6px_rgba(16,42,86,0.04)]"
-        />
-      </div>
+    <header
+      className={cn(
+        "relative shrink-0 border-b border-[#DCE8F5]",
+        "bg-gradient-to-r from-white via-[#FBFDFF] to-[#F0F7FF]",
+        "shadow-[0_4px_20px_rgba(16,42,86,0.05)]",
+        "px-4 py-3 md:px-6 lg:px-8",
+      )}
+    >
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#2563EB]/20 to-transparent" />
 
-      <div className="flex shrink-0 items-center gap-5">
-        <div className="text-sm font-medium text-[#102A56]">{time}</div>
-        <div className="text-sm text-[#647A9B]">{date}</div>
+      <div className="flex min-h-[60px] flex-wrap items-center gap-x-4 gap-y-3 lg:min-h-[64px] lg:gap-4">
+        <div className="min-w-0 shrink-0 basis-full sm:basis-auto lg:max-w-[280px] xl:max-w-xs">
+          <p className="truncate text-sm font-semibold text-[#102A56]">
+            Welcome back, {displayName}
+          </p>
+          <p className="truncate text-xs text-[#647A9B]">
+            Manage your branch from one place
+          </p>
+        </div>
 
-        <button
-          type="button"
-          className="text-[#2563EB] transition-colors hover:text-[#102A56]"
-          aria-label="Notifications"
-        >
-          <Bell className="h-5 w-5" strokeWidth={1.75} />
-        </button>
+        <BranchGlobalSearch className="min-w-0 flex-1 basis-full sm:basis-0 sm:min-w-[220px] lg:max-w-xl" />
 
-        {user?.role === "BRANCH_MANAGER" ? (
-          <Link
-            href="/settings"
-            className="text-[#2563EB] transition-colors hover:text-[#102A56]"
-            aria-label="Settings"
+        <div className="ml-auto flex shrink-0 basis-full items-center justify-end gap-2 sm:basis-auto sm:gap-3">
+          <span className="text-[10px] tabular-nums text-[#647A9B] sm:hidden">
+            {time ? `${time} · ${date}` : null}
+          </span>
+
+          <div
+            className={cn(
+              "hidden flex-col rounded-xl border border-[#E8F1FF] bg-white/80 px-3 py-1.5 text-right",
+              "shadow-[0_1px_4px_rgba(16,42,86,0.04)] sm:flex",
+            )}
           >
-            <Settings className="h-5 w-5" strokeWidth={1.75} />
-          </Link>
-        ) : null}
-
-        <div
-          className="relative cursor-pointer"
-          onMouseEnter={() => setDropdownOpen(true)}
-          onMouseLeave={() => setDropdownOpen(false)}
-        >
-          <div className="flex items-center gap-2">
-            <Avatar alt={userName} fallback={initials} />
-            <ChevronDown className="h-4 w-4 text-[#647A9B]" />
+            <span className="text-xs font-semibold tabular-nums text-[#102A56]">
+              {time}
+            </span>
+            <span className="text-[10px] leading-tight text-[#647A9B]">
+              {date}
+            </span>
           </div>
 
-          {dropdownOpen ? (
-            <div
-              ref={dropdownRef}
-              className="absolute right-0 z-50 mt-2 w-52 rounded-2xl border border-[#DCE8F5] bg-white py-2 shadow-[0_8px_24px_rgba(16,42,86,0.08)]"
-              onMouseEnter={() => setDropdownOpen(true)}
-              onMouseLeave={() => setDropdownOpen(false)}
+          <button
+            type="button"
+            className={iconActionClass}
+            aria-label="Notifications"
+          >
+            <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          </button>
+
+          {canOpenSettings ? (
+            <Link
+              href="/settings"
+              className={iconActionClass}
+              aria-label="Settings"
             >
-              <div className="border-b border-[#DCE8F5] px-4 py-2">
-                <p className="text-sm font-medium text-[#102A56]">{userName}</p>
-                <p className="text-xs text-[#647A9B]">{user?.email ?? ""}</p>
-                <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-[#2563EB]">
-                  {formatRoleLabel(user?.role)}
-                </p>
-              </div>
-
-              {user?.role === "BRANCH_MANAGER" ? (
-                <Link
-                  href="/settings"
-                  className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-[#102A56] transition-colors hover:bg-[#F4F9FF]"
-                >
-                  <Settings className="h-4 w-4 text-[#2563EB]" />
-                  Settings
-                </Link>
-              ) : null}
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-rose-600 transition-colors hover:bg-rose-50"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </button>
-            </div>
+              <Settings className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </Link>
           ) : null}
+
+          <div ref={profileRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setDropdownOpen((open) => !open)}
+              className={cn(
+                "flex cursor-pointer items-center gap-1.5 rounded-xl border border-[#E8F1FF]",
+                "bg-white/90 py-1 pl-1 pr-2 shadow-[0_1px_4px_rgba(16,42,86,0.04)]",
+                "transition-colors hover:border-[#2563EB]/25 hover:bg-[#F4F9FF]",
+              )}
+              aria-expanded={dropdownOpen}
+              aria-haspopup="menu"
+            >
+              <Avatar alt={displayName} fallback={initials} />
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 text-[#647A9B] transition-transform",
+                  dropdownOpen && "rotate-180",
+                )}
+              />
+            </button>
+
+            {dropdownOpen ? (
+              <div
+                className={cn(
+                  "absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl",
+                  "border border-[#DCE8F5] bg-white",
+                  "shadow-[0_12px_40px_rgba(16,42,86,0.12)]",
+                )}
+              >
+                <div className="border-b border-[#E8F1FF] bg-gradient-to-br from-[#F8FBFF] to-white px-4 py-3">
+                  <p className="truncate text-sm font-semibold text-[#102A56]">
+                    {displayName}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-[#647A9B]">
+                    {user?.email ?? ""}
+                  </p>
+                  <p className="mt-1.5 inline-flex rounded-md bg-[#E8F1FF] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#2563EB]">
+                    {roleLabel}
+                  </p>
+                </div>
+
+                <div className="p-1.5">
+                  {canOpenSettings ? (
+                    <Link
+                      href="/settings"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-[#102A56] transition-colors hover:bg-[#F4F9FF]"
+                    >
+                      <Settings className="h-4 w-4 text-[#2563EB]" />
+                      Settings
+                    </Link>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-600 transition-colors hover:bg-rose-50"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     </header>

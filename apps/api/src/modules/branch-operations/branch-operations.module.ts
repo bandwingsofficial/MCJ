@@ -15,6 +15,7 @@ import { BranchAssessmentService } from './application/branch-assessment.service
 import { BranchInterviewService } from './application/branch-interview.service';
 import { BranchInterviewRoundService } from './application/branch-interview-round.service';
 import { BranchStaffService } from './application/branch-staff.service';
+import { BranchGlobalSearchService } from './application/branch-global-search.service';
 import { BranchOperationsController } from './presentation/controllers/branch-operations.controller';
 
 @Module({
@@ -36,6 +37,7 @@ import { BranchOperationsController } from './presentation/controllers/branch-op
     BranchInterviewService,
     BranchInterviewRoundService,
     BranchStaffService,
+    BranchGlobalSearchService,
   ],
   exports: [BranchAttendanceService, BranchAssessmentService],
 })

@@ -33,6 +33,7 @@ import { FacultyDashboardService } from '../../application/faculty-dashboard.ser
 import { BranchInterviewService } from '../../application/branch-interview.service';
 import { BranchInterviewRoundService } from '../../application/branch-interview-round.service';
 import { BranchStaffService } from '../../application/branch-staff.service';
+import { BranchGlobalSearchService } from '../../application/branch-global-search.service';
 import {
   AssignFacultyDto,
   AssessmentQueryDto,
@@ -96,7 +97,30 @@ export class BranchOperationsController {
     private readonly interviews: BranchInterviewService,
     private readonly interviewRounds: BranchInterviewRoundService,
     private readonly staff: BranchStaffService,
+    private readonly globalSearch: BranchGlobalSearchService,
   ) {}
+
+  @Get('global-search')
+  @Roles(
+    BranchUserRole.BRANCH_MANAGER,
+    BranchUserRole.FACULTY,
+    BranchUserRole.STAFF,
+    BranchUserRole.INTERVIEWER,
+    BranchUserRole.RECEPTIONIST,
+    BranchUserRole.ACCOUNTANT,
+    BranchUserRole.FACULTY_COORDINATOR,
+    BranchUserRole.COUNSELOR,
+  )
+  async globalSearchView(
+    @CurrentBranchUser() user: BranchAuthUser,
+    @Query('q') q?: string,
+  ) {
+    return {
+      success: true,
+      message: 'Global search results fetched successfully',
+      data: await this.globalSearch.search(user, q ?? ''),
+    };
+  }
 
   @Get('dashboard')
   @Roles(

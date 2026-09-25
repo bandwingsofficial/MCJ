@@ -47,7 +47,23 @@ import type {
 const unwrap = <T>(promise: Promise<{ data: ApiSuccess<T> }>) =>
   promise.then((response) => response.data.data);
 
+export type BranchGlobalSearchApiGroup = {
+  type: "student" | "trainer" | "batch" | "job_application" | "interview";
+  typeLabel: string;
+  items: Array<{
+    id: string;
+    type: "student" | "trainer" | "batch" | "job_application" | "interview";
+    title: string;
+    subtitle: string;
+  }>;
+};
+
 export const branchOpsApi = {
+  globalSearch: (q: string) =>
+    unwrap<BranchGlobalSearchApiGroup[]>(
+      apiClient.get("/branch/global-search", { params: { q } }),
+    ),
+
   dashboard: (params?: Record<string, string | undefined>) =>
     unwrap<DashboardData>(apiClient.get("/branch/dashboard", { params })),
 
