@@ -1,133 +1,136 @@
 "use client";
 
-
-
-import { useMemo, useState } from "react";
-
+import Link from "next/link";
+import { useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-import { Copy, Gift, Share2 } from "lucide-react";
-
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Coins,
+  Copy,
+  Gift,
+  Link2,
+  Lock,
+  Share2,
+  TrendingUp,
+  Users,
+  Wallet,
+} from "lucide-react";
 import { toast } from "sonner";
 
-
-
 import { Button } from "@/src/shared/components/ui/button";
-
+import { Input } from "@/src/shared/components/ui/input";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
-
+import { cn } from "@/src/shared/lib/cn";
 import { referralRewardsQueryKeys } from "@/src/features/referral-rewards/constants/query-keys";
-
-import { RedeemCoinsModal } from "@/src/features/referral-rewards/components/redeem-coins-modal";
-
 import { useReferralRewardsSummary } from "@/src/features/referral-rewards/hooks/use-referral-rewards-summary";
-
 import {
-
   referralRewardsService,
-
   type CoinTransactionItem,
   type PublicReferralSettings,
   type RedemptionHistoryItem,
 } from "@/src/features/referral-rewards/services/referral-rewards.service";
-
 import {
-
-  buildReferralRegisterPath,
-
   buildReferralRegisterUrl,
-
   buildReferralShareText,
-
   formatInrFromPaise,
-
   formatReferralCoins,
-
   formatReferralDateTime,
-
   formatStatusLabel,
-
   formatTransactionTypeLabel,
-
 } from "@/src/features/referral-rewards/utils/referral-rewards-format.utils";
 
-
+function initialsFromName(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+}
 
 function StatusBadge({ status }: { status: string }) {
-
   const normalized = status.toUpperCase();
-
   const styles =
-
     normalized === "REWARDED" || normalized === "PROCESSED" || normalized === "APPROVED"
-
       ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
-
       : normalized === "PENDING" || normalized === "QUALIFIED"
-
         ? "bg-amber-50 text-amber-800 ring-amber-100"
-
         : normalized === "REJECTED" ||
-
             normalized === "EXPIRED" ||
-
             normalized === "CANCELLED"
-
           ? "bg-red-50 text-red-700 ring-red-100"
-
-          : "bg-stone-100 text-stone-600 ring-stone-200";
-
-
+          : "bg-slate-100 text-slate-600 ring-slate-200";
 
   return (
-
     <span
-
-      className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${styles}`}
-
+      className={cn(
+        "inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset",
+        styles,
+      )}
     >
-
       {formatStatusLabel(status)}
-
     </span>
-
   );
-
 }
-
-
 
 function transactionReference(tx: CoinTransactionItem) {
-
-  if (tx.referral?.referred?.name) {
-
-    return tx.referral.referred.name;
-
-  }
-
-  if (tx.redemption?.publicId) {
-
-    return tx.redemption.publicId;
-
-  }
-
+  if (tx.referral?.referred?.name) return tx.referral.referred.name;
+  if (tx.redemption?.publicId) return tx.redemption.publicId;
   return null;
-
 }
 
+function Panel({
+  title,
+  children,
+  className,
+}: {
+  title: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={cn(
+        "rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5",
+        className,
+      )}
+    >
+      <h2 className="mb-4 text-base font-semibold tracking-tight text-[#0B1F3A]">
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
 
+function EmptyState({
+  icon,
+  title,
+  description,
+}: {
+  icon: ReactNode;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">
+      <div className="mb-2 text-slate-400">{icon}</div>
+      <p className="text-sm font-medium text-slate-700">{title}</p>
+      {description ? (
+        <p className="mt-1 max-w-xs text-xs text-slate-500">{description}</p>
+      ) : null}
+    </div>
+  );
+}
 
 export function MyRewardsPage() {
-
   const queryClient = useQueryClient();
-
-  const [redeemOpen, setRedeemOpen] = useState(false);
-
-
+  const [redeemAmount, setRedeemAmount] = useState("");
+  const [redeemError, setRedeemError] = useState<string | null>(null);
 
   const summaryQuery = useReferralRewardsSummary();
-
-
 
   const settingsQuery = useQuery({
     queryKey: referralRewardsQueryKeys.settings,
@@ -150,629 +153,541 @@ export function MyRewardsPage() {
       referralRewardsService.listRedemptions(),
   });
 
-
-
   const redeemMutation = useMutation({
-
     mutationFn: (coins: number) => referralRewardsService.createRedemption(coins),
-
     onSuccess: () => {
-
       toast.success("Redemption request submitted");
-
-      setRedeemOpen(false);
-
+      setRedeemAmount("");
+      setRedeemError(null);
       void queryClient.invalidateQueries({ queryKey: referralRewardsQueryKeys.root });
-
     },
-
     onError: (error: { response?: { data?: { message?: string } } }) => {
-
       toast.error(error.response?.data?.message ?? "Redemption failed");
-
     },
-
   });
 
-
-
   const referralCode = summaryQuery.data?.referralCode ?? null;
-
-  const referralPath = referralCode ? buildReferralRegisterPath(referralCode) : "";
-
   const referralLink = useMemo(
-
     () => (referralCode ? buildReferralRegisterUrl(referralCode) : ""),
-
     [referralCode],
-
   );
-
-
 
   const wallet = summaryQuery.data?.wallet;
-
   const settings = settingsQuery.data;
+  const stats = summaryQuery.data?.stats;
 
+  const redeemCoins = Number(redeemAmount) || 0;
+  const redeemValuePreview = useMemo(() => {
+    if (!settings || redeemCoins <= 0) return formatInrFromPaise(0);
+    return formatInrFromPaise(
+      Math.floor((redeemCoins / settings.coinsPerRupee) * 100),
+    );
+  }, [redeemCoins, settings]);
 
+  const handleRedeemSubmit = () => {
+    if (!settings?.redemptionEnabled) {
+      setRedeemError("Redemption is currently disabled.");
+      return;
+    }
+    if (redeemCoins < settings.minRedemptionCoins) {
+      setRedeemError(`Minimum redemption is ${settings.minRedemptionCoins} coins.`);
+      return;
+    }
+    if (
+      settings.maxRedemptionCoins != null &&
+      redeemCoins > settings.maxRedemptionCoins
+    ) {
+      setRedeemError(`Maximum redemption is ${settings.maxRedemptionCoins} coins.`);
+      return;
+    }
+    if (redeemCoins > (wallet?.availableCoins ?? 0)) {
+      setRedeemError("Amount exceeds your available coins.");
+      return;
+    }
+    setRedeemError(null);
+    redeemMutation.mutate(redeemCoins);
+  };
+
+  const copyCode = async () => {
+    if (!referralCode) return;
+    await navigator.clipboard.writeText(referralCode);
+    toast.success("Referral code copied");
+  };
+
+  const copyLink = async () => {
+    if (!referralLink) return;
+    await navigator.clipboard.writeText(referralLink);
+    toast.success("Referral link copied");
+  };
+
+  const shareReferral = async () => {
+    if (!referralLink) return;
+    const text = buildReferralShareText(referralLink);
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Join MCJ Academy",
+          text,
+          url: referralLink,
+        });
+        return;
+      }
+    } catch {
+      /* cancelled */
+    }
+    await navigator.clipboard.writeText(text);
+    toast.success("Referral link copied");
+  };
 
   if (summaryQuery.isLoading) {
-
     return (
-
       <div className="space-y-4">
-
-        <Skeleton className="h-10 w-64" />
-
-        <Skeleton className="h-40 w-full rounded-2xl" />
-
+        <Skeleton className="h-8 w-72" />
+        <Skeleton className="h-44 w-full rounded-xl" />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-24 rounded-xl" />
+          ))}
+        </div>
       </div>
-
     );
-
   }
 
-
-
   return (
-
-    <div className="space-y-8">
-
-      <div>
-
-        <h1 className="text-2xl font-bold tracking-tight text-stone-900 sm:text-[26px]">
-
+    <div className="space-y-6 pb-4">
+      <nav
+        aria-label="Breadcrumb"
+        className="flex items-center gap-1 text-xs text-slate-500"
+      >
+        <Link href="/" className="transition-colors hover:text-[#2563EB]">
+          Home
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span className="text-slate-400">Student</span>
+        <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span aria-current="page" className="font-medium text-[#0B1F3A]">
           Referral & Rewards
+        </span>
+      </nav>
 
-        </h1>
-
-        <p className="mt-1 text-sm text-stone-500 sm:text-base">
-
-          Earn coins by referring new users and manage your rewards.
-
-        </p>
-
-      </div>
-
-
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
-        <StatCard label="Available Coins" value={wallet?.availableCoins ?? 0} />
-
-        <StatCard label="Locked Coins" value={wallet?.lockedCoins ?? 0} />
-
-        <StatCard label="Total Earned" value={wallet?.totalEarned ?? 0} />
-
-        <StatCard label="Total Redeemed" value={wallet?.totalRedeemed ?? 0} />
-
-      </div>
-
-
-
-      <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-
-        <div className="flex flex-wrap items-start justify-between gap-4">
-
-          <div className="min-w-0 flex-1">
-
-            <h2 className="text-lg font-semibold text-stone-900">Your Referral Code</h2>
-
-            <p className="mt-2 font-mono text-2xl font-bold tracking-widest text-amber-700">
-
-              {referralCode ?? "—"}
-
-            </p>
-
-            <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-stone-500">
-
-              Referral Link
-
-            </p>
-
-            <p className="mt-1 break-all text-sm text-stone-600">
-
-              {referralPath || "—"}
-
-            </p>
-
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#2563EB]">
+            <Gift className="h-3.5 w-3.5" aria-hidden />
+            Rewards
           </div>
+          <h1 className="text-2xl font-bold tracking-tight text-[#0B1F3A] sm:text-[28px]">
+            Referral & Rewards
+          </h1>
+          <p className="mt-1 max-w-xl text-sm text-slate-500 sm:text-[15px]">
+            Earn coins by sharing MCJ Academy with your friends.
+          </p>
+        </div>
+      </header>
 
-          <div className="flex flex-wrap gap-2">
-
+      {/* Hero referral card */}
+      <div className="relative overflow-hidden rounded-xl border border-blue-100/80 bg-gradient-to-br from-[#1E49A8] via-[#2563EB] to-[#2F6BE5] p-5 text-white shadow-md sm:p-6">
+        <div
+          className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -bottom-12 -left-6 h-32 w-32 rounded-full bg-white/5"
+          aria-hidden
+        />
+        <div className="relative">
+          <p className="text-xs font-semibold uppercase tracking-wider text-blue-100">
+            Your Referral Code
+          </p>
+          <p className="mt-2 font-mono text-3xl font-bold tracking-[0.2em] sm:text-4xl">
+            {referralCode ?? "—"}
+          </p>
+          <p className="mt-3 max-w-lg text-sm leading-relaxed text-blue-100/95">
+            Invite friends to MCJ Academy and earn coins when their referral
+            qualifies.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
             <Button
-
               type="button"
-
-              variant="outline"
-
-              className="rounded-xl"
-
+              variant="secondary"
+              className="rounded-lg border-0 bg-white/95 text-[#0B1F3A] hover:bg-white"
               disabled={!referralCode}
-
-              onClick={async () => {
-
-                if (!referralCode) return;
-
-                await navigator.clipboard.writeText(referralCode);
-
-                toast.success("Referral code copied");
-
-              }}
-
+              onClick={() => void copyCode()}
             >
-
               <Copy className="mr-2 h-4 w-4" />
-
               Copy Code
-
             </Button>
-
             <Button
-
               type="button"
-
-              className="rounded-xl bg-amber-500 hover:bg-amber-600"
-
+              className="rounded-lg border border-white/30 bg-white/10 text-white hover:bg-white/20"
               disabled={!referralLink}
-
-              onClick={async () => {
-
-                if (!referralLink) return;
-
-                const text = buildReferralShareText(referralLink);
-
-                try {
-
-                  if (navigator.share) {
-
-                    await navigator.share({
-
-                      title: "Join MCJ Academy",
-
-                      text,
-
-                      url: referralLink,
-
-                    });
-
-                    return;
-
-                  }
-
-                } catch {
-
-                  /* user cancelled share */
-
-                }
-
-                await navigator.clipboard.writeText(text);
-
-                toast.success("Referral link copied");
-
-              }}
-
+              onClick={() => void shareReferral()}
             >
-
               <Share2 className="mr-2 h-4 w-4" />
-
               Share
-
             </Button>
-
           </div>
-
-        </div>
-
-
-
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-
-          <MiniStat
-
-            label="Total Referrals"
-
-            value={summaryQuery.data?.stats.totalReferrals ?? 0}
-
-          />
-
-          <MiniStat
-
-            label="Successful Referrals"
-
-            value={summaryQuery.data?.stats.successfulReferrals ?? 0}
-
-          />
-
-          <MiniStat
-
-            label="Pending Referrals"
-
-            value={summaryQuery.data?.stats.pendingReferrals ?? 0}
-
-          />
-
-          <MiniStat
-
-            label="Coins Earned From Referrals"
-
-            value={summaryQuery.data?.stats.coinsEarnedFromReferrals ?? 0}
-
-          />
-
-        </div>
-
-      </section>
-
-
-
-      <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-
-        <h2 className="mb-4 text-lg font-semibold text-stone-900">My Referrals</h2>
-
-        {!summaryQuery.data?.referrals.length ? (
-
-          <p className="text-sm text-stone-500">No referrals yet</p>
-
-        ) : (
-
-          <ul className="divide-y divide-stone-100">
-
-            {summaryQuery.data.referrals.map((item) => (
-
-              <li
-
-                key={item.id}
-
-                className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"
-
+          <div className="mt-5">
+            <label className="text-[11px] font-medium uppercase tracking-wide text-blue-100">
+              Referral link
+            </label>
+            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 py-1.5 pl-3 pr-1.5">
+              <Link2 className="h-4 w-4 shrink-0 text-blue-100" aria-hidden />
+              <p className="min-w-0 flex-1 truncate text-sm text-white/95">
+                {referralLink || "—"}
+              </p>
+              <button
+                type="button"
+                disabled={!referralLink}
+                onClick={() => void copyLink()}
+                className="rounded-md p-2 text-white/90 transition hover:bg-white/15 disabled:opacity-40"
+                aria-label="Copy referral link"
               >
+                <Copy className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-                <div className="min-w-0">
+      {/* Wallet summary */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <WalletMetricCard
+          icon={Wallet}
+          iconClass="text-[#2563EB] bg-blue-50"
+          label="Available Coins"
+          value={wallet?.availableCoins ?? 0}
+          hint="Ready to redeem"
+        />
+        <WalletMetricCard
+          icon={TrendingUp}
+          iconClass="text-emerald-600 bg-emerald-50"
+          label="Total Earned"
+          value={wallet?.totalEarned ?? 0}
+          hint="Lifetime credits"
+        />
+        <WalletMetricCard
+          icon={Coins}
+          iconClass="text-indigo-600 bg-indigo-50"
+          label="Total Redeemed"
+          value={wallet?.totalRedeemed ?? 0}
+          hint="Successfully redeemed"
+        />
+        <WalletMetricCard
+          icon={Lock}
+          iconClass="text-amber-700 bg-amber-50"
+          label="Locked Coins"
+          value={wallet?.lockedCoins ?? 0}
+          hint={
+            (wallet?.lockedCoins ?? 0) > 0
+              ? "Pending redemption"
+              : "None locked"
+          }
+        />
+      </div>
 
-                  <p className="font-medium text-stone-900">{item.referred.name}</p>
+      {/* Referral stats */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatChip icon={Users} label="Total Referrals" value={stats?.totalReferrals ?? 0} />
+        <StatChip
+          icon={CheckCircle2}
+          label="Successful Referrals"
+          value={stats?.successfulReferrals ?? 0}
+        />
+        <StatChip icon={Clock} label="Pending Referrals" value={stats?.pendingReferrals ?? 0} />
+        <StatChip
+          icon={Gift}
+          label="Referral Coins Earned"
+          value={stats?.coinsEarnedFromReferrals ?? 0}
+        />
+      </div>
 
-                  <p className="truncate text-stone-500">{item.referred.email}</p>
-
-                </div>
-
-                <div className="flex flex-col items-end gap-1 text-right">
-
-                  <StatusBadge status={item.status} />
-
-                  {item.status === "REWARDED" ? (
-
-                    <p className="font-semibold text-emerald-700">
-
-                      +{item.rewardCoins} Coins
-
-                    </p>
-
-                  ) : null}
-
-                  <p className="text-stone-500">{formatReferralDateTime(item.createdAt)}</p>
-
-                </div>
-
-              </li>
-
-            ))}
-
-          </ul>
-
-        )}
-
-      </section>
-
-
-
-      <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-
-        <h2 className="mb-4 text-lg font-semibold text-stone-900">Coin History</h2>
-
-        {txQuery.isLoading ? (
-
-          <Skeleton className="h-24 w-full rounded-xl" />
-
-        ) : !txQuery.data?.items.length ? (
-
-          <p className="text-sm text-stone-500">No coin transactions yet</p>
-
-        ) : (
-
-          <ul className="divide-y divide-stone-100">
-
-            {txQuery.data.items.map((tx) => {
-
-              const reference = transactionReference(tx);
-
-              return (
-
+      {/* Two-column: referrals + redeem */}
+      <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
+        <Panel title="My Referrals" className="lg:col-span-2">
+          {!summaryQuery.data?.referrals.length ? (
+            <EmptyState
+              icon={<Gift className="h-8 w-8" />}
+              title="No referrals yet"
+              description="Share your referral code to start earning coins."
+            />
+          ) : (
+            <ul className="space-y-2">
+              {summaryQuery.data.referrals.map((item) => (
                 <li
-
-                  key={tx.id}
-
-                  className="flex flex-wrap items-start justify-between gap-3 py-3 text-sm"
-
+                  key={item.id}
+                  className="flex gap-3 rounded-lg border border-slate-100 bg-slate-50/40 p-3 transition hover:border-slate-200"
                 >
-
-                  <div className="min-w-0">
-
-                    <p className="font-semibold text-stone-900">
-
-                      {formatReferralCoins(tx.amount, tx.direction)}
-
+                  <div
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2F6BE5] to-[#1E49A8] text-xs font-bold text-white"
+                    aria-hidden
+                  >
+                    {initialsFromName(item.referred.name)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-[#0B1F3A]">
+                      {item.referred.name}
                     </p>
-
-                    <p className="text-stone-700">
-
-                      {tx.description ?? formatTransactionTypeLabel(tx.type)}
-
+                    <p className="truncate text-xs text-slate-500">
+                      {item.referred.email}
                     </p>
-
-                    {reference ? (
-
-                      <p className="text-stone-500">{reference}</p>
-
-                    ) : tx.publicId ? (
-
-                      <p className="font-mono text-xs text-stone-400">{tx.publicId}</p>
-
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+                    <StatusBadge status={item.status} />
+                    {item.status === "REWARDED" ? (
+                      <p className="text-sm font-semibold text-emerald-700">
+                        +{item.rewardCoins} Coins
+                      </p>
                     ) : null}
-
-                  </div>
-
-                  <div className="text-right text-stone-500">
-
-                    <p>{formatReferralDateTime(tx.createdAt)}</p>
-
-                    <p className="text-xs text-stone-400">
-
-                      Balance: {tx.availableAfter}
-
+                    <p className="text-xs text-slate-400">
+                      {formatReferralDateTime(item.createdAt)}
                     </p>
-
                   </div>
-
                 </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
 
-              );
-
-            })}
-
-          </ul>
-
-        )}
-
-      </section>
-
-
-
-      <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-
-        <h2 className="mb-4 text-lg font-semibold text-stone-900">Redemption History</h2>
-
-        {redemptionsQuery.isLoading ? (
-
-          <Skeleton className="h-24 w-full rounded-xl" />
-
-        ) : !redemptionsQuery.data?.length ? (
-
-          <p className="text-sm text-stone-500">No redemption requests yet</p>
-
-        ) : (
-
-          <ul className="divide-y divide-stone-100">
-
-            {redemptionsQuery.data.map((item) => (
-
-              <li
-
-                key={item.id}
-
-                className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"
-
+        <Panel title="Redeem Your Coins" className="lg:col-span-1">
+          <div className="space-y-4">
+            {settings ? (
+              <dl className="space-y-2.5 rounded-lg border border-slate-100 bg-slate-50/80 p-3 text-sm">
+                <Row label="Available" value={`${wallet?.availableCoins ?? 0} Coins`} />
+                <Row
+                  label="Conversion"
+                  value={`${settings.coinsPerRupee} Coins = ₹1`}
+                />
+                <Row label="Minimum" value={`${settings.minRedemptionCoins} Coins`} />
+                {settings.maxRedemptionCoins != null ? (
+                  <Row label="Maximum" value={`${settings.maxRedemptionCoins} Coins`} />
+                ) : null}
+              </dl>
+            ) : (
+              <Skeleton className="h-24 w-full rounded-lg" />
+            )}
+            <div>
+              <label
+                htmlFor="redeem-coins-input"
+                className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500"
               >
+                Coins to Redeem
+              </label>
+              <Input
+                id="redeem-coins-input"
+                type="number"
+                min={settings?.minRedemptionCoins ?? 1}
+                max={settings?.maxRedemptionCoins ?? undefined}
+                value={redeemAmount}
+                onChange={(e) => {
+                  setRedeemAmount(e.target.value);
+                  setRedeemError(null);
+                }}
+                placeholder={String(settings?.minRedemptionCoins ?? 500)}
+                className="h-10 rounded-lg"
+              />
+              <p className="mt-2 text-sm text-slate-600">
+                Calculated value:{" "}
+                <span className="font-semibold text-[#0B1F3A]">
+                  {redeemValuePreview}
+                </span>
+              </p>
+              {redeemError ? (
+                <p className="mt-1 text-xs text-red-600">{redeemError}</p>
+              ) : null}
+            </div>
+            <Button
+              type="button"
+              className="w-full rounded-lg bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] font-semibold text-white hover:opacity-95"
+              loading={redeemMutation.isPending}
+              disabled={!settings?.redemptionEnabled || (wallet?.availableCoins ?? 0) < 1}
+              onClick={handleRedeemSubmit}
+            >
+              Redeem Coins
+            </Button>
+          </div>
+        </Panel>
+      </div>
 
-                <div>
-
-                  <p className="font-mono font-medium text-stone-900">{item.publicId}</p>
-
-                  <p className="text-stone-600">
-
-                    {item.coins} Coins · {formatInrFromPaise(item.moneyValuePaise)}
-
-                  </p>
-
-                </div>
-
-                <div className="flex flex-col items-end gap-1 text-right">
-
-                  <StatusBadge status={item.status} />
-
-                  <p className="text-stone-500">
-
-                    {formatReferralDateTime(item.requestedAt)}
-
-                  </p>
-
-                  {item.processedAt ? (
-
-                    <p className="text-xs text-stone-400">
-
-                      Processed {formatReferralDateTime(item.processedAt)}
-
+      <Panel title="Coin History">
+        {txQuery.isLoading ? (
+          <Skeleton className="h-32 w-full rounded-lg" />
+        ) : !txQuery.data?.items.length ? (
+          <EmptyState title="No coin transactions yet" icon={<Coins className="h-7 w-7" />} />
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {txQuery.data.items.map((tx) => {
+              const isCredit = tx.direction === "CREDIT";
+              const reference = transactionReference(tx);
+              return (
+                <li
+                  key={tx.id}
+                  className="flex gap-3 py-3 first:pt-0 last:pb-0 sm:items-center sm:justify-between"
+                >
+                  <div className="flex min-w-0 flex-1 gap-3">
+                    <div
+                      className={cn(
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                        isCredit ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600",
+                      )}
+                    >
+                      {isCredit ? (
+                        <ArrowUpRight className="h-4 w-4" />
+                      ) : (
+                        <ArrowDownLeft className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[#0B1F3A]">
+                        {tx.description ?? formatTransactionTypeLabel(tx.type)}
+                      </p>
+                      {reference ? (
+                        <p className="truncate text-xs text-slate-500">{reference}</p>
+                      ) : tx.publicId ? (
+                        <p className="font-mono text-xs text-slate-400">{tx.publicId}</p>
+                      ) : null}
+                      <p className="mt-0.5 text-xs text-slate-400 sm:hidden">
+                        {formatReferralDateTime(tx.createdAt)} · Bal{" "}
+                        {tx.availableAfter}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p
+                      className={cn(
+                        "text-sm font-bold tabular-nums",
+                        isCredit ? "text-emerald-700" : "text-red-700",
+                      )}
+                    >
+                      {formatReferralCoins(tx.amount, tx.direction)}
                     </p>
-
-                  ) : null}
-
-                </div>
-
-              </li>
-
-            ))}
-
+                    <p className="hidden text-xs text-slate-400 sm:block">
+                      {formatReferralDateTime(tx.createdAt)}
+                    </p>
+                    <p className="hidden text-[11px] text-slate-400 sm:block">
+                      Balance {tx.availableAfter}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
-
         )}
+      </Panel>
 
-      </section>
-
-
-
-      <section className="rounded-2xl border border-stone-200 bg-gradient-to-br from-amber-50 to-white p-5 shadow-sm">
-
-        <div className="mb-4 flex items-center gap-2">
-
-          <Gift className="h-5 w-5 text-amber-600" />
-
-          <h2 className="text-lg font-semibold text-stone-900">Redeem Coins</h2>
-
-        </div>
-
-        {settings ? (
-
-          <dl className="mb-4 grid gap-2 text-sm sm:grid-cols-2">
-
-            <div>
-
-              <dt className="text-stone-500">Available Coins</dt>
-
-              <dd className="font-semibold tabular-nums text-stone-900">
-
-                {wallet?.availableCoins ?? 0}
-
-              </dd>
-
-            </div>
-
-            <div>
-
-              <dt className="text-stone-500">Conversion Rate</dt>
-
-              <dd className="font-medium text-stone-900">
-
-                {settings.coinsPerRupee} Coins = ₹1
-
-              </dd>
-
-            </div>
-
-            <div>
-
-              <dt className="text-stone-500">Minimum Redemption</dt>
-
-              <dd className="font-medium text-stone-900">
-
-                {settings.minRedemptionCoins} coins
-
-              </dd>
-
-            </div>
-
-            {settings.maxRedemptionCoins != null ? (
-
-              <div>
-
-                <dt className="text-stone-500">Maximum Redemption</dt>
-
-                <dd className="font-medium text-stone-900">
-
-                  {settings.maxRedemptionCoins} coins
-
-                </dd>
-
-              </div>
-
-            ) : null}
-
-          </dl>
-
-        ) : null}
-
-        <Button
-
-          type="button"
-
-          className="rounded-xl bg-amber-500 hover:bg-amber-600"
-
-          disabled={!settings?.redemptionEnabled || (wallet?.availableCoins ?? 0) < 1}
-
-          onClick={() => setRedeemOpen(true)}
-
-        >
-
-          Redeem Coins
-
-        </Button>
-
-      </section>
-
-
-
-      <RedeemCoinsModal
-
-        open={redeemOpen}
-
-        onClose={() => setRedeemOpen(false)}
-
-        settings={settings}
-
-        availableCoins={wallet?.availableCoins ?? 0}
-
-        saving={redeemMutation.isPending}
-
-        onSubmit={(coins) => redeemMutation.mutate(coins)}
-
-      />
-
+      <Panel title="Redemption History">
+        {redemptionsQuery.isLoading ? (
+          <Skeleton className="h-32 w-full rounded-lg" />
+        ) : !redemptionsQuery.data?.length ? (
+          <EmptyState
+            title="No redemption requests yet"
+            icon={<Wallet className="h-7 w-7" />}
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  <th className="pb-2 pr-3 font-semibold">Request</th>
+                  <th className="pb-2 pr-3 font-semibold">Coins</th>
+                  <th className="pb-2 pr-3 font-semibold">Value</th>
+                  <th className="pb-2 pr-3 font-semibold">Status</th>
+                  <th className="pb-2 pr-3 font-semibold">Requested</th>
+                  <th className="pb-2 font-semibold">Processed</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {redemptionsQuery.data.map((item) => (
+                  <tr key={item.id} className="text-slate-700">
+                    <td className="py-2.5 pr-3 font-mono text-xs font-medium text-[#0B1F3A]">
+                      {item.publicId}
+                    </td>
+                    <td className="py-2.5 pr-3 tabular-nums">{item.coins}</td>
+                    <td className="py-2.5 pr-3">
+                      {formatInrFromPaise(item.moneyValuePaise)}
+                    </td>
+                    <td className="py-2.5 pr-3">
+                      <StatusBadge status={item.status} />
+                    </td>
+                    <td className="py-2.5 pr-3 text-xs text-slate-500">
+                      {formatReferralDateTime(item.requestedAt)}
+                    </td>
+                    <td className="py-2.5 text-xs text-slate-500">
+                      {item.processedAt
+                        ? formatReferralDateTime(item.processedAt)
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
     </div>
-
   );
-
 }
 
-
-
-function StatCard({ label, value }: { label: string; value: number }) {
-
+function WalletMetricCard({
+  icon: Icon,
+  iconClass,
+  label,
+  value,
+  hint,
+}: {
+  icon: typeof Wallet;
+  iconClass: string;
+  label: string;
+  value: number;
+  hint: string;
+}) {
   return (
-
-    <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-
-      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-
+    <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
+      <div className={cn("mb-3 inline-flex rounded-lg p-2", iconClass)}>
+        <Icon className="h-4 w-4" aria-hidden />
+      </div>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
         {label}
-
       </p>
-
-      <p className="mt-1 text-2xl font-bold tabular-nums text-stone-900">{value}</p>
-
+      <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-[#0B1F3A]">
+        {value.toLocaleString("en-IN")}
+      </p>
+      <p className="mt-1 text-xs text-slate-400">{hint}</p>
     </div>
-
   );
-
 }
 
-
-
-function MiniStat({ label, value }: { label: string; value: number }) {
-
+function StatChip({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: number;
+}) {
   return (
-
-    <div className="rounded-xl border border-stone-100 bg-stone-50 px-3 py-2">
-
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-
-        {label}
-
-      </p>
-
-      <p className="text-lg font-bold tabular-nums text-stone-900">{value}</p>
-
+    <div className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm">
+      <div className="rounded-lg bg-slate-50 p-2 text-slate-500">
+        <Icon className="h-4 w-4" aria-hidden />
+      </div>
+      <div>
+        <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+          {label}
+        </p>
+        <p className="text-lg font-bold tabular-nums text-[#0B1F3A]">
+          {value.toLocaleString("en-IN")}
+        </p>
+      </div>
     </div>
-
   );
-
 }
 
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <dt className="text-slate-500">{label}</dt>
+      <dd className="font-medium text-[#0B1F3A]">{value}</dd>
+    </div>
+  );
+}
