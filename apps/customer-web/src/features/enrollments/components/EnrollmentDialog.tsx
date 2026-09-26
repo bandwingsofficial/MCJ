@@ -15,6 +15,16 @@ import type {
 import { Modal } from "@/src/shared/components/ui/model";
 import { appToast } from "@/src/shared/components/ui/toast";
 
+function resolveBatchTimingId(batch: Batch | undefined): string | null {
+  const timings = batch?.timings ?? [];
+  if (!timings.length) {
+    return null;
+  }
+
+  const activeTiming = timings.find((timing) => timing.isActive);
+  return activeTiming?.id ?? timings[0]?.id ?? null;
+}
+
 interface EnrollmentDialogProps {
   open: boolean;
 
@@ -63,10 +73,22 @@ export function EnrollmentDialog({
       async (
         values: EnrollmentFormValues,
       ) => {
+        const batch = batches.find(
+          (item) => item.id === values.batchId,
+        );
+        const batchTimingId = resolveBatchTimingId(batch);
+
+        if (!batchTimingId) {
+          appToast.error(
+            "No batch timing is available for the selected batch.",
+          );
+          return;
+        }
+
         const enrollment =
           await createEnrollment({
-            batchId:
-              values.batchId,
+            batchId: values.batchId,
+            batchTimingId,
           });
 
         if (!enrollment) {
@@ -84,6 +106,7 @@ export function EnrollmentDialog({
         handleClose();
       },
       [
+        batches,
         createEnrollment,
         handleClose,
         onSuccess,

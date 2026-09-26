@@ -20,7 +20,7 @@ export const batchTemplateSchema = z
     endTime: z.string().optional(),
     isActive: z.boolean(),
     capacity: z
-      .number({ invalid_type_error: "Capacity is required" })
+      .number({ message: "Capacity is required" })
       .int("Capacity must be a whole number")
       .min(1, "Capacity must be at least 1"),
   })

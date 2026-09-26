@@ -7,7 +7,7 @@ import type {
   CreatePaymentOrderResponse,
   PaymentsList,
   VerifyPaymentRequest,
-  VerifyPaymentResponse,
+  VerifyPaymentDetail,
 } from "@/src/features/payments/types/payment.types";
 
 export const paymentApi = {
@@ -26,7 +26,7 @@ export const paymentApi = {
     payload: VerifyPaymentRequest,
   ) {
     return apiClient.post<
-      ApiResponse<VerifyPaymentResponse>
+      ApiResponse<VerifyPaymentDetail>
     >(
       "/public/payments/verify",
       payload,

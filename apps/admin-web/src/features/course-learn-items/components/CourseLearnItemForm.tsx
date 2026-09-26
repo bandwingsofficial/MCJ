@@ -29,10 +29,12 @@ const learnItemFormSchema = z.object({
   title: z.string().trim().min(1, "Question/title is required."),
   explanation: z.string().trim().min(1, "Answer/explanation is required."),
   imageUrl: z.string(),
-  keyLearningPoints: z.array(z.string()),
+  keyLearningPoints: z.array(z.object({ value: z.string() })),
   finalThoughts: z.string(),
   summary: z.string(),
 });
+
+type LearnItemFormValues = z.infer<typeof learnItemFormSchema>;
 
 function UnlimitedCharCounter({ value }: { value: string }) {
   return (
@@ -74,11 +76,14 @@ export function CourseLearnItemForm({
     reset,
     watch,
     formState: { errors, touchedFields, isSubmitted, isSubmitting },
-  } = useForm<CourseLearnItemFormValues>({
+  } = useForm<LearnItemFormValues>({
     resolver: zodResolver(learnItemFormSchema),
     mode: "onTouched",
     reValidateMode: "onChange",
-    defaultValues: DEFAULT_COURSE_LEARN_ITEM_FORM_VALUES,
+    defaultValues: {
+      ...DEFAULT_COURSE_LEARN_ITEM_FORM_VALUES,
+      keyLearningPoints: [],
+    },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -102,6 +107,7 @@ export function CourseLearnItemForm({
       reset({
         ...DEFAULT_COURSE_LEARN_ITEM_FORM_VALUES,
         lessonId,
+        keyLearningPoints: [],
       });
       return;
     }
@@ -111,7 +117,9 @@ export function CourseLearnItemForm({
       title: item.title,
       explanation: item.explanation,
       imageUrl: item.imageUrl ?? "",
-      keyLearningPoints: parseKeyLearningPoints(item.keyLearningPoints),
+      keyLearningPoints: parseKeyLearningPoints(item.keyLearningPoints).map(
+        (point) => ({ value: point }),
+      ),
       finalThoughts: item.finalThoughts ?? "",
       summary: item.summary ?? "",
     });
@@ -160,7 +168,7 @@ export function CourseLearnItemForm({
             {
               ...values,
               keyLearningPoints: values.keyLearningPoints
-                .map((point) => point.trim())
+                .map((point) => point.value.trim())
                 .filter(Boolean),
             },
             selectedImage,
@@ -241,7 +249,7 @@ export function CourseLearnItemForm({
                 <div key={field.id} className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <Input
-                      {...register(`keyLearningPoints.${index}` as const)}
+                      {...register(`keyLearningPoints.${index}.value`)}
                       placeholder={`Point ${index + 1}`}
                       disabled={loading || isSubmitting}
                       className="w-full"
@@ -269,7 +277,7 @@ export function CourseLearnItemForm({
             size="sm"
             className="rounded-lg"
             disabled={loading || isSubmitting}
-            onClick={() => append("")}
+            onClick={() => append({ value: "" })}
           >
             <Plus className="mr-1.5 h-4 w-4" />
             Add Point

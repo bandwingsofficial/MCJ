@@ -13,6 +13,8 @@ interface SearchInputProps {
 
   className?: string;
 
+  disabled?: boolean;
+
   onChange: (value: string) => void;
 }
 
@@ -20,6 +22,7 @@ export function SearchInput({
   value,
   placeholder = "Search...",
   className,
+  disabled,
   onChange,
 }: SearchInputProps) {
   return (
@@ -32,6 +35,7 @@ export function SearchInput({
         value={value ?? ""}
         placeholder={placeholder}
         className={cn("pl-10", className)}
+        disabled={disabled}
         onChange={(e) =>
           onChange(e.target.value)
         }

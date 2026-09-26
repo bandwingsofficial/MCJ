@@ -40,6 +40,7 @@ import type {
 } from "@/src/features/branches/types/branch.types";
 import { DEFAULT_TRAINER_PAGE_SIZE } from "@/src/features/trainers/constants/trainer.constants";
 import { TrainerStatusBadge } from "@/src/features/trainers/components/trainer-status-badge";
+import { getTrainerDisplayStatus } from "@/src/features/trainers/utils/trainer-display.utils";
 import type { BatchMode } from "@/src/features/batches/types/batch.types";
 import { getBatchModeLabel } from "@/src/features/batches/utils/batch-mode.utils";
 
@@ -295,7 +296,9 @@ export function BranchManageTrainersPanel({
                     {getAssignmentTypeLabel(row.assignmentType)}
                   </td>
                   <td className={TABLE_CELL_CLASS}>
-                    <TrainerStatusBadge status={row.trainer.status} />
+                    <TrainerStatusBadge
+                      status={getTrainerDisplayStatus(row.trainer)}
+                    />
                   </td>
                   <td className={TABLE_CELL_CLASS}>
                     <div className="flex items-center justify-end">

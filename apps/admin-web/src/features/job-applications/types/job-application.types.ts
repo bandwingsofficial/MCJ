@@ -572,10 +572,8 @@ export function getOnboardingStatusLabel(
     return "SELECTED";
   }
 
-  return status
-    .toLowerCase()
-    .replaceAll("_", " ")
-    .replace(/^\w/, (char) => char.toUpperCase());
+  const _exhaustiveCheck: never = status;
+  return _exhaustiveCheck;
 }
 
 export function canApproveApplication(status: JobApplicationStatus): boolean {

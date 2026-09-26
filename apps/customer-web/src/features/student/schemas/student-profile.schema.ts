@@ -122,8 +122,8 @@ export const createStudentProfileSchema = z.object({
     .min(2, "Specialization is required.")
     .max(255),
 
-  passingYear: z.coerce
-    .number()
+  passingYear: z
+    .number({ message: "Passing year is invalid." })
     .min(1980, "Passing year is invalid.")
     .max(currentYear + 10, "Passing year is invalid."),
 

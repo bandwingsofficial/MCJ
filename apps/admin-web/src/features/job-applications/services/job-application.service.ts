@@ -37,13 +37,6 @@ function resolveJobApplicationListTotal(
     return metaTotal;
   }
 
-  if (typeof metaTotal === "string" && metaTotal.trim() !== "") {
-    const parsed = Number(metaTotal);
-    if (Number.isFinite(parsed)) {
-      return parsed;
-    }
-  }
-
   return itemsLength;
 }
 

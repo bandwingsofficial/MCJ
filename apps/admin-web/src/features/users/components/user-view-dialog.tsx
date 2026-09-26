@@ -49,7 +49,7 @@ export function UserViewDialog({ open, user, onClose }: UserViewDialogProps) {
           adminUsersService.listRedemptions(user.id),
         ]);
         if (!cancelled) {
-          setPayload(detail as AdminUserDetailPayload);
+          setPayload(detail as unknown as AdminUserDetailPayload);
           setTransactions(tx.items ?? []);
           setRedemptions(red.items ?? []);
         }

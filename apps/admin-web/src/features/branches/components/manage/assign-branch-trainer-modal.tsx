@@ -460,7 +460,7 @@ export function AssignBranchTrainerModal({
           <Button
             type="button"
             size="sm"
-            variant={assignmentKind === "COURSE_BATCH" ? "default" : "outline"}
+            variant={assignmentKind === "COURSE_BATCH" ? "primary" : "outline"}
             disabled={isSubmitting}
             onClick={() => {
               setAssignmentKind("COURSE_BATCH");
@@ -473,7 +473,7 @@ export function AssignBranchTrainerModal({
           <Button
             type="button"
             size="sm"
-            variant={assignmentKind === "BRANCH_ONLY" ? "default" : "outline"}
+            variant={assignmentKind === "BRANCH_ONLY" ? "primary" : "outline"}
             disabled={isSubmitting}
             onClick={() => {
               setAssignmentKind("BRANCH_ONLY");

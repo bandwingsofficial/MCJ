@@ -1,23 +1,41 @@
 import type {
   TrainerDisplayStatus,
-  TrainerListItem,
+  TrainerStatus,
 } from "@/src/features/trainers/types/trainer.types";
 
 import { isArchivedTrainer } from "@/src/features/trainers/utils/trainer-bulk.utils";
 
-type TrainerStatusSource = Pick<TrainerListItem, "status"> & {
+type TrainerStatusSource = {
+  status: TrainerStatus | string;
   deletedAt?: string | null;
   isDeleted?: boolean;
 };
 
+function normalizeTrainerStatus(status: TrainerStatus | string): TrainerStatus {
+  if (
+    status === "ACTIVE" ||
+    status === "INACTIVE" ||
+    status === "ARCHIVED"
+  ) {
+    return status;
+  }
+
+  return "INACTIVE";
+}
+
 export function getTrainerDisplayStatus(
   trainer: TrainerStatusSource,
 ): TrainerDisplayStatus {
-  if (isArchivedTrainer(trainer) || trainer.status === "ARCHIVED") {
+  const status = normalizeTrainerStatus(trainer.status);
+
+  if (
+    isArchivedTrainer({ ...trainer, status }) ||
+    status === "ARCHIVED"
+  ) {
     return "ARCHIVED";
   }
 
-  if (trainer.status === "ACTIVE") {
+  if (status === "ACTIVE") {
     return "ACTIVE";
   }
 

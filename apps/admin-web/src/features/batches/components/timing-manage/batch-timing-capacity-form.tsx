@@ -17,7 +17,7 @@ import type { BatchTiming } from "@/src/features/batches/types/batch.types";
 
 const capacitySchema = z.object({
   capacity: z
-    .number({ invalid_type_error: "Capacity is required" })
+    .number({ message: "Capacity is required" })
     .int("Capacity must be a whole number")
     .min(1, "Capacity must be at least 1"),
 });

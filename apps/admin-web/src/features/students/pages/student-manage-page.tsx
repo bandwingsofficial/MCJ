@@ -95,8 +95,16 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
   }, [initialTab]);
 
   useEffect(() => {
-    if (initialTab === "placement") {
-      router.replace(studentManageTabPath(studentId, "job-applications"));
+    if (
+      typeof initialTab === "string" &&
+      initialTab in LEGACY_TAB_ALIASES
+    ) {
+      router.replace(
+        studentManageTabPath(
+          studentId,
+          LEGACY_TAB_ALIASES[initialTab],
+        ),
+      );
     }
   }, [initialTab, router, studentId]);
 

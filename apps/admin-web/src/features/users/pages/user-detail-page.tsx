@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { Button } from "@/src/shared/components/ui/button";
 import { adminUsersService } from "@/src/features/users/services/admin-users.service";
+import type { AdminUserDetailPayload } from "@/src/features/users/types/user-detail.types";
 import { useState } from "react";
 
 export function UserDetailPage({ userId }: { userId: string }) {
@@ -49,15 +50,7 @@ export function UserDetailPage({ userId }: { userId: string }) {
     return <Skeleton className="h-64 w-full rounded-2xl" />;
   }
 
-  const payload = detailQuery.data as {
-    user?: Record<string, unknown>;
-    referralSummary?: {
-      user?: { referralCode?: string | null; coinWallet?: Record<string, number> };
-      stats?: Record<string, number>;
-      referrals?: Array<Record<string, unknown>>;
-    };
-    referralStats?: Record<string, number>;
-  };
+  const payload = detailQuery.data as AdminUserDetailPayload | undefined;
 
   const user = payload?.user;
   const wallet = payload?.referralSummary?.user?.coinWallet;
@@ -210,8 +203,8 @@ export function UserDetailPage({ userId }: { userId: string }) {
             value={new Date(user.deletedAt as string).toLocaleString()}
           />
         ) : null}
-        {(user?.deletionReason as string | null) ? (
-          <Row label="Deletion reason" value={user.deletionReason as string} />
+        {user?.deletionReason ? (
+          <Row label="Deletion reason" value={user.deletionReason} />
         ) : null}
       </Section>
 

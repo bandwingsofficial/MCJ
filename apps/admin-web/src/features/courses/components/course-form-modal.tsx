@@ -48,7 +48,7 @@ function toCoursePayload(
     metaTitle: values.metaTitle?.trim() || undefined,
     metaDescription: values.metaDescription?.trim() || undefined,
     metaKeywords: values.metaKeywords?.trim() || undefined,
-    thumbnailFileId,
+    thumbnailFileId: thumbnailFileId ?? undefined,
   };
 }
 

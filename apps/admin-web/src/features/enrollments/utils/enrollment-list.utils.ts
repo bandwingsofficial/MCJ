@@ -61,7 +61,7 @@ function normalizeEnrollmentListItem(raw: unknown): Enrollment {
   );
 
   const enrollment = {
-    ...(record as Enrollment),
+    ...(record as unknown as Enrollment),
     status: (normalizedStatus ??
       (typeof statusRaw === "string" ? statusRaw : undefined)) as Enrollment["status"],
     isDeleted: Boolean(record.isDeleted ?? record.is_deleted),

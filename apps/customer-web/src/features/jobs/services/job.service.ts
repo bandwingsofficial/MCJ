@@ -53,7 +53,7 @@ class JobService {
     formData.append("email", values.email);
     formData.append("phone", values.phone);
     formData.append("gender", values.gender);
-    formData.append("dateOfBirth", values.dateOfBirth);
+    formData.append("dateOfBirth", values.dateOfBirth ?? "");
     formData.append("addressLine1", values.addressLine1);
     if (values.addressLine2?.trim()) {
       formData.append("addressLine2", values.addressLine2.trim());
