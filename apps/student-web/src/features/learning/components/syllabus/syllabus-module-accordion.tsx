@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, ChevronDown, ChevronRight, Circle } from "lucide-react";
 
 import { LessonTypeIcon } from "@/src/features/learning/components/syllabus/lesson-type-icon";
@@ -70,6 +70,7 @@ export function SyllabusModuleAccordion({
   onToggleModule,
   lockExpandedModule = false,
 }: SyllabusModuleAccordionProps) {
+  const router = useRouter();
   const orderedModules = sortModules(modules);
 
   return (
@@ -77,10 +78,13 @@ export function SyllabusModuleAccordion({
       {orderedModules.map((module) => {
         const moduleOrdinal = getModuleOrdinal(orderedModules, module.id);
         const moduleProgress = getModuleProgress(module, progressMap);
-        const expanded =
-          lockExpandedModule && currentLessonId
-            ? module.lessons.some((lesson) => lesson.id === currentLessonId)
-            : expandedModuleId === module.id;
+        const moduleContainsCurrentLesson =
+          Boolean(currentLessonId) &&
+          module.lessons.some((lesson) => lesson.id === currentLessonId);
+        const expanded = lockExpandedModule
+          ? expandedModuleId === module.id ||
+            (expandedModuleId === null && moduleContainsCurrentLesson)
+          : expandedModuleId === module.id;
         const orderedLessons = sortLessons(module.lessons);
 
         return (
@@ -92,9 +96,7 @@ export function SyllabusModuleAccordion({
               type="button"
               className="flex w-full items-center gap-3 px-4 py-4 text-left"
               onClick={() => {
-                if (!lockExpandedModule) {
-                  onToggleModule(module.id);
-                }
+                onToggleModule(module.id);
               }}
             >
               {expanded ? (
@@ -140,10 +142,30 @@ export function SyllabusModuleAccordion({
                     const isCurrent = currentLessonId === lesson.id;
                     const badges = getLessonContentBadges(lesson);
 
+                    const lessonHref = getLessonLearningPath(
+                      courseId,
+                      lesson.id,
+                    );
+
                     return (
-                      <Link
+                      <a
                         key={lesson.id}
-                        href={getLessonLearningPath(courseId, lesson.id)}
+                        href={lessonHref}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (
+                            event.defaultPrevented ||
+                            event.button !== 0 ||
+                            event.metaKey ||
+                            event.ctrlKey ||
+                            event.shiftKey ||
+                            event.altKey
+                          ) {
+                            return;
+                          }
+                          event.preventDefault();
+                          router.push(lessonHref);
+                        }}
                         className={cn(
                           "flex items-start gap-3 rounded-lg border px-3 py-3 transition",
                           isCurrent
@@ -193,7 +215,7 @@ export function SyllabusModuleAccordion({
                         ) : (
                           <Circle className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
                         )}
-                      </Link>
+                      </a>
                     );
                   })}
                 </div>

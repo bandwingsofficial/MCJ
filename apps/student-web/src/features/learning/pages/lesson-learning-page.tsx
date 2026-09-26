@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -65,6 +65,9 @@ export function LessonLearningPage({
   const lessonQuery = useStudentLesson(courseId, lessonId);
   const courseQuery = useStudentCourse(courseId);
   const completeMutation = useMarkLessonComplete(courseId, lessonId);
+  const [syllabusExpandedModuleId, setSyllabusExpandedModuleId] = useState<
+    string | null
+  >(null);
 
   const lesson = lessonQuery.data?.lesson;
   const publishedQuiz = lesson ? getPublishedQuiz(lesson) : null;
@@ -278,8 +281,12 @@ export function LessonLearningPage({
               modules={courseQuery.data.course.modules}
               progressMap={progressMap}
               currentLessonId={lessonId}
-              expandedModuleId={module?.id ?? null}
-              onToggleModule={() => undefined}
+              expandedModuleId={syllabusExpandedModuleId}
+              onToggleModule={(moduleId) =>
+                setSyllabusExpandedModuleId((current) =>
+                  current === moduleId ? null : moduleId,
+                )
+              }
               lockExpandedModule
             />
           </aside>

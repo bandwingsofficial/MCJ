@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { MetricBadge } from "@/src/features/learning/components/dashboard/metric-badge";
@@ -80,7 +80,13 @@ export function CourseLearningPage({ courseId }: CourseLearningPageProps) {
     return sortModules(payload.course.modules)[0]?.id ?? null;
   }, [payload, continueLesson]);
 
-  const activeExpandedModuleId = expandedModuleId ?? defaultExpandedModuleId;
+  useEffect(() => {
+    if (expandedModuleId !== null || !defaultExpandedModuleId) {
+      return;
+    }
+
+    setExpandedModuleId(defaultExpandedModuleId);
+  }, [defaultExpandedModuleId, expandedModuleId]);
 
   if (courseQuery.isLoading) {
     return (
@@ -184,7 +190,7 @@ export function CourseLearningPage({ courseId }: CourseLearningPageProps) {
             courseId={courseId}
             modules={course.modules}
             progressMap={progressMap}
-            expandedModuleId={activeExpandedModuleId}
+            expandedModuleId={expandedModuleId}
             onToggleModule={(moduleId) =>
               setExpandedModuleId((current) =>
                 current === moduleId ? null : moduleId,
