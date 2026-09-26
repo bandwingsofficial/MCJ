@@ -28,11 +28,9 @@ export type ReferralUserUsageRow = {
     email: string;
     referralCode: string | null;
   };
-  totalUses: number;
-  successfulUses: number;
-  pendingUses: number;
-  rejectedUses: number;
   coinsEarned: number;
+  redemptions: number;
+  availableCoins: number;
 };
 
 export interface AdminReferralDashboardMetrics {
@@ -118,11 +116,11 @@ export const adminReferralRewardsService = {
   },
   listReferralUsers(params?: Record<string, string | number | undefined>) {
     return apiClient
-      .get<ApiSuccessResponse<ReferralUserUsageRow[]>>(
+      .get<ApiSuccessResponse<{ items: ReferralUserUsageRow[]; total: number }>>(
         "/admin/referral-rewards/referral-users",
         { params },
       )
-      .then(unwrapArray);
+      .then(unwrap);
   },
   listCoinTransactions(params?: Record<string, string | number | undefined>) {
     return apiClient

@@ -25,6 +25,8 @@ import {
   ReferralRewardsSectionHeader,
   ReferralRewardsTableCard,
   ReferralUserCell,
+  formatCoinTransactionLabel,
+  formatRedemptionValuePaise,
   formatReferralDateTime,
   type ReferralRewardsTab,
 } from "@/src/features/referral-rewards/components/referral-rewards-shared";
@@ -46,9 +48,9 @@ const REFERRAL_STATUS_OPTIONS = [
 ];
 
 const TX_DIRECTION_OPTIONS = [
-  { label: "All Directions", value: "ALL" },
-  { label: "Credit", value: "CREDIT" },
-  { label: "Debit", value: "DEBIT" },
+  { label: "All Transactions", value: "ALL" },
+  { label: "Credits", value: "CREDIT" },
+  { label: "Debits", value: "DEBIT" },
 ];
 
 const REDEMPTION_STATUS_OPTIONS = [
@@ -87,9 +89,9 @@ export function ReferralRewardsAdminPage() {
         <ReferralSettingsTab createTrigger={settingsCreateTrigger} />
       ) : null}
       {tab === "Referrals" ? <ReferralsTab /> : null}
+      {tab === "Redemptions" ? <RedemptionsTab queryClient={queryClient} /> : null}
       {tab === "Referral Users" ? <ReferralUsersTab /> : null}
       {tab === "Coin Transactions" ? <CoinTransactionsTab /> : null}
-      {tab === "Redemptions" ? <RedemptionsTab queryClient={queryClient} /> : null}
     </div>
   );
 }
@@ -270,10 +272,10 @@ function ReferralUsersTab() {
     select: (d) => d.users.totalReferralCodes,
   });
 
-  const rows = listQuery.data ?? [];
+  const rows = listQuery.data?.items ?? [];
   const total = debouncedSearch
-    ? rows.length + (page - 1) * pageSize
-    : (totalQuery.data ?? rows.length);
+    ? (listQuery.data?.total ?? rows.length)
+    : (listQuery.data?.total ?? totalQuery.data ?? rows.length);
 
   return (
     <div className="space-y-3">
@@ -306,17 +308,25 @@ function ReferralUsersTab() {
         }}
       >
         <AdminDataTable
-          columns={["Owner", "Code", "Uses", "Successful", "Pending", "Coins earned"]}
+          columns={[
+            "Owner",
+            "Code",
+            "Coins Earned",
+            "Redemptions",
+            "Available Coins",
+          ]}
           rows={rows.map((row: ReferralUserUsageRow) => [
-            <div key="o">
-              <p className="font-medium text-[#102A56]">{row.owner.name}</p>
-              <p className="text-xs text-[#647A9B]">{row.owner.email}</p>
-            </div>,
-            <span className="font-mono text-xs">{row.owner.referralCode ?? "—"}</span>,
-            row.totalUses,
-            row.successfulUses,
-            row.pendingUses,
+            <ReferralUserCell
+              key="owner"
+              name={row.owner.name}
+              email={row.owner.email}
+            />,
+            <span key="code" className="font-mono text-xs">
+              {row.owner.referralCode ?? "—"}
+            </span>,
             row.coinsEarned,
+            row.redemptions,
+            row.availableCoins,
           ])}
         />
       </ReferralRewardsTableCard>
@@ -385,20 +395,22 @@ function CoinTransactionsTab() {
           columns={[
             "ID",
             "User",
-            "Type",
-            "Direction",
+            "Transaction",
             "Coins",
-            "Before",
-            "After",
+            "Balance Before",
+            "Balance After",
             "Date",
           ]}
           rows={items.map((tx) => [
             <span key="id" className="font-mono text-xs">
               {tx.publicId}
             </span>,
-            tx.user?.name ?? tx.userId,
-            tx.type,
-            tx.direction,
+            <ReferralUserCell
+              key="user"
+              name={tx.user?.name}
+              email={tx.user?.email}
+            />,
+            formatCoinTransactionLabel(String(tx.type)),
             tx.amount,
             tx.availableBefore,
             tx.availableAfter,
@@ -420,6 +432,7 @@ function RedemptionsTab({
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("ALL");
+  const [viewId, setViewId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{
     id: string;
     action: "approve" | "reject" | "process";
@@ -446,6 +459,12 @@ function RedemptionsTab({
         take: pageSize,
         skip: (page - 1) * pageSize,
       }),
+  });
+
+  const detailQuery = useQuery({
+    queryKey: ["admin-referral-rewards", "redemption", viewId],
+    queryFn: () => adminReferralRewardsService.getRedemption(viewId!),
+    enabled: Boolean(viewId),
   });
 
   const redemptionAction = useMutation({
@@ -530,11 +549,13 @@ function RedemptionsTab({
       >
         <AdminDataTable
           columns={[
-            "Request",
-            "User",
-            "Coins",
-            "Value (paise)",
+            "Redemption ID",
+            "Owner",
+            "Coins Redeemed",
+            "Redemption Value",
             "Status",
+            "Requested",
+            "Completed",
             "Actions",
           ]}
           rows={items.map((item) => {
@@ -543,11 +564,29 @@ function RedemptionsTab({
               <span key="req" className="font-mono text-xs">
                 {item.publicId}
               </span>,
-              item.user?.name ?? item.userId,
+              <ReferralUserCell
+                key="user"
+                name={item.user?.name}
+                email={item.user?.email}
+              />,
               item.coins,
-              item.moneyValuePaise,
+              formatRedemptionValuePaise(Number(item.moneyValuePaise ?? 0)),
               <StatusPill key="st" value={st} />,
+              formatReferralDateTime(String(item.requestedAt ?? item.createdAt)),
+              item.processedAt
+                ? formatReferralDateTime(String(item.processedAt))
+                : "—",
               <div key="act" className="flex justify-end gap-2">
+                <Tooltip content="View redemption">
+                  <button
+                    type="button"
+                    className={`${iconButtonClass} text-[#2563EB]`}
+                    aria-label="View redemption"
+                    onClick={() => setViewId(String(item.id))}
+                  >
+                    <Eye className={iconClass} />
+                  </button>
+                </Tooltip>
                 {st === "PENDING" ? (
                   <>
                     <Tooltip content="Approve">
@@ -611,6 +650,21 @@ function RedemptionsTab({
           if (confirm) redemptionAction.mutate(confirm);
         }}
       />
+
+      <Modal
+        open={Boolean(viewId)}
+        title="Redemption details"
+        onClose={() => setViewId(null)}
+        contentClassName="max-w-lg"
+      >
+        {detailQuery.isLoading ? (
+          <Skeleton className="h-32 w-full" />
+        ) : detailQuery.data ? (
+          <RedemptionDetailView data={detailQuery.data as Record<string, unknown>} />
+        ) : (
+          <p className="text-sm text-[#647A9B]">Unable to load redemption.</p>
+        )}
+      </Modal>
     </div>
   );
 }
@@ -632,6 +686,43 @@ function StatusPill({ value }: { value: string }) {
     >
       {value}
     </span>
+  );
+}
+
+function RedemptionDetailView({ data }: { data: Record<string, unknown> }) {
+  const user = data.user as { name?: string; email?: string } | undefined;
+  const owner =
+    user?.name != null
+      ? `${user.name}${user.email ? `\n${user.email}` : ""}`
+      : "—";
+
+  return (
+    <dl className="space-y-2 text-sm">
+      <DetailRow label="Redemption ID" value={String(data.publicId ?? "—")} />
+      <DetailRow label="Owner" value={owner} />
+      <DetailRow label="Coins redeemed" value={String(data.coins ?? "—")} />
+      <DetailRow
+        label="Redemption value"
+        value={formatRedemptionValuePaise(Number(data.moneyValuePaise ?? 0))}
+      />
+      <DetailRow label="Status" value={String(data.status ?? "—")} />
+      <DetailRow
+        label="Requested"
+        value={
+          data.requestedAt
+            ? formatReferralDateTime(String(data.requestedAt))
+            : "—"
+        }
+      />
+      <DetailRow
+        label="Completed"
+        value={
+          data.processedAt
+            ? formatReferralDateTime(String(data.processedAt))
+            : "—"
+        }
+      />
+    </dl>
   );
 }
 

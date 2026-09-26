@@ -5,9 +5,9 @@ import { cn } from "@/src/shared/lib/cn";
 export const REFERRAL_REWARDS_TABS = [
   "Settings",
   "Referrals",
+  "Redemptions",
   "Referral Users",
   "Coin Transactions",
-  "Redemptions",
 ] as const;
 
 export type ReferralRewardsTab = (typeof REFERRAL_REWARDS_TABS)[number];

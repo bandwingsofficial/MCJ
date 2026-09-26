@@ -272,6 +272,33 @@ export function formatReferralDate(value: string): string {
   });
 }
 
+export function formatCoinTransactionLabel(type: string): string {
+  switch (type) {
+    case "REFERRAL_REWARD":
+      return "Referral Reward";
+    case "REDEMPTION":
+      return "Redemption";
+    case "ADMIN_CREDIT":
+      return "Manual Credit";
+    case "ADMIN_DEBIT":
+      return "Manual Debit";
+    case "REDEMPTION_REVERSAL":
+      return "Redemption Reversal";
+    case "BONUS":
+      return "Bonus";
+    case "EXPIRATION":
+      return "Expiration";
+    case "ADJUSTMENT":
+      return "Adjustment";
+    default:
+      return type.replace(/_/g, " ");
+  }
+}
+
+export function formatRedemptionValuePaise(paise: number): string {
+  return `₹${(paise / 100).toFixed(2)}`;
+}
+
 export function ReferralUserCell({
   name,
   email,
