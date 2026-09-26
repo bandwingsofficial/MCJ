@@ -5,6 +5,7 @@ import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 
 import { CoinWalletService } from './application/coin-wallet.service';
+import { RedemptionBackfillService } from './application/redemption-backfill.service';
 import { RedemptionService } from './application/redemption.service';
 import { ReferralQueryService } from './application/referral-query.service';
 import { ReferralRegistrationService } from './application/referral-registration.service';
@@ -26,6 +27,7 @@ import { PublicReferralRewardsController } from './presentation/controllers/publ
     CoinWalletService,
     ReferralRegistrationService,
     RedemptionService,
+    RedemptionBackfillService,
     ReferralQueryService,
   ],
   exports: [

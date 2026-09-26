@@ -8,6 +8,7 @@ import {
   CoinTransactionDirection,
   CoinTransactionType,
   Prisma,
+  RedemptionStatus,
 } from '@prisma/client';
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
@@ -236,6 +237,14 @@ export class EnrollmentCoinService {
     enrollmentId: string,
     enrollmentNumber: string,
   ) {
+    const idempotencyKey = `enrollment-coin:${enrollmentId}`;
+    const existingTransaction = await tx.coinTransaction.findUnique({
+      where: { idempotencyKey },
+    });
+    if (existingTransaction) {
+      return;
+    }
+
     const wallet = await tx.coinWallet.findUnique({ where: { userId } });
     if (!wallet) {
       throw new NotFoundException('Wallet not found');
@@ -245,10 +254,34 @@ export class EnrollmentCoinService {
     }
 
     const settings = await this.settingsService.getSettingsInTransaction(tx);
-    const sequence = settings?.nextTransactionPublicNumber ?? 1;
-    const publicId = formatPublicId('TXN', sequence);
+    const redemptionSequence = settings?.nextRedemptionPublicNumber ?? 1;
+    const redemptionPublicId = formatPublicId('RD', redemptionSequence);
+    const moneyValuePaise = this.settingsService.moneyValuePaiseFromCoins(
+      amount,
+      settings.coinsPerRupee,
+    );
+    const processedAt = new Date();
 
+    const redemption = await tx.redemptionRequest.create({
+      data: {
+        publicId: redemptionPublicId,
+        userId,
+        walletId: wallet.id,
+        coins: amount,
+        moneyValuePaise,
+        coinsPerRupeeSnapshot: settings.coinsPerRupee,
+        status: RedemptionStatus.PROCESSED,
+        requestedAt: processedAt,
+        processedAt,
+      },
+    });
+
+    const txnSequence = settings?.nextTransactionPublicNumber ?? 1;
+    const publicId = formatPublicId('TXN', txnSequence);
     const lockedAfter = wallet.lockedCoins - amount;
+    const availableBefore = wallet.availableCoins + amount;
+    const availableAfter = wallet.availableCoins;
+
     await tx.coinWallet.update({
       where: { id: wallet.id },
       data: {
@@ -265,23 +298,25 @@ export class EnrollmentCoinService {
         type: CoinTransactionType.REDEMPTION,
         direction: CoinTransactionDirection.DEBIT,
         amount,
-        availableBefore: wallet.availableCoins,
-        availableAfter: wallet.availableCoins,
+        availableBefore,
+        availableAfter,
         lockedBefore: wallet.lockedCoins,
         lockedAfter,
         description: `Coins applied to enrollment ${enrollmentNumber}`,
         referenceType: 'ENROLLMENT',
         referenceId: enrollmentId,
-        idempotencyKey: `enrollment-coin:${enrollmentId}`,
+        redemptionId: redemption.id,
+        idempotencyKey,
       },
     });
 
-    if (settings) {
-      await tx.referralRewardSettings.update({
-        where: { id: settings.id },
-        data: { nextTransactionPublicNumber: sequence + 1 },
-      });
-    }
+    await tx.referralRewardSettings.update({
+      where: { id: settings.id },
+      data: {
+        nextTransactionPublicNumber: txnSequence + 1,
+        nextRedemptionPublicNumber: redemptionSequence + 1,
+      },
+    });
   }
 
   private async saveEnrollmentInTransaction(

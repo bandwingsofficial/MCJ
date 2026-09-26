@@ -252,6 +252,8 @@ export class CoinWalletService {
     const publicId = formatPublicId('TXN', sequence);
 
     const lockedAfter = wallet.lockedCoins - amount;
+    const availableBefore = wallet.availableCoins + amount;
+    const availableAfter = wallet.availableCoins;
     const updated = await tx.coinWallet.update({
       where: { id: wallet.id },
       data: {
@@ -268,8 +270,8 @@ export class CoinWalletService {
         type: CoinTransactionType.REDEMPTION,
         direction: CoinTransactionDirection.DEBIT,
         amount,
-        availableBefore: wallet.availableCoins,
-        availableAfter: wallet.availableCoins,
+        availableBefore,
+        availableAfter,
         lockedBefore: wallet.lockedCoins,
         lockedAfter,
         description: 'Coin redemption processed',

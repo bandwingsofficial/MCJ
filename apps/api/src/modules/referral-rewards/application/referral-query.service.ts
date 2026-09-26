@@ -409,59 +409,62 @@ export class ReferralQueryService {
   }
 
   async listReferralCodeUsageStats(query: { search?: string; take?: number; skip?: number }) {
-    const users = await this.prisma.user.findMany({
-      where: {
-        referralCode: { not: null },
-        deletedAt: null,
-        ...(query.search?.trim()
-          ? {
-              OR: [
-                { name: { contains: query.search.trim(), mode: 'insensitive' } },
-                { referralCode: { contains: query.search.trim(), mode: 'insensitive' } },
-                { email: { contains: query.search.trim(), mode: 'insensitive' } },
-              ],
-            }
-          : {}),
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        referralCode: true,
-      },
-      take: query.take ?? 25,
-      skip: query.skip ?? 0,
-      orderBy: { name: 'asc' },
-    });
+    const where: Prisma.UserWhereInput = {
+      referralCode: { not: null },
+      deletedAt: null,
+      ...(query.search?.trim()
+        ? {
+            OR: [
+              { name: { contains: query.search.trim(), mode: 'insensitive' } },
+              { referralCode: { contains: query.search.trim(), mode: 'insensitive' } },
+              { email: { contains: query.search.trim(), mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
 
-    const enriched = await Promise.all(
+    const [total, users] = await Promise.all([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          referralCode: true,
+        },
+        take: query.take ?? 25,
+        skip: query.skip ?? 0,
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+
+    const items = await Promise.all(
       users.map(async (owner) => {
-        const grouped = await this.prisma.referral.groupBy({
-          by: ['status'],
-          where: { referrerUserId: owner.id },
-          _count: { _all: true },
+        const wallet = await this.prisma.coinWallet.findUnique({
+          where: { userId: owner.id },
+          select: {
+            totalEarned: true,
+            totalRedeemed: true,
+            availableCoins: true,
+            lockedCoins: true,
+          },
         });
-        const byStatus = Object.fromEntries(
-          grouped.map((row) => [row.status, row._count._all]),
-        ) as Record<string, number>;
-        const totalUses = Object.values(byStatus).reduce((a, b) => a + b, 0);
-        const coinsEarned = await this.prisma.coinTransaction.aggregate({
-          where: { userId: owner.id, type: 'REFERRAL_REWARD' },
-          _sum: { amount: true },
-        });
+
+        const coinsEarned = wallet?.totalEarned ?? 0;
+        const redemptions = wallet?.totalRedeemed ?? 0;
+        const availableCoins =
+          (wallet?.availableCoins ?? 0) + (wallet?.lockedCoins ?? 0);
+
         return {
           owner,
-          totalUses,
-          successfulUses: byStatus.REWARDED ?? 0,
-          pendingUses:
-            (byStatus.PENDING ?? 0) + (byStatus.QUALIFIED ?? 0),
-          rejectedUses:
-            (byStatus.REJECTED ?? 0) + (byStatus.EXPIRED ?? 0),
-          coinsEarned: coinsEarned._sum.amount ?? 0,
+          coinsEarned,
+          redemptions,
+          availableCoins,
         };
       }),
     );
 
-    return enriched;
+    return { items, total };
   }
 }

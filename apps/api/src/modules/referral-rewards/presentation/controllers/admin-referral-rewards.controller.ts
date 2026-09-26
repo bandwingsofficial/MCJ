@@ -29,6 +29,7 @@ import {
 import { SuperAdminGuard } from '../../../../common/guards/super-admin.guard';
 import { JwtAuthGuard } from '../../../auth/presentation/guards/jwt-auth.guard';
 import { ReferralQueryService } from '../../application/referral-query.service';
+import { RedemptionBackfillService } from '../../application/redemption-backfill.service';
 import { RedemptionService } from '../../application/redemption.service';
 import { ReferralSettingsService } from '../../application/referral-settings.service';
 
@@ -107,6 +108,7 @@ export class AdminReferralRewardsController {
     private readonly queryService: ReferralQueryService,
     private readonly settingsService: ReferralSettingsService,
     private readonly redemptionService: RedemptionService,
+    private readonly redemptionBackfillService: RedemptionBackfillService,
   ) {}
 
   @Get('dashboard')
@@ -268,6 +270,23 @@ export class AdminReferralRewardsController {
         take: take ? Number(take) : undefined,
         skip: skip ? Number(skip) : undefined,
       }),
+    };
+  }
+
+  @Post('redemptions/backfill-missing')
+  async backfillMissingRedemptions() {
+    return {
+      data: await this.redemptionBackfillService.backfillMissingRedemptions(),
+    };
+  }
+
+  @Post('coin-transactions/repair-balances')
+  async repairCoinTransactionBalances() {
+    return {
+      data: {
+        repaired:
+          await this.redemptionBackfillService.repairIncorrectCoinTransactionBalances(),
+      },
     };
   }
 
