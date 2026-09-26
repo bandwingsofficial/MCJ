@@ -149,15 +149,24 @@ export function ReferralConfigurationModal({
                 setForm((f) => ({ ...f, referralEnabled: e.target.checked }))
               }
             />
-            <span className="text-[#647A9B]">Allow referral program</span>
+            <span
+              className={
+                form.referralEnabled
+                  ? "font-medium text-emerald-800"
+                  : "text-slate-500"
+              }
+            >
+              {form.referralEnabled ? "Enabled" : "Disabled"}
+            </span>
           </label>
         </Field>
 
-        <Field label="Reward coins per referral">
+        <Field label="Reward coins per referral" hint="Incoming reward value">
           <Input
             type="number"
             min={0}
             disabled={readOnly}
+            className="border-sky-100 focus-visible:ring-sky-200"
             value={form.rewardCoinsPerReferral}
             onChange={(e) =>
               setForm((f) => ({
@@ -206,6 +215,7 @@ export function ReferralConfigurationModal({
           />
         </Field>
 
+        <div className="space-y-4 rounded-lg border border-sky-100 bg-sky-50/30 p-3">
         <Field label="Redemption enabled">
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -216,15 +226,26 @@ export function ReferralConfigurationModal({
                 setForm((f) => ({ ...f, redemptionEnabled: e.target.checked }))
               }
             />
-            <span className="text-[#647A9B]">Allow coin redemption</span>
+            <span
+              className={
+                form.redemptionEnabled
+                  ? "font-medium text-sky-900"
+                  : "text-slate-500"
+              }
+            >
+              {form.redemptionEnabled
+                ? "Redemption enabled"
+                : "Redemption disabled"}
+            </span>
           </label>
         </Field>
 
-        <Field label="Coin conversion rate (coins per ₹1)">
+        <Field label="Coin conversion rate (coins per ₹1)" hint="Redemption rate">
           <Input
             type="number"
             min={1}
             disabled={readOnly}
+            className="border-sky-100 focus-visible:ring-sky-200"
             value={form.coinsPerRupee}
             onChange={(e) =>
               setForm((f) => ({ ...f, coinsPerRupee: Number(e.target.value) }))
@@ -237,6 +258,7 @@ export function ReferralConfigurationModal({
             type="number"
             min={1}
             disabled={readOnly}
+            className="border-sky-100 focus-visible:ring-sky-200"
             value={form.minRedemptionCoins}
             onChange={(e) =>
               setForm((f) => ({
@@ -253,14 +275,20 @@ export function ReferralConfigurationModal({
             min={1}
             disabled={readOnly}
             placeholder="No maximum"
+            className="border-sky-100 focus-visible:ring-sky-200"
             value={form.maxRedemptionCoins}
             onChange={(e) =>
               setForm((f) => ({ ...f, maxRedemptionCoins: e.target.value }))
             }
           />
         </Field>
+        </div>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error ? (
+          <p className="rounded-md border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </p>
+        ) : null}
 
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" disabled={saving} onClick={onClose}>
@@ -279,14 +307,21 @@ export function ReferralConfigurationModal({
 
 function Field({
   label,
+  hint,
   children,
 }: {
   label: string;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
     <label className="grid gap-1.5 text-sm">
-      <span className="font-medium text-[#102A56]">{label}</span>
+      <span className="flex flex-wrap items-baseline gap-x-2">
+        <span className="font-medium text-[#102A56]">{label}</span>
+        {hint ? (
+          <span className="text-xs font-normal text-sky-700/80">{hint}</span>
+        ) : null}
+      </span>
       {children}
     </label>
   );

@@ -319,3 +319,255 @@ export function ReferralUserCell({
     </div>
   );
 }
+
+export type ReferralSemanticTone =
+  | "success"
+  | "pending"
+  | "danger"
+  | "info"
+  | "neutral";
+
+const SEMANTIC_TONE_CLASS: Record<ReferralSemanticTone, string> = {
+  success: "bg-emerald-50 text-emerald-800 ring-emerald-100",
+  pending: "bg-amber-50 text-amber-800 ring-amber-100",
+  danger: "bg-red-50 text-red-700 ring-red-100",
+  info: "bg-sky-50 text-sky-800 ring-sky-100",
+  neutral: "bg-slate-100 text-slate-600 ring-slate-200",
+};
+
+const METRIC_TONE_CLASS = {
+  earned: "bg-emerald-50/80 text-emerald-800 ring-emerald-100",
+  redeemed: "bg-red-50/80 text-red-700 ring-red-100",
+  available: "bg-sky-50/90 text-sky-900 ring-sky-100",
+  reward: "bg-emerald-50/80 text-emerald-800 ring-emerald-100",
+  coinValue: "bg-sky-50/70 text-sky-900 ring-sky-100",
+} as const;
+
+const badgeBase =
+  "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ring-1 ring-inset tabular-nums";
+
+export function ReferralSemanticBadge({
+  tone,
+  children,
+  className = "",
+}: {
+  tone: ReferralSemanticTone;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <span className={`${badgeBase} ${SEMANTIC_TONE_CLASS[tone]} ${className}`}>
+      {children}
+    </span>
+  );
+}
+
+export function resolveReferralStatusTone(status: string): ReferralSemanticTone {
+  const normalized = status.toUpperCase();
+  if (
+    normalized === "REWARDED" ||
+    normalized === "PROCESSED" ||
+    normalized === "COMPLETED" ||
+    normalized === "ACTIVE"
+  ) {
+    return "success";
+  }
+  if (
+    normalized === "PENDING" ||
+    normalized === "QUALIFIED" ||
+    normalized === "WAITING"
+  ) {
+    return "pending";
+  }
+  if (
+    normalized === "REJECTED" ||
+    normalized === "EXPIRED" ||
+    normalized === "FAILED" ||
+    normalized === "CANCELLED"
+  ) {
+    return "danger";
+  }
+  if (normalized === "APPROVED") {
+    return "info";
+  }
+  return "neutral";
+}
+
+export function ReferralStatusBadge({ status }: { status: string }) {
+  const tone = resolveReferralStatusTone(status);
+  const label = status.replace(/_/g, " ");
+  return <ReferralSemanticBadge tone={tone}>{label}</ReferralSemanticBadge>;
+}
+
+export function ReferralConfigurationStatusBadge({
+  active,
+  label,
+}: {
+  active: boolean;
+  label: string;
+}) {
+  return (
+    <ReferralSemanticBadge tone={active ? "success" : "neutral"}>
+      {label}
+    </ReferralSemanticBadge>
+  );
+}
+
+export function ReferralEnabledBadge({ enabled }: { enabled: boolean }) {
+  return (
+    <ReferralSemanticBadge tone={enabled ? "success" : "neutral"}>
+      {enabled ? "Enabled" : "Disabled"}
+    </ReferralSemanticBadge>
+  );
+}
+
+export function ReferralCodeBadge({ code }: { code?: string | null }) {
+  if (!code) {
+    return <span className="text-sm text-[#647A9B]">—</span>;
+  }
+  return (
+    <span
+      className={`${badgeBase} font-mono bg-sky-50/60 text-sky-900 ring-sky-100`}
+    >
+      {code}
+    </span>
+  );
+}
+
+export function ReferralCoinMetric({
+  value,
+  variant,
+}: {
+  value: number | string;
+  variant: "earned" | "redeemed" | "available" | "reward" | "coinValue";
+}) {
+  if (value === "—" || value === "" || value == null) {
+    return <span className="text-sm text-[#647A9B]">—</span>;
+  }
+  return (
+    <span className={`${badgeBase} ${METRIC_TONE_CLASS[variant]}`}>{value}</span>
+  );
+}
+
+export function ReferralCoinAmount({
+  amount,
+  direction,
+}: {
+  amount: number | string;
+  direction: "credit" | "debit" | "neutral";
+}) {
+  if (amount === "—" || amount === "" || amount == null) {
+    return <span className="text-sm text-[#647A9B]">—</span>;
+  }
+  const numeric = Number(amount);
+  const display =
+    direction === "credit"
+      ? `+${numeric}`
+      : direction === "debit"
+        ? `-${numeric}`
+        : String(amount);
+
+  const toneClass =
+    direction === "credit"
+      ? METRIC_TONE_CLASS.earned
+      : direction === "debit"
+        ? METRIC_TONE_CLASS.redeemed
+        : METRIC_TONE_CLASS.coinValue;
+
+  return <span className={`${badgeBase} ${toneClass}`}>{display}</span>;
+}
+
+export function ReferralMoneyValue({ children }: { children: ReactNode }) {
+  return (
+    <span className={`${badgeBase} ${METRIC_TONE_CLASS.coinValue}`}>
+      {children}
+    </span>
+  );
+}
+
+export function ReferralNeutralText({ children }: { children: ReactNode }) {
+  return (
+    <span className="text-sm tabular-nums text-[#647A9B]">{children}</span>
+  );
+}
+
+export function ReferralRecordId({ children }: { children: ReactNode }) {
+  return (
+    <span className="font-mono text-xs text-[#647A9B]">{children}</span>
+  );
+}
+
+export function ReferralQualificationBadge({ label }: { label: string }) {
+  return <ReferralSemanticBadge tone="info">{label}</ReferralSemanticBadge>;
+}
+
+export function ReferralRedemptionConfigBadge({
+  enabled,
+  summary,
+}: {
+  enabled: boolean;
+  summary: string;
+}) {
+  return (
+    <ReferralSemanticBadge tone={enabled ? "info" : "neutral"}>
+      {summary}
+    </ReferralSemanticBadge>
+  );
+}
+
+export function ReferralTransactionTypeBadge({
+  type,
+  direction,
+}: {
+  type: string;
+  direction?: string;
+}) {
+  const label = formatCoinTransactionLabel(type);
+  const isCredit =
+    direction?.toUpperCase() === "CREDIT" ||
+    (!direction &&
+      (type === "REFERRAL_REWARD" ||
+        type === "ADMIN_CREDIT" ||
+        type === "BONUS" ||
+        type === "REDEMPTION_REVERSAL"));
+  if (type === "ADJUSTMENT") {
+    return <ReferralSemanticBadge tone="neutral">{label}</ReferralSemanticBadge>;
+  }
+  const tone: ReferralSemanticTone = isCredit ? "success" : "danger";
+  return <ReferralSemanticBadge tone={tone}>{label}</ReferralSemanticBadge>;
+}
+
+export function ReferralBalanceValue({
+  value,
+  variant,
+}: {
+  value: number | string;
+  variant: "before" | "after";
+}) {
+  if (value === "—" || value === "" || value == null) {
+    return <span className="text-sm text-[#647A9B]">—</span>;
+  }
+  const numeric = Number(value);
+  const toneClass =
+    variant === "before"
+      ? "bg-slate-50 text-slate-700 ring-slate-200"
+      : numeric > 0
+        ? METRIC_TONE_CLASS.available
+        : "bg-slate-50 text-slate-600 ring-slate-200";
+
+  return <span className={`${badgeBase} ${toneClass}`}>{value}</span>;
+}
+
+export function isCoinTransactionCredit(
+  type: string,
+  direction?: string,
+): boolean {
+  if (direction?.toUpperCase() === "CREDIT") return true;
+  if (direction?.toUpperCase() === "DEBIT") return false;
+  return (
+    type === "REFERRAL_REWARD" ||
+    type === "ADMIN_CREDIT" ||
+    type === "BONUS" ||
+    type === "REDEMPTION_REVERSAL"
+  );
+}

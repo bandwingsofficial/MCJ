@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleCheck, Eye, PlayCircle, Plus, X } from "lucide-react";
 
@@ -25,9 +25,18 @@ import {
   ReferralRewardsSectionHeader,
   ReferralRewardsTableCard,
   ReferralUserCell,
-  formatCoinTransactionLabel,
+  ReferralBalanceValue,
+  ReferralCoinAmount,
+  ReferralCoinMetric,
+  ReferralCodeBadge,
+  ReferralMoneyValue,
+  ReferralNeutralText,
+  ReferralRecordId,
+  ReferralStatusBadge,
+  ReferralTransactionTypeBadge,
   formatRedemptionValuePaise,
   formatReferralDateTime,
+  isCoinTransactionCredit,
   type ReferralRewardsTab,
 } from "@/src/features/referral-rewards/components/referral-rewards-shared";
 
@@ -187,9 +196,7 @@ function ReferralsTab() {
             hasActiveFilters ? "No referrals match your filters" : "No referrals yet"
           }
           rows={items.map((item) => [
-            <span key="id" className="font-mono text-xs">
-              {item.publicId}
-            </span>,
+            <ReferralRecordId key="id">{item.publicId}</ReferralRecordId>,
             <ReferralUserCell
               key="ref"
               name={item.referrer?.name}
@@ -200,9 +207,13 @@ function ReferralsTab() {
               name={item.referred?.name}
               email={item.referred?.email}
             />,
-            <span className="font-mono text-xs">{item.referralCodeUsed ?? "—"}</span>,
-            <StatusPill key="st" value={String(item.status)} />,
-            String(item.rewardCoins ?? "—"),
+            <ReferralCodeBadge key="code" code={item.referralCodeUsed} />,
+            <ReferralStatusBadge key="st" status={String(item.status)} />,
+            <ReferralCoinMetric
+              key="reward"
+              variant="reward"
+              value={item.rewardCoins ?? "—"}
+            />,
             <div key="act" className="flex justify-end">
               <Tooltip content="View referral">
                 <button
@@ -321,12 +332,22 @@ function ReferralUsersTab() {
               name={row.owner.name}
               email={row.owner.email}
             />,
-            <span key="code" className="font-mono text-xs">
-              {row.owner.referralCode ?? "—"}
-            </span>,
-            row.coinsEarned,
-            row.redemptions,
-            row.availableCoins,
+            <ReferralCodeBadge key="code" code={row.owner.referralCode} />,
+            <ReferralCoinMetric
+              key="earned"
+              variant="earned"
+              value={row.coinsEarned}
+            />,
+            <ReferralCoinMetric
+              key="redeemed"
+              variant="redeemed"
+              value={row.redemptions}
+            />,
+            <ReferralCoinMetric
+              key="available"
+              variant="available"
+              value={row.availableCoins}
+            />,
           ])}
         />
       </ReferralRewardsTableCard>
@@ -401,21 +422,41 @@ function CoinTransactionsTab() {
             "Balance After",
             "Date",
           ]}
-          rows={items.map((tx) => [
-            <span key="id" className="font-mono text-xs">
-              {tx.publicId}
-            </span>,
-            <ReferralUserCell
-              key="user"
-              name={tx.user?.name}
-              email={tx.user?.email}
-            />,
-            formatCoinTransactionLabel(String(tx.type)),
-            tx.amount,
-            tx.availableBefore,
-            tx.availableAfter,
-            formatReferralDateTime(tx.createdAt),
-          ])}
+          rows={items.map((tx) => {
+            const txType = String(tx.type);
+            const isCredit = isCoinTransactionCredit(txType, tx.direction);
+            return [
+              <ReferralRecordId key="id">{tx.publicId}</ReferralRecordId>,
+              <ReferralUserCell
+                key="user"
+                name={tx.user?.name}
+                email={tx.user?.email}
+              />,
+              <ReferralTransactionTypeBadge
+                key="type"
+                type={txType}
+                direction={tx.direction}
+              />,
+              <ReferralCoinAmount
+                key="amount"
+                amount={tx.amount}
+                direction={isCredit ? "credit" : "debit"}
+              />,
+              <ReferralBalanceValue
+                key="before"
+                variant="before"
+                value={tx.availableBefore}
+              />,
+              <ReferralBalanceValue
+                key="after"
+                variant="after"
+                value={tx.availableAfter}
+              />,
+              <ReferralNeutralText key="date">
+                {formatReferralDateTime(tx.createdAt)}
+              </ReferralNeutralText>,
+            ];
+          })}
         />
       </ReferralRewardsTableCard>
     </div>
@@ -561,21 +602,31 @@ function RedemptionsTab({
           rows={items.map((item) => {
             const st = String(item.status);
             return [
-              <span key="req" className="font-mono text-xs">
-                {item.publicId}
-              </span>,
+              <ReferralRecordId key="req">{item.publicId}</ReferralRecordId>,
               <ReferralUserCell
                 key="user"
                 name={item.user?.name}
                 email={item.user?.email}
               />,
-              item.coins,
-              formatRedemptionValuePaise(Number(item.moneyValuePaise ?? 0)),
-              <StatusPill key="st" value={st} />,
-              formatReferralDateTime(String(item.requestedAt ?? item.createdAt)),
-              item.processedAt
-                ? formatReferralDateTime(String(item.processedAt))
-                : "—",
+              <ReferralCoinAmount
+                key="coins"
+                amount={item.coins}
+                direction="debit"
+              />,
+              <ReferralMoneyValue key="value">
+                {formatRedemptionValuePaise(Number(item.moneyValuePaise ?? 0))}
+              </ReferralMoneyValue>,
+              <ReferralStatusBadge key="st" status={st} />,
+              <ReferralNeutralText key="requested">
+                {formatReferralDateTime(String(item.requestedAt ?? item.createdAt))}
+              </ReferralNeutralText>,
+              item.processedAt ? (
+                <ReferralNeutralText key="completed">
+                  {formatReferralDateTime(String(item.processedAt))}
+                </ReferralNeutralText>
+              ) : (
+                <ReferralNeutralText key="completed">—</ReferralNeutralText>
+              ),
               <div key="act" className="flex justify-end gap-2">
                 <Tooltip content="View redemption">
                   <button
@@ -669,26 +720,6 @@ function RedemptionsTab({
   );
 }
 
-function StatusPill({ value }: { value: string }) {
-  const normalized = value.toUpperCase();
-  const styles =
-    normalized === "REWARDED" || normalized === "PROCESSED" || normalized === "APPROVED"
-      ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
-      : normalized === "PENDING" || normalized === "QUALIFIED"
-        ? "bg-amber-50 text-amber-800 ring-amber-100"
-        : normalized === "REJECTED" || normalized === "EXPIRED"
-          ? "bg-red-50 text-red-700 ring-red-100"
-          : "bg-slate-100 text-slate-600 ring-slate-200";
-
-  return (
-    <span
-      className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${styles}`}
-    >
-      {value}
-    </span>
-  );
-}
-
 function RedemptionDetailView({ data }: { data: Record<string, unknown> }) {
   const user = data.user as { name?: string; email?: string } | undefined;
   const owner =
@@ -698,14 +729,23 @@ function RedemptionDetailView({ data }: { data: Record<string, unknown> }) {
 
   return (
     <dl className="space-y-2 text-sm">
-      <DetailRow label="Redemption ID" value={String(data.publicId ?? "—")} />
-      <DetailRow label="Owner" value={owner} />
-      <DetailRow label="Coins redeemed" value={String(data.coins ?? "—")} />
+      <DetailRow label="Redemption ID" value={String(data.publicId ?? "—")} neutral />
+      <DetailRow label="Owner" value={owner} neutral />
+      <DetailRow
+        label="Coins redeemed"
+        value={String(data.coins ?? "—")}
+        semantic="debit"
+      />
       <DetailRow
         label="Redemption value"
         value={formatRedemptionValuePaise(Number(data.moneyValuePaise ?? 0))}
+        semantic="info"
       />
-      <DetailRow label="Status" value={String(data.status ?? "—")} />
+      <DetailRow
+        label="Status"
+        value={String(data.status ?? "—")}
+        semantic="status"
+      />
       <DetailRow
         label="Requested"
         value={
@@ -731,7 +771,11 @@ function ReferralDetailView({ data }: { data: Record<string, unknown> }) {
   const referred = data.referred as { name?: string; email?: string } | undefined;
   return (
     <dl className="space-y-2 text-sm">
-      <DetailRow label="Status" value={String(data.status ?? "—")} />
+      <DetailRow
+        label="Status"
+        value={String(data.status ?? "—")}
+        semantic="status"
+      />
       <DetailRow
         label="Referrer"
         value={
@@ -748,19 +792,63 @@ function ReferralDetailView({ data }: { data: Record<string, unknown> }) {
             : "—"
         }
       />
-      <DetailRow label="Code used" value={String(data.referralCodeUsed ?? "—")} />
-      <DetailRow label="Reward coins" value={String(data.rewardCoins ?? "—")} />
+      <DetailRow
+        label="Code used"
+        value={String(data.referralCodeUsed ?? "—")}
+        semantic="code"
+      />
+      <DetailRow
+        label="Reward coins"
+        value={String(data.rewardCoins ?? "—")}
+        semantic="credit"
+      />
     </dl>
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({
+  label,
+  value,
+  semantic,
+  neutral,
+}: {
+  label: string;
+  value: string;
+  semantic?: "status" | "credit" | "debit" | "info" | "code";
+  neutral?: boolean;
+}) {
+  let valueNode: ReactNode = (
+    <span className="whitespace-pre-line font-medium text-[#102A56]">{value}</span>
+  );
+
+  if (semantic === "status") {
+    valueNode = <ReferralStatusBadge status={value} />;
+  } else if (semantic === "credit") {
+    valueNode =
+      value === "—" ? (
+        value
+      ) : (
+        <ReferralCoinAmount amount={value} direction="credit" />
+      );
+  } else if (semantic === "debit") {
+    valueNode =
+      value === "—" ? (
+        value
+      ) : (
+        <ReferralCoinAmount amount={value} direction="debit" />
+      );
+  } else if (semantic === "info") {
+    valueNode = <ReferralMoneyValue>{value}</ReferralMoneyValue>;
+  } else if (semantic === "code") {
+    valueNode = <ReferralCodeBadge code={value === "—" ? null : value} />;
+  } else if (neutral) {
+    valueNode = <ReferralNeutralText>{value}</ReferralNeutralText>;
+  }
+
   return (
     <div className="flex justify-between gap-3 border-b border-[#E8EEF5] py-2 last:border-0">
       <dt className="text-[#647A9B]">{label}</dt>
-      <dd className="whitespace-pre-line text-right font-medium text-[#102A56]">
-        {value}
-      </dd>
+      <dd className="text-right">{valueNode}</dd>
     </div>
   );
 }

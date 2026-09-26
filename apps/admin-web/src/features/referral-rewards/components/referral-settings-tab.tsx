@@ -12,6 +12,11 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { adminReferralRewardsService } from "@/src/features/referral-rewards/services/admin-referral-rewards.service";
 import {
   AdminDataTable,
+  ReferralCoinMetric,
+  ReferralConfigurationStatusBadge,
+  ReferralEnabledBadge,
+  ReferralQualificationBadge,
+  ReferralRedemptionConfigBadge,
   ReferralRewardsSectionHeader,
   ReferralRewardsTableCard,
 } from "@/src/features/referral-rewards/components/referral-rewards-shared";
@@ -23,7 +28,6 @@ import {
   formatConfigurationStatus,
   formatQualificationLabel,
   formatRedemptionSummary,
-  formatReferralStatusLabel,
   type ReferralSettingsRecord,
 } from "@/src/features/referral-rewards/utils/referral-configuration.utils";
 
@@ -189,11 +193,22 @@ export function ReferralSettingsTab({ createTrigger = 0 }: ReferralSettingsTabPr
             <span key="name" className="font-medium text-[#102A56]">
               {row.name}
             </span>,
-            formatReferralStatusLabel(row.referralEnabled),
-            row.rewardCoinsPerReferral,
-            formatQualificationLabel(row.qualificationCondition),
-            formatRedemptionSummary(row),
-            <StatusPill
+            <ReferralEnabledBadge key="ref" enabled={row.referralEnabled} />,
+            <ReferralCoinMetric
+              key="reward"
+              variant="reward"
+              value={row.rewardCoinsPerReferral}
+            />,
+            <ReferralQualificationBadge
+              key="qual"
+              label={formatQualificationLabel(row.qualificationCondition)}
+            />,
+            <ReferralRedemptionConfigBadge
+              key="redemption"
+              enabled={row.redemptionEnabled}
+              summary={formatRedemptionSummary(row)}
+            />,
+            <ReferralConfigurationStatusBadge
               key="status"
               active={row.isActive}
               label={formatConfigurationStatus(row)}
@@ -274,16 +289,3 @@ export function ReferralSettingsTab({ createTrigger = 0 }: ReferralSettingsTabPr
   );
 }
 
-function StatusPill({ active, label }: { active: boolean; label: string }) {
-  return (
-    <span
-      className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${
-        active
-          ? "bg-emerald-50 text-emerald-700 ring-emerald-100"
-          : "bg-slate-100 text-slate-600 ring-slate-200"
-      }`}
-    >
-      {label}
-    </span>
-  );
-}
