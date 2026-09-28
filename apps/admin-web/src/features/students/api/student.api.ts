@@ -11,6 +11,7 @@ import type {
   StudentListResponse,
   SuggestStudentCodeResponse,
   UpdateStudentDocumentRequest,
+  UpdateStudentAdmissionStatusRequest,
   UpdateStudentRequest,
 } from "@/src/features/students/types/student.types";
 import type { StudentAssessmentOverview } from "@/src/features/students/types/student-assessment.types";
@@ -97,6 +98,21 @@ export const studentApi = {
   async updateStudent(id: string, payload: UpdateStudentRequest) {
     const response = await apiClient.patch<ApiSuccessResponse<Student>>(
       `/admin/students/${id}`,
+      payload,
+    );
+
+    return {
+      ...response.data,
+      data: syncStudentImageFields(response.data.data),
+    };
+  },
+
+  async updateStudentAdmissionStatus(
+    id: string,
+    payload: UpdateStudentAdmissionStatusRequest,
+  ) {
+    const response = await apiClient.patch<ApiSuccessResponse<Student>>(
+      `/admin/students/${id}/admission-status`,
       payload,
     );
 

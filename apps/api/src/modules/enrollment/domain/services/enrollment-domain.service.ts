@@ -689,6 +689,20 @@ export class EnrollmentDomainService {
     return branches[0].id;
   }
 
+  /** Maps student admission workflow status to a target current-enrollment status. */
+  resolveEnrollmentStatusForStudentAdmissionStatus(
+    status: StudentStatus,
+  ): EnrollmentStatus | null {
+    switch (status) {
+      case StudentStatus.ADVANCED:
+        return EnrollmentStatus.ADVANCED;
+      case StudentStatus.ADMITTED:
+        return EnrollmentStatus.ADMITTED;
+      default:
+        return null;
+    }
+  }
+
   // Maps an enrollment status to its impact on the linked student.
   resolveStudentStatus(
     status: EnrollmentStatus,

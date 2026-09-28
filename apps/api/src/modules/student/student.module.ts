@@ -14,6 +14,11 @@ import { BranchModule } from '../branch/branch.module';
 import type { BranchRepository } from '../branch/domain/repositories/branch.repository';
 import { BranchUserModule } from '../branch-user/branch-user.module';
 import { BranchOperationsModule } from '../branch-operations/branch-operations.module';
+import { EnrollmentModule } from '../enrollment/enrollment.module';
+import { ENROLLMENT_TOKENS } from '../enrollment/enrollment.tokens';
+import type { EnrollmentRepository } from '../enrollment/domain/repositories/enrollment.repository';
+import { EnrollmentDomainService } from '../enrollment/domain/services/enrollment-domain.service';
+import { EnrollmentSideEffectsService } from '../enrollment/application/shared/enrollment-side-effects.service';
 import { UploadsModule } from '../uploads/uploads.module';
 import { UploadDomainService } from '../uploads/domain/services/upload-domain.service';
 import { CreateProfileHandler } from '../profile/application/create-profile/create-profile.handler';
@@ -33,6 +38,8 @@ import { ListStudentsHandler } from './application/list-students/list-students.h
 import { PermanentDeleteStudentHandler } from './application/permanent-delete-student/permanent-delete-student.handler';
 import { RestoreStudentHandler } from './application/restore-student/restore-student.handler';
 import { UpdateStudentHandler } from './application/update-student/update-student.handler';
+import { UpdateStudentAdmissionStatusHandler } from './application/update-student-admission-status/update-student-admission-status.handler';
+import { StudentAdmissionStatusSyncService } from './application/shared/student-admission-status-sync.service';
 import { UpdateStudentStatusHandler } from './application/update-student-status/update-student-status.handler';
 import { SuggestStudentCodeHandler } from './application/suggest-student-code/suggest-student-code.handler';
 import { BulkDeleteStudentsHandler } from './application/bulk-delete-students/bulk-delete-students.handler';
@@ -61,6 +68,7 @@ import { PublicStudentController } from './presentation/controllers/public-stude
     forwardRef(() => BranchOperationsModule),
     UploadsModule,
     forwardRef(() => ProfileModule),
+    forwardRef(() => EnrollmentModule),
   ],
 
   controllers: [AdminStudentController, PublicStudentController],
@@ -212,24 +220,68 @@ import { PublicStudentController } from './presentation/controllers/public-stude
     },
 
     {
+      provide: StudentAdmissionStatusSyncService,
+      useFactory: (
+        studentRepo: StudentRepository,
+        enrollmentRepo: EnrollmentRepository,
+        enrollmentDomainService: EnrollmentDomainService,
+        enrollmentSideEffects: EnrollmentSideEffectsService,
+      ) =>
+        new StudentAdmissionStatusSyncService(
+          studentRepo,
+          enrollmentRepo,
+          enrollmentDomainService,
+          enrollmentSideEffects,
+        ),
+      inject: [
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+        EnrollmentDomainService,
+        EnrollmentSideEffectsService,
+      ],
+    },
+
+    {
       provide: UpdateStudentHandler,
       useFactory: (
         studentRepo: StudentRepository,
         branchRepo: BranchRepository,
         uploadDomainService: UploadDomainService,
         domainService: StudentDomainService,
+        admissionStatusSync: StudentAdmissionStatusSyncService,
       ) =>
         new UpdateStudentHandler(
           studentRepo,
           branchRepo,
           uploadDomainService,
           domainService,
+          admissionStatusSync,
         ),
       inject: [
         STUDENT_TOKENS.STUDENT_REPOSITORY,
         BRANCH_TOKENS.BRANCH_REPOSITORY,
         UploadDomainService,
         StudentDomainService,
+        StudentAdmissionStatusSyncService,
+      ],
+    },
+
+    {
+      provide: UpdateStudentAdmissionStatusHandler,
+      useFactory: (
+        studentRepo: StudentRepository,
+        domainService: StudentDomainService,
+        admissionStatusSync: StudentAdmissionStatusSyncService,
+      ) =>
+        new UpdateStudentAdmissionStatusHandler(
+          studentRepo,
+          domainService,
+          admissionStatusSync,
+        ),
+      inject: [
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        StudentDomainService,
+        StudentAdmissionStatusSyncService,
       ],
     },
 

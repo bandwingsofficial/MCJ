@@ -26,6 +26,8 @@ import {
 } from "@/src/features/students/components/student-bulk-actions-toolbar";
 import { CreateStudentModal } from "@/src/features/students/components/create-student-modal";
 import { UpdateStudentModal } from "@/src/features/students/components/update-student-modal";
+import { UpdateStudentAdmissionStatusDialog } from "@/src/features/students/components/update-student-admission-status-dialog";
+import { useUpdateStudentAdmissionStatus } from "@/src/features/students/hooks/useUpdateStudentAdmissionStatus";
 
 import type {
   BranchOption,
@@ -60,9 +62,15 @@ export function StudentsPage() {
   const { restoreStudent, isPending: isRestoring } = useRestoreStudent();
   const { permanentDeleteStudent, isPending: isPermanentlyDeleting } =
     usePermanentDeleteStudent();
+  const {
+    updateStudentAdmissionStatus,
+    isLoading: isUpdatingAdmissionStatus,
+  } = useUpdateStudentAdmissionStatus();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<StudentListItem | null>(null);
+  const [admissionStatusTarget, setAdmissionStatusTarget] =
+    useState<StudentListItem | null>(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [bulkConfirmAction, setBulkConfirmAction] =
     useState<BulkStudentAction | null>(null);
@@ -98,6 +106,7 @@ export function StudentsPage() {
     isDeactivating ||
     isRestoring ||
     isPermanentlyDeleting ||
+    isUpdatingAdmissionStatus ||
     isBulkLoading;
 
   useEffect(() => {
@@ -345,6 +354,7 @@ export function StudentsPage() {
                   }
                   onRestore={setRestoreTarget}
                   onPermanentDelete={setPermanentDeleteTarget}
+                  onAdmissionStatus={setAdmissionStatusTarget}
                 />
               </div>
 
@@ -408,6 +418,30 @@ export function StudentsPage() {
           }}
         />
       ) : null}
+
+      <UpdateStudentAdmissionStatusDialog
+        open={Boolean(admissionStatusTarget)}
+        student={admissionStatusTarget}
+        loading={isUpdatingAdmissionStatus}
+        onClose={() => setAdmissionStatusTarget(null)}
+        onSubmit={async (status) => {
+          if (!admissionStatusTarget) {
+            return;
+          }
+
+          try {
+            await updateStudentAdmissionStatus(
+              admissionStatusTarget.id,
+              status,
+            );
+            appToast.success("Admission status updated successfully");
+            setAdmissionStatusTarget(null);
+            await refetch();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
+        }}
+      />
 
       <ConfirmDialog
         open={Boolean(statusTarget)}

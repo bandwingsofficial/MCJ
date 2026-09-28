@@ -2,6 +2,7 @@
 
 import {
   CircleCheck,
+  GraduationCap,
   Pencil,
   Power,
   RotateCcw,
@@ -29,6 +30,7 @@ interface Props {
   onDelete?: (student: StudentListItem) => void;
   onRestore?: (student: StudentListItem) => void;
   onPermanentDelete?: (student: StudentListItem) => void;
+  onAdmissionStatus?: (student: StudentListItem) => void;
 }
 
 export function StudentRowActionsMenu({
@@ -40,6 +42,7 @@ export function StudentRowActionsMenu({
   onDeactivate,
   onRestore,
   onPermanentDelete,
+  onAdmissionStatus,
 }: Props) {
   if (isArchivedStudent(student)) {
     return (
@@ -108,6 +111,20 @@ export function StudentRowActionsMenu({
           <Pencil className={iconClass} />
         </button>
       </Tooltip>
+
+      {onAdmissionStatus ? (
+        <Tooltip content="Admission status">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onAdmissionStatus(student)}
+            aria-label="Update admission status"
+            className={`${iconButtonClass} text-[#2563EB]`}
+          >
+            <GraduationCap className={iconClass} />
+          </button>
+        </Tooltip>
+      ) : null}
 
       <Tooltip content="Manage student">
         <button

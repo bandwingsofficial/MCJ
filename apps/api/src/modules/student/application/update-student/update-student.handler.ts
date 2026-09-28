@@ -4,6 +4,7 @@ import { UploadDomainService } from '@modules/uploads/domain/services/upload-dom
 import type { StudentRepository } from '../../domain/repositories/student.repository';
 import { StudentDomainService } from '../../domain/services/student-domain.service';
 import { GetStudentResult } from '../get-student/get-student.result';
+import { StudentAdmissionStatusSyncService } from '../shared/student-admission-status-sync.service';
 
 import { UpdateStudentCommand } from './update-student.command';
 
@@ -16,6 +17,7 @@ export class UpdateStudentHandler {
     private readonly branchRepo: BranchRepository,
     private readonly uploadDomainService: UploadDomainService,
     private readonly domainService: StudentDomainService,
+    private readonly admissionStatusSync: StudentAdmissionStatusSyncService,
   ) {}
 
   async execute(
@@ -89,6 +91,11 @@ export class UpdateStudentHandler {
       }
     }
 
+    const shouldSyncAdmissionStatus =
+      command.status !== undefined &&
+      command.status !== student.status &&
+      this.admissionStatusSync.isAdmissionSyncStatus(command.status);
+
     student.update({
       firstName: command.firstName,
       lastName: command.lastName,
@@ -116,11 +123,24 @@ export class UpdateStudentHandler {
       admissionDate: command.admissionDate,
       branchId: command.branchId,
       notes: command.notes,
-      status: command.status,
+      status: shouldSyncAdmissionStatus ? undefined : command.status,
       updatedBy: command.updatedBy,
     });
 
     await this.studentRepo.save(student);
+
+    if (shouldSyncAdmissionStatus && command.status) {
+      const synced = await this.admissionStatusSync.applyStudentAdmissionStatus(
+        {
+          student: (await this.studentRepo.findById(student.id)) ?? student,
+          targetStatus: command.status,
+          updatedBy: command.updatedBy,
+          actorBranchId: command.actorBranchId,
+        },
+      );
+
+      return GetStudentResult.fromEntity(synced);
+    }
 
     return GetStudentResult.fromEntity(student);
   }

@@ -47,6 +47,8 @@ import { UpdateStudentCommand } from '../../application/update-student/update-st
 import { UpdateStudentHandler } from '../../application/update-student/update-student.handler';
 import { UpdateStudentDocumentCommand } from '../../application/update-student-document/update-student-document.command';
 import { UpdateStudentDocumentHandler } from '../../application/update-student-document/update-student-document.handler';
+import { UpdateStudentAdmissionStatusCommand } from '../../application/update-student-admission-status/update-student-admission-status.command';
+import { UpdateStudentAdmissionStatusHandler } from '../../application/update-student-admission-status/update-student-admission-status.handler';
 import { UpdateStudentStatusCommand } from '../../application/update-student-status/update-student-status.command';
 import { UpdateStudentStatusHandler } from '../../application/update-student-status/update-student-status.handler';
 import { SuggestStudentCodeHandler } from '../../application/suggest-student-code/suggest-student-code.handler';
@@ -64,6 +66,7 @@ import { BulkUpdateStudentStatusDto } from '../dtos/bulk-update-student-status.d
 import { CreateStudentDto } from '../dtos/create-student.dto';
 import { CreateStudentDocumentDto } from '../dtos/create-student-document.dto';
 import { ListStudentsQueryDto } from '../dtos/list-students-query.dto';
+import { UpdateStudentAdmissionStatusDto } from '../dtos/update-student-admission-status.dto';
 import { UpdateStudentDto } from '../dtos/update-student.dto';
 import { UpdateStudentDocumentDto } from '../dtos/update-student-document.dto';
 import { BranchAssessmentService } from '@modules/branch-operations/application/branch-assessment.service';
@@ -79,6 +82,7 @@ export class AdminStudentController {
   constructor(
     private readonly createStudentHandler: CreateStudentHandler,
     private readonly updateStudentHandler: UpdateStudentHandler,
+    private readonly updateStudentAdmissionStatusHandler: UpdateStudentAdmissionStatusHandler,
     private readonly listStudentsHandler: ListStudentsHandler,
     private readonly getStudentHandler: GetStudentHandler,
     private readonly deleteStudentHandler: DeleteStudentHandler,
@@ -621,6 +625,35 @@ export class AdminStudentController {
     return {
       success: true,
       message: 'Student permanently deleted successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':id/admission-status')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+    BranchAccessGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async updateAdmissionStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateStudentAdmissionStatusDto,
+    @CurrentUser() user: StudentAdminUser,
+  ) {
+    const result =
+      await this.updateStudentAdmissionStatusHandler.execute(
+        new UpdateStudentAdmissionStatusCommand(
+          id,
+          dto.status,
+          user.sub,
+          this.resolveBranchId(undefined, user),
+        ),
+      );
+
+    return {
+      success: true,
+      message: 'Student admission status updated successfully',
       data: result,
     };
   }

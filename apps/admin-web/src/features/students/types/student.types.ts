@@ -112,6 +112,10 @@ export interface UpdateStudentRequest
   profileImageFileId?: string | null;
 }
 
+export interface UpdateStudentAdmissionStatusRequest {
+  status: StudentStatus;
+}
+
 export interface StudentListResponse {
   items: Student[];
   count: number;

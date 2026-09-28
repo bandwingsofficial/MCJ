@@ -8,6 +8,7 @@ import type {
   CreateStudentDocumentRequest,
   CreateStudentRequest,
   StudentFilters,
+  UpdateStudentAdmissionStatusRequest,
   UpdateStudentDocumentRequest,
   UpdateStudentRequest,
 } from "@/src/features/students/types/student.types";
@@ -63,6 +64,17 @@ class StudentService {
   async updateStudent(id: string, payload: UpdateStudentRequest) {
     try {
       return await studentApi.updateStudent(id, payload);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async updateStudentAdmissionStatus(
+    id: string,
+    payload: UpdateStudentAdmissionStatusRequest,
+  ) {
+    try {
+      return await studentApi.updateStudentAdmissionStatus(id, payload);
     } catch (error) {
       throw this.handleError(error);
     }
