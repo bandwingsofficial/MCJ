@@ -1,0 +1,98 @@
+# Local integration testing only — not the production deployment topology.
+# Production: deploy API + each Next app as separate Coolify services.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mcj
+      POSTGRES_PASSWORD: mcj_local_dev
+      POSTGRES_DB: mcj
+    ports:
+      - "5432:5432"
+    volumes:
+      - mcj_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mcj -d mcj"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://mcj:mcj_local_dev@postgres:5432/mcj?schema=public
+      JWT_ACCESS_SECRET: local-docker-jwt-access-secret-change-me
+      JWT_REFRESH_SECRET: local-docker-jwt-refresh-secret-change-me
+      JWT_MFA_SECRET: local-docker-jwt-mfa-secret-change-me
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003
+
+  customer-web:
+    build:
+      context: .
+      dockerfile: docker/next/Dockerfile
+      args:
+        APP_NAME: customer-web
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:4000
+        NEXT_PUBLIC_CUSTOMER_WEB_URL: http://localhost:3000
+        NEXT_PUBLIC_STUDENT_WEB_URL: http://localhost:3003
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+
+  admin-web:
+    build:
+      context: .
+      dockerfile: docker/next/Dockerfile
+      args:
+        APP_NAME: admin-web
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:4000
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3001:3000"
+
+  branch-web:
+    build:
+      context: .
+      dockerfile: docker/next/Dockerfile
+      args:
+        APP_NAME: branch-web
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:4000
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3002:3000"
+
+  student-web:
+    build:
+      context: .
+      dockerfile: docker/next/Dockerfile
+      args:
+        APP_NAME: student-web
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:4000
+        NEXT_PUBLIC_CUSTOMER_WEB_URL: http://localhost:3000
+        NEXT_PUBLIC_STUDENT_WEB_URL: http://localhost:3003
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3003:3000"
+
+volumes:
+  mcj_pgdata:

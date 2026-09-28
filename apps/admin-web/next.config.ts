@@ -45,6 +45,7 @@ const manageRewrites = [
 ] as const;
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   images: {
     // Public S3 bucket; DNS64/NAT64 (64:ff9b::…) can false-trigger Next 16 private-IP SSRF guard.
     dangerouslyAllowLocalIP: true,

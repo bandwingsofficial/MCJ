@@ -1,0 +1,45 @@
+# Dependencies & build outputs
+**/node_modules
+**/.next
+**/dist
+**/build
+**/coverage
+**/.turbo
+
+# Tests & QA artifacts
+**/test-results
+**/playwright-report
+**/.playwright
+packages/visual-regression/output
+packages/visual-regression/.playwright
+.visual-regression
+
+# Git & IDE
+.git
+.gitignore
+**/.vscode
+**/.idea
+**/*.swp
+**/*.swo
+
+# Secrets & local env (never bake into images)
+**/.env
+**/.env.*
+!**/.env.example
+
+# Logs & temp
+**/*.log
+**/npm-debug.log*
+**/pnpm-debug.log*
+**/tmp
+**/temp
+
+# OS
+**/.DS_Store
+**/Thumbs.db
+
+# Docs & agent tooling (not needed for production builds)
+**/*.md
+!apps/api/prisma/**
+.cursor
+agent-transcripts
