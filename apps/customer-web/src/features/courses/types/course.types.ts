@@ -135,6 +135,8 @@ export interface GetCoursesParams {
   branchId?: string;
   isFeatured?: boolean;
   isPopular?: boolean;
+  skip?: number;
+  take?: number;
 }
 
 export interface GetCoursesResponse {
