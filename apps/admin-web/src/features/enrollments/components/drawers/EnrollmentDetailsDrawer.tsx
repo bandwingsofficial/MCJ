@@ -58,7 +58,7 @@ export function EnrollmentDetailsDrawer({
 
           <Separator />
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
 
             <div>
               <span className="font-medium">
@@ -121,7 +121,7 @@ export function EnrollmentDetailsDrawer({
 
           <Separator />
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
 
             <div>
               <span className="font-medium">
@@ -205,7 +205,7 @@ export function EnrollmentDetailsDrawer({
 
           <Separator />
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
 
             <div>
               <span className="font-medium">

@@ -61,9 +61,14 @@ export function LmsHeader({ title, subtitle }: LmsHeaderProps) {
             </Button>
           </Link>
           <a href={buildCustomerWebHandoffUrl("/")} target="_self" rel="noreferrer">
-            <Button variant="outline" size="sm">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Back to Website
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-2 sm:px-3"
+              aria-label="Back to Website"
+            >
+              <ExternalLink className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Back to Website</span>
             </Button>
           </a>
           <Avatar alt={user?.name ?? "Student"} fallback={initials} />

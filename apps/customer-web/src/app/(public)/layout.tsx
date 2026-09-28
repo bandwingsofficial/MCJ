@@ -10,7 +10,7 @@ export default function PublicLayout({
     <>
       <Header />
 
-      <main>{children}</main>
+      <main className="min-w-0 overflow-x-clip">{children}</main>
 
       <Footer />
     </>

@@ -1,6 +1,6 @@
 export function AdminFooter() {
   return (
-    <footer className="shrink-0 border-t border-[#DCE8F5] bg-white px-8 py-4">
+    <footer className="shrink-0 border-t border-[#DCE8F5] bg-white px-4 py-4 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-[#102A56]">
           © 2026 MCJ Academy. All rights reserved.

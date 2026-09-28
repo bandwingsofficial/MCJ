@@ -18,6 +18,8 @@ import {
 
   Bell,
 
+  Menu,
+
 } from "lucide-react";
 
 import { useAuth } from "@/src/features/auth/hooks/use-auth";
@@ -72,7 +74,11 @@ const iconActionClass = cn(
 
 
 
-export function AdminHeader() {
+interface AdminHeaderProps {
+  onOpenMobileNav?: () => void;
+}
+
+export function AdminHeader({ onOpenMobileNav }: AdminHeaderProps) {
 
   const [time, setTime] = useState("");
 
@@ -215,6 +221,17 @@ export function AdminHeader() {
 
 
       <div className="flex min-h-[60px] flex-wrap items-center gap-x-4 gap-y-3 lg:min-h-[64px] lg:gap-4">
+
+        {onOpenMobileNav ? (
+          <button
+            type="button"
+            aria-label="Open navigation menu"
+            onClick={onOpenMobileNav}
+            className={cn(iconActionClass, "lg:hidden")}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        ) : null}
 
         <div className="min-w-0 shrink-0 basis-full sm:basis-auto lg:max-w-[280px] xl:max-w-xs">
 

@@ -549,8 +549,8 @@ export function CourseEnrollmentSidebar({
           className={cn(
             "mt-2.5 grid gap-1 rounded-xl bg-slate-100 p-1",
             availableModes.length === 1 && "grid-cols-1",
-            availableModes.length === 2 && "grid-cols-2",
-            availableModes.length >= 3 && "grid-cols-3",
+            availableModes.length === 2 && "grid-cols-1 sm:grid-cols-2",
+            availableModes.length >= 3 && "grid-cols-1 sm:grid-cols-3",
           )}
         >
           {availableModes.map((mode) => {

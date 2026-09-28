@@ -6,6 +6,7 @@ import { StudentAttentionRow } from "./StudentAttentionRow";
 import {
   DASHBOARD_TABLE,
   DASHBOARD_TABLE_HEAD,
+  DASHBOARD_TABLE_SCROLL,
 } from "./DashboardTable";
 import {
   DashboardEmptyState,
@@ -27,6 +28,7 @@ export function StudentsAttention({ students }: Props) {
       {!rows.length ? (
         <DashboardEmptyState message="All students are on track." />
       ) : (
+        <div className={DASHBOARD_TABLE_SCROLL}>
         <table className={DASHBOARD_TABLE}>
           <colgroup>
             <col className="w-[22%]" />
@@ -53,6 +55,7 @@ export function StudentsAttention({ students }: Props) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </DashboardSection>
   );

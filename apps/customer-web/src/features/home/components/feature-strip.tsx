@@ -15,7 +15,7 @@ export function FeatureStripSection() {
   return (
     <section className="relative z-10 -mt-8 px-4 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl rounded-2xl bg-[#0B1F3A] px-4 py-4 shadow-[0_20px_50px_rgba(11,31,58,0.25)] sm:px-6">
-        <div className="grid grid-cols-1 divide-y divide-white/10 sm:grid-cols-5 sm:divide-x sm:divide-y-0">
+        <div className="grid grid-cols-1 divide-y divide-white/10 sm:grid-cols-2 sm:divide-y-0 md:grid-cols-3 lg:grid-cols-5 lg:divide-x">
           {MCJ_FEATURE_STRIP_ITEMS.map((item, index) => {
             const Icon = icons[index] ?? Sparkles;
 

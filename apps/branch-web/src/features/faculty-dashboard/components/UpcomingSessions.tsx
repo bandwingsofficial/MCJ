@@ -6,6 +6,7 @@ import { UpcomingSessionRow } from "./UpcomingSessionRow";
 import {
   DASHBOARD_TABLE,
   DASHBOARD_TABLE_HEAD,
+  DASHBOARD_TABLE_SCROLL,
 } from "./DashboardTable";
 import {
   DashboardEmptyState,
@@ -28,6 +29,7 @@ export function UpcomingSessions({ sessions }: Props) {
       {!rows.length ? (
         <DashboardEmptyState message="No upcoming sessions." />
       ) : (
+        <div className={DASHBOARD_TABLE_SCROLL}>
         <table className={DASHBOARD_TABLE}>
           <colgroup>
             <col className="w-[16%]" />
@@ -54,6 +56,7 @@ export function UpcomingSessions({ sessions }: Props) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </DashboardSection>
   );

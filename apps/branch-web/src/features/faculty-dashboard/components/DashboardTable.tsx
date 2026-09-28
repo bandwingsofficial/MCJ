@@ -19,7 +19,10 @@ export function TruncatedCell({ children, title, className = "" }: Props) {
 }
 
 export const DASHBOARD_TABLE =
-  "w-full table-fixed border-collapse text-left";
+  "w-full min-w-[640px] table-fixed border-collapse text-left";
+
+export const DASHBOARD_TABLE_SCROLL =
+  "min-w-0 overflow-x-auto";
 
 export const DASHBOARD_TABLE_HEAD =
   "border-b border-[#E8EEF5] text-[10px] font-semibold uppercase tracking-wide text-[#647A9B]";

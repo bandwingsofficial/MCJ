@@ -9,6 +9,7 @@ import { BatchOverviewRow } from "./BatchOverviewRow";
 import {
   DASHBOARD_TABLE,
   DASHBOARD_TABLE_HEAD,
+  DASHBOARD_TABLE_SCROLL,
 } from "./DashboardTable";
 import {
   DashboardEmptyState,
@@ -49,6 +50,7 @@ export function BatchOverview({ batches, upcomingSessions = [] }: Props) {
       {!rows.length ? (
         <DashboardEmptyState message="No batches assigned." />
       ) : (
+        <div className={DASHBOARD_TABLE_SCROLL}>
         <table className={DASHBOARD_TABLE}>
           <colgroup>
             <col className="w-[28%]" />
@@ -76,6 +78,7 @@ export function BatchOverview({ batches, upcomingSessions = [] }: Props) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </DashboardSection>
   );

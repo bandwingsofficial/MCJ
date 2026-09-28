@@ -55,7 +55,7 @@ export function AttendanceOverview({ trend, summary }: Props) {
         <>
           <AttendanceChart data={trend} />
           {summary ? (
-            <div className="mt-3 grid grid-cols-4 gap-1.5">
+            <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
               <StatBlock
                 label="Present"
                 value={summary.present}

@@ -136,10 +136,20 @@ function SidebarTooltip({
   );
 }
 
-export function BranchSidebar() {
+interface BranchSidebarProps {
+  mobile?: boolean;
+  onNavigate?: () => void;
+}
+
+export function BranchSidebar({
+  mobile = false,
+  onNavigate,
+}: BranchSidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { collapsed, toggleCollapsed } = useAdminSidebarCollapsed();
+  const { collapsed: storedCollapsed, toggleCollapsed } =
+    useAdminSidebarCollapsed();
+  const collapsed = mobile ? false : storedCollapsed;
 
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
@@ -167,8 +177,15 @@ export function BranchSidebar() {
   return (
     <>
       <aside
-        style={{ width: sidebarWidth }}
-        className="admin-sidebar relative flex h-full max-h-full min-h-0 shrink-0 flex-col border-r border-[#DCE8F5] text-[#102A56] transition-[width] duration-200 ease-in-out"
+        style={{
+          width: mobile
+            ? ADMIN_SIDEBAR_WIDTH_EXPANDED_PX
+            : sidebarWidth,
+        }}
+        className={cn(
+          "admin-sidebar relative flex h-full max-h-full min-h-0 shrink-0 flex-col border-r border-[#DCE8F5] bg-[#FBFDFF] text-[#102A56] transition-[width] duration-200 ease-in-out",
+          mobile && "shadow-xl",
+        )}
       >
         <div className="admin-sidebar-wash" aria-hidden="true" />
 
@@ -210,31 +227,33 @@ export function BranchSidebar() {
             ) : null}
           </div>
 
-          <div
-            className={cn(
-              "flex shrink-0 items-center justify-end",
-              collapsed ? "w-7" : "w-8",
-            )}
-          >
-            <button
-              type="button"
-              onClick={toggleCollapsed}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-expanded={!collapsed}
+          {!mobile ? (
+            <div
               className={cn(
-                "flex shrink-0 items-center justify-center rounded-lg",
-                collapsed ? "h-7 w-7" : "h-8 w-8",
-                "border border-[#DCE8F5] bg-white text-[#102A56]",
-                "shadow-[0_1px_6px_rgba(16,42,86,0.06)] transition-colors hover:bg-[#F8FBFF]",
+                "flex shrink-0 items-center justify-end",
+                collapsed ? "w-7" : "w-8",
               )}
             >
-              {collapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronLeft className="h-4 w-4" />
-              )}
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={toggleCollapsed}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-expanded={!collapsed}
+                className={cn(
+                  "flex shrink-0 items-center justify-center rounded-lg",
+                  collapsed ? "h-7 w-7" : "h-8 w-8",
+                  "border border-[#DCE8F5] bg-white text-[#102A56]",
+                  "shadow-[0_1px_6px_rgba(16,42,86,0.06)] transition-colors hover:bg-[#F8FBFF]",
+                )}
+              >
+                {collapsed ? (
+                  <ChevronRight className="h-4 w-4" />
+                ) : (
+                  <ChevronLeft className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <div
@@ -268,6 +287,7 @@ export function BranchSidebar() {
                     >
                       <Link
                         href={item.path}
+                        onClick={() => onNavigate?.()}
                         className={cn(
                           "group flex items-center text-sm transition-all duration-200",
                           collapsed

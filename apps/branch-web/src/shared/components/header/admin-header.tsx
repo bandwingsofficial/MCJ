@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Bell, ChevronDown, LogOut, Settings } from "lucide-react";
+import { Bell, ChevronDown, LogOut, Menu, Settings } from "lucide-react";
 
 import { Avatar } from "@/src/shared/components/ui/avatar";
 import { useAuth } from "@/src/features/auth/hooks/use-auth";
@@ -19,7 +19,11 @@ const iconActionClass = cn(
   "transition-colors hover:bg-[#2563EB]/8 hover:text-[#102A56]",
 );
 
-export function AdminHeader() {
+interface AdminHeaderProps {
+  onOpenMobileNav?: () => void;
+}
+
+export function AdminHeader({ onOpenMobileNav }: AdminHeaderProps) {
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -99,6 +103,17 @@ export function AdminHeader() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#2563EB]/20 to-transparent" />
 
       <div className="flex min-h-[60px] flex-wrap items-center gap-x-4 gap-y-3 lg:min-h-[64px] lg:gap-4">
+        {onOpenMobileNav ? (
+          <button
+            type="button"
+            aria-label="Open navigation menu"
+            onClick={onOpenMobileNav}
+            className={cn(iconActionClass, "lg:hidden")}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        ) : null}
+
         <div className="min-w-0 shrink-0 basis-full sm:basis-auto lg:max-w-[280px] xl:max-w-xs">
           <p className="truncate text-sm font-semibold text-[#102A56]">
             Welcome back, {displayName}

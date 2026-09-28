@@ -39,8 +39,8 @@ export function BranchJobApplicationsTable({
   onSchedule,
 }: Props) {
   return (
-    <div className="w-full overflow-hidden ">
-      <table className="w-full table-fixed border-collapse text-sm">
+    <div className="min-w-0 w-full overflow-x-auto">
+      <table className="w-full min-w-[640px] table-fixed border-collapse text-sm">
         <colgroup>
           {COL_WIDTHS.map((width, index) => (
             <col key={index} style={{ width }} />
