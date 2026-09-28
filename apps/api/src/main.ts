@@ -7,6 +7,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 import { ValidationError } from 'class-validator';
 
@@ -29,6 +30,8 @@ async function bootstrap(): Promise<void> {
   app.set('trust proxy', true);
 
   app.enableShutdownHooks();
+
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   app.enableCors({
     origin: (() => {

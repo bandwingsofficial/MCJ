@@ -17,6 +17,8 @@ import { normalizeBatchPricingInput } from '../../domain/value-objects/batch-pri
 import { PrismaBatchCourseRepository } from '../../infrastructure/repositories/prisma-batch-course.repository';
 import { GetBatchResult } from '../get-batch/get-batch.result';
 
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
+
 import { CreateBatchCommand } from './create-batch.command';
 
 export class CreateBatchHandler {
@@ -182,6 +184,14 @@ export class CreateBatchHandler {
       );
 
     this.logger.log(`✅ Batch created: ${batch.id}`);
+
+    notifyDomainMutation({
+      domain: 'batch',
+      action: 'created',
+      entityId: batch.id,
+      courseId: command.courseId,
+      branchId: command.branchId ?? undefined,
+    });
 
     return GetBatchResult.fromEntity(savedBatch);
   }

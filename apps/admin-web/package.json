@@ -12,8 +12,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@mcj/shared-constants": "workspace:*",
     "@hookform/resolvers": "^5.4.0",
+    "@mcj/shared-constants": "workspace:*",
     "@radix-ui/react-accordion": "^1.2.16",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.11",
@@ -32,6 +32,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.77.0",
+    "socket.io-client": "^4.8.4",
     "sonner": "^2.0.7",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"

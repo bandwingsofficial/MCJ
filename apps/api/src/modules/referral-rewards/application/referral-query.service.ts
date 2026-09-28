@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   CoinTransactionDirection,
+  CoinTransactionType,
   Prisma,
   ReferralStatus,
 } from '@prisma/client';
@@ -100,8 +101,13 @@ export class ReferralQueryService {
       skip?: number;
     },
   ) {
+    const direction = this.normalizeTransactionDirection(query.direction);
+    if (direction === CoinTransactionDirection.CREDIT) {
+      return this.listCustomerEarnHistory(userId, query);
+    }
+
     const where: Prisma.CoinTransactionWhereInput = { userId };
-    if (query.direction) where.direction = query.direction;
+    if (direction) where.direction = direction;
     if (query.from || query.to) {
       where.createdAt = {};
       if (query.from) where.createdAt.gte = query.from;
@@ -127,6 +133,165 @@ export class ReferralQueryService {
     ]);
 
     return { items, total };
+  }
+
+  /**
+   * Earn history: ledger CREDIT rows plus rewarded referrals that predate or
+   * missed ledger writes (display-only; does not mutate wallet balances).
+   */
+  async listCustomerEarnHistory(
+    userId: string,
+    query: {
+      from?: Date;
+      to?: Date;
+      take?: number;
+      skip?: number;
+    },
+  ) {
+    const creditWhere: Prisma.CoinTransactionWhereInput = {
+      userId,
+      direction: CoinTransactionDirection.CREDIT,
+    };
+    if (query.from || query.to) {
+      creditWhere.createdAt = {};
+      if (query.from) creditWhere.createdAt.gte = query.from;
+      if (query.to) creditWhere.createdAt.lte = query.to;
+    }
+
+    const [ledgerItems, rewardedReferrals, userReferralLedgerRows, wallet, firstDebit] =
+      await Promise.all([
+        this.prisma.coinTransaction.findMany({
+          where: creditWhere,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            referral: {
+              select: {
+                referred: { select: { name: true, email: true } },
+              },
+            },
+            redemption: { select: { publicId: true } },
+          },
+        }),
+        this.prisma.referral.findMany({
+          where: {
+            referrerUserId: userId,
+            status: ReferralStatus.REWARDED,
+            rewardCoins: { gt: 0 },
+          },
+          orderBy: { rewardedAt: 'desc' },
+          select: {
+            id: true,
+            publicId: true,
+            rewardCoins: true,
+            rewardedAt: true,
+            createdAt: true,
+            referred: { select: { name: true, email: true } },
+          },
+        }),
+        this.prisma.coinTransaction.findMany({
+          where: {
+            userId,
+            type: CoinTransactionType.REFERRAL_REWARD,
+            referralId: { not: null },
+          },
+          select: { referralId: true },
+        }),
+        this.prisma.coinWallet.findUnique({
+          where: { userId },
+          select: { totalEarned: true, createdAt: true },
+        }),
+        this.prisma.coinTransaction.findFirst({
+          where: {
+            userId,
+            direction: CoinTransactionDirection.DEBIT,
+          },
+          orderBy: { createdAt: 'asc' },
+          select: { createdAt: true, availableBefore: true },
+        }),
+      ]);
+
+    const referralIdsWithLedger = new Set(
+      userReferralLedgerRows
+        .map((row) => row.referralId)
+        .filter((id): id is string => Boolean(id)),
+    );
+
+    const referralFallbackItems = rewardedReferrals
+      .filter((referral) => !referralIdsWithLedger.has(referral.id))
+      .map((referral) => ({
+        id: `referral-reward:${referral.id}`,
+        publicId: referral.publicId,
+        type: CoinTransactionType.REFERRAL_REWARD,
+        direction: CoinTransactionDirection.CREDIT,
+        amount: referral.rewardCoins,
+        description: 'Referral reward',
+        availableBefore: null,
+        availableAfter: null,
+        createdAt: referral.rewardedAt ?? referral.createdAt,
+        referral: {
+          referred: {
+            name: referral.referred.name,
+            email: referral.referred.email,
+          },
+        },
+        redemption: null,
+      }));
+
+    const creditedTotal =
+      ledgerItems.reduce((sum, row) => sum + row.amount, 0) +
+      referralFallbackItems.reduce((sum, row) => sum + row.amount, 0);
+    const walletEarned = wallet?.totalEarned ?? 0;
+    const orphanEarnGap = walletEarned - creditedTotal;
+    const walletGapItems =
+      orphanEarnGap > 0
+        ? (() => {
+            const balanceAfterEarn =
+              firstDebit?.availableBefore ?? walletEarned;
+            return [
+              {
+                id: `wallet-earn-gap:${userId}`,
+                publicId: 'WALLET-EARN',
+                type: CoinTransactionType.ADJUSTMENT,
+                direction: CoinTransactionDirection.CREDIT,
+                amount: orphanEarnGap,
+                description: 'Recorded wallet earnings',
+                availableBefore: balanceAfterEarn - orphanEarnGap,
+                availableAfter: balanceAfterEarn,
+                createdAt: firstDebit
+                  ? new Date(firstDebit.createdAt.getTime() - 1)
+                  : (wallet?.createdAt ?? new Date()),
+                referral: null,
+                redemption: null,
+              },
+            ];
+          })()
+        : [];
+
+    const merged = [
+      ...ledgerItems,
+      ...referralFallbackItems,
+      ...walletGapItems,
+    ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const skip = query.skip ?? 0;
+    const take = query.take ?? 50;
+    const items = merged.slice(skip, skip + take);
+
+    return { items, total: merged.length };
+  }
+
+  private normalizeTransactionDirection(
+    direction?: CoinTransactionDirection | string,
+  ): CoinTransactionDirection | undefined {
+    if (!direction) return undefined;
+    const normalized = String(direction).toUpperCase();
+    if (normalized === CoinTransactionDirection.CREDIT) {
+      return CoinTransactionDirection.CREDIT;
+    }
+    if (normalized === CoinTransactionDirection.DEBIT) {
+      return CoinTransactionDirection.DEBIT;
+    }
+    return direction as CoinTransactionDirection;
   }
 
   async listCustomerRedemptions(userId: string) {

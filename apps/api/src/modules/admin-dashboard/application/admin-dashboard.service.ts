@@ -15,6 +15,7 @@ import {
 import type { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
+import { countBatchesByLifecycleStatus } from '../../batch/domain/utils/batch-lifecycle-status.util';
 import {
   listDateKeys,
   previousPeriod,
@@ -122,13 +123,9 @@ export class AdminDashboardService {
       totalTrainers,
       activeTrainers,
       trainersWithBranchAssignment,
-      upcomingBatches,
-      ongoingBatches,
-      ongoingBatchesInPeriod,
-      ongoingBatchesPreviousPeriod,
+      lifecycleBatchRows,
       jobApplicationsInPeriod,
       jobApplicationsPreviousPeriod,
-      expiredBatches,
       batchModeGroups,
       timingModeGroups,
       revenuePaymentsAll,
@@ -226,21 +223,17 @@ export class AdminDashboardService {
         by: ['trainerId'],
         _count: { _all: true },
       }),
-      this.prisma.batch.count({
-        where: { ...batchBase, status: BatchStatus.UPCOMING },
-      }),
-      this.prisma.batch.count({
-        where: { ...batchBase, status: BatchStatus.ONGOING },
-      }),
-      this.prisma.batch.count({
-        where: batchOverlapPeriodWhere(batchBase, from, toExclusive),
-      }),
-      this.prisma.batch.count({
-        where: batchOverlapPeriodWhere(
-          batchBase,
-          prev.from,
-          prev.toExclusive,
-        ),
+      this.prisma.batch.findMany({
+        where: {
+          ...batchBase,
+          status: { not: BatchStatus.CANCELLED },
+        },
+        select: {
+          startDate: true,
+          startTime: true,
+          endDate: true,
+          endTime: true,
+        },
       }),
       this.prisma.jobApplication.count({
         where: {
@@ -253,9 +246,6 @@ export class AdminDashboardService {
           isDeleted: false,
           createdAt: { gte: prev.from, lt: prev.toExclusive },
         },
-      }),
-      this.prisma.batch.count({
-        where: { ...batchBase, status: BatchStatus.EXPIRED },
       }),
       this.prisma.batch.groupBy({
         by: ['mode'],
@@ -543,6 +533,20 @@ export class AdminDashboardService {
 
     const modeDistribution = mergeModeCounts(batchModeGroups, timingModeGroups);
 
+    const lifecycleCountsNow = countBatchesByLifecycleStatus(
+      lifecycleBatchRows,
+      now,
+    );
+    const lifecycleCountsPrevious = countBatchesByLifecycleStatus(
+      lifecycleBatchRows,
+      prev.toExclusive,
+    );
+    const upcomingBatches = lifecycleCountsNow[BatchStatus.UPCOMING];
+    const ongoingBatches = lifecycleCountsNow[BatchStatus.ONGOING];
+    const expiredBatches = lifecycleCountsNow[BatchStatus.EXPIRED];
+    const ongoingBatchesPreviousPeriod =
+      lifecycleCountsPrevious[BatchStatus.ONGOING];
+
     return {
       period: {
         preset: period.preset,
@@ -581,7 +585,7 @@ export class AdminDashboardService {
         ),
         upcomingBatches: { value: upcomingBatches },
         ongoingBatches: metricWithComparison(
-          ongoingBatchesInPeriod,
+          ongoingBatches,
           ongoingBatchesPreviousPeriod,
         ),
         expiredBatches: { value: expiredBatches },
@@ -733,22 +737,6 @@ function sumPaymentsInRange(
     }
   }
   return total;
-}
-
-function batchOverlapPeriodWhere(
-  batchBase: Prisma.BatchWhereInput,
-  from: Date,
-  toExclusive: Date,
-): Prisma.BatchWhereInput {
-  return {
-    ...batchBase,
-    AND: [
-      { startDate: { lt: toExclusive } },
-      {
-        OR: [{ endDate: null }, { endDate: { gte: from } }],
-      },
-    ],
-  };
 }
 
 function metricWithComparison(current: number, previous: number) {

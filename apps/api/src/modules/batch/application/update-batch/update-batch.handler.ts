@@ -15,6 +15,8 @@ import { BranchNotFoundException } from '@/modules/student/domain/errors/branch-
 import { ensureBatchSelectableForAssignment } from '../../domain/utils/batch-selection.util';
 
 import { syncBatchTimings } from '../batch-timings/sync-batch-timings.util';
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
+
 import { UpdateBatchCommand } from './update-batch.command';
 import type { BatchTemplateRepository } from '../../domain/repositories/batch-template.repository';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
@@ -240,6 +242,14 @@ export class UpdateBatchHandler {
       await this.domainService.ensureExists(
         await this.batchRepo.findById(batch.id),
       );
+
+    notifyDomainMutation({
+      domain: 'batch',
+      action: 'updated',
+      entityId: batch.id,
+      courseId: updatedBatch.courseId ?? undefined,
+      branchId: updatedBatch.branchId ?? undefined,
+    });
 
     return GetBatchResult.fromEntity(updatedBatch);
   }

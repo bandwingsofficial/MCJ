@@ -20,6 +20,8 @@ import {
   CourseTrainerResult,
 } from '../get-course/get-course.result';
 
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
+
 import { CreateCourseCommand } from './create-course.command';
 
 import { BranchRepository } from '@/modules/branch/domain/repositories/branch.repository';
@@ -225,6 +227,12 @@ export class CreateCourseHandler {
     );
 
     this.logger.log(`✅ Course created: ${course.id}`);
+
+    notifyDomainMutation({
+      domain: 'course',
+      action: 'created',
+      entityId: course.id,
+    });
 
     const categoryEntity = await this.categoryRepo.findById(
       course.categoryId,

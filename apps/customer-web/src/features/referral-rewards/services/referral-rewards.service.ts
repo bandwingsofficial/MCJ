@@ -97,7 +97,7 @@ export type CoinTransactionItem = {
 
   description: string | null;
 
-  availableAfter: number;
+  availableAfter: number | null;
 
   createdAt: string;
 

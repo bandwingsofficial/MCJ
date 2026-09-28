@@ -1,6 +1,8 @@
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
 
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
+
 import { DeleteBatchCommand } from './delete-batch.command';
 import { DeleteBatchResult } from './delete-batch.result';
 
@@ -25,6 +27,12 @@ export class DeleteBatchHandler {
     if (deletedDisplayOrder != null) {
       await this.batchRepo.closeDisplayOrderGap(deletedDisplayOrder);
     }
+
+    notifyDomainMutation({
+      domain: 'batch',
+      action: 'deleted',
+      entityId: batch.id,
+    });
 
     return new DeleteBatchResult(
       batch.id,

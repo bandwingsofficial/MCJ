@@ -2,6 +2,8 @@ import type { BatchRepository } from '../../domain/repositories/batch.repository
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
 import { GetBatchResult } from '../get-batch/get-batch.result';
 
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
+
 import { UpdateBatchStatusCommand } from './update-batch-status.command';
 
 export class UpdateBatchStatusHandler {
@@ -37,6 +39,12 @@ export class UpdateBatchStatusHandler {
       await this.domainService.ensureExists(
         await this.batchRepo.findById(batch.id),
       );
+
+    notifyDomainMutation({
+      domain: 'batch',
+      action: 'status_changed',
+      entityId: batch.id,
+    });
 
     return GetBatchResult.fromEntity(updatedBatch);
   }

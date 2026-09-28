@@ -14,6 +14,7 @@ import {
   EnrollmentFilters,
   SortOrder,
 } from "../types";
+import { useRealtimeRefetch } from "@/src/core/realtime/use-realtime-refetch";
 
 interface UseEnrollmentsReturn {
   enrollments: Enrollment[];
@@ -99,6 +100,8 @@ export const useEnrollments =
     useEffect(() => {
       void fetchEnrollments();
     }, [fetchEnrollments]);
+
+    useRealtimeRefetch("enrollment", fetchEnrollments);
 
     return {
       enrollments,

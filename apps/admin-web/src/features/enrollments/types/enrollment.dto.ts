@@ -13,6 +13,7 @@ export interface CreateEnrollmentRequest {
   batchId: string;
   batchTimingId?: string;
   branchId?: string;
+  status?: EnrollmentStatus;
   feeAmount: number;
   discountAmount?: number;
   admissionDate?: string;

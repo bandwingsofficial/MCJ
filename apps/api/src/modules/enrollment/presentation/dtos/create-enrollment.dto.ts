@@ -16,6 +16,7 @@ import { PaymentMethod } from '@modules/payment/domain/enums/payment-method.enum
 
 import { ApplicationType } from '../../domain/enums/application-type.enum';
 import { EnrollmentMode } from '../../domain/enums/enrollment-mode.enum';
+import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { CreateEnrollmentInstallmentDto } from './create-enrollment-installment.dto';
 
 const toNumber = (value: unknown) =>
@@ -50,6 +51,14 @@ export class CreateEnrollmentDto {
   @IsOptional()
   @IsEnum(EnrollmentMode)
   mode?: EnrollmentMode;
+
+  @ApiPropertyOptional({
+    enum: EnrollmentStatus,
+    description: 'Admin offline create: ADVANCED or ADMITTED',
+  })
+  @IsOptional()
+  @IsEnum(EnrollmentStatus)
+  status?: EnrollmentStatus;
 
   @ApiPropertyOptional()
   @IsOptional()

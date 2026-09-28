@@ -7,6 +7,8 @@ import { EnrollmentStatus } from '@modules/enrollment/domain/enums/enrollment-st
 import { EnrollmentDomainService } from '@modules/enrollment/domain/services/enrollment-domain.service';
 import { EnrollmentSideEffectsService } from '@modules/enrollment/application/shared/enrollment-side-effects.service';
 
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
+
 import type { Student } from '../../domain/entities/student.entity';
 import type { StudentRepository } from '../../domain/repositories/student.repository';
 import { StudentStatus } from '../../domain/enums/student-status.enum';
@@ -166,5 +168,15 @@ export class StudentAdmissionStatusSyncService {
       previousStatus,
       updatedBy,
     );
+
+    notifyDomainMutation({
+      domain: 'enrollment',
+      action: 'status_changed',
+      entityId: enrollment.id,
+      batchId: enrollment.batchId,
+      studentId: enrollment.studentId,
+      courseId: enrollment.courseId,
+      branchId: enrollment.branchId,
+    });
   }
 }

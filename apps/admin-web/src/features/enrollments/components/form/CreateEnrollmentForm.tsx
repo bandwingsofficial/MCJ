@@ -32,6 +32,8 @@ import {
   toApiDateTime,
   type EnrollmentPaymentMethod,
 } from "@/src/features/enrollments/constants/enrollment-create.constants";
+import { CREATE_ENROLLMENT_STATUS_OPTIONS } from "@/src/features/enrollments/constants/enrollment-status";
+import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types";
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
@@ -178,6 +180,8 @@ export function CreateEnrollmentForm({
       ? enrollment.admissionDate.slice(0, 10)
       : todayDateInputValue(),
   );
+  const [createEnrollmentStatus, setCreateEnrollmentStatus] =
+    useState<EnrollmentStatus>(EnrollmentStatus.ADVANCED);
   const [paymentDate, setPaymentDate] = useState(todayDateInputValue());
   const [batchId, setBatchId] = useState(
     () => resolveEnrollmentBatchId(enrollment),
@@ -695,6 +699,7 @@ export function CreateEnrollmentForm({
           batchId,
           batchTimingId,
           branchId,
+          status: createEnrollmentStatus,
           feeAmount,
           discountAmount,
           admissionDate: apiAdmissionDate,
@@ -753,7 +758,9 @@ export function CreateEnrollmentForm({
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div
+        className={`grid gap-4 ${isEdit ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}
+      >
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">
             Enrollment Date
@@ -764,6 +771,23 @@ export function CreateEnrollmentForm({
             onChange={(event) => setAdmissionDate(event.target.value)}
           />
         </div>
+        {!isEdit ? (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Status</label>
+            <AppSelect
+              value={createEnrollmentStatus}
+              placeholder="Select status"
+              options={CREATE_ENROLLMENT_STATUS_OPTIONS}
+              onValueChange={(value) =>
+                setCreateEnrollmentStatus(value as EnrollmentStatus)
+              }
+            />
+            <p className="text-xs text-slate-500">
+              Advanced: seat booked, admission may be pending. Admitted: student
+              is fully admitted.
+            </p>
+          </div>
+        ) : null}
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700">
             Select Branch

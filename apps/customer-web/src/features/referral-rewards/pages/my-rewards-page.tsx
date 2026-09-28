@@ -13,7 +13,6 @@ import {
   Copy,
   Gift,
   Link2,
-  Lock,
   Share2,
   TrendingUp,
   Users,
@@ -76,7 +75,70 @@ function StatusBadge({ status }: { status: string }) {
 function transactionReference(tx: CoinTransactionItem) {
   if (tx.referral?.referred?.name) return tx.referral.referred.name;
   if (tx.redemption?.publicId) return tx.redemption.publicId;
+  if (tx.publicId) return tx.publicId;
   return null;
+}
+
+function CoinTransactionList({ items }: { items: CoinTransactionItem[] }) {
+  return (
+    <ul className="divide-y divide-slate-100">
+      {items.map((tx) => {
+        const isCredit = tx.direction === "CREDIT";
+        const reference = transactionReference(tx);
+        return (
+          <li
+            key={tx.id}
+            className="flex gap-3 py-3 first:pt-0 last:pb-0 sm:items-center sm:justify-between"
+          >
+            <div className="flex min-w-0 flex-1 gap-3">
+              <div
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                  isCredit ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600",
+                )}
+              >
+                {isCredit ? (
+                  <ArrowUpRight className="h-4 w-4" />
+                ) : (
+                  <ArrowDownLeft className="h-4 w-4" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[#0B1F3A]">
+                  {tx.description ?? formatTransactionTypeLabel(tx.type)}
+                </p>
+                {reference ? (
+                  <p className="truncate text-xs text-slate-500">{reference}</p>
+                ) : null}
+                <p className="mt-0.5 text-xs text-slate-400 sm:hidden">
+                  {formatReferralDateTime(tx.createdAt)}
+                  {tx.availableAfter != null ? ` · Bal ${tx.availableAfter}` : ""}
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0 text-right">
+              <p
+                className={cn(
+                  "text-sm font-bold tabular-nums",
+                  isCredit ? "text-emerald-700" : "text-red-700",
+                )}
+              >
+                {formatReferralCoins(tx.amount, tx.direction)}
+              </p>
+              <p className="hidden text-xs text-slate-400 sm:block">
+                {formatReferralDateTime(tx.createdAt)}
+              </p>
+              {tx.availableAfter != null ? (
+                <p className="hidden text-[11px] text-slate-400 sm:block">
+                  Balance {tx.availableAfter}
+                </p>
+              ) : null}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 function Panel({
@@ -126,13 +188,22 @@ function EmptyState({
 export function MyRewardsPage() {
   const summaryQuery = useReferralRewardsSummary();
 
-  const txQuery = useQuery({
-    queryKey: referralRewardsQueryKeys.transactions("ALL"),
+  const earnTxQuery = useQuery({
+    queryKey: referralRewardsQueryKeys.transactions("CREDIT"),
     queryFn: () =>
-      referralRewardsService.listTransactions({ take: 100 }) as Promise<{
-        items: CoinTransactionItem[];
-        total: number;
-      }>,
+      referralRewardsService.listTransactions({
+        direction: "CREDIT",
+        take: 100,
+      }),
+  });
+
+  const debitTxQuery = useQuery({
+    queryKey: referralRewardsQueryKeys.transactions("DEBIT"),
+    queryFn: () =>
+      referralRewardsService.listTransactions({
+        direction: "DEBIT",
+        take: 100,
+      }),
   });
 
   const redemptionsQuery = useQuery({
@@ -186,8 +257,8 @@ export function MyRewardsPage() {
       <div className="space-y-4">
         <Skeleton className="h-8 w-72" />
         <Skeleton className="h-44 w-full rounded-xl" />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
         </div>
@@ -291,7 +362,7 @@ export function MyRewardsPage() {
       </div>
 
       {/* Wallet summary */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <WalletMetricCard
           icon={Wallet}
           iconClass="text-[#2563EB] bg-blue-50"
@@ -312,17 +383,6 @@ export function MyRewardsPage() {
           label="Total Redeemed"
           value={wallet?.totalRedeemed ?? 0}
           hint="Successfully redeemed"
-        />
-        <WalletMetricCard
-          icon={Lock}
-          iconClass="text-amber-700 bg-amber-50"
-          label="Locked Coins"
-          value={wallet?.lockedCoins ?? 0}
-          hint={
-            (wallet?.lockedCoins ?? 0) > 0
-              ? "Pending redemption"
-              : "None locked"
-          }
         />
       </div>
 
@@ -404,69 +464,35 @@ export function MyRewardsPage() {
       </div>
 
       <Panel title="Coin History">
-        {txQuery.isLoading ? (
-          <Skeleton className="h-32 w-full rounded-lg" />
-        ) : !txQuery.data?.items.length ? (
-          <EmptyState title="No coin transactions yet" icon={<Coins className="h-7 w-7" />} />
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {txQuery.data.items.map((tx) => {
-              const isCredit = tx.direction === "CREDIT";
-              const reference = transactionReference(tx);
-              return (
-                <li
-                  key={tx.id}
-                  className="flex gap-3 py-3 first:pt-0 last:pb-0 sm:items-center sm:justify-between"
-                >
-                  <div className="flex min-w-0 flex-1 gap-3">
-                    <div
-                      className={cn(
-                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-                        isCredit ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600",
-                      )}
-                    >
-                      {isCredit ? (
-                        <ArrowUpRight className="h-4 w-4" />
-                      ) : (
-                        <ArrowDownLeft className="h-4 w-4" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-[#0B1F3A]">
-                        {tx.description ?? formatTransactionTypeLabel(tx.type)}
-                      </p>
-                      {reference ? (
-                        <p className="truncate text-xs text-slate-500">{reference}</p>
-                      ) : tx.publicId ? (
-                        <p className="font-mono text-xs text-slate-400">{tx.publicId}</p>
-                      ) : null}
-                      <p className="mt-0.5 text-xs text-slate-400 sm:hidden">
-                        {formatReferralDateTime(tx.createdAt)} · Bal{" "}
-                        {tx.availableAfter}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p
-                      className={cn(
-                        "text-sm font-bold tabular-nums",
-                        isCredit ? "text-emerald-700" : "text-red-700",
-                      )}
-                    >
-                      {formatReferralCoins(tx.amount, tx.direction)}
-                    </p>
-                    <p className="hidden text-xs text-slate-400 sm:block">
-                      {formatReferralDateTime(tx.createdAt)}
-                    </p>
-                    <p className="hidden text-[11px] text-slate-400 sm:block">
-                      Balance {tx.availableAfter}
-                    </p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        <div className="space-y-6">
+          <div>
+            <h3 className="mb-3 text-sm font-semibold text-[#0B1F3A]">Earn History</h3>
+            {earnTxQuery.isLoading ? (
+              <Skeleton className="h-24 w-full rounded-lg" />
+            ) : earnTxQuery.isError ? (
+              <p className="text-sm text-red-600">Unable to load earning history.</p>
+            ) : !earnTxQuery.data?.items.length ? (
+              <EmptyState
+                title="No earning history yet"
+                icon={<TrendingUp className="h-7 w-7" />}
+              />
+            ) : (
+              <CoinTransactionList items={earnTxQuery.data.items} />
+            )}
+          </div>
+
+          <div className="border-t border-slate-100 pt-6">
+            {debitTxQuery.isLoading ? (
+              <Skeleton className="h-24 w-full rounded-lg" />
+            ) : debitTxQuery.isError ? (
+              <p className="text-sm text-red-600">Unable to load coin history.</p>
+            ) : !debitTxQuery.data?.items.length ? (
+              <EmptyState title="No coin transactions yet" icon={<Coins className="h-7 w-7" />} />
+            ) : (
+              <CoinTransactionList items={debitTxQuery.data.items} />
+            )}
+          </div>
+        </div>
       </Panel>
 
       <Panel title="Redemption History">

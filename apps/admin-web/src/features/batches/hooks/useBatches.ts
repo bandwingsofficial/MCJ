@@ -9,6 +9,7 @@ import type {
   BatchListItem,
 } from "@/src/features/batches/types/batch.types";
 import { parseBatchListResponse } from "@/src/features/batches/utils/batch-list.utils";
+import { useRealtimeRefetch } from "@/src/core/realtime/use-realtime-refetch";
 
 const DEFAULT_PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 400;
@@ -158,6 +159,8 @@ export const useBatches = (options?: {
   useEffect(() => {
     void fetchBatches();
   }, [fetchBatches]);
+
+  useRealtimeRefetch("batch", fetchBatches);
 
   return {
     batches,

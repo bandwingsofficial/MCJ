@@ -17,6 +17,8 @@ import {
   CourseTrainerResult,
 } from '../get-course/get-course.result';
 
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
+
 import { UpdateCourseCommand } from './update-course.command';
 import { BranchRepository } from '@/modules/branch/domain/repositories/branch.repository';
 import { BranchNotFoundException } from '@/modules/branch/domain/errors/branch-not-found.exception';
@@ -303,6 +305,12 @@ export class UpdateCourseHandler {
           trainer.email,
         ),
     );
+
+    notifyDomainMutation({
+      domain: 'course',
+      action: 'updated',
+      entityId: course.id,
+    });
 
     return GetCourseResult.fromEntity(course, branches, {
       category,

@@ -75,6 +75,34 @@ export function isBatchLifecycleStatus(
  *   replace the date-driven lifecycle status (UPCOMING / ONGOING / EXPIRED)
  * - otherwise use date+time lifecycle calculation
  */
+export type BatchLifecycleCountInput = {
+  startDate: Date;
+  startTime: string;
+  endDate: Date | null;
+  endTime: string;
+};
+
+export function countBatchesByLifecycleStatus(
+  batches: BatchLifecycleCountInput[],
+  now?: Date,
+): Record<BatchLifecycleStatus, number> {
+  const counts: Record<BatchLifecycleStatus, number> = {
+    [BatchStatus.UPCOMING]: 0,
+    [BatchStatus.ONGOING]: 0,
+    [BatchStatus.EXPIRED]: 0,
+  };
+
+  for (const batch of batches) {
+    const tab = calculateBatchLifecycleStatus({
+      ...batch,
+      now,
+    });
+    counts[tab] += 1;
+  }
+
+  return counts;
+}
+
 export function resolveBatchApiStatus(params: {
   storedStatus: BatchStatus;
   isDeleted?: boolean;

@@ -14,6 +14,8 @@ import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
 import { EnrollmentCoinService } from '../shared/enrollment-coin.service';
 import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
 
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
+
 import { UnenrollEnrollmentCommand } from './unenroll-enrollment.command';
 
 export class UnenrollEnrollmentHandler {
@@ -83,6 +85,16 @@ export class UnenrollEnrollmentHandler {
       previousStatus,
       command.updatedBy,
     );
+
+    notifyDomainMutation({
+      domain: 'enrollment',
+      action: 'deleted',
+      entityId: enrollment.id,
+      batchId: enrollment.batchId,
+      studentId: enrollment.studentId,
+      courseId: enrollment.courseId,
+      branchId: enrollment.branchId,
+    });
 
     return this.domainService.ensureDetailExists(
       await this.enrollmentRepo.findDetailById(enrollment.id, true),

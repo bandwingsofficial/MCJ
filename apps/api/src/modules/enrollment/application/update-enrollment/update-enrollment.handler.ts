@@ -14,6 +14,8 @@ import { EnrollmentDomainService } from '../../domain/services/enrollment-domain
 import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
 import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
 
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
+
 import { UpdateEnrollmentCommand } from './update-enrollment.command';
 
 export class UpdateEnrollmentHandler {
@@ -219,6 +221,16 @@ export class UpdateEnrollmentHandler {
         enrollment.status,
       );
     }
+
+    notifyDomainMutation({
+      domain: 'enrollment',
+      action: 'updated',
+      entityId: enrollment.id,
+      batchId: enrollment.batchId,
+      studentId: enrollment.studentId,
+      courseId: enrollment.courseId,
+      branchId: enrollment.branchId,
+    });
 
     return this.domainService.ensureDetailExists(
       await this.enrollmentRepo.findDetailById(enrollment.id, true),

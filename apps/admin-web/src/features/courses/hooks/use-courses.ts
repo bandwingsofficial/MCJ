@@ -11,6 +11,7 @@ import {
   courseService,
   resolveCourseListTotal,
 } from "@/src/features/courses/services/course.service";
+import { useRealtimeRefetch } from "@/src/core/realtime/use-realtime-refetch";
 
 import {
   DEFAULT_COURSE_PAGE_SIZE,
@@ -217,6 +218,8 @@ export const useCourses = (options?: {
   useEffect(() => {
     void fetchCourses();
   }, [fetchCourses]);
+
+  useRealtimeRefetch("course", () => fetchCourses({ silent: true }));
 
   return {
     courses,

@@ -11,6 +11,7 @@ import { batchService } from "@/src/features/batches/services/batch.service";
 import type {
   Batch,
 } from "@/src/features/batches/types/batch.types";
+import { useRealtimeRefetch } from "@/src/core/realtime/use-realtime-refetch";
 
 interface UseBatchReturn {
   batch: Batch | null;
@@ -62,6 +63,8 @@ export const useBatch = (
 
     void fetchBatch();
   }, [fetchBatch, id]);
+
+  useRealtimeRefetch("batch", fetchBatch);
 
   return {
     batch,

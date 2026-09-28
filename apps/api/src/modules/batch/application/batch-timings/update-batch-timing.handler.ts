@@ -7,6 +7,7 @@ import { countTimingLinkedEnrollments } from '@modules/enrollment/infrastructure
 import { GetBatchResult } from '../get-batch/get-batch.result';
 import { GetBatchQuery } from '../get-batch/get-batch.query';
 import { GetBatchHandler } from '../get-batch/get-batch.handler';
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
 
 export class UpdateBatchTimingHandler {
   constructor(
@@ -81,6 +82,12 @@ export class UpdateBatchTimingHandler {
         capacity: params.capacity,
         updatedBy: params.updatedBy ?? null,
       },
+    });
+
+    notifyDomainMutation({
+      domain: 'batch',
+      action: 'updated',
+      entityId: scope.batchId,
     });
 
     return this.getBatchHandler.execute(

@@ -30,12 +30,14 @@ import { TrainerModule } from './modules/trainer/trainer.module';
 import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
 import { ReferralRewardsModule } from './modules/referral-rewards/referral-rewards.module';
 import { AdminUserManagementModule } from './modules/admin-user-management/admin-user-management.module';
+import { RealtimeModule } from './infrastructure/realtime/realtime.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    RealtimeModule,
     AuthModule,
     ProfileModule,
     BranchModule,

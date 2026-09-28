@@ -11,6 +11,7 @@ import type {
 import { enrichStudentsWithJobStatusFromApplications } from "@/src/features/students/utils/student-job-status.utils";
 import { parseStudentListResponse } from "@/src/features/students/utils/student-list.utils";
 import { DEFAULT_STUDENT_FILTERS } from "@/src/features/students/constants/student.constants";
+import { useRealtimeRefetch } from "@/src/core/realtime/use-realtime-refetch";
 
 const SEARCH_DEBOUNCE_MS = 400;
 
@@ -134,6 +135,8 @@ export const useStudents = (): UseStudentsReturn => {
   useEffect(() => {
     void fetchStudents();
   }, [fetchStudents]);
+
+  useRealtimeRefetch("student", fetchStudents);
 
   return {
     students,

@@ -9,6 +9,8 @@ import { ValidationError } from '../errors/validation.error';
 import type { BulkBatchItemResult } from '../shared/bulk-batch-operation.result';
 import { parseBulkBatchIds } from '../shared/parse-bulk-batch-ids';
 
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
+
 import { BulkUpdateBatchStatusCommand } from './bulk-update-batch-status.command';
 import { BulkUpdateBatchStatusResult } from './bulk-update-batch-status.result';
 
@@ -104,6 +106,12 @@ export class BulkUpdateBatchStatusHandler {
           });
 
           this.logger.log(`Batch status updated: ${batch.id}`);
+
+          notifyDomainMutation({
+            domain: 'batch',
+            action: 'status_changed',
+            entityId: batch.id,
+          });
         } catch {
           itemResults.push({
             batchId: batch.id,

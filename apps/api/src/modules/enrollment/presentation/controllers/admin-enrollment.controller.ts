@@ -131,6 +131,7 @@ export class AdminEnrollmentController {
         dto.batchTimingId,
         dto.applicationType,
         dto.mode,
+        dto.status,
       ),
     );
 

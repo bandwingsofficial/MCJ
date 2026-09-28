@@ -23,9 +23,13 @@ import {
   InvalidDiscountException,
   InvalidPaymentAmountException,
 } from '../../domain/errors/enrollment-business.exception';
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
 import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
 import { EnrollmentPaymentRecordingService } from '../shared/enrollment-payment-recording.service';
 import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
+
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
 
 import { CreateEnrollmentCommand } from './create-enrollment.command';
 import { Enrollment } from '../../domain/entities/enrollment.entity';
@@ -145,6 +149,8 @@ export class CreateEnrollmentHandler {
 
     const admissionDate = command.admissionDate ?? new Date();
     const isAdminSource = command.source === EnrollmentSource.ADMIN;
+    const enrollmentStatus = this.resolveCreateStatus(command, isAdminSource);
+    const isActive = enrollmentStatus === EnrollmentStatus.ADMITTED;
 
     const enrollment = Enrollment.create({
       id: randomUUID(),
@@ -162,16 +168,22 @@ export class CreateEnrollmentHandler {
       feeAmount: command.feeAmount,
       discountAmount,
       paidAmount: 0,
-      status: isAdminSource
-        ? EnrollmentStatus.ADMITTED
-        : EnrollmentStatus.PENDING,
+      status: enrollmentStatus,
       source: command.source,
       applicationType:
         command.applicationType ?? ApplicationType.OFFLINE,
       mode: enrollmentMode,
       remarks: undefined,
+      isActive,
       createdBy: command.createdBy,
     });
+
+    if (enrollmentStatus === EnrollmentStatus.ADMITTED) {
+      await this.sideEffects.assertCapacityForTransition(
+        enrollment,
+        null,
+      );
+    }
 
     await this.enrollmentRepo.save(enrollment);
 
@@ -220,9 +232,43 @@ export class CreateEnrollmentHandler {
 
     this.logger.log(`✅ Enrollment created: ${enrollment.id}`);
 
+    notifyDomainMutation({
+      domain: 'enrollment',
+      action: 'created',
+      entityId: enrollment.id,
+      batchId: command.batchId,
+      studentId: command.studentId,
+      courseId: hierarchy.courseId,
+      branchId: hierarchy.branchId,
+    });
+
     return this.domainService.ensureDetailExists(
       await this.enrollmentRepo.findDetailById(enrollment.id, true),
     );
+  }
+
+  private resolveCreateStatus(
+    command: CreateEnrollmentCommand,
+    isAdminSource: boolean,
+  ): EnrollmentStatus {
+    if (!isAdminSource) {
+      return EnrollmentStatus.PENDING;
+    }
+
+    const status = command.status ?? EnrollmentStatus.ADVANCED;
+
+    if (
+      status !== EnrollmentStatus.ADVANCED &&
+      status !== EnrollmentStatus.ADMITTED
+    ) {
+      throw new BaseException(
+        ERROR_CODES.INVALID_STATUS_TRANSITION,
+        'Admin enrollment status must be ADVANCED or ADMITTED.',
+        400,
+      );
+    }
+
+    return status;
   }
 
   private async resolveBatchTiming(batchId: string, batchTimingId: string) {

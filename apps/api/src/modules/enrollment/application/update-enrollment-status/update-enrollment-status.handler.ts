@@ -3,6 +3,8 @@ import { EnrollmentDomainService } from '../../domain/services/enrollment-domain
 import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
 import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
 
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
+
 import { UpdateEnrollmentStatusCommand } from './update-enrollment-status.command';
 
 export class UpdateEnrollmentStatusHandler {
@@ -50,6 +52,16 @@ export class UpdateEnrollmentStatusHandler {
         previousStatus,
         command.updatedBy,
       );
+
+      notifyDomainMutation({
+        domain: 'enrollment',
+        action: 'status_changed',
+        entityId: enrollment.id,
+        batchId: enrollment.batchId,
+        studentId: enrollment.studentId,
+        courseId: enrollment.courseId,
+        branchId: enrollment.branchId,
+      });
     }
 
     return this.domainService.ensureDetailExists(

@@ -1,6 +1,7 @@
 import { BatchStatus } from '../enums/batch-status.enum';
 import {
   calculateBatchLifecycleStatus,
+  countBatchesByLifecycleStatus,
   combineUtcDateAndTime,
   resolveBatchApiStatus,
 } from './batch-lifecycle-status.util';
@@ -120,6 +121,37 @@ describe('resolveBatchApiStatus', () => {
         now: new Date(Date.UTC(2026, 8, 20)),
       }),
     ).toBe(BatchStatus.ONGOING);
+  });
+
+  it('counts batches by calculated lifecycle tab', () => {
+    const now = new Date(Date.UTC(2026, 8, 20));
+    const counts = countBatchesByLifecycleStatus(
+      [
+        {
+          startDate: new Date(Date.UTC(2026, 8, 4)),
+          startTime: '10:00',
+          endDate: new Date(Date.UTC(2026, 9, 5)),
+          endTime: '16:00',
+        },
+        {
+          startDate: new Date(Date.UTC(2026, 7, 1)),
+          startTime: '09:00',
+          endDate: new Date(Date.UTC(2026, 7, 30)),
+          endTime: '17:00',
+        },
+        {
+          startDate: new Date(Date.UTC(2026, 10, 1)),
+          startTime: '09:00',
+          endDate: new Date(Date.UTC(2026, 11, 1)),
+          endTime: '17:00',
+        },
+      ],
+      now,
+    );
+
+    expect(counts[BatchStatus.ONGOING]).toBe(1);
+    expect(counts[BatchStatus.EXPIRED]).toBe(1);
+    expect(counts[BatchStatus.UPCOMING]).toBe(1);
   });
 
   it('calculates lifecycle for legacy stored ARCHIVED status', () => {
