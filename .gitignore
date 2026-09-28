@@ -14,6 +14,12 @@ node_modules
 
 # Testing
 coverage
+.visual-regression/output/
+.visual-regression/last-audit.log
+packages/.visual-regression/
+packages/visual-regression/.visual-regression/
+packages/visual-regression/test-results/
+packages/visual-regression/auth/*.json
 
 # Turbo
 .turbo

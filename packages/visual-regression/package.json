@@ -1,0 +1,26 @@
+{
+  "name": "@mcj/visual-regression",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "discover": "tsx src/discover-routes.ts",
+    "baseline": "tsx src/run-phase.ts baseline",
+    "compare": "tsx src/run-phase.ts compare",
+    "diff": "tsx src/compare-screenshots.ts",
+    "report": "tsx src/generate-report.ts",
+    "audit": "tsx src/run-audit.ts",
+    "smoke": "tsx src/run-smoke.ts",
+    "test:playwright": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^20",
+    "@types/pixelmatch": "^5.2.6",
+    "@types/pngjs": "^6.0.5",
+    "pixelmatch": "^7.1.0",
+    "pngjs": "^7.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "5.9.2"
+  }
+}
