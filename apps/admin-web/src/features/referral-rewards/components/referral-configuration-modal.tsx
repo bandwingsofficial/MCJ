@@ -5,17 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/src/shared/components/ui/button";
 import { Input } from "@/src/shared/components/ui/input";
 import { Modal } from "@/src/shared/components/ui/model";
-import { AppSelect } from "@/src/shared/components/ui/select";
-
 import type { ReferralSettingsRecord } from "@/src/features/referral-rewards/utils/referral-configuration.utils";
-
-const QUALIFICATION_OPTIONS = [
-  { label: "Registration", value: "REGISTRATION" },
-  { label: "Email verification", value: "EMAIL_VERIFICATION" },
-  { label: "Phone verification", value: "PHONE_VERIFICATION" },
-  { label: "Enrollment", value: "ENROLLMENT" },
-  { label: "Paid enrollment", value: "PAID_ENROLLMENT" },
-];
 
 export type ReferralConfigurationModalMode = "create" | "edit" | "view";
 
@@ -33,9 +23,6 @@ function buildFormState(initial: ReferralSettingsRecord | null) {
     name: initial?.name ?? "",
     referralEnabled: Boolean(initial?.referralEnabled ?? true),
     rewardCoinsPerReferral: Number(initial?.rewardCoinsPerReferral ?? 100),
-    qualificationCondition: initial?.qualificationCondition ?? "REGISTRATION",
-    referralExpiryDays:
-      initial?.referralExpiryDays == null ? "" : String(initial.referralExpiryDays),
     maxReferralsPerReferrer:
       initial?.maxReferralsPerReferrer == null
         ? ""
@@ -103,10 +90,6 @@ export function ReferralConfigurationModal({
       name: form.name.trim(),
       referralEnabled: form.referralEnabled,
       rewardCoinsPerReferral: form.rewardCoinsPerReferral,
-      qualificationCondition: form.qualificationCondition,
-      referralExpiryDays: form.referralExpiryDays
-        ? Number(form.referralExpiryDays)
-        : null,
       maxReferralsPerReferrer: form.maxReferralsPerReferrer
         ? Number(form.maxReferralsPerReferrer)
         : null,
@@ -173,31 +156,6 @@ export function ReferralConfigurationModal({
                 ...f,
                 rewardCoinsPerReferral: Number(e.target.value),
               }))
-            }
-          />
-        </Field>
-
-        <Field label="Qualification condition">
-          <AppSelect
-            value={form.qualificationCondition}
-            disabled={readOnly}
-            triggerClassName="h-9 w-full"
-            onValueChange={(value) =>
-              setForm((f) => ({ ...f, qualificationCondition: value }))
-            }
-            options={QUALIFICATION_OPTIONS}
-          />
-        </Field>
-
-        <Field label="Referral expiry (days, optional)">
-          <Input
-            type="number"
-            min={1}
-            disabled={readOnly}
-            placeholder="No expiry"
-            value={form.referralExpiryDays}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, referralExpiryDays: e.target.value }))
             }
           />
         </Field>

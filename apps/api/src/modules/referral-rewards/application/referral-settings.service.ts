@@ -11,8 +11,6 @@ type SettingsInput = Partial<{
   name: string;
   referralEnabled: boolean;
   rewardCoinsPerReferral: number;
-  qualificationCondition: ReferralQualificationCondition;
-  referralExpiryDays: number | null;
   maxReferralsPerReferrer: number | null;
   redemptionEnabled: boolean;
   coinsPerRupee: number;
@@ -74,9 +72,7 @@ export class ReferralSettingsService {
           isActive: true,
           referralEnabled: input.referralEnabled ?? true,
           rewardCoinsPerReferral: input.rewardCoinsPerReferral ?? 100,
-          qualificationCondition:
-            input.qualificationCondition ?? ReferralQualificationCondition.REGISTRATION,
-          referralExpiryDays: input.referralExpiryDays ?? null,
+          qualificationCondition: ReferralQualificationCondition.REGISTRATION,
           maxReferralsPerReferrer: input.maxReferralsPerReferrer ?? null,
           redemptionEnabled: input.redemptionEnabled ?? true,
           coinsPerRupee: input.coinsPerRupee ?? 10,
@@ -103,11 +99,13 @@ export class ReferralSettingsService {
       throw new NotFoundException('Configuration not found');
     }
 
+    const { name, ...rest } = input;
+
     return this.prisma.referralRewardSettings.update({
       where: { id },
       data: {
-        ...input,
-        ...(input.name != null ? { name: input.name.trim() } : {}),
+        ...rest,
+        ...(name != null ? { name: name.trim() } : {}),
         updatedByUserId: updatedByUserId ?? null,
       },
     });

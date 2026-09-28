@@ -25,6 +25,7 @@ import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { cn } from "@/src/shared/lib/cn";
 import { referralRewardsQueryKeys } from "@/src/features/referral-rewards/constants/query-keys";
 import { useReferralRewardsSummary } from "@/src/features/referral-rewards/hooks/use-referral-rewards-summary";
+import { usePublicReferralSettings } from "@/src/features/referral-rewards/hooks/use-public-referral-settings";
 import {
   referralRewardsService,
   type CoinTransactionItem,
@@ -212,7 +213,13 @@ export function MyRewardsPage() {
       referralRewardsService.listRedemptions(),
   });
 
-  const referralCode = summaryQuery.data?.referralCode ?? null;
+  const publicSettingsQuery = usePublicReferralSettings();
+  const referralProgramEnabled =
+    publicSettingsQuery.data?.referralEnabled === true;
+
+  const referralCode = referralProgramEnabled
+    ? (summaryQuery.data?.referralCode ?? null)
+    : null;
   const referralLink = useMemo(
     () => (referralCode ? buildReferralRegisterUrl(referralCode) : ""),
     [referralCode],
@@ -252,7 +259,7 @@ export function MyRewardsPage() {
     toast.success("Referral link copied");
   };
 
-  if (summaryQuery.isLoading) {
+  if (summaryQuery.isLoading || publicSettingsQuery.isLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-72" />
@@ -305,59 +312,63 @@ export function MyRewardsPage() {
               Referral & Rewards
             </h1>
             <p className="mt-1 max-w-xl text-sm text-blue-100/95 sm:text-[15px]">
-              Earn coins by sharing MCJ Academy with your friends.
+              {referralProgramEnabled
+                ? "Earn coins by sharing MCJ Academy with your friends."
+                : "View your coin wallet, history, and redemption details."}
             </p>
           </div>
 
-          <div className="border-t border-white/15 pt-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-blue-100">
-            Your Referral Code
-          </p>
-          <p className="mt-2 font-mono text-3xl font-bold tracking-[0.2em] sm:text-4xl">
-            {referralCode ?? "—"}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              className="rounded-lg border-0 bg-white/95 text-[#0B1F3A] hover:bg-white"
-              disabled={!referralCode}
-              onClick={() => void copyCode()}
-            >
-              <Copy className="mr-2 h-4 w-4" />
-              Copy Code
-            </Button>
-            <Button
-              type="button"
-              className="rounded-lg border border-white/30 bg-white/10 text-white hover:bg-white/20"
-              disabled={!referralLink}
-              onClick={() => void shareReferral()}
-            >
-              <Share2 className="mr-2 h-4 w-4" />
-              Share
-            </Button>
-          </div>
-          <div className="mt-5">
-            <label className="text-[11px] font-medium uppercase tracking-wide text-blue-100">
-              Referral link
-            </label>
-            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 py-1.5 pl-3 pr-1.5">
-              <Link2 className="h-4 w-4 shrink-0 text-blue-100" aria-hidden />
-              <p className="min-w-0 flex-1 truncate text-sm text-white/95">
-                {referralLink || "—"}
+          {referralProgramEnabled ? (
+            <div className="border-t border-white/15 pt-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-100">
+                Your Referral Code
               </p>
-              <button
-                type="button"
-                disabled={!referralLink}
-                onClick={() => void copyLink()}
-                className="rounded-md p-2 text-white/90 transition hover:bg-white/15 disabled:opacity-40"
-                aria-label="Copy referral link"
-              >
-                <Copy className="h-4 w-4" />
-              </button>
+              <p className="mt-2 font-mono text-3xl font-bold tracking-[0.2em] sm:text-4xl">
+                {referralCode ?? "—"}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="rounded-lg border-0 bg-white/95 text-[#0B1F3A] hover:bg-white"
+                  disabled={!referralCode}
+                  onClick={() => void copyCode()}
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy Code
+                </Button>
+                <Button
+                  type="button"
+                  className="rounded-lg border border-white/30 bg-white/10 text-white hover:bg-white/20"
+                  disabled={!referralLink}
+                  onClick={() => void shareReferral()}
+                >
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Share
+                </Button>
+              </div>
+              <div className="mt-5">
+                <label className="text-[11px] font-medium uppercase tracking-wide text-blue-100">
+                  Referral link
+                </label>
+                <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 py-1.5 pl-3 pr-1.5">
+                  <Link2 className="h-4 w-4 shrink-0 text-blue-100" aria-hidden />
+                  <p className="min-w-0 flex-1 truncate text-sm text-white/95">
+                    {referralLink || "—"}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={!referralLink}
+                    onClick={() => void copyLink()}
+                    className="rounded-md p-2 text-white/90 transition hover:bg-white/15 disabled:opacity-40"
+                    aria-label="Copy referral link"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-          </div>
+          ) : null}
         </div>
       </div>
 
@@ -386,70 +397,85 @@ export function MyRewardsPage() {
         />
       </div>
 
-      {/* Referral stats */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatChip icon={Users} label="Total Referrals" value={stats?.totalReferrals ?? 0} />
-        <StatChip
-          icon={CheckCircle2}
-          label="Successful Referrals"
-          value={stats?.successfulReferrals ?? 0}
-        />
-        <StatChip icon={Clock} label="Pending Referrals" value={stats?.pendingReferrals ?? 0} />
-        <StatChip
-          icon={Gift}
-          label="Referral Coins Earned"
-          value={stats?.coinsEarnedFromReferrals ?? 0}
-        />
-      </div>
-
-      {/* Two-column: referrals + redeem */}
-      <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
-        <Panel title="My Referrals" className="lg:col-span-2">
-          {!summaryQuery.data?.referrals.length ? (
-            <EmptyState
-              icon={<Gift className="h-8 w-8" />}
-              title="No referrals yet"
-              description="Share your referral code to start earning coins."
+      {referralProgramEnabled ? (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StatChip icon={Users} label="Total Referrals" value={stats?.totalReferrals ?? 0} />
+            <StatChip
+              icon={CheckCircle2}
+              label="Successful Referrals"
+              value={stats?.successfulReferrals ?? 0}
             />
-          ) : (
-            <ul className="space-y-2">
-              {summaryQuery.data.referrals.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex gap-3 rounded-lg border border-slate-100 bg-slate-50/40 p-3 transition hover:border-slate-200"
-                >
-                  <div
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2F6BE5] to-[#1E49A8] text-xs font-bold text-white"
-                    aria-hidden
-                  >
-                    {initialsFromName(item.referred.name)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-[#0B1F3A]">
-                      {item.referred.name}
-                    </p>
-                    <p className="truncate text-xs text-slate-500">
-                      {item.referred.email}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1 text-right">
-                    <StatusBadge status={item.status} />
-                    {item.status === "REWARDED" ? (
-                      <p className="text-sm font-semibold text-emerald-700">
-                        +{item.rewardCoins} Coins
-                      </p>
-                    ) : null}
-                    <p className="text-xs text-slate-400">
-                      {formatReferralDateTime(item.createdAt)}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
+            <StatChip icon={Clock} label="Pending Referrals" value={stats?.pendingReferrals ?? 0} />
+            <StatChip
+              icon={Gift}
+              label="Referral Coins Earned"
+              value={stats?.coinsEarnedFromReferrals ?? 0}
+            />
+          </div>
 
-        <Panel title="Coin Redemption" className="lg:col-span-1">
+          <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
+            <Panel title="My Referrals" className="lg:col-span-2">
+              {!summaryQuery.data?.referrals.length ? (
+                <EmptyState
+                  icon={<Gift className="h-8 w-8" />}
+                  title="No referrals yet"
+                  description="Share your referral code to start earning coins."
+                />
+              ) : (
+                <ul className="space-y-2">
+                  {summaryQuery.data.referrals.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex gap-3 rounded-lg border border-slate-100 bg-slate-50/40 p-3 transition hover:border-slate-200"
+                    >
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2F6BE5] to-[#1E49A8] text-xs font-bold text-white"
+                        aria-hidden
+                      >
+                        {initialsFromName(item.referred.name)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-[#0B1F3A]">
+                          {item.referred.name}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">
+                          {item.referred.email}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+                        <StatusBadge status={item.status} />
+                        {item.status === "REWARDED" ? (
+                          <p className="text-sm font-semibold text-emerald-700">
+                            +{item.rewardCoins} Coins
+                          </p>
+                        ) : null}
+                        <p className="text-xs text-slate-400">
+                          {formatReferralDateTime(item.createdAt)}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+
+            <Panel title="Coin Redemption" className="lg:col-span-1">
+              <div className="space-y-3 text-sm leading-relaxed text-slate-600">
+                <p className="font-medium text-[#0B1F3A]">
+                  Your coins are safely stored in your wallet.
+                </p>
+                <p>
+                  Coin redemption is currently handled through the MCJ Academy rewards
+                  process. You can continue to view your available coins, earned coins,
+                  transactions, and redemption history here.
+                </p>
+              </div>
+            </Panel>
+          </div>
+        </>
+      ) : (
+        <Panel title="Coin Redemption">
           <div className="space-y-3 text-sm leading-relaxed text-slate-600">
             <p className="font-medium text-[#0B1F3A]">
               Your coins are safely stored in your wallet.
@@ -461,7 +487,7 @@ export function MyRewardsPage() {
             </p>
           </div>
         </Panel>
-      </div>
+      )}
 
       <Panel title="Coin History">
         <div className="space-y-6">

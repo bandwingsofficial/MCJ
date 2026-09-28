@@ -5,7 +5,6 @@ import {
 import {
   AccountStatus,
   CoinTransactionType,
-  ReferralQualificationCondition,
   ReferralStatus,
   Role,
   type Prisma,
@@ -238,35 +237,31 @@ export class ReferralRegistrationService {
       data: { nextReferralPublicNumber: referralNumber + 1 },
     });
 
-    if (
-      settings.qualificationCondition === ReferralQualificationCondition.REGISTRATION
-    ) {
-      referral = await tx.referral.update({
-        where: { id: referral.id },
-        data: {
-          status: ReferralStatus.QUALIFIED,
-          qualifiedAt: new Date(),
-        },
-      });
+    referral = await tx.referral.update({
+      where: { id: referral.id },
+      data: {
+        status: ReferralStatus.QUALIFIED,
+        qualifiedAt: new Date(),
+      },
+    });
 
-      await this.walletService.creditAvailable(tx, {
-        userId: input.referrerUserId,
-        amount: settings.rewardCoinsPerReferral,
-        type: CoinTransactionType.REFERRAL_REWARD,
-        description: 'Referral reward',
-        referralId: referral.id,
-        idempotencyKey: `referral-reward:${referral.id}`,
-      });
+    await this.walletService.creditAvailable(tx, {
+      userId: input.referrerUserId,
+      amount: settings.rewardCoinsPerReferral,
+      type: CoinTransactionType.REFERRAL_REWARD,
+      description: 'Referral reward',
+      referralId: referral.id,
+      idempotencyKey: `referral-reward:${referral.id}`,
+    });
 
-      referral = await tx.referral.update({
-        where: { id: referral.id },
-        data: {
-          status: ReferralStatus.REWARDED,
-          rewardedAt: new Date(),
-          rewardCoins: settings.rewardCoinsPerReferral,
-        },
-      });
-    }
+    referral = await tx.referral.update({
+      where: { id: referral.id },
+      data: {
+        status: ReferralStatus.REWARDED,
+        rewardedAt: new Date(),
+        rewardCoins: settings.rewardCoinsPerReferral,
+      },
+    });
 
     return referral;
   }

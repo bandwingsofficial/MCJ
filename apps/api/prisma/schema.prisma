@@ -2252,7 +2252,6 @@ model ReferralRewardSettings {
   referralEnabled            Boolean                        @default(true)
   rewardCoinsPerReferral     Int                            @default(100)
   qualificationCondition     ReferralQualificationCondition @default(REGISTRATION)
-  referralExpiryDays         Int?
   maxReferralsPerReferrer    Int?
   redemptionEnabled          Boolean                        @default(true)
   coinsPerRupee              Int                            @default(10)

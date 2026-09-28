@@ -15,6 +15,8 @@ function unwrap<T>(response: { data: ApiResponse<T> }): T {
 
 export interface ReferralRewardsSummary {
 
+  referralEnabled: boolean;
+
   referralCode: string | null;
 
   referredBy: unknown;

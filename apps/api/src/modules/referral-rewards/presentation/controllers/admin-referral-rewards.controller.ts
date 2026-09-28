@@ -8,14 +8,9 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  CoinTransactionDirection,
-  ReferralQualificationCondition,
-  ReferralStatus,
-} from '@prisma/client';
+import { CoinTransactionDirection, ReferralStatus } from '@prisma/client';
 import {
   IsBoolean,
-  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -46,15 +41,6 @@ class UpdateReferralSettingsDto {
   @IsInt()
   @Min(0)
   rewardCoinsPerReferral?: number;
-
-  @IsOptional()
-  @IsEnum(ReferralQualificationCondition)
-  qualificationCondition?: ReferralQualificationCondition;
-
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  referralExpiryDays?: number | null;
 
   @IsOptional()
   @IsInt()

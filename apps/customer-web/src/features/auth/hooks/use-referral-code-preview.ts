@@ -8,6 +8,7 @@ export function useReferralCodePreview(
   code: string,
   email: string,
   enabled: boolean,
+  referralProgramEnabled = true,
 ) {
   const normalizedCode = code.trim().toUpperCase();
 
@@ -24,7 +25,9 @@ export function useReferralCodePreview(
         email.trim() || undefined,
       ),
     enabled:
-      enabled && /^[A-Za-z0-9]{6,12}$/.test(normalizedCode),
+      referralProgramEnabled &&
+      enabled &&
+      /^[A-Za-z0-9]{6,12}$/.test(normalizedCode),
     staleTime: 30_000,
     retry: false,
   });

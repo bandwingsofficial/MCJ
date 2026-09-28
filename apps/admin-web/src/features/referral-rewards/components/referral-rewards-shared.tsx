@@ -497,10 +497,6 @@ export function ReferralRecordId({ children }: { children: ReactNode }) {
   );
 }
 
-export function ReferralQualificationBadge({ label }: { label: string }) {
-  return <ReferralSemanticBadge tone="info">{label}</ReferralSemanticBadge>;
-}
-
 export function ReferralRedemptionConfigBadge({
   enabled,
   summary,

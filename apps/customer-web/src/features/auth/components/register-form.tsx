@@ -15,6 +15,7 @@ import {
   useRegistrationPhoneCheck,
 } from "@/src/features/auth/hooks/use-registration-field-check";
 import { useReferralCodePreview } from "@/src/features/auth/hooks/use-referral-code-preview";
+import { usePublicReferralSettings } from "@/src/features/referral-rewards/hooks/use-public-referral-settings";
 import {
   RegisterFieldFeedback,
   RegisterInputIcon,
@@ -48,6 +49,9 @@ export function RegisterForm({
   initialReferralCode?: string;
 }) {
   const registerMutation = useRegister(redirectTo);
+  const publicReferralSettings = usePublicReferralSettings();
+  const referralProgramEnabled =
+    publicReferralSettings.data?.referralEnabled ?? false;
 
   const {
     register,
@@ -118,6 +122,7 @@ export function RegisterForm({
     debouncedReferral,
     watchedEmail,
     referralCheckEnabled,
+    referralProgramEnabled,
   );
 
   const emailAsyncState = useMemo(() => {
@@ -149,16 +154,22 @@ export function RegisterForm({
     return "idle" as const;
   }, [referralCheckEnabled, referralPreview]);
 
+  const referralPreviewValid =
+    referralProgramEnabled &&
+    referralPreview.data &&
+    referralPreview.data.valid
+      ? referralPreview.data
+      : null;
+  const referredUser = referralPreviewValid?.referrer ?? null;
+
   const onSubmit = (data: RegisterFormValues) => {
-    const referralCode = data.referralCode?.trim();
+    const referralCode =
+      referralProgramEnabled ? data.referralCode?.trim() : undefined;
     registerMutation.mutate({
       ...data,
       referralCode: referralCode || undefined,
     });
   };
-
-  const referredUser =
-    referralPreview.data?.valid === true ? referralPreview.data.referrer : null;
 
   return (
     <>
@@ -432,56 +443,58 @@ export function RegisterForm({
             <RegisterFieldFeedback schemaMessage={errors.password?.message} />
           </div>
 
-          <div className="mcj-field mcj-field-span-2">
-            <label className="mcj-label">
-              Referral Code{" "}
-              <span className="font-normal normal-case tracking-normal text-stone-400">
-                (Optional)
-              </span>
-            </label>
-            <div className="mcj-input-wrap">
-              <Input
-                placeholder="AKS7X92P"
-                className={registerInputStatusClass(
-                  referralAsyncState,
-                  Boolean(errors.referralCode),
-                )}
-                style={{ paddingLeft: "14px" }}
-                {...register("referralCode")}
-              />
-              <RegisterInputIcon
-                asyncState={referralAsyncState}
-                hasSchemaError={Boolean(errors.referralCode)}
-              />
-            </div>
-            <RegisterFieldFeedback
-              schemaMessage={errors.referralCode?.message}
-              asyncState={referralAsyncState}
-              asyncMessage={
-                referralAsyncState === "success"
-                  ? "Referral code verified"
-                  : referralPreview.data && !referralPreview.data.valid
-                    ? referralPreview.data.message
-                    : referralPreview.isError
-                      ? "Unable to verify referral code"
-                      : undefined
-              }
-            />
-            {referredUser ? (
-              <div className="mcj-referrer-panel" aria-live="polite">
-                <dl>
-                  <div>
-                    <dt>Referred by — Name</dt>
-                    <dd>{referredUser.name}</dd>
-                  </div>
-                  <div>
-                    <dt>Referred by — Email</dt>
-                    <dd>{referredUser.email}</dd>
-                  </div>
-                </dl>
+          {referralProgramEnabled ? (
+            <div className="mcj-field mcj-field-span-2">
+              <label className="mcj-label">
+                Referral Code{" "}
+                <span className="font-normal normal-case tracking-normal text-stone-400">
+                  (Optional)
+                </span>
+              </label>
+              <div className="mcj-input-wrap">
+                <Input
+                  placeholder="AKS7X92P"
+                  className={registerInputStatusClass(
+                    referralAsyncState,
+                    Boolean(errors.referralCode),
+                  )}
+                  style={{ paddingLeft: "14px" }}
+                  {...register("referralCode")}
+                />
+                <RegisterInputIcon
+                  asyncState={referralAsyncState}
+                  hasSchemaError={Boolean(errors.referralCode)}
+                />
               </div>
-            ) : null}
-          </div>
+              <RegisterFieldFeedback
+                schemaMessage={errors.referralCode?.message}
+                asyncState={referralAsyncState}
+                asyncMessage={
+                  referralAsyncState === "success"
+                    ? "Referral code verified"
+                    : referralPreview.data && !referralPreview.data.valid
+                      ? referralPreview.data.message
+                      : referralPreview.isError
+                        ? "Unable to verify referral code"
+                        : undefined
+                }
+              />
+              {referredUser ? (
+                <div className="mcj-referrer-panel" aria-live="polite">
+                  <dl>
+                    <div>
+                      <dt>Referred by — Name</dt>
+                      <dd>{referredUser.name}</dd>
+                    </div>
+                    <div>
+                      <dt>Referred by — Email</dt>
+                      <dd>{referredUser.email}</dd>
+                    </div>
+                  </dl>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="mcj-btn-wrap">

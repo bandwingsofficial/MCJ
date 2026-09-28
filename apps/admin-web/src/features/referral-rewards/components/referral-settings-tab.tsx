@@ -15,7 +15,6 @@ import {
   ReferralCoinMetric,
   ReferralConfigurationStatusBadge,
   ReferralEnabledBadge,
-  ReferralQualificationBadge,
   ReferralRedemptionConfigBadge,
   ReferralRewardsSectionHeader,
   ReferralRewardsTableCard,
@@ -26,7 +25,6 @@ import {
 } from "@/src/features/referral-rewards/components/referral-configuration-modal";
 import {
   formatConfigurationStatus,
-  formatQualificationLabel,
   formatRedemptionSummary,
   type ReferralSettingsRecord,
 } from "@/src/features/referral-rewards/utils/referral-configuration.utils";
@@ -42,9 +40,6 @@ function toSettingsRecord(data: Record<string, unknown>): ReferralSettingsRecord
     isActive: Boolean(data.isActive),
     referralEnabled: Boolean(data.referralEnabled),
     rewardCoinsPerReferral: Number(data.rewardCoinsPerReferral ?? 0),
-    qualificationCondition: String(data.qualificationCondition ?? "REGISTRATION"),
-    referralExpiryDays:
-      data.referralExpiryDays == null ? null : Number(data.referralExpiryDays),
     maxReferralsPerReferrer:
       data.maxReferralsPerReferrer == null
         ? null
@@ -184,7 +179,6 @@ export function ReferralSettingsTab({ createTrigger = 0 }: ReferralSettingsTabPr
             "Configuration",
             "Referral Status",
             "Reward Coins",
-            "Qualification",
             "Redemption",
             "Status",
             "Actions",
@@ -198,10 +192,6 @@ export function ReferralSettingsTab({ createTrigger = 0 }: ReferralSettingsTabPr
               key="reward"
               variant="reward"
               value={row.rewardCoinsPerReferral}
-            />,
-            <ReferralQualificationBadge
-              key="qual"
-              label={formatQualificationLabel(row.qualificationCondition)}
             />,
             <ReferralRedemptionConfigBadge
               key="redemption"

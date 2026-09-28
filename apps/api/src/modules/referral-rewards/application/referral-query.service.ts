@@ -33,6 +33,13 @@ export class ReferralQueryService {
     });
     if (!user) throw new NotFoundException('User not found');
 
+    const activeSettings = await this.prisma.referralRewardSettings.findFirst({
+      where: { isActive: true },
+      orderBy: { updatedAt: 'desc' },
+      select: { referralEnabled: true },
+    });
+    const referralEnabled = activeSettings?.referralEnabled ?? true;
+
     const [
       referralsMade,
       totalReferrals,
@@ -78,7 +85,8 @@ export class ReferralQueryService {
     ]);
 
     return {
-      referralCode: user.referralCode,
+      referralEnabled,
+      referralCode: referralEnabled ? user.referralCode : null,
       referredBy: user.referralAsReferred,
       wallet: user.coinWallet,
       stats: {
