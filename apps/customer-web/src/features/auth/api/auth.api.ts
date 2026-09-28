@@ -16,8 +16,25 @@ import type {
 } from "@/src/features/auth/types/auth.types";
 
 import type { ApiResponse } from "@/src/core/types/api-response.types";
+import type { RegistrationFieldAvailability } from "@/src/features/auth/types/registration-check.types";
 
 export const authApi = {
+  checkRegistrationEmail(email: string) {
+    return apiClient.get<
+      ApiResponse<RegistrationFieldAvailability>
+    >("/auth/register/check-email", {
+      params: { email },
+    });
+  },
+
+  checkRegistrationPhone(phone: string) {
+    return apiClient.get<
+      ApiResponse<RegistrationFieldAvailability>
+    >("/auth/register/check-phone", {
+      params: { phone },
+    });
+  },
+
   register(
     payload: RegisterRequest
   ) {

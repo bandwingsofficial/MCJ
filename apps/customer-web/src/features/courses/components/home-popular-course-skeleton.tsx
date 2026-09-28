@@ -16,7 +16,7 @@ export function HomePopularCourseSkeleton({
           key={index}
           className="flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
         >
-          <Skeleton className="aspect-video w-full shrink-0 rounded-none" />
+          <Skeleton className="h-40 w-full shrink-0 rounded-none" />
           <div className="flex flex-1 flex-col p-3">
             <div className="mb-1.5 flex gap-1">
               <Skeleton className="h-4 w-14 rounded-sm" />

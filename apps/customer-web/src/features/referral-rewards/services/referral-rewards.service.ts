@@ -1,6 +1,7 @@
 import { apiClient } from "@/src/core/api/axios";
 
 import type { ApiResponse } from "@/src/core/types/api-response.types";
+import type { ReferralCodePreviewResult } from "@/src/features/auth/types/registration-check.types";
 
 
 
@@ -150,6 +151,23 @@ export const referralRewardsService = {
     return apiClient
       .get<ApiResponse<PublicReferralSettings>>(
         "/referral-rewards/settings/public",
+      )
+      .then(unwrap);
+  },
+
+  async validateRegistrationCode(
+    code: string,
+    email?: string,
+  ): Promise<ReferralCodePreviewResult> {
+    return apiClient
+      .get<ApiResponse<ReferralCodePreviewResult>>(
+        "/referral-rewards/validate-registration-code",
+        {
+          params: {
+            code,
+            ...(email?.trim() ? { email: email.trim() } : {}),
+          },
+        },
       )
       .then(unwrap);
   },

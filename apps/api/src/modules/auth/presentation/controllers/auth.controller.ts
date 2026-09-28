@@ -6,6 +6,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -74,6 +75,11 @@ import { GetMeQuery } from '../../application/me/get-me.query';
 // =====================
 
 import { RegisterDto } from '../dtos/register.dto';
+import {
+  CheckRegistrationEmailQueryDto,
+  CheckRegistrationPhoneQueryDto,
+} from '../dtos/check-registration.dto';
+import { UserAccountLifecycleService } from '../../../admin-user-management/application/user-account-lifecycle.service';
 
 import { LoginDto } from '../dtos/login.dto';
 
@@ -113,11 +119,46 @@ export class AuthController {
 
     private readonly resetPasswordHandler: ResetPasswordHandler,
     private readonly getMeHandler: GetMeHandler,
+    private readonly accountLifecycle: UserAccountLifecycleService,
   ) {}
 
   // =====================
   // 🟢 REGISTER
   // =====================
+
+  @Get('register/check-email')
+  async checkRegistrationEmail(
+    @Query() query: CheckRegistrationEmailQueryDto,
+  ) {
+    const result =
+      await this.accountLifecycle.checkEmailAvailabilityForRegistration(
+        query.email,
+      );
+
+    return {
+      message: result.available
+        ? 'Email is available'
+        : (result.message ?? 'Email is not available'),
+      data: result,
+    };
+  }
+
+  @Get('register/check-phone')
+  async checkRegistrationPhone(
+    @Query() query: CheckRegistrationPhoneQueryDto,
+  ) {
+    const result =
+      await this.accountLifecycle.checkPhoneAvailabilityForRegistration(
+        query.phone,
+      );
+
+    return {
+      message: result.available
+        ? 'Phone number is available'
+        : (result.message ?? 'Phone number is not available'),
+      data: result,
+    };
+  }
 
   @Post('register')
   async register(@Body() dto: RegisterDto, @Req() req: Request) {

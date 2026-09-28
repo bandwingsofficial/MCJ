@@ -5,15 +5,22 @@ interface AuthCardProps {
   title: string;
   description?: string;
   children: ReactNode;
+  variant?: "default" | "wide";
 }
 
-export function AuthCard({ title, description, children }: AuthCardProps) {
+export function AuthCard({
+  title,
+  description,
+  children,
+  variant = "default",
+}: AuthCardProps) {
+  const isWide = variant === "wide";
   return (
     <>
       <style>{`
         .mcj-auth-card-shell {
           width: 100%;
-          max-width: 440px;
+          max-width: ${isWide ? "820px" : "440px"};
           background: #FFFFFF;
           border-radius: 20px;
           overflow: hidden;

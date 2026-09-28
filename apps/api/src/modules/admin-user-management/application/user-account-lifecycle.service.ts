@@ -10,9 +10,89 @@ import { randomBytes, randomUUID } from 'crypto';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { resolvePortalAccountStatus } from '../utils/account-status.util';
 
+export type RegistrationFieldAvailability = {
+  available: boolean;
+  message?: string;
+};
+
 @Injectable()
 export class UserAccountLifecycleService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async checkEmailAvailabilityForRegistration(
+    email: string,
+  ): Promise<RegistrationFieldAvailability> {
+    try {
+      await this.assertRegistrationAllowed(email.trim(), undefined);
+      return { available: true };
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        const message =
+          typeof error.message === 'string'
+            ? error.message
+            : 'Email is already registered';
+        return { available: false, message };
+      }
+      throw error;
+    }
+  }
+
+  async checkPhoneAvailabilityForRegistration(
+    phone: string,
+  ): Promise<RegistrationFieldAvailability> {
+    const trimmed = phone?.trim();
+    if (!trimmed) {
+      return { available: false, message: 'Phone number is required' };
+    }
+
+    try {
+      await this.assertPhoneRegistrationAllowed(trimmed);
+      return { available: true };
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        const message =
+          typeof error.message === 'string'
+            ? error.message
+            : 'Phone number is already registered';
+        return { available: false, message };
+      }
+      throw error;
+    }
+  }
+
+  private async assertPhoneRegistrationAllowed(phone: string) {
+    const phoneUser = await this.prisma.user.findFirst({
+      where: { phone: phone.trim() },
+      select: { deletedAt: true, status: true, lastLoginAt: true, role: true },
+    });
+    if (phoneUser) {
+      const status = resolvePortalAccountStatus(phoneUser);
+      if (status === 'SUSPENDED') {
+        throw new ConflictException(
+          'This account is suspended. Please contact support.',
+        );
+      }
+      if (status === 'DELETED') {
+        throw new ConflictException(
+          'This phone number belongs to a deleted account.',
+        );
+      }
+      const claimable =
+        phoneUser.role === Role.STUDENT && phoneUser.lastLoginAt === null;
+      if (!claimable) {
+        throw new ConflictException('Phone number is already registered');
+      }
+    }
+
+    const deletedPhone = await this.prisma.userDeletionRecord.findFirst({
+      where: { originalPhone: phone.trim() },
+    });
+    if (deletedPhone) {
+      throw new ConflictException(
+        'This phone number belongs to a deleted account.',
+      );
+    }
+  }
 
   async assertRegistrationAllowed(email: string, phone?: string | null) {
     const normalizedEmail = email.trim().toLowerCase();
@@ -58,37 +138,7 @@ export class UserAccountLifecycleService {
     }
 
     if (phone?.trim()) {
-      const phoneUser = await this.prisma.user.findFirst({
-        where: { phone: phone.trim() },
-        select: { deletedAt: true, status: true, lastLoginAt: true, role: true },
-      });
-      if (phoneUser) {
-        const status = resolvePortalAccountStatus(phoneUser);
-        if (status === 'SUSPENDED') {
-          throw new ConflictException(
-            'This account is suspended. Please contact support.',
-          );
-        }
-        if (status === 'DELETED') {
-          throw new ConflictException(
-            'This phone number belongs to a deleted account.',
-          );
-        }
-        const claimable =
-          phoneUser.role === Role.STUDENT && phoneUser.lastLoginAt === null;
-        if (!claimable) {
-          throw new ConflictException('Phone number is already registered');
-        }
-      }
-
-      const deletedPhone = await this.prisma.userDeletionRecord.findFirst({
-        where: { originalPhone: phone.trim() },
-      });
-      if (deletedPhone) {
-        throw new ConflictException(
-          'This phone number belongs to a deleted account.',
-        );
-      }
+      await this.assertPhoneRegistrationAllowed(phone);
     }
   }
 

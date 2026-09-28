@@ -49,7 +49,7 @@ export function HomePopularCourseCard({
       "
     >
       {/* Image */}
-      <div className="relative h-[175px] w-full shrink-0 overflow-hidden bg-slate-100">
+      <div className="relative h-40 w-full shrink-0 overflow-hidden bg-slate-100">
         {course.thumbnailUrl ? (
           <>
             <Image
@@ -63,6 +63,7 @@ export function HomePopularCourseCard({
               "
               className="
                 object-cover
+                object-center
                 transition-transform
                 duration-500
                 ease-out

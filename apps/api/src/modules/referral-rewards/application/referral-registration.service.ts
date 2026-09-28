@@ -69,6 +69,61 @@ export class ReferralRegistrationService {
     return { normalizedCode, referrerUserId: referrer.id };
   }
 
+  async previewReferralCodeForRegistration(
+    referralCodeRaw: string,
+    registeringEmail: string,
+  ): Promise<
+    | {
+        valid: true;
+        normalizedCode: string;
+        referrer: { name: string; email: string };
+      }
+    | { valid: false; message: string }
+  > {
+    try {
+      const result = await this.validateReferralCodeForRegistration(
+        referralCodeRaw,
+        registeringEmail,
+      );
+      if (!result) {
+        return { valid: false, message: 'Referral code is not valid' };
+      }
+
+      const referrer = await this.prisma.user.findUnique({
+        where: { id: result.referrerUserId },
+        select: { name: true, email: true },
+      });
+
+      if (!referrer) {
+        return { valid: false, message: 'Referral code is not valid' };
+      }
+
+      return {
+        valid: true,
+        normalizedCode: result.normalizedCode,
+        referrer: {
+          name: referrer.name,
+          email: referrer.email,
+        },
+      };
+    } catch (error) {
+      if (error instanceof InvalidReferralCodeError) {
+        const response = error.getResponse();
+        const message =
+          typeof response === 'string'
+            ? response
+            : (response as { message?: string | string[] }).message;
+        return {
+          valid: false,
+          message: Array.isArray(message)
+            ? (message[0] ?? 'Invalid referral code')
+            : (message ?? 'Invalid referral code'),
+        };
+      }
+      throw error;
+    }
+  }
+
   async ensureUserReferralAssets(
     tx: Tx,
     userId: string,

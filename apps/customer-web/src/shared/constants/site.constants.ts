@@ -20,6 +20,7 @@ export const MCJ_SOCIAL_LINKS = {
 export const MCJ_NAV_ITEMS = [
   { name: "Home", href: "/" },
   { name: "Courses", href: "/courses" },
+  { name: "Financial News", href: "/finance-news" },
   { name: "Our Branches", href: "/branches" },
   { name: "Job Applications", href: "/jobs" },
   { name: "About Us", href: "/about" },
@@ -29,6 +30,7 @@ export const MCJ_NAV_ITEMS = [
 export const MCJ_FOOTER_QUICK_LINKS = [
   { name: "Home", href: "/" },
   { name: "Courses", href: "/courses" },
+  { name: "Financial News", href: "/finance-news" },
   { name: "Our Branches", href: "/branches" },
   { name: "Placements", href: "/success-stories" },
   { name: "About Us", href: "/about" },

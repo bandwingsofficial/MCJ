@@ -1,9 +1,5 @@
-export default function FinanceNewsPage() {
-  return (
-    <div className="flex items-center justify-center min-h-[70vh]">
-      <h1 className="text-4xl font-bold text-gray-700">
-        Coming Soon....
-      </h1>
-    </div>
-  );
+import { FinanceNewsListPage } from "@/src/features/finance-news/pages/finance-news-list-page";
+
+export default function FinanceNewsRoutePage() {
+  return <FinanceNewsListPage />;
 }

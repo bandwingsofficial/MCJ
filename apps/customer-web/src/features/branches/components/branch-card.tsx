@@ -21,13 +21,13 @@ export function BranchCard({ branch }: BranchCardProps) {
   return (
     <Link href={getBranchDetailPath(branch)}>
       <Card className="group h-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#2563EB]/30 hover:shadow-md">
-        <div className="relative h-36 bg-slate-100">
+        <div className="relative h-40 w-full bg-slate-100">
           {imageUrl ? (
             <Image
               src={imageUrl}
               alt={branch.branchName}
               fill
-              className="object-cover"
+              className="object-cover object-center"
             />
           ) : (
             <div className="flex h-full items-center justify-center bg-gradient-to-br from-[#EEF4FF] to-[#F5F3FF] text-sm font-medium text-[#2563EB]">

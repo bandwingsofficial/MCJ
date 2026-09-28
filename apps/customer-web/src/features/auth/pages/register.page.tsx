@@ -28,6 +28,7 @@ function RegisterPageContent() {
   return (
     <AuthPageWrapper>
       <AuthCard
+        variant="wide"
         title="Create Account"
         description="Register to access MCJ LMS"
       >

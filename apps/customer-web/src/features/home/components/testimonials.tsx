@@ -45,10 +45,12 @@ export function TestimonialsSection() {
       : [...visible, ...testimonials].slice(0, 3);
 
   return (
-    <section id="testimonials" className="relative w-full overflow-hidden bg-white py-12">
-      <div className="w-full">
-        {/* HEADER SECTION */}
-        <div className="mb-8 flex items-end justify-between gap-4 px-6">
+    <section
+      id="testimonials"
+      className="relative w-full overflow-hidden bg-gradient-to-b from-white via-[#F8FBFF]/40 to-white py-8 sm:py-10"
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-6 flex items-end justify-between gap-4">
           <div className="text-center md:text-left">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2563EB]">
               Testimonials
@@ -82,7 +84,7 @@ export function TestimonialsSection() {
           </div>
         </div>
 
-        <div className="mx-auto grid max-w-7xl gap-5 px-6 md:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-3">
           {paddedVisible.map((t, i) => (
             <TestimonialCard key={`${t.name}-${i}`} t={t} />
           ))}
@@ -95,7 +97,7 @@ export function TestimonialsSection() {
 // Extracted Simple Card UI Layer with SVG User Profile Icon Fallbacks
 function TestimonialCard({ t }: { t: (typeof testimonials)[0] }) {
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-slate-100 bg-[#F8FBFF] px-5 py-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+    <div className="flex h-full flex-col rounded-2xl border border-[#D9E4F2] bg-gradient-to-br from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-5 py-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
       <div className="flex flex-col min-h-0">
         {/* RATING STARS BLOCK */}
         <div className="flex gap-1 mb-4 flex-shrink-0">
@@ -117,9 +119,9 @@ function TestimonialCard({ t }: { t: (typeof testimonials)[0] }) {
       </div>
 
       {/* AUTHOR FOOTER METADATA ZONE */}
-      <div className="flex items-center gap-3 mt-4 pt-3 border-t border-[#e8e0cf] flex-shrink-0">
+      <div className="mt-4 flex flex-shrink-0 items-center gap-3 border-t border-[#D9E4F2] pt-3">
         {/* PROFILE ICON CONTAINER */}
-        <div className="w-11 h-11 rounded-full bg-[#f5edd8] border border-[#e8e0cf] flex items-center justify-center flex-shrink-0 text-[#b8922a] transition-transform duration-300 group-hover:scale-105">
+        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-[#C7D9F5] bg-[#EAF2FB] text-[#2563EB] transition-transform duration-300 group-hover:scale-105">
           <User size={20} strokeWidth={2} />
         </div>
 
