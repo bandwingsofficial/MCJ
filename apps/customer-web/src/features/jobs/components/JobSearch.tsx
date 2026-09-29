@@ -14,7 +14,7 @@ export function JobSearch({
   value,
   onChange,
   className,
-  placeholder = "Search jobs by title or company...",
+  placeholder = "Search jobs by title, company, skills, location...",
 }: JobSearchProps) {
   return (
     <SearchInput

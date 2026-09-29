@@ -22,7 +22,7 @@ export const MCJ_NAV_ITEMS = [
   { name: "Courses", href: "/courses" },
   { name: "Financial News", href: "/finance-news" },
   { name: "Our Branches", href: "/branches" },
-  { name: "Job Applications", href: "/jobs" },
+  { name: "Jobs", href: "/jobs" },
   { name: "About Us", href: "/about" },
   { name: "Contact", href: "/contact" },
 ] as const;

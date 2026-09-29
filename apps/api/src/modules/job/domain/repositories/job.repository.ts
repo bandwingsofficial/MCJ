@@ -9,6 +9,8 @@ export interface JobListFilters {
   source?: JobSource;
   employmentType?: string;
   search?: string;
+  filterMinExperience?: number;
+  filterMaxExperience?: number;
   includeDeleted?: boolean;
   onlyActive?: boolean;
   onlyPublic?: boolean;

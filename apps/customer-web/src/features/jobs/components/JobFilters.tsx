@@ -1,5 +1,6 @@
 "use client";
 
+import { Input } from "@/src/shared/components/ui/input";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { cn } from "@/src/shared/lib/cn";
 
@@ -9,7 +10,8 @@ import type { EmploymentType } from "@/src/features/jobs/types/job.types";
 
 export interface JobFiltersValue {
   employmentType: EmploymentType | "ALL";
-  experience: string;
+  experienceMin: string;
+  experienceMax: string;
   salary: string;
 }
 
@@ -19,14 +21,6 @@ interface JobFiltersProps {
   className?: string;
   showExtendedFilters?: boolean;
 }
-
-const EXPERIENCE_OPTIONS = [
-  { label: "All Experience", value: "ALL" },
-  { label: "0 - 1 Years", value: "0-1" },
-  { label: "1 - 3 Years", value: "1-3" },
-  { label: "3 - 5 Years", value: "3-5" },
-  { label: "5+ Years", value: "5+" },
-];
 
 const SALARY_OPTIONS = [
   { label: "All Salaries", value: "ALL" },
@@ -47,8 +41,8 @@ export function JobFilters({
       className={cn(
         "grid w-full gap-3",
         showExtendedFilters
-          ? "grid-cols-1 sm:grid-cols-3 lg:w-auto"
-          : "grid-cols-1 sm:max-w-xs lg:w-72",
+          ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+          : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
         className,
       )}
     >
@@ -66,30 +60,47 @@ export function JobFilters({
         }
       />
 
-      {showExtendedFilters ? (
-        <>
-          <AppSelect
-            value={value.experience}
-            options={EXPERIENCE_OPTIONS}
-            onValueChange={(experience) =>
-              onChange({
-                ...value,
-                experience,
-              })
-            }
-          />
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <Input
+          type="number"
+          min={0}
+          placeholder="Min years"
+          value={value.experienceMin}
+          className="h-10 rounded-xl border-slate-200 bg-[#F8FBFF]"
+          onChange={(event) =>
+            onChange({
+              ...value,
+              experienceMin: event.target.value,
+            })
+          }
+        />
+        <span className="text-xs font-medium text-slate-400">—</span>
+        <Input
+          type="number"
+          min={0}
+          placeholder="Max years"
+          value={value.experienceMax}
+          className="h-10 rounded-xl border-slate-200 bg-[#F8FBFF]"
+          onChange={(event) =>
+            onChange({
+              ...value,
+              experienceMax: event.target.value,
+            })
+          }
+        />
+      </div>
 
-          <AppSelect
-            value={value.salary}
-            options={SALARY_OPTIONS}
-            onValueChange={(salary) =>
-              onChange({
-                ...value,
-                salary,
-              })
-            }
-          />
-        </>
+      {showExtendedFilters ? (
+        <AppSelect
+          value={value.salary}
+          options={SALARY_OPTIONS}
+          onValueChange={(salary) =>
+            onChange({
+              ...value,
+              salary,
+            })
+          }
+        />
       ) : null}
     </div>
   );

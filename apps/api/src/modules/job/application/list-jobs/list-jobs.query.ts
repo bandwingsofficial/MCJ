@@ -16,5 +16,7 @@ export class ListJobsQuery {
     public readonly source?: JobSource,
     public readonly excludeStatuses?: JobStatus[],
     public readonly includeStatuses?: JobStatus[],
+    public readonly filterMinExperience?: number,
+    public readonly filterMaxExperience?: number,
   ) {}
 }

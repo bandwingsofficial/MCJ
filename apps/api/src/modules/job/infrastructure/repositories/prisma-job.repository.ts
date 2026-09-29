@@ -57,7 +57,7 @@ export class PrismaJobRepository implements JobRepository {
 
   async findAll(filters: JobListFilters = {}): Promise<Job[]> {
     const records = await this.prisma.job.findMany({
-      where: this.buildWhere(filters),
+      where: await this.buildWhere(filters),
       skip: filters.skip,
       take: filters.take,
       orderBy: { createdAt: 'desc' },
@@ -68,7 +68,7 @@ export class PrismaJobRepository implements JobRepository {
 
   async count(filters: JobListFilters = {}): Promise<number> {
     return this.prisma.job.count({
-      where: this.buildWhere(filters),
+      where: await this.buildWhere(filters),
     });
   }
 
@@ -135,7 +135,7 @@ export class PrismaJobRepository implements JobRepository {
     });
   }
 
-  private buildWhere(filters: JobListFilters): Prisma.JobWhereInput {
+  private async buildWhere(filters: JobListFilters): Promise<Prisma.JobWhereInput> {
     const where: Prisma.JobWhereInput = {};
 
     if (filters.onlyDeleted) {
@@ -182,16 +182,29 @@ export class PrismaJobRepository implements JobRepository {
     }
 
     if (filters.search?.trim()) {
-      const search = filters.search.trim();
+      and.push(await this.buildGlobalSearchCondition(filters.search.trim()));
+    }
+
+    if (
+      filters.filterMinExperience != null ||
+      filters.filterMaxExperience != null
+    ) {
+      const rangeMin = filters.filterMinExperience ?? 0;
+      const rangeMax = filters.filterMaxExperience ?? 999;
       and.push({
-        OR: [
-          { title: { contains: search, mode: 'insensitive' } },
-          { jobNumber: { contains: search, mode: 'insensitive' } },
-          { companyName: { contains: search, mode: 'insensitive' } },
-          { location: { contains: search, mode: 'insensitive' } },
-          { city: { contains: search, mode: 'insensitive' } },
-          { category: { contains: search, mode: 'insensitive' } },
-          { skills: { has: search } },
+        AND: [
+          {
+            OR: [
+              { minExperience: null },
+              { minExperience: { lte: rangeMax } },
+            ],
+          },
+          {
+            OR: [
+              { maxExperience: null },
+              { maxExperience: { gte: rangeMin } },
+            ],
+          },
         ],
       });
     }
@@ -201,5 +214,58 @@ export class PrismaJobRepository implements JobRepository {
     }
 
     return where;
+  }
+
+  private async buildGlobalSearchCondition(
+    search: string,
+  ): Promise<Prisma.JobWhereInput> {
+    const ilike = `%${search.replace(/[%_\\]/g, '\\$&')}%`;
+
+    const arrayMatchRows = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT j.id
+      FROM "Job" j
+      WHERE (
+        EXISTS (SELECT 1 FROM unnest(j.skills) elem WHERE elem ILIKE ${ilike})
+        OR EXISTS (SELECT 1 FROM unnest(j."preferredSkills") elem WHERE elem ILIKE ${ilike})
+        OR EXISTS (SELECT 1 FROM unnest(j.qualifications) elem WHERE elem ILIKE ${ilike})
+        OR EXISTS (SELECT 1 FROM unnest(j.responsibilities) elem WHERE elem ILIKE ${ilike})
+      )
+    `;
+
+    const textConditions: Prisma.JobWhereInput[] = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { jobNumber: { contains: search, mode: 'insensitive' } },
+      { companyName: { contains: search, mode: 'insensitive' } },
+      { companyDescription: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+      { shortDescription: { contains: search, mode: 'insensitive' } },
+      { location: { contains: search, mode: 'insensitive' } },
+      { city: { contains: search, mode: 'insensitive' } },
+      { state: { contains: search, mode: 'insensitive' } },
+      { country: { contains: search, mode: 'insensitive' } },
+      { category: { contains: search, mode: 'insensitive' } },
+      { department: { contains: search, mode: 'insensitive' } },
+      { benefits: { contains: search, mode: 'insensitive' } },
+      { eligibilityTitle: { contains: search, mode: 'insensitive' } },
+      { skills: { has: search } },
+      { preferredSkills: { has: search } },
+      { qualifications: { has: search } },
+      { responsibilities: { has: search } },
+    ];
+
+    const numericSearch = Number(search);
+    if (!Number.isNaN(numericSearch) && /^\d+(\.\d+)?$/.test(search.trim())) {
+      textConditions.push({ minSalary: { equals: numericSearch } });
+      textConditions.push({ maxSalary: { equals: numericSearch } });
+      textConditions.push({ minExperience: { equals: numericSearch } });
+      textConditions.push({ maxExperience: { equals: numericSearch } });
+    }
+
+    const or: Prisma.JobWhereInput[] = [...textConditions];
+    if (arrayMatchRows.length > 0) {
+      or.push({ id: { in: arrayMatchRows.map((row) => row.id) } });
+    }
+
+    return { OR: or };
   }
 }

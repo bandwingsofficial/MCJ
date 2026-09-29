@@ -49,10 +49,7 @@ export function useHomeStats() {
       (total, batch) => total + (batch.enrolledCount ?? 0),
       0,
     );
-    const jobsPayload = jobsQuery.data;
-    const hiringPartners = Array.isArray(jobsPayload)
-      ? jobsPayload.length
-      : (jobsPayload as { items?: unknown[] } | undefined)?.items?.length ?? 0;
+    const hiringPartners = jobsQuery.data?.jobs.length ?? 0;
 
     return [
       {

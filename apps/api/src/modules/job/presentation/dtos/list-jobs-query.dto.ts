@@ -1,5 +1,12 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import { PaginationQueryDto } from '@common/pagination/pagination-query.dto';
@@ -25,6 +32,28 @@ export class ListJobsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(({ value }) =>
+    value === undefined || value === null || value === ''
+      ? undefined
+      : Number(value),
+  )
+  @IsInt()
+  @Min(0)
+  filterMinExperience?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(({ value }) =>
+    value === undefined || value === null || value === ''
+      ? undefined
+      : Number(value),
+  )
+  @IsInt()
+  @Min(0)
+  filterMaxExperience?: number;
 
   @ApiPropertyOptional()
   @IsOptional()

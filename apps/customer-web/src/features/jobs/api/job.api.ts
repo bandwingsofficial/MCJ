@@ -2,14 +2,31 @@ import { apiClient } from "@/src/core/api/axios";
 
 import type { ApiResponse } from "@/src/core/types/api-response.types";
 
-import type { Job } from "@/src/features/jobs/types/job.types";
+import type { EmploymentType, Job } from "@/src/features/jobs/types/job.types";
+
+export type JobListRequestParams = {
+  search?: string;
+  employmentType?: EmploymentType;
+  filterMinExperience?: number;
+  filterMaxExperience?: number;
+  skip?: number;
+  take?: number;
+};
+
+type JobsListApiResponse = ApiResponse<Job[]> & {
+  meta?: {
+    total: number;
+    skip: number;
+    take: number | null;
+  };
+};
 import type { CompanyJobSubmitResult } from "@/src/features/jobs/schemas/company-job-onboarding.schema";
 import type { JobApplicationSubmitResult } from "@/src/features/jobs/schemas/job-application-student.schema";
 import type { PublicJobApplicationResult } from "@/src/features/jobs/schemas/public-job-application.schema";
 
 export const jobApi = {
-  getJobs() {
-    return apiClient.get<ApiResponse<Job[]>>("/jobs");
+  getJobs(params?: JobListRequestParams) {
+    return apiClient.get<JobsListApiResponse>("/jobs", { params });
   },
 
   getJob(slug: string) {

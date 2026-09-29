@@ -1,4 +1,7 @@
-import { jobApi } from "@/src/features/jobs/api/job.api";
+import {
+  jobApi,
+  type JobListRequestParams,
+} from "@/src/features/jobs/api/job.api";
 import type {
   CompanyJobOnboardingValues,
   CompanyJobSubmitResult,
@@ -9,9 +12,12 @@ import type { PublicJobApplicationFormValues } from "@/src/features/jobs/schemas
 import type { PublicJobApplicationResult } from "@/src/features/jobs/schemas/public-job-application.schema";
 
 class JobService {
-  async getJobs() {
-    const response = await jobApi.getJobs();
-    return response.data.data;
+  async getJobs(params?: JobListRequestParams) {
+    const response = await jobApi.getJobs(params);
+    return {
+      jobs: response.data.data,
+      total: response.data.meta?.total ?? response.data.data.length,
+    };
   }
 
   async getJob(slug: string) {

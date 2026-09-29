@@ -33,6 +33,11 @@ export class JobController {
         false,
         query.skip,
         query.take,
+        undefined,
+        undefined,
+        undefined,
+        query.filterMinExperience,
+        query.filterMaxExperience,
       ),
     );
 

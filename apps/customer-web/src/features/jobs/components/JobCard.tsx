@@ -15,6 +15,7 @@ import {
   descriptionLabel,
   employmentLabel,
   experienceLabel,
+  formatDeadlineDate,
   formatPostedDate,
   locationLabel,
   salaryLabel,
@@ -23,6 +24,34 @@ import {
 interface JobCardProps {
   job: Job;
   variant?: "default" | "listing";
+}
+
+function JobCardStatusBadge({ job }: { job: Job }) {
+  const accepting = isJobAcceptingApplications(job);
+
+  if (!accepting) {
+    return (
+      <Badge
+        variant="default"
+        className="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide"
+      >
+        Closed
+      </Badge>
+    );
+  }
+
+  if (!job.applicationDeadline) {
+    return null;
+  }
+
+  return (
+    <Badge
+      variant="success"
+      className="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide"
+    >
+      {formatDeadlineDate(job.applicationDeadline)}
+    </Badge>
+  );
 }
 
 function CompanyAvatar({
@@ -77,12 +106,7 @@ function DefaultJobCard({ job }: { job: Job }) {
               {job.companyName}
             </p>
           </div>
-          <Badge
-            variant={accepting ? "success" : "default"}
-            className="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide"
-          >
-            {accepting ? "Open" : "Closed"}
-          </Badge>
+          <JobCardStatusBadge job={job} />
         </div>
 
         <div className="my-5 border-t border-slate-100" />
@@ -165,12 +189,7 @@ function ListingJobCard({ job }: { job: Job }) {
               </p>
             </div>
 
-            <Badge
-              variant={accepting ? "success" : "default"}
-              className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
-            >
-              {accepting ? "Open" : "Closed"}
-            </Badge>
+            <JobCardStatusBadge job={job} />
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">

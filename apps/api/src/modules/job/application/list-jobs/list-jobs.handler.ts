@@ -29,23 +29,13 @@ export class ListJobsHandler {
       includeStatuses: query.includeStatuses,
       skip: query.skip,
       take: query.take,
+      filterMinExperience: query.filterMinExperience,
+      filterMaxExperience: query.filterMaxExperience,
     };
 
     const [jobs, total] = await Promise.all([
       this.jobRepo.findAll(filters),
-      this.jobRepo.count({
-        status: filters.status,
-        employmentType: filters.employmentType,
-        search: filters.search,
-        includeDeleted: filters.includeDeleted,
-        onlyActive: filters.onlyActive,
-        onlyPublic: filters.onlyPublic,
-        isActive: filters.isActive,
-        onlyDeleted: filters.onlyDeleted,
-        source: filters.source,
-        excludeStatuses: filters.excludeStatuses,
-        includeStatuses: filters.includeStatuses,
-      }),
+      this.jobRepo.count(filters),
     ]);
 
     return new ListJobsPageResult(
