@@ -346,8 +346,10 @@ export function CourseManageModulesPanel({
         module={selectedModule ?? undefined}
         courseId={courseId}
         onClose={() => {
-          setSelectedModule(null);
           setFormOpen(false);
+        }}
+        onCancel={() => {
+          setSelectedModule(null);
         }}
         onSubmit={async (values) => {
           try {

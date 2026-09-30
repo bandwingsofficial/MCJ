@@ -25,9 +25,6 @@ export function useFormSessionReset<T extends FieldValues>(
     const enabled = options?.enabled ?? true;
 
     if (!enabled || !sessionKey) {
-      if (!sessionKey) {
-        lastSessionKeyRef.current = null;
-      }
       return;
     }
 

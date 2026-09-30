@@ -35,6 +35,8 @@ interface CourseModuleFormProps {
   module?: CourseModule;
   courseId: string;
   onClose: () => void;
+  /** Explicit Cancel — discard draft and clear edit selection in parent. */
+  onCancel?: () => void;
   onSubmit: (values: CreateCourseModuleForm) => Promise<void>;
 }
 
@@ -51,6 +53,7 @@ export function CourseModuleForm({
   module,
   courseId,
   onClose,
+  onCancel,
   onSubmit,
 }: CourseModuleFormProps) {
   const isEdit = Boolean(module);
@@ -105,10 +108,26 @@ export function CourseModuleForm({
     },
   );
 
-  const handleClose = () => {
-    if (!module) {
-      discardCreateSession();
+  const handleDismiss = () => {
+    onClose();
+  };
+
+  const handleCancel = () => {
+    if (module) {
+      reset({
+        courseId: module.courseId,
+        title: module.title,
+        description: module.description ?? "",
+        keySkills: module.keySkills ?? [],
+      });
+      setEditValidationReady(false);
+      onCancel?.();
+      onClose();
+      return;
     }
+
+    discardCreateSession();
+    onCancel?.();
     onClose();
   };
 
@@ -139,7 +158,7 @@ export function CourseModuleForm({
     <Modal
       open={open}
       title={isEdit ? "Edit Module" : "Create Module"}
-      onClose={handleClose}
+      onClose={handleDismiss}
     >
       <form
         className="space-y-4"
@@ -219,7 +238,7 @@ export function CourseModuleForm({
           <Button
             type="button"
             variant="outline"
-            onClick={handleClose}
+            onClick={handleCancel}
             disabled={loading}
           >
             Cancel

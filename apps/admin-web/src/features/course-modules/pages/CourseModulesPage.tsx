@@ -184,11 +184,10 @@ export function CourseModulesPage({
         }
         courseId={courseId}
         onClose={() => {
-          setSelectedModule(
-            null
-          );
-
           setFormOpen(false);
+        }}
+        onCancel={() => {
+          setSelectedModule(null);
         }}
         onSubmit={async (
           values

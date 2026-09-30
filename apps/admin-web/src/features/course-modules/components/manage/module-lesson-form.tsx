@@ -54,6 +54,7 @@ interface Props {
   loading?: boolean;
   lesson?: CourseLesson;
   onClose: () => void;
+  onCancel?: () => void;
   onSubmit: (values: ModuleLessonFormValues) => Promise<void>;
 }
 
@@ -62,6 +63,7 @@ export function ModuleLessonForm({
   loading = false,
   lesson,
   onClose,
+  onCancel,
   onSubmit,
 }: Props) {
   const isEdit = Boolean(lesson);
@@ -108,10 +110,24 @@ export function ModuleLessonForm({
     },
   );
 
-  const handleClose = () => {
-    if (!lesson) {
-      discardCreateSession();
+  const handleDismiss = () => {
+    onClose();
+  };
+
+  const handleCancel = () => {
+    if (lesson) {
+      reset({
+        title: lesson.title,
+        description: lesson.description ?? "",
+      });
+      setEditValidationReady(false);
+      onCancel?.();
+      onClose();
+      return;
     }
+
+    discardCreateSession();
+    onCancel?.();
     onClose();
   };
 
@@ -143,7 +159,7 @@ export function ModuleLessonForm({
     <Modal
       open={open}
       title={isEdit ? "Edit Lesson" : "Add Lesson"}
-      onClose={handleClose}
+      onClose={handleDismiss}
     >
       <form
         className="space-y-4"
@@ -202,7 +218,7 @@ export function ModuleLessonForm({
         </ValidatedField>
 
         <div className="flex justify-end gap-3 border-t pt-4">
-          <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
+          <Button type="button" variant="outline" onClick={handleCancel} disabled={loading}>
             Cancel
           </Button>
           <Button type="submit" loading={loading}>

@@ -12,23 +12,19 @@ type EntityLike = {
  * Call `discardCreateSession` on Cancel / successful Save for create flows.
  */
 export function useModalFormSessionKey(
-  open: boolean,
+  _open: boolean,
   entity: EntityLike | null | undefined,
   createScope: string,
 ) {
   const [createSession, setCreateSession] = useState(0);
 
   const sessionKey = useMemo(() => {
-    if (!open) {
-      return undefined;
-    }
-
     if (entity?.id) {
       return buildEntityFormSessionKey(entity);
     }
 
     return `create-${createScope}-${createSession}`;
-  }, [open, entity, createScope, createSession]);
+  }, [entity, createScope, createSession]);
 
   const discardCreateSession = useCallback(() => {
     setCreateSession((value) => value + 1);
