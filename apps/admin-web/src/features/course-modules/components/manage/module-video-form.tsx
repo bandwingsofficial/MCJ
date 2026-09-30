@@ -8,6 +8,7 @@ interface Props {
   loading?: boolean;
   lesson?: CourseLesson;
   onClose: () => void;
+  onCancel?: () => void;
   onSubmit: (values: {
     title: string;
     description: string;

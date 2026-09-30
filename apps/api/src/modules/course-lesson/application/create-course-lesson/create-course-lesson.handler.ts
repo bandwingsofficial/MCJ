@@ -64,7 +64,17 @@ export class CreateCourseLessonHandler {
       }
     }
 
-    const slug = Slug.fromTitle(command.title).getValue();
+    const title = command.title.trim();
+
+    if (!title) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Lesson title is required',
+        400,
+      );
+    }
+
+    const slug = Slug.fromTitle(title).getValue();
 
     await this.domainService.ensureSlugIsAvailable(
       this.courseLessonRepo,
@@ -84,7 +94,7 @@ export class CreateCourseLessonHandler {
       id: randomUUID(),
       moduleId: command.moduleId,
       parentLessonId,
-      title: command.title,
+      title,
       slug,
       description: command.description,
       videoUrl: command.videoUrl,

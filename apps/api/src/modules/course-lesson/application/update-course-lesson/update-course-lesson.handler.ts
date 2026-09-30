@@ -20,12 +20,15 @@ export class UpdateCourseLessonHandler {
       await this.courseLessonRepo.findById(command.id),
     );
 
+    const nextTitle =
+      command.title !== undefined ? command.title.trim() : undefined;
+
     const nextSlug =
-      command.title !== undefined
-        ? Slug.fromTitle(command.title).getValue()
+      nextTitle !== undefined
+        ? Slug.fromTitle(nextTitle).getValue()
         : lesson.slug.getValue();
 
-    if (command.title !== undefined) {
+    if (nextTitle !== undefined) {
       await this.domainService.ensureSlugIsAvailable(
         this.courseLessonRepo,
         lesson.moduleId,
@@ -35,8 +38,8 @@ export class UpdateCourseLessonHandler {
     }
 
     lesson.update({
-      title: command.title,
-      slug: command.title !== undefined ? nextSlug : undefined,
+      title: nextTitle,
+      slug: nextTitle !== undefined ? nextSlug : undefined,
       description: command.description,
       videoUrl: command.videoUrl,
       contentType: command.contentType,

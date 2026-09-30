@@ -99,6 +99,7 @@ interface Props {
   loading?: boolean;
   lesson?: CourseLesson;
   onClose: () => void;
+  onCancel?: () => void;
   onSubmit: (values: {
     title: string;
     description: string;
@@ -127,6 +128,7 @@ export function ModuleLessonVideoForm({
   loading = false,
   lesson,
   onClose,
+  onCancel,
   onSubmit,
 }: Props) {
   const isEdit = Boolean(lesson);
@@ -143,6 +145,7 @@ export function ModuleLessonVideoForm({
     trigger,
     watch,
     setValue,
+    getValues,
     formState: { errors, touchedFields, isSubmitted },
   } = useForm<FormValues>({
     resolver: zodResolver(lessonVideoSchema),
@@ -203,10 +206,35 @@ export function ModuleLessonVideoForm({
     },
   );
 
-  const handleClose = () => {
-    if (!lesson) {
-      discardCreateSession();
+  useEffect(() => {
+    register("title");
+    register("description");
+  }, [register]);
+
+  const handleDismiss = () => {
+    onClose();
+  };
+
+  const handleCancel = () => {
+    if (lesson) {
+      reset({
+        title: lesson.title,
+        description: lesson.description ?? "",
+        videoUrl: youtube ? existingUrl : "",
+        uploadedVideoUrl: youtube ? "" : existingUrl,
+        duration: formatSecondsToDurationHms(lesson.duration),
+      });
+      setEditValidationReady(false);
+      setVideoFile(null);
+      setUploadError(null);
+      setVideoSourceTouched(false);
+      onCancel?.();
+      onClose();
+      return;
     }
+
+    discardCreateSession();
+    onCancel?.();
     onClose();
   };
 
@@ -320,11 +348,14 @@ export function ModuleLessonVideoForm({
     <Modal
       open={open}
       title={isEdit ? copy.editTitle : copy.addTitle}
-      onClose={handleClose}
+      onClose={handleDismiss}
     >
       <form
         className="space-y-4"
-        onSubmit={handleSubmit(async (values) => {
+        onSubmit={handleSubmit(async () => {
+          const values = getValues();
+          const title = values.title.trim();
+          const description = values.description.trim();
           const videoUrl =
             values.uploadedVideoUrl?.trim() || values.videoUrl.trim();
           const durationSeconds = parseDurationHmsToSeconds(values.duration);
@@ -333,12 +364,21 @@ export function ModuleLessonVideoForm({
             return;
           }
 
+          if (!title) {
+            await trigger("title");
+            return;
+          }
+
           await onSubmit({
-            title: values.title,
-            description: values.description,
+            title,
+            description,
             videoUrl,
             duration: durationSeconds,
           });
+
+          if (!lesson) {
+            discardCreateSession();
+          }
         })}
       >
         <ValidatedField
@@ -521,7 +561,7 @@ export function ModuleLessonVideoForm({
           <Button
             type="button"
             variant="outline"
-            onClick={handleClose}
+            onClick={handleCancel}
             disabled={loading || isUploading}
           >
             Cancel

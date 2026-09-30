@@ -219,6 +219,8 @@ export function ModuleVideosTab({
         lesson={selected ?? undefined}
         onClose={() => {
           setFormOpen(false);
+        }}
+        onCancel={() => {
           setSelected(null);
         }}
         onSubmit={async (values) => {
