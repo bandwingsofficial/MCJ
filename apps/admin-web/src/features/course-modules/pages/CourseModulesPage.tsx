@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { useInitialLoadingOnly } from "@/src/shared/hooks/use-initial-loading-only";
+
 import { Button } from "@/src/shared/components/ui/button";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { PageHeader } from "@/src/shared/components/ui/page-header";
@@ -47,6 +49,8 @@ export function CourseModulesPage({
     courseId,
     includeDeleted: true,
   });
+
+  const isInitialLoading = useInitialLoadingOnly(isLoading);
 
   const {
     createCourseModule,
@@ -110,22 +114,6 @@ export function CourseModulesPage({
     setMoveOpen,
   ] = useState(false);
 
-  if (isLoading) {
-    return (
-      <CourseModuleSkeleton />
-    );
-  }
-
-  if (error) {
-    return (
-      <ErrorState
-        title="Failed To Load Modules"
-        description={error}
-        onRetry={refetch}
-      />
-    );
-  }
-
   return (
     <>
       <PageHeader
@@ -142,35 +130,45 @@ export function CourseModulesPage({
         }
       />
 
-      <CourseModuleList
-        courseId={courseId}
-        modules={modules}
-        onCreate={() =>
-          setFormOpen(true)
-        }
-        onEdit={(module) => {
-          setSelectedModule(
-            module,
-          );
+      {error ? (
+        <ErrorState
+          title="Failed To Load Modules"
+          description={error}
+          onRetry={refetch}
+        />
+      ) : isInitialLoading ? (
+        <CourseModuleSkeleton />
+      ) : (
+        <CourseModuleList
+          courseId={courseId}
+          modules={modules}
+          onCreate={() =>
+            setFormOpen(true)
+          }
+          onEdit={(module) => {
+            setSelectedModule(
+              module,
+            );
 
-          setFormOpen(true);
-        }}
-        onDeactivate={(module) => {
-          setSelectedModule(module);
-          setStatusOpen(true);
-        }}
-        onActivate={(module) => {
-          setSelectedModule(module);
-          setStatusOpen(true);
-        }}
-        onDelete={(module) => {
-          setSelectedModule(
-            module,
-          );
+            setFormOpen(true);
+          }}
+          onDeactivate={(module) => {
+            setSelectedModule(module);
+            setStatusOpen(true);
+          }}
+          onActivate={(module) => {
+            setSelectedModule(module);
+            setStatusOpen(true);
+          }}
+          onDelete={(module) => {
+            setSelectedModule(
+              module,
+            );
 
-          setDeleteOpen(true);
-        }}
-      />
+            setDeleteOpen(true);
+          }}
+        />
+      )}
 
       <CourseModuleForm
         open={formOpen}

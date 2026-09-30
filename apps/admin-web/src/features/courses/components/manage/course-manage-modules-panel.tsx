@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+
+import { useInitialLoadingOnly } from "@/src/shared/hooks/use-initial-loading-only";
 import { GripVertical, Plus } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
@@ -54,14 +56,16 @@ export function CourseManageModulesPanel({
     includeDeleted: true,
   });
 
-  useEffect(() => {
-    const refreshFromServer = () => {
-      void refetch();
-    };
+  const isInitialLoading = useInitialLoadingOnly(isLoading);
 
-    window.addEventListener("focus", refreshFromServer);
-    return () => window.removeEventListener("focus", refreshFromServer);
-  }, [refetch]);
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[CourseManageModulesPanel] mount", { courseId });
+      return () => {
+        console.log("[CourseManageModulesPanel] unmount", { courseId });
+      };
+    }
+  }, [courseId]);
 
   const { createCourseModule, isSubmitting: isCreating } =
     useCreateCourseModule();
@@ -171,25 +175,124 @@ export function CourseManageModulesPanel({
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-4 shadow-sm">
-        <SkeletonTable rows={4} />
-      </div>
-    );
-  }
+  const moduleForm = (
+    <CourseModuleForm
+      open={formOpen}
+      loading={isCreating || isUpdating}
+      module={selectedModule ?? undefined}
+      courseId={courseId}
+      onClose={() => {
+        setFormOpen(false);
+      }}
+      onCancel={() => {
+        setSelectedModule(null);
+      }}
+      onSubmit={async (values) => {
+        try {
+          if (selectedModule) {
+            await updateCourseModule(selectedModule.id, {
+              title: values.title,
+              description: values.description,
+              keySkills: values.keySkills,
+            });
+            appToast.success("Module updated successfully");
+          } else {
+            await createCourseModule({
+              ...values,
+              courseId,
+            });
+            appToast.success("Module created successfully");
+          }
+          setSelectedModule(null);
+          setFormOpen(false);
+          await refetch();
+          await onRefresh?.();
+          await onMutationSuccess?.();
+        } catch (err) {
+          appToast.error(getErrorMessage(err));
+        }
+      }}
+    />
+  );
 
-  if (error) {
-    return (
-      <ErrorState
-        title="Failed to load modules"
-        description={error}
-        onRetry={() => {
-          void refetch();
+  const moduleDialogs = (
+    <>
+      <CourseModuleStatusDialog
+        open={statusOpen}
+        module={selectedModule}
+        isLoading={isDeactivating || isRestoring}
+        onClose={() => {
+          setStatusOpen(false);
+          setSelectedModule(null);
+        }}
+        onConfirm={async () => {
+          if (!selectedModule) {
+            return;
+          }
+
+          try {
+            const isArchived = Boolean(
+              selectedModule.isDeleted || selectedModule.deletedAt,
+            );
+
+            if (isArchived) {
+              await restoreCourseModule(selectedModule.id);
+              appToast.success("Module activated successfully");
+            } else {
+              await deactivateCourseModule(selectedModule.id);
+              appToast.success("Module deactivated successfully");
+            }
+
+            setStatusOpen(false);
+            setSelectedModule(null);
+            await refetch();
+            await onRefresh?.();
+            await onMutationSuccess?.();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
         }}
       />
-    );
-  }
+
+      <CourseModuleDeleteDialog
+        open={deleteOpen}
+        moduleTitle={selectedModule?.title}
+        contentCounts={
+          selectedModule
+            ? getModuleContentCounts(
+                hasAuthoritativeModuleCounts(selectedModule)
+                  ? selectedModule
+                  : (moduleTreeById.get(selectedModule.id) ?? selectedModule),
+              )
+            : undefined
+        }
+        loading={isDeleting}
+        onClose={() => {
+          if (!isDeleting) {
+            setDeleteOpen(false);
+            setSelectedModule(null);
+          }
+        }}
+        onConfirm={async () => {
+          if (!selectedModule) {
+            return;
+          }
+
+          try {
+            await deleteCourseModule(selectedModule.id);
+            appToast.success("Module deleted successfully");
+            setDeleteOpen(false);
+            setSelectedModule(null);
+            await refetch();
+            await onRefresh?.();
+            await onMutationSuccess?.();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
+        }}
+      />
+    </>
+  );
 
   return (
     <>
@@ -217,7 +320,17 @@ export function CourseManageModulesPanel({
         </div>
 
         <div className="p-4">
-        {rows.length === 0 ? (
+        {error ? (
+          <ErrorState
+            title="Failed to load modules"
+            description={error}
+            onRetry={() => {
+              void refetch();
+            }}
+          />
+        ) : isInitialLoading ? (
+          <SkeletonTable rows={4} />
+        ) : rows.length === 0 ? (
           <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-4 text-center">
             <h3 className="text-base font-semibold text-[#102A56]">
               No modules yet
@@ -340,118 +453,8 @@ export function CourseManageModulesPanel({
         </div>
       </div>
 
-      <CourseModuleForm
-        open={formOpen}
-        loading={isCreating || isUpdating}
-        module={selectedModule ?? undefined}
-        courseId={courseId}
-        onClose={() => {
-          setFormOpen(false);
-        }}
-        onCancel={() => {
-          setSelectedModule(null);
-        }}
-        onSubmit={async (values) => {
-          try {
-            if (selectedModule) {
-              await updateCourseModule(selectedModule.id, {
-                title: values.title,
-                description: values.description,
-                keySkills: values.keySkills,
-              });
-              appToast.success("Module updated successfully");
-            } else {
-              await createCourseModule({
-                ...values,
-                courseId,
-              });
-              appToast.success("Module created successfully");
-            }
-            setSelectedModule(null);
-            setFormOpen(false);
-            await refetch();
-            await onRefresh?.();
-            await onMutationSuccess?.();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          }
-        }}
-      />
-
-      <CourseModuleStatusDialog
-        open={statusOpen}
-        module={selectedModule}
-        isLoading={isDeactivating || isRestoring}
-        onClose={() => {
-          setStatusOpen(false);
-          setSelectedModule(null);
-        }}
-        onConfirm={async () => {
-          if (!selectedModule) {
-            return;
-          }
-
-          try {
-            const isArchived = Boolean(
-              selectedModule.isDeleted || selectedModule.deletedAt,
-            );
-
-            if (isArchived) {
-              await restoreCourseModule(selectedModule.id);
-              appToast.success("Module activated successfully");
-            } else {
-              await deactivateCourseModule(selectedModule.id);
-              appToast.success("Module deactivated successfully");
-            }
-
-            setStatusOpen(false);
-            setSelectedModule(null);
-            await refetch();
-            await onRefresh?.();
-            await onMutationSuccess?.();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          }
-        }}
-      />
-
-      <CourseModuleDeleteDialog
-        open={deleteOpen}
-        moduleTitle={selectedModule?.title}
-        contentCounts={
-          selectedModule
-            ? getModuleContentCounts(
-                hasAuthoritativeModuleCounts(selectedModule)
-                  ? selectedModule
-                  : (moduleTreeById.get(selectedModule.id) ?? selectedModule),
-              )
-            : undefined
-        }
-        loading={isDeleting}
-        onClose={() => {
-          if (!isDeleting) {
-            setDeleteOpen(false);
-            setSelectedModule(null);
-          }
-        }}
-        onConfirm={async () => {
-          if (!selectedModule) {
-            return;
-          }
-
-          try {
-            await deleteCourseModule(selectedModule.id);
-            appToast.success("Module deleted successfully");
-            setDeleteOpen(false);
-            setSelectedModule(null);
-            await refetch();
-            await onRefresh?.();
-            await onMutationSuccess?.();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          }
-        }}
-      />
+      {moduleForm}
+      {moduleDialogs}
     </>
   );
 }

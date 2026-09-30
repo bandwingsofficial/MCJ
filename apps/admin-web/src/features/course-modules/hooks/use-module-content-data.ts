@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { courseLearnItemService } from "@/src/features/course-learn-items/services/course-learn-item.service";
 import { courseLessonService } from "@/src/features/course-lessons/services/course-lesson.service";
@@ -133,13 +133,20 @@ export function useModuleContentData(
   >(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasLoadedOnceRef = useRef(false);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    hasLoadedOnceRef.current = false;
+  }, [moduleId]);
+
+  const load = useCallback(async (silent = hasLoadedOnceRef.current) => {
     if (!moduleId) {
       return;
     }
 
-    setIsLoading(true);
+    if (!silent) {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -213,18 +220,23 @@ export function useModuleContentData(
       setQuizLessonIds(new Set(quizRows.map((row) => row.lessonId)));
       setResources(flatResources);
       setLearnCountByLessonId(learnMap);
+      hasLoadedOnceRef.current = true;
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load module content.",
       );
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   }, [moduleId]);
 
   useEffect(() => {
-    void load();
+    void load(false);
   }, [load]);
+
+  const refetch = useCallback(() => load(true), [load]);
 
   const resourceShellLessonIds = useMemo(() => {
     const lessonIdsWithResources = new Set(
@@ -268,7 +280,7 @@ export function useModuleContentData(
     lessonContentCountsByLessonId,
     isLoading,
     error,
-    refetch: load,
+    refetch,
   };
 }
 

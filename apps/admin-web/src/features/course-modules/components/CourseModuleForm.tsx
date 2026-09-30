@@ -85,6 +85,22 @@ export function CourseModuleForm({
     `module-${courseId}`,
   );
 
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("[CourseModuleForm] mount", {
+        courseId,
+        moduleId: module?.id ?? "create",
+        open,
+      });
+      return () => {
+        console.log("[CourseModuleForm] unmount", {
+          courseId,
+          moduleId: module?.id ?? "create",
+        });
+      };
+    }
+  }, [courseId, module?.id, open]);
+
   useFormSessionReset(
     reset,
     sessionKey,

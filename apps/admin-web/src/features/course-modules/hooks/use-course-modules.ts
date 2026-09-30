@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -60,8 +61,14 @@ export const useCourseModules =
         initialFilters
       );
 
-    const fetchModules =
-      useCallback(async (silent = false) => {
+    const hasLoadedOnceRef = useRef(false);
+
+    useEffect(() => {
+      hasLoadedOnceRef.current = false;
+    }, [filters.courseId]);
+
+    const fetchModules = useCallback(
+      async (silent = hasLoadedOnceRef.current) => {
         try {
           if (!silent) {
             setIsLoading(true);
@@ -74,9 +81,8 @@ export const useCourseModules =
               filters
             );
 
-          setModules(
-            response.data
-          );
+          setModules(response.data);
+          hasLoadedOnceRef.current = true;
         } catch (error) {
           const message =
             error instanceof Error
@@ -89,10 +95,12 @@ export const useCourseModules =
             setIsLoading(false);
           }
         }
-      }, [filters]);
+      },
+      [filters],
+    );
 
     useEffect(() => {
-      void fetchModules();
+      void fetchModules(false);
     }, [fetchModules]);
 
     const refetch = useCallback(
