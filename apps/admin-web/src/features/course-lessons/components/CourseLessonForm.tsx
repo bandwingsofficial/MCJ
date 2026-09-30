@@ -38,6 +38,9 @@ import type {
   CourseLesson,
   CourseLessonFormValues,
 } from "@/src/features/course-lessons/types";
+import { lessonFormSessionEntity } from "@/src/features/course-modules/utils/modal-form-session.util";
+import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
+import { useModalFormSessionKey } from "@/src/shared/hooks/use-modal-form-session-key";
 
 interface CourseLessonFormProps {
   open: boolean;
@@ -113,41 +116,34 @@ export function CourseLessonForm({
       },
     );
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    if (!lesson) {
-      reset({
-        ...DEFAULT_COURSE_LESSON_FORM_VALUES,
-        moduleId,
-      });
-
-      return;
-    }
-
-    reset({
-      moduleId:
-        lesson.moduleId,
-
-      title:
-        lesson.title,
-
-      description:
-        lesson.description ??
-        "",
-
-      videoUrl:
-        lesson.videoUrl ??
-        "",
-    });
-  }, [
-    lesson,
-    moduleId,
+  const { sessionKey, discardCreateSession } = useModalFormSessionKey(
     open,
+    lessonFormSessionEntity(lesson),
+    `course-lesson-${moduleId}`,
+  );
+
+  useFormSessionReset(
     reset,
-  ]);
+    sessionKey,
+    lesson
+      ? {
+          moduleId: lesson.moduleId,
+          title: lesson.title,
+          description: lesson.description ?? "",
+          videoUrl: lesson.videoUrl ?? "",
+        }
+      : {
+          ...DEFAULT_COURSE_LESSON_FORM_VALUES,
+          moduleId,
+        },
+  );
+
+  const handleClose = () => {
+    if (!lesson) {
+      discardCreateSession();
+    }
+    onClose();
+  };
 
   const modalTitle =
     lesson
@@ -163,15 +159,17 @@ export function CourseLessonForm({
     async (
       values: CourseLessonFormValues,
     ) => {
-      await onSubmit(
-        values,
-      );
+      await onSubmit(values);
+      if (!lesson) {
+        discardCreateSession();
+      }
     };
-      return (
+
+  return (
     <Modal
       open={open}
       title={modalTitle}
-      onClose={onClose}
+      onClose={handleClose}
     >
       <form
         className="space-y-6"
@@ -300,7 +298,7 @@ export function CourseLessonForm({
               loading ||
               isSubmitting
             }
-            onClick={onClose}
+            onClick={handleClose}
           >
             Cancel
           </Button>

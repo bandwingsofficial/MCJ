@@ -46,6 +46,7 @@ import {
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
 import { cn } from "@/src/shared/lib/cn";
+import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
 
 import {
   createBranchSchema,
@@ -208,13 +209,10 @@ export function BranchForm({
   const branchCode = watch("branchCode");
   const values = watch();
 
-  // Seed form when the loaded branch identity/version changes (edit reopen).
-  useEffect(() => {
-    if (!defaultValues || !excludeId) {
-      return;
-    }
-
-    reset({
+  useFormSessionReset(
+    reset,
+    isEdit ? excludeId : undefined,
+    {
       branchName: "",
       branchCode: "",
       email: "",
@@ -229,38 +227,25 @@ export function BranchForm({
       longitude: 0,
       description: "",
       ...defaultValues,
-    });
-    setNameTouched(true);
-    setCodeTouched(true);
-    setNameAvailable(null);
-    setNameAsyncError(null);
-    setCodeAvailable(null);
-    setCodeAsyncError(null);
-    setPreviewUrl(defaultValues?.thumbnailUrl ?? null);
-    setSelectedImage(null);
-    setRemoveImage(false);
-    setImageBroken(false);
-    setImageError(null);
-    setImageTouched(true);
-  }, [
-    excludeId,
-    defaultValues?.branchName,
-    defaultValues?.branchCode,
-    defaultValues?.email,
-    defaultValues?.phone,
-    defaultValues?.addressLine1,
-    defaultValues?.addressLine2,
-    defaultValues?.city,
-    defaultValues?.state,
-    defaultValues?.country,
-    defaultValues?.postalCode,
-    defaultValues?.latitude,
-    defaultValues?.longitude,
-    defaultValues?.description,
-    defaultValues?.thumbnailUrl,
-    isEdit,
-    reset,
-  ]);
+    },
+    {
+      enabled: isEdit && Boolean(excludeId && defaultValues),
+      onReset: () => {
+        setNameTouched(true);
+        setCodeTouched(true);
+        setNameAvailable(null);
+        setNameAsyncError(null);
+        setCodeAvailable(null);
+        setCodeAsyncError(null);
+        setPreviewUrl(defaultValues?.thumbnailUrl ?? null);
+        setSelectedImage(null);
+        setRemoveImage(false);
+        setImageBroken(false);
+        setImageError(null);
+        setImageTouched(true);
+      },
+    },
+  );
 
   useEffect(() => {
     if (!selectedImage) {

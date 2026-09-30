@@ -22,6 +22,8 @@ import type {
   QuizQuestionFormValues,
   QuizQuestionType,
 } from "@/src/features/course-quizzes/types/course-quiz.types";
+import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
+import { useModalFormSessionKey } from "@/src/shared/hooks/use-modal-form-session-key";
 
 const QUESTION_TYPE_OPTIONS = [
   { label: "Multiple Choice", value: "MULTIPLE_CHOICE" },
@@ -103,24 +105,32 @@ export function QuizQuestionForm({
 
   const questionType = watch("type");
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
+  const { sessionKey, discardCreateSession } = useModalFormSessionKey(
+    open,
+    question ? { id: question.id, updatedAt: question.updatedAt } : undefined,
+    "quiz-question",
+  );
 
-    if (question) {
-      reset(mapQuestionToFormValues(question));
-      return;
-    }
+  useFormSessionReset(
+    reset,
+    sessionKey,
+    question
+      ? mapQuestionToFormValues(question)
+      : {
+          questionText: "",
+          type: "MULTIPLE_CHOICE" as QuizQuestionType,
+          explanation: "",
+          points: "1",
+          options: getDefaultOptionsForType("MULTIPLE_CHOICE"),
+        },
+  );
 
-    reset({
-      questionText: "",
-      type: "MULTIPLE_CHOICE",
-      explanation: "",
-      points: "1",
-      options: getDefaultOptionsForType("MULTIPLE_CHOICE"),
-    });
-  }, [open, question, reset]);
+  const handleClose = () => {
+    if (!question) {
+      discardCreateSession();
+    }
+    onClose();
+  };
 
   useEffect(() => {
     if (!open || question) {
@@ -168,12 +178,15 @@ export function QuizQuestionForm({
     <Modal
       open={open}
       title={question ? "Edit Question" : "Add Question"}
-      onClose={onClose}
+      onClose={handleClose}
     >
       <form
         className="space-y-4"
         onSubmit={handleSubmit(async (values) => {
           await onSubmit(values);
+          if (!question) {
+            discardCreateSession();
+          }
         })}
       >
         <ValidatedField
@@ -323,7 +336,7 @@ export function QuizQuestionForm({
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={handleClose}>
             Cancel
           </Button>
           <Button

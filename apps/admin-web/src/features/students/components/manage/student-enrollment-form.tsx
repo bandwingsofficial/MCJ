@@ -21,6 +21,7 @@ import {
   type FieldVisualState,
 } from "@/src/shared/components/ui/validated-field";
 import { appToast } from "@/src/shared/components/ui/toast";
+import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { batchService } from "@/src/features/batches/services/batch.service";
@@ -76,6 +77,8 @@ interface Props {
   student: Student;
   defaultBatchId?: string;
   defaultValues?: Partial<StudentEnrollmentFormValues>;
+  /** Stable id for edit sessions (e.g. enrollment id). */
+  editSessionKey?: string;
   editBatchDetails?: StudentEnrollmentBatchDetailsData & { batchLabel: string };
   isSubmitting?: boolean;
   submitLabel?: string;
@@ -105,6 +108,7 @@ export function StudentEnrollmentForm({
   student,
   defaultBatchId,
   defaultValues,
+  editSessionKey,
   editBatchDetails,
   isSubmitting = false,
   submitLabel = "Create Enrollment",
@@ -150,9 +154,12 @@ export function StudentEnrollmentForm({
   const discountAmount = normalizeMoney(watch("discountAmount"));
   const finalAmount = Math.max(0, feeAmount - discountAmount);
 
-  useEffect(() => {
-    reset(mergedDefaults);
-  }, [mergedDefaults, reset]);
+  useFormSessionReset(
+    reset,
+    mode === "edit" ? editSessionKey : `create-${student.id}`,
+    mergedDefaults,
+    { enabled: true },
+  );
 
   useEffect(() => {
     if (mode !== "create") {

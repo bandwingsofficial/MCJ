@@ -37,6 +37,7 @@ import {
   type FieldVisualState,
 } from "@/src/shared/components/ui/validated-field";
 import { cn } from "@/src/shared/lib/cn";
+import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
 
 import { buildStudentQualificationSelectOptions } from "@mcj/shared-constants";
 
@@ -127,12 +128,13 @@ export function EditStudentForm({
     defaultValues,
   });
 
-  useEffect(() => {
-    reset(defaultValues);
-    setSelectedImage(null);
-    selectedImageRef.current = null;
-    setPreviewUrl(profileImageUrl ?? null);
-  }, [defaultValues, profileImageUrl, reset]);
+  useFormSessionReset(reset, defaultValues.studentCode, defaultValues, {
+    onReset: () => {
+      setSelectedImage(null);
+      selectedImageRef.current = null;
+      setPreviewUrl(profileImageUrl ?? null);
+    },
+  });
 
   useEffect(() => {
     if (!serverErrors || Object.keys(serverErrors).length === 0) {

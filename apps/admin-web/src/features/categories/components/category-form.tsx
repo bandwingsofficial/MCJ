@@ -47,6 +47,7 @@ import {
 
 import { categoryService } from "@/src/features/categories/services/category.service";
 import { mapCategoryApiError } from "@/src/features/categories/utils/category-form-errors";
+import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
 
 const AVAILABILITY_DEBOUNCE_MS = 400;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -188,46 +189,39 @@ export function CategoryForm({
   const slug = watch("slug");
   const values = watch();
 
-  useEffect(() => {
-    if (!defaultValues || !excludeId) {
-      return;
-    }
-
-    reset({
+  useFormSessionReset(
+    reset,
+    isEdit ? excludeId : undefined,
+    {
       name: "",
       slug: "",
       description: "",
       displayOrder: undefined,
       ...defaultValues,
-    });
-
-    slugManuallyEditedRef.current = isEdit;
-    lastSuggestedSlugRef.current = defaultValues.slug
-      ? normalizeCategorySlug(defaultValues.slug)
-      : "";
-    setPreviewUrl(defaultValues.thumbnailUrl ?? null);
-    setSelectedImage(null);
-    setRemoveImage(false);
-    setImageBroken(false);
-    setImageError(null);
-    setRootError(null);
-    setNameTouched(true);
-    setSlugTouched(true);
-    setImageTouched(true);
-    setNameAvailable(null);
-    setNameAsyncError(null);
-    setSlugAvailable(null);
-    setSlugAsyncError(null);
-  }, [
-    excludeId,
-    defaultValues?.name,
-    defaultValues?.slug,
-    defaultValues?.description,
-    defaultValues?.displayOrder,
-    defaultValues?.thumbnailUrl,
-    isEdit,
-    reset,
-  ]);
+    },
+    {
+      enabled: isEdit && Boolean(excludeId && defaultValues),
+      onReset: () => {
+        slugManuallyEditedRef.current = isEdit;
+        lastSuggestedSlugRef.current = defaultValues?.slug
+          ? normalizeCategorySlug(defaultValues.slug)
+          : "";
+        setPreviewUrl(defaultValues?.thumbnailUrl ?? null);
+        setSelectedImage(null);
+        setRemoveImage(false);
+        setImageBroken(false);
+        setImageError(null);
+        setRootError(null);
+        setNameTouched(true);
+        setSlugTouched(true);
+        setImageTouched(true);
+        setNameAvailable(null);
+        setNameAsyncError(null);
+        setSlugAvailable(null);
+        setSlugAsyncError(null);
+      },
+    },
+  );
 
   useEffect(() => {
     if (isEdit || slugManuallyEditedRef.current) {

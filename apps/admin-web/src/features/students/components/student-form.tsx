@@ -36,6 +36,7 @@ import {
   type FieldVisualState,
 } from "@/src/shared/components/ui/validated-field";
 import { cn } from "@/src/shared/lib/cn";
+import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
 
 import { buildStudentQualificationSelectOptions } from "@mcj/shared-constants";
 
@@ -145,14 +146,16 @@ export function StudentForm({
     ? values.studentCode || suggestedCode
     : suggestedCode;
 
-  useEffect(() => {
-    reset(mergedDefaults);
-    setPreviewUrl(profileImageUrl ?? null);
-    setSelectedImage(null);
-    if (isEdit && defaultValues?.studentCode) {
-      setSuggestedCode(defaultValues.studentCode);
-    }
-  }, [mergedDefaults, reset, profileImageUrl, isEdit, defaultValues?.studentCode]);
+  useFormSessionReset(reset, isEdit ? defaultValues?.studentCode : undefined, mergedDefaults, {
+    enabled: isEdit && Boolean(defaultValues?.studentCode),
+    onReset: () => {
+      setPreviewUrl(profileImageUrl ?? null);
+      setSelectedImage(null);
+      if (defaultValues?.studentCode) {
+        setSuggestedCode(defaultValues.studentCode);
+      }
+    },
+  });
 
   useEffect(() => {
     if (isEdit) {

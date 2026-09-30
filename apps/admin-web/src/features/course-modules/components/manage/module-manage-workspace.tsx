@@ -2,6 +2,7 @@
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
+import { useInitialLoadingOnly } from "@/src/shared/hooks/use-initial-loading-only";
 
 import type { CourseModule } from "@/src/features/course-modules/types/course-module.types";
 import { ModuleManageHeader } from "@/src/features/course-modules/components/manage/module-manage-header";
@@ -38,6 +39,8 @@ export function ModuleManageWorkspace({
     await onModuleRefresh?.();
   };
 
+  const isInitialLoading = useInitialLoadingOnly(isLoading);
+
   return (
     <div className="space-y-4">
       <ModuleManageHeader
@@ -47,7 +50,7 @@ export function ModuleManageWorkspace({
         module={module}
       />
 
-      {isLoading ? (
+      {isInitialLoading ? (
         <SkeletonTable rows={6} />
       ) : error ? (
         <ErrorState

@@ -92,6 +92,7 @@ export function UpdateStudentEnrollmentModal({
           mode="edit"
           student={student}
           defaultValues={defaultValues}
+          editSessionKey={enrollment.id}
           editBatchDetails={{
             batchLabel: formatBatchLabel(enrollment),
             courseTitle: enrollment.course?.title ?? "—",

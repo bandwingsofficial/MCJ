@@ -25,6 +25,9 @@ import {
   getSyncFieldState,
   MODULE_WORD_LIMITS,
 } from "@/src/features/course-modules/utils/module-form-validation";
+import { moduleFormSessionEntity } from "@/src/features/course-modules/utils/modal-form-session.util";
+import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
+import { useModalFormSessionKey } from "@/src/shared/hooks/use-modal-form-session-key";
 
 interface CourseModuleFormProps {
   open: boolean;
@@ -73,29 +76,41 @@ export function CourseModuleForm({
   const keySkillsValue = watch("keySkills");
   const showValidation = Boolean(isSubmitted || editValidationReady);
 
-  useEffect(() => {
-    if (!open) {
-      setEditValidationReady(false);
-      return;
-    }
+  const { sessionKey, discardCreateSession } = useModalFormSessionKey(
+    open,
+    moduleFormSessionEntity(module),
+    `module-${courseId}`,
+  );
 
-    if (module) {
-      reset({
-        courseId: module.courseId,
-        title: module.title,
-        description: module.description ?? "",
-        keySkills: module.keySkills ?? [],
-      });
-      return;
-    }
+  useFormSessionReset(
+    reset,
+    sessionKey,
+    module
+      ? {
+          courseId: module.courseId,
+          title: module.title,
+          description: module.description ?? "",
+          keySkills: module.keySkills ?? [],
+        }
+      : {
+          courseId,
+          title: "",
+          description: "",
+          keySkills: [],
+        },
+    {
+      onReset: () => {
+        setEditValidationReady(false);
+      },
+    },
+  );
 
-    reset({
-      courseId,
-      title: "",
-      description: "",
-      keySkills: [],
-    });
-  }, [open, module, courseId, reset]);
+  const handleClose = () => {
+    if (!module) {
+      discardCreateSession();
+    }
+    onClose();
+  };
 
   useEffect(() => {
     if (!open || !module || editValidationReady) {
@@ -124,7 +139,7 @@ export function CourseModuleForm({
     <Modal
       open={open}
       title={isEdit ? "Edit Module" : "Create Module"}
-      onClose={onClose}
+      onClose={handleClose}
     >
       <form
         className="space-y-4"
@@ -134,6 +149,9 @@ export function CourseModuleForm({
             courseId: values.courseId || courseId,
             keySkills: values.keySkills ?? [],
           });
+          if (!module) {
+            discardCreateSession();
+          }
         })}
       >
         <input type="hidden" {...register("courseId")} />
@@ -201,7 +219,7 @@ export function CourseModuleForm({
           <Button
             type="button"
             variant="outline"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={loading}
           >
             Cancel

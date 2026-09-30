@@ -70,14 +70,14 @@ export function CourseFormModal({
   const isEditMode = Boolean(course);
   const isLoading = isCreating || isUpdating;
 
+  const [createSession, setCreateSession] = useState(0);
+
   const formSeedKey = useMemo(
     () =>
       course
         ? `${course.id}-${course.updatedAt}`
-        : open
-          ? "create"
-          : "closed",
-    [course, open],
+        : `create-${createSession}`,
+    [course, createSession],
   );
 
   const defaultValues = useMemo(
@@ -174,17 +174,23 @@ export function CourseFormModal({
         await onSuccess(created.id);
       }
 
+      setCreateSession((value) => value + 1);
       onClose();
     } catch (error) {
       appToast.error(getErrorMessage(error));
     }
   };
 
+  const handleClose = () => {
+    setCreateSession((value) => value + 1);
+    onClose();
+  };
+
   return (
     <Modal
       open={open}
       title={isEditMode ? "Edit Course" : "Create Course"}
-      onClose={onClose}
+      onClose={handleClose}
       contentClassName="min-w-0"
       bodyRef={bodyRef}
     >
@@ -200,7 +206,7 @@ export function CourseFormModal({
         loadingLabel={
           isEditMode ? "Updating Course..." : "Creating Course..."
         }
-        onCancel={onClose}
+        onCancel={handleClose}
         dropdownBoundaryRef={bodyRef}
         defaultValues={defaultValues}
         onSubmit={handleSubmit}

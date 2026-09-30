@@ -5,6 +5,7 @@ import {
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -141,11 +142,13 @@ export const AssignBatchCreateForm = forwardRef<
     });
   };
 
+  const wasOpenRef = useRef(false);
+
   useEffect(() => {
-    if (!open) {
-      return;
+    if (open && !wasOpenRef.current) {
+      resetForm();
     }
-    resetForm();
+    wasOpenRef.current = open;
   }, [open]);
 
   useEffect(() => {

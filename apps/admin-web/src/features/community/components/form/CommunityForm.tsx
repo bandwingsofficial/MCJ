@@ -16,6 +16,10 @@ import {
   type FieldVisualState,
 } from "@/src/shared/components/ui/validated-field";
 import { cn } from "@/src/shared/lib/cn";
+import {
+  buildEntityFormSessionKey,
+  useFormSessionReset,
+} from "@/src/shared/hooks/use-form-session-reset";
 
 import { CommunityPostPreview } from "@/src/features/community/components/community-post-preview";
 import { CommunityMediaCollectionField } from "@/src/features/community/components/form/CommunityMediaCollectionField";
@@ -95,18 +99,27 @@ export function CommunityForm({
     defaultValues: defaultCommunityFormValues,
   });
 
-  useEffect(() => {
-    if (mode === "edit" && initialData) {
-      reset(mapCommunityToFormValues(initialData));
-      setMediaItems(mapExistingPostMediaToFormItems(initialData));
-      return;
-    }
+  const communitySessionKey =
+    mode === "edit" && initialData
+      ? buildEntityFormSessionKey(initialData)
+      : "create";
 
-    if (mode === "create") {
-      reset(defaultCommunityFormValues);
-      setMediaItems([]);
-    }
-  }, [initialData, mode, reset]);
+  useFormSessionReset(
+    reset,
+    communitySessionKey,
+    mode === "edit" && initialData
+      ? mapCommunityToFormValues(initialData)
+      : defaultCommunityFormValues,
+    {
+      onReset: () => {
+        if (mode === "edit" && initialData) {
+          setMediaItems(mapExistingPostMediaToFormItems(initialData));
+        } else {
+          setMediaItems([]);
+        }
+      },
+    },
+  );
 
   const caption = watch("caption");
   const authorName = watch("authorName");

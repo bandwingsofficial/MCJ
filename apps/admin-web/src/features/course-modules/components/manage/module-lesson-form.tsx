@@ -23,6 +23,9 @@ import {
   requiredWordsRefine,
   wordLimitRefine,
 } from "@/src/features/course-modules/utils/module-form-validation";
+import { lessonFormSessionEntity } from "@/src/features/course-modules/utils/modal-form-session.util";
+import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
+import { useModalFormSessionKey } from "@/src/shared/hooks/use-modal-form-session-key";
 
 const moduleLessonSchema = z.object({
   title: z
@@ -85,17 +88,32 @@ export function ModuleLessonForm({
     isSubmitted || editValidationReady,
   );
 
-  useEffect(() => {
-    if (!open) {
-      setEditValidationReady(false);
-      return;
-    }
+  const { sessionKey, discardCreateSession } = useModalFormSessionKey(
+    open,
+    lessonFormSessionEntity(lesson),
+    "module-lesson",
+  );
 
-    reset({
+  useFormSessionReset(
+    reset,
+    sessionKey,
+    {
       title: lesson?.title ?? "",
       description: lesson?.description ?? "",
-    });
-  }, [open, lesson, reset]);
+    },
+    {
+      onReset: () => {
+        setEditValidationReady(false);
+      },
+    },
+  );
+
+  const handleClose = () => {
+    if (!lesson) {
+      discardCreateSession();
+    }
+    onClose();
+  };
 
   useEffect(() => {
     if (!open || !lesson || editValidationReady) {
@@ -125,12 +143,15 @@ export function ModuleLessonForm({
     <Modal
       open={open}
       title={isEdit ? "Edit Lesson" : "Add Lesson"}
-      onClose={onClose}
+      onClose={handleClose}
     >
       <form
         className="space-y-4"
         onSubmit={handleSubmit(async (values) => {
           await onSubmit(values);
+          if (!lesson) {
+            discardCreateSession();
+          }
         })}
       >
         <ValidatedField
@@ -181,7 +202,7 @@ export function ModuleLessonForm({
         </ValidatedField>
 
         <div className="flex justify-end gap-3 border-t pt-4">
-          <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+          <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
           <Button type="submit" loading={loading}>

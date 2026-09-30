@@ -28,6 +28,8 @@ import {
   validateResourceFileForType,
 } from "@/src/features/course-resources/utils/resource-file-validation";
 import { getSyncFieldState } from "@/src/features/course-modules/utils/module-form-validation";
+import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
+import { useModalFormSessionKey } from "@/src/shared/hooks/use-modal-form-session-key";
 
 import type {
   CourseResource,
@@ -117,30 +119,42 @@ export function CourseResourceForm({
     { required: true },
   );
 
-  useEffect(() => {
-    if (!open) {
-      setEditValidationReady(false);
-      setSelectedFile(null);
-      setFileError(null);
-      setFileTouched(false);
-      return;
-    }
+  const { sessionKey, discardCreateSession } = useModalFormSessionKey(
+    open,
+    resource ? { id: resource.id, updatedAt: resource.updatedAt } : undefined,
+    `resource-${lessonId}`,
+  );
 
+  useFormSessionReset(
+    reset,
+    sessionKey,
+    resource
+      ? {
+          lessonId: resource.lessonId,
+          title: resource.title,
+          type: resource.type,
+          fileUrl: isResourceTypeLink(resource.type) ? resource.fileUrl : "",
+        }
+      : {
+          ...DEFAULT_COURSE_RESOURCE_FORM_VALUES,
+          lessonId,
+        },
+    {
+      onReset: () => {
+        setEditValidationReady(false);
+        setSelectedFile(null);
+        setFileError(null);
+        setFileTouched(false);
+      },
+    },
+  );
+
+  const handleClose = () => {
     if (!resource) {
-      reset({
-        ...DEFAULT_COURSE_RESOURCE_FORM_VALUES,
-        lessonId,
-      });
-      return;
+      discardCreateSession();
     }
-
-    reset({
-      lessonId: resource.lessonId,
-      title: resource.title,
-      type: resource.type,
-      fileUrl: isResourceTypeLink(resource.type) ? resource.fileUrl : "",
-    });
-  }, [open, lessonId, resource, reset]);
+    onClose();
+  };
 
   useEffect(() => {
     if (!open || !resource || editValidationReady) {
@@ -231,7 +245,7 @@ export function CourseResourceForm({
     <Modal
       open={open}
       title={resource ? "Edit Resource" : "Create Resource"}
-      onClose={onClose}
+      onClose={handleClose}
     >
       <form className="space-y-4" onSubmit={(event) => void handleFormSubmit(event)}>
         <ValidatedField
@@ -333,7 +347,7 @@ export function CourseResourceForm({
           <Button
             type="button"
             variant="outline"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={loading || isSubmitting}
           >
             Cancel

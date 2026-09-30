@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GripVertical, Plus } from "lucide-react";
@@ -39,6 +39,10 @@ import type {
 
 import { QuizQuestionForm } from "./quiz-question-form";
 import { formatContentOrderNumber } from "@/src/shared/utils/content-order";
+import {
+  buildEntityFormSessionKey,
+  useFormSessionReset,
+} from "@/src/shared/hooks/use-form-session-reset";
 
 function mapQuizToFormValues(quiz: CourseQuizDetail): CourseQuizFormValues {
   return {
@@ -116,9 +120,11 @@ export function QuizBuilder({ quiz, onQuizUpdated }: QuizBuilderProps) {
     defaultValues: mapQuizToFormValues(quiz),
   });
 
-  useEffect(() => {
-    reset(mapQuizToFormValues(quiz));
-  }, [quiz, reset]);
+  useFormSessionReset(
+    reset,
+    buildEntityFormSessionKey(quiz),
+    mapQuizToFormValues(quiz),
+  );
 
   const getFieldState = (fieldError?: { message?: string }) =>
     fieldError ? "invalid" : "neutral";

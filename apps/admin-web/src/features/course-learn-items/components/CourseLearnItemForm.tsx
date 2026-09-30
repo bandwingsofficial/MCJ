@@ -23,6 +23,8 @@ import type {
 } from "@/src/features/course-learn-items/types";
 import { parseKeyLearningPoints } from "@/src/features/course-learn-items/utils/key-learning-points.utils";
 import { getSyncFieldState } from "@/src/features/course-modules/utils/module-form-validation";
+import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
+import { useModalFormSessionKey } from "@/src/shared/hooks/use-modal-form-session-key";
 
 const learnItemFormSchema = z.object({
   lessonId: z.string(),
@@ -96,34 +98,46 @@ export function CourseLearnItemForm({
   const finalThoughtsValue = watch("finalThoughts") ?? "";
   const summaryValue = watch("summary") ?? "";
 
-  useEffect(() => {
-    if (!open) {
-      setSelectedImage(null);
-      setRemoveImage(false);
-      return;
-    }
+  const { sessionKey, discardCreateSession } = useModalFormSessionKey(
+    open,
+    item ? { id: item.id, updatedAt: item.updatedAt } : undefined,
+    `learn-${lessonId}`,
+  );
 
+  useFormSessionReset(
+    reset,
+    sessionKey,
+    item
+      ? {
+          lessonId: item.lessonId,
+          title: item.title,
+          explanation: item.explanation,
+          imageUrl: item.imageUrl ?? "",
+          keyLearningPoints: parseKeyLearningPoints(item.keyLearningPoints).map(
+            (point) => ({ value: point }),
+          ),
+          finalThoughts: item.finalThoughts ?? "",
+          summary: item.summary ?? "",
+        }
+      : {
+          ...DEFAULT_COURSE_LEARN_ITEM_FORM_VALUES,
+          lessonId,
+          keyLearningPoints: [],
+        },
+    {
+      onReset: () => {
+        setSelectedImage(null);
+        setRemoveImage(false);
+      },
+    },
+  );
+
+  const handleClose = () => {
     if (!item) {
-      reset({
-        ...DEFAULT_COURSE_LEARN_ITEM_FORM_VALUES,
-        lessonId,
-        keyLearningPoints: [],
-      });
-      return;
+      discardCreateSession();
     }
-
-    reset({
-      lessonId: item.lessonId,
-      title: item.title,
-      explanation: item.explanation,
-      imageUrl: item.imageUrl ?? "",
-      keyLearningPoints: parseKeyLearningPoints(item.keyLearningPoints).map(
-        (point) => ({ value: point }),
-      ),
-      finalThoughts: item.finalThoughts ?? "",
-      summary: item.summary ?? "",
-    });
-  }, [open, lessonId, item, reset]);
+    onClose();
+  };
 
   const titleState = getSyncFieldState(
     Boolean(touchedFields.title || (isSubmitted && errors.title)),
@@ -157,7 +171,7 @@ export function CourseLearnItemForm({
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={isEdit ? "Edit Learn Item" : "Add Learn Item"}
       contentClassName="max-w-3xl"
     >
@@ -319,7 +333,7 @@ export function CourseLearnItemForm({
             type="button"
             variant="outline"
             className="rounded-lg"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={loading || isSubmitting}
           >
             Cancel

@@ -27,6 +27,10 @@ import {
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
 import { cn } from "@/src/shared/lib/cn";
+import {
+  buildEntityFormSessionKey,
+  useFormSessionReset,
+} from "@/src/shared/hooks/use-form-session-reset";
 
 import { JobTagInput } from "@/src/features/jobs/components/JobTagInput";
 import {
@@ -133,19 +137,28 @@ export function JobForm({
     defaultValues: initialData ? jobToFormValues(initialData) : defaults,
   });
 
-  useEffect(() => {
-    const next = initialData
-      ? jobToFormValues(initialData)
-      : createDefaultJobFormValues();
-    if (!initialData && (companyNameDefault !== undefined || variant === "company")) {
-      next.companyName = companyNameDefault ?? "";
-    }
-    reset(next);
-    setSelectedImage(null);
-    setRemoveImage(false);
-    setImageError(null);
-    setImageTouched(false);
-  }, [companyNameDefault, initialData, reset, variant]);
+  const jobFormSessionKey = initialData
+    ? buildEntityFormSessionKey(initialData)
+    : `create-${variant}`;
+
+  const jobSeedValues = initialData
+    ? jobToFormValues(initialData)
+    : (() => {
+        const next = createDefaultJobFormValues();
+        if (companyNameDefault !== undefined || variant === "company") {
+          next.companyName = companyNameDefault ?? "";
+        }
+        return next;
+      })();
+
+  useFormSessionReset(reset, jobFormSessionKey, jobSeedValues, {
+    onReset: () => {
+      setSelectedImage(null);
+      setRemoveImage(false);
+      setImageError(null);
+      setImageTouched(false);
+    },
+  });
 
   const values = watch();
   const showValidation = isSubmitted;

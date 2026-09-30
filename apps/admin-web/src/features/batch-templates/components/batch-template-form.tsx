@@ -9,6 +9,10 @@ import { Input } from "@/src/shared/components/ui/input";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { Label } from "@/src/shared/components/ui/label";
 import { cn } from "@/src/shared/lib/cn";
+import {
+  buildEntityFormSessionKey,
+  useFormSessionReset,
+} from "@/src/shared/hooks/use-form-session-reset";
 
 import {
   DAYS_OF_WEEK,
@@ -207,14 +211,13 @@ export function BatchTemplateForm({
       : DEFAULT_BATCH_TEMPLATE_FORM_VALUES,
   });
 
-  useEffect(() => {
-    if (initial) {
-      reset(mapBatchTemplateToFormValues(initial));
-      return;
-    }
-
-    reset(DEFAULT_BATCH_TEMPLATE_FORM_VALUES);
-  }, [initial, reset]);
+  useFormSessionReset(
+    reset,
+    initial ? buildEntityFormSessionKey(initial) : "create",
+    initial
+      ? mapBatchTemplateToFormValues(initial)
+      : DEFAULT_BATCH_TEMPLATE_FORM_VALUES,
+  );
 
   const hasFixedTime = watch("hasFixedTime");
   const daysOfWeek = watch("daysOfWeek");

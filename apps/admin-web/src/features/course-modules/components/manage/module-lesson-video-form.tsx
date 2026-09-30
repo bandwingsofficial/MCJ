@@ -34,6 +34,9 @@ import {
   wordLimitRefine,
 } from "@/src/features/course-modules/utils/module-form-validation";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { lessonFormSessionEntity } from "@/src/features/course-modules/utils/modal-form-session.util";
+import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
+import { useModalFormSessionKey } from "@/src/shared/hooks/use-modal-form-session-key";
 
 const lessonVideoSchema = z
   .object({
@@ -171,26 +174,41 @@ export function ModuleLessonVideoForm({
     showValidation,
   });
 
-  useEffect(() => {
-    if (!open) {
-      setEditValidationReady(false);
-      setVideoFile(null);
-      setUploadError(null);
-      setVideoSourceTouched(false);
-      return;
-    }
+  const { sessionKey, discardCreateSession } = useModalFormSessionKey(
+    open,
+    lessonFormSessionEntity(lesson),
+    "module-lesson-video",
+  );
 
-    const existingUrl = lesson?.videoUrl ?? "";
-    const youtube = isYouTubeUrl(existingUrl);
+  const existingUrl = lesson?.videoUrl ?? "";
+  const youtube = isYouTubeUrl(existingUrl);
 
-    reset({
+  useFormSessionReset(
+    reset,
+    sessionKey,
+    {
       title: lesson?.title ?? "",
       description: lesson?.description ?? "",
       videoUrl: youtube ? existingUrl : "",
       uploadedVideoUrl: youtube ? "" : existingUrl,
       duration: formatSecondsToDurationHms(lesson?.duration),
-    });
-  }, [open, lesson, reset]);
+    },
+    {
+      onReset: () => {
+        setEditValidationReady(false);
+        setVideoFile(null);
+        setUploadError(null);
+        setVideoSourceTouched(false);
+      },
+    },
+  );
+
+  const handleClose = () => {
+    if (!lesson) {
+      discardCreateSession();
+    }
+    onClose();
+  };
 
   useEffect(() => {
     if (!open || !lesson || editValidationReady) {
@@ -302,7 +320,7 @@ export function ModuleLessonVideoForm({
     <Modal
       open={open}
       title={isEdit ? copy.editTitle : copy.addTitle}
-      onClose={onClose}
+      onClose={handleClose}
     >
       <form
         className="space-y-4"
@@ -503,7 +521,7 @@ export function ModuleLessonVideoForm({
           <Button
             type="button"
             variant="outline"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={loading || isUploading}
           >
             Cancel

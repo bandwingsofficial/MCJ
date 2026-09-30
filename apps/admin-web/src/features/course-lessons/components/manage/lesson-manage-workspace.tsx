@@ -13,6 +13,7 @@ import {
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
+import { useInitialLoadingOnly } from "@/src/shared/hooks/use-initial-loading-only";
 import {
   Tabs,
   TabsContent,
@@ -103,6 +104,8 @@ export function LessonManageWorkspace({
     resourceShellLessonIds,
   );
 
+  const isInitialLoading = useInitialLoadingOnly(isLoading || isLearnLoading);
+
   return (
     <div className="space-y-4">
       <LessonManageHeader
@@ -127,7 +130,7 @@ export function LessonManageWorkspace({
           ))}
         </TabsList>
 
-        {isLoading || isLearnLoading ? (
+        {isInitialLoading ? (
           <SkeletonTable rows={6} />
         ) : error || learnError ? (
           <ErrorState

@@ -27,6 +27,11 @@ export function CreateBatchModal({
 }: CreateBatchModalProps) {
   const { createBatch, isLoading } = useCreateBatch();
   const [method, setMethod] = useState<CreateMethod>("template");
+  const [customFormSession, setCustomFormSession] = useState(0);
+
+  const discardCustomFormSession = () => {
+    setCustomFormSession((value) => value + 1);
+  };
 
   const handleCustomSubmit = async (values: BatchFormValues) => {
     try {
@@ -45,6 +50,7 @@ export function CreateBatchModal({
       title="Create Batch"
       onClose={() => {
         setMethod("template");
+        discardCustomFormSession();
         onClose();
       }}
       contentClassName="!flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-3xl flex-col !overflow-hidden"
@@ -76,20 +82,21 @@ export function CreateBatchModal({
 
       {method === "template" ? (
         <CreateBatchesFromTemplatesForm
-          key={open ? "from-template-open" : "from-template-closed"}
           onCancel={() => {
             setMethod("template");
+            discardCustomFormSession();
             onClose();
           }}
           onSuccess={async () => {
             await onSuccess();
             setMethod("template");
+            discardCustomFormSession();
             onClose();
           }}
         />
       ) : (
         <BatchForm
-          key={open ? "create-batch-open" : "create-batch-closed"}
+          formSessionKey={`create-custom-${customFormSession}`}
           isEdit={false}
           isSubmitting={isLoading}
           submitLabel="Create Batch"
@@ -103,6 +110,7 @@ export function CreateBatchModal({
           }}
           onCancel={() => {
             setMethod("template");
+            discardCustomFormSession();
             onClose();
           }}
         />

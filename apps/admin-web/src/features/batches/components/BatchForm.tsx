@@ -69,10 +69,13 @@ import {
   isEndDateBeforeStartDate,
 } from "@/src/features/batches/utils/batch-schedule.utils";
 import { uniqueSelectOptions } from "@/src/features/batches/utils/batch-select.utils";
+import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
 
 interface BatchFormProps {
   isEdit?: boolean;
   defaultValues?: Partial<BatchFormValues>;
+  /** Changes only when starting a new create/edit session (not on parent rerenders). */
+  formSessionKey?: string;
   /** Ensures the batch's current course appears in options even if inactive. */
   initialCourse?: CourseOption | null;
   isSubmitting: boolean;
@@ -173,6 +176,7 @@ function IconField({
 export function BatchForm({
   isEdit = false,
   defaultValues,
+  formSessionKey,
   initialCourse = null,
   isSubmitting,
   submitLabel,
@@ -295,9 +299,9 @@ export function BatchForm({
     }
   }, [values.startDate, values.endDate, trigger]);
 
-  useEffect(() => {
-    reset(mergedDefaults);
-  }, [mergedDefaults, reset]);
+  useFormSessionReset(reset, formSessionKey, mergedDefaults, {
+    enabled: Boolean(formSessionKey),
+  });
 
   useEffect(() => {
     if (isEdit) {
