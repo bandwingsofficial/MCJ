@@ -83,6 +83,7 @@ export class CourseLessonPreviewResult {
     public readonly learnItemCount: number = 0,
     public readonly selfPacedVideoCount: number = 0,
     public readonly liveRecordedVideoCount: number = 0,
+    public readonly selfPacedVideos: CourseLessonVideoTreeResult[] = [],
   ) {}
 }
 

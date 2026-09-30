@@ -79,7 +79,6 @@ export function ModuleLessonsTab({
   const [togglingLessonId, setTogglingLessonId] = useState<string | null>(
     null,
   );
-
   const rootLessonsForOrder = useMemo(
     () =>
       lessons
@@ -199,7 +198,6 @@ export function ModuleLessonsTab({
                 lessonContentCountsByLessonId.get(row.id) ??
                   emptyLessonContentSummaryCounts(),
               );
-
               return (
                 <div>
                   <p className="text-sm font-medium text-[#102A56]">{row.title}</p>

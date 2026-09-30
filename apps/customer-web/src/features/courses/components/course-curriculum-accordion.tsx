@@ -5,16 +5,23 @@ import {
   ChevronDown,
   Clock3,
   Lock,
+  PlayCircle,
+  Unlock,
+  Video,
 } from "lucide-react";
 
+import { Button } from "@/src/shared/components/ui/button";
 import { appToast } from "@/src/shared/components/ui/toast";
+import { formatVideoDurationHms } from "@/src/shared/utils/duration";
 
+import { CourseLessonPreviewSection } from "@/src/features/courses/components/course-lesson-preview-section";
 import type {
   CoursePreviewLesson,
   CoursePreviewModule,
 } from "@/src/features/courses/types/course.types";
 
 interface CourseCurriculumAccordionProps {
+  courseId: string;
   modules: CoursePreviewModule[] | unknown;
 }
 
@@ -76,15 +83,7 @@ function formatLessonNumber(order: number): string {
   return String(order).padStart(2, "0");
 }
 
-function handleLockedLessonClick(isPreview?: boolean) {
-  /*
-   * Preview lessons are allowed to continue through
-   * whatever preview behavior the application already supports.
-   */
-  if (isPreview) {
-    return;
-  }
-
+function notifyLockedLesson() {
   appToast.info(
     "Please enroll in this course to access this lesson.",
   );
@@ -135,6 +134,7 @@ function LessonContentIndicators({
 }
 
 export function CourseCurriculumAccordion({
+  courseId,
   modules,
 }: CourseCurriculumAccordionProps) {
   /*
@@ -152,6 +152,9 @@ export function CourseCurriculumAccordion({
   }, [modules]);
 
   const [openModuleId, setOpenModuleId] = useState<string | null>(null);
+  const [openPreviewLessonId, setOpenPreviewLessonId] = useState<
+    string | null
+  >(null);
 
   if (sortedModules.length === 0) {
     return (
@@ -352,87 +355,163 @@ export function CourseCurriculumAccordion({
                             return null;
                           }
 
+                          const durationHms = formatVideoDurationHms(
+                            lesson.duration,
+                          );
+                          const canPreview = Boolean(lesson.isPreview);
+                          const hasSelfPacedVideo =
+                            (lesson.selfPacedVideoCount ?? 0) > 0;
+                          const isPreviewOpen =
+                            openPreviewLessonId === lesson.id;
+
                           return (
-                            <button
+                            <div
                               key={lesson.id}
-                              type="button"
-                              onClick={() =>
-                                handleLockedLessonClick(
-                                  lesson.isPreview,
-                                )
-                              }
-                              className="
-                                flex
-                                w-full
-                                items-center
-                                gap-3
-                                border-b
-                                border-slate-100
-                                py-3.5
-                                text-left
-                                transition-colors
-                                last:border-b-0
-                                hover:bg-slate-50
-                              "
+                              className="border-b border-slate-100 last:border-b-0"
                             >
-                              {/* Lesson number */}
-                              <span
+                              <div
                                 className="
                                   flex
-                                  h-7
-                                  w-7
-                                  shrink-0
-                                  items-center
-                                  justify-center
-                                  rounded-md
-                                  bg-white
-                                  text-[11px]
-                                  font-semibold
-                                  text-slate-400
-                                  ring-1
-                                  ring-slate-200
+                                  w-full
+                                  flex-col
+                                  gap-2
+                                  py-3.5
+                                  sm:flex-row
+                                  sm:items-center
+                                  sm:gap-3
                                 "
                               >
-                                {formatLessonNumber(
-                                  lessonIndex + 1,
-                                )}
-                              </span>
-
-                              <div className="min-w-0 flex-1">
-                                <span className="block truncate text-sm font-medium text-slate-800">
-                                  {lesson.title || "Untitled Lesson"}
-                                </span>
-                                {lesson.description?.trim() ? (
-                                  <span className="mt-0.5 line-clamp-1 block text-xs text-slate-500">
-                                    {lesson.description.trim()}
+                                <div className="flex min-w-0 flex-1 items-start gap-3">
+                                  <span
+                                    className="
+                                      flex
+                                      h-7
+                                      w-7
+                                      shrink-0
+                                      items-center
+                                      justify-center
+                                      rounded-md
+                                      bg-white
+                                      text-[11px]
+                                      font-semibold
+                                      text-slate-400
+                                      ring-1
+                                      ring-slate-200
+                                    "
+                                  >
+                                    {formatLessonNumber(lessonIndex + 1)}
                                   </span>
-                                ) : null}
+
+                                  <div className="min-w-0 flex-1">
+                                    <span className="block truncate text-sm font-medium text-slate-800">
+                                      {lesson.title || "Untitled Lesson"}
+                                    </span>
+                                    {lesson.description?.trim() ? (
+                                      <span className="mt-0.5 line-clamp-2 block text-xs text-slate-500">
+                                        {lesson.description.trim()}
+                                      </span>
+                                    ) : null}
+
+                                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
+                                      {hasSelfPacedVideo ? (
+                                        <span className="inline-flex items-center gap-1 font-medium text-slate-600">
+                                          <Video
+                                            className="h-3.5 w-3.5 text-[#2563D9]"
+                                            aria-hidden
+                                          />
+                                          Video
+                                        </span>
+                                      ) : null}
+
+                                      {canPreview ? (
+                                        <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
+                                          <Unlock
+                                            className="h-3.5 w-3.5"
+                                            aria-hidden
+                                          />
+                                          Preview
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 font-medium text-slate-500">
+                                          <Lock
+                                            className="h-3.5 w-3.5"
+                                            aria-hidden
+                                          />
+                                          Locked
+                                        </span>
+                                      )}
+
+                                      {durationHms ? (
+                                        <span>Duration: {durationHms}</span>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex shrink-0 items-center gap-2 pl-10 sm:pl-0">
+                                  <LessonContentIndicators lesson={lesson} />
+
+                                  {canPreview ? (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant={
+                                        isPreviewOpen ? "secondary" : "outline"
+                                      }
+                                      className="h-8 gap-1.5 text-xs"
+                                      onClick={() => {
+                                        setOpenPreviewLessonId((current) =>
+                                          current === lesson.id
+                                            ? null
+                                            : lesson.id,
+                                        );
+                                      }}
+                                    >
+                                      <PlayCircle
+                                        className="h-3.5 w-3.5"
+                                        aria-hidden
+                                      />
+                                      {isPreviewOpen ? "Hide" : "Preview"}
+                                    </Button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className="
+                                        flex
+                                        h-8
+                                        items-center
+                                        gap-1.5
+                                        rounded-md
+                                        border
+                                        border-slate-200
+                                        bg-slate-50
+                                        px-3
+                                        text-xs
+                                        font-medium
+                                        text-slate-500
+                                      "
+                                      onClick={notifyLockedLesson}
+                                    >
+                                      <Lock
+                                        className="h-3.5 w-3.5"
+                                        aria-hidden
+                                      />
+                                      Locked
+                                    </button>
+                                  )}
+                                </div>
                               </div>
 
-                              <LessonContentIndicators lesson={lesson} />
-
-                              {lesson.duration ? (
-                                <span className="hidden shrink-0 text-[11px] text-slate-400 sm:block">
-                                  {formatLessonDuration(lesson.duration)}
-                                </span>
+                              {canPreview ? (
+                                <div className="pb-3 pl-10 sm:pl-[2.875rem]">
+                                  <CourseLessonPreviewSection
+                                    courseId={courseId}
+                                    lessonId={lesson.id}
+                                    isOpen={isPreviewOpen}
+                                  />
+                                </div>
                               ) : null}
-
-                              {/* LOCK */}
-                              <span
-                                className="
-                                  flex
-                                  h-7
-                                  w-7
-                                  shrink-0
-                                  items-center
-                                  justify-center
-                                  rounded-md
-                                  bg-slate-100
-                                "
-                              >
-                                <Lock className="h-3.5 w-3.5 text-slate-400" />
-                              </span>
-                            </button>
+                            </div>
                           );
                         },
                       )

@@ -492,6 +492,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
 
               {activeTab === "curriculum" ? (
                 <CurriculumPanel
+                  courseId={course.id}
                   modules={safeModules}
                   moduleCount={moduleCount}
                   lessonCount={lessonCount}
@@ -624,10 +625,12 @@ function OverviewPanel({
 }
 
 function CurriculumPanel({
+  courseId,
   modules,
   moduleCount,
   lessonCount,
 }: {
+  courseId: string;
   modules: CoursePreviewModule[];
   moduleCount: number;
   lessonCount: number;
@@ -645,7 +648,7 @@ function CurriculumPanel({
         lesson{lessonCount === 1 ? "" : "s"}
       </p>
       <div className="mt-8">
-        <CourseCurriculumAccordion modules={modules} />
+        <CourseCurriculumAccordion courseId={courseId} modules={modules} />
       </div>
     </div>
   );

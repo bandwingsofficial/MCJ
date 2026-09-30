@@ -3,6 +3,7 @@
 import { apiClient } from "@/src/core/api/axios";
 
 import type {
+  GetCoursePreviewLessonResponse,
   GetCourseResponse,
   GetCoursesParams,
   GetCoursesResponse,
@@ -45,6 +46,17 @@ export async function getCourseFaqsApi(
 ): Promise<GetCourseFaqsResponse> {
   const response = await apiClient.get<GetCourseFaqsResponse>(
     `/courses/${id}/faqs`,
+  );
+
+  return response.data;
+}
+
+export async function getCoursePreviewLessonApi(
+  courseId: string,
+  lessonId: string,
+): Promise<GetCoursePreviewLessonResponse> {
+  const response = await apiClient.get<GetCoursePreviewLessonResponse>(
+    `/courses/${courseId}/lessons/${lessonId}/preview`,
   );
 
   return response.data;

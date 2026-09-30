@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
 import { GripVertical } from "lucide-react";
 
@@ -46,6 +46,9 @@ interface Props<T extends ModuleContentRow> {
     targetId: string,
   ) => number | null;
   renderActions: (row: T) => React.ReactNode;
+  isRowExpanded?: (row: T) => boolean;
+  onToggleRowExpanded?: (row: T) => void;
+  renderExpandedRow?: (row: T) => React.ReactNode;
 }
 
 export function ModuleContentTable<T extends ModuleContentRow>({
@@ -63,6 +66,9 @@ export function ModuleContentTable<T extends ModuleContentRow>({
   onReorder,
   resolveReorderPosition,
   renderActions,
+  isRowExpanded,
+  onToggleRowExpanded,
+  renderExpandedRow,
 }: Props<T>) {
   const [localRows, setLocalRows] = useState(rows);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -240,79 +246,98 @@ export function ModuleContentTable<T extends ModuleContentRow>({
                 orderOffset + index + 1,
               );
 
+              const expanded =
+                Boolean(renderExpandedRow) &&
+                Boolean(isRowExpanded?.(row));
+
               return (
-                <tr
-                  key={row.id}
-                  draggable={rowDraggable}
-                  onDragStart={() => {
-                    if (rowDraggable) {
-                      setDragId(row.id);
-                    }
-                  }}
-                  onDragOver={(event) => {
-                    if (rowDraggable && dragId && dragId !== row.id) {
-                      event.preventDefault();
-                      setDropTargetId(row.id);
-                    }
-                  }}
-                  onDrop={() => {
-                    void handleDrop(row.id);
-                  }}
-                  onDragEnd={() => {
-                    setDragId(null);
-                    setDropTargetId(null);
-                  }}
-                  className={cn(
-                    "border-b border-slate-100 transition-colors hover:bg-slate-50",
-                    dragId === row.id && "opacity-60",
-                    dropTargetId === row.id &&
-                      (isManagement ? "bg-blue-50/60" : "bg-slate-50"),
-                  )}
-                >
-                  {showReorderColumn && onReorder ? (
-                    <td className={reorderCellClassName}>
-                      <div
-                        className={cn(
-                          "flex items-center gap-2 text-slate-400",
-                          !isManagement && "gap-2",
-                        )}
+                <Fragment key={row.id}>
+                  <tr
+                    draggable={rowDraggable}
+                    onDragStart={() => {
+                      if (rowDraggable) {
+                        setDragId(row.id);
+                      }
+                    }}
+                    onDragOver={(event) => {
+                      if (rowDraggable && dragId && dragId !== row.id) {
+                        event.preventDefault();
+                        setDropTargetId(row.id);
+                      }
+                    }}
+                    onDrop={() => {
+                      void handleDrop(row.id);
+                    }}
+                    onDragEnd={() => {
+                      setDragId(null);
+                      setDropTargetId(null);
+                    }}
+                    className={cn(
+                      "border-b border-slate-100 transition-colors hover:bg-slate-50",
+                      dragId === row.id && "opacity-60",
+                      dropTargetId === row.id &&
+                        (isManagement ? "bg-blue-50/60" : "bg-slate-50"),
+                      expanded && "border-b-0 bg-slate-50/40",
+                    )}
+                  >
+                    {showReorderColumn && onReorder ? (
+                      <td className={reorderCellClassName}>
+                        <div
+                          className={cn(
+                            "flex items-center gap-2 text-slate-400",
+                            !isManagement && "gap-2",
+                          )}
+                        >
+                          {rowDraggable ? (
+                            <GripVertical
+                              className={cn(
+                                "cursor-grab active:cursor-grabbing",
+                                isManagement ? "h-3.5 w-3.5" : "h-4 w-4",
+                              )}
+                              aria-label="Drag to reorder"
+                            />
+                          ) : (
+                            <span
+                              className={cn(
+                                "inline-block",
+                                isManagement ? "w-3.5" : "h-4 w-4",
+                              )}
+                            />
+                          )}
+                          <span className="text-xs font-semibold tabular-nums text-slate-500">
+                            {orderLabel}
+                          </span>
+                        </div>
+                      </td>
+                    ) : null}
+                    {columns.map((column) => (
+                      <td
+                        key={column.key}
+                        className={cn(bodyCellClassName, column.className)}
                       >
-                        {rowDraggable ? (
-                          <GripVertical
-                            className={cn(
-                              "cursor-grab active:cursor-grabbing",
-                              isManagement ? "h-3.5 w-3.5" : "h-4 w-4",
-                            )}
-                            aria-label="Drag to reorder"
-                          />
-                        ) : (
-                          <span
-                            className={cn(
-                              "inline-block",
-                              isManagement ? "w-3.5" : "h-4 w-4",
-                            )}
-                          />
-                        )}
-                        <span className="text-xs font-semibold tabular-nums text-slate-500">
-                          {orderLabel}
-                        </span>
+                        {column.render(row)}
+                      </td>
+                    ))}
+                    <td className={actionsCellClassName}>
+                      <div className="flex items-center justify-end">
+                        {renderActions(row)}
                       </div>
                     </td>
-                  ) : null}
-                  {columns.map((column) => (
-                    <td
-                      key={column.key}
-                      className={cn(bodyCellClassName, column.className)}
+                  </tr>
+                  {expanded && renderExpandedRow ? (
+                    <tr
+                      key={`${row.id}-expanded`}
+                      className="border-b border-slate-100 bg-[#FBFDFF]"
                     >
-                      {column.render(row)}
-                    </td>
-                  ))}
-                  <td className={actionsCellClassName}>
-                    <div className="flex items-center justify-end">
-                      {renderActions(row)}
-                    </div>
-                  </td>
-                </tr>
+                      <td
+                        colSpan={totalColumns}
+                        className={isManagement ? "!px-4 !py-4" : "px-4 py-4"}
+                      >
+                        {renderExpandedRow(row)}
+                      </td>
+                    </tr>
+                  ) : null}
+                </Fragment>
               );
             })
           )}

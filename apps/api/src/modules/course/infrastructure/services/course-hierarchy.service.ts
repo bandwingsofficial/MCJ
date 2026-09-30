@@ -133,25 +133,61 @@ export class CourseHierarchyService {
           isDeleted: false,
         },
       },
+      include: {
+        module: {
+          include: {
+            lessons: {
+              where: { isDeleted: false },
+              orderBy: { displayOrder: 'asc' },
+            },
+          },
+        },
+        resources: {
+          where: { isDeleted: false },
+        },
+        learnItems: true,
+        quiz: {
+          where: { isDeleted: false },
+          select: { id: true },
+        },
+      },
     });
 
     if (!lesson) {
       return null;
     }
 
+    const childLessons = lesson.module.lessons.filter(
+      (item) => item.parentLessonId === lesson.id,
+    );
+
+    const selfPacedChildren = childLessons.filter(
+      (item) => item.contentType === 'SELF_PACED_VIDEO',
+    );
+
+    const selfPacedVideos = selfPacedChildren.map((item) =>
+      this.toVideoResult(item),
+    );
+
+    const previewDuration =
+      selfPacedVideos[0]?.duration ?? lesson.duration ?? null;
+
     return new CourseLessonPreviewResult(
       lesson.id,
       lesson.title,
       lesson.isPreview,
-      lesson.duration,
+      previewDuration,
       lesson.displayOrder,
       lesson.description,
-      lesson.videoUrl,
-      0,
-      false,
-      0,
-      0,
-      0,
+      null,
+      lesson.resources.length,
+      Boolean(lesson.quiz),
+      lesson.learnItems.length,
+      selfPacedChildren.length,
+      childLessons.filter(
+        (item) => item.contentType === 'LIVE_RECORDED_VIDEO',
+      ).length,
+      selfPacedVideos,
     );
   }
 
@@ -507,23 +543,33 @@ export class CourseHierarchyService {
           (item) => item.parentLessonId === lesson.id,
         );
 
+        const selfPacedChildren = childLessons.filter(
+          (item) => item.contentType === 'SELF_PACED_VIDEO',
+        );
+
+        const previewDuration =
+          lesson.isPreview && selfPacedChildren.length > 0
+            ? (selfPacedChildren.sort(
+                (a, b) => a.displayOrder - b.displayOrder,
+              )[0]?.duration ?? lesson.duration)
+            : lesson.duration;
+
         return new CourseLessonPreviewResult(
           lesson.id,
           lesson.title,
           lesson.isPreview,
-          lesson.duration,
+          previewDuration,
           lesson.displayOrder,
           lesson.description,
-          lesson.videoUrl,
+          null,
           lesson.resources.length,
           Boolean(lesson.quiz),
           lesson.learnItems.length,
-          childLessons.filter(
-            (item) => item.contentType === 'SELF_PACED_VIDEO',
-          ).length,
+          selfPacedChildren.length,
           childLessons.filter(
             (item) => item.contentType === 'LIVE_RECORDED_VIDEO',
           ).length,
+          [],
         );
       }),
       module.keySkills ?? [],

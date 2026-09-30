@@ -22,6 +22,16 @@ export interface CourseBranch {
   branchCode: string;
 }
 
+export interface CoursePreviewSelfPacedVideo {
+  id: string;
+  title: string;
+  videoUrl: string | null;
+  contentType: string;
+  duration: number | null;
+  displayOrder: number;
+  description?: string | null;
+}
+
 export interface CoursePreviewLesson {
   id: string;
   title: string;
@@ -34,6 +44,36 @@ export interface CoursePreviewLesson {
   learnItemCount?: number;
   selfPacedVideoCount?: number;
   liveRecordedVideoCount?: number;
+}
+
+export interface CoursePreviewLessonDetail extends CoursePreviewLesson {
+  selfPacedVideos: CoursePreviewSelfPacedVideo[];
+}
+
+export interface GetCoursePreviewLessonResponse {
+  success: boolean;
+  message: string;
+  data: CoursePreviewLessonDetailDto;
+}
+
+export interface CoursePreviewLessonDetailDto {
+  id: string;
+  title: string;
+  isPreview: boolean;
+  duration: number | null;
+  displayOrder: number;
+  description?: string | null;
+  selfPacedVideos?: CoursePreviewSelfPacedVideoDto[];
+}
+
+export interface CoursePreviewSelfPacedVideoDto {
+  id: string;
+  title: string;
+  videoUrl: string | null;
+  contentType: string;
+  duration: number | null;
+  displayOrder: number;
+  description?: string | null;
 }
 
 export interface CoursePreviewModule {
