@@ -1,5 +1,3 @@
-import { Slug } from '@common/value-objects/slug.vo';
-
 import type { CourseLessonRepository } from '../../domain/repositories/course-lesson.repository';
 import { CourseLessonDomainService } from '../../domain/services/course-lesson-domain.service';
 import { CourseLessonResponseMapper } from '../../infrastructure/mappers/course-lesson-response.mapper';
@@ -25,17 +23,14 @@ export class UpdateCourseLessonHandler {
 
     const nextSlug =
       nextTitle !== undefined
-        ? Slug.fromTitle(nextTitle).getValue()
+        ? await this.domainService.resolveAvailableSlug(
+            this.courseLessonRepo,
+            lesson.moduleId,
+            lesson.parentLessonId,
+            nextTitle,
+            lesson.id,
+          )
         : lesson.slug.getValue();
-
-    if (nextTitle !== undefined) {
-      await this.domainService.ensureSlugIsAvailable(
-        this.courseLessonRepo,
-        lesson.moduleId,
-        nextSlug,
-        lesson.id,
-      );
-    }
 
     lesson.update({
       title: nextTitle,

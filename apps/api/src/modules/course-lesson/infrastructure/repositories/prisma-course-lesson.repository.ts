@@ -49,12 +49,14 @@ export class PrismaCourseLessonRepository
   async findBySlug(
     moduleId: string,
     slug: string,
+    parentLessonId: string | null,
     includeDeleted = false,
   ): Promise<CourseLesson | null> {
     const record = await this.prisma.courseLesson.findFirst({
       where: {
         moduleId,
         slug,
+        parentLessonId,
         ...(includeDeleted ? {} : { isDeleted: false }),
       },
     });

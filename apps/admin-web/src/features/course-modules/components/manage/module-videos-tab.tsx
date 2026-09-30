@@ -235,8 +235,8 @@ export function ModuleVideosTab({
               await createCourseLesson({
                 moduleId,
                 parentLessonId: parentLessonId ?? null,
-                title: values.title,
-                description: values.description,
+                title: values.title.trim(),
+                description: values.description.trim(),
                 videoUrl: values.videoUrl,
                 duration: values.duration,
                 contentType: "SELF_PACED_VIDEO",

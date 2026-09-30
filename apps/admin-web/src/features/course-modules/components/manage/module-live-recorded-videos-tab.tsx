@@ -243,8 +243,8 @@ export function ModuleLiveRecordedVideosTab({
               await createCourseLesson({
                 moduleId,
                 parentLessonId: parentLessonId ?? null,
-                title: values.title,
-                description: values.description,
+                title: values.title.trim(),
+                description: values.description.trim(),
                 videoUrl: values.videoUrl,
                 duration: values.duration,
                 contentType: "LIVE_RECORDED_VIDEO",

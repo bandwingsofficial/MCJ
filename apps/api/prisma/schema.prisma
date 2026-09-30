@@ -519,7 +519,7 @@ model CourseLesson {
   quiz         CourseQuiz?
   progress     LessonProgress[]
 
-  @@unique([moduleId, slug])
+  // Slug uniqueness: partial indexes in 20260930143000_course_lesson_slug_parent_scope
   @@index([moduleId])
   @@index([parentLessonId])
   @@index([slug])

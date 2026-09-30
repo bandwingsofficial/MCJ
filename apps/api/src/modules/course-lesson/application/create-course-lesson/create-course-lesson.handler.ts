@@ -3,7 +3,6 @@ import { Logger } from '@nestjs/common';
 
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
-import { Slug } from '@common/value-objects/slug.vo';
 import type { CourseModuleRepository } from '@modules/course-module/domain/repositories/course-module.repository';
 
 import { CourseLesson } from '../../domain/entities/course-lesson.entity';
@@ -74,15 +73,14 @@ export class CreateCourseLessonHandler {
       );
     }
 
-    const slug = Slug.fromTitle(title).getValue();
+    const parentLessonId = command.parentLessonId ?? null;
 
-    await this.domainService.ensureSlugIsAvailable(
+    const slug = await this.domainService.resolveAvailableSlug(
       this.courseLessonRepo,
       command.moduleId,
-      slug,
+      parentLessonId,
+      title,
     );
-
-    const parentLessonId = command.parentLessonId ?? null;
 
     const displayOrder =
       (await this.courseLessonRepo.getMaxDisplayOrder(

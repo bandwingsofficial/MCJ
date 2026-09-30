@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
+import { Slug } from '@common/value-objects/slug.vo';
 
 import type { CourseLesson } from '../entities/course-lesson.entity';
 import type { CourseLessonRepository } from '../repositories/course-lesson.repository';
@@ -22,15 +23,21 @@ export class CourseLessonDomainService {
     return lesson;
   }
 
+  /**
+   * Slug uniqueness is scoped to siblings: same moduleId + parentLessonId.
+   * Root lessons (parentLessonId null) do not collide with child video rows.
+   */
   async ensureSlugIsAvailable(
     courseLessonRepo: CourseLessonRepository,
     moduleId: string,
     slug: string,
+    parentLessonId: string | null,
     excludeId?: string,
   ): Promise<void> {
     const existing = await courseLessonRepo.findBySlug(
       moduleId,
       slug,
+      parentLessonId,
       true,
     );
 
@@ -40,6 +47,34 @@ export class CourseLessonDomainService {
         'Course lesson slug already exists',
         400,
       );
+    }
+  }
+
+  async resolveAvailableSlug(
+    courseLessonRepo: CourseLessonRepository,
+    moduleId: string,
+    parentLessonId: string | null,
+    title: string,
+    excludeId?: string,
+  ): Promise<string> {
+    const base = Slug.fromTitle(title).getValue();
+    let slug = base;
+    let suffix = 2;
+
+    while (true) {
+      const existing = await courseLessonRepo.findBySlug(
+        moduleId,
+        slug,
+        parentLessonId,
+        true,
+      );
+
+      if (!existing || existing.id === excludeId) {
+        return slug;
+      }
+
+      slug = `${base}-${suffix}`;
+      suffix += 1;
     }
   }
 }

@@ -21,6 +21,7 @@ export interface CourseLessonRepository {
   findBySlug(
     moduleId: string,
     slug: string,
+    parentLessonId: string | null,
     includeDeleted?: boolean,
   ): Promise<CourseLesson | null>;
 
