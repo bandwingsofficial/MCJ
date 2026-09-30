@@ -165,12 +165,23 @@ export class CourseHierarchyService {
       (item) => item.contentType === 'SELF_PACED_VIDEO',
     );
 
+    const liveRecordedChildren = childLessons.filter(
+      (item) => item.contentType === 'LIVE_RECORDED_VIDEO',
+    );
+
     const selfPacedVideos = selfPacedChildren.map((item) =>
       this.toVideoResult(item),
     );
 
-    const previewDuration =
-      selfPacedVideos[0]?.duration ?? lesson.duration ?? null;
+    const liveRecordedVideos = liveRecordedChildren.map((item) =>
+      this.toVideoResult(item),
+    );
+
+    const previewDuration = this.resolvePreviewDurationFromChildVideos(
+      lesson.isPreview,
+      childLessons,
+      lesson.duration,
+    );
 
     return new CourseLessonPreviewResult(
       lesson.id,
@@ -184,10 +195,9 @@ export class CourseHierarchyService {
       Boolean(lesson.quiz),
       lesson.learnItems.length,
       selfPacedChildren.length,
-      childLessons.filter(
-        (item) => item.contentType === 'LIVE_RECORDED_VIDEO',
-      ).length,
+      liveRecordedChildren.length,
       selfPacedVideos,
+      liveRecordedVideos,
     );
   }
 
@@ -547,18 +557,11 @@ export class CourseHierarchyService {
           (item) => item.contentType === 'SELF_PACED_VIDEO',
         );
 
-        const previewDuration =
-          lesson.isPreview && selfPacedChildren.length > 0
-            ? (selfPacedChildren.sort(
-                (a, b) => a.displayOrder - b.displayOrder,
-              )[0]?.duration ?? lesson.duration)
-            : lesson.duration;
-
         return new CourseLessonPreviewResult(
           lesson.id,
           lesson.title,
           lesson.isPreview,
-          previewDuration,
+          lesson.duration,
           lesson.displayOrder,
           lesson.description,
           null,
@@ -569,6 +572,7 @@ export class CourseHierarchyService {
           childLessons.filter(
             (item) => item.contentType === 'LIVE_RECORDED_VIDEO',
           ).length,
+          [],
           [],
         );
       }),
@@ -649,6 +653,30 @@ export class CourseHierarchyService {
     );
   }
 
+  private resolvePreviewDurationFromChildVideos(
+    isPreview: boolean,
+    childLessons: Array<{
+      contentType: string;
+      duration: number | null;
+      displayOrder: number;
+    }>,
+    fallbackDuration: number | null,
+  ): number | null {
+    if (!isPreview) {
+      return fallbackDuration;
+    }
+
+    const previewVideos = childLessons
+      .filter(
+        (item) =>
+          item.contentType === 'SELF_PACED_VIDEO' ||
+          item.contentType === 'LIVE_RECORDED_VIDEO',
+      )
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+
+    return previewVideos[0]?.duration ?? fallbackDuration;
+  }
+
   private toVideoResult(lesson: {
     id: string;
     title: string;
@@ -657,7 +685,13 @@ export class CourseHierarchyService {
     duration: number | null;
     displayOrder: number;
     description: string | null;
+    createdAt?: Date;
   }): CourseLessonVideoTreeResult {
+    const recordedAt =
+      lesson.contentType === 'LIVE_RECORDED_VIDEO' && lesson.createdAt
+        ? lesson.createdAt.toISOString()
+        : null;
+
     return new CourseLessonVideoTreeResult(
       lesson.id,
       lesson.title,
@@ -666,6 +700,7 @@ export class CourseHierarchyService {
       lesson.duration,
       lesson.displayOrder,
       lesson.description,
+      recordedAt,
     );
   }
 

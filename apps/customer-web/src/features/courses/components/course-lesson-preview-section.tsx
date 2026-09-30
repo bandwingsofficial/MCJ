@@ -30,7 +30,8 @@ export function CourseLessonPreviewSection({
 
   return (
     <CourseLessonPreviewPanel
-      videos={data?.selfPacedVideos ?? []}
+      previewVideo={data?.previewVideo ?? null}
+      isOpen={isOpen}
       isLoading={isPending && !data}
       errorMessage={errorMessage}
     />

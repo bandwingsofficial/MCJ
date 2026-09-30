@@ -22,15 +22,24 @@ export interface CourseBranch {
   branchCode: string;
 }
 
-export interface CoursePreviewSelfPacedVideo {
+export type CoursePreviewLessonVideoContentType =
+  | "SELF_PACED_VIDEO"
+  | "LIVE_RECORDED_VIDEO"
+  | string;
+
+export interface CoursePreviewLessonVideo {
   id: string;
   title: string;
   videoUrl: string | null;
-  contentType: string;
+  contentType: CoursePreviewLessonVideoContentType;
   duration: number | null;
   displayOrder: number;
   description?: string | null;
+  recordedAt?: string | null;
 }
+
+/** @deprecated Use CoursePreviewLessonVideo */
+export type CoursePreviewSelfPacedVideo = CoursePreviewLessonVideo;
 
 export interface CoursePreviewLesson {
   id: string;
@@ -47,7 +56,8 @@ export interface CoursePreviewLesson {
 }
 
 export interface CoursePreviewLessonDetail extends CoursePreviewLesson {
-  selfPacedVideos: CoursePreviewSelfPacedVideo[];
+  previewVideos: CoursePreviewLessonVideo[];
+  previewVideo: CoursePreviewLessonVideo | null;
 }
 
 export interface GetCoursePreviewLessonResponse {
@@ -63,10 +73,11 @@ export interface CoursePreviewLessonDetailDto {
   duration: number | null;
   displayOrder: number;
   description?: string | null;
-  selfPacedVideos?: CoursePreviewSelfPacedVideoDto[];
+  selfPacedVideos?: CoursePreviewLessonVideoDto[];
+  liveRecordedVideos?: CoursePreviewLessonVideoDto[];
 }
 
-export interface CoursePreviewSelfPacedVideoDto {
+export interface CoursePreviewLessonVideoDto {
   id: string;
   title: string;
   videoUrl: string | null;
@@ -74,7 +85,11 @@ export interface CoursePreviewSelfPacedVideoDto {
   duration: number | null;
   displayOrder: number;
   description?: string | null;
+  recordedAt?: string | null;
 }
+
+/** @deprecated Use CoursePreviewLessonVideoDto */
+export type CoursePreviewSelfPacedVideoDto = CoursePreviewLessonVideoDto;
 
 export interface CoursePreviewModule {
   id: string;

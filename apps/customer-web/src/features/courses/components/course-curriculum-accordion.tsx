@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import {
   ChevronDown,
-  Clock3,
   Lock,
   PlayCircle,
   Unlock,
@@ -12,64 +11,24 @@ import {
 
 import { Button } from "@/src/shared/components/ui/button";
 import { appToast } from "@/src/shared/components/ui/toast";
-import { formatVideoDurationHms } from "@/src/shared/utils/duration";
 
 import { CourseLessonPreviewSection } from "@/src/features/courses/components/course-lesson-preview-section";
 import type {
   CoursePreviewLesson,
   CoursePreviewModule,
 } from "@/src/features/courses/types/course.types";
+import {
+  getPrimaryPreviewVideoTypeLabel,
+  lessonHasPreviewableVideo,
+  lessonOffersCustomerPreview,
+} from "@/src/features/courses/utils/lesson-preview.utils";
+
+const ENROLLMENT_PRIMARY_BUTTON_CLASS =
+  "h-9 rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-4 text-xs font-semibold text-white shadow-sm hover:from-[#2860D4] hover:to-[#1A3F96]";
 
 interface CourseCurriculumAccordionProps {
   courseId: string;
   modules: CoursePreviewModule[] | unknown;
-}
-
-function formatLessonDuration(
-  duration?: number | null,
-): string | null {
-  if (
-    typeof duration !== "number" ||
-    !Number.isFinite(duration) ||
-    duration <= 0
-  ) {
-    return null;
-  }
-
-  if (duration >= 60) {
-    const hours = Math.floor(duration / 60);
-    const minutes = duration % 60;
-
-    return minutes > 0
-      ? `${hours}h ${minutes}m`
-      : `${hours}h`;
-  }
-
-  return `${duration} min`;
-}
-
-function getModuleDuration(
-  module: CoursePreviewModule,
-): string | null {
-  const lessons = Array.isArray(module?.lessons)
-    ? module.lessons
-    : [];
-
-  const total = lessons.reduce((sum, lesson) => {
-    const duration = lesson?.duration;
-
-    if (
-      typeof duration !== "number" ||
-      !Number.isFinite(duration) ||
-      duration <= 0
-    ) {
-      return sum;
-    }
-
-    return sum + duration;
-  }, 0);
-
-  return formatLessonDuration(total);
 }
 
 function getDisplayOrder(value?: number | null): number {
@@ -197,8 +156,9 @@ export function CourseCurriculumAccordion({
               )
             : [];
 
-        const moduleDuration =
-          getModuleDuration(module);
+        const moduleHasPreviewLesson = lessons.some((lesson) =>
+          lessonOffersCustomerPreview(lesson),
+        );
 
         return (
           <section
@@ -271,6 +231,13 @@ export function CourseCurriculumAccordion({
                     {module.description.trim()}
                   </p>
                 ) : null}
+
+                {moduleHasPreviewLesson ? (
+                  <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+                    <Unlock className="h-3 w-3" aria-hidden />
+                    Preview available in this module
+                  </p>
+                ) : null}
               </div>
 
               {/* Module metadata */}
@@ -281,13 +248,6 @@ export function CourseCurriculumAccordion({
                     ? "Lesson"
                     : "Lessons"}
                 </span>
-
-                {moduleDuration && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Clock3 className="h-3.5 w-3.5 text-slate-400" />
-                    {moduleDuration}
-                  </span>
-                )}
               </div>
 
               {/* Chevron */}
@@ -331,12 +291,12 @@ export function CourseCurriculumAccordion({
                         : "Lessons"}
                     </span>
 
-                    {moduleDuration && (
-                      <span className="inline-flex items-center gap-1">
-                        <Clock3 className="h-3 w-3" />
-                        {moduleDuration}
+                    {moduleHasPreviewLesson ? (
+                      <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
+                        <Unlock className="h-3 w-3" aria-hidden />
+                        Preview available
                       </span>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* LESSONS */}
@@ -355,12 +315,10 @@ export function CourseCurriculumAccordion({
                             return null;
                           }
 
-                          const durationHms = formatVideoDurationHms(
-                            lesson.duration,
-                          );
-                          const canPreview = Boolean(lesson.isPreview);
-                          const hasSelfPacedVideo =
-                            (lesson.selfPacedVideoCount ?? 0) > 0;
+                          const offersPreview =
+                            lessonOffersCustomerPreview(lesson);
+                          const primaryPreviewTypeLabel =
+                            getPrimaryPreviewVideoTypeLabel(lesson);
                           const isPreviewOpen =
                             openPreviewLessonId === lesson.id;
 
@@ -413,24 +371,23 @@ export function CourseCurriculumAccordion({
                                     ) : null}
 
                                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
-                                      {hasSelfPacedVideo ? (
-                                        <span className="inline-flex items-center gap-1 font-medium text-slate-600">
-                                          <Video
-                                            className="h-3.5 w-3.5 text-[#2563D9]"
-                                            aria-hidden
-                                          />
-                                          Video
-                                        </span>
-                                      ) : null}
-
-                                      {canPreview ? (
-                                        <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
-                                          <Unlock
-                                            className="h-3.5 w-3.5"
-                                            aria-hidden
-                                          />
-                                          Preview
-                                        </span>
+                                      {offersPreview && primaryPreviewTypeLabel ? (
+                                        <>
+                                          <span className="inline-flex items-center gap-1 font-medium text-slate-600">
+                                            <Video
+                                              className="h-3.5 w-3.5 text-[#2563D9]"
+                                              aria-hidden
+                                            />
+                                            Video · {primaryPreviewTypeLabel}
+                                          </span>
+                                          <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
+                                            <Unlock
+                                              className="h-3.5 w-3.5"
+                                              aria-hidden
+                                            />
+                                            Preview
+                                          </span>
+                                        </>
                                       ) : (
                                         <span className="inline-flex items-center gap-1 font-medium text-slate-500">
                                           <Lock
@@ -440,10 +397,6 @@ export function CourseCurriculumAccordion({
                                           Locked
                                         </span>
                                       )}
-
-                                      {durationHms ? (
-                                        <span>Duration: {durationHms}</span>
-                                      ) : null}
                                     </div>
                                   </div>
                                 </div>
@@ -451,14 +404,11 @@ export function CourseCurriculumAccordion({
                                 <div className="flex shrink-0 items-center gap-2 pl-10 sm:pl-0">
                                   <LessonContentIndicators lesson={lesson} />
 
-                                  {canPreview ? (
+                                  {offersPreview ? (
                                     <Button
                                       type="button"
                                       size="sm"
-                                      variant={
-                                        isPreviewOpen ? "secondary" : "outline"
-                                      }
-                                      className="h-8 gap-1.5 text-xs"
+                                      className={`${ENROLLMENT_PRIMARY_BUTTON_CLASS} gap-1.5`}
                                       onClick={() => {
                                         setOpenPreviewLessonId((current) =>
                                           current === lesson.id
@@ -471,7 +421,9 @@ export function CourseCurriculumAccordion({
                                         className="h-3.5 w-3.5"
                                         aria-hidden
                                       />
-                                      {isPreviewOpen ? "Hide" : "Preview"}
+                                      {isPreviewOpen
+                                        ? "Hide Preview"
+                                        : "Preview"}
                                     </Button>
                                   ) : (
                                     <button
@@ -502,7 +454,7 @@ export function CourseCurriculumAccordion({
                                 </div>
                               </div>
 
-                              {canPreview ? (
+                              {offersPreview ? (
                                 <div className="pb-3 pl-10 sm:pl-[2.875rem]">
                                   <CourseLessonPreviewSection
                                     courseId={courseId}

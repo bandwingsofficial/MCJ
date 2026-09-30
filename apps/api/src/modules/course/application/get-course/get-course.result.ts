@@ -84,6 +84,7 @@ export class CourseLessonPreviewResult {
     public readonly selfPacedVideoCount: number = 0,
     public readonly liveRecordedVideoCount: number = 0,
     public readonly selfPacedVideos: CourseLessonVideoTreeResult[] = [],
+    public readonly liveRecordedVideos: CourseLessonVideoTreeResult[] = [],
   ) {}
 }
 
@@ -129,6 +130,7 @@ export class CourseLessonVideoTreeResult {
     public readonly duration: number | null,
     public readonly displayOrder: number,
     public readonly description: string | null,
+    public readonly recordedAt: string | null = null,
   ) {}
 }
 

@@ -5,9 +5,14 @@ import { getYouTubeEmbedUrl } from "@/src/shared/utils/youtube";
 interface Props {
   url: string;
   youtubeVideoId?: string | null;
+  autoPlay?: boolean;
 }
 
-export function VideoSourcePreview({ url, youtubeVideoId }: Props) {
+export function VideoSourcePreview({
+  url,
+  youtubeVideoId,
+  autoPlay = false,
+}: Props) {
   const trimmed = url.trim();
   if (!trimmed) {
     return null;
@@ -19,13 +24,20 @@ export function VideoSourcePreview({ url, youtubeVideoId }: Props) {
         `https://www.youtube.com/embed/${youtubeVideoId}?rel=0&modestbranding=1`
       : getYouTubeEmbedUrl(trimmed);
 
+  const wrapperClassName =
+    "relative w-full overflow-hidden rounded-xl border border-slate-200 bg-black aspect-video";
+
   if (embedUrl) {
+    const src = autoPlay
+      ? `${embedUrl}${embedUrl.includes("?") ? "&" : "?"}autoplay=1`
+      : embedUrl;
+
     return (
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-black">
+      <div className={wrapperClassName}>
         <iframe
-          src={embedUrl}
+          src={src}
           title="Video preview"
-          className="aspect-video w-full max-w-xl"
+          className="absolute inset-0 h-full w-full"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
         />
@@ -34,12 +46,14 @@ export function VideoSourcePreview({ url, youtubeVideoId }: Props) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-black">
+    <div className={wrapperClassName}>
       <video
         key={trimmed}
         controls
+        autoPlay={autoPlay}
+        playsInline
         preload="metadata"
-        className="aspect-video w-full max-w-xl"
+        className="absolute inset-0 h-full w-full object-contain"
         src={trimmed}
       >
         Your browser does not support video playback.
