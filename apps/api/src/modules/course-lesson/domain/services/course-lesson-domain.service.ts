@@ -56,6 +56,7 @@ export class CourseLessonDomainService {
     parentLessonId: string | null,
     title: string,
     excludeId?: string,
+    batchId?: string | null,
   ): Promise<string> {
     const base = Slug.fromTitle(title).getValue();
     let slug = base;
@@ -67,6 +68,7 @@ export class CourseLessonDomainService {
         slug,
         parentLessonId,
         true,
+        batchId,
       );
 
       if (!existing || existing.id === excludeId) {

@@ -3,6 +3,8 @@ export class CourseLessonResult {
     public readonly id: string,
     public readonly moduleId: string,
     public readonly parentLessonId: string | null,
+    public readonly branchId: string | null,
+    public readonly batchId: string | null,
     public readonly title: string,
     public readonly slug: string,
     public readonly description: string | null,

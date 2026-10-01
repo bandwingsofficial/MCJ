@@ -3,6 +3,8 @@ import { CourseLesson } from '../entities/course-lesson.entity';
 export interface CourseLessonListFilters {
   moduleId?: string;
   parentLessonId?: string | null;
+  branchId?: string;
+  batchId?: string;
   contentType?: string;
   search?: string;
   includeDeleted?: boolean;
@@ -23,6 +25,7 @@ export interface CourseLessonRepository {
     slug: string,
     parentLessonId: string | null,
     includeDeleted?: boolean,
+    batchId?: string | null,
   ): Promise<CourseLesson | null>;
 
   findByModuleId(
@@ -40,6 +43,7 @@ export interface CourseLessonRepository {
   getMaxDisplayOrder(
     moduleId: string,
     parentLessonId?: string | null,
+    batchId?: string | null,
   ): Promise<number>;
 
   shiftDisplayOrders(
@@ -53,6 +57,7 @@ export interface CourseLessonRepository {
     moduleId: string,
     deletedDisplayOrder: number,
     parentLessonId?: string | null,
+    batchId?: string | null,
   ): Promise<void>;
 
   move(
@@ -62,6 +67,7 @@ export interface CourseLessonRepository {
     newOrder: number,
     updatedBy?: string | null,
     parentLessonId?: string | null,
+    batchId?: string | null,
   ): Promise<void>;
 
   // Cascade operations (down to resources)

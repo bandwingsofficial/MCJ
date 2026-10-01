@@ -3,7 +3,7 @@ export type BranchManageTabKey =
   | "users"
   | "categories"
   | "courses"
+  | "liveRecorded"
   | "trainers"
   | "batches"
-  | "students"
-  | "reports";
+  | "students";

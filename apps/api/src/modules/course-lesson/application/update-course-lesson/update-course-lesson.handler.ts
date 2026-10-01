@@ -29,6 +29,7 @@ export class UpdateCourseLessonHandler {
             lesson.parentLessonId,
             nextTitle,
             lesson.id,
+            lesson.batchId,
           )
         : lesson.slug.getValue();
 

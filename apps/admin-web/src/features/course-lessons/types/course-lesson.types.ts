@@ -10,6 +10,10 @@ export interface CourseLesson {
 
   moduleId: string;
 
+  branchId?: string | null;
+
+  batchId?: string | null;
+
   parentLessonId?: string | null;
 
   title: string;
@@ -55,6 +59,10 @@ export interface CreateCourseLessonRequest {
   duration?: number;
 
   contentType?: LessonContentType;
+
+  branchId?: string | null;
+
+  batchId?: string | null;
 }
 
 export interface UpdateCourseLessonRequest {
@@ -141,4 +149,13 @@ export interface GetCourseLessonsRequest {
   contentType?: LessonContentType;
 
   includeDeleted: boolean;
+
+  branchId?: string;
+
+  batchId?: string;
+}
+
+export interface LiveRecordedScope {
+  branchId: string;
+  batchId: string;
 }

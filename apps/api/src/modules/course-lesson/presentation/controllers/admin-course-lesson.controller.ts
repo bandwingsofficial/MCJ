@@ -77,6 +77,8 @@ export class AdminCourseLessonController {
         dto.duration,
         dto.contentType,
         dto.parentLessonId ?? null,
+        dto.branchId ?? null,
+        dto.batchId ?? null,
         user?.sub,
       ),
     );
@@ -98,6 +100,8 @@ export class AdminCourseLessonController {
       new ListCourseLessonsQuery(
         query.moduleId,
         parentLessonId,
+        query.branchId,
+        query.batchId,
         query.contentType,
         query.search,
         query.includeDeleted,

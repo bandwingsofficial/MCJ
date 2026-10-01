@@ -27,6 +27,7 @@ export class DeleteCourseLessonHandler {
       lesson.moduleId,
       deletedDisplayOrder,
       lesson.parentLessonId,
+      lesson.batchId,
     );
 
     await this.courseLessonRepo.cascadeSoftDelete(

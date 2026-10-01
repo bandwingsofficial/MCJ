@@ -3,11 +3,11 @@
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
-  BarChart3,
   BookOpen,
   GraduationCap,
   LayoutDashboard,
   Layers,
+  Radio,
   Tag,
   UserCheck,
   Users,
@@ -29,6 +29,7 @@ import { BranchManageCoursesPanel } from "./branch-manage-courses-panel";
 import { BranchManageTrainersPanel } from "./branch-manage-trainers-panel";
 import { BranchManageEnrollmentsPanel } from "./branch-manage-enrollments-panel";
 import { BranchManageUsersPanel } from "./branch-manage-users-panel";
+import { BranchManageLiveRecordedPanel } from "./branch-manage-live-recorded-panel";
 import { BranchManageOverviewPanel } from "./branch-manage-overview-panel";
 import { BranchManageEmptyState } from "./branch-manage-section";
 import type { BranchManageTabKey } from "./branch-manage-tab.types";
@@ -55,9 +56,9 @@ const TAB_ITEMS: ReadonlyArray<{
   { value: "batches", label: "Batches", icon: Layers },
   { value: "categories", label: "Categories", icon: Tag },
   { value: "courses", label: "Courses", icon: BookOpen },
+  { value: "liveRecorded", label: "Live Recorded Videos", icon: Radio },
   { value: "trainers", label: "Trainers", icon: GraduationCap },
   { value: "students", label: "Enrolled Students", icon: UserCheck },
-  { value: "reports", label: "Reports", icon: BarChart3 },
 ];
 
 export function BranchManageWorkspace({
@@ -152,6 +153,10 @@ export function BranchManageWorkspace({
         />
       </TabsContent>
 
+      <TabsContent value="liveRecorded">
+        <BranchManageLiveRecordedPanel branchId={branchId} />
+      </TabsContent>
+
       <TabsContent value="trainers">
         <BranchManageTrainersPanel
           branchId={branchId}
@@ -177,15 +182,6 @@ export function BranchManageWorkspace({
         />
       </TabsContent>
 
-      <TabsContent value="reports">
-        <div className="overflow-hidden rounded-xl border border-[#E1EBF5] bg-white p-3 shadow-sm">
-          <BranchManageEmptyState
-          icon={BarChart3}
-          title="Reports Coming Soon"
-          description="Branch-level reporting will be available in a future update."
-          />
-        </div>
-      </TabsContent>
     </Tabs>
   );
 }

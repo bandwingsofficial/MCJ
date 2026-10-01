@@ -9,6 +9,8 @@ export class CourseLesson {
     public readonly id: string,
     public readonly moduleId: string,
     public readonly parentLessonId: string | null,
+    public readonly branchId: string | null,
+    public readonly batchId: string | null,
     public title: string,
     public slug: Slug,
     public description: string | null,
@@ -31,6 +33,8 @@ export class CourseLesson {
       params.id,
       params.moduleId,
       params.parentLessonId ?? null,
+      params.branchId ?? null,
+      params.batchId ?? null,
       CourseLesson.normalizeTitle(params.title),
       params.slug
         ? Slug.create(params.slug)
@@ -58,6 +62,8 @@ export class CourseLesson {
       params.id,
       params.moduleId,
       params.parentLessonId,
+      params.branchId ?? null,
+      params.batchId ?? null,
       params.title,
       Slug.create(params.slug),
       params.description,
@@ -153,6 +159,8 @@ export interface CourseLessonCreateParams {
   id: string;
   moduleId: string;
   parentLessonId?: string | null;
+  branchId?: string | null;
+  batchId?: string | null;
   title: string;
   slug?: string;
   description?: string | null;
@@ -178,6 +186,8 @@ export interface CourseLessonReconstituteParams {
   id: string;
   moduleId: string;
   parentLessonId: string | null;
+  branchId?: string | null;
+  batchId?: string | null;
   title: string;
   slug: string;
   description: string | null;

@@ -37,6 +37,8 @@ class CourseLessonService {
             parentLessonScope: filters.parentLessonScope,
             contentType: filters.contentType,
             includeDeleted: filters.includeDeleted,
+            branchId: filters.branchId,
+            batchId: filters.batchId,
           },
         },
       );

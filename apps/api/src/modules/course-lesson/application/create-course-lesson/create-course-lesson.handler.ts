@@ -8,7 +8,10 @@ import type { CourseModuleRepository } from '@modules/course-module/domain/repos
 import { CourseLesson } from '../../domain/entities/course-lesson.entity';
 import type { CourseLessonRepository } from '../../domain/repositories/course-lesson.repository';
 import { CourseLessonDomainService } from '../../domain/services/course-lesson-domain.service';
+import { LessonContentType } from '../../domain/enums/lesson-content-type.enum';
+import { assertBatchLiveRecordedContext } from '../../domain/utils/batch-live-recorded-context.util';
 import { CourseLessonResponseMapper } from '../../infrastructure/mappers/course-lesson-response.mapper';
+import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { CourseLessonResult } from '../course-lesson.result';
 
 import { CreateCourseLessonCommand } from './create-course-lesson.command';
@@ -22,6 +25,7 @@ export class CreateCourseLessonHandler {
     private readonly courseLessonRepo: CourseLessonRepository,
     private readonly domainService: CourseLessonDomainService,
     private readonly courseModuleRepo: CourseModuleRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(
@@ -74,29 +78,54 @@ export class CreateCourseLessonHandler {
     }
 
     const parentLessonId = command.parentLessonId ?? null;
+    const contentType = command.contentType ?? LessonContentType.LESSON;
+    const branchId = command.branchId?.trim() || null;
+    const batchId = command.batchId?.trim() || null;
+
+    if (contentType === LessonContentType.LIVE_RECORDED_VIDEO) {
+      if (!branchId || !batchId) {
+        throw new BaseException(
+          ERROR_CODES.VALIDATION_ERROR,
+          'branchId and batchId are required for live recorded videos',
+          400,
+        );
+      }
+
+      await assertBatchLiveRecordedContext(this.prisma, {
+        branchId,
+        batchId,
+        moduleId: command.moduleId,
+        contentType,
+      });
+    }
 
     const slug = await this.domainService.resolveAvailableSlug(
       this.courseLessonRepo,
       command.moduleId,
       parentLessonId,
       title,
+      undefined,
+      batchId,
     );
 
     const displayOrder =
       (await this.courseLessonRepo.getMaxDisplayOrder(
         command.moduleId,
         parentLessonId,
+        batchId,
       )) + 1;
 
     const lesson = CourseLesson.create({
       id: randomUUID(),
       moduleId: command.moduleId,
       parentLessonId,
+      branchId,
+      batchId,
       title,
       slug,
       description: command.description,
       videoUrl: command.videoUrl,
-      contentType: command.contentType,
+      contentType,
       duration: command.duration,
       displayOrder,
       createdBy: command.createdBy,

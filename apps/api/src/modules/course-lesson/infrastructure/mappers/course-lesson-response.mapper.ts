@@ -10,6 +10,8 @@ export class CourseLessonResponseMapper {
       lesson.id,
       lesson.moduleId,
       lesson.parentLessonId,
+      lesson.branchId,
+      lesson.batchId,
       lesson.title,
       lesson.slug.getValue(),
       lesson.description,

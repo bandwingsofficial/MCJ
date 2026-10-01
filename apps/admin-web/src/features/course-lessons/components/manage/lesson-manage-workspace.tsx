@@ -7,7 +7,6 @@ import {
   FileQuestion,
   FileText,
   LayoutDashboard,
-  Radio,
   Video,
 } from "lucide-react";
 
@@ -24,7 +23,6 @@ import {
 import type { CourseLesson } from "@/src/features/course-lessons/types";
 import type { CourseModule } from "@/src/features/course-modules/types/course-module.types";
 import { ModuleVideosTab } from "@/src/features/course-modules/components/manage/module-videos-tab";
-import { ModuleLiveRecordedVideosTab } from "@/src/features/course-modules/components/manage/module-live-recorded-videos-tab";
 import {
   ModuleQuizzesTab,
   ModuleResourcesTab,
@@ -40,7 +38,6 @@ export type LessonManageTab =
   | "overview"
   | "learn"
   | "videos"
-  | "live"
   | "resources"
   | "quizzes";
 
@@ -55,7 +52,6 @@ const TAB_ITEMS: ReadonlyArray<{
   { value: "overview", label: "Overview", icon: LayoutDashboard },
   { value: "learn", label: "Learn", icon: BookOpen },
   { value: "videos", label: "Self-Paced Videos", icon: Video },
-  { value: "live", label: "Live Recorded Videos", icon: Radio },
   { value: "resources", label: "Resources", icon: FileText },
   { value: "quizzes", label: "Quizzes", icon: FileQuestion },
 ];
@@ -165,16 +161,6 @@ export function LessonManageWorkspace({
 
             <TabsContent value="videos">
               <ModuleVideosTab
-                moduleId={module.id}
-                parentLessonId={lesson.id}
-                lessons={lessons}
-                quizLessonIds={quizLessonIds}
-                onRefresh={refetch}
-              />
-            </TabsContent>
-
-            <TabsContent value="live">
-              <ModuleLiveRecordedVideosTab
                 moduleId={module.id}
                 parentLessonId={lesson.id}
                 lessons={lessons}

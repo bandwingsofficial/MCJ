@@ -312,11 +312,13 @@ export function filterChildSelfPacedVideoLessons(
 export function filterChildLiveRecordedVideoLessons(
   lessons: CourseLesson[],
   parentLessonId: string,
+  batchId?: string | null,
 ) {
   return lessons.filter(
     (lesson) =>
       lesson.parentLessonId === parentLessonId &&
-      isLiveRecordedVideoLesson(lesson),
+      isLiveRecordedVideoLesson(lesson) &&
+      (batchId == null || lesson.batchId === batchId),
   );
 }
 

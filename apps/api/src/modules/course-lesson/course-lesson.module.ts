@@ -52,16 +52,19 @@ import { CourseLessonController } from './presentation/controllers/course-lesson
         courseLessonRepo: CourseLessonRepository,
         domainService: CourseLessonDomainService,
         courseModuleRepo: CourseModuleRepository,
+        prisma: PrismaService,
       ) =>
         new CreateCourseLessonHandler(
           courseLessonRepo,
           domainService,
           courseModuleRepo,
+          prisma,
         ),
       inject: [
         COURSE_LESSON_TOKENS.COURSE_LESSON_REPOSITORY,
         CourseLessonDomainService,
         COURSE_MODULE_TOKENS.COURSE_MODULE_REPOSITORY,
+        PrismaService,
       ],
     },
 

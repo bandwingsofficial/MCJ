@@ -17,7 +17,7 @@ export class PermanentDeleteCourseLessonHandler {
       await this.courseLessonRepo.findById(command.id, true),
     );
 
-    const { moduleId, displayOrder, parentLessonId } = lesson;
+    const { moduleId, displayOrder, parentLessonId, batchId } = lesson;
 
     await this.courseLessonRepo.deletePermanent(lesson.id);
 
@@ -25,6 +25,7 @@ export class PermanentDeleteCourseLessonHandler {
       moduleId,
       displayOrder,
       parentLessonId,
+      batchId,
     );
 
     return new PermanentDeleteCourseLessonResult(lesson.id, true);

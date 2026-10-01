@@ -9,6 +9,8 @@ export class CreateCourseLessonCommand {
     public readonly duration?: number,
     public readonly contentType?: LessonContentType,
     public readonly parentLessonId?: string | null,
+    public readonly branchId?: string | null,
+    public readonly batchId?: string | null,
     public readonly createdBy?: string,
   ) {}
 }

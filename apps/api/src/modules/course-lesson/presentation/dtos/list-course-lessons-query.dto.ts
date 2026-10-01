@@ -24,6 +24,16 @@ export class ListCourseLessonsQueryDto extends PaginationQueryDto {
   @IsUUID()
   parentLessonId?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  branchId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  batchId?: string;
+
   @ApiPropertyOptional({ enum: ['root'] })
   @IsOptional()
   @IsIn(['root'])

@@ -166,7 +166,8 @@ export class CourseHierarchyService {
     );
 
     const liveRecordedChildren = childLessons.filter(
-      (item) => item.contentType === 'LIVE_RECORDED_VIDEO',
+      (item) =>
+        item.contentType === 'LIVE_RECORDED_VIDEO' && item.batchId == null,
     );
 
     const selfPacedVideos = selfPacedChildren.map((item) =>
@@ -570,7 +571,9 @@ export class CourseHierarchyService {
           lesson.learnItems.length,
           selfPacedChildren.length,
           childLessons.filter(
-            (item) => item.contentType === 'LIVE_RECORDED_VIDEO',
+            (item) =>
+              item.contentType === 'LIVE_RECORDED_VIDEO' &&
+              (item as { batchId?: string | null }).batchId == null,
           ).length,
           [],
           [],
@@ -611,7 +614,11 @@ export class CourseHierarchyService {
       .map((item) => this.toVideoResult(item));
 
     const liveRecordedVideos = childLessons
-      .filter((item) => item.contentType === 'LIVE_RECORDED_VIDEO')
+      .filter(
+        (item) =>
+          item.contentType === 'LIVE_RECORDED_VIDEO' &&
+          (item as { batchId?: string | null }).batchId == null,
+      )
       .map((item) => this.toVideoResult(item));
 
     return new CourseLessonTreeResult(
@@ -670,7 +677,8 @@ export class CourseHierarchyService {
       .filter(
         (item) =>
           item.contentType === 'SELF_PACED_VIDEO' ||
-          item.contentType === 'LIVE_RECORDED_VIDEO',
+          (item.contentType === 'LIVE_RECORDED_VIDEO' &&
+            (item as { batchId?: string | null }).batchId == null),
       )
       .sort((a, b) => a.displayOrder - b.displayOrder);
 

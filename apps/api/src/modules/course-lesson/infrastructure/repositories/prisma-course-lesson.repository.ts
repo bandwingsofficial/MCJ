@@ -51,12 +51,14 @@ export class PrismaCourseLessonRepository
     slug: string,
     parentLessonId: string | null,
     includeDeleted = false,
+    batchId?: string | null,
   ): Promise<CourseLesson | null> {
     const record = await this.prisma.courseLesson.findFirst({
       where: {
         moduleId,
         slug,
         parentLessonId,
+        ...(batchId !== undefined ? { batchId } : {}),
         ...(includeDeleted ? {} : { isDeleted: false }),
       },
     });
@@ -107,9 +109,10 @@ export class PrismaCourseLessonRepository
   async getMaxDisplayOrder(
     moduleId: string,
     parentLessonId: string | null = null,
+    batchId?: string | null,
   ): Promise<number> {
     const result = await this.prisma.courseLesson.aggregate({
-      where: this.buildOrderScopeWhere(moduleId, parentLessonId),
+      where: this.buildOrderScopeWhere(moduleId, parentLessonId, batchId),
       _max: {
         displayOrder: true,
       },
@@ -128,7 +131,11 @@ export class PrismaCourseLessonRepository
       return;
     }
 
-    const scope = this.buildOrderScopeWhere(moduleId, parentLessonId);
+    const scope = this.buildOrderScopeWhere(
+      moduleId,
+      parentLessonId,
+      undefined,
+    );
 
     if (newOrder < oldOrder) {
       await this.prisma.courseLesson.updateMany({
@@ -153,10 +160,11 @@ export class PrismaCourseLessonRepository
     moduleId: string,
     deletedDisplayOrder: number,
     parentLessonId: string | null = null,
+    batchId?: string | null,
   ): Promise<void> {
     await this.prisma.courseLesson.updateMany({
       where: {
-        ...this.buildOrderScopeWhere(moduleId, parentLessonId),
+        ...this.buildOrderScopeWhere(moduleId, parentLessonId, batchId),
         displayOrder: { gt: deletedDisplayOrder },
       },
       data: { displayOrder: { decrement: 1 } },
@@ -170,8 +178,13 @@ export class PrismaCourseLessonRepository
     newOrder: number,
     updatedBy?: string | null,
     parentLessonId: string | null = null,
+    batchId?: string | null,
   ): Promise<void> {
-    const scope = this.buildOrderScopeWhere(moduleId, parentLessonId);
+    const scope = this.buildOrderScopeWhere(
+      moduleId,
+      parentLessonId,
+      batchId,
+    );
 
     const siblings = await this.prisma.courseLesson.findMany({
       where: scope,
@@ -208,11 +221,13 @@ export class PrismaCourseLessonRepository
   private buildOrderScopeWhere(
     moduleId: string,
     parentLessonId: string | null,
+    batchId?: string | null,
   ): Prisma.CourseLessonWhereInput {
     return {
       moduleId,
       isDeleted: false,
       parentLessonId,
+      ...(batchId !== undefined ? { batchId } : {}),
     };
   }
 
@@ -308,6 +323,14 @@ export class PrismaCourseLessonRepository
 
     if (filters.contentType) {
       where.contentType = filters.contentType as Prisma.CourseLessonWhereInput['contentType'];
+    }
+
+    if (filters.branchId) {
+      where.branchId = filters.branchId;
+    }
+
+    if (filters.batchId) {
+      where.batchId = filters.batchId;
     }
 
     if (filters.search) {

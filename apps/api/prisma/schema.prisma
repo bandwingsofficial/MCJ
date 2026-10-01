@@ -180,6 +180,7 @@ model Branch {
   assessments    AcademicAssessment[]
   interviews     Interview[]
   activityLogs   BranchActivityLog[]
+  courseLessons  CourseLesson[]
   thumbnailUpload Upload?           @relation("BranchThumbnailUpload", fields: [thumbnailFileId], references: [id], onDelete: SetNull)
 
   @@index([branchName])
@@ -496,6 +497,8 @@ model CourseLesson {
   id           String           @id @default(uuid())
   moduleId     String
   parentLessonId String?
+  branchId     String?
+  batchId      String?
   title        String
   slug         String
   description  String?
@@ -512,6 +515,8 @@ model CourseLesson {
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   module       CourseModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  branch       Branch?          @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  batch        Batch?           @relation(fields: [batchId], references: [id], onDelete: Cascade)
   parentLesson CourseLesson?    @relation("LessonChildren", fields: [parentLessonId], references: [id], onDelete: Cascade)
   childLessons CourseLesson[]   @relation("LessonChildren")
   resources    CourseResource[]
@@ -522,6 +527,9 @@ model CourseLesson {
   // Slug uniqueness: partial indexes in 20260930143000_course_lesson_slug_parent_scope
   @@index([moduleId])
   @@index([parentLessonId])
+  @@index([branchId])
+  @@index([batchId])
+  @@index([batchId, branchId])
   @@index([slug])
   @@index([displayOrder])
   @@index([moduleId, isDeleted])
@@ -802,6 +810,7 @@ model Batch {
   timings         BatchTiming[]
   modeCalendarExceptions BatchModeCalendarException[]
   branchTrainerAssignments BranchTrainer[]
+  courseLessons CourseLesson[]
 
   @@unique([slug, branchId])
   @@index([name])

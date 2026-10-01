@@ -30,8 +30,8 @@ const TAB_LABELS: Record<string, string> = {
   courses: "Courses",
   trainers: "Trainers",
   batches: "Batches",
+  liveRecorded: "Live Recorded Videos",
   students: "Enrolled Students",
-  reports: "Reports",
 };
 
 export function BranchManagePage({ branchId }: Props) {

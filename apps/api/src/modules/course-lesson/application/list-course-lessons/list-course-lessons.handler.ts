@@ -19,6 +19,8 @@ export class ListCourseLessonsHandler {
     const lessons = await this.courseLessonRepo.findAll({
       moduleId: query.moduleId,
       parentLessonId: query.parentLessonId,
+      branchId: query.branchId,
+      batchId: query.batchId,
       contentType: query.contentType,
       search: query.search,
       includeDeleted: query.includeDeleted,

@@ -22,7 +22,11 @@ export class MoveCourseLessonHandler {
 
     const siblings = (
       await this.courseLessonRepo.findByModuleId(lesson.moduleId, false)
-    ).filter((row) => row.parentLessonId === lesson.parentLessonId);
+    ).filter(
+      (row) =>
+        row.parentLessonId === lesson.parentLessonId &&
+        row.batchId === lesson.batchId,
+    );
     const maxPosition = siblings.length;
 
     if (
@@ -42,6 +46,7 @@ export class MoveCourseLessonHandler {
       command.newPosition,
       command.updatedBy,
       lesson.parentLessonId,
+      lesson.batchId,
     );
 
     return CourseLessonResponseMapper.toResult(

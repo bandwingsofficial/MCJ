@@ -29,9 +29,11 @@ export class CourseLessonController {
       new ListCourseLessonsQuery(
         query.moduleId,
         parentLessonId,
+        query.branchId,
+        query.batchId,
         query.contentType,
         query.search,
-        false,
+        query.includeDeleted ?? false,
         query.skip,
         query.take,
       ),

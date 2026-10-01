@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { appToast } from "@/src/shared/components/ui/toast";
@@ -14,7 +14,11 @@ import {
   useActivateCourseLesson,
   useMoveCourseLesson,
 } from "@/src/features/course-lessons/hooks";
-import type { CourseLesson } from "@/src/features/course-lessons/types";
+import type {
+  CourseLesson,
+  LiveRecordedScope,
+} from "@/src/features/course-lessons/types";
+import { courseLessonService } from "@/src/features/course-lessons/services/course-lesson.service";
 import { ModuleContentActions } from "@/src/features/course-modules/components/manage/module-content-actions";
 import { ModuleContentSection } from "@/src/features/course-modules/components/manage/module-content-section";
 import { ModuleLiveRecordedVideoForm } from "@/src/features/course-modules/components/manage/module-live-recorded-video-form";
@@ -40,9 +44,10 @@ interface VideoRow extends CourseLesson {
 interface Props {
   moduleId: string;
   parentLessonId?: string;
-  lessons: CourseLesson[];
-  quizLessonIds: Set<string>;
-  onRefresh: () => Promise<void>;
+  lessons?: CourseLesson[];
+  quizLessonIds?: Set<string>;
+  liveRecordedScope?: LiveRecordedScope;
+  onRefresh?: () => Promise<void>;
 }
 
 function formatSessionDate(value: string) {
@@ -61,10 +66,51 @@ function formatSessionDate(value: string) {
 export function ModuleLiveRecordedVideosTab({
   moduleId,
   parentLessonId,
-  lessons,
-  quizLessonIds,
-  onRefresh,
+  lessons: lessonsProp,
+  quizLessonIds: _quizLessonIds,
+  liveRecordedScope,
+  onRefresh: onRefreshProp,
 }: Props) {
+  const [scopedLessons, setScopedLessons] = useState<CourseLesson[]>([]);
+  const [scopedLoading, setScopedLoading] = useState(Boolean(liveRecordedScope));
+
+  const loadScopedLessons = useCallback(async () => {
+    if (!liveRecordedScope || !parentLessonId) {
+      return;
+    }
+
+    setScopedLoading(true);
+    try {
+      const response = await courseLessonService.getCourseLessons({
+        moduleId,
+        parentLessonId,
+        contentType: "LIVE_RECORDED_VIDEO",
+        includeDeleted: true,
+        branchId: liveRecordedScope.branchId,
+        batchId: liveRecordedScope.batchId,
+      });
+      setScopedLessons(response.data ?? []);
+    } catch {
+      setScopedLessons([]);
+    } finally {
+      setScopedLoading(false);
+    }
+  }, [liveRecordedScope, moduleId, parentLessonId]);
+
+  useEffect(() => {
+    if (liveRecordedScope) {
+      void loadScopedLessons();
+    }
+  }, [liveRecordedScope, loadScopedLessons]);
+
+  const lessons = liveRecordedScope ? scopedLessons : (lessonsProp ?? []);
+
+  const onRefresh = useCallback(async () => {
+    if (liveRecordedScope) {
+      await loadScopedLessons();
+    }
+    await onRefreshProp?.();
+  }, [liveRecordedScope, loadScopedLessons, onRefreshProp]);
   const { createCourseLesson, isLoading: isCreating } = useCreateCourseLesson();
   const { updateCourseLesson, isLoading: isUpdating } = useUpdateCourseLesson();
   const { deleteCourseLesson, isLoading: isDeleting } = useDeleteCourseLesson();
@@ -85,7 +131,11 @@ export function ModuleLiveRecordedVideosTab({
 
   const sourceRows = useMemo(() => {
     const sourceLessons = parentLessonId
-      ? filterChildLiveRecordedVideoLessons(lessons, parentLessonId)
+      ? filterChildLiveRecordedVideoLessons(
+          lessons,
+          parentLessonId,
+          liveRecordedScope?.batchId,
+        )
       : filterLiveRecordedVideoLessons(lessons);
 
     return sourceLessons
@@ -94,7 +144,7 @@ export function ModuleLiveRecordedVideosTab({
         isArchived: Boolean(lesson.isDeleted || lesson.deletedAt),
       }))
       .sort((a, b) => a.displayOrder - b.displayOrder);
-  }, [lessons, parentLessonId]);
+  }, [lessons, parentLessonId, liveRecordedScope?.batchId]);
 
   const filteredRows = useMemo(() => {
     return sourceRows.filter((lesson) => {
@@ -115,6 +165,23 @@ export function ModuleLiveRecordedVideosTab({
   const pagedRows = paginateRows(filteredRows, page, pageSize);
   const orderOffset = (page - 1) * pageSize;
   const reorderDisabled = Boolean(search.trim()) || status !== "ALL";
+
+  if (scopedLoading && liveRecordedScope) {
+    return (
+      <ModuleContentSection
+        title="Live Recorded Videos"
+        search=""
+        searchPlaceholder="Search live recorded videos..."
+        onSearchChange={() => {}}
+        status="ALL"
+        onStatusChange={() => {}}
+        actionLabel="Add Live Recorded Video"
+        onAction={() => {}}
+      >
+        <p className="py-8 text-center text-sm text-slate-500">Loading…</p>
+      </ModuleContentSection>
+    );
+  }
 
   return (
     <>
@@ -248,6 +315,8 @@ export function ModuleLiveRecordedVideosTab({
                 videoUrl: values.videoUrl,
                 duration: values.duration,
                 contentType: "LIVE_RECORDED_VIDEO",
+                branchId: liveRecordedScope?.branchId ?? null,
+                batchId: liveRecordedScope?.batchId ?? null,
               });
               appToast.success("Live recorded video created successfully");
             }
