@@ -87,17 +87,16 @@ export class CourseAccessService {
   ): Promise<EnrollmentDetailView> {
     const student = await this.resolveStudentFromUserId(userId);
 
-    if (student.status !== StudentStatus.ADMITTED) {
-      throw new CourseAccessDeniedException();
-    }
-
     const enrollment =
       await this.enrollmentRepo.findAdmittedByStudentAndCourse(
         student.id,
         courseId,
       );
 
-    if (!enrollment) {
+    if (
+      !enrollment ||
+      !isValidLearningEnrollmentStatus(enrollment.status)
+    ) {
       throw new CourseAccessDeniedException();
     }
 

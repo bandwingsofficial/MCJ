@@ -45,7 +45,7 @@ export function useLearningAccessGuard() {
         }
 
         const student = await learningService.getStudentProfile();
-        if (!student || !isAdmittedStudentStatus(student.status)) {
+        if (!student) {
           redirectToCustomerWeb();
           return;
         }
@@ -55,7 +55,10 @@ export function useLearningAccessGuard() {
           isValidLearningEnrollmentStatus(enrollment.status),
         );
 
-        if (!hasValidEnrollment) {
+        if (
+          !hasValidEnrollment &&
+          !isAdmittedStudentStatus(student.status)
+        ) {
           redirectToCustomerWeb();
           return;
         }

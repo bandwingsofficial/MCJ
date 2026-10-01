@@ -1,5 +1,8 @@
 import { env } from "@/src/core/config/env";
 
+import type { LearningContentMode } from "@/src/features/learning/types/learning.types";
+import { learningContentModeToSearchParam } from "@/src/features/learning/utils/learning-mode-navigation.utils";
+
 export function getCustomerWebUrl(path = "/"): string {
   return new URL(path, env.CUSTOMER_WEB_URL).toString();
 }
@@ -22,8 +25,15 @@ export function getModuleLearningPath(
 export function getLessonLearningPath(
   courseId: string,
   lessonId: string,
+  contentMode?: LearningContentMode,
 ): string {
-  return `/student/learning/${courseId}/lessons/${lessonId}`;
+  const base = `/student/learning/${courseId}/lessons/${lessonId}`;
+  if (!contentMode) {
+    return base;
+  }
+
+  const modeParam = learningContentModeToSearchParam(contentMode);
+  return `${base}?mode=${modeParam}`;
 }
 
 export function getLessonRecordingPath(

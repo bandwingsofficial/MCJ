@@ -82,13 +82,27 @@ export function formatLessonOrdinal(ordinal: number): string {
   return `Lesson ${String(ordinal).padStart(2, "0")}`;
 }
 
+function lessonMatchesId(
+  lesson: LessonTreeDto,
+  lessonId: string,
+): boolean {
+  if (lesson.id === lessonId) {
+    return true;
+  }
+
+  return (
+    (lesson.selfPacedVideos ?? []).some((video) => video.id === lessonId) ||
+    (lesson.liveRecordedVideos ?? []).some((video) => video.id === lessonId)
+  );
+}
+
 export function findModuleForLessonOrdered(
   modules: ModuleTreeDto[],
   lessonId: string,
 ): ModuleTreeDto | null {
   return (
     sortModules(modules).find((module) =>
-      module.lessons.some((lesson) => lesson.id === lessonId),
+      module.lessons.some((lesson) => lessonMatchesId(lesson, lessonId)),
     ) ?? null
   );
 }
