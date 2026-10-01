@@ -31,7 +31,7 @@ export function calculateBranchBatchLifecycleStatus(
   now: Date = new Date(),
 ): BatchLifecycleStatus | null {
   if (batch.status === "CANCELLED") {
-    return null;
+    return "EXPIRED";
   }
 
   const startAt = combineUtcDateAndTime(batch.startDate, batch.startTime);

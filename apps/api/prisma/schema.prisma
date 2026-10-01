@@ -772,6 +772,9 @@ model Batch {
   modePricing      Json?
   classroom     String?
   meetingLink   String?
+  cancellationReason String?
+  cancelledAt   DateTime?
+  cancelledBy   String?
   isFeatured    Boolean        @default(false)
   status        BatchStatus    @default(UPCOMING)
   createdBy     String?

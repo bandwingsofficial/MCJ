@@ -12,6 +12,7 @@ import type {
   BatchTimingDetailResponse,
   BatchTimingListResponse,
   BulkBatchOperationResult,
+  CancelBatchRequest,
   CreateBatchRequest,
   CreateBatchWithTimingsRequest,
   DeleteBatchResponse,
@@ -122,6 +123,15 @@ export const batchApi = {
   async assignTrainers(id: string, payload: AssignBatchTrainersRequest) {
     const response = await apiClient.patch<ApiSuccessResponse<Batch>>(
       `/admin/batches/${id}/assign-trainers`,
+      payload,
+    );
+
+    return response.data;
+  },
+
+  async cancelBatch(id: string, payload: CancelBatchRequest) {
+    const response = await apiClient.patch<ApiSuccessResponse<Batch>>(
+      `/admin/batches/${id}/cancel`,
       payload,
     );
 

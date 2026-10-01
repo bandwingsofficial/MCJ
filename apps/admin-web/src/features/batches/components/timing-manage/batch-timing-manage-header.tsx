@@ -19,6 +19,7 @@ import {
   courseManageTabPath,
 } from "@/src/features/courses/utils/course-manage.routes";
 import { formatTimingRange } from "@/src/features/batches/utils/batch-timing.utils";
+import { resolveBatchTimingDisplayStatus } from "@/src/features/batches/utils/batch-select.utils";
 
 interface Props {
   batch: Batch;
@@ -132,7 +133,7 @@ export function BatchTimingManageHeader({
                 {timing.name}
               </h1>
               <BatchStatusBadge
-                status={timing.status}
+                status={resolveBatchTimingDisplayStatus(batch, timing)}
                 isActive={timing.isActive}
                 isDeleted={timing.isDeleted}
                 startDate={timing.startDate}

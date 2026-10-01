@@ -2,6 +2,8 @@ import type { BatchRepository } from '../../domain/repositories/batch.repository
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
 import { GetBatchResult } from '../get-batch/get-batch.result';
 
+import { ensureBatchOpenForLifecycleMutation } from '../../domain/utils/batch-selection.util';
+
 import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
 
 import { UpdateBatchStatusCommand } from './update-batch-status.command';
@@ -18,6 +20,8 @@ export class UpdateBatchStatusHandler {
     const batch = await this.domainService.ensureExists(
       await this.batchRepo.findById(command.id),
     );
+
+    ensureBatchOpenForLifecycleMutation(batch);
 
     if (command.activate) {
       if (!batch.isActive) {

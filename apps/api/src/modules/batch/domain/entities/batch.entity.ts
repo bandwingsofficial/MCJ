@@ -66,6 +66,9 @@ export class Batch {
     public isActive: boolean,
     public displayOrder: number | null,
     public status: BatchStatus,
+    public cancellationReason: string | null,
+    public cancelledAt: Date | null,
+    public cancelledBy: string | null,
     public trainers: BatchTrainer[],
     public readonly createdBy: string | null,
     public updatedBy: string | null,
@@ -125,6 +128,9 @@ export class Batch {
       params.isActive ?? true,
       params.displayOrder ?? null,
       params.status ?? BatchStatus.UPCOMING,
+      params.cancellationReason ?? null,
+      params.cancelledAt ?? null,
+      params.cancelledBy ?? null,
       params.trainers ?? [],
       params.createdBy ?? null,
       null,
@@ -175,6 +181,9 @@ export class Batch {
       params.isActive,
       params.displayOrder,
       params.status,
+      params.cancellationReason ?? null,
+      params.cancelledAt ?? null,
+      params.cancelledBy ?? null,
       params.trainers,
       params.createdBy,
       params.updatedBy,
@@ -295,6 +304,20 @@ export class Batch {
   deactivate(updatedBy?: string | null) {
     this.isActive = false;
     this.displayOrder = null;
+    this.updatedBy = updatedBy ?? this.updatedBy;
+    this.touch();
+  }
+
+  cancel(reason: string, updatedBy?: string | null) {
+    const trimmed = reason.trim();
+    if (!trimmed) {
+      throw new Error('Cancellation reason is required');
+    }
+
+    this.status = BatchStatus.CANCELLED;
+    this.cancellationReason = trimmed;
+    this.cancelledAt = new Date();
+    this.cancelledBy = updatedBy ?? null;
     this.updatedBy = updatedBy ?? this.updatedBy;
     this.touch();
   }
@@ -434,6 +457,9 @@ export interface BatchCreateParams {
   isActive?: boolean;
   displayOrder?: number | null;
   status?: BatchStatus;
+  cancellationReason?: string | null;
+  cancelledAt?: Date | null;
+  cancelledBy?: string | null;
   trainers?: BatchTrainer[];
   createdBy?: string | null;
 }
@@ -490,6 +516,9 @@ export interface BatchReconstituteParams
   deletedAt: Date | null;
   deletedBy: string | null;
   displayOrder: number | null;
+  cancellationReason: string | null;
+  cancelledAt: Date | null;
+  cancelledBy: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

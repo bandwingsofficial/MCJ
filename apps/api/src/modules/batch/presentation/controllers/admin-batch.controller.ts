@@ -64,6 +64,9 @@ import { UpdateBatchCommand } from '../../application/update-batch/update-batch.
 import { UpdateBatchHandler } from '../../application/update-batch/update-batch.handler';
 import { UpdateBatchStatusCommand } from '../../application/update-batch-status/update-batch-status.command';
 import { UpdateBatchStatusHandler } from '../../application/update-batch-status/update-batch-status.handler';
+import { CancelBatchHandler } from '../../application/cancel-batch/cancel-batch.handler';
+import { CancelBatchCommand } from '../../application/cancel-batch/cancel-batch.command';
+import { CancelBatchDto } from '../dtos/cancel-batch.dto';
 import { AssignBatchCourseDto } from '../dtos/assign-batch-course.dto';
 import { AssignBatchTrainersDto } from '../dtos/assign-batch-trainers.dto';
 import { BulkBatchIdsDto } from '../dtos/bulk-batch-ids.dto';
@@ -96,6 +99,7 @@ export class AdminBatchController {
     private readonly restoreBatchHandler: RestoreBatchHandler,
     private readonly permanentDeleteBatchHandler: PermanentDeleteBatchHandler,
     private readonly updateBatchStatusHandler: UpdateBatchStatusHandler,
+    private readonly cancelBatchHandler: CancelBatchHandler,
     private readonly assignBatchTrainersHandler: AssignBatchTrainersHandler,
     private readonly suggestBatchCodeHandler: SuggestBatchCodeHandler,
     private readonly reorderBatchesHandler: ReorderBatchesHandler,
@@ -525,6 +529,24 @@ export class AdminBatchController {
     return {
       success: true,
       message: 'Batch deactivated successfully',
+      data: result,
+    };
+  }
+
+  @Patch(':id/cancel')
+  @ApiBody({ type: CancelBatchDto })
+  async cancel(
+    @Param('id') id: string,
+    @Body() dto: CancelBatchDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    const result = await this.cancelBatchHandler.execute(
+      new CancelBatchCommand(id, dto.reason, user?.sub),
+    );
+
+    return {
+      success: true,
+      message: 'Batch cancelled successfully',
       data: result,
     };
   }

@@ -4,6 +4,7 @@ import {
   countBatchesByLifecycleStatus,
   combineUtcDateAndTime,
   resolveBatchApiStatus,
+  resolveBatchTimingApiStatus,
 } from './batch-lifecycle-status.util';
 
 describe('combineUtcDateAndTime', () => {
@@ -166,5 +167,45 @@ describe('resolveBatchApiStatus', () => {
         now: new Date(Date.UTC(2026, 7, 1)),
       }),
     ).toBe(BatchStatus.UPCOMING);
+  });
+});
+
+describe('resolveBatchTimingApiStatus', () => {
+  const activeRange = {
+    startDate: new Date(Date.UTC(2026, 8, 4)),
+    startTime: '10:00',
+    endDate: new Date(Date.UTC(2026, 9, 5)),
+    endTime: '16:00',
+    now: new Date(Date.UTC(2026, 8, 20)),
+  };
+
+  it('inherits CANCELLED from parent even when timing dates are ongoing', () => {
+    expect(
+      resolveBatchTimingApiStatus(
+        {
+          storedStatus: BatchStatus.CANCELLED,
+          ...activeRange,
+        },
+        {
+          storedStatus: BatchStatus.UPCOMING,
+          ...activeRange,
+        },
+      ),
+    ).toBe(BatchStatus.CANCELLED);
+  });
+
+  it('uses timing lifecycle when parent is not cancelled', () => {
+    expect(
+      resolveBatchTimingApiStatus(
+        {
+          storedStatus: BatchStatus.ONGOING,
+          ...activeRange,
+        },
+        {
+          storedStatus: BatchStatus.UPCOMING,
+          ...activeRange,
+        },
+      ),
+    ).toBe(BatchStatus.ONGOING);
   });
 });

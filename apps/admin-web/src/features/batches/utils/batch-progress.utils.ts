@@ -74,18 +74,10 @@ export interface BatchProgressInfo {
 export function calculateBatchProgress(
   batch: Pick<
     Batch,
-    "startDate" | "endDate" | "daysOfWeek" | "startTime" | "endTime"
+    "status" | "startDate" | "endDate" | "daysOfWeek" | "startTime" | "endTime"
   >,
   referenceDate: Date = new Date(),
 ): BatchProgressInfo {
-  const start = parseLocalDate(batch.startDate.split("T")[0] ?? batch.startDate);
-  const end = parseLocalDate(
-    (batch.endDate ?? batch.startDate).split("T")[0] ??
-      batch.endDate ??
-      batch.startDate,
-  );
-  const today = startOfDay(referenceDate);
-
   const calendarDurationLabel = formatBatchDateRange(
     batch.startDate,
     batch.endDate,
@@ -98,6 +90,28 @@ export function calculateBatchProgress(
       batch.startDate,
     batch.daysOfWeek,
   );
+
+  if (batch.status === "CANCELLED") {
+    return {
+      calendarDurationLabel,
+      totalWorkingDays,
+      daysCompleted: totalWorkingDays ?? 0,
+      daysRemaining: 0,
+      daysUntilStart: null,
+      progressPercent: totalWorkingDays ? 100 : null,
+      isExpired: true,
+      isNotStarted: false,
+      progressLabel: "Cancelled",
+    };
+  }
+
+  const start = parseLocalDate(batch.startDate.split("T")[0] ?? batch.startDate);
+  const end = parseLocalDate(
+    (batch.endDate ?? batch.startDate).split("T")[0] ??
+      batch.endDate ??
+      batch.startDate,
+  );
+  const today = startOfDay(referenceDate);
 
   if (!start || !end) {
     return {
@@ -220,9 +234,13 @@ export function formatBatchDurationLabel(
 export function formatBatchLifecycleStatus(
   progress: Pick<
     BatchProgressInfo,
-    "isExpired" | "isNotStarted"
+    "isExpired" | "isNotStarted" | "progressLabel"
   >,
 ): string {
+  if (progress.progressLabel === "Cancelled") {
+    return "Cancelled";
+  }
+
   if (progress.isExpired) {
     return "Completed / Expired";
   }

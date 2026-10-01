@@ -53,6 +53,7 @@ import { RestoreBatchHandler } from './application/restore-batch/restore-batch.h
 import { SuggestBatchCodeHandler } from './application/suggest-batch-code/suggest-batch-code.handler';
 import { UpdateBatchHandler } from './application/update-batch/update-batch.handler';
 import { UpdateBatchStatusHandler } from './application/update-batch-status/update-batch-status.handler';
+import { CancelBatchHandler } from './application/cancel-batch/cancel-batch.handler';
 import type { BatchRepository } from './domain/repositories/batch.repository';
 import type { BatchTemplateRepository } from './domain/repositories/batch-template.repository';
 import { BatchDomainService } from './domain/services/batch-domain.service';
@@ -77,7 +78,7 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
     forwardRef(() => CourseModule),
     CategoryModule,
     TrainerModule,
-    BranchModule,
+    forwardRef(() => BranchModule),
   ],
 
   controllers: [
@@ -513,6 +514,21 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
       useFactory: (prisma: PrismaService, getBatchHandler: GetBatchHandler) =>
         new UpdateBatchTimingHandler(prisma, getBatchHandler),
       inject: [PrismaService, GetBatchHandler],
+    },
+
+    {
+      provide: CancelBatchHandler,
+      useFactory: (
+        batchRepo: BatchRepository,
+        domainService: BatchDomainService,
+        getBatchHandler: GetBatchHandler,
+      ) =>
+        new CancelBatchHandler(batchRepo, domainService, getBatchHandler),
+      inject: [
+        BATCH_TOKENS.BATCH_REPOSITORY,
+        BatchDomainService,
+        GetBatchHandler,
+      ],
     },
   ],
 

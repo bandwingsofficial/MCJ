@@ -120,3 +120,30 @@ export function resolveBatchApiStatus(params: {
   // status=ARCHIVED rows expose the calculated Upcoming/Ongoing/Expired value.
   return calculateBatchLifecycleStatus(params);
 }
+
+export type BatchTimingStatusInput = {
+  storedStatus: BatchStatus;
+  isDeleted?: boolean;
+  startDate: Date;
+  startTime: string;
+  endDate: Date | null;
+  endTime: string;
+  now?: Date;
+};
+
+/**
+ * Resolve status shown for a child batch timing.
+ * Parent cancellation overrides date-derived timing lifecycle.
+ */
+export function resolveBatchTimingApiStatus(
+  parent: BatchTimingStatusInput,
+  timing: BatchTimingStatusInput,
+): BatchStatus {
+  const parentStatus = resolveBatchApiStatus(parent);
+
+  if (parentStatus === BatchStatus.CANCELLED) {
+    return BatchStatus.CANCELLED;
+  }
+
+  return resolveBatchApiStatus(timing);
+}

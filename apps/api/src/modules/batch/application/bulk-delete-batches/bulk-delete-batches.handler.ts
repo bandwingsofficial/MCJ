@@ -8,6 +8,7 @@ import type { BatchRepository } from '../../domain/repositories/batch.repository
 import { ValidationError } from '../errors/validation.error';
 import type { BulkBatchItemResult } from '../shared/bulk-batch-operation.result';
 import { parseBulkBatchIds } from '../shared/parse-bulk-batch-ids';
+import { isBatchClosedForLifecycleMutation } from '../../domain/utils/batch-selection.util';
 
 import { BulkDeleteBatchesCommand } from './bulk-delete-batches.command';
 import { BulkDeleteBatchesResult } from './bulk-delete-batches.result';
@@ -45,6 +46,15 @@ export class BulkDeleteBatchesHandler {
             batchId,
             success: true,
             message: 'Batch is already archived',
+          });
+          continue;
+        }
+
+        if (isBatchClosedForLifecycleMutation(batch)) {
+          itemResults.push({
+            batchId,
+            success: false,
+            message: 'Expired or cancelled batches cannot be archived',
           });
           continue;
         }

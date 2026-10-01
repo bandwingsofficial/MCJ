@@ -6,6 +6,7 @@ import { Button } from "@/src/shared/components/ui/button";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
 import type { Batch } from "@/src/features/batches/types/batch.types";
+import { resolveBatchTimingDisplayStatus } from "@/src/features/batches/utils/batch-select.utils";
 import {
   formatBatchDuration,
   formatBatchDurationType,
@@ -208,7 +209,7 @@ export function BatchManageDetailsPanel({
                       </td>
                       <td className="whitespace-nowrap px-3 py-3 align-middle">
                         <BatchStatusBadge
-                          status={timing.status}
+                          status={resolveBatchTimingDisplayStatus(batch, timing)}
                           isActive={timing.isActive}
                           isDeleted={timing.isDeleted}
                           startDate={timing.startDate}

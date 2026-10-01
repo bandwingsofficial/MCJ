@@ -14,11 +14,17 @@ const TABS: {
 
 interface Props {
   value: BatchLifecycleStatus;
+  counts?: Record<BatchLifecycleStatus, number>;
   onChange: (value: BatchLifecycleStatus) => void;
   disabled?: boolean;
 }
 
-export function BatchLifecycleTabs({ value, onChange, disabled }: Props) {
+export function BatchLifecycleTabs({
+  value,
+  counts,
+  onChange,
+  disabled,
+}: Props) {
   return (
     <div
       className="flex h-auto w-full flex-wrap justify-start gap-0.5 border-b border-slate-200"
@@ -27,6 +33,7 @@ export function BatchLifecycleTabs({ value, onChange, disabled }: Props) {
     >
       {TABS.map((tab) => {
         const isActive = value === tab.value;
+        const count = counts?.[tab.value];
 
         return (
           <button
@@ -45,6 +52,11 @@ export function BatchLifecycleTabs({ value, onChange, disabled }: Props) {
             )}
           >
             {tab.label}
+            {count !== undefined ? (
+              <span className="ml-1.5 tabular-nums text-xs font-semibold opacity-80">
+                ({count})
+              </span>
+            ) : null}
           </button>
         );
       })}

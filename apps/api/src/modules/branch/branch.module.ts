@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { PrismaModule } from '../../infrastructure/prisma/prisma.module';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
@@ -44,8 +44,12 @@ import { PrismaBranchRepository } from './infrastructure/repositories/prisma-bra
 
 import { BRANCH_TOKENS } from './branch.tokens';
 
+import { BatchModule } from '../batch/batch.module';
+import { BATCH_TOKENS } from '../batch/batch.tokens';
+import type { BatchRepository } from '../batch/domain/repositories/batch.repository';
+
 @Module({
-  imports: [PrismaModule, UploadsModule],
+  imports: [PrismaModule, UploadsModule, forwardRef(() => BatchModule)],
 
   controllers: [
     BranchController,
@@ -326,9 +330,11 @@ import { BRANCH_TOKENS } from './branch.tokens';
 
     {
       provide: UnassignBatchFromBranchHandler,
-      useFactory: (branchRepo: BranchRepository) =>
-        new UnassignBatchFromBranchHandler(branchRepo),
-      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
+      useFactory: (
+        branchRepo: BranchRepository,
+        batchRepo: BatchRepository,
+      ) => new UnassignBatchFromBranchHandler(branchRepo, batchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY, BATCH_TOKENS.BATCH_REPOSITORY],
     },
   ],
   exports: [BRANCH_TOKENS.BRANCH_REPOSITORY],

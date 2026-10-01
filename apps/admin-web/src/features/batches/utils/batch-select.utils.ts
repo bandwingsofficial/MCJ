@@ -59,19 +59,28 @@ export function isBatchSelectableForAssignment(batch: BatchLike): boolean {
   return !isBatchBlockedForSelection(batch);
 }
 
+/** Expired / cancelled rows are read-only on the main /batches list. */
+export function isBatchClosedForMainListMutations(batch: BatchLike): boolean {
+  return batch.status === "EXPIRED" || batch.status === "CANCELLED";
+}
+
 /**
- * Row checkboxes on list tables: allow lifecycle batches (including Expired)
- * to be selected for Archive / Activate / Deactivate. Soft-deleted rows stay
- * selectable for Restore / Permanent Delete. Block cancelled / completed.
+ * Row checkboxes on list tables: Upcoming/Ongoing/Inactive for bulk archive
+ * and activate/deactivate. Soft-deleted rows stay selectable for Restore /
+ * Permanent Delete. Expired and cancelled batches are not bulk-selectable.
  */
 export function isBatchSelectableInBulkList(batch: BatchLike): boolean {
   if (batch.isDeleted || batch.deletedAt) {
     return true;
   }
 
+  if (isBatchClosedForMainListMutations(batch)) {
+    return false;
+  }
+
   const reason = getBatchSelectionBlockReason(batch);
 
-  if (reason === "INACTIVE" || reason === "EXPIRED" || reason === null) {
+  if (reason === "INACTIVE" || reason === null) {
     return true;
   }
 
@@ -100,6 +109,23 @@ export interface BatchDisplayStatus {
  * (UPCOMING / ONGOING / EXPIRED) — no frontend date recalculation.
  * Soft-delete (archive) is separate and does not replace lifecycle status.
  */
+type BatchTimingStatusLike = Pick<BatchLike, "status">;
+
+/**
+ * Child timing display status: parent CANCELLED overrides timing date lifecycle.
+ * Align with API resolveBatchTimingApiStatus.
+ */
+export function resolveBatchTimingDisplayStatus(
+  batch: BatchTimingStatusLike,
+  timing: BatchTimingStatusLike,
+): NonNullable<BatchLike["status"]> {
+  if (batch.status === "CANCELLED") {
+    return "CANCELLED";
+  }
+
+  return (timing.status ?? "ONGOING") as NonNullable<BatchLike["status"]>;
+}
+
 export function getBatchDisplayStatus(batch: BatchLike): BatchDisplayStatus {
   if (batch.status === "CANCELLED") {
     return { key: "CANCELLED", label: "Cancelled", variant: "danger" };

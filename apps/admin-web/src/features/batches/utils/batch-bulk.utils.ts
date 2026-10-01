@@ -2,6 +2,7 @@ import type {
   BatchListItem,
   BulkBatchOperationResult,
 } from "@/src/features/batches/types/batch.types";
+import { isBatchClosedForMainListMutations } from "@/src/features/batches/utils/batch-select.utils";
 
 export function isArchivedBatch(batch: BatchListItem): boolean {
   return Boolean(batch.deletedAt || batch.isDeleted);
@@ -18,6 +19,7 @@ export function getEligibleActivateIds(
       (batch) =>
         selected.has(batch.id) &&
         !isArchivedBatch(batch) &&
+        !isBatchClosedForMainListMutations(batch) &&
         batch.isActive === false,
     )
     .map((batch) => batch.id);
@@ -34,6 +36,7 @@ export function getEligibleDeactivateIds(
       (batch) =>
         selected.has(batch.id) &&
         !isArchivedBatch(batch) &&
+        !isBatchClosedForMainListMutations(batch) &&
         batch.isActive !== false,
     )
     .map((batch) => batch.id);
@@ -46,7 +49,12 @@ export function getEligibleDeleteIds(
   const selected = new Set(selectedIds);
 
   return batches
-    .filter((batch) => selected.has(batch.id) && !isArchivedBatch(batch))
+    .filter(
+      (batch) =>
+        selected.has(batch.id) &&
+        !isArchivedBatch(batch) &&
+        !isBatchClosedForMainListMutations(batch),
+    )
     .map((batch) => batch.id);
 }
 

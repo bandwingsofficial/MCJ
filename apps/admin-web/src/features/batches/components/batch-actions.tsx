@@ -14,6 +14,7 @@ import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { BatchListItem } from "@/src/features/batches/types/batch.types";
 import { isArchivedBatch } from "@/src/features/batches/utils/batch-bulk.utils";
+import { isBatchClosedForMainListMutations } from "@/src/features/batches/utils/batch-select.utils";
 import { batchManagePath } from "@/src/features/batches/utils/batch-manage.routes";
 
 const iconButtonClass =
@@ -42,7 +43,26 @@ export function BatchActions({
 }: Props) {
   const router = useRouter();
   const isArchived = isArchivedBatch(batch);
+  const isClosed = isBatchClosedForMainListMutations(batch);
   const isActive = batch.isActive !== false;
+
+  if (isClosed) {
+    return (
+      <div className="flex items-center justify-end gap-2">
+        <Tooltip content="Manage batch">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => router.push(batchManagePath(batch.id))}
+            aria-label="Manage batch"
+            className={`${iconButtonClass} text-blue-900`}
+          >
+            <Settings2 className={iconClass} />
+          </button>
+        </Tooltip>
+      </div>
+    );
+  }
 
   if (isArchived) {
     return (

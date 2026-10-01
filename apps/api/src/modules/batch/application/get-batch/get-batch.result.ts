@@ -5,7 +5,10 @@ import {
 } from '../../domain/entities/batch.entity';
 import { BatchStatus } from '../../domain/enums/batch-status.enum';
 import { DayOfWeek } from '../../domain/enums/day-of-week.enum';
-import { resolveBatchApiStatus } from '../../domain/utils/batch-lifecycle-status.util';
+import {
+  resolveBatchApiStatus,
+  resolveBatchTimingApiStatus,
+} from '../../domain/utils/batch-lifecycle-status.util';
 
 export class BatchTrainerResult {
   constructor(
@@ -78,7 +81,37 @@ export class BatchTimingResult {
     public readonly updatedAt: Date,
   ) {}
 
-  static fromRef(timing: BatchTimingRef): BatchTimingResult {
+  static fromRef(
+    timing: BatchTimingRef,
+    parent: Pick<
+      Batch,
+      | 'status'
+      | 'isDeleted'
+      | 'startDate'
+      | 'startTime'
+      | 'endDate'
+      | 'endTime'
+    >,
+  ): BatchTimingResult {
+    const status = resolveBatchTimingApiStatus(
+      {
+        storedStatus: parent.status,
+        isDeleted: parent.isDeleted,
+        startDate: parent.startDate,
+        startTime: parent.startTime,
+        endDate: parent.endDate,
+        endTime: parent.endTime,
+      },
+      {
+        storedStatus: timing.status,
+        isDeleted: timing.isDeleted,
+        startDate: timing.startDate,
+        startTime: timing.startTime,
+        endDate: timing.endDate,
+        endTime: timing.endTime,
+      },
+    );
+
     return new BatchTimingResult(
       timing.id,
       timing.batchId,
@@ -93,14 +126,7 @@ export class BatchTimingResult {
       timing.capacity,
       timing.enrolledCount,
       timing.enrolledCount,
-      resolveBatchApiStatus({
-        storedStatus: timing.status,
-        isDeleted: timing.isDeleted,
-        startDate: timing.startDate,
-        startTime: timing.startTime,
-        endDate: timing.endDate,
-        endTime: timing.endTime,
-      }),
+      status,
       timing.isActive,
       timing.displayOrder,
       timing.isDeleted,
@@ -151,6 +177,9 @@ export class GetBatchResult {
     public readonly isActive: boolean,
     public readonly displayOrder: number | null,
     public readonly status: BatchStatus,
+    public readonly cancellationReason: string | null,
+    public readonly cancelledAt: Date | null,
+    public readonly cancelledBy: string | null,
     public readonly trainers: BatchTrainerResult[],
     public readonly createdBy: string | null,
     public readonly updatedBy: string | null,
@@ -170,7 +199,9 @@ export class GetBatchResult {
       endDate: batch.endDate,
       endTime: batch.endTime,
     });
-    const timings = (batch.timings ?? []).map(BatchTimingResult.fromRef);
+    const timings = (batch.timings ?? []).map((timing) =>
+      BatchTimingResult.fromRef(timing, batch),
+    );
     const modePricing =
       ((batch as Batch & { modePricing?: unknown }).modePricing as
         | Record<string, unknown>
@@ -252,6 +283,9 @@ export class GetBatchResult {
       batch.isActive,
       batch.displayOrder,
       status,
+      batch.cancellationReason,
+      batch.cancelledAt,
+      batch.cancelledBy,
       batch.trainers.map(
         (trainer) =>
           new BatchTrainerResult(

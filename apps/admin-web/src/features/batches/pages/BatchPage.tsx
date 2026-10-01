@@ -61,6 +61,7 @@ export function BatchPage() {
     batches,
     total,
     catalogTotal,
+    lifecycleCounts,
     filters,
     setFilters,
     isInitialLoading,
@@ -289,6 +290,7 @@ export function BatchPage() {
 
       <BatchLifecycleTabs
         value={filters.batchStatus ?? "UPCOMING"}
+        counts={lifecycleCounts}
         disabled={actionLoading || isFetching}
         onChange={(batchStatus: BatchLifecycleStatus) =>
           setFilters({ ...filters, batchStatus, page: 1 })

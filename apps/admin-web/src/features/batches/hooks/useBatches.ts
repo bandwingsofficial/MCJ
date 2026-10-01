@@ -6,6 +6,7 @@ import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { batchService } from "@/src/features/batches/services/batch.service";
 import type {
   BatchFilters,
+  BatchLifecycleStatus,
   BatchListItem,
 } from "@/src/features/batches/types/batch.types";
 import { parseBatchListResponse } from "@/src/features/batches/utils/batch-list.utils";
@@ -14,10 +15,17 @@ import { useRealtimeRefetch } from "@/src/core/realtime/use-realtime-refetch";
 const DEFAULT_PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 400;
 
+const LIFECYCLE_TABS: BatchLifecycleStatus[] = [
+  "UPCOMING",
+  "ONGOING",
+  "EXPIRED",
+];
+
 interface UseBatchesReturn {
   batches: BatchListItem[];
   total: number;
   catalogTotal: number;
+  lifecycleCounts: Record<BatchLifecycleStatus, number>;
   count: number;
   isInitialLoading: boolean;
   isFetching: boolean;
@@ -36,6 +44,13 @@ export const useBatches = (options?: {
   const [batches, setBatches] = useState<BatchListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [catalogTotal, setCatalogTotal] = useState(0);
+  const [lifecycleCounts, setLifecycleCounts] = useState<
+    Record<BatchLifecycleStatus, number>
+  >({
+    UPCOMING: 0,
+    ONGOING: 0,
+    EXPIRED: 0,
+  });
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +120,44 @@ export const useBatches = (options?: {
     }
   }, []);
 
+  const refreshLifecycleCounts = useCallback(async () => {
+    const sharedFilters: BatchFilters = {
+      search: debouncedSearch,
+      courseId: filters.courseId,
+      status: filters.status,
+      isDeleted: filters.isDeleted,
+      includeDeleted: filters.includeDeleted,
+      page: 1,
+      pageSize: 1,
+    };
+
+    try {
+      const results = await Promise.all(
+        LIFECYCLE_TABS.map(async (batchStatus) => {
+          const response = await batchService.getBatches({
+            ...sharedFilters,
+            batchStatus,
+          });
+          return parseBatchListResponse(response.data).count;
+        }),
+      );
+
+      setLifecycleCounts({
+        UPCOMING: results[0] ?? 0,
+        ONGOING: results[1] ?? 0,
+        EXPIRED: results[2] ?? 0,
+      });
+    } catch {
+      // Tab counts are non-critical.
+    }
+  }, [
+    debouncedSearch,
+    filters.courseId,
+    filters.status,
+    filters.isDeleted,
+    filters.includeDeleted,
+  ]);
+
   const fetchBatches = useCallback(async () => {
     const requestId = ++requestIdRef.current;
 
@@ -157,15 +210,23 @@ export const useBatches = (options?: {
   }, [refreshCatalogTotal]);
 
   useEffect(() => {
+    void refreshLifecycleCounts();
+  }, [refreshLifecycleCounts]);
+
+  useEffect(() => {
     void fetchBatches();
   }, [fetchBatches]);
 
-  useRealtimeRefetch("batch", fetchBatches);
+  useRealtimeRefetch("batch", async () => {
+    await fetchBatches();
+    await refreshLifecycleCounts();
+  });
 
   return {
     batches,
     total,
     catalogTotal,
+    lifecycleCounts,
     count: total,
     isInitialLoading,
     isFetching,
@@ -176,6 +237,7 @@ export const useBatches = (options?: {
     refetch: async () => {
       await fetchBatches();
       await refreshCatalogTotal();
+      await refreshLifecycleCounts();
     },
   };
 };

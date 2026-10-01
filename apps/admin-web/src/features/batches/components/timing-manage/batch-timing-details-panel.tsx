@@ -6,7 +6,8 @@ import {
   BatchManageField,
   BatchManageSection,
 } from "@/src/features/batches/components/manage/batch-manage-section";
-import type { BatchTiming } from "@/src/features/batches/types/batch.types";
+import type { Batch, BatchTiming } from "@/src/features/batches/types/batch.types";
+import { resolveBatchTimingDisplayStatus } from "@/src/features/batches/utils/batch-select.utils";
 import { formatBatchOverviewDate } from "@/src/features/batches/utils/batch-progress.utils";
 import {
   formatTimingDays,
@@ -17,10 +18,11 @@ import {
 import { formatBatchTime } from "@/src/features/batches/utils/batch.helper";
 
 interface Props {
+  batch: Batch;
   timing: BatchTiming;
 }
 
-export function BatchTimingDetailsPanel({ timing }: Props) {
+export function BatchTimingDetailsPanel({ batch, timing }: Props) {
   return (
     <BatchManageSection
       title="Batch Timing"
@@ -66,7 +68,7 @@ export function BatchTimingDetailsPanel({ timing }: Props) {
           label="Status"
           value={
             <BatchStatusBadge
-              status={timing.status}
+              status={resolveBatchTimingDisplayStatus(batch, timing)}
               isActive={timing.isActive}
               isDeleted={timing.isDeleted}
               startDate={timing.startDate}

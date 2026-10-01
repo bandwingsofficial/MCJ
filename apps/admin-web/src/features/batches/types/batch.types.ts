@@ -224,6 +224,13 @@ export interface Batch {
   updatedAt: string;
   isDeleted: boolean;
   deletedAt: string | null;
+  cancellationReason?: string | null;
+  cancelledAt?: string | null;
+  cancelledBy?: string | null;
+}
+
+export interface CancelBatchRequest {
+  reason: string;
 }
 
 export type BatchListItem = Batch;

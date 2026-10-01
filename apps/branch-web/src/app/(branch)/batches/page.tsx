@@ -363,7 +363,7 @@ export default function BatchesPage() {
                           </td>
                           <td className="!px-4 !py-4 align-middle">
                             <BatchStatusBadge
-                              status={getBatchDateLifecycleTab(batch)}
+                              status={batch.status}
                               startDate={batch.startDate}
                               endDate={batch.endDate}
                             />

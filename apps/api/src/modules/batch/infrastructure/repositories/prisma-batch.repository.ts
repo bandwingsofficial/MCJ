@@ -18,8 +18,8 @@ import {
   BatchRepository,
 } from '../../domain/repositories/batch.repository';
 import {
-  calculateBatchLifecycleStatus,
   isBatchLifecycleStatus,
+  resolveBatchApiStatus,
 } from '../../domain/utils/batch-lifecycle-status.util';
 import { BatchMapper } from '../mappers/batch.mapper';
 
@@ -178,13 +178,6 @@ export class PrismaBatchRepository implements BatchRepository {
       status: undefined,
     });
 
-    // Cancelled batches are never shown in lifecycle tabs.
-    // Soft-deleted (archived) rows may still match by date calculation when
-    // filters.isDeleted === true. Do not treat Archive as a BatchStatus.
-    where.status = {
-      not: BatchStatus.CANCELLED,
-    };
-
     const records = await this.prisma.batch.findMany({
       where,
       include: this.includeRelations(),
@@ -198,7 +191,9 @@ export class PrismaBatchRepository implements BatchRepository {
     const now = new Date();
 
     return records.filter((record) => {
-      const calculated = calculateBatchLifecycleStatus({
+      const resolved = resolveBatchApiStatus({
+        storedStatus: record.status as BatchStatus,
+        isDeleted: record.isDeleted,
         startDate: record.startDate,
         startTime: record.startTime,
         endDate: record.endDate,
@@ -206,7 +201,14 @@ export class PrismaBatchRepository implements BatchRepository {
         now,
       });
 
-      return calculated === lifecycleStatus;
+      if (lifecycleStatus === BatchStatus.EXPIRED) {
+        return (
+          resolved === BatchStatus.EXPIRED ||
+          resolved === BatchStatus.CANCELLED
+        );
+      }
+
+      return resolved === lifecycleStatus;
     });
   }
 

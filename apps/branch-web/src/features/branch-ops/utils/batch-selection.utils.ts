@@ -156,8 +156,12 @@ function todayUtcDateOnlyKey(): number {
  * (aligned with batch date display timezone).
  */
 export function getBatchDateLifecycleTab(
-  batch: Pick<BatchLike, "startDate" | "endDate">,
+  batch: Pick<BatchLike, "startDate" | "endDate" | "status">,
 ): BatchDateLifecycleTab {
+  if (batch.status === "CANCELLED") {
+    return "EXPIRED";
+  }
+
   const today = todayUtcDateOnlyKey();
   const startKey = batch.startDate
     ? utcDateOnlyKey(batch.startDate)

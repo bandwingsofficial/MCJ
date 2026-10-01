@@ -12,7 +12,10 @@ import { GetBatchResult } from '../get-batch/get-batch.result';
 
 import type { BranchRepository } from '@modules/branch/domain/repositories/branch.repository';
 import { BranchNotFoundException } from '@/modules/student/domain/errors/branch-not-found.exception';
-import { ensureBatchSelectableForAssignment } from '../../domain/utils/batch-selection.util';
+import {
+  ensureBatchOpenForLifecycleMutation,
+  ensureBatchSelectableForAssignment,
+} from '../../domain/utils/batch-selection.util';
 
 import { syncBatchTimings } from '../batch-timings/sync-batch-timings.util';
 import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
@@ -40,6 +43,8 @@ export class UpdateBatchHandler {
     const batch = await this.domainService.ensureExists(
       await this.batchRepo.findById(command.id),
     );
+
+    ensureBatchOpenForLifecycleMutation(batch);
 
     if (command.categoryId) {
       await this.domainService.ensureCategoryExists(

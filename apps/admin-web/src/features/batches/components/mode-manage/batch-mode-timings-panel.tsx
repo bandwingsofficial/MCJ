@@ -7,7 +7,8 @@ import { Button } from "@/src/shared/components/ui/button";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
-import type { Batch, BatchMode, BatchStatus } from "@/src/features/batches/types/batch.types";
+import type { Batch, BatchMode } from "@/src/features/batches/types/batch.types";
+import { resolveBatchTimingDisplayStatus } from "@/src/features/batches/utils/batch-select.utils";
 import { batchTimingManagePath } from "@/src/features/batches/utils/batch-manage.routes";
 import {
   getBatchModeLabel,
@@ -114,7 +115,7 @@ export function BatchModeTimingsPanel({ batch, mode }: Props) {
                   </td>
                   <td className="px-3 py-3 align-middle">
                     <BatchStatusBadge
-                      status={timing.status as BatchStatus}
+                      status={resolveBatchTimingDisplayStatus(batch, timing)}
                       isActive={timing.isActive}
                     />
                   </td>

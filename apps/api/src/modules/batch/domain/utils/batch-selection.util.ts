@@ -1,6 +1,7 @@
 import { BatchStatus } from '../enums/batch-status.enum';
 import type { Batch } from '../entities/batch.entity';
 import { BatchNotSelectableException } from '../errors/batch-business.exception';
+import { resolveBatchApiStatus } from './batch-lifecycle-status.util';
 
 export const BATCH_NOT_SELECTABLE_MESSAGE =
   'Completed or expired batches cannot be selected.';
@@ -23,6 +24,41 @@ export function isBatchDateExpired(
 }
 
 /** COMPLETED status or calendar-expired (UI "Expired"). */
+type BatchLifecycleMutationGuard = Pick<
+  Batch,
+  'status' | 'startDate' | 'startTime' | 'endDate' | 'endTime' | 'isDeleted'
+>;
+
+export function isBatchClosedForLifecycleMutation(
+  batch: BatchLifecycleMutationGuard,
+  referenceDate: Date = new Date(),
+): boolean {
+  const resolved = resolveBatchApiStatus({
+    storedStatus: batch.status,
+    isDeleted: batch.isDeleted,
+    startDate: batch.startDate,
+    startTime: batch.startTime,
+    endDate: batch.endDate,
+    endTime: batch.endTime,
+    now: referenceDate,
+  });
+
+  return (
+    resolved === BatchStatus.EXPIRED || resolved === BatchStatus.CANCELLED
+  );
+}
+
+export function ensureBatchOpenForLifecycleMutation(
+  batch: BatchLifecycleMutationGuard,
+  referenceDate: Date = new Date(),
+): void {
+  if (isBatchClosedForLifecycleMutation(batch, referenceDate)) {
+    throw new BatchNotSelectableException(
+      'Expired or cancelled batches cannot be modified.',
+    );
+  }
+}
+
 export function isBatchCompletedOrExpired(
   batch: Pick<Batch, 'status' | 'endDate' | 'startDate'>,
   referenceDate: Date = new Date(),

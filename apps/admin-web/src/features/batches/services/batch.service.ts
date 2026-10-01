@@ -156,6 +156,14 @@ class BatchService {
     }
   }
 
+  async cancelBatch(id: string, reason: string) {
+    try {
+      return await batchApi.cancelBatch(id, { reason });
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async activateBatch(id: string) {
     try {
       return await batchApi.activateBatch(id);
