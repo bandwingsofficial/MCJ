@@ -40,6 +40,7 @@ import { RestoreStudentHandler } from './application/restore-student/restore-stu
 import { UpdateStudentHandler } from './application/update-student/update-student.handler';
 import { UpdateStudentAdmissionStatusHandler } from './application/update-student-admission-status/update-student-admission-status.handler';
 import { StudentAdmissionStatusSyncService } from './application/shared/student-admission-status-sync.service';
+import { StudentEnrollmentDisplayStatusService } from './application/shared/student-enrollment-display-status.service';
 import { UpdateStudentStatusHandler } from './application/update-student-status/update-student-status.handler';
 import { SuggestStudentCodeHandler } from './application/suggest-student-code/suggest-student-code.handler';
 import { BulkDeleteStudentsHandler } from './application/bulk-delete-students/bulk-delete-students.handler';
@@ -286,25 +287,50 @@ import { PublicStudentController } from './presentation/controllers/public-stude
     },
 
     {
+      provide: StudentEnrollmentDisplayStatusService,
+      useFactory: (enrollmentDomainService: EnrollmentDomainService) =>
+        new StudentEnrollmentDisplayStatusService(enrollmentDomainService),
+      inject: [EnrollmentDomainService],
+    },
+
+    {
       provide: ListStudentsHandler,
-      useFactory: (studentRepo: StudentRepository) =>
-        new ListStudentsHandler(studentRepo),
-      inject: [STUDENT_TOKENS.STUDENT_REPOSITORY],
+      useFactory: (
+        studentRepo: StudentRepository,
+        enrollmentRepo: EnrollmentRepository,
+        displayStatusService: StudentEnrollmentDisplayStatusService,
+      ) =>
+        new ListStudentsHandler(
+          studentRepo,
+          enrollmentRepo,
+          displayStatusService,
+        ),
+      inject: [
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
+        ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+        StudentEnrollmentDisplayStatusService,
+      ],
     },
 
     {
       provide: GetStudentHandler,
       useFactory: (
         studentRepo: StudentRepository,
+        enrollmentRepo: EnrollmentRepository,
         domainService: StudentDomainService,
+        displayStatusService: StudentEnrollmentDisplayStatusService,
       ) =>
         new GetStudentHandler(
           studentRepo,
+          enrollmentRepo,
           domainService,
+          displayStatusService,
         ),
       inject: [
         STUDENT_TOKENS.STUDENT_REPOSITORY,
+        ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
         StudentDomainService,
+        StudentEnrollmentDisplayStatusService,
       ],
     },
 

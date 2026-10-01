@@ -17,7 +17,7 @@ import {
 import { LessonLearnSection } from "@/src/features/learning/components/lesson/lesson-learn-section";
 import { LessonTextContent } from "@/src/features/learning/components/lesson/lesson-content-panels";
 import { LearningProgressBar } from "@/src/features/learning/components/progress/learning-progress-bar";
-import { SyllabusModuleAccordion } from "@/src/features/learning/components/syllabus/syllabus-module-accordion";
+import { LearningCourseSidebar } from "@/src/features/learning/components/layout/learning-course-sidebar";
 import { LessonTypeIcon } from "@/src/features/learning/components/syllabus/lesson-type-icon";
 import { useMarkLessonComplete } from "@/src/features/learning/hooks/use-learning-mutations";
 import {
@@ -47,7 +47,10 @@ import { Card } from "@/src/shared/components/ui/card";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 
-import type { LessonTreeDto } from "@/src/features/learning/types/learning.types";
+import type {
+  LearningContentMode,
+  LessonTreeDto,
+} from "@/src/features/learning/types/learning.types";
 
 interface LessonLearningPageProps {
   courseId: string;
@@ -68,6 +71,9 @@ export function LessonLearningPage({
   const [syllabusExpandedModuleId, setSyllabusExpandedModuleId] = useState<
     string | null
   >(null);
+  const [contentMode, setContentMode] = useState<LearningContentMode>(
+    "self_paced",
+  );
 
   const lesson = lessonQuery.data?.lesson;
   const publishedQuiz = lesson ? getPublishedQuiz(lesson) : null;
@@ -144,9 +150,12 @@ export function LessonLearningPage({
   const hasRecordedVideo =
     Boolean(lesson.videoUrl) ||
     selfPacedVideos.some((video) => Boolean(video.videoUrl));
-  const hasLiveRecordedVideos = liveRecordedVideos.some((video) =>
-    Boolean(video.videoUrl),
-  );
+  const learningAccess = courseQuery.data?.learningAccess;
+  const canAccessLiveRecorded =
+    learningAccess?.canAccessLiveRecorded ?? false;
+  const hasLiveRecordedVideos =
+    canAccessLiveRecorded &&
+    liveRecordedVideos.some((video) => Boolean(video.videoUrl));
   const hasResources = lesson.resources.length > 0;
   const hasQuiz = Boolean(publishedQuiz);
   const courseTitle = courseQuery.data?.course.title ?? "Course";
@@ -214,8 +223,27 @@ export function LessonLearningPage({
         </Card>
       ) : null}
 
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(260px,300px)_minmax(0,1fr)] lg:items-start">
+        {courseQuery.data && learningAccess ? (
+          <LearningCourseSidebar
+            courseId={courseId}
+            courseTitle={courseTitle}
+            modules={courseQuery.data.course.modules}
+            progressMap={progressMap}
+            learningAccess={learningAccess}
+            contentMode={contentMode}
+            onContentModeChange={setContentMode}
+            currentLessonId={lessonId}
+            expandedModuleId={syllabusExpandedModuleId}
+            onToggleModule={(moduleId) =>
+              setSyllabusExpandedModuleId((current) =>
+                current === moduleId ? null : moduleId,
+              )
+            }
+          />
+        ) : null}
+
+        <div className="min-w-0 space-y-6">
           <LessonTextContent
             description={lesson.description}
             contentType={lesson.contentType}
@@ -226,7 +254,7 @@ export function LessonLearningPage({
             <LessonLearnSection learnItems={lesson.learnItems ?? []} />
           ) : null}
 
-          {hasRecordedVideo ? (
+          {contentMode === "self_paced" && hasRecordedVideo ? (
             <RecordedVideosSection
               courseId={courseId}
               parentLessonId={lessonId}
@@ -238,7 +266,7 @@ export function LessonLearningPage({
             />
           ) : null}
 
-          {hasLiveRecordedVideos ? (
+          {contentMode === "live_recorded" && hasLiveRecordedVideos ? (
             <LiveRecordedVideosSection
               courseId={courseId}
               videos={liveRecordedVideos}
@@ -266,31 +294,6 @@ export function LessonLearningPage({
           ) : null}
         </div>
 
-        {courseQuery.data ? (
-          <aside className="space-y-3">
-            <div>
-              <h2 className="text-base font-semibold text-[#0B1F3A]">
-                Course Syllabus
-              </h2>
-              <p className="text-sm text-slate-500">
-                Your current lesson is highlighted below.
-              </p>
-            </div>
-            <SyllabusModuleAccordion
-              courseId={courseId}
-              modules={courseQuery.data.course.modules}
-              progressMap={progressMap}
-              currentLessonId={lessonId}
-              expandedModuleId={syllabusExpandedModuleId}
-              onToggleModule={(moduleId) =>
-                setSyllabusExpandedModuleId((current) =>
-                  current === moduleId ? null : moduleId,
-                )
-              }
-              lockExpandedModule
-            />
-          </aside>
-        ) : null}
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur">

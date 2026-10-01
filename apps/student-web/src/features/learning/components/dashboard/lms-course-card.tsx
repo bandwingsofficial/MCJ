@@ -15,7 +15,6 @@ import {
   formatLearningDate,
   type CourseTabStatus,
 } from "@/src/features/learning/utils/course-status.utils";
-import { getCourseLearningPath } from "@/src/features/learning/utils/routes.utils";
 import { Button } from "@/src/shared/components/ui/button";
 import { cn } from "@/src/shared/lib/cn";
 
@@ -109,13 +108,8 @@ export function LmsCourseCard({
         </div>
       </div>
 
-      <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-        <Link href={getCourseLearningPath(course.courseId)} className="sm:order-1">
-          <Button variant="outline" size="sm" className="w-full rounded-lg sm:w-auto">
-            View Syllabus
-          </Button>
-        </Link>
-        <Link href={continueLessonPath} className="sm:order-2">
+      <div className="mt-5 flex justify-end border-t border-slate-100 pt-4">
+        <Link href={continueLessonPath}>
           <Button
             size="sm"
             className="w-full rounded-lg bg-[#0B1F3A] hover:bg-[#102A56] sm:w-auto"

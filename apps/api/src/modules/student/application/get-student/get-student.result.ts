@@ -45,7 +45,10 @@ export class GetStudentResult {
     public readonly updatedAt: Date,
   ) {}
 
-  static fromEntity(student: Student): GetStudentResult {
+  static fromEntity(
+    student: Student,
+    statusOverride?: StudentStatus,
+  ): GetStudentResult {
     return new GetStudentResult(
       student.id,
       student.firstName.getValue(),
@@ -76,7 +79,7 @@ export class GetStudentResult {
       student.notes,
       student.isActive,
       student.applicationType,
-      student.status,
+      statusOverride ?? student.status,
       student.jobStatus,
       student.createdBy,
       student.updatedBy,

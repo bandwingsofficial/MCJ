@@ -5,6 +5,7 @@ export * from "./RestoreEnrollmentDialog";
 export * from "./PermanentDeleteEnrollmentDialog";
 
 export * from "./update-enrollment-status-dialog";
+export * from "./admit-enrollment-confirm-dialog";
 
 export * from "./reject-enrollment-dialog";
 export * from "./unenroll-enrollment-dialog";

@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Settings2, Trash2, UserMinus } from "lucide-react";
+import { GraduationCap, Pencil, Settings2, Trash2, UserMinus } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
@@ -25,6 +25,8 @@ interface Props {
   onUnenroll?: (enrollment: Enrollment) => void;
   onArchive?: (enrollment: Enrollment) => void;
   onPermanentDelete?: (enrollment: Enrollment) => void;
+  onAdmitAdvanced?: (enrollment: Enrollment) => void;
+  showAdmitAdvanced?: boolean;
 }
 
 export function EnrollmentActions({
@@ -35,6 +37,8 @@ export function EnrollmentActions({
   onUnenroll,
   onArchive,
   onPermanentDelete,
+  onAdmitAdvanced,
+  showAdmitAdvanced = false,
 }: Props) {
   const isCurrent = isCurrentEnrollmentRecord(enrollment);
   const showUnenroll =
@@ -91,6 +95,22 @@ export function EnrollmentActions({
             className={`${iconBtnClass} text-red-700 hover:bg-red-50 hover:text-red-800`}
           >
             <Trash2 className={iconClass} />
+          </Button>
+        </Tooltip>
+      ) : null}
+
+      {showAdmitAdvanced && onAdmitAdvanced ? (
+        <Tooltip content="Admit student (Advanced → Admitted)">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={() => onAdmitAdvanced(enrollment)}
+            aria-label="Admit student"
+            className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
+          >
+            <GraduationCap className={iconClass} />
           </Button>
         </Tooltip>
       ) : null}

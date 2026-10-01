@@ -21,7 +21,7 @@ export class GetStudentCourseProgressHandler {
     userId: string;
     courseId: string;
   }): Promise<StudentCourseProgressResult> {
-    await this.courseAccessService.requireAdmittedEnrollment(
+    const { scope } = await this.courseAccessService.requireLearningContext(
       query.userId,
       query.courseId,
     );
@@ -30,7 +30,7 @@ export class GetStudentCourseProgressHandler {
       await this.courseAccessService.resolveStudentFromUserId(
         query.userId,
       );
-    const tree = await this.hierarchyService.getTree(query.courseId);
+    const tree = await this.hierarchyService.getTree(query.courseId, scope);
     const navigableLessonCount = tree.reduce(
       (total, module) => total + module.lessons.length,
       0,
@@ -86,17 +86,18 @@ export class UpdateLessonProgressHandler {
     isCompleted?: boolean;
     watchedSeconds?: number;
   }) {
-    await this.courseAccessService.requireAdmittedEnrollment(
+    const { scope } = await this.courseAccessService.requireLearningContext(
       command.userId,
       command.courseId,
     );
 
-    const belongs = await this.hierarchyService.lessonBelongsToCourse(
+    const lesson = await this.hierarchyService.getLessonTree(
       command.courseId,
       command.lessonId,
+      scope,
     );
 
-    if (!belongs) {
+    if (!lesson) {
       throw new BaseException(
         ERROR_CODES.COURSE_LESSON_NOT_FOUND,
         'Lesson does not belong to course',
@@ -130,7 +131,7 @@ export class GetStudentCourseCompletionHandler {
     userId: string;
     courseId: string;
   }): Promise<StudentCourseCompletionResult> {
-    await this.courseAccessService.requireAdmittedEnrollment(
+    const { scope } = await this.courseAccessService.requireLearningContext(
       query.userId,
       query.courseId,
     );
@@ -139,7 +140,7 @@ export class GetStudentCourseCompletionHandler {
       await this.courseAccessService.resolveStudentFromUserId(
         query.userId,
       );
-    const tree = await this.hierarchyService.getTree(query.courseId);
+    const tree = await this.hierarchyService.getTree(query.courseId, scope);
     const navigableLessonCount = tree.reduce(
       (total, module) => total + module.lessons.length,
       0,

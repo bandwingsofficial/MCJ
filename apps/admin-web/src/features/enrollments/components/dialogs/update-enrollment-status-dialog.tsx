@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Modal } from "@/src/shared/components/ui/model";
@@ -38,6 +38,12 @@ export function UpdateEnrollmentStatusDialog({
 }: UpdateEnrollmentStatusDialogProps) {
   const [status, setStatus] =
     useState(value);
+
+  useEffect(() => {
+    if (open) {
+      setStatus(value);
+    }
+  }, [open, value]);
 
   return (
     <Modal

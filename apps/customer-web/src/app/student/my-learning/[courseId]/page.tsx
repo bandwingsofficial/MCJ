@@ -1,4 +1,4 @@
-import { StudentCoursePage } from "@/src/features/student-course/pages/StudentCoursePage";
+import { StudentWebLmsRedirectPage } from "@/src/features/student-course/pages/student-web-lms-redirect-page";
 
 interface StudentCourseRouteProps {
   params: Promise<{
@@ -6,15 +6,12 @@ interface StudentCourseRouteProps {
   }>;
 }
 
-export default async function Page({
-  params,
-}: StudentCourseRouteProps) {
-  const { courseId } =
-    await params;
+export default async function Page({ params }: StudentCourseRouteProps) {
+  const { courseId } = await params;
 
   return (
-    <StudentCoursePage
-      courseId={courseId}
+    <StudentWebLmsRedirectPage
+      targetPath={`/student/learning/${courseId}`}
     />
   );
 }

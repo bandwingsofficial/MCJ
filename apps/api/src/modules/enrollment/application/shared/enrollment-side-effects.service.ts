@@ -13,6 +13,22 @@ import {
   syncBatchTimingEnrolledCount,
 } from '../../infrastructure/utils/enrollment-timing-count.util';
 
+/** Status update on an enrollment already in the batch — not a new seat. */
+function isInPlaceSeatPromotion(
+  previousStatus: EnrollmentStatus | null,
+  nextOccupiesSeat: boolean,
+): boolean {
+  if (!previousStatus || !nextOccupiesSeat) {
+    return false;
+  }
+
+  if (Enrollment.statusOccupiesSeat(previousStatus)) {
+    return true;
+  }
+
+  return Enrollment.isCurrentStatus(previousStatus);
+}
+
 // Synchronizes batch and batch-timing seat counts with enrollment status changes.
 export class EnrollmentSideEffectsService {
   constructor(
@@ -59,9 +75,14 @@ export class EnrollmentSideEffectsService {
       select: { status: true },
     });
 
-    const statuses = records.map(
-      (record) => record.status as EnrollmentStatus,
-    );
+    const statuses = records
+      .map((record) => record.status as EnrollmentStatus)
+      .filter((status) => Enrollment.isCurrentStatus(status));
+
+    if (statuses.length === 0) {
+      return;
+    }
+
     const nextStatus =
       this.domainService.resolveStudentStatusFromEnrollmentStatuses(
         statuses,
@@ -115,6 +136,12 @@ export class EnrollmentSideEffectsService {
       return;
     }
 
+    if (
+      isInPlaceSeatPromotion(previousStatus, enrollment.occupiesSeat())
+    ) {
+      return;
+    }
+
     if (enrollment.batchTimingId) {
       try {
         await assertBatchTimingHasLiveCapacity(
@@ -164,6 +191,11 @@ export class EnrollmentSideEffectsService {
       return;
     }
 
+    const inPlacePromotion = isInPlaceSeatPromotion(
+      previousStatus,
+      isOccupying,
+    );
+
     const batch = await this.batchRepo.findById(
       enrollment.batchId,
     );
@@ -172,18 +204,20 @@ export class EnrollmentSideEffectsService {
     }
 
     if (isOccupying) {
-      if (enrollment.batchTimingId) {
-        await assertBatchTimingHasLiveCapacity(
-          this.prisma,
-          enrollment.batchTimingId,
-        );
-      } else {
-        this.domainService.ensureBatchHasCapacity(batch);
+      if (!inPlacePromotion) {
+        if (enrollment.batchTimingId) {
+          await assertBatchTimingHasLiveCapacity(
+            this.prisma,
+            enrollment.batchTimingId,
+          );
+        } else {
+          this.domainService.ensureBatchHasCapacity(batch);
+        }
+        batch.update({
+          enrolledCount: batch.enrolledCount + 1,
+          updatedBy: actorId,
+        });
       }
-      batch.update({
-        enrolledCount: batch.enrolledCount + 1,
-        updatedBy: actorId,
-      });
     } else {
       batch.update({
         enrolledCount: Math.max(0, batch.enrolledCount - 1),

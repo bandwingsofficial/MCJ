@@ -44,7 +44,10 @@ import { PermanentDeleteEnrollmentDialog } from "@/src/features/enrollments/comp
 import { useDeleteEnrollment } from "@/src/features/enrollments/hooks/useDeleteEnrollment";
 import { usePermanentDeleteEnrollment } from "@/src/features/enrollments/hooks/usePermanentDeleteEnrollment";
 import { useUnenrollEnrollment } from "@/src/features/enrollments/hooks/useUnenrollEnrollment";
+import { useUpdateEnrollmentStatus } from "@/src/features/enrollments/hooks/useUpdateEnrollmentStatus";
+import { AdmitEnrollmentConfirmDialog } from "@/src/features/enrollments/components/dialogs/admit-enrollment-confirm-dialog";
 import type { Enrollment } from "@/src/features/enrollments/types";
+import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
 import { enrollmentManagePath } from "@/src/features/enrollments/utils/enrollment-manage.routes";
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
 
@@ -69,8 +72,11 @@ export function EnrollmentListPage() {
   const [archiveTarget, setArchiveTarget] = useState<Enrollment | null>(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] =
     useState<Enrollment | null>(null);
+  const [admitTarget, setAdmitTarget] = useState<Enrollment | null>(null);
   const { unenrollEnrollment, isLoading: isUnenrolling } =
     useUnenrollEnrollment();
+  const { updateStatus, isLoading: isUpdatingStatus } =
+    useUpdateEnrollmentStatus();
   const { deleteEnrollment, isLoading: isArchiving } = useDeleteEnrollment();
   const { permanentDeleteEnrollment, isLoading: isPermanentDeleting } =
     usePermanentDeleteEnrollment();
@@ -218,6 +224,8 @@ export function EnrollmentListPage() {
                   }}
                   onArchive={setArchiveTarget}
                   onPermanentDelete={setPermanentDeleteTarget}
+                  onAdmitAdvanced={setAdmitTarget}
+                  admitAdvancedDisabled={isUpdatingStatus}
                 />
               </div>
 
@@ -348,6 +356,29 @@ export function EnrollmentListPage() {
           }
         }}
       />
+
+      {admitTarget ? (
+        <AdmitEnrollmentConfirmDialog
+          open
+          loading={isUpdatingStatus}
+          onClose={() => setAdmitTarget(null)}
+          onConfirm={async () => {
+            if (!admitTarget) {
+              return;
+            }
+
+            try {
+              await updateStatus(admitTarget.id, {
+                status: EnrollmentStatus.ADMITTED,
+              });
+              setAdmitTarget(null);
+              void refetch();
+            } catch {
+              // Toast handled in hook.
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 }

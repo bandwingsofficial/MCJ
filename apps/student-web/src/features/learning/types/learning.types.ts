@@ -224,10 +224,25 @@ export interface LessonDetailPayloadDto {
   progress: LessonProgressDto | null;
 }
 
+export interface StudentLearningAccessDto {
+  enrollmentId: string;
+  enrollmentMode: "OFFLINE" | "ONLINE" | "SELF_PACED";
+  branchId: string;
+  batchId: string;
+  canAccessLiveRecorded: boolean;
+  canAccessSelfPaced: boolean;
+  canAccessResources: boolean;
+  canAccessQuizzes: boolean;
+  canAccessProgress: boolean;
+}
+
 export interface StudentCoursePayloadDto {
   course: StudentCourseDetailDto;
   progress: CourseProgressDto;
+  learningAccess: StudentLearningAccessDto;
 }
+
+export type LearningContentMode = "live_recorded" | "self_paced";
 
 export interface EnrollmentDetailDto {
   id: string;

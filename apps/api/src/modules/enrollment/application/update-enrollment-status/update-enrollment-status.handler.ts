@@ -1,4 +1,5 @@
 import type { EnrollmentRepository } from '../../domain/repositories/enrollment.repository';
+import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
 import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
 import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
@@ -37,12 +38,16 @@ export class UpdateEnrollmentStatusHandler {
       command.status,
     );
 
-    enrollment.changeStatus(command.status, command.updatedBy);
-
-    await this.sideEffects.assertCapacityForTransition(
-      enrollment,
-      previousStatus,
-    );
+    if (command.status === EnrollmentStatus.ADMITTED) {
+      enrollment.update({
+        status: EnrollmentStatus.ADMITTED,
+        admissionDate: enrollment.admissionDate ?? new Date(),
+        isActive: true,
+        updatedBy: command.updatedBy,
+      });
+    } else {
+      enrollment.changeStatus(command.status, command.updatedBy);
+    }
 
     await this.enrollmentRepo.save(enrollment);
 

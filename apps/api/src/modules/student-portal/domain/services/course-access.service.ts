@@ -5,8 +5,21 @@ import type { Student } from '@modules/student/domain/entities/student.entity';
 import { StudentStatus } from '@modules/student/domain/enums/student-status.enum';
 import { ResolveAuthenticatedStudentService } from '@modules/student/domain/services/resolve-authenticated-student.service';
 
+import {
+  buildStudentHierarchyScope,
+  buildStudentLearningAccess,
+  type StudentLearningAccess,
+} from '../student-learning-access';
+import type { StudentHierarchyScope } from '@modules/course/infrastructure/services/course-hierarchy.service';
+
 import { CourseAccessDeniedException } from '../errors/course-access.exception';
 import { StudentPortalStudentNotFoundException } from '../errors/student-portal-business.exception';
+
+export interface StudentLearningContext {
+  enrollment: EnrollmentDetailView;
+  access: StudentLearningAccess;
+  scope: StudentHierarchyScope;
+}
 
 export class CourseAccessService {
   constructor(
@@ -89,5 +102,21 @@ export class CourseAccessService {
     }
 
     return enrollment;
+  }
+
+  async requireLearningContext(
+    userId: string,
+    courseId: string,
+  ): Promise<StudentLearningContext> {
+    const enrollment = await this.requireAdmittedEnrollment(
+      userId,
+      courseId,
+    );
+
+    return {
+      enrollment,
+      access: buildStudentLearningAccess(enrollment),
+      scope: buildStudentHierarchyScope(enrollment),
+    };
   }
 }

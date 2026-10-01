@@ -105,7 +105,7 @@ export function getGlobalActiveEnrollmentBlockCopy(): {
 export const STUDENT_ENROLLMENTS_PATH = "/student/enrollments";
 
 export function getMyLearningCoursePath(courseId: string): string {
-  return `/student/my-learning/${courseId}`;
+  return `/student/learning/${courseId}`;
 }
 
 export function isAdmittedLearningEnrollmentStatus(

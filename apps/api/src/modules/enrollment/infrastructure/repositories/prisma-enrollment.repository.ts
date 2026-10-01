@@ -100,6 +100,30 @@ export class PrismaEnrollmentRepository
     return record ? EnrollmentMapper.toDomain(record) : null;
   }
 
+  async findEnrollmentStatusesByStudentIds(
+    studentIds: string[],
+  ): Promise<Array<{ studentId: string; status: EnrollmentStatus }>> {
+    if (studentIds.length === 0) {
+      return [];
+    }
+
+    const records = await this.prisma.enrollment.findMany({
+      where: {
+        studentId: { in: studentIds },
+        isDeleted: false,
+      },
+      select: {
+        studentId: true,
+        status: true,
+      },
+    });
+
+    return records.map((record) => ({
+      studentId: record.studentId,
+      status: record.status as EnrollmentStatus,
+    }));
+  }
+
   async findCurrentDetailByStudentId(
     studentId: string,
     excludeId?: string,

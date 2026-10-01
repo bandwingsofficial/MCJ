@@ -9,6 +9,7 @@ import { EnrollmentActions } from "@/src/features/enrollments/components/table/e
 import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/table/EnrollmentStatusBadge";
 
 import type { Enrollment } from "@/src/features/enrollments/types";
+import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
 
 import { enrollmentListDisplayStatus } from "@/src/features/enrollments/utils/current-enrollment";
 
@@ -34,6 +35,10 @@ interface EnrollmentTableProps {
 
   onPermanentDelete?: (enrollment: Enrollment) => void;
 
+  onAdmitAdvanced?: (enrollment: Enrollment) => void;
+
+  admitAdvancedDisabled?: boolean;
+
 }
 
 
@@ -57,6 +62,10 @@ export function EnrollmentTable({
   onArchive,
 
   onPermanentDelete,
+
+  onAdmitAdvanced,
+
+  admitAdvancedDisabled = false,
 
 }: EnrollmentTableProps) {
 
@@ -165,6 +174,11 @@ export function EnrollmentTable({
           ) : (
 
             enrollments.map((enrollment) => {
+              const displayStatus = enrollmentListDisplayStatus(enrollment);
+              const canAdmitAdvanced =
+                Boolean(onAdmitAdvanced) &&
+                !enrollment.isDeleted &&
+                displayStatus === EnrollmentStatus.ADVANCED;
 
               const studentName =
 
@@ -262,7 +276,7 @@ export function EnrollmentTable({
 
                     <EnrollmentStatusBadge
 
-                      status={enrollmentListDisplayStatus(enrollment)}
+                      status={displayStatus}
 
                       isDeleted={enrollment.isDeleted}
 
@@ -276,7 +290,9 @@ export function EnrollmentTable({
 
                       enrollment={enrollment}
 
-                      disabled={actionsDisabled}
+                      disabled={
+                        actionsDisabled || admitAdvancedDisabled
+                      }
 
                       onEdit={onEdit}
 
@@ -287,6 +303,10 @@ export function EnrollmentTable({
                       onArchive={onArchive}
 
                       onPermanentDelete={onPermanentDelete}
+
+                      showAdmitAdvanced={canAdmitAdvanced}
+
+                      onAdmitAdvanced={onAdmitAdvanced}
 
                     />
 

@@ -26,7 +26,6 @@ interface Props {
   onDeactivate: (student: StudentListItem) => void;
   onRestore?: (student: StudentListItem) => void;
   onPermanentDelete?: (student: StudentListItem) => void;
-  onAdmissionStatus?: (student: StudentListItem) => void;
 }
 
 function formatStudentName(student: StudentListItem): string {
@@ -47,7 +46,6 @@ export function StudentTable({
   onDeactivate,
   onRestore,
   onPermanentDelete,
-  onAdmissionStatus,
 }: Props) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
@@ -232,7 +230,6 @@ export function StudentTable({
                       onDeactivate={onDeactivate}
                       onRestore={onRestore}
                       onPermanentDelete={onPermanentDelete}
-                      onAdmissionStatus={onAdmissionStatus}
                     />
                   </td>
                 </tr>

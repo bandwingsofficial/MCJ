@@ -14,6 +14,7 @@ import {
   StudentCourseProgressItemResult,
   StudentCourseProgressResult,
 } from '../student-course/student-course.result';
+import { StudentLearningAccessResult } from '../student-course/student-learning-access.result';
 import { GetStudentCourseQuery } from './get-student-course.query';
 
 export class GetStudentCourseHandler {
@@ -29,11 +30,13 @@ export class GetStudentCourseHandler {
   async execute(query: GetStudentCourseQuery): Promise<{
     course: GetCourseResult;
     progress: StudentCourseProgressResult;
+    learningAccess: StudentLearningAccessResult;
   }> {
-    await this.courseAccessService.requireAdmittedEnrollment(
-      query.userId,
-      query.courseId,
-    );
+    const { scope, access } =
+      await this.courseAccessService.requireLearningContext(
+        query.userId,
+        query.courseId,
+      );
 
     const course = await this.courseDomainService.ensureExists(
       await this.courseRepo.findById(query.courseId),
@@ -60,7 +63,7 @@ export class GetStudentCourseHandler {
         ),
     );
 
-    const modules = await this.hierarchyService.getTree(course.id);
+    const modules = await this.hierarchyService.getTree(course.id, scope);
     const counts = await this.hierarchyService.getCourseCounts(course.id);
     const student =
       await this.courseAccessService.resolveStudentFromUserId(
@@ -92,7 +95,10 @@ export class GetStudentCourseHandler {
         resourceCount: counts.resourceCount,
         quizCount: counts.quizCount,
         selfPacedVideoCount: counts.selfPacedVideoCount,
-        liveRecordedVideoCount: counts.liveRecordedVideoCount,
+        liveRecordedVideoCount: modules.reduce(
+          (total, module) => total + module.liveRecordedVideoCount,
+          0,
+        ),
       }),
       progress: new StudentCourseProgressResult(
         course.id,
@@ -113,6 +119,7 @@ export class GetStudentCourseHandler {
             ),
         ),
       ),
+      learningAccess: StudentLearningAccessResult.fromAccess(access),
     };
   }
 }
@@ -128,7 +135,7 @@ export class GetStudentCourseModuleHandler {
     courseId: string;
     moduleId: string;
   }) {
-    await this.courseAccessService.requireAdmittedEnrollment(
+    const { scope } = await this.courseAccessService.requireLearningContext(
       query.userId,
       query.courseId,
     );
@@ -136,6 +143,7 @@ export class GetStudentCourseModuleHandler {
     const module = await this.hierarchyService.getModuleTree(
       query.courseId,
       query.moduleId,
+      scope,
     );
 
     if (!module) {
@@ -162,7 +170,7 @@ export class GetStudentCourseLessonHandler {
     courseId: string;
     lessonId: string;
   }) {
-    await this.courseAccessService.requireAdmittedEnrollment(
+    const { scope } = await this.courseAccessService.requireLearningContext(
       query.userId,
       query.courseId,
     );
@@ -170,6 +178,7 @@ export class GetStudentCourseLessonHandler {
     const lesson = await this.hierarchyService.getLessonTree(
       query.courseId,
       query.lessonId,
+      scope,
     );
 
     if (!lesson) {

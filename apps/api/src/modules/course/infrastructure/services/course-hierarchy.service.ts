@@ -23,16 +23,23 @@ import {
 
 export type { CourseContentCounts, ModuleContentCounts };
 
+export interface StudentHierarchyScope {
+  branchId: string;
+  batchId: string;
+  includeLiveRecorded: boolean;
+}
+
 @Injectable()
 export class CourseHierarchyService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getTree(
     courseId: string,
+    scope?: StudentHierarchyScope,
   ): Promise<CourseModuleTreeResult[]> {
     const modules = await this.loadModules(courseId);
 
-    return modules.map((module) => this.toFullModule(module));
+    return modules.map((module) => this.toFullModule(module, scope));
   }
 
   async getPreviewTree(
@@ -205,6 +212,7 @@ export class CourseHierarchyService {
   async getModuleTree(
     courseId: string,
     moduleId: string,
+    scope?: StudentHierarchyScope,
   ): Promise<CourseModuleTreeResult | null> {
     const module = await this.prisma.courseModule.findFirst({
       where: {
@@ -245,12 +253,13 @@ export class CourseHierarchyService {
       },
     });
 
-    return module ? this.toFullModule(module) : null;
+    return module ? this.toFullModule(module, scope) : null;
   }
 
   async getLessonTree(
     courseId: string,
     lessonId: string,
+    scope?: StudentHierarchyScope,
   ): Promise<CourseLessonTreeResult | null> {
     const lesson = await this.prisma.courseLesson.findFirst({
       where: {
@@ -292,6 +301,14 @@ export class CourseHierarchyService {
       return null;
     }
 
+    if (
+      lesson.contentType === 'LIVE_RECORDED_VIDEO' &&
+      lesson.parentLessonId &&
+      !this.isLiveRecordedVisible(lesson, scope)
+    ) {
+      return null;
+    }
+
     const childLessons = await this.prisma.courseLesson.findMany({
       where: {
         parentLessonId: lessonId,
@@ -300,7 +317,7 @@ export class CourseHierarchyService {
       orderBy: { displayOrder: 'asc' },
     });
 
-    return this.toFullLesson(lesson, childLessons);
+    return this.toFullLesson(lesson, childLessons, scope);
   }
 
   async lessonBelongsToCourse(
@@ -516,8 +533,27 @@ export class CourseHierarchyService {
 
   private toFullModule(
     module: Awaited<ReturnType<CourseHierarchyService['loadModules']>>[number],
+    scope?: StudentHierarchyScope,
   ): CourseModuleTreeResult {
-    const counts = this.countsFromLessons(module.lessons);
+    const parentLessons = module.lessons.filter(
+      (lesson) => !lesson.parentLessonId,
+    );
+    const lessonResults = parentLessons.map((lesson) => {
+      const childLessons = module.lessons.filter(
+        (item) => item.parentLessonId === lesson.id,
+      );
+
+      return this.toFullLesson(lesson, childLessons, scope);
+    });
+
+    const counts = this.countsFromLessons(module.lessons, scope);
+
+    if (scope) {
+      counts.liveRecordedVideoCount = lessonResults.reduce(
+        (total, lesson) => total + lesson.liveRecordedVideos.length,
+        0,
+      );
+    }
 
     return new CourseModuleTreeResult(
       module.id,
@@ -525,9 +561,7 @@ export class CourseHierarchyService {
       module.description,
       module.keySkills,
       module.displayOrder,
-      module.lessons
-        .filter((lesson) => !lesson.parentLessonId)
-        .map((lesson) => this.toFullLesson(lesson)),
+      lessonResults,
       counts.lessonCount,
       counts.resourceCount,
       counts.quizCount,
@@ -596,6 +630,7 @@ export class CourseHierarchyService {
       displayOrder: number;
       description: string | null;
     }> = [],
+  scope?: StudentHierarchyScope,
   ): CourseLessonTreeResult {
     const quiz = lesson.quiz
       ? new CourseLessonQuizTreeResult(
@@ -614,11 +649,7 @@ export class CourseHierarchyService {
       .map((item) => this.toVideoResult(item));
 
     const liveRecordedVideos = childLessons
-      .filter(
-        (item) =>
-          item.contentType === 'LIVE_RECORDED_VIDEO' &&
-          (item as { batchId?: string | null }).batchId == null,
-      )
+      .filter((item) => this.isLiveRecordedVisible(item, scope))
       .map((item) => this.toVideoResult(item));
 
     return new CourseLessonTreeResult(
@@ -716,10 +747,19 @@ export class CourseHierarchyService {
     lessons: Awaited<
       ReturnType<CourseHierarchyService['loadModules']>
     >[number]['lessons'],
+    scope?: StudentHierarchyScope,
   ): ModuleContentCounts {
     const counts = emptyModuleContentCounts();
 
     for (const lesson of lessons) {
+      if (
+        lesson.contentType === 'LIVE_RECORDED_VIDEO' &&
+        lesson.parentLessonId &&
+        !this.isLiveRecordedVisible(lesson, scope)
+      ) {
+        continue;
+      }
+
       accumulateLessonIntoCounts(counts, {
         parentLessonId: lesson.parentLessonId,
         contentType: lesson.contentType,
@@ -731,5 +771,31 @@ export class CourseHierarchyService {
     }
 
     return counts;
+  }
+
+  private isLiveRecordedVisible(
+    lesson: {
+      contentType: string;
+      batchId?: string | null;
+      branchId?: string | null;
+    },
+    scope?: StudentHierarchyScope,
+  ): boolean {
+    if (lesson.contentType !== 'LIVE_RECORDED_VIDEO') {
+      return false;
+    }
+
+    if (!scope) {
+      return lesson.batchId == null;
+    }
+
+    if (!scope.includeLiveRecorded) {
+      return false;
+    }
+
+    return (
+      lesson.batchId === scope.batchId &&
+      lesson.branchId === scope.branchId
+    );
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
@@ -33,6 +34,7 @@ interface CourseLearningPageProps {
 }
 
 export function CourseLearningPage({ courseId }: CourseLearningPageProps) {
+  const router = useRouter();
   const courseQuery = useStudentCourse(courseId);
   const completionQuery = useCourseCompletion(courseId);
   const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
@@ -87,6 +89,14 @@ export function CourseLearningPage({ courseId }: CourseLearningPageProps) {
 
     setExpandedModuleId(defaultExpandedModuleId);
   }, [defaultExpandedModuleId, expandedModuleId]);
+
+  useEffect(() => {
+    if (!continueLesson || courseQuery.isLoading) {
+      return;
+    }
+
+    router.replace(getLessonLearningPath(courseId, continueLesson.id));
+  }, [continueLesson, courseId, courseQuery.isLoading, router]);
 
   if (courseQuery.isLoading) {
     return (
