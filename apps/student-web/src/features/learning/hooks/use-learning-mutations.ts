@@ -1,9 +1,54 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 
 import { learningService } from "@/src/features/learning/services/learning.service";
 import { learningQueryKeys } from "@/src/features/learning/hooks/use-learning-queries";
+import type {
+  StudentLessonQuizDto,
+  StudentQuizAttemptSummaryDto,
+  StudentQuizSubmitResultDto,
+} from "@/src/features/learning/types/learning.types";
+
+function buildLatestAttemptFromSubmitResult(
+  result: StudentQuizSubmitResultDto,
+): StudentQuizAttemptSummaryDto {
+  return {
+    id: result.attemptId,
+    score: result.score,
+    totalPoints: result.totalPoints,
+    percentage: result.percentage,
+    passed: result.passed,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function applyQuizAttemptToCache(
+  queryClient: QueryClient,
+  courseId: string,
+  lessonId: string,
+  result: StudentQuizSubmitResultDto,
+) {
+  const latestAttempt = buildLatestAttemptFromSubmitResult(result);
+
+  queryClient.setQueryData<StudentLessonQuizDto>(
+    learningQueryKeys.quiz(courseId, lessonId),
+    (current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        latestAttempt,
+      };
+    },
+  );
+}
 
 export function useMarkLessonComplete(courseId: string, lessonId: string) {
   const queryClient = useQueryClient();
@@ -60,11 +105,10 @@ export function useSubmitLessonQuiz(courseId: string, lessonId: string) {
         selectedOptionIds: string[];
       }>,
     ) => learningService.submitLessonQuiz(courseId, lessonId, answers),
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      applyQuizAttemptToCache(queryClient, courseId, lessonId, result);
+
       await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: learningQueryKeys.quiz(courseId, lessonId),
-        }),
         queryClient.invalidateQueries({
           queryKey: learningQueryKeys.lesson(courseId, lessonId),
         }),
@@ -81,6 +125,10 @@ export function useSubmitLessonQuiz(courseId: string, lessonId: string) {
           queryKey: learningQueryKeys.dashboard,
         }),
       ]);
+
+      void queryClient.invalidateQueries({
+        queryKey: learningQueryKeys.quiz(courseId, lessonId),
+      });
     },
   });
 }

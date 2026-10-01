@@ -10,13 +10,13 @@ import type {
 import {
   createInitialLessonSelectionByMode,
   createInitialModuleExpansionByMode,
-  DEFAULT_MODE_VIDEO_SELECTION,
   EMPTY_MODE_LESSON_SELECTION,
   EMPTY_MODE_MODULE_EXPANSION,
+  EMPTY_MODE_VIDEO_SELECTION_BY_LESSON,
   parseLearningContentModeFromSearch,
   type ModeModuleExpansionState,
   type ModeNavigationState,
-  type ModeVideoSelectionState,
+  type ModeVideoSelectionByLesson,
 } from "@/src/features/learning/utils/learning-mode-navigation.utils";
 import { findModuleForLesson } from "@/src/features/learning/utils/progress.utils";
 import type { ProgressMap } from "@/src/features/learning/utils/progress.utils";
@@ -60,10 +60,11 @@ export function useLearningModeNavigation({
   const [expandedModuleByMode, setExpandedModuleByMode] =
     useState<ModeModuleExpansionState>(EMPTY_MODE_MODULE_EXPANSION);
 
-  const [videoSelectionByMode, setVideoSelectionByMode] =
-    useState<ModeVideoSelectionState>(DEFAULT_MODE_VIDEO_SELECTION);
+  const [videoSelectionByLesson, setVideoSelectionByLesson] =
+    useState<ModeVideoSelectionByLesson>(EMPTY_MODE_VIDEO_SELECTION_BY_LESSON);
 
   const initializedRef = useRef(false);
+  const previousUrlLessonIdRef = useRef(urlLessonId);
 
   useEffect(() => {
     if (initializedRef.current || modules.length === 0) {
@@ -100,6 +101,27 @@ export function useLearningModeNavigation({
       }));
     }
   }, [urlLessonId, activeMode, modules]);
+
+  useEffect(() => {
+    if (!initializedRef.current) {
+      previousUrlLessonIdRef.current = urlLessonId;
+      return;
+    }
+
+    if (previousUrlLessonIdRef.current === urlLessonId) {
+      return;
+    }
+
+    previousUrlLessonIdRef.current = urlLessonId;
+
+    setVideoSelectionByLesson((current) => ({
+      ...current,
+      [activeMode]: {
+        ...current[activeMode],
+        [urlLessonId]: { videoId: null, index: 0 },
+      },
+    }));
+  }, [urlLessonId, activeMode]);
 
   useEffect(() => {
     const modeFromUrl = parseLearningContentModeFromSearch(
@@ -199,9 +221,12 @@ export function useLearningModeNavigation({
         [mode]: moduleId,
       }));
 
-      setVideoSelectionByMode((current) => ({
+      setVideoSelectionByLesson((current) => ({
         ...current,
-        [mode]: { videoId: null, index: 0 },
+        [mode]: {
+          ...current[mode],
+          [lessonId]: { videoId: null, index: 0 },
+        },
       }));
 
       setActiveMode(mode);
@@ -211,17 +236,51 @@ export function useLearningModeNavigation({
     [canAccessLiveRecorded, courseId, router],
   );
 
-  const setVideoSelection = useCallback(
-    (mode: LearningContentMode, selection: { videoId?: string; index?: number }) => {
-      setVideoSelectionByMode((current) => ({
+  const setVideoIndex = useCallback(
+    (
+      mode: LearningContentMode,
+      targetLessonId: string,
+      index: number,
+      videoId: string | null,
+    ) => {
+      setVideoSelectionByLesson((current) => ({
         ...current,
         [mode]: {
-          videoId: selection.videoId ?? current[mode].videoId,
-          index: selection.index ?? current[mode].index,
+          ...current[mode],
+          [targetLessonId]: { index, videoId },
         },
       }));
     },
     [],
+  );
+
+  const navigateLessonVideo = useCallback(
+    (
+      mode: LearningContentMode,
+      targetLessonId: string,
+      direction: "previous" | "next",
+      videoCount: number,
+      currentIndex: number,
+      videos: { id: string }[],
+    ) => {
+      const nextIndex =
+        direction === "next"
+          ? Math.min(currentIndex + 1, videoCount - 1)
+          : Math.max(currentIndex - 1, 0);
+
+      if (nextIndex === currentIndex) {
+        return;
+      }
+
+      const nextVideo = videos[nextIndex];
+      setVideoIndex(
+        mode,
+        targetLessonId,
+        nextIndex,
+        nextVideo?.id ?? null,
+      );
+    },
+    [setVideoIndex],
   );
 
   const displayLessonId =
@@ -232,13 +291,14 @@ export function useLearningModeNavigation({
     openMode,
     selectedLessonByMode,
     expandedModuleByMode,
-    videoSelectionByMode,
+    videoSelectionByLesson,
     displayLessonId,
     toggleOpenMode,
     toggleModule,
     selectLesson,
     navigateToLesson,
     activateMode,
-    setVideoSelection,
+    setVideoIndex,
+    navigateLessonVideo,
   };
 }

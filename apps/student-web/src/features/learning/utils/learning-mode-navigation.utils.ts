@@ -24,10 +24,23 @@ export interface ModeVideoSelection {
   index: number;
 }
 
-export type ModeVideoSelectionState = Record<
+export type ModeVideoSelectionByLesson = Record<
   LearningContentMode,
-  ModeVideoSelection
+  Record<string, ModeVideoSelection>
 >;
+
+export const EMPTY_MODE_VIDEO_SELECTION_BY_LESSON: ModeVideoSelectionByLesson =
+  {
+    live_recorded: {},
+    self_paced: {},
+  };
+
+export interface PlayableLessonVideo {
+  id: string;
+  title: string;
+  videoUrl: string;
+  duration: number | null;
+}
 
 export const EMPTY_MODE_LESSON_SELECTION: ModeNavigationState = {
   live_recorded: null,
@@ -37,11 +50,6 @@ export const EMPTY_MODE_LESSON_SELECTION: ModeNavigationState = {
 export const EMPTY_MODE_MODULE_EXPANSION: ModeModuleExpansionState = {
   live_recorded: null,
   self_paced: null,
-};
-
-export const DEFAULT_MODE_VIDEO_SELECTION: ModeVideoSelectionState = {
-  live_recorded: { videoId: null, index: 0 },
-  self_paced: { videoId: null, index: 0 },
 };
 
 export function parseLearningContentModeFromSearch(
@@ -84,71 +92,106 @@ export function getLiveRecordedVideoEntries(
   return sortVideos(lesson.liveRecordedVideos ?? []);
 }
 
-export function getVideoEntriesForMode(
+export function getPlayableVideosForMode(
   lesson: LessonTreeDto,
   mode: LearningContentMode,
-): LessonVideoDto[] {
-  return mode === "live_recorded"
-    ? getLiveRecordedVideoEntries(lesson)
-    : getSelfPacedVideoEntries(lesson);
+): PlayableLessonVideo[] {
+  if (mode === "live_recorded") {
+    return getLiveRecordedVideoEntries(lesson)
+      .filter((video) => Boolean(video.videoUrl))
+      .map((video) => ({
+        id: video.id,
+        title: video.title,
+        videoUrl: video.videoUrl as string,
+        duration: video.duration,
+      }));
+  }
+
+  const fromList = getSelfPacedVideoEntries(lesson)
+    .filter((video) => Boolean(video.videoUrl))
+    .map((video) => ({
+      id: video.id,
+      title: video.title,
+      videoUrl: video.videoUrl as string,
+      duration: video.duration,
+    }));
+
+  if (fromList.length > 0) {
+    return fromList;
+  }
+
+  if (lesson.videoUrl) {
+    return [
+      {
+        id: `self-paced-primary-${lesson.id}`,
+        title: lesson.title,
+        videoUrl: lesson.videoUrl,
+        duration: lesson.duration,
+      },
+    ];
+  }
+
+  return [];
 }
 
-export function resolveVideoUrlForMode(
+export function getVideoSelectionForLesson(
+  map: ModeVideoSelectionByLesson,
+  mode: LearningContentMode,
+  lessonId: string,
+): ModeVideoSelection {
+  return map[mode][lessonId] ?? { videoId: null, index: 0 };
+}
+
+export function resolveActivePlayableVideo(
   lesson: LessonTreeDto,
   mode: LearningContentMode,
   selection: ModeVideoSelection,
-): string | null {
-  if (mode === "self_paced") {
-    if (selection.videoId) {
-      const match = (lesson.selfPacedVideos ?? []).find(
-        (video) => video.id === selection.videoId,
-      );
-      if (match?.videoUrl) {
-        return match.videoUrl;
-      }
-    }
+): {
+  videos: PlayableLessonVideo[];
+  current: PlayableLessonVideo | null;
+  currentIndex: number;
+} {
+  const videos = getPlayableVideosForMode(lesson, mode);
 
-    if (lesson.videoUrl && selection.index <= 0) {
-      const ordered = getSelfPacedVideoEntries(lesson);
-      if (ordered.length === 0 || !ordered[0]?.videoUrl) {
-        return lesson.videoUrl;
-      }
-    }
-
-    const entries = getSelfPacedVideoEntries(lesson).filter(
-      (video) => video.videoUrl,
-    );
-
-    if (entries.length === 0 && lesson.videoUrl) {
-      return lesson.videoUrl;
-    }
-
-    const index = Math.min(
-      Math.max(selection.index, 0),
-      Math.max(entries.length - 1, 0),
-    );
-
-    return entries[index]?.videoUrl ?? null;
+  if (videos.length === 0) {
+    return { videos, current: null, currentIndex: 0 };
   }
+
+  let index = selection.index;
 
   if (selection.videoId) {
-    const match = (lesson.liveRecordedVideos ?? []).find(
+    const matchIndex = videos.findIndex(
       (video) => video.id === selection.videoId,
     );
-    if (match?.videoUrl) {
-      return match.videoUrl;
+    if (matchIndex >= 0) {
+      index = matchIndex;
     }
   }
 
-  const entries = getLiveRecordedVideoEntries(lesson).filter(
-    (video) => video.videoUrl,
-  );
-  const index = Math.min(
-    Math.max(selection.index, 0),
-    Math.max(entries.length - 1, 0),
-  );
+  index = Math.min(Math.max(index, 0), videos.length - 1);
 
-  return entries[index]?.videoUrl ?? null;
+  return {
+    videos,
+    current: videos[index] ?? null,
+    currentIndex: index,
+  };
+}
+
+export function formatVideoDuration(seconds: number | null): string | null {
+  if (seconds == null || seconds <= 0) {
+    return null;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (minutes <= 0) {
+    return `${remainingSeconds} sec`;
+  }
+
+  return remainingSeconds > 0
+    ? `${minutes} min ${remainingSeconds} sec`
+    : `${minutes} min`;
 }
 
 export function getFirstLessonId(modules: ModuleTreeDto[]): string | null {

@@ -77,6 +77,23 @@ export class SubmitStudentLessonQuizHandler {
         command.userId,
       );
 
+    const existingAttempt = await this.prisma.lessonQuizAttempt.findFirst({
+      where: {
+        studentId: student.id,
+        lessonId: command.lessonId,
+        quizId: quiz.id,
+      },
+      select: { id: true },
+    });
+
+    if (existingAttempt) {
+      throw new BaseException(
+        ERROR_CODES.COURSE_QUIZ_ATTEMPT_ALREADY_EXISTS,
+        'Quiz attempt already completed',
+        409,
+      );
+    }
+
     const answerMap = new Map(
       command.answers.map((answer) => [
         answer.questionId,
