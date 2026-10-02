@@ -9,6 +9,7 @@ import { CourseStatus } from '../../domain/enums/course-status.enum';
 
 import { ValidationError } from '../errors/validation.error';
 import type { BulkCourseItemResult } from '../shared/bulk-course-operation.result';
+import { formatCourseDeactivateBlockingMessage } from '../shared/format-course-delete-blocking-message';
 import { parseBulkCourseIds } from '../shared/parse-bulk-course-ids';
 
 import { BulkUpdateCourseStatusCommand } from './bulk-update-course-status.command';
@@ -86,6 +87,47 @@ export class BulkUpdateCourseStatusHandler {
           const rightOrder = right.displayOrder ?? -1;
           return rightOrder - leftOrder;
         });
+
+        const deactivateBatchBlockers: {
+          courseId: string;
+          batches: Awaited<
+            ReturnType<CourseRepository['findDeleteBlockingBatches']>
+          >;
+        }[] = [];
+
+        for (const course of coursesToUpdate) {
+          const batches =
+            await this.courseRepo.findDeleteBlockingBatches(course.id);
+
+          if (batches.length > 0) {
+            deactivateBatchBlockers.push({
+              courseId: course.id,
+              batches,
+            });
+          }
+        }
+
+        if (deactivateBatchBlockers.length > 0) {
+          for (const course of coursesToUpdate) {
+            const blocker = deactivateBatchBlockers.find(
+              (entry) => entry.courseId === course.id,
+            );
+
+            itemResults.push({
+              courseId: course.id,
+              success: false,
+              message: blocker
+                ? formatCourseDeactivateBlockingMessage(blocker.batches)
+                : 'Deactivation cancelled because other selected courses are assigned to active batches.',
+            });
+          }
+
+          return BulkUpdateCourseStatusResult.create(
+            command.status,
+            courseIds.length,
+            itemResults,
+          );
+        }
       }
 
       for (const course of coursesToUpdate) {

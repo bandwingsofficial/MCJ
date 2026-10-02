@@ -103,6 +103,9 @@ export class GetCourseHandler {
         )
       : null;
 
+    const blockingBatches =
+      await this.courseRepo.findDeleteBlockingBatches(course.id);
+
     const trainers = (
       await this.courseRepo.findTrainersByCourseId(course.id)
     ).map(
@@ -136,6 +139,7 @@ export class GetCourseHandler {
       quizCount: counts.quizCount,
       selfPacedVideoCount: counts.selfPacedVideoCount,
       liveRecordedVideoCount: counts.liveRecordedVideoCount,
+      hasLifecycleBlockingBatches: blockingBatches.length > 0,
     });
   }
 

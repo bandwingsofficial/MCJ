@@ -30,6 +30,7 @@ import { GetCourseSummaryHandler } from './application/get-course-summary/get-co
 import { GetPublicCourseModulesHandler } from './application/get-public-course-modules/get-public-course-modules.handler';
 import { GetPreviewLessonHandler } from './application/get-preview-lesson/get-preview-lesson.handler';
 import { GetCourseHandler } from './application/get-course/get-course.handler';
+import { GetCourseDependenciesHandler } from './application/get-course-dependencies/get-course-dependencies.handler';
 import { ListCoursesHandler } from './application/list-courses/list-courses.handler';
 import { PermanentDeleteCourseHandler } from './application/permanent-delete-course/permanent-delete-course.handler';
 import { ReorderCoursesHandler } from './application/reorder-courses/reorder-courses.handler';
@@ -146,6 +147,16 @@ import { BranchModule } from '../branch/branch.module';
         BRANCH_TOKENS.BRANCH_REPOSITORY,
         CATEGORY_TOKENS.CATEGORY_REPOSITORY,
       ],
+    },
+
+    {
+      provide: GetCourseDependenciesHandler,
+      useFactory: (
+        courseRepo: CourseRepository,
+        domainService: CourseDomainService,
+      ) =>
+        new GetCourseDependenciesHandler(courseRepo, domainService),
+      inject: [COURSE_TOKENS.COURSE_REPOSITORY, CourseDomainService],
     },
 
     {

@@ -38,6 +38,10 @@ interface CourseTableProps {
   onActivate: (course: CourseListItem) => void;
   onDeactivate: (course: CourseListItem) => void;
   onEdit: (course: CourseListItem) => void;
+  pendingLifecycleCheck?: {
+    courseId: string;
+    action: "deactivate";
+  } | null;
 }
 
 function canReorder(course: CourseListItem): boolean {
@@ -65,6 +69,7 @@ export function CourseTable({
   onActivate,
   onDeactivate,
   onEdit,
+  pendingLifecycleCheck = null,
 }: CourseTableProps) {
   const [rows, setRows] = useState(courses);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -380,6 +385,7 @@ export function CourseTable({
                   <CourseActions
                     course={course}
                     disabled={actionsDisabled || isSavingOrder}
+                    pendingLifecycleCheck={pendingLifecycleCheck}
                     onActivate={onActivate}
                     onDeactivate={onDeactivate}
                     onEdit={onEdit}

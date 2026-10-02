@@ -48,6 +48,13 @@ export class ListCoursesHandler {
       this.courseRepo.count(filters),
     ]);
 
+    const lifecycleBlockingCourseIds =
+      courses.length > 0
+        ? await this.courseRepo.findCourseIdsWithLifecycleBlockingBatches(
+            courses.map((course) => course.id),
+          )
+        : new Set<string>();
+
     const branchCourseLinks =
       query.branchId && courses.length > 0
         ? await this.branchRepo.findCourseBranchLinksAtBranch(
@@ -114,6 +121,9 @@ export class ListCoursesHandler {
           category,
           categoryName: category?.name ?? null,
           branchCourseLink,
+          hasLifecycleBlockingBatches: lifecycleBlockingCourseIds.has(
+            course.id,
+          ),
         });
       }),
     );

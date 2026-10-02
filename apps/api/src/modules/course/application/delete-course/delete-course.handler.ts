@@ -1,6 +1,11 @@
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+
 import type { CourseRepository } from '../../domain/repositories/course.repository';
 import { CourseDomainService } from '../../domain/services/course-domain.service';
 import { CourseHierarchyService } from '../../infrastructure/services/course-hierarchy.service';
+
+import { formatCourseDeleteBlockingMessage } from '../shared/format-course-delete-blocking-message';
 
 import { DeleteCourseCommand } from './delete-course.command';
 import { DeleteCourseResult } from './delete-course.result';
@@ -18,6 +23,17 @@ export class DeleteCourseHandler {
     const course = await this.domainService.ensureExists(
       await this.courseRepo.findById(command.id),
     );
+
+    const blockingBatches =
+      await this.courseRepo.findDeleteBlockingBatches(course.id);
+
+    if (blockingBatches.length > 0) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        formatCourseDeleteBlockingMessage(blockingBatches),
+        409,
+      );
+    }
 
     const deletedDisplayOrder = course.displayOrder;
 

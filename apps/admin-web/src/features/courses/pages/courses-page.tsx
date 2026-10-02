@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useCategories } from "@/src/features/categories/hooks/use-categories";
 
@@ -40,6 +40,16 @@ import {
   getEligiblePermanentDeleteIds,
   getEligibleRestoreIds,
 } from "@/src/features/courses/utils/course-bulk.utils";
+import {
+  buildBulkCourseDeactivateBlockedDescription,
+  buildBulkCourseDeleteBlockedDescription,
+  buildBulkCourseDeleteConfirmDescription,
+  buildCourseDeactivateDescription,
+  collectBulkCourseBatchBlocks,
+  isCourseDeactivateAllowed,
+  parseCourseDependencySummary,
+  type CourseDependencySummary,
+} from "@/src/features/courses/utils/course-dependency-copy.utils";
 
 import type {
   CourseDetails,
@@ -66,13 +76,29 @@ export function CoursesPage() {
   const [isEditLoading, setIsEditLoading] = useState(false);
   const [statusTarget, setStatusTarget] = useState<{
     course: CourseListItem;
-    action: "activate" | "deactivate";
+    action: "activate";
   } | null>(null);
   const [selectedCourseIds, setSelectedCourseIds] = useState<
     string[]
   >([]);
   const [bulkConfirmAction, setBulkConfirmAction] =
     useState<BulkCourseAction | null>(null);
+  const [bulkBlockedDescription, setBulkBlockedDescription] = useState<
+    string | null
+  >(null);
+  const [pendingBulkLifecycleCheck, setPendingBulkLifecycleCheck] = useState<
+    "delete" | "deactivate" | null
+  >(null);
+  const bulkCheckRequestIdRef = useRef(0);
+  const lifecycleCheckRequestIdRef = useRef(0);
+  const [pendingLifecycleCheck, setPendingLifecycleCheck] = useState<{
+    courseId: string;
+    action: "deactivate";
+  } | null>(null);
+  const [lifecycleCourse, setLifecycleCourse] =
+    useState<CourseListItem | null>(null);
+  const [dependencySummary, setDependencySummary] =
+    useState<CourseDependencySummary | null>(null);
   const [isReordering, setIsReordering] = useState(false);
 
   const {
@@ -100,7 +126,6 @@ export function CoursesPage() {
     useActivateCourse();
   const { deactivateCourse, isLoading: isDeactivatingCourse } =
     useDeactivateCourse();
-
   const pageSize = filters.pageSize ?? 20;
   const page = filters.page ?? 1;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -123,12 +148,116 @@ export function CoursesPage() {
     isBulkRestoring ||
     isBulkPermanentDeleting;
 
-  const actionLoading =
+  const tableActionLoading =
     isReordering ||
     bulkActionLoading ||
     isActivatingCourse ||
     isDeactivatingCourse ||
     isEditLoading;
+
+  const loadCourseDependencySummary = async (courseId: string) => {
+    const response = await courseService.getCourseDependencies(courseId);
+    return parseCourseDependencySummary(response.data);
+  };
+
+  const closeLifecycleDialog = () => {
+    lifecycleCheckRequestIdRef.current += 1;
+    setPendingLifecycleCheck(null);
+    setLifecycleCourse(null);
+    setDependencySummary(null);
+  };
+
+  const closeBulkDialog = () => {
+    bulkCheckRequestIdRef.current += 1;
+    setPendingBulkLifecycleCheck(null);
+    setBulkConfirmAction(null);
+    setBulkBlockedDescription(null);
+  };
+
+  const startDeactivateDependencyCheck = async (course: CourseListItem) => {
+    const requestId = ++lifecycleCheckRequestIdRef.current;
+    setPendingLifecycleCheck({ courseId: course.id, action: "deactivate" });
+
+    try {
+      const summary = await loadCourseDependencySummary(course.id);
+
+      if (requestId !== lifecycleCheckRequestIdRef.current) {
+        return;
+      }
+
+      setLifecycleCourse(course);
+      setDependencySummary(summary);
+    } catch (error) {
+      if (requestId !== lifecycleCheckRequestIdRef.current) {
+        return;
+      }
+
+      appToast.error(getErrorMessage(error));
+    } finally {
+      if (requestId === lifecycleCheckRequestIdRef.current) {
+        setPendingLifecycleCheck(null);
+      }
+    }
+  };
+
+  const handleBulkToolbarAction = (action: BulkCourseAction) => {
+    if (pendingBulkLifecycleCheck) {
+      return;
+    }
+
+    if (action === "delete" || action === "deactivate") {
+      const eligibleIds =
+        action === "deactivate"
+          ? getEligibleDeactivateIds(courses, selectedCourseIds)
+          : getEligibleDeleteIds(courses, selectedCourseIds);
+
+      if (eligibleIds.length === 0) {
+        return;
+      }
+
+      const requestId = ++bulkCheckRequestIdRef.current;
+      setPendingBulkLifecycleCheck(action);
+
+      void (async () => {
+        try {
+          const blocks = await collectBulkCourseBatchBlocks(
+            courses,
+            eligibleIds,
+            loadCourseDependencySummary,
+            action,
+          );
+
+          if (requestId !== bulkCheckRequestIdRef.current) {
+            return;
+          }
+
+          setBulkBlockedDescription(
+            blocks.length > 0
+              ? action === "deactivate"
+                ? buildBulkCourseDeactivateBlockedDescription(blocks)
+                : buildBulkCourseDeleteBlockedDescription(blocks)
+              : null,
+          );
+          setBulkConfirmAction(action);
+        } catch (error) {
+          if (requestId !== bulkCheckRequestIdRef.current) {
+            return;
+          }
+
+          appToast.error(getErrorMessage(error));
+        } finally {
+          if (requestId === bulkCheckRequestIdRef.current) {
+            setPendingBulkLifecycleCheck(null);
+          }
+        }
+      })();
+
+      return;
+    }
+
+    setBulkBlockedDescription(null);
+    setBulkConfirmAction(action);
+  };
 
   const eligibleBulkIds = useMemo(() => {
     if (!bulkConfirmAction) {
@@ -183,7 +312,7 @@ export function CoursesPage() {
   };
 
   const handleDeactivate = (course: CourseListItem) => {
-    setStatusTarget({ course, action: "deactivate" });
+    void startDeactivateDependencyCheck(course);
   };
 
   const handleEdit = async (course: CourseListItem) => {
@@ -198,20 +327,14 @@ export function CoursesPage() {
     }
   };
 
-  const handleStatusConfirm = async () => {
+  const handleActivateConfirm = async () => {
     if (!statusTarget) {
       return;
     }
 
     try {
-      if (statusTarget.action === "activate") {
-        await activateCourse(statusTarget.course.id);
-        appToast.success("Course activated successfully");
-      } else {
-        await deactivateCourse(statusTarget.course.id);
-        appToast.success("Course deactivated successfully");
-      }
-
+      await activateCourse(statusTarget.course.id);
+      appToast.success("Course activated successfully");
       setStatusTarget(null);
       await refetch();
     } catch (err) {
@@ -238,7 +361,11 @@ export function CoursesPage() {
 
   const handleBulkConfirm = async () => {
     if (!bulkConfirmAction || eligibleBulkIds.length === 0) {
-      setBulkConfirmAction(null);
+      closeBulkDialog();
+      return;
+    }
+
+    if (bulkBlockedDescription) {
       return;
     }
 
@@ -304,7 +431,7 @@ export function CoursesPage() {
 
     if (result) {
       setSelectedCourseIds([]);
-      setBulkConfirmAction(null);
+      closeBulkDialog();
       await refetch();
     }
   };
@@ -329,8 +456,8 @@ export function CoursesPage() {
         };
       case "delete":
         return {
-          title: "Archive selected courses?",
-          description: `Archive ${count} selected course${count === 1 ? "" : "s"}? They can be restored later.`,
+          title: "Archive courses?",
+          description: buildBulkCourseDeleteConfirmDescription(),
           confirmLabel: "Archive",
           confirmVariant: "danger" as const,
         };
@@ -405,8 +532,9 @@ export function CoursesPage() {
           <CourseBulkActionsToolbar
             courses={courses}
             selectedCourseIds={selectedCourseIds}
-            disabled={actionLoading || isFetching}
-            onAction={setBulkConfirmAction}
+            disabled={tableActionLoading || isFetching}
+            pendingBulkLifecycleCheck={pendingBulkLifecycleCheck}
+            onAction={handleBulkToolbarAction}
           />
 
           {isInitialLoading ? (
@@ -439,8 +567,9 @@ export function CoursesPage() {
                   courses={courses}
                   selectedCourseIds={selectedCourseIds}
                   onSelectionChange={setSelectedCourseIds}
-                  actionsDisabled={actionLoading || isFetching}
-                  selectionDisabled={actionLoading || isFetching}
+                  actionsDisabled={tableActionLoading || isFetching}
+                  selectionDisabled={tableActionLoading || isFetching}
+                  pendingLifecycleCheck={pendingLifecycleCheck}
                   reorderDisabled={
                     isReordering ||
                     !!filters.status ||
@@ -532,36 +661,79 @@ export function CoursesPage() {
           }
         }}
         onConfirm={() => {
-          void handleStatusConfirm();
+          void handleActivateConfirm();
         }}
       />
 
-      <CourseDeactivateDialog
-        open={statusTarget?.action === "deactivate"}
-        isLoading={isDeactivatingCourse}
-        onClose={() => {
-          if (!isDeactivatingCourse) {
-            setStatusTarget(null);
-          }
-        }}
-        onConfirm={() => {
-          void handleStatusConfirm();
-        }}
-      />
+      {dependencySummary && lifecycleCourse ? (
+        <CourseDeactivateDialog
+          open
+          isLoading={isDeactivatingCourse}
+          canDeactivate={isCourseDeactivateAllowed(dependencySummary)}
+          description={buildCourseDeactivateDescription(dependencySummary)}
+          onClose={closeLifecycleDialog}
+          onConfirm={() => {
+            if (
+              !lifecycleCourse ||
+              !isCourseDeactivateAllowed(dependencySummary)
+            ) {
+              return;
+            }
+
+            void (async () => {
+              try {
+                await deactivateCourse(lifecycleCourse.id);
+                appToast.success("Course deactivated successfully");
+                closeLifecycleDialog();
+                await refetch();
+              } catch {
+                try {
+                  const summary = await loadCourseDependencySummary(
+                    lifecycleCourse.id,
+                  );
+                  setDependencySummary(summary);
+                } catch {
+                  // Toast handled in hook.
+                }
+              }
+            })();
+          }}
+        />
+      ) : null}
 
       <ConfirmDialog
         open={bulkConfirmAction !== null}
-        title={bulkDialogCopy.title}
-        description={bulkDialogCopy.description}
-        confirmLabel={bulkDialogCopy.confirmLabel}
-        confirmVariant={bulkDialogCopy.confirmVariant}
-        loading={bulkActionLoading}
+        title={
+          bulkBlockedDescription
+            ? bulkConfirmAction === "deactivate"
+              ? "Cannot deactivate selected courses"
+              : "Cannot delete selected courses"
+            : bulkDialogCopy.title
+        }
+        description={
+          bulkBlockedDescription ?? bulkDialogCopy.description
+        }
+        confirmLabel={
+          bulkBlockedDescription ? "OK" : bulkDialogCopy.confirmLabel
+        }
+        confirmVariant={
+          bulkBlockedDescription
+            ? "primary"
+            : bulkDialogCopy.confirmVariant
+        }
+        loading={bulkActionLoading && !bulkBlockedDescription}
+        showCancel={!bulkBlockedDescription}
         onCancel={() => {
           if (!bulkActionLoading) {
-            setBulkConfirmAction(null);
+            closeBulkDialog();
           }
         }}
         onConfirm={() => {
+          if (bulkBlockedDescription) {
+            closeBulkDialog();
+            return;
+          }
+
           void handleBulkConfirm();
         }}
       />

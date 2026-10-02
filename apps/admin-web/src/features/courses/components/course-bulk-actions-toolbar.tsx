@@ -1,5 +1,7 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
+
 import { Button } from "@/src/shared/components/ui/button";
 
 import type { CourseListItem } from "@/src/features/courses/types/course.types";
@@ -9,6 +11,7 @@ import {
   getEligibleDeleteIds,
   getEligiblePermanentDeleteIds,
   getEligibleRestoreIds,
+  isBulkActionEnabledForSelection,
 } from "@/src/features/courses/utils/course-bulk.utils";
 
 export type BulkCourseAction =
@@ -22,6 +25,7 @@ interface Props {
   courses: CourseListItem[];
   selectedCourseIds: string[];
   disabled?: boolean;
+  pendingBulkLifecycleCheck?: "delete" | "deactivate" | null;
   onAction: (action: BulkCourseAction) => void;
 }
 
@@ -29,6 +33,7 @@ export function CourseBulkActionsToolbar({
   courses,
   selectedCourseIds = [],
   disabled = false,
+  pendingBulkLifecycleCheck = null,
   onAction,
 }: Props) {
   const selectedCount = selectedCourseIds.length;
@@ -39,24 +44,49 @@ export function CourseBulkActionsToolbar({
 
   const activateCount = getEligibleActivateIds(
     courses,
-    selectedCourseIds
+    selectedCourseIds,
   ).length;
   const deactivateCount = getEligibleDeactivateIds(
     courses,
-    selectedCourseIds
+    selectedCourseIds,
   ).length;
   const deleteCount = getEligibleDeleteIds(
     courses,
-    selectedCourseIds
+    selectedCourseIds,
   ).length;
   const restoreCount = getEligibleRestoreIds(
     courses,
-    selectedCourseIds
+    selectedCourseIds,
   ).length;
   const permanentDeleteCount = getEligiblePermanentDeleteIds(
     courses,
-    selectedCourseIds
+    selectedCourseIds,
   ).length;
+
+  const checkingDelete = pendingBulkLifecycleCheck === "delete";
+  const checkingDeactivate = pendingBulkLifecycleCheck === "deactivate";
+  const bulkCheckInFlight = pendingBulkLifecycleCheck !== null;
+
+  const activateEnabled = isBulkActionEnabledForSelection(
+    selectedCount,
+    activateCount,
+  );
+  const deactivateEnabled = isBulkActionEnabledForSelection(
+    selectedCount,
+    deactivateCount,
+  );
+  const deleteEnabled = isBulkActionEnabledForSelection(
+    selectedCount,
+    deleteCount,
+  );
+  const restoreEnabled = isBulkActionEnabledForSelection(
+    selectedCount,
+    restoreCount,
+  );
+  const permanentDeleteEnabled = isBulkActionEnabledForSelection(
+    selectedCount,
+    permanentDeleteCount,
+  );
 
   return (
     <div className="flex flex-col gap-1.5 border-b border-[#2563EB]/15 bg-[#2563EB]/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -69,7 +99,7 @@ export function CourseBulkActionsToolbar({
           type="button"
           variant="outline"
           className="h-7 px-2.5 text-xs"
-          disabled={disabled || activateCount === 0}
+          disabled={disabled || !activateEnabled || bulkCheckInFlight}
           onClick={() => onAction("activate")}
         >
           Activate
@@ -78,28 +108,36 @@ export function CourseBulkActionsToolbar({
         <Button
           type="button"
           variant="outline"
-          className="h-7 px-2.5 text-xs"
-          disabled={disabled || deactivateCount === 0}
+          className="h-7 gap-1 px-2.5 text-xs"
+          disabled={disabled || !deactivateEnabled || bulkCheckInFlight}
+          aria-busy={checkingDeactivate}
           onClick={() => onAction("deactivate")}
         >
+          {checkingDeactivate ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          ) : null}
           Deactivate
         </Button>
 
         <Button
           type="button"
           variant="outline"
-          className="h-7 px-2.5 text-xs"
-          disabled={disabled || deleteCount === 0}
+          className="h-7 gap-1 px-2.5 text-xs"
+          disabled={disabled || !deleteEnabled || bulkCheckInFlight}
+          aria-busy={checkingDelete}
           onClick={() => onAction("delete")}
         >
-          Delete
+          {checkingDelete ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          ) : null}
+          Archive
         </Button>
 
         <Button
           type="button"
           variant="outline"
           className="h-7 px-2.5 text-xs"
-          disabled={disabled || restoreCount === 0}
+          disabled={disabled || !restoreEnabled || bulkCheckInFlight}
           onClick={() => onAction("restore")}
         >
           Restore
@@ -109,7 +147,9 @@ export function CourseBulkActionsToolbar({
           type="button"
           variant="danger"
           className="h-7 px-2.5 text-xs"
-          disabled={disabled || permanentDeleteCount === 0}
+          disabled={
+            disabled || !permanentDeleteEnabled || bulkCheckInFlight
+          }
           onClick={() => onAction("permanent-delete")}
         >
           Permanent Delete

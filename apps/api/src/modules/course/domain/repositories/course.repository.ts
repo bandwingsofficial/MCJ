@@ -1,6 +1,8 @@
 import { Course } from '../entities/course.entity';
 import { CourseStatus } from '../enums/course-status.enum';
 
+import type { CourseDeleteBlockingBatch } from '../types/course-delete-blocking-batch';
+
 export interface CourseListFilters {
   categoryId?: string;
   branchId?: string;
@@ -75,4 +77,10 @@ export interface CourseRepository {
     trainerIds: string[],
   ): Promise<boolean>;
   deletePermanent(id: string): Promise<void>;
+  findDeleteBlockingBatches(
+    courseId: string,
+  ): Promise<CourseDeleteBlockingBatch[]>;
+  findCourseIdsWithLifecycleBlockingBatches(
+    courseIds: string[],
+  ): Promise<Set<string>>;
 }

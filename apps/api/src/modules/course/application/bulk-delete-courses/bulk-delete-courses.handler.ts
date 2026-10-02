@@ -8,6 +8,7 @@ import { CourseHierarchyService } from '../../infrastructure/services/course-hie
 
 import { ValidationError } from '../errors/validation.error';
 import type { BulkCourseItemResult } from '../shared/bulk-course-operation.result';
+import { formatCourseDeleteBlockingMessage } from '../shared/format-course-delete-blocking-message';
 import { parseBulkCourseIds } from '../shared/parse-bulk-course-ids';
 
 import { BulkDeleteCoursesCommand } from './bulk-delete-courses.command';
@@ -61,6 +62,46 @@ export class BulkDeleteCoursesHandler {
         const rightOrder = right.displayOrder ?? -1;
         return rightOrder - leftOrder;
       });
+
+      const deleteBatchBlockers: {
+        courseId: string;
+        batches: Awaited<
+          ReturnType<CourseRepository['findDeleteBlockingBatches']>
+        >;
+      }[] = [];
+
+      for (const course of coursesToDelete) {
+        const batches =
+          await this.courseRepo.findDeleteBlockingBatches(course.id);
+
+        if (batches.length > 0) {
+          deleteBatchBlockers.push({
+            courseId: course.id,
+            batches,
+          });
+        }
+      }
+
+      if (deleteBatchBlockers.length > 0) {
+        for (const course of coursesToDelete) {
+          const blocker = deleteBatchBlockers.find(
+            (entry) => entry.courseId === course.id,
+          );
+
+          itemResults.push({
+            courseId: course.id,
+            success: false,
+            message: blocker
+              ? formatCourseDeleteBlockingMessage(blocker.batches)
+              : 'Archive cancelled because other selected courses are assigned to active batches.',
+          });
+        }
+
+        return BulkDeleteCoursesResult.fromItemResults(
+          courseIds.length,
+          itemResults,
+        );
+      }
 
       for (const course of coursesToDelete) {
         try {

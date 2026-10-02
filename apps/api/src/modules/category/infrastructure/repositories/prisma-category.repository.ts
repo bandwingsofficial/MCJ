@@ -166,12 +166,12 @@ export class PrismaCategoryRepository
   ): Promise<string[]> {
     const courses = await this.prisma.course.findMany({
       where: { categoryId },
-      select: { name: true },
-      orderBy: { name: 'asc' },
+      select: { title: true },
+      orderBy: { title: 'asc' },
       take: limit,
     });
 
-    return courses.map((course) => course.name);
+    return courses.map((course) => course.title);
   }
 
   async removeBranchAssignments(

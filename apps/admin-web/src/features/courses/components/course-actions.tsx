@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   CircleCheck,
+  Loader2,
   Pencil,
   Power,
   Settings2,
@@ -25,6 +26,10 @@ interface Props {
   onActivate: (course: CourseListItem) => void;
   onDeactivate: (course: CourseListItem) => void;
   onEdit: (course: CourseListItem) => void;
+  pendingLifecycleCheck?: {
+    courseId: string;
+    action: "deactivate";
+  } | null;
 }
 
 export function CourseActions({
@@ -33,41 +38,16 @@ export function CourseActions({
   onActivate,
   onDeactivate,
   onEdit,
+  pendingLifecycleCheck = null,
 }: Props) {
-  const isArchived = isArchivedCourse(course);
+  const archived = isArchivedCourse(course);
   const isActive = course.status === "ACTIVE";
-  const statusDisabled = disabled || isArchived;
+  const deactivateChecking =
+    pendingLifecycleCheck?.courseId === course.id &&
+    pendingLifecycleCheck.action === "deactivate";
 
   return (
     <div className="flex items-center justify-end gap-2">
-      <Tooltip
-        content={
-          isArchived
-            ? "Archived courses cannot change status"
-            : isActive
-              ? "Deactivate course"
-              : "Activate course"
-        }
-      >
-        <button
-          type="button"
-          disabled={statusDisabled}
-          onClick={() =>
-            isActive ? onDeactivate(course) : onActivate(course)
-          }
-          aria-label={
-            isActive ? "Deactivate course" : "Activate course"
-          }
-          className={`${iconButtonClass} text-orange-700`}
-        >
-          {isActive ? (
-            <Power className={iconClass} />
-          ) : (
-            <CircleCheck className={iconClass} />
-          )}
-        </button>
-      </Tooltip>
-
       <Tooltip content="Edit course">
         <button
           type="button"
@@ -79,6 +59,42 @@ export function CourseActions({
           <Pencil className={iconClass} />
         </button>
       </Tooltip>
+
+      {!archived ? (
+        isActive ? (
+          <Tooltip content="Deactivate course">
+            <button
+              type="button"
+              disabled={disabled || deactivateChecking}
+              aria-busy={deactivateChecking}
+              onClick={() => onDeactivate(course)}
+              aria-label="Deactivate course"
+              className={`${iconButtonClass} text-orange-700`}
+            >
+              {deactivateChecking ? (
+                <Loader2
+                  className={`${iconClass} animate-spin`}
+                  aria-hidden
+                />
+              ) : (
+                <Power className={iconClass} />
+              )}
+            </button>
+          </Tooltip>
+        ) : (
+          <Tooltip content="Activate course">
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onActivate(course)}
+              aria-label="Activate course"
+              className={`${iconButtonClass} text-green-800`}
+            >
+              <CircleCheck className={iconClass} />
+            </button>
+          </Tooltip>
+        )
+      ) : null}
 
       <Tooltip content="Manage course">
         <Link

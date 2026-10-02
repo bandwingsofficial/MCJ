@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -28,6 +28,13 @@ import {
   isCourseManageTab,
 } from "@/src/features/courses/utils/course-manage.routes";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { courseService } from "@/src/features/courses/services/course.service";
+import {
+  buildCourseDeleteDescription,
+  isCourseDeleteAllowed,
+  parseCourseDependencySummary,
+  type CourseDependencySummary,
+} from "@/src/features/courses/utils/course-dependency-copy.utils";
 
 interface Props {
   courseId: string;
@@ -65,7 +72,11 @@ export function CourseManagePage({ courseId }: Props) {
     isLoading: isPermanentlyDeleting,
   } = usePermanentlyDeleteCourse();
 
+  const archiveCheckRequestIdRef = useRef(0);
+  const [pendingArchiveCheck, setPendingArchiveCheck] = useState(false);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [archiveDependencySummary, setArchiveDependencySummary] =
+    useState<CourseDependencySummary | null>(null);
   const [isRestoreOpen, setIsRestoreOpen] = useState(false);
   const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] =
     useState(false);
@@ -124,8 +135,49 @@ export function CourseManagePage({ courseId }: Props) {
     await refreshCourseData();
   }, [refreshCourseData]);
 
+  const closeArchiveDialog = useCallback(() => {
+    archiveCheckRequestIdRef.current += 1;
+    setPendingArchiveCheck(false);
+    setIsArchiveOpen(false);
+    setArchiveDependencySummary(null);
+  }, []);
+
+  const startArchiveDependencyCheck = useCallback(async () => {
+    if (!course) {
+      return;
+    }
+
+    const requestId = ++archiveCheckRequestIdRef.current;
+    setPendingArchiveCheck(true);
+
+    try {
+      const response = await courseService.getCourseDependencies(course.id);
+      const summary = parseCourseDependencySummary(response.data);
+
+      if (requestId !== archiveCheckRequestIdRef.current) {
+        return;
+      }
+
+      setArchiveDependencySummary(summary);
+      setIsArchiveOpen(true);
+    } catch (err) {
+      if (requestId !== archiveCheckRequestIdRef.current) {
+        return;
+      }
+
+      appToast.error(getErrorMessage(err));
+    } finally {
+      if (requestId === archiveCheckRequestIdRef.current) {
+        setPendingArchiveCheck(false);
+      }
+    }
+  }, [course]);
+
   const actionsDisabled =
-    isArchiving || isRestoring || isPermanentlyDeleting;
+    isArchiving ||
+    isRestoring ||
+    isPermanentlyDeleting ||
+    pendingArchiveCheck;
 
   if (isLoading) {
     return <Loader />;
@@ -150,7 +202,10 @@ export function CourseManagePage({ courseId }: Props) {
         categoryName={categoryName}
         activeSection={TAB_LABELS[activeTab]}
         actionsDisabled={actionsDisabled}
-        onArchive={() => setIsArchiveOpen(true)}
+        archiveChecking={pendingArchiveCheck}
+        onArchive={() => {
+          void startArchiveDependencyCheck();
+        }}
         onRestore={() => setIsRestoreOpen(true)}
         onPermanentDelete={() => setIsPermanentDeleteOpen(true)}
       />
@@ -167,21 +222,39 @@ export function CourseManagePage({ courseId }: Props) {
         onTabChange={handleTabChange}
       />
 
-      <CourseDeleteDialog
-        open={isArchiveOpen}
-        isLoading={isArchiving}
-        onClose={() => setIsArchiveOpen(false)}
-        onConfirm={async () => {
-          try {
-            await deleteCourse(course.id);
-            appToast.success("Course archived successfully");
-            setIsArchiveOpen(false);
-            await returnToOverview();
-          } catch (err) {
-            appToast.error(getErrorMessage(err));
-          }
-        }}
-      />
+      {isArchiveOpen && archiveDependencySummary ? (
+        <CourseDeleteDialog
+          open
+          isLoading={isArchiving}
+          canDelete={isCourseDeleteAllowed(archiveDependencySummary)}
+          description={buildCourseDeleteDescription(archiveDependencySummary)}
+          onClose={closeArchiveDialog}
+          onConfirm={async () => {
+            if (!isCourseDeleteAllowed(archiveDependencySummary)) {
+              return;
+            }
+
+            try {
+              await deleteCourse(course.id);
+              appToast.success("Course archived successfully");
+              closeArchiveDialog();
+              await returnToOverview();
+            } catch (err) {
+              appToast.error(getErrorMessage(err));
+              try {
+                const response = await courseService.getCourseDependencies(
+                  course.id,
+                );
+                setArchiveDependencySummary(
+                  parseCourseDependencySummary(response.data),
+                );
+              } catch {
+                // Keep existing dialog copy if refresh fails.
+              }
+            }
+          }}
+        />
+      ) : null}
 
       <CourseRestoreDialog
         open={isRestoreOpen}

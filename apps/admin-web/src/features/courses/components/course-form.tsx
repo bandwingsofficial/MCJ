@@ -9,7 +9,10 @@ import {
   FileText,
   FolderOpen,
   GraduationCap,
+  Hash,
+  Languages,
   Star,
+  TextQuote,
   type LucideIcon,
 } from "lucide-react";
 
@@ -536,32 +539,41 @@ export function CourseForm({
           </div>
 
           <div className={CELL_CLASS}>
-            <IconValidatedField
+            <ValidatedField
               label="Title"
               required
-              icon={BookOpen}
+              leftIcon={<BookOpen className="h-4 w-4" aria-hidden />}
               state={titleState}
               errorMessage={errors.title?.message}
             >
               <Input
                 id="course-title"
                 placeholder="Enter course title"
-                className={iconInputClass(titleState)}
+                className={validatedFieldInputClass(
+                  titleState,
+                  "w-full min-w-0 max-w-full",
+                  { leftIcon: true },
+                )}
                 {...register("title")}
               />
-            </IconValidatedField>
+            </ValidatedField>
           </div>
 
           <div className={CELL_CLASS}>
             <ValidatedField
-              label="Tagline"
+              label="Tagline (Optional)"
+              leftIcon={<TextQuote className="h-4 w-4" aria-hidden />}
               state={taglineState}
               errorMessage={errors.tagline?.message}
             >
               <Input
                 id="course-tagline"
                 placeholder="Course tagline"
-                className={inputClass(taglineState)}
+                className={validatedFieldInputClass(
+                  taglineState,
+                  "w-full min-w-0 max-w-full",
+                  { leftIcon: true },
+                )}
                 {...register("tagline")}
               />
             </ValidatedField>
@@ -632,13 +644,18 @@ export function CourseForm({
             <ValidatedField
               label="Language"
               required
+              leftIcon={<Languages className="h-4 w-4" aria-hidden />}
               state={languageState}
               errorMessage={errors.language?.message}
             >
               <Input
                 id="course-language"
                 placeholder="Select language"
-                className={inputClass(languageState)}
+                className={validatedFieldInputClass(
+                  languageState,
+                  "w-full min-w-0 max-w-full",
+                  { leftIcon: true },
+                )}
                 {...register("language")}
               />
             </ValidatedField>
@@ -651,9 +668,15 @@ export function CourseForm({
 
         <div className={GRID_CLASS}>
           <div className={CELL_CLASS}>
-            <ValidatedField
-              label="Minimum Qualification Required"
-              state={qualificationsState}
+            <IconValidatedField
+              label="Minimum Qualification Required (Optional)"
+              select
+              icon={GraduationCap}
+              state={
+                qualificationsState === "checking"
+                  ? "neutral"
+                  : qualificationsState
+              }
               errorMessage={errors.minimumQualifications?.message}
             >
               <Controller
@@ -663,16 +686,24 @@ export function CourseForm({
                   <QualificationMultiSelect
                     value={field.value ?? []}
                     onChange={field.onChange}
+                    insetForLeftFieldIcon
                     state={
                       qualificationsState === "checking"
                         ? "neutral"
                         : qualificationsState
                     }
+                    triggerClassName={validatedFieldInputClass(
+                      qualificationsState === "checking"
+                        ? "neutral"
+                        : qualificationsState,
+                      "w-full min-w-0 max-w-full",
+                      { select: true },
+                    )}
                     collisionBoundaryRef={dropdownBoundaryRef}
                   />
                 )}
               />
-            </ValidatedField>
+            </IconValidatedField>
           </div>
         </div>
       </section>
@@ -682,7 +713,9 @@ export function CourseForm({
 
         <div className="space-y-4">
           <ValidatedField
-            label="Short Description"
+            label="Short Description (Optional)"
+            textarea
+            leftIcon={<FileText className="h-4 w-4" aria-hidden />}
             state={shortDescriptionState}
             errorMessage={errors.shortDescription?.message}
           >
@@ -692,8 +725,10 @@ export function CourseForm({
                 rows={3}
                 placeholder="Write a short description of the course..."
                 className={cn(
-                  inputClass(shortDescriptionState),
-                  "min-h-[5.5rem] w-full resize-y pr-10",
+                  validatedFieldInputClass(shortDescriptionState, "min-h-[5.5rem] w-full resize-y", {
+                    leftIcon: true,
+                    textarea: true,
+                  }),
                 )}
                 value={shortDescriptionValue ?? ""}
                 onChange={(event) => {
@@ -709,10 +744,6 @@ export function CourseForm({
                 }}
                 onBlur={register("shortDescription").onBlur}
               />
-              <FileText
-                className="pointer-events-none absolute right-3 top-3 z-[1] h-4 w-4 text-slate-400"
-                aria-hidden="true"
-              />
             </>
             <WordCount
               value={shortDescriptionValue ?? ""}
@@ -721,7 +752,9 @@ export function CourseForm({
           </ValidatedField>
 
           <ValidatedField
-            label="Description"
+            label="Description (Optional)"
+            textarea
+            leftIcon={<FileText className="h-4 w-4" aria-hidden />}
             state={descriptionState}
             errorMessage={errors.description?.message}
           >
@@ -731,8 +764,10 @@ export function CourseForm({
                 rows={4}
                 placeholder="Describe the course, learning outcomes, and what students will learn..."
                 className={cn(
-                  inputClass(descriptionState),
-                  "min-h-[6.5rem] w-full resize-y pr-10",
+                  validatedFieldInputClass(descriptionState, "min-h-[6.5rem] w-full resize-y", {
+                    leftIcon: true,
+                    textarea: true,
+                  }),
                 )}
                 value={descriptionValue ?? ""}
                 onChange={(event) => {
@@ -748,10 +783,6 @@ export function CourseForm({
                 }}
                 onBlur={register("description").onBlur}
               />
-              <FileText
-                className="pointer-events-none absolute right-3 top-3 z-[1] h-4 w-4 text-slate-400"
-                aria-hidden="true"
-              />
             </>
             <WordCount
               value={descriptionValue ?? ""}
@@ -766,9 +797,10 @@ export function CourseForm({
 
         <div className={GRID_CLASS}>
           <div className={CELL_CLASS}>
-            <IconValidatedField
+            <ValidatedField
               label="Rating"
-              icon={Star}
+              required
+              leftIcon={<Star className="h-4 w-4" aria-hidden />}
               state={averageRatingState}
               errorMessage={errors.averageRating?.message}
             >
@@ -778,17 +810,23 @@ export function CourseForm({
                 max={5}
                 step={0.01}
                 placeholder="e.g. 4.5"
-                className={iconInputClass(averageRatingState)}
+                className={validatedFieldInputClass(
+                  averageRatingState,
+                  "w-full min-w-0 max-w-full",
+                  { leftIcon: true },
+                )}
                 {...register("averageRating", {
                   valueAsNumber: true,
                 })}
               />
-            </IconValidatedField>
+            </ValidatedField>
           </div>
 
           <div className={CELL_CLASS}>
             <ValidatedField
               label="Rating Count"
+              required
+              leftIcon={<Hash className="h-4 w-4" aria-hidden />}
               state={totalReviewsState}
               errorMessage={errors.totalReviews?.message}
             >
@@ -797,7 +835,11 @@ export function CourseForm({
                 min={0}
                 step={1}
                 placeholder="e.g. 146"
-                className={inputClass(totalReviewsState)}
+                className={validatedFieldInputClass(
+                  totalReviewsState,
+                  "w-full min-w-0 max-w-full",
+                  { leftIcon: true },
+                )}
                 {...register("totalReviews", {
                   valueAsNumber: true,
                 })}
@@ -811,7 +853,7 @@ export function CourseForm({
         <h3 className={SECTION_TITLE_CLASS}>Course Image</h3>
 
         <ValidatedField
-          label="Course Image"
+          label="Course Image (Optional)"
           state={imageState}
           errorMessage={imageError ?? undefined}
         >
@@ -864,7 +906,7 @@ export function CourseForm({
           <div className={GRID_CLASS}>
             <div className={CELL_CLASS}>
               <CourseMetaField
-                label="Meta Title"
+                label="Meta Title (Optional)"
                 state={metaTitleState}
                 errorMessage={errors.metaTitle?.message}
                 showReset={!isMetaAuto("metaTitle")}
@@ -886,7 +928,7 @@ export function CourseForm({
 
             <div className={CELL_CLASS}>
               <CourseMetaField
-                label="Slug"
+                label="Slug (Optional)"
                 state={slugState}
                 errorMessage={errors.slug?.message}
                 showReset={!isMetaAuto("slug")}
@@ -910,7 +952,7 @@ export function CourseForm({
           <div className={GRID_CLASS}>
             <div className={CELL_CLASS}>
               <CourseMetaField
-                label="Meta Description"
+                label="Meta Description (Optional)"
                 state={metaDescriptionState}
                 errorMessage={errors.metaDescription?.message}
                 showReset={!isMetaAuto("metaDescription")}
@@ -934,7 +976,7 @@ export function CourseForm({
 
             <div className={CELL_CLASS}>
               <CourseMetaField
-                label="Meta Keywords"
+                label="Meta Keywords (Optional)"
                 state={metaKeywordsState}
                 errorMessage={errors.metaKeywords?.message}
                 showReset={!isMetaAuto("metaKeywords")}

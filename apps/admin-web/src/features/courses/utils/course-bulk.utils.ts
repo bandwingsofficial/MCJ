@@ -76,6 +76,13 @@ export function getEligiblePermanentDeleteIds(
   return getEligibleRestoreIds(courses, selectedIds);
 }
 
+export function isBulkActionEnabledForSelection(
+  selectedCount: number,
+  eligibleCount: number,
+): boolean {
+  return selectedCount > 0 && eligibleCount === selectedCount;
+}
+
 export function formatBulkResultToast(
   result: BulkCourseOperationResult,
   successLabel: string

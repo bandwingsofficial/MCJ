@@ -225,6 +225,28 @@ class CourseService {
     }
   }
 
+  async getCourseDependencies(id: string) {
+    try {
+      const response = await apiClient.get<
+        ApiSuccessResponse<{
+          courseId: string;
+          courseTitle: string;
+          canDelete: boolean;
+          canDeactivate: boolean;
+          blockingBatches: {
+            batchId: string;
+            batchName: string;
+            lifecycleStatus: "UPCOMING" | "ONGOING";
+          }[];
+        }>
+      >(`${this.basePath}/${id}/dependencies`);
+
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async deleteCourse(
     id: string
   ): Promise<ApiSuccessResponse<DeleteCourseResponse>> {

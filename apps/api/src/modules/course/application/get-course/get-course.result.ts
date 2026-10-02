@@ -233,6 +233,7 @@ export class GetCourseResult {
     public readonly selfPacedVideoCount: number = 0,
     public readonly liveRecordedVideoCount: number = 0,
     public readonly branchCourseLink: BranchCourseLinkResult | null = null,
+    public readonly hasLifecycleBlockingBatches: boolean = false,
   ) {}
 
   static fromEntity(
@@ -255,6 +256,7 @@ export class GetCourseResult {
       selfPacedVideoCount?: number;
       liveRecordedVideoCount?: number;
       branchCourseLink?: BranchCourseLinkResult | null;
+      hasLifecycleBlockingBatches?: boolean;
     } = {},
   ): GetCourseResult {
     const publicView = options.publicView ?? false;
@@ -349,6 +351,7 @@ export class GetCourseResult {
       options.selfPacedVideoCount ?? 0,
       options.liveRecordedVideoCount ?? 0,
       options.branchCourseLink ?? null,
+      options.hasLifecycleBlockingBatches ?? false,
     );
   }
 }

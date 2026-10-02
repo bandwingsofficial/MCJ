@@ -37,6 +37,7 @@ import { BulkUpdateCourseStatusHandler } from '../../application/bulk-update-cou
 import { DeleteCourseCommand } from '../../application/delete-course/delete-course.command';
 import { DeleteCourseHandler } from '../../application/delete-course/delete-course.handler';
 import { GetCourseHandler } from '../../application/get-course/get-course.handler';
+import { GetCourseDependenciesHandler } from '../../application/get-course-dependencies/get-course-dependencies.handler';
 import { GetCourseQuery } from '../../application/get-course/get-course.query';
 import { GetCourseSummaryHandler } from '../../application/get-course-summary/get-course-summary.handler';
 import { GetCourseSummaryQuery } from '../../application/get-course-summary/get-course-summary.query';
@@ -71,6 +72,7 @@ export class AdminCourseController {
     private readonly updateCourseHandler: UpdateCourseHandler,
     private readonly listCoursesHandler: ListCoursesHandler,
     private readonly getCourseHandler: GetCourseHandler,
+    private readonly getCourseDependenciesHandler: GetCourseDependenciesHandler,
     private readonly deleteCourseHandler: DeleteCourseHandler,
     private readonly restoreCourseHandler: RestoreCourseHandler,
     private readonly permanentDeleteCourseHandler: PermanentDeleteCourseHandler,
@@ -247,6 +249,27 @@ export class AdminCourseController {
       success: true,
       message: 'Course code suggested successfully',
       data: result,
+    };
+  }
+
+  @Get(':id/dependencies')
+  @ApiResponse({
+    status: 200,
+    description: 'Course batch assignment dependencies',
+  })
+  async getDependencies(@Param('id') id: string) {
+    const result = await this.getCourseDependenciesHandler.execute(id);
+
+    return {
+      success: true,
+      message: 'Course dependencies retrieved',
+      data: {
+        courseId: result.courseId,
+        courseTitle: result.courseTitle,
+        canDelete: result.canDelete,
+        canDeactivate: result.canDeactivate,
+        blockingBatches: result.blockingBatches,
+      },
     };
   }
 

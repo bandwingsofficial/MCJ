@@ -3,7 +3,7 @@
 import { useLayoutEffect, useState, type RefObject } from "react";
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { Check, ChevronDown, GraduationCap } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 
 import { Checkbox } from "@/src/shared/components/ui/checkbox";
 import { cn } from "@/src/shared/lib/cn";
@@ -21,6 +21,8 @@ interface Props {
   onChange: (value: CourseQualification[]) => void;
   disabled?: boolean;
   triggerClassName?: string;
+  /** When true, reserve left padding for a parent field icon (IconValidatedField). */
+  insetForLeftFieldIcon?: boolean;
   state?: "neutral" | "valid" | "invalid";
   collisionBoundary?: HTMLElement | null;
   collisionBoundaryRef?: RefObject<HTMLElement | null>;
@@ -31,6 +33,7 @@ export function QualificationMultiSelect({
   onChange,
   disabled = false,
   triggerClassName,
+  insetForLeftFieldIcon = false,
   state = "neutral",
   collisionBoundary,
   collisionBoundaryRef,
@@ -76,14 +79,15 @@ export function QualificationMultiSelect({
         type="button"
         disabled={disabled}
         className={cn(
-          "relative flex h-11 w-full min-w-0 max-w-full items-center justify-between gap-2 rounded-xl border bg-white px-4 py-2 text-left text-sm focus:outline-none focus:ring-2",
+          "relative flex h-11 w-full min-w-0 max-w-full items-center justify-between gap-2 rounded-xl border bg-white py-2 pr-10 text-left text-sm focus:outline-none focus:ring-2",
+          insetForLeftFieldIcon ? "pl-10" : "pl-4",
           borderClass,
           triggerClassName,
         )}
       >
         <span
           className={cn(
-            "min-w-0 flex-1 truncate pr-8",
+            "min-w-0 flex-1 truncate",
             selected.length === 0 ? "text-slate-400" : "text-[#102A56]",
           )}
         >
@@ -92,10 +96,6 @@ export function QualificationMultiSelect({
             : formatCourseQualifications(selected)}
         </span>
 
-        <GraduationCap
-          className="pointer-events-none absolute right-8 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-          aria-hidden="true"
-        />
         <ChevronDown
           className="h-4 w-4 shrink-0 text-slate-500"
           aria-hidden="true"

@@ -3,9 +3,12 @@ import { Prisma } from '@prisma/client';
 
 import { reorderIdsByRank } from '../../../../common/utils/reorder-by-rank.util';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
+import { BatchStatus } from '@modules/batch/domain/enums/batch-status.enum';
+import { resolveBatchApiStatus } from '@modules/batch/domain/utils/batch-lifecycle-status.util';
 
 import { Course } from '../../domain/entities/course.entity';
 import { CourseStatus } from '../../domain/enums/course-status.enum';
+import type { CourseDeleteBlockingBatch } from '../../domain/types/course-delete-blocking-batch';
 import {
   CourseListFilters,
   CourseRepository,
@@ -548,5 +551,104 @@ export class PrismaCourseRepository
     }
 
     return where;
+  }
+
+  async findDeleteBlockingBatches(
+    courseId: string,
+  ): Promise<CourseDeleteBlockingBatch[]> {
+    const batches = await this.prisma.batch.findMany({
+      where: {
+        courseId,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        startDate: true,
+        startTime: true,
+        endDate: true,
+        endTime: true,
+        isDeleted: true,
+      },
+    });
+
+    const blocking: CourseDeleteBlockingBatch[] = [];
+
+    for (const batch of batches) {
+      const resolved = resolveBatchApiStatus({
+        storedStatus: batch.status as BatchStatus,
+        isDeleted: batch.isDeleted,
+        startDate: batch.startDate,
+        startTime: batch.startTime,
+        endDate: batch.endDate,
+        endTime: batch.endTime,
+      });
+
+      if (
+        resolved === BatchStatus.UPCOMING ||
+        resolved === BatchStatus.ONGOING
+      ) {
+        blocking.push({
+          batchId: batch.id,
+          batchName: batch.name,
+          lifecycleStatus:
+            resolved === BatchStatus.UPCOMING ? 'UPCOMING' : 'ONGOING',
+        });
+      }
+    }
+
+    blocking.sort((left, right) =>
+      left.batchName.localeCompare(right.batchName),
+    );
+
+    return blocking;
+  }
+
+  async findCourseIdsWithLifecycleBlockingBatches(
+    courseIds: string[],
+  ): Promise<Set<string>> {
+    if (courseIds.length === 0) {
+      return new Set();
+    }
+
+    const batches = await this.prisma.batch.findMany({
+      where: {
+        courseId: { in: courseIds },
+        isDeleted: false,
+      },
+      select: {
+        courseId: true,
+        status: true,
+        startDate: true,
+        startTime: true,
+        endDate: true,
+        endTime: true,
+        isDeleted: true,
+      },
+    });
+
+    const blocked = new Set<string>();
+
+    for (const batch of batches) {
+      const resolved = resolveBatchApiStatus({
+        storedStatus: batch.status as BatchStatus,
+        isDeleted: batch.isDeleted,
+        startDate: batch.startDate,
+        startTime: batch.startTime,
+        endDate: batch.endDate,
+        endTime: batch.endTime,
+      });
+
+      if (
+        batch.courseId &&
+        (resolved === BatchStatus.UPCOMING ||
+          resolved === BatchStatus.ONGOING)
+      ) {
+        blocked.add(batch.courseId);
+      }
+    }
+
+    return blocked;
   }
 }

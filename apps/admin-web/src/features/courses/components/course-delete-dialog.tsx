@@ -4,30 +4,40 @@ import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 
 interface Props {
   open: boolean;
-
+  isLoading: boolean;
+  description: string;
+  canDelete: boolean;
   onClose: () => void;
-
   onConfirm: () => void;
-
-  isLoading?: boolean;
 }
 
 export function CourseDeleteDialog({
   open,
+  isLoading,
+  description,
+  canDelete,
   onClose,
   onConfirm,
-  isLoading = false,
 }: Props) {
   return (
     <ConfirmDialog
       open={open}
-      title="Archive course?"
-      description="This will archive the course. It will no longer be active, but you can restore it later from the course management page."
-      confirmLabel="Archive"
-      confirmVariant="danger"
-      loading={isLoading}
-      onConfirm={onConfirm}
+      title={canDelete ? "Archive course?" : "Cannot delete course"}
+      description={description}
+      confirmLabel={canDelete ? "Archive" : "OK"}
+      confirmVariant={canDelete ? "danger" : "primary"}
+      loading={isLoading && canDelete}
+      loadingLabel="Archiving..."
+      showCancel={canDelete}
       onCancel={onClose}
+      onConfirm={() => {
+        if (!canDelete) {
+          onClose();
+          return;
+        }
+
+        onConfirm();
+      }}
     />
   );
 }

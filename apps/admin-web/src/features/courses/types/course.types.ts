@@ -100,6 +100,8 @@ export interface Course {
   createdAt: string;
 
   updatedAt: string;
+
+  hasLifecycleBlockingBatches?: boolean;
 }
 
 export interface CourseBranch {
@@ -282,6 +284,9 @@ export interface CourseListItem {
     linkedViaManual: boolean;
     linkedViaBatch: boolean;
   } | null;
+
+  /** True when the course is assigned to an upcoming or ongoing batch. */
+  hasLifecycleBlockingBatches?: boolean;
 }
 
 export interface CourseListResponse {

@@ -2,7 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Archive, ChevronRight, Eye, RotateCcw, Trash2 } from "lucide-react";
+import {
+  Archive,
+  ChevronRight,
+  Eye,
+  Loader2,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 
@@ -19,6 +26,7 @@ interface Props {
   onRestore: () => void;
   onPermanentDelete: () => void;
   actionsDisabled?: boolean;
+  archiveChecking?: boolean;
 }
 
 export function CourseManageHeader({
@@ -29,6 +37,7 @@ export function CourseManageHeader({
   onRestore,
   onPermanentDelete,
   actionsDisabled = false,
+  archiveChecking = false,
 }: Props) {
   const isArchived = Boolean(course.deletedAt || course.isDeleted);
   const description =
@@ -164,10 +173,18 @@ export function CourseManageHeader({
                 size="sm"
                 variant="outline"
                 disabled={actionsDisabled}
+                aria-busy={archiveChecking}
                 onClick={onArchive}
                 className="h-9 justify-center border-amber-200 text-amber-800 hover:bg-amber-50"
               >
-                <Archive className="mr-1.5 h-4 w-4 shrink-0" />
+                {archiveChecking ? (
+                  <Loader2
+                    className="mr-1.5 h-4 w-4 shrink-0 animate-spin"
+                    aria-hidden
+                  />
+                ) : (
+                  <Archive className="mr-1.5 h-4 w-4 shrink-0" />
+                )}
                 Archive Course
               </Button>
             )}
