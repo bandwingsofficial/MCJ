@@ -1,28 +1,19 @@
 "use client";
 
+import { CalendarRange, Hash } from "lucide-react";
+
 import { Input } from "@/src/shared/components/ui/input";
 import { AppSelect } from "@/src/shared/components/ui/select";
+import { IconValidatedField, type FieldVisualState } from "@/src/shared/components/ui/validated-field";
+
 import {
-  ValidatedField,
-  validatedFieldInputClass,
-  type FieldVisualState,
-} from "@/src/shared/components/ui/validated-field";
-import { cn } from "@/src/shared/lib/cn";
+  batchIconInputClass,
+  batchSelectTriggerClass,
+} from "@/src/features/batches/utils/batch-form-field-styles";
 
 import { BATCH_DURATION_TYPES } from "@/src/features/batches/constants/batch.constants";
 import type { BatchDurationType } from "@/src/features/batches/types/batch.types";
 import { uniqueSelectOptions } from "@/src/features/batches/utils/batch-select.utils";
-
-function plainInputClass(state: FieldVisualState, extra = "") {
-  return cn(
-    validatedFieldInputClass(state, "w-full min-w-0 max-w-full"),
-    extra,
-  );
-}
-
-function selectTriggerClass(state: FieldVisualState) {
-  return plainInputClass(state);
-}
 
 interface Props {
   durationValue: number;
@@ -32,11 +23,12 @@ interface Props {
   onDurationValueBlur?: () => void;
   valueState: FieldVisualState;
   typeState: FieldVisualState;
-  errorMessage?: string | null;
+  valueErrorMessage?: string | null;
+  typeErrorMessage?: string | null;
   idPrefix?: string;
 }
 
-/** Shared duration input used by Assign Batches and Edit Batch. */
+/** Shared duration fields used by Batch create/edit forms. */
 export function BatchDurationField({
   durationValue,
   durationType,
@@ -45,17 +37,19 @@ export function BatchDurationField({
   onDurationValueBlur,
   valueState,
   typeState,
-  errorMessage,
+  valueErrorMessage,
+  typeErrorMessage,
   idPrefix,
 }: Props) {
   return (
-    <ValidatedField
-      label="Duration"
-      required
-      state={valueState}
-      errorMessage={errorMessage ?? undefined}
-    >
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-2">
+    <>
+      <IconValidatedField
+        label="Duration"
+        required
+        icon={Hash}
+        state={valueState}
+        errorMessage={valueErrorMessage ?? undefined}
+      >
         <Input
           id={idPrefix ? `${idPrefix}-duration-value` : undefined}
           type="number"
@@ -71,17 +65,27 @@ export function BatchDurationField({
             onDurationValueChange(parsed);
           }}
           onBlur={onDurationValueBlur}
-          className={plainInputClass(valueState)}
+          className={batchIconInputClass(valueState)}
         />
+      </IconValidatedField>
+
+      <IconValidatedField
+        label="Schedule Type"
+        required
+        icon={CalendarRange}
+        select
+        state={typeState}
+        errorMessage={typeErrorMessage ?? undefined}
+      >
         <AppSelect
           value={durationType}
           onValueChange={(value) =>
             onDurationTypeChange(value as BatchDurationType)
           }
           options={uniqueSelectOptions(BATCH_DURATION_TYPES)}
-          triggerClassName={selectTriggerClass(typeState)}
+          triggerClassName={batchSelectTriggerClass(typeState)}
         />
-      </div>
-    </ValidatedField>
+      </IconValidatedField>
+    </>
   );
 }

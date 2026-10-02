@@ -2,7 +2,10 @@ import type { BatchRepository } from '../../domain/repositories/batch.repository
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
 import { GetBatchResult } from '../get-batch/get-batch.result';
 
-import { ensureBatchOpenForLifecycleMutation } from '../../domain/utils/batch-selection.util';
+import {
+  ensureBatchCanDeactivateOrArchive,
+  ensureBatchOpenForLifecycleMutation,
+} from '../../domain/utils/batch-selection.util';
 
 import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
 
@@ -21,7 +24,11 @@ export class UpdateBatchStatusHandler {
       await this.batchRepo.findById(command.id),
     );
 
-    ensureBatchOpenForLifecycleMutation(batch);
+    if (command.activate) {
+      ensureBatchOpenForLifecycleMutation(batch);
+    } else {
+      ensureBatchCanDeactivateOrArchive(batch, 'deactivate');
+    }
 
     if (command.activate) {
       if (!batch.isActive) {

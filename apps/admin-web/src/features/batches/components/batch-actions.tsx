@@ -13,7 +13,11 @@ import {
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { BatchListItem } from "@/src/features/batches/types/batch.types";
-import { isArchivedBatch } from "@/src/features/batches/utils/batch-bulk.utils";
+import {
+  isArchivedBatch,
+  isBatchEligibleForUpcomingDelete,
+} from "@/src/features/batches/utils/batch-bulk.utils";
+import { isBatchLifecycleBlockingDeactivateOrArchive } from "@/src/features/batches/utils/batch-lifecycle-block.utils";
 import { isBatchClosedForMainListMutations } from "@/src/features/batches/utils/batch-select.utils";
 import { batchManagePath } from "@/src/features/batches/utils/batch-manage.routes";
 
@@ -28,8 +32,10 @@ interface Props {
   onActivate: (batch: BatchListItem) => void;
   onDeactivate: (batch: BatchListItem) => void;
   onEdit: (batch: BatchListItem) => void;
+  onArchive: (batch: BatchListItem) => void;
   onRestore: (batch: BatchListItem) => void;
   onPermanentDelete: (batch: BatchListItem) => void;
+  onDeleteUpcoming: (batch: BatchListItem) => void;
 }
 
 export function BatchActions({
@@ -38,13 +44,17 @@ export function BatchActions({
   onActivate,
   onDeactivate,
   onEdit,
+  onArchive,
   onRestore,
   onPermanentDelete,
+  onDeleteUpcoming,
 }: Props) {
   const router = useRouter();
   const isArchived = isArchivedBatch(batch);
   const isClosed = isBatchClosedForMainListMutations(batch);
   const isActive = batch.isActive !== false;
+  const lifecycleBlocksMutations =
+    isBatchLifecycleBlockingDeactivateOrArchive(batch);
 
   if (isClosed) {
     return (
@@ -96,21 +106,53 @@ export function BatchActions({
 
   return (
     <div className="flex items-center justify-end gap-2">
-      <Tooltip content={isActive ? "Deactivate batch" : "Activate batch"}>
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => (isActive ? onDeactivate(batch) : onActivate(batch))}
-          aria-label={isActive ? "Deactivate batch" : "Activate batch"}
-          className={`${iconButtonClass} text-orange-700`}
-        >
-          {isActive ? (
-            <Power className={iconClass} />
-          ) : (
-            <CircleCheck className={iconClass} />
-          )}
-        </button>
-      </Tooltip>
+      {isActive && lifecycleBlocksMutations ? null : (
+        <Tooltip content={isActive ? "Deactivate batch" : "Activate batch"}>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() =>
+              isActive ? onDeactivate(batch) : onActivate(batch)
+            }
+            aria-label={isActive ? "Deactivate batch" : "Activate batch"}
+            className={`${iconButtonClass} text-orange-700`}
+          >
+            {isActive ? (
+              <Power className={iconClass} />
+            ) : (
+              <CircleCheck className={iconClass} />
+            )}
+          </button>
+        </Tooltip>
+      )}
+
+      {lifecycleBlocksMutations ? null : (
+        <Tooltip content="Archive batch">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onArchive(batch)}
+            aria-label="Archive batch"
+            className={`${iconButtonClass} text-red-800`}
+          >
+            <Trash2 className={iconClass} />
+          </button>
+        </Tooltip>
+      )}
+
+      {isBatchEligibleForUpcomingDelete(batch) ? (
+        <Tooltip content="Delete batch">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onDeleteUpcoming(batch)}
+            aria-label="Delete batch"
+            className={`${iconButtonClass} text-red-800`}
+          >
+            <Trash2 className={iconClass} />
+          </button>
+        </Tooltip>
+      ) : null}
 
       <Tooltip content="Edit batch">
         <button

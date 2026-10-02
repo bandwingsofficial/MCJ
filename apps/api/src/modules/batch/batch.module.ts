@@ -39,11 +39,15 @@ import { CreateBatchTemplateHandler } from './application/batch-templates/create
 import { CreateBatchWithTimingsHandler } from './application/batch-timings/create-batch-with-timings.handler';
 import { UpdateBatchTimingHandler } from './application/batch-timings/update-batch-timing.handler';
 import { GetBatchTemplateHandler } from './application/batch-templates/get-batch-template.handler';
+import { GetBatchTemplateLifecycleDependenciesHandler } from './application/batch-templates/get-batch-template-lifecycle-dependencies.handler';
 import { ListBatchTemplatesHandler } from './application/batch-templates/list-batch-templates.handler';
 import { SetBatchTemplateActiveHandler } from './application/batch-templates/set-batch-template-active.handler';
 import { UpdateBatchTemplateHandler } from './application/batch-templates/update-batch-template.handler';
 import { CreateBatchHandler } from './application/create-batch/create-batch.handler';
+import { BulkDeleteUpcomingBatchesHandler } from './application/bulk-delete-upcoming-batches/bulk-delete-upcoming-batches.handler';
 import { DeleteBatchHandler } from './application/delete-batch/delete-batch.handler';
+import { DeleteUpcomingBatchHandler } from './application/delete-upcoming-batch/delete-upcoming-batch.handler';
+import { GetBatchDeleteDependenciesHandler } from './application/delete-upcoming-batch/get-batch-delete-dependencies.handler';
 import { GetBatchHandler } from './application/get-batch/get-batch.handler';
 import { GetBatchSummaryHandler } from './application/get-batch-summary/get-batch-summary.handler';
 import { ListBatchesHandler } from './application/list-batches/list-batches.handler';
@@ -401,6 +405,33 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
     },
 
     {
+      provide: GetBatchDeleteDependenciesHandler,
+      useFactory: (
+        batchRepo: BatchRepository,
+        domainService: BatchDomainService,
+      ) =>
+        new GetBatchDeleteDependenciesHandler(batchRepo, domainService),
+      inject: [BATCH_TOKENS.BATCH_REPOSITORY, BatchDomainService],
+    },
+
+    {
+      provide: DeleteUpcomingBatchHandler,
+      useFactory: (
+        batchRepo: BatchRepository,
+        domainService: BatchDomainService,
+      ) =>
+        new DeleteUpcomingBatchHandler(batchRepo, domainService),
+      inject: [BATCH_TOKENS.BATCH_REPOSITORY, BatchDomainService],
+    },
+
+    {
+      provide: BulkDeleteUpcomingBatchesHandler,
+      useFactory: (batchRepo: BatchRepository) =>
+        new BulkDeleteUpcomingBatchesHandler(batchRepo),
+      inject: [BATCH_TOKENS.BATCH_REPOSITORY],
+    },
+
+    {
       provide: CreateBatchTemplateHandler,
       useFactory: (templateRepo: BatchTemplateRepository) =>
         new CreateBatchTemplateHandler(templateRepo),
@@ -425,6 +456,13 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
       provide: GetBatchTemplateHandler,
       useFactory: (templateRepo: BatchTemplateRepository) =>
         new GetBatchTemplateHandler(templateRepo),
+      inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
+    },
+
+    {
+      provide: GetBatchTemplateLifecycleDependenciesHandler,
+      useFactory: (templateRepo: BatchTemplateRepository) =>
+        new GetBatchTemplateLifecycleDependenciesHandler(templateRepo),
       inject: [BATCH_TOKENS.BATCH_TEMPLATE_REPOSITORY],
     },
 

@@ -63,6 +63,10 @@ const durationValueSchema = z
   .int("Duration must be a whole number")
   .positive("Duration must be a positive number");
 
+const batchModeSchema = z.enum(["ONLINE", "OFFLINE", "RECORDED"], {
+  error: "Mode is required.",
+});
+
 export const batchDurationSchema = z.object({
   durationValue: durationValueSchema,
   durationType: durationTypeEnum,
@@ -73,6 +77,7 @@ export const batchSchema = z
     name: z
       .string()
       .trim()
+      .min(1, "Batch Name is required.")
       .min(3, "Batch name must be at least 3 characters")
       .max(100, "Batch name cannot exceed 100 characters"),
 
@@ -95,23 +100,23 @@ export const batchSchema = z
 
     startTime: z
       .string()
-      .min(1, "Start time is required")
+      .min(1, "Start Time is required.")
       .regex(timePattern, "Enter a valid start time"),
 
     endTime: z
       .string()
-      .min(1, "End time is required")
+      .min(1, "End Time is required.")
       .regex(timePattern, "Enter a valid end time"),
 
     daysOfWeek: z
       .array(dayOfWeekEnum)
-      .min(1, "Select at least one batch day"),
+      .min(1, "Batch Days is required."),
 
     capacity: z.number().min(1, "Capacity must be greater than 0"),
 
     enrolledCount: z.number().min(0).default(0),
 
-    mode: z.enum(["ONLINE", "OFFLINE", "RECORDED"]),
+    mode: batchModeSchema,
 
     durationValue: durationValueSchema,
 

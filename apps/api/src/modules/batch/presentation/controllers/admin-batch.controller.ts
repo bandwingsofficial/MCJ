@@ -52,6 +52,11 @@ import { GetBatchSummaryHandler } from '../../application/get-batch-summary/get-
 import { GetBatchSummaryQuery } from '../../application/get-batch-summary/get-batch-summary.query';
 import { ListBatchesHandler } from '../../application/list-batches/list-batches.handler';
 import { ListBatchesQuery } from '../../application/list-batches/list-batches.query';
+import { BulkDeleteUpcomingBatchesCommand } from '../../application/bulk-delete-upcoming-batches/bulk-delete-upcoming-batches.command';
+import { BulkDeleteUpcomingBatchesHandler } from '../../application/bulk-delete-upcoming-batches/bulk-delete-upcoming-batches.handler';
+import { DeleteUpcomingBatchCommand } from '../../application/delete-upcoming-batch/delete-upcoming-batch.handler';
+import { DeleteUpcomingBatchHandler } from '../../application/delete-upcoming-batch/delete-upcoming-batch.handler';
+import { GetBatchDeleteDependenciesHandler } from '../../application/delete-upcoming-batch/get-batch-delete-dependencies.handler';
 import { PermanentDeleteBatchCommand } from '../../application/permanent-delete-batch/permanent-delete-batch.command';
 import { PermanentDeleteBatchHandler } from '../../application/permanent-delete-batch/permanent-delete-batch.handler';
 import { ReorderBatchesCommand } from '../../application/reorder-batches/reorder-batches.command';
@@ -107,6 +112,9 @@ export class AdminBatchController {
     private readonly bulkDeleteBatchesHandler: BulkDeleteBatchesHandler,
     private readonly bulkRestoreBatchesHandler: BulkRestoreBatchesHandler,
     private readonly bulkPermanentDeleteBatchesHandler: BulkPermanentDeleteBatchesHandler,
+    private readonly getBatchDeleteDependenciesHandler: GetBatchDeleteDependenciesHandler,
+    private readonly deleteUpcomingBatchHandler: DeleteUpcomingBatchHandler,
+    private readonly bulkDeleteUpcomingBatchesHandler: BulkDeleteUpcomingBatchesHandler,
     private readonly listBatchCoursesHandler: ListBatchCoursesHandler,
     private readonly assignBatchCourseHandler: AssignBatchCourseHandler,
     private readonly removeBatchCourseHandler: RemoveBatchCourseHandler,
@@ -368,6 +376,43 @@ export class AdminBatchController {
     return {
       success: true,
       message: 'Batches permanently deleted successfully',
+      data: result,
+    };
+  }
+
+  @Delete('bulk/upcoming')
+  async bulkDeleteUpcoming(@Body() dto: BulkBatchIdsDto) {
+    const result = await this.bulkDeleteUpcomingBatchesHandler.execute(
+      new BulkDeleteUpcomingBatchesCommand(dto.batchIds),
+    );
+
+    return {
+      success: true,
+      message: 'Batches deleted successfully',
+      data: result,
+    };
+  }
+
+  @Get(':id/delete-dependencies')
+  async getDeleteDependencies(@Param('id') id: string) {
+    const result = await this.getBatchDeleteDependenciesHandler.execute(id);
+
+    return {
+      success: true,
+      message: 'Batch delete dependencies fetched successfully',
+      data: result,
+    };
+  }
+
+  @Delete(':id/upcoming')
+  async deleteUpcoming(@Param('id') id: string) {
+    const result = await this.deleteUpcomingBatchHandler.execute(
+      new DeleteUpcomingBatchCommand(id),
+    );
+
+    return {
+      success: true,
+      message: 'Batch deleted successfully',
       data: result,
     };
   }

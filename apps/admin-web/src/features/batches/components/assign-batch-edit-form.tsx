@@ -73,13 +73,15 @@ function fieldState(
   error: string | null,
   touched: boolean,
 ): FieldVisualState {
+  if (!touched) {
+    return "neutral";
+  }
+
   if (error) {
     return "invalid";
   }
-  if (touched) {
-    return "valid";
-  }
-  return "neutral";
+
+  return "valid";
 }
 
 function buildModeTabStateFromBatch(
@@ -421,25 +423,23 @@ export const AssignBatchEditForm = forwardRef<
             />
           </div>
 
-          <div className="sm:col-span-2">
-            <BatchDurationField
-              idPrefix={idPrefix}
-              durationValue={durationValue}
-              durationType={durationType}
-              onDurationValueChange={(value) => {
-                setDurationValue(value);
-                setDurationTouched(true);
-              }}
-              onDurationTypeChange={(value) => {
-                setDurationType(value);
-                setDurationTouched(true);
-              }}
-              onDurationValueBlur={() => setDurationTouched(true)}
-              valueState={durationValueState}
-              typeState={durationTypeState}
-              errorMessage={durationError}
-            />
-          </div>
+          <BatchDurationField
+            idPrefix={idPrefix}
+            durationValue={durationValue}
+            durationType={durationType}
+            onDurationValueChange={(value) => {
+              setDurationValue(value);
+              setDurationTouched(true);
+            }}
+            onDurationTypeChange={(value) => {
+              setDurationType(value);
+              setDurationTouched(true);
+            }}
+            onDurationValueBlur={() => setDurationTouched(true)}
+            valueState={durationValueState}
+            typeState={durationTypeState}
+            valueErrorMessage={durationError}
+          />
 
           <div className="space-y-1.5">
             <Label htmlFor={`${idPrefix}-start`}>Start Date</Label>

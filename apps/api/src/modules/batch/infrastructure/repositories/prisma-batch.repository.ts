@@ -398,6 +398,80 @@ export class PrismaBatchRepository implements BatchRepository {
     return assignment?.courseId ?? null;
   }
 
+  async findBranchAssignmentsByBatchId(batchId: string) {
+    if (!batchId) {
+      return [];
+    }
+
+    const rows = await this.prisma.branchBatch.findMany({
+      where: { batchId },
+      select: {
+        branch: {
+          select: {
+            id: true,
+            branchName: true,
+          },
+        },
+      },
+      orderBy: {
+        branch: {
+          branchName: 'asc',
+        },
+      },
+    });
+
+    return rows.map((row) => ({
+      branchId: row.branch.id,
+      branchName: row.branch.branchName,
+    }));
+  }
+
+  async findBranchAssignmentsByBatchIds(batchIds: string[]) {
+    const uniqueIds = [...new Set(batchIds.filter(Boolean))];
+    const result: Record<
+      string,
+      { branchId: string; branchName: string }[]
+    > = {};
+
+    for (const batchId of uniqueIds) {
+      result[batchId] = [];
+    }
+
+    if (uniqueIds.length === 0) {
+      return result;
+    }
+
+    const rows = await this.prisma.branchBatch.findMany({
+      where: { batchId: { in: uniqueIds } },
+      select: {
+        batchId: true,
+        branch: {
+          select: {
+            id: true,
+            branchName: true,
+          },
+        },
+      },
+    });
+
+    for (const row of rows) {
+      const list = result[row.batchId] ?? [];
+      list.push({
+        branchId: row.branch.id,
+        branchName: row.branch.branchName,
+      });
+      result[row.batchId] = list;
+    }
+
+    for (const batchId of uniqueIds) {
+      result[batchId]?.sort((left, right) =>
+        left.branchName.localeCompare(right.branchName),
+      );
+    }
+
+    return result;
+  }
+
   async isAssignedToBranch(
     batchId: string,
     branchId: string,

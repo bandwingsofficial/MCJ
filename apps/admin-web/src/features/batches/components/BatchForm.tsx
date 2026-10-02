@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  forwardRef,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
@@ -15,6 +17,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   BookOpen,
   CalendarDays,
+  Clock,
   GraduationCap,
   Hash,
   IndianRupee,
@@ -31,7 +34,6 @@ import { Textarea } from "@/src/shared/components/ui/textarea";
 import { WordCount } from "@/src/shared/components/ui/word-count";
 import {
   IconValidatedField,
-  iconDecorInputClass,
   ValidatedField,
   validatedFieldInputClass,
   type FieldVisualState,
@@ -69,7 +71,17 @@ import {
   isEndDateBeforeStartDate,
 } from "@/src/features/batches/utils/batch-schedule.utils";
 import { uniqueSelectOptions } from "@/src/features/batches/utils/batch-select.utils";
+import {
+  batchIconInputClass,
+  batchPlainInputClass,
+  batchSelectTriggerClass,
+} from "@/src/features/batches/utils/batch-form-field-styles";
 import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
+
+export interface BatchFormHandle {
+  /** Runs validation and returns values when valid. */
+  validateAndGetValues: () => Promise<BatchFormValues | null>;
+}
 
 interface BatchFormProps {
   isEdit?: boolean;
@@ -83,6 +95,9 @@ interface BatchFormProps {
   loadingLabel?: string;
   onSubmit: (values: BatchFormValues) => Promise<void>;
   onCancel?: () => void;
+  showFooter?: boolean;
+  /** Rendered inside the form after main fields (e.g. assign mode tabs). */
+  afterFields?: ReactNode;
 }
 
 function formatCourseOptionLabel(course: {
@@ -124,21 +139,6 @@ const GRID_CLASS = "grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2";
 
 type SyncFieldName = keyof BatchFormValues;
 
-function iconInputClass(state: FieldVisualState, extra = "") {
-  return iconDecorInputClass(state, cn("w-full min-w-0 max-w-full", extra));
-}
-
-function plainInputClass(state: FieldVisualState, extra = "") {
-  return cn(
-    validatedFieldInputClass(state, "w-full min-w-0 max-w-full"),
-    extra,
-  );
-}
-
-function selectTriggerClass(state: FieldVisualState) {
-  return iconInputClass(state);
-}
-
 function IconField({
   label,
   required,
@@ -173,17 +173,23 @@ function IconField({
   );
 }
 
-export function BatchForm({
-  isEdit = false,
-  defaultValues,
-  formSessionKey,
-  initialCourse = null,
-  isSubmitting,
-  submitLabel,
-  loadingLabel,
-  onCancel,
-  onSubmit,
-}: BatchFormProps) {
+export const BatchForm = forwardRef<BatchFormHandle, BatchFormProps>(
+  function BatchForm(
+    {
+      isEdit = false,
+      defaultValues,
+      formSessionKey,
+      initialCourse = null,
+      isSubmitting,
+      submitLabel,
+      loadingLabel,
+      onCancel,
+      onSubmit,
+      showFooter = true,
+      afterFields,
+    },
+    ref,
+  ) {
   const suggestRequestIdRef = useRef(0);
   const [isSuggestingCode, setIsSuggestingCode] = useState(false);
   const [courses, setCourses] = useState<CourseOption[]>([]);
@@ -259,6 +265,7 @@ export function BatchForm({
   });
 
   const values = watch();
+
   const selectedDays = values.daysOfWeek ?? [];
   const descriptionWords = countWords(values.description ?? "");
   const pricesDisabled = Boolean(values.isFree);
@@ -364,7 +371,6 @@ export function BatchForm({
     }
 
     const interacted =
-      isEdit ||
       Boolean(touchedFields[name]) ||
       Boolean(dirtyFields[name]) ||
       isSubmitted;
@@ -403,11 +409,6 @@ export function BatchForm({
     [values.durationType, values.durationValue],
   );
 
-  const durationErrorMessage =
-    errors.durationValue?.message ??
-    errors.durationType?.message ??
-    getBatchDurationErrorMessage(durationValidation);
-
   const durationTouched =
     Boolean(touchedFields.durationValue) ||
     Boolean(touchedFields.durationType) ||
@@ -415,16 +416,21 @@ export function BatchForm({
     Boolean(dirtyFields.durationType) ||
     isSubmitted;
 
-  const editDurationStates = getBatchDurationFieldStates(
-    isEdit || durationTouched,
-    isEdit || durationTouched ? durationErrorMessage : null,
-  );
+  const durationValueErrorMessage =
+    errors.durationValue?.message ??
+    (durationTouched ? getBatchDurationErrorMessage(durationValidation) : null);
 
-  const durationValueState = isEdit
-    ? editDurationStates.valueState
+  const durationTypeErrorMessage = errors.durationType?.message;
+
+  const durationValueState = durationTouched
+    ? getBatchDurationFieldStates(durationTouched, durationValueErrorMessage)
+        .valueState
     : getFieldState("durationValue");
-  const durationTypeState = isEdit
-    ? editDurationStates.typeState
+  const durationTypeState = durationTouched
+    ? getBatchDurationFieldStates(
+        durationTouched,
+        durationTypeErrorMessage ?? null,
+      ).typeState
     : getFieldState("durationType");
 
   const registerPlainField = (name: SyncFieldName) => {
@@ -432,7 +438,7 @@ export function BatchForm({
 
     return {
       ...registration,
-      className: plainInputClass(getFieldState(name)),
+      className: batchPlainInputClass(getFieldState(name)),
       onBlur: (event: FocusEvent<HTMLInputElement>) => {
         registration.onBlur(event);
         void trigger(name);
@@ -452,6 +458,7 @@ export function BatchForm({
     setValue("daysOfWeek", next, {
       shouldValidate: true,
       shouldDirty: true,
+      shouldTouch: true,
     });
   };
 
@@ -483,7 +490,7 @@ export function BatchForm({
 
     return {
       ...registration,
-      className: iconInputClass(getFieldState(name)),
+      className: batchIconInputClass(getFieldState(name)),
       onBlur: (event: FocusEvent<HTMLInputElement>) => {
         registration.onBlur(event);
         void trigger(name);
@@ -499,6 +506,16 @@ export function BatchForm({
     await onSubmit(formValues);
   });
 
+  useImperativeHandle(ref, () => ({
+    validateAndGetValues: () =>
+      new Promise((resolve) => {
+        void handleSubmit(
+          (formValues) => resolve(formValues),
+          () => resolve(null),
+        )();
+      }),
+  }));
+
   return (
     <form onSubmit={handleFormSubmit} className="flex min-h-0 flex-1 flex-col bg-white">
       <div className={`${GRID_CLASS} min-h-0 flex-1 overflow-y-auto`}>
@@ -513,7 +530,7 @@ export function BatchForm({
             placeholder="Enter batch name"
             autoComplete="off"
             {...registerField("name")}
-            className={iconInputClass(getFieldState("name"))}
+            className={batchIconInputClass(getFieldState("name"))}
           />
         </IconField>
 
@@ -529,7 +546,7 @@ export function BatchForm({
             readOnly
             placeholder="Auto-generated"
             autoComplete="off"
-            className={iconInputClass(
+            className={batchIconInputClass(
               getFieldState("code", { forceValid: true }),
               "bg-slate-50",
             )}
@@ -559,12 +576,12 @@ export function BatchForm({
             }
             disabled={coursesLoading}
             options={courseSelectOptions}
-            triggerClassName={selectTriggerClass(getFieldState("courseId"))}
+            triggerClassName={batchSelectTriggerClass(getFieldState("courseId"))}
           />
         </IconField>
 
         <IconField
-          label="Batch Type"
+          label="Mode"
           required
           icon={BookOpen}
           select
@@ -580,7 +597,7 @@ export function BatchForm({
               })
             }
             options={uniqueSelectOptions(BATCH_MODES)}
-            triggerClassName={selectTriggerClass(getFieldState("mode"))}
+            triggerClassName={batchSelectTriggerClass(getFieldState("mode"))}
           />
         </IconField>
 
@@ -588,31 +605,33 @@ export function BatchForm({
           <p className="text-sm font-medium text-[#102A56]">Dates</p>
         </div>
 
-        <ValidatedField
+        <IconField
           label="Start Date"
           required
+          icon={CalendarDays}
           state={getFieldState("startDate")}
           errorMessage={errors.startDate?.message}
         >
           <Input
             type="date"
             autoComplete="off"
-            {...registerPlainField("startDate")}
+            {...registerField("startDate")}
           />
-        </ValidatedField>
+        </IconField>
 
-        <ValidatedField
+        <IconField
           label="End Date"
           required
+          icon={CalendarDays}
           state={getFieldState("endDate")}
           errorMessage={errors.endDate?.message}
         >
           <Input
             type="date"
             autoComplete="off"
-            {...registerPlainField("endDate")}
+            {...registerField("endDate")}
           />
-        </ValidatedField>
+        </IconField>
 
         <BatchDurationField
           durationValue={values.durationValue}
@@ -621,6 +640,7 @@ export function BatchForm({
             setValue("durationValue", value, {
               shouldValidate: true,
               shouldDirty: true,
+              shouldTouch: true,
             });
             void trigger("durationValue");
           }}
@@ -628,6 +648,7 @@ export function BatchForm({
             setValue("durationType", value, {
               shouldValidate: true,
               shouldDirty: true,
+              shouldTouch: true,
             });
             void trigger("durationValue");
             void trigger("durationType");
@@ -638,7 +659,8 @@ export function BatchForm({
           }}
           valueState={durationValueState}
           typeState={durationTypeState}
-          errorMessage={durationErrorMessage}
+          valueErrorMessage={durationValueErrorMessage}
+          typeErrorMessage={durationTypeErrorMessage}
           idPrefix={isEdit ? "edit" : undefined}
         />
 
@@ -655,7 +677,7 @@ export function BatchForm({
               tabIndex={-1}
               value={totalWorkingDaysLabel}
               placeholder="Auto-calculated"
-              className={iconInputClass(
+              className={batchIconInputClass(
                 datesAreValid && totalWorkingDays !== null ? "valid" : "neutral",
                 "cursor-not-allowed bg-slate-50",
               )}
@@ -663,99 +685,103 @@ export function BatchForm({
           </IconField>
         ) : null}
 
-        <div className="md:col-span-2">
-          <p className="text-sm font-medium text-[#102A56]">Schedule</p>
-        </div>
-
-        <div className="md:col-span-2">
-          <ValidatedField
-            label="Batch Days"
-            required
-            state={getFieldState("daysOfWeek")}
-            errorMessage={errors.daysOfWeek?.message}
-          >
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {DAYS_OF_WEEK.map((day) => (
-                <label
-                  key={day.value}
-                  className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"
-                >
-                  <Checkbox
-                    checked={selectedDays.includes(day.value)}
-                    onCheckedChange={() => toggleDay(day.value)}
-                  />
-                  <span>{day.label}</span>
-                </label>
-              ))}
+        <>
+            <div className="md:col-span-2">
+              <p className="text-sm font-medium text-[#102A56]">Schedule</p>
             </div>
-          </ValidatedField>
-        </div>
 
-        <div className="md:col-span-2">
-          <p className="text-sm font-medium text-slate-700">Daily Timing</p>
-        </div>
+            <div className="md:col-span-2">
+              <IconField
+                label="Batch Days"
+                required
+                icon={CalendarDays}
+                state={getFieldState("daysOfWeek")}
+                errorMessage={errors.daysOfWeek?.message}
+              >
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 pl-1">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <label
+                      key={day.value}
+                      className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"
+                    >
+                      <Checkbox
+                        checked={selectedDays.includes(day.value)}
+                        onCheckedChange={() => toggleDay(day.value)}
+                      />
+                      <span>{day.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </IconField>
+            </div>
 
-        <ValidatedField
-          label="Start Time"
-          required
-          state={getFieldState("startTime")}
-          errorMessage={errors.startTime?.message}
-        >
-          <Input
-            type="time"
-            autoComplete="off"
-            {...registerPlainField("startTime")}
-          />
-        </ValidatedField>
+            <div className="md:col-span-2">
+              <p className="text-sm font-medium text-slate-700">Daily Timing</p>
+            </div>
 
-        <ValidatedField
-          label="End Time"
-          required
-          state={getFieldState("endTime")}
-          errorMessage={errors.endTime?.message}
-        >
-          <Input
-            type="time"
-            autoComplete="off"
-            {...registerPlainField("endTime")}
-          />
-        </ValidatedField>
+            <IconField
+              label="Start Time"
+              required
+              icon={Clock}
+              state={getFieldState("startTime")}
+              errorMessage={errors.startTime?.message}
+            >
+              <Input
+                type="time"
+                autoComplete="off"
+                {...registerField("startTime")}
+              />
+            </IconField>
 
-        <IconField
-          label="Capacity"
-          required
-          icon={Users}
-          state={getFieldState("capacity")}
-          errorMessage={errors.capacity?.message}
-        >
-          <Input
-            type="number"
-            min={1}
-            autoComplete="off"
-            className={iconInputClass(getFieldState("capacity"))}
-            {...register("capacity", {
-              valueAsNumber: true,
-              onBlur: () => {
-                void trigger("capacity");
-              },
-              onChange: () => {
-                void trigger("capacity");
-              },
-            })}
-          />
-        </IconField>
+            <IconField
+              label="End Time"
+              required
+              icon={Clock}
+              state={getFieldState("endTime")}
+              errorMessage={errors.endTime?.message}
+            >
+              <Input
+                type="time"
+                autoComplete="off"
+                {...registerField("endTime")}
+              />
+            </IconField>
 
-        {isEdit ? (
-          <IconField label="Enrolled Count" icon={Users} state="neutral">
-            <Input
-              type="number"
-              min={0}
-              autoComplete="off"
-              className={iconInputClass("neutral")}
-              {...register("enrolledCount", { valueAsNumber: true })}
-            />
-          </IconField>
-        ) : null}
+            <IconField
+              label="Capacity"
+              required
+              icon={Users}
+              state={getFieldState("capacity")}
+              errorMessage={errors.capacity?.message}
+            >
+              <Input
+                type="number"
+                min={1}
+                autoComplete="off"
+                className={batchIconInputClass(getFieldState("capacity"))}
+                {...register("capacity", {
+                  valueAsNumber: true,
+                  onBlur: () => {
+                    void trigger("capacity");
+                  },
+                  onChange: () => {
+                    void trigger("capacity");
+                  },
+                })}
+              />
+            </IconField>
+
+            {isEdit ? (
+              <IconField label="Enrolled Count" icon={Users} state="neutral">
+                <Input
+                  type="number"
+                  min={0}
+                  autoComplete="off"
+                  className={batchIconInputClass("neutral")}
+                  {...register("enrolledCount", { valueAsNumber: true })}
+                />
+              </IconField>
+            ) : null}
 
         <div className="md:col-span-2">
           <p className="text-sm font-medium text-[#102A56]">Pricing</p>
@@ -773,7 +799,7 @@ export function BatchForm({
             onValueChange={handlePricingTypeChange}
             placeholder="Select pricing type"
             options={PRICING_TYPE_OPTIONS}
-            triggerClassName={plainInputClass(getFieldState("isFree"))}
+            triggerClassName={batchPlainInputClass(getFieldState("isFree"))}
           />
         </ValidatedField>
 
@@ -841,7 +867,7 @@ export function BatchForm({
               pricesDisabled ? "Free batch" : "Enter discount percent"
             }
             autoComplete="off"
-            className={plainInputClass(getFieldState("discountPercent"))}
+            className={batchPlainInputClass(getFieldState("discountPercent"))}
             {...register("discountPercent", {
               valueAsNumber: true,
               onChange: (event) => {
@@ -892,7 +918,7 @@ export function BatchForm({
                 pricesDisabled ? "Free batch" : "Enter discount amount"
               }
               autoComplete="off"
-              className={plainInputClass(
+              className={batchPlainInputClass(
                 getFieldState("discountAmount"),
                 pricesDisabled ? "" : "pl-7",
               )}
@@ -941,7 +967,7 @@ export function BatchForm({
             }
             readOnly
             disabled
-            className={plainInputClass("neutral")}
+            className={batchPlainInputClass("neutral")}
           />
         </ValidatedField>
 
@@ -1000,23 +1026,29 @@ export function BatchForm({
             Show this batch on homepage
           </label>
         </div>
+        </>
+
+        {afterFields}
       </div>
 
-      <div className="mt-4 flex shrink-0 justify-end gap-2 border-t border-slate-200 pt-4">
-        {onCancel ? (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isSubmitting}
-            onClick={onCancel}
-          >
-            Cancel
+      {showFooter ? (
+        <div className="mt-4 flex shrink-0 justify-end gap-2 border-t border-slate-200 pt-4">
+          {onCancel ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSubmitting}
+              onClick={onCancel}
+            >
+              Cancel
+            </Button>
+          ) : null}
+          <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
+            {isSubmitting ? (loadingLabel ?? `${submitLabel}...`) : submitLabel}
           </Button>
-        ) : null}
-        <Button type="submit" loading={isSubmitting} disabled={isSubmitting}>
-          {isSubmitting ? (loadingLabel ?? `${submitLabel}...`) : submitLabel}
-        </Button>
-      </div>
+        </div>
+      ) : null}
     </form>
   );
-}
+},
+);

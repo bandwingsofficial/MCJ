@@ -2,10 +2,46 @@ import type {
   BatchListItem,
   BulkBatchOperationResult,
 } from "@/src/features/batches/types/batch.types";
+import { isBatchLifecycleBlockingDeactivateOrArchive } from "@/src/features/batches/utils/batch-lifecycle-block.utils";
 import { isBatchClosedForMainListMutations } from "@/src/features/batches/utils/batch-select.utils";
 
 export function isArchivedBatch(batch: BatchListItem): boolean {
   return Boolean(batch.deletedAt || batch.isDeleted);
+}
+
+export function isBatchEligibleForUpcomingDelete(
+  batch: BatchListItem,
+): boolean {
+  return !isArchivedBatch(batch) && batch.status === "UPCOMING";
+}
+
+export function getEligibleUpcomingDeleteIds(
+  batches: BatchListItem[],
+  selectedIds: string[],
+): string[] {
+  const selected = new Set(selectedIds);
+
+  return batches
+    .filter(
+      (batch) =>
+        selected.has(batch.id) && isBatchEligibleForUpcomingDelete(batch),
+    )
+    .map((batch) => batch.id);
+}
+
+/** Bulk delete is enabled only when every selected row is an upcoming batch. */
+export function isBulkUpcomingDeleteEnabled(
+  batches: BatchListItem[],
+  selectedBatchIds: string[],
+): boolean {
+  if (selectedBatchIds.length === 0) {
+    return false;
+  }
+
+  return selectedBatchIds.every((batchId) => {
+    const batch = batches.find((item) => item.id === batchId);
+    return batch ? isBatchEligibleForUpcomingDelete(batch) : false;
+  });
 }
 
 export function getEligibleActivateIds(
@@ -37,7 +73,8 @@ export function getEligibleDeactivateIds(
         selected.has(batch.id) &&
         !isArchivedBatch(batch) &&
         !isBatchClosedForMainListMutations(batch) &&
-        batch.isActive !== false,
+        batch.isActive !== false &&
+        !isBatchLifecycleBlockingDeactivateOrArchive(batch),
     )
     .map((batch) => batch.id);
 }
@@ -53,9 +90,23 @@ export function getEligibleDeleteIds(
       (batch) =>
         selected.has(batch.id) &&
         !isArchivedBatch(batch) &&
-        !isBatchClosedForMainListMutations(batch),
+        !isBatchClosedForMainListMutations(batch) &&
+        !isBatchLifecycleBlockingDeactivateOrArchive(batch),
     )
     .map((batch) => batch.id);
+}
+
+export function selectedBatchIdsIncludeLifecycleBlock(
+  batches: BatchListItem[],
+  selectedBatchIds: string[],
+): boolean {
+  const selected = new Set(selectedBatchIds);
+
+  return batches.some(
+    (batch) =>
+      selected.has(batch.id) &&
+      isBatchLifecycleBlockingDeactivateOrArchive(batch),
+  );
 }
 
 export function getEligibleRestoreIds(

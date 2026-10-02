@@ -204,6 +204,22 @@ class BatchService {
     }
   }
 
+  async getBatchDeleteDependencies(id: string) {
+    try {
+      return await batchApi.getBatchDeleteDependencies(id);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async deleteUpcomingBatch(id: string) {
+    try {
+      return await batchApi.deleteUpcomingBatch(id);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async reorderBatches(payload: ReorderBatchRequest) {
     try {
       return await batchApi.reorderBatches(payload);
@@ -249,6 +265,14 @@ class BatchService {
       return normalizeBulkResponse(
         await batchApi.bulkPermanentDelete(batchIds),
       );
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async bulkDeleteUpcoming(batchIds: string[]) {
+    try {
+      return normalizeBulkResponse(await batchApi.bulkDeleteUpcoming(batchIds));
     } catch (error) {
       throw this.handleError(error);
     }

@@ -4,7 +4,12 @@ import { CourseMode as PrismaCourseMode, DayOfWeek as PrismaDayOfWeek } from '@p
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
 import { DayOfWeek } from '../../domain/enums/day-of-week.enum';
+import { BatchStatus } from '../../domain/enums/batch-status.enum';
+import { getBatchLifecycleBlockReason } from '../../domain/utils/batch-template-lifecycle-block.util';
+import { resolveBatchApiStatus } from '../../domain/utils/batch-lifecycle-status.util';
 import type {
+  BatchTemplateLifecycleBlockRecord,
+  BatchTemplateLinkedBatchLifecycle,
   BatchTemplateRecord,
   BatchTemplateRepository,
   CreateBatchTemplateInput,
@@ -141,6 +146,14 @@ export class PrismaBatchTemplateRepository
     params?: ListBatchTemplatesParams,
   ): Promise<ListBatchTemplatesResult> {
     const where = buildWhere(params);
+
+    if (params?.linkedBatchLifecycle) {
+      const templateIds = await this.findTemplateIdsByLinkedBatchLifecycle(
+        params.linkedBatchLifecycle,
+      );
+
+      where.id = { in: templateIds.length ? templateIds : ['__none__'] };
+    }
     const skip = params?.skip ?? 0;
     const take = params?.take;
 
@@ -300,5 +313,335 @@ export class PrismaBatchTemplateRepository
       where: { isDeleted: false },
     });
     return result._max.displayOrder ?? 0;
+  }
+
+  async findLifecycleBlocksByTemplateIds(
+    templateIds: string[],
+  ): Promise<Record<string, BatchTemplateLifecycleBlockRecord[]>> {
+    const result: Record<string, BatchTemplateLifecycleBlockRecord[]> =
+      {};
+
+    for (const id of templateIds) {
+      result[id] = [];
+    }
+
+    if (!templateIds.length) {
+      return result;
+    }
+
+    const batchSelect = {
+      id: true,
+      name: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      startTime: true,
+      endTime: true,
+      isDeleted: true,
+      batchTemplateId: true,
+    } as const;
+
+    const [linkedBatches, linkedTimings] = await Promise.all([
+      this.prisma.batch.findMany({
+        where: {
+          batchTemplateId: { in: templateIds },
+          isDeleted: false,
+        },
+        select: batchSelect,
+      }),
+      this.prisma.batchTiming.findMany({
+        where: {
+          batchTemplateId: { in: templateIds },
+          isDeleted: false,
+          batch: { isDeleted: false },
+        },
+        select: {
+          batchTemplateId: true,
+          status: true,
+          startDate: true,
+          endDate: true,
+          startTime: true,
+          endTime: true,
+          isDeleted: true,
+          batch: { select: batchSelect },
+        },
+      }),
+    ]);
+
+    type BatchShape = {
+      id: string;
+      name: string;
+      status: string;
+      startDate: Date;
+      endDate: Date | null;
+      startTime: string;
+      endTime: string;
+      isDeleted: boolean;
+    };
+
+    const toBatchSource = (batch: BatchShape) => ({
+      id: batch.id,
+      name: batch.name,
+      status: batch.status as BatchStatus,
+      startDate: batch.startDate,
+      endDate: batch.endDate,
+      startTime: batch.startTime,
+      endTime: batch.endTime,
+      isDeleted: batch.isDeleted,
+    });
+
+    const appendBlock = (
+      templateId: string | null | undefined,
+      batch: BatchShape,
+      lifecycleStatus: 'UPCOMING' | 'ONGOING' | null,
+    ) => {
+      if (!templateId || !result[templateId] || !lifecycleStatus) {
+        return;
+      }
+
+      const blocks = result[templateId]!;
+      const existing = blocks.find((entry) => entry.batchId === batch.id);
+
+      if (existing) {
+        if (lifecycleStatus === 'ONGOING') {
+          existing.lifecycleStatus = 'ONGOING';
+        }
+
+        return;
+      }
+
+      blocks.push({
+        batchId: batch.id,
+        batchName: batch.name,
+        lifecycleStatus,
+      });
+    };
+
+    for (const batch of linkedBatches) {
+      appendBlock(
+        batch.batchTemplateId,
+        batch,
+        getBatchLifecycleBlockReason(toBatchSource(batch)),
+      );
+    }
+
+    for (const timing of linkedTimings) {
+      const parent = timing.batch;
+      appendBlock(
+        timing.batchTemplateId,
+        parent,
+        getBatchLifecycleBlockReason(toBatchSource(parent)),
+      );
+    }
+
+    return result;
+  }
+
+  async findPrimaryLinkedBatchLifecycleByTemplateIds(
+    templateIds: string[],
+  ): Promise<Record<string, BatchTemplateLinkedBatchLifecycle | null>> {
+    const result: Record<string, BatchTemplateLinkedBatchLifecycle | null> =
+      {};
+
+    for (const id of templateIds) {
+      result[id] = null;
+    }
+
+    if (!templateIds.length) {
+      return result;
+    }
+
+    const templateIdSet = new Set(templateIds);
+    const links = await this.findTemplateBatchLinks();
+    const now = new Date();
+    const priority: Record<BatchTemplateLinkedBatchLifecycle, number> = {
+      ONGOING: 3,
+      UPCOMING: 2,
+      EXPIRED: 1,
+    };
+
+    const toLifecycle = (
+      resolved: BatchStatus,
+    ): BatchTemplateLinkedBatchLifecycle | null => {
+      if (
+        resolved === BatchStatus.EXPIRED ||
+        resolved === BatchStatus.CANCELLED
+      ) {
+        return 'EXPIRED';
+      }
+
+      if (resolved === BatchStatus.ONGOING) {
+        return 'ONGOING';
+      }
+
+      if (resolved === BatchStatus.UPCOMING) {
+        return 'UPCOMING';
+      }
+
+      return null;
+    };
+
+    for (const link of links) {
+      if (!templateIdSet.has(link.templateId)) {
+        continue;
+      }
+
+      const resolved = resolveBatchApiStatus({
+        storedStatus: link.batch.status,
+        isDeleted: link.batch.isDeleted,
+        startDate: link.batch.startDate,
+        startTime: link.batch.startTime,
+        endDate: link.batch.endDate,
+        endTime: link.batch.endTime,
+        now,
+      });
+      const lifecycle = toLifecycle(resolved);
+
+      if (!lifecycle) {
+        continue;
+      }
+
+      const current = result[link.templateId];
+
+      if (!current || priority[lifecycle] > priority[current]) {
+        result[link.templateId] = lifecycle;
+      }
+    }
+
+    return result;
+  }
+
+  async findTemplateIdsByLinkedBatchLifecycle(
+    lifecycle: 'UPCOMING' | 'ONGOING' | 'EXPIRED',
+  ): Promise<string[]> {
+    const links = await this.findTemplateBatchLinks();
+    const now = new Date();
+    const matching = new Set<string>();
+
+    for (const link of links) {
+      const resolved = resolveBatchApiStatus({
+        storedStatus: link.batch.status,
+        isDeleted: link.batch.isDeleted,
+        startDate: link.batch.startDate,
+        startTime: link.batch.startTime,
+        endDate: link.batch.endDate,
+        endTime: link.batch.endTime,
+        now,
+      });
+
+      const matchesTab =
+        lifecycle === 'EXPIRED'
+          ? resolved === BatchStatus.EXPIRED ||
+            resolved === BatchStatus.CANCELLED
+          : resolved === lifecycle;
+
+      if (matchesTab) {
+        matching.add(link.templateId);
+      }
+    }
+
+    return [...matching];
+  }
+
+  private async findTemplateBatchLinks(): Promise<
+    {
+      templateId: string;
+      batch: {
+        id: string;
+        status: BatchStatus;
+        startDate: Date;
+        endDate: Date | null;
+        startTime: string;
+        endTime: string;
+        isDeleted: boolean;
+      };
+    }[]
+  > {
+    const batchSelect = {
+      id: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      startTime: true,
+      endTime: true,
+      isDeleted: true,
+    } as const;
+
+    const [directLinks, timingLinks] = await Promise.all([
+      this.prisma.batch.findMany({
+        where: {
+          isDeleted: false,
+          batchTemplateId: { not: null },
+        },
+        select: {
+          batchTemplateId: true,
+          ...batchSelect,
+        },
+      }),
+      this.prisma.batchTiming.findMany({
+        where: {
+          isDeleted: false,
+          batchTemplateId: { not: null },
+          batch: { isDeleted: false },
+        },
+        select: {
+          batchTemplateId: true,
+          batch: { select: batchSelect },
+        },
+      }),
+    ]);
+
+    const links: {
+      templateId: string;
+      batch: {
+        id: string;
+        status: BatchStatus;
+        startDate: Date;
+        endDate: Date | null;
+        startTime: string;
+        endTime: string;
+        isDeleted: boolean;
+      };
+    }[] = [];
+
+    for (const row of directLinks) {
+      if (!row.batchTemplateId) {
+        continue;
+      }
+
+      links.push({
+        templateId: row.batchTemplateId,
+        batch: {
+          id: row.id,
+          status: row.status as BatchStatus,
+          startDate: row.startDate,
+          endDate: row.endDate,
+          startTime: row.startTime,
+          endTime: row.endTime,
+          isDeleted: row.isDeleted,
+        },
+      });
+    }
+
+    for (const row of timingLinks) {
+      if (!row.batchTemplateId) {
+        continue;
+      }
+
+      links.push({
+        templateId: row.batchTemplateId,
+        batch: {
+          id: row.batch.id,
+          status: row.batch.status as BatchStatus,
+          startDate: row.batch.startDate,
+          endDate: row.batch.endDate,
+          startTime: row.batch.startTime,
+          endTime: row.batch.endTime,
+          isDeleted: row.batch.isDeleted,
+        },
+      });
+    }
+
+    return links;
   }
 }

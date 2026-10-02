@@ -1,7 +1,7 @@
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
 
-import { ensureBatchOpenForLifecycleMutation } from '../../domain/utils/batch-selection.util';
+import { ensureBatchCanDeactivateOrArchive } from '../../domain/utils/batch-selection.util';
 
 import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
 
@@ -21,7 +21,7 @@ export class DeleteBatchHandler {
       await this.batchRepo.findById(command.id),
     );
 
-    ensureBatchOpenForLifecycleMutation(batch);
+    ensureBatchCanDeactivateOrArchive(batch, 'archive');
 
     const deletedDisplayOrder = batch.displayOrder;
 

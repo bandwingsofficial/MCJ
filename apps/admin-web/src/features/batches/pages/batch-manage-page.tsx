@@ -28,6 +28,11 @@ import {
   BATCH_MANAGE_DEFAULT_TAB,
   parseBatchManageReturnContext,
 } from "@/src/features/batches/utils/batch-manage.routes";
+import {
+  buildSingleLifecycleBlockedDescription,
+  getBatchLifecycleStatusLabel,
+  isBatchLifecycleBlockingDeactivateOrArchive,
+} from "@/src/features/batches/utils/batch-lifecycle-block.utils";
 
 interface Props {
   batchId: string;
@@ -55,6 +60,9 @@ export function BatchManagePage({ batchId }: Props) {
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [archiveBlockedDescription, setArchiveBlockedDescription] = useState<
+    string | null
+  >(null);
   const [isRestoreOpen, setIsRestoreOpen] = useState(false);
   const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] = useState(false);
   const [isPermanentDeleting, setIsPermanentDeleting] = useState(false);
@@ -88,7 +96,22 @@ export function BatchManagePage({ batchId }: Props) {
           batch={batch}
           returnContext={returnContext}
           activeSection={activeSection}
-          onArchive={() => setIsArchiveOpen(true)}
+          onArchive={() => {
+            if (isBatchLifecycleBlockingDeactivateOrArchive(batch)) {
+              setArchiveBlockedDescription(
+                buildSingleLifecycleBlockedDescription(
+                  batch.name,
+                  getBatchLifecycleStatusLabel(batch.status),
+                  "archive",
+                ),
+              );
+              setIsArchiveOpen(true);
+              return;
+            }
+
+            setArchiveBlockedDescription(null);
+            setIsArchiveOpen(true);
+          }}
           onRestore={() => setIsRestoreOpen(true)}
           onPermanentDelete={() => setIsPermanentDeleteOpen(true)}
           actionsDisabled={actionsDisabled}
@@ -121,8 +144,20 @@ export function BatchManagePage({ batchId }: Props) {
       <BatchDeleteDialog
         open={isArchiveOpen}
         isLoading={isArchiving}
-        onCancel={() => setIsArchiveOpen(false)}
+        blocked={Boolean(archiveBlockedDescription)}
+        description={
+          archiveBlockedDescription ??
+          "Are you sure you want to archive this batch? It can be restored later."
+        }
+        onCancel={() => {
+          setIsArchiveOpen(false);
+          setArchiveBlockedDescription(null);
+        }}
         onConfirm={async () => {
+          if (archiveBlockedDescription) {
+            return;
+          }
+
           try {
             await deleteBatch(batch.id);
             appToast.success("Batch archived successfully");

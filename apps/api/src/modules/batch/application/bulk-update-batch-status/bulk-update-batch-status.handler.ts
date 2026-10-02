@@ -8,7 +8,10 @@ import type { BatchRepository } from '../../domain/repositories/batch.repository
 import { ValidationError } from '../errors/validation.error';
 import type { BulkBatchItemResult } from '../shared/bulk-batch-operation.result';
 import { parseBulkBatchIds } from '../shared/parse-bulk-batch-ids';
-import { isBatchClosedForLifecycleMutation } from '../../domain/utils/batch-selection.util';
+import {
+  isBatchBlockedForDeactivateOrArchive,
+  isBatchClosedForLifecycleMutation,
+} from '../../domain/utils/batch-selection.util';
 
 import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
 
@@ -55,12 +58,22 @@ export class BulkUpdateBatchStatusHandler {
           continue;
         }
 
-        if (isBatchClosedForLifecycleMutation(batch)) {
+        if (command.isActive) {
+          if (isBatchClosedForLifecycleMutation(batch)) {
+            itemResults.push({
+              batchId,
+              success: false,
+              message:
+                'Expired or cancelled batches cannot be activated or deactivated',
+            });
+            continue;
+          }
+        } else if (isBatchBlockedForDeactivateOrArchive(batch)) {
           itemResults.push({
             batchId,
             success: false,
             message:
-              'Expired or cancelled batches cannot be activated or deactivated',
+              'Upcoming or ongoing batches cannot be deactivated',
           });
           continue;
         }

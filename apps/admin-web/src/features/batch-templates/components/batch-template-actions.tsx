@@ -93,18 +93,6 @@ export function BatchTemplateActions({
         </button>
       </Tooltip>
 
-      <Tooltip content="Edit batch timing">
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => onEdit(template)}
-          aria-label="Edit batch timing"
-          className={`${iconButtonClass} text-blue-900`}
-        >
-          <Pencil className={iconClass} />
-        </button>
-      </Tooltip>
-
       <Tooltip content="Archive batch timing">
         <button
           type="button"
@@ -114,6 +102,18 @@ export function BatchTemplateActions({
           className={`${iconButtonClass} text-red-800`}
         >
           <Archive className={iconClass} />
+        </button>
+      </Tooltip>
+
+      <Tooltip content="Edit batch timing">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onEdit(template)}
+          aria-label="Edit batch timing"
+          className={`${iconButtonClass} text-blue-900`}
+        >
+          <Pencil className={iconClass} />
         </button>
       </Tooltip>
     </div>

@@ -1,4 +1,6 @@
+import { BatchTemplateLifecycleBlockedException } from '../../domain/errors/batch-template-lifecycle.exception';
 import type { BatchTemplateRepository } from '../../domain/repositories/batch-template.repository';
+import { formatBatchTemplateLifecycleBlockMessage } from '../../domain/utils/batch-template-lifecycle-block.util';
 
 export type BulkBatchTemplateResult = {
   requested: number;
@@ -16,6 +18,29 @@ export class BulkSetBatchTemplateActiveHandler {
     isActive: boolean;
   }): Promise<BulkBatchTemplateResult> {
     const ids = [...new Set(params.ids.filter(Boolean))];
+
+    if (!params.isActive && ids.length > 0) {
+      const blocksByTemplateId =
+        await this.templateRepo.findLifecycleBlocksByTemplateIds(ids);
+      const blockedEntries = ids.flatMap((id) => {
+        const blocks = blocksByTemplateId[id] ?? [];
+        return blocks.map((block) => ({ templateId: id, ...block }));
+      });
+
+      if (blockedEntries.length > 0) {
+        throw new BatchTemplateLifecycleBlockedException(
+          formatBatchTemplateLifecycleBlockMessage(
+            'deactivate',
+            blockedEntries.map((entry) => ({
+              batchId: entry.batchId,
+              batchName: entry.batchName,
+              lifecycleStatus: entry.lifecycleStatus,
+            })),
+          ),
+        );
+      }
+    }
+
     const succeeded = await this.templateRepo.setActiveMany(
       ids,
       params.isActive,
@@ -39,6 +64,29 @@ export class BulkArchiveBatchTemplatesHandler {
     deletedBy?: string;
   }): Promise<BulkBatchTemplateResult> {
     const ids = [...new Set(params.ids.filter(Boolean))];
+
+    if (ids.length > 0) {
+      const blocksByTemplateId =
+        await this.templateRepo.findLifecycleBlocksByTemplateIds(ids);
+      const blockedEntries = ids.flatMap((id) => {
+        const blocks = blocksByTemplateId[id] ?? [];
+        return blocks.map((block) => ({ templateId: id, ...block }));
+      });
+
+      if (blockedEntries.length > 0) {
+        throw new BatchTemplateLifecycleBlockedException(
+          formatBatchTemplateLifecycleBlockMessage(
+            'archive',
+            blockedEntries.map((entry) => ({
+              batchId: entry.batchId,
+              batchName: entry.batchName,
+              lifecycleStatus: entry.lifecycleStatus,
+            })),
+          ),
+        );
+      }
+    }
+
     const succeeded = await this.templateRepo.softDeleteMany(
       ids,
       params.deletedBy,

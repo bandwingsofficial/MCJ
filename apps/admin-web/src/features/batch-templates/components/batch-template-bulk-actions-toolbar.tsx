@@ -49,7 +49,6 @@ export function BatchTemplateBulkActionsToolbar({
   ).length;
 
   const viewingArchived = restoreCount > 0 || permanentDeleteCount > 0;
-
   return (
     <div className="mb-3 flex flex-col gap-2 rounded-lg border border-[#2563EB]/20 bg-[#2563EB]/5 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-sm font-medium text-slate-800">

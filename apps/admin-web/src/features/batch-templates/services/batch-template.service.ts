@@ -1,12 +1,21 @@
 import { apiClient } from "@/src/core/api/axios";
 
+import type { BatchLifecycleStatus } from "@/src/features/batches/types/batch.types";
 import type {
   ApiSuccessResponse,
   BatchTemplate,
+  BatchTemplateLifecycleBlock,
   BulkBatchTemplateResult,
   CreateBatchTemplateRequest,
   UpdateBatchTemplateRequest,
 } from "@/src/features/batch-templates/types/batch-template.types";
+
+export type BatchTemplateLifecycleDependencies = {
+  templateId: string;
+  lifecycleBlocks: BatchTemplateLifecycleBlock[];
+  canDeactivate: boolean;
+  canArchive: boolean;
+};
 
 export type BatchTemplateListFilters = {
   search?: string;
@@ -15,6 +24,7 @@ export type BatchTemplateListFilters = {
   isDeleted?: boolean;
   /** When true, All Status includes archived rows (Categories-style). */
   includeDeleted?: boolean;
+  linkedBatchLifecycle?: BatchLifecycleStatus;
   page?: number;
   pageSize?: number;
 };
@@ -62,6 +72,7 @@ class BatchTemplateService {
         isActive: filters.isActive,
         isDeleted: filters.isDeleted,
         includeDeleted: filters.includeDeleted,
+        linkedBatchLifecycle: filters.linkedBatchLifecycle,
         skip,
         take: pageSize,
       },
@@ -84,6 +95,16 @@ class BatchTemplateService {
     const response = await apiClient.post<
       ApiSuccessResponse<BatchTemplate>
     >(this.basePath, payload);
+    return response.data.data;
+  }
+
+  async getLifecycleDependencies(
+    id: string,
+  ): Promise<BatchTemplateLifecycleDependencies> {
+    const response = await apiClient.get<
+      ApiSuccessResponse<BatchTemplateLifecycleDependencies>
+    >(`${this.basePath}/${id}/lifecycle-dependencies`);
+
     return response.data.data;
   }
 

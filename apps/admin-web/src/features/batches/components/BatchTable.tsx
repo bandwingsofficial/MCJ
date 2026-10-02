@@ -30,9 +30,11 @@ interface Props {
   emptyMessage?: string;
   onActivate: (batch: BatchListItem) => void;
   onDeactivate: (batch: BatchListItem) => void;
+  onArchive: (batch: BatchListItem) => void;
   onEdit: (batch: BatchListItem) => void;
   onRestore: (batch: BatchListItem) => void;
   onPermanentDelete: (batch: BatchListItem) => void;
+  onDeleteUpcoming: (batch: BatchListItem) => void;
 }
 
 export function BatchTable({
@@ -44,9 +46,11 @@ export function BatchTable({
   emptyMessage = "No batches found.",
   onActivate,
   onDeactivate,
+  onArchive,
   onEdit,
   onRestore,
   onPermanentDelete,
+  onDeleteUpcoming,
 }: Props) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
@@ -273,9 +277,11 @@ export function BatchTable({
                       disabled={actionsDisabled}
                       onActivate={onActivate}
                       onDeactivate={onDeactivate}
+                      onArchive={onArchive}
                       onEdit={onEdit}
                       onRestore={onRestore}
                       onPermanentDelete={onPermanentDelete}
+                      onDeleteUpcoming={onDeleteUpcoming}
                     />
                   </td>
                 </tr>

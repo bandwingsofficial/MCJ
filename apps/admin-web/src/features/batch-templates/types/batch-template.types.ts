@@ -1,4 +1,14 @@
-import type { BatchMode, DayOfWeek } from "@/src/features/batches/types/batch.types";
+import type {
+  BatchLifecycleStatus,
+  BatchMode,
+  DayOfWeek,
+} from "@/src/features/batches/types/batch.types";
+
+export type BatchTemplateLifecycleBlock = {
+  batchId: string;
+  batchName: string;
+  lifecycleStatus: "UPCOMING" | "ONGOING";
+};
 
 export type BatchTemplate = {
   id: string;
@@ -13,6 +23,9 @@ export type BatchTemplate = {
   isDeleted: boolean;
   deletedAt?: string | null;
   displayOrder: number | null;
+  lifecycleBlocks?: BatchTemplateLifecycleBlock[];
+  /** Resolved from linked parent Batch(es); null when no linked batch. */
+  linkedBatchLifecycleStatus?: BatchLifecycleStatus | null;
   createdAt: string;
   updatedAt: string;
 };

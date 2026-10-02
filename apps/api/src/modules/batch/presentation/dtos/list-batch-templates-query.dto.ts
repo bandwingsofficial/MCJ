@@ -82,6 +82,11 @@ export class ListBatchTemplatesQueryDto {
   @Min(1)
   @Transform(({ value }) => toNumber(value))
   take?: number;
+
+  @ApiPropertyOptional({ enum: ['UPCOMING', 'ONGOING', 'EXPIRED'] })
+  @IsOptional()
+  @IsEnum(['UPCOMING', 'ONGOING', 'EXPIRED'] as const)
+  linkedBatchLifecycle?: 'UPCOMING' | 'ONGOING' | 'EXPIRED';
 }
 
 export class BulkBatchTemplateIdsDto {

@@ -23,6 +23,7 @@ import {
   courseManagePath,
   courseManageTabPath,
 } from "@/src/features/courses/utils/course-manage.routes";
+import { isBatchLifecycleBlockingDeactivateOrArchive } from "@/src/features/batches/utils/batch-lifecycle-block.utils";
 
 interface Props {
   batch: Batch;
@@ -44,6 +45,8 @@ export function BatchManageHeader({
   actionsDisabled = false,
 }: Props) {
   const isArchived = Boolean(batch.deletedAt || batch.isDeleted);
+  const archiveBlockedByLifecycle =
+    isBatchLifecycleBlockingDeactivateOrArchive(batch);
   const courseName = batch.course?.title?.trim() || "No course assigned";
   const courseCode = batch.course?.code?.trim() || "";
   const courseId =
@@ -239,7 +242,7 @@ export function BatchManageHeader({
                     Permanent Delete
                   </Button>
                 </>
-              ) : (
+              ) : archiveBlockedByLifecycle ? null : (
                 <Button
                   type="button"
                   size="sm"

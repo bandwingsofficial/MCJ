@@ -35,6 +35,7 @@ import {
 import { CreateBatchTemplateCommand } from '../../application/batch-templates/create-batch-template.command';
 import { CreateBatchTemplateHandler } from '../../application/batch-templates/create-batch-template.handler';
 import { GetBatchTemplateHandler } from '../../application/batch-templates/get-batch-template.handler';
+import { GetBatchTemplateLifecycleDependenciesHandler } from '../../application/batch-templates/get-batch-template-lifecycle-dependencies.handler';
 import { ListBatchTemplatesHandler } from '../../application/batch-templates/list-batch-templates.handler';
 import { SetBatchTemplateActiveHandler } from '../../application/batch-templates/set-batch-template-active.handler';
 import { UpdateBatchTemplateCommand } from '../../application/batch-templates/update-batch-template.command';
@@ -57,6 +58,7 @@ export class AdminBatchTemplateController {
     private readonly updateHandler: UpdateBatchTemplateHandler,
     private readonly listHandler: ListBatchTemplatesHandler,
     private readonly getHandler: GetBatchTemplateHandler,
+    private readonly getLifecycleDependenciesHandler: GetBatchTemplateLifecycleDependenciesHandler,
     private readonly setActiveHandler: SetBatchTemplateActiveHandler,
     private readonly softDeleteHandler: SoftDeleteBatchTemplateHandler,
     private readonly restoreHandler: RestoreBatchTemplateHandler,
@@ -76,6 +78,7 @@ export class AdminBatchTemplateController {
       isActive: query.isActive,
       isDeleted: query.isDeleted,
       includeDeleted: query.includeDeleted,
+      linkedBatchLifecycle: query.linkedBatchLifecycle,
       skip: query.skip,
       take: query.take,
     });
@@ -184,6 +187,22 @@ export class AdminBatchTemplateController {
       success: true,
       message: `${data.succeeded} batch timing(s) permanently deleted`,
       data,
+    };
+  }
+
+  @Get(':id/lifecycle-dependencies')
+  async getLifecycleDependencies(@Param('id', ParseUUIDPipe) id: string) {
+    const data = await this.getLifecycleDependenciesHandler.execute(id);
+
+    return {
+      success: true,
+      message: 'Batch timing dependencies retrieved successfully',
+      data: {
+        templateId: data.templateId,
+        lifecycleBlocks: data.lifecycleBlocks,
+        canDeactivate: data.canDeactivate,
+        canArchive: data.canArchive,
+      },
     };
   }
 

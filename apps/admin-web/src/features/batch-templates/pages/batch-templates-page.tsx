@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
@@ -25,6 +25,10 @@ import {
   getEligiblePermanentDeleteIds,
   getEligibleRestoreIds,
 } from "@/src/features/batch-templates/utils/batch-template-bulk.utils";
+import {
+  buildBatchTemplateLifecycleBlockedDescription,
+} from "@/src/features/batch-templates/utils/batch-template-lifecycle-block.utils";
+import type { BatchTemplateLifecycleBlock } from "@/src/features/batch-templates/types/batch-template.types";
 
 type DialogAction =
   | "activate"
@@ -56,10 +60,24 @@ export function BatchTemplatesPage() {
     null,
   );
   const [actionLoading, setActionLoading] = useState(false);
+  const [dialogBlockedDescription, setDialogBlockedDescription] = useState<
+    string | null
+  >(null);
+  const [bulkBlockedDescription, setBulkBlockedDescription] = useState<
+    string | null
+  >(null);
+  const lifecycleCheckRequestIdRef = useRef(0);
+  const bulkLifecycleCheckRequestIdRef = useRef(0);
 
   useEffect(() => {
     setSelectedIds([]);
-  }, [filters.page, filters.pageSize, filters.mode, filters.status, filters.search]);
+  }, [
+    filters.page,
+    filters.pageSize,
+    filters.mode,
+    filters.status,
+    filters.search,
+  ]);
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(total / filters.pageSize));
@@ -100,8 +118,134 @@ export function BatchTemplatesPage() {
   };
 
   const closeDialog = () => {
+    lifecycleCheckRequestIdRef.current += 1;
     setDialogAction(null);
     setDialogTarget(null);
+    setDialogBlockedDescription(null);
+  };
+
+  const mergeLifecycleBlocks = (
+    blocks: BatchTemplateLifecycleBlock[],
+  ): BatchTemplateLifecycleBlock[] => {
+    const byBatchId = new Map<string, BatchTemplateLifecycleBlock>();
+
+    for (const block of blocks) {
+      const existing = byBatchId.get(block.batchId);
+
+      if (!existing) {
+        byBatchId.set(block.batchId, block);
+        continue;
+      }
+
+      if (block.lifecycleStatus === "ONGOING") {
+        byBatchId.set(block.batchId, block);
+      }
+    }
+
+    return Array.from(byBatchId.values()).sort((left, right) =>
+      left.batchName.localeCompare(right.batchName),
+    );
+  };
+
+  const runLifecycleProtectedAction = async (
+    template: BatchTemplate,
+    action: "deactivate" | "archive",
+  ) => {
+    const requestId = ++lifecycleCheckRequestIdRef.current;
+
+    try {
+      const dependencies =
+        await batchTemplateService.getLifecycleDependencies(template.id);
+
+      if (requestId !== lifecycleCheckRequestIdRef.current) {
+        return;
+      }
+
+      const blocks = dependencies.lifecycleBlocks ?? [];
+
+      if (blocks.length > 0) {
+        setDialogBlockedDescription(
+          buildBatchTemplateLifecycleBlockedDescription(
+            template.name,
+            blocks,
+            action,
+          ),
+        );
+      } else {
+        setDialogBlockedDescription(null);
+      }
+
+      setDialogTarget(template);
+      setDialogAction(action);
+    } catch (err) {
+      if (requestId === lifecycleCheckRequestIdRef.current) {
+        appToast.error(getErrorMessage(err));
+      }
+    }
+  };
+
+  const openDeactivateDialog = (template: BatchTemplate) => {
+    void runLifecycleProtectedAction(template, "deactivate");
+  };
+
+  const openArchiveDialog = (template: BatchTemplate) => {
+    void runLifecycleProtectedAction(template, "archive");
+  };
+
+  const handleBulkToolbarAction = (action: BulkBatchTimingAction) => {
+    if (action === "deactivate" || action === "archive") {
+      const eligibleIds =
+        action === "deactivate"
+          ? getEligibleDeactivateIds(templates, selectedIds)
+          : getEligibleArchiveIds(templates, selectedIds);
+
+      if (eligibleIds.length === 0) {
+        return;
+      }
+
+      const requestId = ++bulkLifecycleCheckRequestIdRef.current;
+
+      void (async () => {
+        try {
+          const dependencyResults = await Promise.all(
+            selectedIds.map((id) =>
+              batchTemplateService.getLifecycleDependencies(id),
+            ),
+          );
+
+          if (requestId !== bulkLifecycleCheckRequestIdRef.current) {
+            return;
+          }
+
+          const blocks = mergeLifecycleBlocks(
+            dependencyResults.flatMap((result) => result.lifecycleBlocks ?? []),
+          );
+
+          if (blocks.length > 0) {
+            setBulkBlockedDescription(
+              buildBatchTemplateLifecycleBlockedDescription(
+                "",
+                blocks,
+                action === "deactivate" ? "deactivate" : "archive",
+              ),
+            );
+          } else {
+            setBulkBlockedDescription(null);
+          }
+
+          setBulkAction(action);
+        } catch (err) {
+          if (requestId === bulkLifecycleCheckRequestIdRef.current) {
+            appToast.error(getErrorMessage(err));
+          }
+        }
+      })();
+
+      return;
+    }
+
+    setBulkBlockedDescription(null);
+    setBulkAction(action);
   };
 
   const runSingleAction = async (
@@ -301,7 +445,7 @@ export function BatchTemplatesPage() {
           templates={templates}
           selectedIds={selectedIds}
           disabled={tableActionLoading || isFetching}
-          onAction={setBulkAction}
+          onAction={handleBulkToolbarAction}
         />
 
         {isInitialLoading ? (
@@ -342,14 +486,8 @@ export function BatchTemplatesPage() {
                   setDialogTarget(template);
                   setDialogAction("activate");
                 }}
-                onDeactivate={(template) => {
-                  setDialogTarget(template);
-                  setDialogAction("deactivate");
-                }}
-                onArchive={(template) => {
-                  setDialogTarget(template);
-                  setDialogAction("archive");
-                }}
+                onDeactivate={openDeactivateDialog}
+                onArchive={openArchiveDialog}
                 onRestore={(template) => {
                   setDialogTarget(template);
                   setDialogAction("restore");
@@ -429,26 +567,52 @@ export function BatchTemplatesPage() {
 
       <ConfirmDialog
         open={dialogAction === "deactivate" && Boolean(dialogTarget)}
-        title="Deactivate Batch Timing?"
-        description={`${targetName} will become inactive. Existing batches are not changed.`}
-        confirmLabel="Deactivate"
-        confirmVariant="danger"
-        loading={actionLoading}
+        title={
+          dialogBlockedDescription
+            ? "Cannot deactivate batch timing"
+            : "Deactivate Batch Timing?"
+        }
+        description={
+          dialogBlockedDescription ??
+          `${targetName} will become inactive. Existing batches are not changed.`
+        }
+        confirmLabel={dialogBlockedDescription ? "OK" : "Deactivate"}
+        confirmVariant={dialogBlockedDescription ? "primary" : "danger"}
+        showCancel={!dialogBlockedDescription}
+        loading={actionLoading && !dialogBlockedDescription}
         onCancel={closeDialog}
         onConfirm={() => {
+          if (dialogBlockedDescription) {
+            closeDialog();
+            return;
+          }
+
           void confirmSingleDialog();
         }}
       />
 
       <ConfirmDialog
         open={dialogAction === "archive" && Boolean(dialogTarget)}
-        title="Archive Batch Timing?"
-        description="This batch timing will be moved to archived status."
-        confirmLabel="Archive"
-        confirmVariant="danger"
-        loading={actionLoading}
+        title={
+          dialogBlockedDescription
+            ? "Cannot archive batch timing"
+            : "Archive Batch Timing?"
+        }
+        description={
+          dialogBlockedDescription ??
+          "This batch timing will be moved to archived status."
+        }
+        confirmLabel={dialogBlockedDescription ? "OK" : "Archive"}
+        confirmVariant={dialogBlockedDescription ? "primary" : "danger"}
+        showCancel={!dialogBlockedDescription}
+        loading={actionLoading && !dialogBlockedDescription}
         onCancel={closeDialog}
         onConfirm={() => {
+          if (dialogBlockedDescription) {
+            closeDialog();
+            return;
+          }
+
           void confirmSingleDialog();
         }}
       />
@@ -481,15 +645,33 @@ export function BatchTemplatesPage() {
 
       <ConfirmDialog
         open={bulkAction !== null}
-        title={bulkDialogCopy.title}
-        description={bulkDialogCopy.description}
-        confirmLabel={bulkDialogCopy.confirmLabel}
-        confirmVariant={bulkDialogCopy.confirmVariant}
-        loading={actionLoading}
+        title={
+          bulkBlockedDescription
+            ? bulkAction === "archive"
+              ? "Cannot archive selected batch timings"
+              : "Cannot deactivate selected batch timings"
+            : bulkDialogCopy.title
+        }
+        description={bulkBlockedDescription ?? bulkDialogCopy.description}
+        confirmLabel={bulkBlockedDescription ? "OK" : bulkDialogCopy.confirmLabel}
+        confirmVariant={
+          bulkBlockedDescription ? "primary" : bulkDialogCopy.confirmVariant
+        }
+        showCancel={!bulkBlockedDescription}
+        loading={actionLoading && !bulkBlockedDescription}
         onCancel={() => {
-          if (!actionLoading) setBulkAction(null);
+          if (!actionLoading) {
+            setBulkAction(null);
+            setBulkBlockedDescription(null);
+          }
         }}
         onConfirm={() => {
+          if (bulkBlockedDescription) {
+            setBulkAction(null);
+            setBulkBlockedDescription(null);
+            return;
+          }
+
           void confirmBulkAction();
         }}
       />

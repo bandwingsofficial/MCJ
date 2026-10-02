@@ -1,6 +1,10 @@
 import type { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
 import type { DayOfWeek } from '../../domain/enums/day-of-week.enum';
-import type { BatchTemplateRecord } from '../../domain/repositories/batch-template.repository';
+import type {
+  BatchTemplateLifecycleBlockRecord,
+  BatchTemplateLinkedBatchLifecycle,
+  BatchTemplateRecord,
+} from '../../domain/repositories/batch-template.repository';
 
 export class BatchTemplateResult {
   constructor(
@@ -18,9 +22,17 @@ export class BatchTemplateResult {
     public readonly deletedAt: Date | null,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
+    public readonly lifecycleBlocks: BatchTemplateLifecycleBlockRecord[] = [],
+    public readonly linkedBatchLifecycleStatus:
+      | BatchTemplateLinkedBatchLifecycle
+      | null = null,
   ) {}
 
-  static fromRecord(row: BatchTemplateRecord): BatchTemplateResult {
+  static fromRecord(
+    row: BatchTemplateRecord,
+    lifecycleBlocks: BatchTemplateLifecycleBlockRecord[] = [],
+    linkedBatchLifecycleStatus: BatchTemplateLinkedBatchLifecycle | null = null,
+  ): BatchTemplateResult {
     return new BatchTemplateResult(
       row.id,
       row.name,
@@ -36,6 +48,8 @@ export class BatchTemplateResult {
       row.deletedAt,
       row.createdAt,
       row.updatedAt,
+      lifecycleBlocks,
+      linkedBatchLifecycleStatus,
     );
   }
 }

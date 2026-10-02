@@ -178,6 +178,26 @@ export const batchApi = {
     return response.data;
   },
 
+  async getBatchDeleteDependencies(id: string) {
+    const response = await apiClient.get<
+      ApiSuccessResponse<{
+        batchId: string;
+        canDelete: boolean;
+        branchAssignments: { branchId: string; branchName: string }[];
+      }>
+    >(`/admin/batches/${id}/delete-dependencies`);
+
+    return response.data;
+  },
+
+  async deleteUpcomingBatch(id: string) {
+    const response = await apiClient.delete<
+      ApiSuccessResponse<{ id: string; deleted: boolean }>
+    >(`/admin/batches/${id}/upcoming`);
+
+    return response.data;
+  },
+
   async reorderBatches(payload: ReorderBatchRequest) {
     const response = await apiClient.patch<
       ApiSuccessResponse<{ batchId: string; displayOrder: number }>
@@ -230,6 +250,14 @@ export const batchApi = {
     const response = await apiClient.delete<
       ApiSuccessResponse<BulkBatchOperationResult>
     >("/admin/batches/bulk/permanent", { data: { batchIds } });
+
+    return response.data;
+  },
+
+  async bulkDeleteUpcoming(batchIds: string[]) {
+    const response = await apiClient.delete<
+      ApiSuccessResponse<BulkBatchOperationResult>
+    >("/admin/batches/bulk/upcoming", { data: { batchIds } });
 
     return response.data;
   },

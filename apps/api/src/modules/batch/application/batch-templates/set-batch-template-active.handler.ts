@@ -1,7 +1,9 @@
 import { ERROR_CODES } from '@common/constants/error-codes';
 import { BaseException } from '@common/exceptions/base.exception';
 
+import { BatchTemplateLifecycleBlockedException } from '../../domain/errors/batch-template-lifecycle.exception';
 import type { BatchTemplateRepository } from '../../domain/repositories/batch-template.repository';
+import { formatBatchTemplateLifecycleBlockMessage } from '../../domain/utils/batch-template-lifecycle-block.util';
 import { BatchTemplateResult } from './batch-template.result';
 
 export class SetBatchTemplateActiveHandler {
@@ -21,6 +23,21 @@ export class SetBatchTemplateActiveHandler {
         'Batch timing not found',
         404,
       );
+    }
+
+    if (!params.isActive) {
+      const blocks =
+        (
+          await this.templateRepo.findLifecycleBlocksByTemplateIds([
+            params.id,
+          ])
+        )[params.id] ?? [];
+
+      if (blocks.length > 0) {
+        throw new BatchTemplateLifecycleBlockedException(
+          formatBatchTemplateLifecycleBlockMessage('deactivate', blocks),
+        );
+      }
     }
 
     const updated = await this.templateRepo.update(params.id, {

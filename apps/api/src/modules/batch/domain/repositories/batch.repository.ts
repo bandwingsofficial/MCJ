@@ -29,6 +29,11 @@ export interface BatchSummaryCounts {
   attendanceAbsent: number;
 }
 
+export interface BatchBranchAssignmentSummary {
+  branchId: string;
+  branchName: string;
+}
+
 export interface BatchRepository {
   save(batch: Batch): Promise<void>;
   findById(
@@ -58,5 +63,11 @@ export interface BatchRepository {
   getSummaryCounts(batchId: string): Promise<BatchSummaryCounts>;
   findFirstAssignedCourseId(batchId: string): Promise<string | null>;
   isAssignedToBranch(batchId: string, branchId: string): Promise<boolean>;
+  findBranchAssignmentsByBatchId(
+    batchId: string,
+  ): Promise<BatchBranchAssignmentSummary[]>;
+  findBranchAssignmentsByBatchIds(
+    batchIds: string[],
+  ): Promise<Record<string, BatchBranchAssignmentSummary[]>>;
   deletePermanent(id: string): Promise<void>;
 }

@@ -2,8 +2,14 @@ import { z } from "zod";
 
 export const batchTemplateSchema = z
   .object({
-    name: z.string().trim().min(1, "Template name is required").max(160),
-    mode: z.enum(["ONLINE", "OFFLINE", "RECORDED"]),
+    name: z
+      .string()
+      .trim()
+      .min(1, "Batch Name is required.")
+      .max(160, "Batch name cannot exceed 160 characters"),
+    mode: z.enum(["ONLINE", "OFFLINE", "RECORDED"], {
+      error: "Mode is required.",
+    }),
     hasFixedTime: z.boolean(),
     daysOfWeek: z.array(
       z.enum([
@@ -33,7 +39,7 @@ export const batchTemplateSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["daysOfWeek"],
-        message: "Select at least one day",
+        message: "Batch Days is required.",
       });
     }
 
@@ -41,7 +47,7 @@ export const batchTemplateSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["startTime"],
-        message: "Start time is required",
+        message: "Start Time is required.",
       });
     }
 
@@ -49,7 +55,7 @@ export const batchTemplateSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["endTime"],
-        message: "End time is required",
+        message: "End Time is required.",
       });
     }
   });

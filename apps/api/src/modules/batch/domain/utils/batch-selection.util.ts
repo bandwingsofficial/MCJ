@@ -59,6 +59,66 @@ export function ensureBatchOpenForLifecycleMutation(
   }
 }
 
+function formatBatchLifecycleStatusLabel(
+  status: BatchStatus,
+): string {
+  switch (status) {
+    case BatchStatus.UPCOMING:
+      return 'Upcoming';
+    case BatchStatus.ONGOING:
+      return 'Ongoing';
+    default:
+      return status;
+  }
+}
+
+/** Deactivate / archive are blocked while the batch is Upcoming or Ongoing. */
+export function isBatchBlockedForDeactivateOrArchive(
+  batch: BatchLifecycleMutationGuard,
+  referenceDate: Date = new Date(),
+): boolean {
+  const resolved = resolveBatchApiStatus({
+    storedStatus: batch.status,
+    isDeleted: batch.isDeleted,
+    startDate: batch.startDate,
+    startTime: batch.startTime,
+    endDate: batch.endDate,
+    endTime: batch.endTime,
+    now: referenceDate,
+  });
+
+  return (
+    resolved === BatchStatus.UPCOMING || resolved === BatchStatus.ONGOING
+  );
+}
+
+export function ensureBatchCanDeactivateOrArchive(
+  batch: BatchLifecycleMutationGuard,
+  action: 'deactivate' | 'archive',
+  referenceDate: Date = new Date(),
+): void {
+  if (!isBatchBlockedForDeactivateOrArchive(batch, referenceDate)) {
+    return;
+  }
+
+  const resolved = resolveBatchApiStatus({
+    storedStatus: batch.status,
+    isDeleted: batch.isDeleted,
+    startDate: batch.startDate,
+    startTime: batch.startTime,
+    endDate: batch.endDate,
+    endTime: batch.endTime,
+    now: referenceDate,
+  });
+
+  const statusLabel = formatBatchLifecycleStatusLabel(resolved);
+  const verb = action === 'deactivate' ? 'deactivated' : 'archived';
+
+  throw new BatchNotSelectableException(
+    `Batch cannot be ${verb} because it is currently ${statusLabel}.`,
+  );
+}
+
 export function isBatchCompletedOrExpired(
   batch: Pick<Batch, 'status' | 'endDate' | 'startDate'>,
   referenceDate: Date = new Date(),
@@ -125,6 +185,58 @@ export function ensureBatchSelectableForAssignment(
   }
 
   throw new BatchNotSelectableException();
+}
+
+export function isBatchEligibleForUpcomingDelete(
+  batch: BatchLifecycleMutationGuard,
+  referenceDate: Date = new Date(),
+): boolean {
+  const resolved = resolveBatchApiStatus({
+    storedStatus: batch.status,
+    isDeleted: batch.isDeleted,
+    startDate: batch.startDate,
+    startTime: batch.startTime,
+    endDate: batch.endDate,
+    endTime: batch.endTime,
+    now: referenceDate,
+  });
+
+  return resolved === BatchStatus.UPCOMING && !batch.isDeleted;
+}
+
+export function ensureBatchCanDeleteUpcoming(
+  batch: BatchLifecycleMutationGuard,
+  branchNames: string[],
+  referenceDate: Date = new Date(),
+): void {
+  const resolved = resolveBatchApiStatus({
+    storedStatus: batch.status,
+    isDeleted: batch.isDeleted,
+    startDate: batch.startDate,
+    startTime: batch.startTime,
+    endDate: batch.endDate,
+    endTime: batch.endTime,
+    now: referenceDate,
+  });
+
+  if (batch.isDeleted) {
+    throw new BatchNotSelectableException(
+      'Archived batches cannot be deleted from the batch list.',
+    );
+  }
+
+  if (resolved !== BatchStatus.UPCOMING) {
+    const statusLabel = formatBatchLifecycleStatusLabel(resolved);
+    throw new BatchNotSelectableException(
+      `Batch cannot be deleted because it is currently ${statusLabel}.`,
+    );
+  }
+
+  if (branchNames.length > 0) {
+    throw new BatchNotSelectableException(
+      'Batch cannot be deleted because it is assigned to one or more branches.',
+    );
+  }
 }
 
 export function getBatchSelectionBlockReason(
