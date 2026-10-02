@@ -3,7 +3,16 @@
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2 } from "lucide-react";
+import {
+  BookOpen,
+  FileText,
+  Image as ImageIcon,
+  ListOrdered,
+  MessageSquare,
+  Plus,
+  ScrollText,
+  Trash2,
+} from "lucide-react";
 import { z } from "zod";
 
 import { Button } from "@/src/shared/components/ui/button";
@@ -28,8 +37,11 @@ import { useModalFormSessionKey } from "@/src/shared/hooks/use-modal-form-sessio
 
 const learnItemFormSchema = z.object({
   lessonId: z.string(),
-  title: z.string().trim().min(1, "Question/title is required."),
-  explanation: z.string().trim().min(1, "Answer/explanation is required."),
+  title: z.string().trim().min(1, "Question / Title is required."),
+  explanation: z
+    .string()
+    .trim()
+    .min(1, "Answer / Explanation is required."),
   imageUrl: z.string(),
   keyLearningPoints: z.array(z.object({ value: z.string() })),
   finalThoughts: z.string(),
@@ -193,6 +205,7 @@ export function CourseLearnItemForm({
         <ValidatedField
           label="Question / Title"
           required
+          leftIcon={<BookOpen className="h-4 w-4" aria-hidden />}
           state={titleState}
           errorMessage={errors.title?.message}
           className="w-full"
@@ -201,7 +214,9 @@ export function CourseLearnItemForm({
             {...register("title")}
             placeholder="What is a Variable?"
             disabled={loading || isSubmitting}
-            className={validatedFieldInputClass(titleState, "w-full")}
+            className={validatedFieldInputClass(titleState, "w-full", {
+              leftIcon: true,
+            })}
           />
           <UnlimitedCharCounter value={titleValue} />
         </ValidatedField>
@@ -209,6 +224,8 @@ export function CourseLearnItemForm({
         <ValidatedField
           label="Answer / Explanation"
           required
+          textarea
+          leftIcon={<FileText className="h-4 w-4" aria-hidden />}
           state={explanationState}
           errorMessage={errors.explanation?.message}
           className="w-full"
@@ -218,13 +235,21 @@ export function CourseLearnItemForm({
             rows={5}
             placeholder="Explain the concept clearly for students."
             disabled={loading || isSubmitting}
-            className={validatedFieldInputClass(explanationState, "min-h-[140px] w-full")}
+            className={validatedFieldInputClass(
+              explanationState,
+              "min-h-[140px] w-full",
+              { leftIcon: true, textarea: true },
+            )}
           />
           <UnlimitedCharCounter value={explanationValue} />
         </ValidatedField>
 
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-[#102A56]">Image (optional)</p>
+        <ValidatedField
+          label="Image (Optional)"
+          leftIcon={<ImageIcon className="h-4 w-4" aria-hidden />}
+          state="neutral"
+          className="w-full"
+        >
           <FileUploadField
             file={selectedImage}
             existingFileUrl={existingImageUrl}
@@ -252,10 +277,15 @@ export function CourseLearnItemForm({
               Remove Image
             </Button>
           ) : null}
-        </div>
+        </ValidatedField>
 
+        <ValidatedField
+          label="Key Learning Points (Optional)"
+          leftIcon={<ListOrdered className="h-4 w-4" aria-hidden />}
+          state="neutral"
+          className="w-full"
+        >
         <div className="space-y-3">
-          <p className="text-sm font-medium text-[#102A56]">Key Learning Points</p>
 
           {fields.length > 0 ? (
             <div className="space-y-3">
@@ -297,9 +327,12 @@ export function CourseLearnItemForm({
             Add Point
           </Button>
         </div>
+        </ValidatedField>
 
         <ValidatedField
-          label="Final Thoughts"
+          label="Final Thoughts (Optional)"
+          textarea
+          leftIcon={<MessageSquare className="h-4 w-4" aria-hidden />}
           state={finalThoughtsState}
           errorMessage={errors.finalThoughts?.message}
           className="w-full"
@@ -307,14 +340,19 @@ export function CourseLearnItemForm({
           <Textarea
             {...register("finalThoughts")}
             rows={3}
-            className={validatedFieldInputClass(finalThoughtsState, "w-full")}
+            className={validatedFieldInputClass(finalThoughtsState, "w-full", {
+              leftIcon: true,
+              textarea: true,
+            })}
             placeholder="Closing reflection for this learn item."
             disabled={loading || isSubmitting}
           />
         </ValidatedField>
 
         <ValidatedField
-          label="Summary"
+          label="Summary (Optional)"
+          textarea
+          leftIcon={<ScrollText className="h-4 w-4" aria-hidden />}
           state={summaryState}
           errorMessage={errors.summary?.message}
           className="w-full"
@@ -322,7 +360,10 @@ export function CourseLearnItemForm({
           <Textarea
             {...register("summary")}
             rows={3}
-            className={validatedFieldInputClass(summaryState, "w-full")}
+            className={validatedFieldInputClass(summaryState, "w-full", {
+              leftIcon: true,
+              textarea: true,
+            })}
             placeholder="Short recap of this learn item."
             disabled={loading || isSubmitting}
           />

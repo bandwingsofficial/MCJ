@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Badge } from "@/src/shared/components/ui/badge";
@@ -128,6 +129,7 @@ export function ModuleResourcesTab({
           setPage(1);
         }}
         actionLabel="Add Resource"
+        actionIcon={FileText}
         onAction={() => {
           setSelected(null);
           setFormOpen(true);
@@ -153,7 +155,13 @@ export function ModuleResourcesTab({
               key: "name",
               header: "Name",
               render: (row) => (
-                <p className="font-medium text-[#102A56]">{row.title}</p>
+                <div className="flex items-start gap-2">
+                  <FileText
+                    className="mt-0.5 h-4 w-4 shrink-0 text-[#2563EB]"
+                    aria-hidden
+                  />
+                  <p className="font-medium text-[#102A56]">{row.title}</p>
+                </div>
               ),
             },
             {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { BookOpen, Clock, FileText, Link2, Upload } from "lucide-react";
 
 import { useVideoSource } from "@/src/shared/hooks/use-video-source";
 import { Button } from "@/src/shared/components/ui/button";
@@ -384,6 +385,7 @@ export function ModuleLessonVideoForm({
         <ValidatedField
           label="Title"
           required
+          leftIcon={<BookOpen className="h-4 w-4" aria-hidden />}
           state={getSyncFieldState(
             Boolean(touchedFields.title || showValidation),
             errors.title?.message,
@@ -401,6 +403,8 @@ export function ModuleLessonVideoForm({
                 titleValue,
                 { required: true },
               ),
+              undefined,
+              { leftIcon: true },
             )}
             disabled={loading || isUploading}
             value={titleValue}
@@ -426,6 +430,8 @@ export function ModuleLessonVideoForm({
         <ValidatedField
           label="Description"
           required
+          textarea
+          leftIcon={<FileText className="h-4 w-4" aria-hidden />}
           state={getSyncFieldState(
             Boolean(touchedFields.description || showValidation),
             errors.description?.message,
@@ -444,6 +450,8 @@ export function ModuleLessonVideoForm({
                 descriptionValue,
                 { required: true },
               ),
+              undefined,
+              { leftIcon: true, textarea: true },
             )}
             disabled={loading || isUploading}
             value={descriptionValue}
@@ -466,8 +474,21 @@ export function ModuleLessonVideoForm({
           />
         </ValidatedField>
 
-        <div>
-          <p className="mb-2 text-sm font-medium text-slate-700">Video Upload</p>
+        <ValidatedField
+          label="Video Upload"
+          required
+          leftIcon={<Upload className="h-4 w-4" aria-hidden />}
+          state={
+            combinedUploadError && showValidation
+              ? "invalid"
+              : uploadedVideoUrl?.trim() || videoFile
+                ? "valid"
+                : "neutral"
+          }
+          errorMessage={
+            showValidation || videoSourceTouched ? combinedUploadError : null
+          }
+        >
           <VideoUploadField
             file={videoFile}
             uploadedUrl={uploadedVideoUrl}
@@ -485,10 +506,11 @@ export function ModuleLessonVideoForm({
             }}
             onUpload={handleUpload}
           />
-        </div>
+        </ValidatedField>
 
         <ValidatedField
-          label="Video URL"
+          label="Video URL (Optional)"
+          leftIcon={<Link2 className="h-4 w-4" aria-hidden />}
           state={urlFieldState}
           errorMessage={
             errors.videoUrl?.message ??
@@ -506,7 +528,9 @@ export function ModuleLessonVideoForm({
         >
           <Input
             placeholder="https://youtube.com/watch?v=... or direct video URL"
-            className={validatedFieldInputClass(urlFieldState)}
+            className={validatedFieldInputClass(urlFieldState, undefined, {
+              leftIcon: true,
+            })}
             disabled={
               loading ||
               isUploading ||
@@ -534,6 +558,7 @@ export function ModuleLessonVideoForm({
         <ValidatedField
           label="Duration"
           required
+          leftIcon={<Clock className="h-4 w-4" aria-hidden />}
           state={videoSource.durationState}
           errorMessage={
             errors.duration?.message ?? videoSource.durationError
@@ -550,6 +575,7 @@ export function ModuleLessonVideoForm({
             className={validatedFieldInputClass(
               videoSource.durationState,
               "bg-slate-50 text-slate-700",
+              { leftIcon: true },
             )}
           />
         </ValidatedField>

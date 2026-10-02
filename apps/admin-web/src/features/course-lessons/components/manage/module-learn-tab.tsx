@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { BookOpen } from "lucide-react";
 
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { appToast } from "@/src/shared/components/ui/toast";
@@ -37,11 +38,17 @@ function truncateText(value: string | null | undefined, max = 160): string {
 function LearnItemPreview({ item }: { item: CourseLearnItem }) {
   return (
     <div className="space-y-3 py-1">
-      <div>
+      <div className="flex items-start gap-2">
+        <BookOpen
+          className="mt-0.5 h-4 w-4 shrink-0 text-[#2563EB]"
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#2563EB]">
           Question / Title
         </p>
         <p className="mt-1 font-medium text-[#102A56]">{item.title}</p>
+        </div>
       </div>
 
       <div>
@@ -163,6 +170,7 @@ export function ModuleLearnTab({
         onStatusChange={() => undefined}
         showStatusFilter={false}
         actionLabel="Add Learn"
+        actionIcon={BookOpen}
         onAction={() => {
           setSelected(null);
           setFormOpen(true);

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { BookOpen, FileUp, FolderOpen, Link2 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Input } from "@/src/shared/components/ui/input";
@@ -11,6 +12,7 @@ import { Modal } from "@/src/shared/components/ui/model";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { FileUploadField } from "@/src/shared/components/ui/file-upload-field";
 import {
+  IconValidatedField,
   ValidatedField,
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
@@ -251,54 +253,60 @@ export function CourseResourceForm({
         <ValidatedField
           label="Title"
           required
+          leftIcon={<BookOpen className="h-4 w-4" aria-hidden />}
           state={titleState}
           errorMessage={errors.title?.message}
         >
           <Input
             placeholder="Enter resource title"
-            className={validatedFieldInputClass(titleState)}
+            className={validatedFieldInputClass(titleState, undefined, {
+              leftIcon: true,
+            })}
             disabled={loading || isSubmitting}
             {...register("title")}
           />
         </ValidatedField>
 
-        <ValidatedField
+        <IconValidatedField
           label="Resource Type"
           required
+          select
+          icon={FolderOpen}
           state={typeState}
           errorMessage={errors.type?.message}
         >
-          <div
-            className={validatedFieldInputClass(typeState, "rounded-lg")}
-          >
-            <AppSelect
-              value={typeValue}
-              options={COURSE_RESOURCE_TYPES.map((option) => ({
-                label: option.label,
-                value: option.value,
-              }))}
-              disabled={loading || isSubmitting}
-              placeholder="Select Resource Type"
-              onValueChange={(value) => {
-                setValue("type", value, {
-                  shouldDirty: true,
-                  shouldTouch: true,
-                  shouldValidate: true,
-                });
-                setSelectedFile(null);
-                setFileError(null);
-                if (!isResourceTypeLink(value)) {
-                  setValue("fileUrl", "", { shouldValidate: true });
-                }
-              }}
-            />
-          </div>
-        </ValidatedField>
+          <AppSelect
+            value={typeValue}
+            options={COURSE_RESOURCE_TYPES.map((option) => ({
+              label: option.label,
+              value: option.value,
+            }))}
+            disabled={loading || isSubmitting}
+            placeholder="Select resource type"
+            triggerClassName={validatedFieldInputClass(typeState, undefined, {
+              leftIcon: true,
+              select: true,
+            })}
+            onValueChange={(value) => {
+              setValue("type", value, {
+                shouldDirty: true,
+                shouldTouch: true,
+                shouldValidate: true,
+              });
+              setSelectedFile(null);
+              setFileError(null);
+              if (!isResourceTypeLink(value)) {
+                setValue("fileUrl", "", { shouldValidate: true });
+              }
+            }}
+          />
+        </IconValidatedField>
 
         {isLinkType ? (
           <ValidatedField
             label="Resource URL"
             required
+            leftIcon={<Link2 className="h-4 w-4" aria-hidden />}
             state={linkUrlState}
             errorMessage={
               fileError && isLinkType ? fileError : errors.fileUrl?.message
@@ -306,7 +314,9 @@ export function CourseResourceForm({
           >
             <Input
               placeholder="https://example.com/resource"
-              className={validatedFieldInputClass(linkUrlState)}
+              className={validatedFieldInputClass(linkUrlState, undefined, {
+                leftIcon: true,
+              })}
               disabled={loading || isSubmitting}
               {...register("fileUrl")}
             />
@@ -315,6 +325,7 @@ export function CourseResourceForm({
           <ValidatedField
             label="Resource File"
             required
+            leftIcon={<FileUp className="h-4 w-4" aria-hidden />}
             state={fileFieldState}
             errorMessage={fileError ?? undefined}
           >

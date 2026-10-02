@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { Video } from "lucide-react";
+
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { appToast } from "@/src/shared/components/ui/toast";
 
@@ -120,6 +122,7 @@ export function ModuleVideosTab({
           setPage(1);
         }}
         actionLabel="Add Self-Paced Video"
+        actionIcon={Video}
         onAction={() => {
           setSelected(null);
           setFormOpen(true);
@@ -145,13 +148,19 @@ export function ModuleVideosTab({
               key: "title",
               header: "Title",
               render: (row) => (
-                <div>
+                <div className="flex items-start gap-2">
+                  <Video
+                    className="mt-0.5 h-4 w-4 shrink-0 text-[#2563EB]"
+                    aria-hidden
+                  />
+                  <div className="min-w-0">
                   <p className="font-medium text-[#102A56]">{row.title}</p>
                   {row.description?.trim() ? (
                     <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
                       {row.description}
                     </p>
                   ) : null}
+                  </div>
                 </div>
               ),
             },

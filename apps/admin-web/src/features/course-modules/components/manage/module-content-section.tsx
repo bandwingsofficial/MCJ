@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Plus } from "lucide-react";
+import { Plus, type LucideIcon } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
@@ -24,6 +24,7 @@ interface Props {
   showStatusFilter?: boolean;
   statusOptions?: { label: string; value: string }[];
   actionLabel: string;
+  actionIcon?: LucideIcon;
   onAction: () => void;
   actionDisabled?: boolean;
   children: ReactNode;
@@ -39,6 +40,7 @@ export function ModuleContentSection({
   showStatusFilter = true,
   statusOptions = DEFAULT_STATUS_OPTIONS,
   actionLabel,
+  actionIcon: ActionIcon,
   onAction,
   actionDisabled = false,
   children,
@@ -77,7 +79,11 @@ export function ModuleContentSection({
               className="h-9 shrink-0 border-0 bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] px-4 text-sm font-semibold text-white shadow-[0_3px_10px_rgba(37,99,235,0.25)] hover:from-[#0284C7] hover:to-[#1D4ED8]"
               onClick={onAction}
             >
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              {ActionIcon ? (
+                <ActionIcon className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              ) : (
+                <Plus className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              )}
               {actionLabel}
             </Button>
           </div>
