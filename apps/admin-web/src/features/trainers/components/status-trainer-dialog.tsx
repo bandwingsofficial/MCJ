@@ -7,7 +7,10 @@ import type { TrainerListItem } from "@/src/features/trainers/types/trainer.type
 interface StatusTrainerDialogProps {
   open: boolean;
   trainer: TrainerListItem | null;
+  mode: "activate" | "deactivate";
+  description: string;
   isLoading: boolean;
+  canProceed?: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
 }
@@ -15,27 +18,46 @@ interface StatusTrainerDialogProps {
 export function StatusTrainerDialog({
   open,
   trainer,
+  mode,
+  description,
   isLoading,
+  canProceed = true,
   onClose,
   onConfirm,
 }: StatusTrainerDialogProps) {
-  const isActive = trainer?.status === "ACTIVE";
+  const isDeactivate = mode === "deactivate";
   const fullName = trainer
-    ? [trainer.firstName, trainer.lastName]
-        .filter(Boolean)
-        .join(" ")
-    : "";
+    ? [trainer.firstName, trainer.lastName].filter(Boolean).join(" ")
+    : "this trainer";
+  const blocked = isDeactivate && !canProceed;
 
   return (
     <ConfirmDialog
       open={open}
-      title={isActive ? "Deactivate Trainer" : "Activate Trainer"}
-      description={`Are you sure you want to ${
-        isActive ? "deactivate" : "activate"
-      } ${fullName}?`}
+      title={
+        blocked
+          ? "Cannot deactivate trainer"
+          : isDeactivate
+            ? "Deactivate trainer?"
+            : "Activate trainer?"
+      }
+      description={
+        description ||
+        (isDeactivate
+          ? `Are you sure you want to deactivate ${fullName}?`
+          : `Are you sure you want to activate ${fullName}?`)
+      }
+      confirmLabel={blocked ? "OK" : isDeactivate ? "Deactivate" : "Activate"}
+      confirmVariant={blocked ? "primary" : isDeactivate ? "danger" : "success"}
       loading={isLoading}
+      showCancel={!blocked}
       onCancel={onClose}
       onConfirm={() => {
+        if (blocked) {
+          onClose();
+          return;
+        }
+
         void onConfirm();
       }}
     />

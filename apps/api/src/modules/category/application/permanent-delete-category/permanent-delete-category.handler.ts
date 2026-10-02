@@ -33,31 +33,6 @@ function isForeignKeyRestrictError(error: unknown): boolean {
   );
 }
 
-function formatBlockingMessage(refs: {
-  courses: number;
-  enrollments: number;
-  articles: number;
-}): string {
-  const parts: string[] = [];
-  if (refs.courses > 0) {
-    parts.push(
-      `${refs.courses} course${refs.courses === 1 ? '' : 's'}`,
-    );
-  }
-  if (refs.enrollments > 0) {
-    parts.push(
-      `${refs.enrollments} enrollment${refs.enrollments === 1 ? '' : 's'}`,
-    );
-  }
-  if (refs.articles > 0) {
-    parts.push(
-      `${refs.articles} article${refs.articles === 1 ? '' : 's'}`,
-    );
-  }
-
-  return `Cannot permanently delete this category because it is still referenced by ${parts.join(', ')}. Reassign those records to another category first.`;
-}
-
 export class PermanentDeleteCategoryHandler {
   constructor(
     private readonly categoryRepo: CategoryRepository,
@@ -83,24 +58,6 @@ export class PermanentDeleteCategoryHandler {
       );
     }
 
-    // Re-check immediately before delete (race-safe).
-    const refs = await this.categoryRepo.countBlockingReferences(
-      category.id,
-    );
-
-    // Required FKs: Course / Enrollment / FinancialArticle.categoryId
-    const blockingCount =
-      refs.courses + refs.enrollments + refs.articles;
-
-    if (blockingCount > 0) {
-      throw new BaseException(
-        ERROR_CODES.VALIDATION_ERROR,
-        formatBlockingMessage(refs),
-        409,
-      );
-    }
-
-    // BranchCategory rows are removable; required FKs already blocked above.
     await this.categoryRepo.removeBranchAssignments(
       category.id,
     );

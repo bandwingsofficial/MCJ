@@ -10,6 +10,7 @@ interface StatusCategoryDialogProps {
   mode: "activate" | "deactivate";
   description: string;
   isLoading: boolean;
+  canProceed?: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
 }
@@ -20,27 +21,43 @@ export function StatusCategoryDialog({
   mode,
   description,
   isLoading,
+  canProceed = true,
   onClose,
   onConfirm,
 }: StatusCategoryDialogProps) {
   const isDeactivate = mode === "deactivate";
   const name = category?.name ?? "this category";
+  const blocked = isDeactivate && !canProceed;
 
   return (
     <ConfirmDialog
       open={open}
-      title={isDeactivate ? "Deactivate category?" : "Activate category?"}
+      title={
+        blocked
+          ? "Cannot deactivate category"
+          : isDeactivate
+            ? "Deactivate category?"
+            : "Activate category?"
+      }
       description={
         description ||
         (isDeactivate
           ? `${name} will become inactive and hidden from active category lists.`
           : `${name} will become active and visible in category lists again.`)
       }
-      confirmLabel={isDeactivate ? "Deactivate" : "Activate"}
-      confirmVariant={isDeactivate ? "danger" : "success"}
-      loading={isLoading}
+      confirmLabel={
+        blocked ? "OK" : isDeactivate ? "Deactivate" : "Activate"
+      }
+      confirmVariant={blocked ? "primary" : isDeactivate ? "danger" : "success"}
+      loading={isLoading && !blocked}
+      showCancel={!blocked}
       onCancel={onClose}
       onConfirm={() => {
+        if (blocked) {
+          onClose();
+          return;
+        }
+
         void onConfirm();
       }}
     />

@@ -1,3 +1,8 @@
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+
+import { formatCategoryDeactivateBlockingMessage } from '../shared/format-category-deactivate-blocking-message';
+
 import { CategoryStatus } from '../../domain/enums/category-status.enum';
 import type { CategoryRepository } from '../../domain/repositories/category.repository';
 import { CategoryDomainService } from '../../domain/services/category-domain.service';
@@ -49,6 +54,26 @@ export class UpdateCategoryStatusHandler {
 
       category.activate(command.updatedBy);
     } else {
+      const refs = await this.categoryRepo.countBlockingReferences(
+        category.id,
+      );
+
+      if (refs.courses > 0) {
+        const blockingCourseNames =
+          await this.categoryRepo.findBlockingCourseNames(
+            category.id,
+          );
+
+        throw new BaseException(
+          ERROR_CODES.VALIDATION_ERROR,
+          formatCategoryDeactivateBlockingMessage(
+            blockingCourseNames,
+            refs.courses,
+          ),
+          409,
+        );
+      }
+
       if (category.displayOrder !== null) {
         await this.categoryRepo.closeDisplayOrderGap(
           category.displayOrder,

@@ -25,14 +25,12 @@ import {
 } from "lucide-react";
 
 import { Input } from "@/src/shared/components/ui/input";
-import { Button } from "@/src/shared/components/ui/button";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { ImageUploadField } from "@/src/shared/components/ui/image-upload-field";
 import { buildStudentQualificationSelectOptions } from "@mcj/shared-constants";
 import {
   FieldVisualState,
   IconValidatedField,
-  iconDecorInputClass,
   ValidatedField,
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
@@ -58,8 +56,14 @@ import {
 import { withProfileImageCacheBust } from "@/src/features/trainers/utils/trainer-image.util";
 import type { TrainerDetails } from "@/src/features/trainers/types/trainer.types";
 
-function iconInputClass(state: FieldVisualState, extra = "") {
-  return iconDecorInputClass(state, cn("w-full min-w-0 max-w-full", extra));
+export const TRAINER_FORM_ID = "trainer-form";
+
+function leftIconInputClass(state: FieldVisualState, extra = "") {
+  return validatedFieldInputClass(
+    state,
+    cn("w-full min-w-0 max-w-full", extra),
+    { leftIcon: true },
+  );
 }
 
 type SyncFieldName = Exclude<
@@ -110,7 +114,6 @@ interface TrainerFormProps {
   mode: "create" | "edit";
   trainer?: TrainerDetails;
   isSubmitting: boolean;
-  submitLabel: string;
   onSubmit: (
     values: CreateTrainerFormValues,
     image: File | null,
@@ -122,7 +125,6 @@ export function TrainerForm({
   mode,
   trainer,
   isSubmitting,
-  submitLabel,
   onSubmit,
 }: TrainerFormProps) {
   const isEdit = mode === "edit";
@@ -310,7 +312,7 @@ export function TrainerForm({
       errorMessage?: string;
       inputProps: React.ComponentProps<typeof Input>;
     },
-    icon: LucideIcon,
+    Icon: LucideIcon,
     placeholder: string,
     options?: {
       required?: boolean;
@@ -318,21 +320,21 @@ export function TrainerForm({
       type?: string;
     },
   ) => (
-    <IconValidatedField
+    <ValidatedField
       label={label}
       required={options?.required}
       state={field.state}
       errorMessage={field.errorMessage}
-      icon={icon}
+      leftIcon={<Icon className="h-4 w-4" aria-hidden />}
     >
       <Input
         {...field.inputProps}
         type={options?.type}
         placeholder={placeholder}
-        className={iconInputClass(field.state)}
+        className={leftIconInputClass(field.state)}
       />
       {options?.footer}
-    </IconValidatedField>
+    </ValidatedField>
   );
 
   const handleKeyDown = (
@@ -369,7 +371,7 @@ export function TrainerForm({
       Boolean(dirtyFields[name]) ||
       isSubmitted;
 
-    return interacted || (isEdit && editValidationReady);
+    return interacted;
   };
 
   const isOptionalEmptyValue = (
@@ -454,8 +456,11 @@ export function TrainerForm({
       return "invalid";
     }
 
-    if (name === "qualification") {
-      const raw = values.qualification?.trim() ?? "";
+    if (name === "qualification" || name === "gender") {
+      const raw =
+        name === "qualification"
+          ? values.qualification?.trim() ?? ""
+          : values.gender;
       if (!raw) {
         return "neutral";
       }
@@ -474,7 +479,7 @@ export function TrainerForm({
       errorMessage: errors[name]?.message,
       inputProps: {
         ...registration,
-        className: iconInputClass(state),
+        className: leftIconInputClass(state),
         onBlur: (event: FocusEvent<HTMLInputElement>) => {
           registration.onBlur(event);
           void trigger(name);
@@ -498,7 +503,7 @@ export function TrainerForm({
       errorMessage: errors[name]?.message,
       inputProps: {
         ...registration,
-        className: iconInputClass(state),
+        className: leftIconInputClass(state),
         onBlur: (event: FocusEvent<HTMLInputElement>) => {
           registration.onBlur(event);
           void trigger(name);
@@ -553,6 +558,7 @@ export function TrainerForm({
 
   return (
     <form
+      id={TRAINER_FORM_ID}
       className="space-y-5 bg-white"
       onSubmit={handleSubmit(
         async (formValues) => {
@@ -577,7 +583,7 @@ export function TrainerForm({
         </>
       ) : null}
       <ValidatedField
-        label="Profile Image"
+        label="Profile Image (Optional)"
         state={getImageState()}
         errorMessage={imageError ?? undefined}
       >
@@ -605,7 +611,7 @@ export function TrainerForm({
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {renderIconInput(
-          "Trainer Name",
+          "First Name",
           firstNameField,
           User,
           "Enter trainer name",
@@ -632,15 +638,14 @@ export function TrainerForm({
         )}
 
         {renderIconInput(
-          "Last Name",
+          "Last Name (Optional)",
           lastNameField,
           User,
           "Enter last name",
         )}
 
-        <IconValidatedField
+        <ValidatedField
           label="Trainer Code"
-          icon={Hash}
           state={
             isEdit
               ? "neutral"
@@ -651,6 +656,7 @@ export function TrainerForm({
           successMessage={
             !isEdit && suggestedCode ? "Auto-generated" : undefined
           }
+          leftIcon={<Hash className="h-4 w-4" aria-hidden />}
         >
           <Input
             value={trainerCode}
@@ -658,9 +664,9 @@ export function TrainerForm({
             placeholder={
               isSuggestingCode ? "Generating code..." : "Trainer code"
             }
-            className={iconInputClass(isEdit ? "neutral" : "valid")}
+            className={leftIconInputClass(isEdit ? "neutral" : "valid")}
           />
-        </IconValidatedField>
+        </ValidatedField>
 
         {renderIconInput(
           "Email",
@@ -679,7 +685,7 @@ export function TrainerForm({
         )}
 
         <IconValidatedField
-          label="Gender"
+          label="Gender (Optional)"
           icon={User}
           select
           state={genderFieldState}
@@ -709,6 +715,7 @@ export function TrainerForm({
 
         <IconValidatedField
           label="Trainer Type"
+          required
           icon={Briefcase}
           select
           state={trainerTypeFieldState}
@@ -738,19 +745,19 @@ export function TrainerForm({
       </div>
 
       <div className="min-w-0">
-        <IconValidatedField
-          label="Skills (Press Enter to add)"
-          icon={Tag}
+        <ValidatedField
+          label="Skills (Optional)"
           state="neutral"
+          leftIcon={<Tag className="h-4 w-4" aria-hidden />}
         >
           <Input
             placeholder="Type a skill and press Enter"
-            className={iconInputClass("neutral")}
+            className={leftIconInputClass("neutral")}
             value={skillInput}
             onChange={(event) => setSkillInput(event.target.value)}
             onKeyDown={handleKeyDown}
           />
-        </IconValidatedField>
+        </ValidatedField>
         {currentSkills.length > 0 ? (
           <div className="mt-2 flex flex-wrap gap-2">
             {currentSkills.map((skill) => (
@@ -791,7 +798,7 @@ export function TrainerForm({
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <IconValidatedField
-          label="Qualification"
+          label="Qualification (Optional)"
           icon={GraduationCap}
           select
           state={qualificationFieldState}
@@ -817,72 +824,64 @@ export function TrainerForm({
         </IconValidatedField>
 
         {renderIconInput(
-          "Specialization",
+          "Specialization (Optional)",
           specializationField,
           Briefcase,
           "e.g. Strength Training",
         )}
 
-        <IconValidatedField
-          label="Experience (Years)"
-          icon={Hash}
+        <ValidatedField
+          label="Experience (Years) (Optional)"
           state={experienceYearsField.state}
           errorMessage={experienceYearsField.errorMessage}
+          leftIcon={<Hash className="h-4 w-4" aria-hidden />}
         >
           <Input
             type="number"
             min={0}
             {...experienceYearsField.inputProps}
             placeholder="0"
-            className={iconInputClass(experienceYearsField.state)}
+            className={leftIconInputClass(experienceYearsField.state)}
           />
-        </IconValidatedField>
+        </ValidatedField>
 
-        <IconValidatedField
-          label="Joining Date"
-          icon={Calendar}
+        <ValidatedField
+          label="Joining Date (Optional)"
           state={joiningDateField.state}
           errorMessage={joiningDateField.errorMessage}
+          leftIcon={<Calendar className="h-4 w-4" aria-hidden />}
         >
           <Input
             type="date"
             placeholder="Select joining date"
             {...joiningDateField.inputProps}
-            className={iconInputClass(joiningDateField.state)}
+            className={leftIconInputClass(joiningDateField.state)}
           />
-        </IconValidatedField>
+        </ValidatedField>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {renderIconInput(
-          "LinkedIn",
+          "LinkedIn (Optional)",
           linkedInField,
           Link2,
           "https://...",
         )}
 
         {renderIconInput(
-          "YouTube",
+          "YouTube (Optional)",
           youtubeField,
           Link2,
           "https://...",
         )}
 
         {renderIconInput(
-          "Instagram",
+          "Instagram (Optional)",
           instagramField,
           Link2,
           "https://...",
         )}
       </div>
-
-      <Button
-        type="submit"
-        loading={isSubmitting}
-        disabled={isSubmitting}
-      >
-        {submitLabel}
-      </Button>
     </form>
   );
 }

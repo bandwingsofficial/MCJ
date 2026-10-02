@@ -56,17 +56,14 @@ describe('PermanentDeleteCategoryHandler', () => {
     expect(result.permanentlyDeleted).toBe(true);
   });
 
-  it('rejects permanent delete when courses still reference the category', async () => {
+  it('does not pre-check course references before permanent delete', async () => {
     const category = makeArchived();
     const categoryRepo = {
       findById: jest.fn().mockResolvedValue(category),
-      countBlockingReferences: jest.fn().mockResolvedValue({
-        courses: 1,
-        enrollments: 0,
-        articles: 0,
-        branches: 0,
-      }),
-      deletePermanent: jest.fn(),
+      removeBranchAssignments: jest.fn().mockResolvedValue(0),
+      deletePermanent: jest.fn().mockResolvedValue(undefined),
+      countBlockingReferences: jest.fn(),
+      findBlockingCourseNames: jest.fn(),
     };
 
     const handler = new PermanentDeleteCategoryHandler(
@@ -75,13 +72,13 @@ describe('PermanentDeleteCategoryHandler', () => {
       { softDelete: jest.fn() } as never,
     );
 
-    await expect(
-      handler.execute(new PermanentDeleteCategoryCommand('cat-1')),
-    ).rejects.toMatchObject({
-      statusCode: 409,
-      message: expect.stringContaining('1 course'),
-    });
-    expect(categoryRepo.deletePermanent).not.toHaveBeenCalled();
+    const result = await handler.execute(
+      new PermanentDeleteCategoryCommand('cat-1'),
+    );
+
+    expect(categoryRepo.countBlockingReferences).not.toHaveBeenCalled();
+    expect(categoryRepo.deletePermanent).toHaveBeenCalledWith('cat-1');
+    expect(result.permanentlyDeleted).toBe(true);
   });
 
   it('allows permanent delete when only a branch assignment exists', async () => {

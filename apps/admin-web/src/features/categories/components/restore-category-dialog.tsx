@@ -23,7 +23,7 @@ export function RestoreCategoryDialog({
     <ConfirmDialog
       open={open}
       title="Restore category?"
-      description={`Restore ${category?.name ?? "this category"}? It will become available again in category lists.`}
+      description="Are you sure you want to restore this category?"
       confirmLabel="Restore"
       loading={isLoading}
       onCancel={onClose}

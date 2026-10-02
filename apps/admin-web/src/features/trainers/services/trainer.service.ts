@@ -114,6 +114,25 @@ class TrainerService {
     }
   }
 
+  async getTrainerDependencies(id: string) {
+    try {
+      const response = await apiClient.get<
+        ApiSuccessResponse<{
+          trainerId: string;
+          trainerName: string;
+          canDelete: boolean;
+          canDeactivate: boolean;
+          branchAssignmentCount: number;
+          blockingBranchNames: string[];
+        }>
+      >(`${this.basePath}/${id}/dependencies`);
+
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async suggestTrainerCode() {
     try {
       const response = await apiClient.get<

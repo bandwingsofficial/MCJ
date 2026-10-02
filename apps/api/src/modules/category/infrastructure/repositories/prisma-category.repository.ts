@@ -160,6 +160,20 @@ export class PrismaCategoryRepository
     };
   }
 
+  async findBlockingCourseNames(
+    categoryId: string,
+    limit = 50,
+  ): Promise<string[]> {
+    const courses = await this.prisma.course.findMany({
+      where: { categoryId },
+      select: { name: true },
+      orderBy: { name: 'asc' },
+      take: limit,
+    });
+
+    return courses.map((course) => course.name);
+  }
+
   async removeBranchAssignments(
     categoryId: string,
   ): Promise<number> {

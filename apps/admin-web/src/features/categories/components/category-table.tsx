@@ -31,6 +31,10 @@ interface Props {
     categoryId: string;
     newDisplayOrder: number;
   }) => Promise<void>;
+  pendingLifecycleCheck?: {
+    categoryId: string;
+    action: "deactivate" | "archive";
+  } | null;
 }
 
 function canReorder(category: CategoryListItem): boolean {
@@ -55,6 +59,7 @@ export function CategoryTable({
   onRestore,
   onPermanentDelete,
   onReorder,
+  pendingLifecycleCheck = null,
 }: Props) {
   const [rows, setRows] = useState(categories);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -371,6 +376,7 @@ export function CategoryTable({
                       disabled={
                         actionsDisabled || isSavingOrder
                       }
+                      pendingLifecycleCheck={pendingLifecycleCheck}
                       onEdit={onEdit}
                       onActivate={onActivate}
                       onDeactivate={onDeactivate}

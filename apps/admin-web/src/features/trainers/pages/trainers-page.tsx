@@ -93,6 +93,12 @@ import {
   getEligiblePermanentDeleteIds,
   getEligibleRestoreIds,
 } from "@/src/features/trainers/utils/trainer-bulk.utils";
+import {
+  buildTrainerDeactivateDescription,
+  buildTrainerDeleteDescription,
+  buildTrainerPermanentDeleteDescription,
+  type TrainerDependencySummary,
+} from "@/src/features/trainers/utils/trainer-dependency-copy.utils";
 
 function getEmptyMessage(filters: TrainerFiltersState): string {
   if (filters.status === "ARCHIVED") {
@@ -145,6 +151,9 @@ export function TrainersPage() {
   const [statusTarget, setStatusTarget] = useState<
     "ACTIVE" | "INACTIVE" | null
   >(null);
+  const [dependencySummary, setDependencySummary] =
+    useState<TrainerDependencySummary | null>(null);
+  const [dependencyLoading, setDependencyLoading] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
 
   const { activateTrainer, isLoading: isActivating } =
@@ -189,6 +198,50 @@ export function TrainersPage() {
     () => getEmptyMessage(filters),
     [filters],
   );
+
+  const loadTrainerDependencies = async (trainerId: string) => {
+    const response = await trainerService.getTrainerDependencies(trainerId);
+
+    return {
+      canDelete: response.data.canDelete,
+      canDeactivate: response.data.canDeactivate,
+      branchAssignmentCount: response.data.branchAssignmentCount,
+      blockingBranchNames: response.data.blockingBranchNames ?? [],
+    };
+  };
+
+  const openWithDependencies = async (
+    trainer: TrainerListItem,
+    action: "deactivate" | "delete" | "permanent-delete",
+  ) => {
+    setSelectedTrainer(trainer);
+    setDependencySummary(null);
+    setDependencyLoading(true);
+
+    if (action === "deactivate") {
+      setStatusTarget("INACTIVE");
+      setIsStatusOpen(true);
+    } else if (action === "delete") {
+      setIsDeleteOpen(true);
+    } else {
+      setIsPermanentDeleteOpen(true);
+    }
+
+    try {
+      const summary = await loadTrainerDependencies(trainer.id);
+      setDependencySummary(summary);
+    } catch (error) {
+      appToast.error(getErrorMessage(error));
+      setSelectedTrainer(null);
+      setDependencySummary(null);
+      setIsStatusOpen(false);
+      setIsDeleteOpen(false);
+      setIsPermanentDeleteOpen(false);
+      setStatusTarget(null);
+    } finally {
+      setDependencyLoading(false);
+    }
+  };
 
   useEffect(() => {
     const trainerId = searchParams.get("trainerId")?.trim();
@@ -557,24 +610,22 @@ export function TrainersPage() {
                   onActivate={(trainer) => {
                     setSelectedTrainer(trainer);
                     setStatusTarget("ACTIVE");
+                    setDependencySummary(null);
+                    setDependencyLoading(false);
                     setIsStatusOpen(true);
                   }}
                   onDeactivate={(trainer) => {
-                    setSelectedTrainer(trainer);
-                    setStatusTarget("INACTIVE");
-                    setIsStatusOpen(true);
+                    void openWithDependencies(trainer, "deactivate");
                   }}
                   onDelete={(trainer) => {
-                    setSelectedTrainer(trainer);
-                    setIsDeleteOpen(true);
+                    void openWithDependencies(trainer, "delete");
                   }}
                   onRestore={(trainer) => {
                     setSelectedTrainer(trainer);
                     setIsRestoreOpen(true);
                   }}
                   onPermanentDelete={(trainer) => {
-                    setSelectedTrainer(trainer);
-                    setIsPermanentDeleteOpen(true);
+                    void openWithDependencies(trainer, "permanent-delete");
                   }}
                   onReorder={handleReorder}
                 />
@@ -654,13 +705,38 @@ export function TrainersPage() {
       <StatusTrainerDialog
         open
         trainer={selectedTrainer}
-        isLoading={isActivating || isDeactivating}
+        mode={statusTarget === "ACTIVE" ? "activate" : "deactivate"}
+        description={
+          statusTarget === "ACTIVE"
+            ? ""
+            : buildTrainerDeactivateDescription(
+                dependencySummary,
+                dependencyLoading,
+              )
+        }
+        isLoading={
+          isActivating || isDeactivating || dependencyLoading
+        }
+        canProceed={
+          statusTarget === "ACTIVE" ||
+          dependencySummary?.canDeactivate !== false
+        }
         onClose={() => {
           setIsStatusOpen(false);
           setStatusTarget(null);
+          setDependencySummary(null);
+          setDependencyLoading(false);
         }}
         onConfirm={async () => {
           if (!selectedTrainer || !statusTarget) {
+            return;
+          }
+
+          if (
+            statusTarget === "INACTIVE" &&
+            dependencySummary &&
+            !dependencySummary.canDeactivate
+          ) {
             return;
           }
 
@@ -672,6 +748,7 @@ export function TrainersPage() {
           if (success) {
             setIsStatusOpen(false);
             setStatusTarget(null);
+            setDependencySummary(null);
             await refetch();
           }
         }}
@@ -681,10 +758,23 @@ export function TrainersPage() {
       {isDeleteOpen ? (
       <TrainerDeleteDialog
         open
-        isLoading={isDeleting}
-        onClose={() => setIsDeleteOpen(false)}
+        isLoading={isDeleting || dependencyLoading}
+        canDelete={dependencySummary?.canDelete ?? true}
+        description={buildTrainerDeleteDescription(
+          dependencySummary,
+          dependencyLoading,
+        )}
+        onClose={() => {
+          setIsDeleteOpen(false);
+          setDependencySummary(null);
+          setDependencyLoading(false);
+        }}
         onConfirm={async () => {
           if (!selectedTrainer) {
+            return;
+          }
+
+          if (dependencySummary && !dependencySummary.canDelete) {
             return;
           }
 
@@ -694,6 +784,7 @@ export function TrainersPage() {
 
           if (success) {
             setIsDeleteOpen(false);
+            setDependencySummary(null);
             await refetch();
           }
         }}
@@ -726,10 +817,23 @@ export function TrainersPage() {
       <PermanentDeleteTrainerDialog
         open
         trainer={selectedTrainer}
-        isLoading={isPermanentDeleting}
-        onClose={() => setIsPermanentDeleteOpen(false)}
+        isLoading={isPermanentDeleting || dependencyLoading}
+        canDelete={dependencySummary?.canDelete ?? true}
+        description={buildTrainerPermanentDeleteDescription(
+          dependencySummary,
+          dependencyLoading,
+        )}
+        onClose={() => {
+          setIsPermanentDeleteOpen(false);
+          setDependencySummary(null);
+          setDependencyLoading(false);
+        }}
         onConfirm={async () => {
           if (!selectedTrainer) {
+            return;
+          }
+
+          if (dependencySummary && !dependencySummary.canDelete) {
             return;
           }
 
@@ -739,6 +843,7 @@ export function TrainersPage() {
 
           if (success) {
             setIsPermanentDeleteOpen(false);
+            setDependencySummary(null);
             await refetch();
           }
         }}

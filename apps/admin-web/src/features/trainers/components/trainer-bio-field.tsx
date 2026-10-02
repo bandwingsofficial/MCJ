@@ -2,7 +2,7 @@
 
 import type { FocusEvent } from "react";
 
-import { Check, X } from "lucide-react";
+import { Check, FileText, X } from "lucide-react";
 
 import { Textarea } from "@/src/shared/components/ui/textarea";
 import { Label } from "@/src/shared/components/ui/label";
@@ -38,16 +38,23 @@ export function TrainerBioField({
 
   return (
     <div className="min-w-0">
-      <Label>Biography</Label>
+      <Label>Biography (Optional)</Label>
 
-      <div className="relative">
+      <div className="relative w-full min-w-0">
+        <span
+          className="pointer-events-none absolute left-3 top-3 z-[1] text-[#8AA0BB]"
+          aria-hidden
+        >
+          <FileText className="h-4 w-4" />
+        </span>
         <Textarea
           value={value}
           placeholder="Type trainer biography..."
           rows={4}
           className={validatedFieldInputClass(
             state,
-            "min-h-[7rem] resize-y"
+            "min-h-[7rem] resize-y pt-3 leading-normal",
+            { leftIcon: true, textarea: true },
           )}
           onBlur={onBlur}
           onChange={(event) => {

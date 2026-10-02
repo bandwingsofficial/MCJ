@@ -8,7 +8,6 @@ import type { TrainerDetails } from "@/src/features/trainers/types/trainer.types
 interface EditTrainerFormProps {
   trainer: TrainerDetails;
   isSubmitting: boolean;
-  submitLabel: string;
   onSubmit: (
     values: CreateTrainerFormValues,
     image: File | null,
@@ -19,7 +18,6 @@ interface EditTrainerFormProps {
 export function EditTrainerForm({
   trainer,
   isSubmitting,
-  submitLabel,
   onSubmit,
 }: EditTrainerFormProps) {
   return (
@@ -27,7 +25,6 @@ export function EditTrainerForm({
       mode="edit"
       trainer={trainer}
       isSubmitting={isSubmitting}
-      submitLabel={submitLabel}
       onSubmit={onSubmit}
     />
   );

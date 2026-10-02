@@ -1,31 +1,46 @@
-export function formatCategoryBlockingMessage(refs: {
-  courses: number;
-  enrollments: number;
-  articles: number;
-}): string | null {
-  const parts: string[] = [];
+export function formatCategoryBlockingMessage(
+  refs: {
+    courses: number;
+    enrollments: number;
+    articles: number;
+  },
+  options?: {
+    blockingCourseNames?: string[];
+  },
+): string | null {
+  const lines: string[] = [];
 
   if (refs.courses > 0) {
-    parts.push(
-      `${refs.courses} course${refs.courses === 1 ? '' : 's'}`,
-    );
+    const names = options?.blockingCourseNames?.filter(Boolean) ?? [];
+
+    if (names.length > 0) {
+      lines.push(
+        'This category is currently being used by the following course(s):',
+        ...names.map((name) => `• ${name}`),
+        'Remove the category from these courses before deleting it.',
+      );
+    } else {
+      lines.push(
+        `This category is still referenced by ${refs.courses} course${refs.courses === 1 ? '' : 's'}. Remove the category from those courses before deleting it.`,
+      );
+    }
   }
 
   if (refs.enrollments > 0) {
-    parts.push(
-      `${refs.enrollments} enrollment${refs.enrollments === 1 ? '' : 's'}`,
+    lines.push(
+      `This category is still referenced by ${refs.enrollments} enrollment${refs.enrollments === 1 ? '' : 's'}. Reassign those enrollments before deleting it.`,
     );
   }
 
   if (refs.articles > 0) {
-    parts.push(
-      `${refs.articles} article${refs.articles === 1 ? '' : 's'}`,
+    lines.push(
+      `This category is still referenced by ${refs.articles} article${refs.articles === 1 ? '' : 's'}. Reassign those articles before deleting it.`,
     );
   }
 
-  if (parts.length === 0) {
+  if (lines.length === 0) {
     return null;
   }
 
-  return `Cannot permanently delete this category because it is still referenced by ${parts.join(', ')}. Reassign those records to another category first.`;
+  return lines.join('\n\n');
 }

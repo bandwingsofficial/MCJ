@@ -6,6 +6,7 @@ import { BaseException } from '@common/exceptions/base.exception';
 import type { Category } from '../../domain/entities/category.entity';
 import { CategoryStatus } from '../../domain/enums/category-status.enum';
 import type { CategoryRepository } from '../../domain/repositories/category.repository';
+import { formatCategoryDeactivateBlockingMessage } from '../shared/format-category-deactivate-blocking-message';
 import type { BulkCategoryItemResult } from '../shared/bulk-category-operation.result';
 import { parseBulkCategoryIds } from '../shared/parse-bulk-category-ids';
 
@@ -115,6 +116,58 @@ export class BulkUpdateCategoryStatusHandler {
       const rightOrder = right.displayOrder ?? -1;
       return rightOrder - leftOrder;
     });
+
+    const deactivateCourseBlockers: {
+      categoryId: string;
+      blockingCourseNames: string[];
+      courseCount: number;
+    }[] = [];
+
+    for (const category of categoriesToDeactivate) {
+      const refs = await this.categoryRepo.countBlockingReferences(
+        category.id,
+      );
+
+      if (refs.courses > 0) {
+        const blockingCourseNames =
+          await this.categoryRepo.findBlockingCourseNames(category.id);
+
+        deactivateCourseBlockers.push({
+          categoryId: category.id,
+          blockingCourseNames,
+          courseCount: refs.courses,
+        });
+      }
+    }
+
+    if (deactivateCourseBlockers.length > 0) {
+      const blockerIds = new Set(
+        deactivateCourseBlockers.map((entry) => entry.categoryId),
+      );
+
+      for (const category of categoriesToDeactivate) {
+        const blocker = deactivateCourseBlockers.find(
+          (entry) => entry.categoryId === category.id,
+        );
+
+        itemResults.push({
+          categoryId: category.id,
+          success: false,
+          message: blocker
+            ? formatCategoryDeactivateBlockingMessage(
+                blocker.blockingCourseNames,
+                blocker.courseCount,
+              )
+            : 'Deactivation cancelled because other selected categories are used by courses.',
+        });
+      }
+
+      return BulkUpdateCategoryStatusResult.create(
+        command.status,
+        categoryIds.length,
+        itemResults,
+      );
+    }
 
     for (const category of categoriesToDeactivate) {
       try {

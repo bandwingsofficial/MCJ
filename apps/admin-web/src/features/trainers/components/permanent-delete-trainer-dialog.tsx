@@ -8,35 +8,39 @@ interface PermanentDeleteTrainerDialogProps {
   open: boolean;
   trainer: TrainerListItem | null;
   isLoading: boolean;
+  description: string;
+  canDelete: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
 }
 
 export function PermanentDeleteTrainerDialog({
   open,
-  trainer,
   isLoading,
+  description,
+  canDelete,
   onClose,
   onConfirm,
 }: PermanentDeleteTrainerDialogProps) {
-  const fullName = trainer
-    ? [trainer.firstName, trainer.lastName]
-        .filter(Boolean)
-        .join(" ")
-    : "";
-
   return (
     <ConfirmDialog
       open={open}
-      title="Permanently delete trainer?"
-      description={`This action cannot be undone.${
-        fullName ? ` (${fullName})` : ""
-      }`}
-      confirmLabel="Permanently Delete"
-      loadingLabel="Permanently Deleting..."
+      title={
+        canDelete ? "Permanently delete trainer?" : "Cannot delete trainer"
+      }
+      description={description}
+      confirmLabel={canDelete ? "Permanently Delete" : "OK"}
+      confirmVariant={canDelete ? "danger" : "primary"}
+      loadingLabel={isLoading ? "Checking..." : "Permanently Deleting..."}
       loading={isLoading}
+      showCancel={canDelete}
       onCancel={onClose}
       onConfirm={() => {
+        if (!canDelete) {
+          onClose();
+          return;
+        }
+
         void onConfirm();
       }}
     />

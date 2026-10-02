@@ -122,6 +122,22 @@ import {
 
 } from "@/src/features/categories/utils/category-bulk.utils";
 
+import {
+  buildArchiveDescription,
+  buildBulkArchiveBlockedDescription,
+  buildBulkArchiveConfirmDescription,
+  buildBulkDeactivateBlockedDescription,
+  buildBulkDeactivateConfirmDescription,
+  buildDeactivateDescription,
+  buildPermanentDeleteDescription,
+  collectBulkCourseBlocks,
+  isCategoryArchiveAllowed,
+  isCategoryDeactivateAllowed,
+  parseCategoryDependencySummary,
+  type CategoryDependencySummary,
+} from "@/src/features/categories/utils/category-dependency-copy.utils";
+import { AxiosError } from "axios";
+
 
 
 type DialogAction =
@@ -134,227 +150,9 @@ type DialogAction =
 
 
 
-type DependencySummary = {
-
-  canDelete: boolean;
-
-  removable: {
-
-    branches: number;
-
-    courses: number;
-
-    enrollments: number;
-
-    articles: number;
-
-  };
-
-  blocking: {
-
-    branches: number;
-
-    courses: number;
-
-    enrollments: number;
-
-    articles: number;
-
-  };
-
-};
-
-
-
-function buildPermanentDeleteDescription(
-
-  name: string,
-
-  summary: DependencySummary | null,
-
-  loading: boolean,
-
-): string {
-
-  if (loading) {
-
-    return "Checking category dependencies...";
-
-  }
-
-
-
-  if (!summary) {
-
-    return "Unable to verify category dependencies. Please try again.";
-
-  }
-
-
-
-  if (!summary.canDelete) {
-
-    const lines: string[] = [];
-
-
-
-    if (summary.blocking.courses > 0) {
-
-      lines.push(`Courses        ${summary.blocking.courses}`);
-
-    }
-
-
-
-    if (summary.blocking.enrollments > 0) {
-
-      lines.push(`Enrollments    ${summary.blocking.enrollments}`);
-
-    }
-
-
-
-    if (summary.blocking.articles > 0) {
-
-      lines.push(`Articles       ${summary.blocking.articles}`);
-
-    }
-
-
-
-    return `${name} is referenced by required records:\n\n${lines.join("\n")}\n\nThese must be reassigned to another category before this category can be deleted.`;
-
-  }
-
-
-
-  const removableLines: string[] = [];
-
-
-
-  if (summary.removable.branches > 0) {
-
-    removableLines.push(`Branches       ${summary.removable.branches}`);
-
-  }
-
-
-
-  if (summary.removable.courses > 0) {
-
-    removableLines.push(`Courses        ${summary.removable.courses}`);
-
-  }
-
-
-
-  if (summary.removable.enrollments > 0) {
-
-    removableLines.push(`Enrollments    ${summary.removable.enrollments}`);
-
-  }
-
-
-
-  if (summary.removable.articles > 0) {
-
-    removableLines.push(`Articles       ${summary.removable.articles}`);
-
-  }
-
-
-
-  if (removableLines.length > 0) {
-
-    const branchCount = summary.removable.branches;
-
-
-
-    if (branchCount > 0) {
-
-      return `${name} is assigned to ${branchCount} branch${branchCount === 1 ? "" : "es"}.\n\nPermanently deleting this category will remove its branch assignments.\n\nThis action cannot be undone.\n\nAre you sure you want to continue?`;
-
-    }
-
-
-
-    return `${name} is currently used by:\n\n${removableLines.join("\n")}\n\nThese category assignments will be removed.\n\nThis action cannot be undone.\n\nAre you sure you want to continue?`;
-
-  }
-
-
-
-  return "This action cannot be undone.\n\nAre you sure you want to continue?";
-
-}
-
-
-
 function buildActivateDescription(name: string): string {
   return `${name} will become active and visible in active category lists again.\n\nDo you want to continue?`;
 }
-
-function buildDeactivateDescription(
-
-  name: string,
-
-  summary: DependencySummary | null,
-
-  loading: boolean,
-
-): string {
-
-  if (loading) {
-
-    return "Checking branch assignments before deactivation...";
-
-  }
-
-
-
-  const branchCount = summary?.removable.branches ?? 0;
-
-
-
-  if (branchCount > 0) {
-
-    return `${name} is currently assigned to ${branchCount} branch${branchCount === 1 ? "" : "es"}.\n\nDeactivating will remove it from those branch assignments and hide it from active category lists.\n\nDo you want to continue?`;
-
-  }
-
-
-
-  return `${name} will become inactive and hidden from active category lists.\n\nDo you want to continue?`;
-
-}
-
-
-
-function buildArchiveDescription(
-
-  name: string,
-
-  summary: DependencySummary | null,
-
-): string {
-
-  const branchCount = summary?.removable.branches ?? 0;
-
-
-
-  if (branchCount > 0) {
-
-    return `${name} is currently assigned to ${branchCount} branch${branchCount === 1 ? "" : "es"}.\n\nArchiving it will remove it from those branch assignments. This category will remain available for restoration.`;
-
-  }
-
-
-
-  return "This category will be archived and will remain available for restoration.";
-
-}
-
-
 
 export function CategoriesPage() {
 
@@ -432,6 +230,16 @@ export function CategoriesPage() {
 
     useState<BulkCategoryAction | null>(null);
 
+  const [bulkBlockedDescription, setBulkBlockedDescription] = useState<
+    string | null
+  >(null);
+
+  const [pendingBulkLifecycleCheck, setPendingBulkLifecycleCheck] = useState<
+    "deactivate" | "archive" | null
+  >(null);
+
+  const bulkCheckRequestIdRef = useRef(0);
+
 
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -448,9 +256,14 @@ export function CategoriesPage() {
 
   const [dependencySummary, setDependencySummary] =
 
-    useState<DependencySummary | null>(null);
+    useState<CategoryDependencySummary | null>(null);
 
-  const [dependencyLoading, setDependencyLoading] = useState(false);
+  const [pendingLifecycleCheck, setPendingLifecycleCheck] = useState<{
+    categoryId: string;
+    action: "deactivate" | "archive";
+  } | null>(null);
+
+  const lifecycleCheckRequestIdRef = useRef(0);
 
   const [isReordering, setIsReordering] = useState(false);
 
@@ -470,7 +283,9 @@ export function CategoriesPage() {
 
   const tableActionLoading =
 
-    actionLoading || isReordering || bulkActionLoading;
+    actionLoading ||
+    isReordering ||
+    bulkActionLoading;
 
 
 
@@ -644,51 +459,53 @@ export function CategoriesPage() {
 
 
 
-  const loadDependencies = async (category: CategoryListItem) => {
+  const loadDependencySummaryById = async (categoryId: string) => {
+    const response =
+      await categoryService.getCategoryDependencies(categoryId);
 
-    const response = await categoryService.getCategoryDependencies(category.id);
-
-
-
-    return {
-
-      canDelete: response.data.canDelete,
-
-      removable: response.data.removable,
-
-      blocking: response.data.blocking,
-
-    };
-
+    return parseCategoryDependencySummary(response.data);
   };
 
+  const loadDependencies = async (category: CategoryListItem) =>
+    loadDependencySummaryById(category.id);
 
 
-  const openDialogWithDependencies = async (
+
+  const startLifecycleDependencyCheck = async (
 
     category: CategoryListItem,
 
-    action: Exclude<DialogAction, null>,
+    action: "deactivate" | "archive",
 
   ) => {
 
-    setSelectedCategory(category);
+    const requestId = ++lifecycleCheckRequestIdRef.current;
 
-    setDependencySummary(null);
-
-    setDependencyLoading(true);
-
-    setDialogAction(action);
-
-
+    setPendingLifecycleCheck({ categoryId: category.id, action });
 
     try {
 
       const summary = await loadDependencies(category);
 
+      if (requestId !== lifecycleCheckRequestIdRef.current) {
+
+        return;
+
+      }
+
+      setSelectedCategory(category);
+
       setDependencySummary(summary);
 
+      setDialogAction(action);
+
     } catch (error) {
+
+      if (requestId !== lifecycleCheckRequestIdRef.current) {
+
+        return;
+
+      }
 
       appToast.error(
 
@@ -698,15 +515,13 @@ export function CategoriesPage() {
 
       );
 
-      setDialogAction(null);
-
-      setSelectedCategory(null);
-
-      setDependencySummary(null);
-
     } finally {
 
-      setDependencyLoading(false);
+      if (requestId === lifecycleCheckRequestIdRef.current) {
+
+        setPendingLifecycleCheck(null);
+
+      }
 
     }
 
@@ -715,9 +530,10 @@ export function CategoriesPage() {
 
 
   const openActivateDialog = (category: CategoryListItem) => {
+    lifecycleCheckRequestIdRef.current += 1;
+    setPendingLifecycleCheck(null);
     setSelectedCategory(category);
     setDependencySummary(null);
-    setDependencyLoading(false);
     setDialogAction("activate");
   };
 
@@ -729,17 +545,27 @@ export function CategoriesPage() {
 
   };
 
+  const openPermanentDeleteDialog = (category: CategoryListItem) => {
+    lifecycleCheckRequestIdRef.current += 1;
+    setPendingLifecycleCheck(null);
+    setSelectedCategory(category);
+    setDependencySummary(null);
+    setDialogAction("permanent-delete");
+  };
+
 
 
   const closeDialog = () => {
+
+    lifecycleCheckRequestIdRef.current += 1;
+
+    setPendingLifecycleCheck(null);
 
     setDialogAction(null);
 
     setSelectedCategory(null);
 
     setDependencySummary(null);
-
-    setDependencyLoading(false);
 
   };
 
@@ -770,11 +596,19 @@ export function CategoriesPage() {
 
         case "deactivate":
 
+          if (!isCategoryDeactivateAllowed(dependencySummary, false)) {
+            return;
+          }
+
           await deactivateCategory(category.id);
 
           break;
 
         case "archive":
+
+          if (!isCategoryArchiveAllowed(dependencySummary, false)) {
+            return;
+          }
 
           await deleteCategory(category.id);
 
@@ -788,12 +622,6 @@ export function CategoriesPage() {
 
         case "permanent-delete":
 
-          if (dependencySummary && !dependencySummary.canDelete) {
-
-            return;
-
-          }
-
           await permanentlyDeleteCategory(category.id);
 
           break;
@@ -806,7 +634,22 @@ export function CategoriesPage() {
 
       await refetch();
 
-    } catch {
+    } catch (error) {
+
+      if (
+        category &&
+        (action === "deactivate" || action === "archive") &&
+        error instanceof AxiosError &&
+        error.response?.status === 409
+      ) {
+        try {
+          const summary = await loadDependencies(category);
+          setDependencySummary(summary);
+        } catch {
+          // Toast already shown by action hook.
+        }
+        return;
+      }
 
       // Toast handled in hook
 
@@ -817,6 +660,80 @@ export function CategoriesPage() {
 
 
   const handleActivate = openActivateDialog;
+
+  const closeBulkDialog = () => {
+    bulkCheckRequestIdRef.current += 1;
+    setPendingBulkLifecycleCheck(null);
+    setBulkConfirmAction(null);
+    setBulkBlockedDescription(null);
+  };
+
+  const handleBulkToolbarAction = (action: BulkCategoryAction) => {
+    if (pendingBulkLifecycleCheck) {
+      return;
+    }
+
+    if (action === "deactivate" || action === "delete") {
+      const eligibleIds =
+        action === "deactivate"
+          ? getEligibleDeactivateIds(categories, selectedCategoryIds)
+          : getEligibleDeleteIds(categories, selectedCategoryIds);
+
+      if (eligibleIds.length === 0) {
+        return;
+      }
+
+      const requestId = ++bulkCheckRequestIdRef.current;
+      setPendingBulkLifecycleCheck(
+        action === "deactivate" ? "deactivate" : "archive",
+      );
+
+      void (async () => {
+        try {
+          const blocks = await collectBulkCourseBlocks(
+            categories,
+            eligibleIds,
+            loadDependencySummaryById,
+            action === "deactivate" ? "deactivate" : "archive",
+          );
+
+          if (requestId !== bulkCheckRequestIdRef.current) {
+            return;
+          }
+
+          if (blocks.length > 0) {
+            setBulkBlockedDescription(
+              action === "deactivate"
+                ? buildBulkDeactivateBlockedDescription(blocks)
+                : buildBulkArchiveBlockedDescription(blocks),
+            );
+          } else {
+            setBulkBlockedDescription(null);
+          }
+
+          setBulkConfirmAction(action);
+        } catch (error) {
+          if (requestId !== bulkCheckRequestIdRef.current) {
+            return;
+          }
+
+          appToast.error(
+            getErrorMessage(error) ||
+              "Unable to verify category assignments. Please try again.",
+          );
+        } finally {
+          if (requestId === bulkCheckRequestIdRef.current) {
+            setPendingBulkLifecycleCheck(null);
+          }
+        }
+      })();
+
+      return;
+    }
+
+    setBulkBlockedDescription(null);
+    setBulkConfirmAction(action);
+  };
 
   const handleReorder = async (payload: {
 
@@ -856,10 +773,14 @@ export function CategoriesPage() {
 
     if (!bulkConfirmAction || eligibleBulkIds.length === 0) {
 
-      setBulkConfirmAction(null);
+      closeBulkDialog();
 
       return;
 
+    }
+
+    if (bulkBlockedDescription) {
+      return;
     }
 
 
@@ -964,7 +885,7 @@ export function CategoriesPage() {
 
       setSelectedCategoryIds([]);
 
-      setBulkConfirmAction(null);
+      closeBulkDialog();
 
       await refetch();
 
@@ -1000,9 +921,9 @@ export function CategoriesPage() {
 
         return {
 
-          title: "Deactivate selected categories?",
+          title: "Deactivate categories?",
 
-          description: `Deactivate ${count} selected categor${count === 1 ? "y" : "ies"}? They will be removed from branch assignments and active ordering.`,
+          description: buildBulkDeactivateConfirmDescription(),
 
           confirmLabel: "Deactivate",
 
@@ -1014,9 +935,9 @@ export function CategoriesPage() {
 
         return {
 
-          title: "Archive selected categories?",
+          title: "Archive categories?",
 
-          description: `Archive ${count} selected categor${count === 1 ? "y" : "ies"}? They can be restored later.`,
+          description: buildBulkArchiveConfirmDescription(),
 
           confirmLabel: "Archive",
 
@@ -1162,7 +1083,9 @@ export function CategoriesPage() {
 
             disabled={tableActionLoading || isFetching}
 
-            onAction={setBulkConfirmAction}
+            pendingBulkLifecycleCheck={pendingBulkLifecycleCheck}
+
+            onAction={handleBulkToolbarAction}
 
           />
 
@@ -1246,31 +1169,23 @@ export function CategoriesPage() {
 
                   onActivate={handleActivate}
 
+                  pendingLifecycleCheck={pendingLifecycleCheck}
+
                   onDeactivate={(category) => {
 
-                    void openDialogWithDependencies(category, "deactivate");
+                    void startLifecycleDependencyCheck(category, "deactivate");
 
                   }}
 
                   onDelete={(category) => {
 
-                    void openDialogWithDependencies(category, "archive");
+                    void startLifecycleDependencyCheck(category, "archive");
 
                   }}
 
                   onRestore={openRestoreDialog}
 
-                  onPermanentDelete={(category) => {
-
-                    void openDialogWithDependencies(
-
-                      category,
-
-                      "permanent-delete",
-
-                    );
-
-                  }}
+                  onPermanentDelete={openPermanentDeleteDialog}
 
                   onReorder={handleReorder}
 
@@ -1350,36 +1265,43 @@ export function CategoriesPage() {
         />
       ) : null}
 
-      {dialogAction === "activate" || dialogAction === "deactivate" ? (
+      {dialogAction === "activate" ? (
       <StatusCategoryDialog
         open
         category={selectedCategory}
-        mode={dialogAction === "activate" ? "activate" : "deactivate"}
-        isLoading={actionLoading || dependencyLoading}
-        description={
-          dialogAction === "activate"
-            ? buildActivateDescription(categoryName)
-            : buildDeactivateDescription(
-                categoryName,
-                dependencySummary,
-                dependencyLoading,
-              )
-        }
+        mode="activate"
+        isLoading={actionLoading}
+        description={buildActivateDescription(categoryName)}
+        canProceed
         onClose={closeDialog}
         onConfirm={handleConfirmDialog}
       />
       ) : null}
 
-      {dialogAction === "archive" ? (
+      {dialogAction === "deactivate" && dependencySummary ? (
+      <StatusCategoryDialog
+        open
+        category={selectedCategory}
+        mode="deactivate"
+        isLoading={actionLoading}
+        description={buildDeactivateDescription(dependencySummary, false)}
+        canProceed={isCategoryDeactivateAllowed(dependencySummary, false)}
+        onClose={closeDialog}
+        onConfirm={handleConfirmDialog}
+      />
+      ) : null}
+
+      {dialogAction === "archive" && dependencySummary ? (
       <ArchiveCategoryDialog
 
         open
 
         category={selectedCategory}
 
-        isLoading={actionLoading || dependencyLoading}
+        isLoading={actionLoading}
 
-        description={buildArchiveDescription(categoryName, dependencySummary)}
+        description={buildArchiveDescription(dependencySummary, false)}
+        canProceed={isCategoryArchiveAllowed(dependencySummary, false)}
 
         onClose={closeDialog}
 
@@ -1411,19 +1333,9 @@ export function CategoriesPage() {
 
         category={selectedCategory}
 
-        isLoading={actionLoading || dependencyLoading}
+        isLoading={actionLoading}
 
-        canDelete={dependencySummary?.canDelete ?? true}
-
-        description={buildPermanentDeleteDescription(
-
-          categoryName,
-
-          dependencySummary,
-
-          dependencyLoading,
-
-        )}
+        description={buildPermanentDeleteDescription()}
 
         onClose={closeDialog}
 
@@ -1436,17 +1348,38 @@ export function CategoriesPage() {
 
         open={bulkConfirmAction !== null}
 
-        title={bulkDialogCopy.title}
+        title={
+          bulkBlockedDescription
+            ? bulkConfirmAction === "delete"
+              ? "Cannot archive selected categories"
+              : "Cannot deactivate selected categories"
+            : bulkDialogCopy.title
+        }
 
-        description={bulkDialogCopy.description}
+        description={
+          bulkBlockedDescription ?? bulkDialogCopy.description
+        }
 
-        confirmLabel={bulkDialogCopy.confirmLabel}
+        confirmLabel={
+          bulkBlockedDescription ? "OK" : bulkDialogCopy.confirmLabel
+        }
 
-        confirmVariant={bulkDialogCopy.confirmVariant}
+        confirmVariant={
+          bulkBlockedDescription
+            ? "primary"
+            : bulkDialogCopy.confirmVariant
+        }
 
-        loading={bulkActionLoading}
+        loading={bulkActionLoading && !bulkBlockedDescription}
+
+        showCancel={!bulkBlockedDescription}
 
         onConfirm={() => {
+
+          if (bulkBlockedDescription) {
+            closeBulkDialog();
+            return;
+          }
 
           void handleBulkConfirm();
 
@@ -1456,7 +1389,7 @@ export function CategoriesPage() {
 
           if (!bulkActionLoading) {
 
-            setBulkConfirmAction(null);
+            closeBulkDialog();
 
           }
 

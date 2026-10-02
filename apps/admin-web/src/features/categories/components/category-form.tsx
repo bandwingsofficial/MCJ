@@ -15,7 +15,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   FileText,
-  Hash,
   ImageIcon,
   ListOrdered,
   Tag,
@@ -31,8 +30,6 @@ import { Label } from "@/src/shared/components/ui/label";
 import { WordCount } from "@/src/shared/components/ui/word-count";
 import {
   FieldVisualState,
-  IconValidatedField,
-  iconDecorInputClass,
   ValidatedField,
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
@@ -58,18 +55,28 @@ const ACCEPTED_TYPES = [
   "image/gif",
 ];
 
-function iconInputClass(state: FieldVisualState, extra = "") {
-  return iconDecorInputClass(state, cn("w-full min-w-0 max-w-full", extra));
+export const CATEGORY_FORM_ID = "category-form";
+
+function leftIconInputClass(
+  state: FieldVisualState,
+  extra = "",
+  options?: { textarea?: boolean },
+) {
+  return validatedFieldInputClass(
+    state,
+    cn("w-full min-w-0 max-w-full", extra),
+    { leftIcon: true, textarea: options?.textarea },
+  );
 }
 
-function IconField({
+function LeftIconField({
   label,
   required,
   state,
   errorMessage,
   checkingMessage,
   successMessage,
-  icon,
+  icon: Icon,
   textarea,
   children,
 }: {
@@ -84,19 +91,18 @@ function IconField({
   children: ReactNode;
 }) {
   return (
-    <IconValidatedField
+    <ValidatedField
       label={label}
       required={required}
       state={state}
       errorMessage={errorMessage}
       checkingMessage={checkingMessage}
       successMessage={successMessage}
-      icon={icon}
       textarea={textarea}
-      rightDecorAlignTop={textarea}
+      leftIcon={<Icon className="h-4 w-4" aria-hidden />}
     >
       {children}
-    </IconValidatedField>
+    </ValidatedField>
   );
 }
 
@@ -112,8 +118,6 @@ interface CategoryFormProps {
 
   isSubmitting: boolean;
 
-  submitLabel: string;
-
   onSubmit: (
     values: CategoryFormValues,
     image: File | null,
@@ -125,33 +129,21 @@ export function CategoryForm({
   defaultValues,
   excludeId,
   isSubmitting,
-  submitLabel,
   onSubmit,
 }: CategoryFormProps) {
   const isEdit = Boolean(excludeId);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const slugManuallyEditedRef = useRef(isEdit);
-  const lastSuggestedSlugRef = useRef(
-    defaultValues?.slug
-      ? normalizeCategorySlug(defaultValues.slug)
-      : "",
-  );
   const nameCheckIdRef = useRef(0);
-  const slugCheckIdRef = useRef(0);
 
   const [nameTouched, setNameTouched] = useState(false);
-  const [slugTouched, setSlugTouched] = useState(false);
   const [imageTouched, setImageTouched] = useState(isEdit);
 
   const [nameChecking, setNameChecking] = useState(false);
-  const [slugChecking, setSlugChecking] = useState(false);
 
   const [nameAvailable, setNameAvailable] = useState<boolean | null>(null);
-  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
 
   const [nameAsyncError, setNameAsyncError] = useState<string | null>(null);
-  const [slugAsyncError, setSlugAsyncError] = useState<string | null>(null);
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
@@ -186,7 +178,6 @@ export function CategoryForm({
   });
 
   const name = watch("name");
-  const slug = watch("slug");
   const values = watch();
 
   useFormSessionReset(
@@ -202,10 +193,6 @@ export function CategoryForm({
     {
       enabled: isEdit && Boolean(excludeId && defaultValues),
       onReset: () => {
-        slugManuallyEditedRef.current = isEdit;
-        lastSuggestedSlugRef.current = defaultValues?.slug
-          ? normalizeCategorySlug(defaultValues.slug)
-          : "";
         setPreviewUrl(defaultValues?.thumbnailUrl ?? null);
         setSelectedImage(null);
         setRemoveImage(false);
@@ -213,18 +200,15 @@ export function CategoryForm({
         setImageError(null);
         setRootError(null);
         setNameTouched(true);
-        setSlugTouched(true);
         setImageTouched(true);
         setNameAvailable(null);
         setNameAsyncError(null);
-        setSlugAvailable(null);
-        setSlugAsyncError(null);
       },
     },
   );
 
   useEffect(() => {
-    if (isEdit || slugManuallyEditedRef.current) {
+    if (isEdit) {
       return;
     }
 
@@ -235,12 +219,10 @@ export function CategoryForm({
     }
 
     const suggested = normalizeCategorySlug(trimmed);
-    lastSuggestedSlugRef.current = suggested;
     setValue("slug", suggested, {
       shouldDirty: true,
-      shouldValidate: true,
+      shouldValidate: false,
     });
-    setSlugTouched(true);
   }, [name, isEdit, setValue]);
 
   useEffect(() => {
@@ -292,54 +274,6 @@ export function CategoryForm({
   }, [name, excludeId, nameTouched]);
 
   useEffect(() => {
-    const trimmed = normalizeCategorySlug(slug ?? "");
-
-    if (!slugTouched || !trimmed) {
-      setSlugChecking(false);
-      setSlugAvailable(null);
-      setSlugAsyncError(null);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      const requestId = ++slugCheckIdRef.current;
-      setSlugChecking(true);
-
-      try {
-        const response = await categoryService.checkAvailability({
-          slug: trimmed,
-          excludeId,
-        });
-
-        if (requestId !== slugCheckIdRef.current) {
-          return;
-        }
-
-        const available = response.data.slugAvailable;
-        setSlugAvailable(available);
-        setSlugAsyncError(
-          available === false
-            ? response.data.slugMessage ??
-                "Category slug already exists."
-            : null,
-        );
-      } catch {
-        if (requestId !== slugCheckIdRef.current) {
-          return;
-        }
-        setSlugAvailable(null);
-        setSlugAsyncError(null);
-      } finally {
-        if (requestId === slugCheckIdRef.current) {
-          setSlugChecking(false);
-        }
-      }
-    }, AVAILABILITY_DEBOUNCE_MS);
-
-    return () => clearTimeout(timer);
-  }, [slug, excludeId, slugTouched]);
-
-  useEffect(() => {
     if (!selectedImage) {
       return;
     }
@@ -364,10 +298,10 @@ export function CategoryForm({
     }
 
     if (mapped.slug) {
-      setSlugTouched(true);
-      setSlugAvailable(false);
-      setSlugAsyncError(mapped.slug);
-      setError("slug", { message: mapped.slug });
+      setNameTouched(true);
+      setNameAvailable(false);
+      setNameAsyncError(mapped.slug);
+      setError("name", { message: mapped.slug });
     }
 
     if (mapped.description) {
@@ -389,7 +323,6 @@ export function CategoryForm({
   };
 
   const nameRegister = register("name");
-  const slugRegister = register("slug");
 
   const nameState: FieldVisualState = nameChecking
     ? "checking"
@@ -400,18 +333,6 @@ export function CategoryForm({
         : nameAvailable === true
           ? "valid"
           : errors.name
-            ? "invalid"
-            : "neutral";
-
-  const slugState: FieldVisualState = slugChecking
-    ? "checking"
-    : slugAvailable === false || errors.slug
-      ? "invalid"
-      : !slugTouched
-        ? "neutral"
-        : slugAvailable === true
-          ? "valid"
-          : errors.slug
             ? "invalid"
             : "neutral";
 
@@ -457,7 +378,9 @@ export function CategoryForm({
       errorMessage: errors[fieldName]?.message,
       inputProps: {
         ...registration,
-        className: iconInputClass(state),
+        className: leftIconInputClass(state, "", {
+          textarea: fieldName === "description",
+        }),
         onBlur: (event: FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
           registration.onBlur(event);
           void trigger(fieldName);
@@ -523,6 +446,7 @@ export function CategoryForm({
 
   return (
     <form
+      id={CATEGORY_FORM_ID}
       onSubmit={handleSubmit(async (formValues) => {
         setRootError(null);
         setImageTouched(true);
@@ -532,12 +456,7 @@ export function CategoryForm({
           return;
         }
 
-        if (
-          nameChecking ||
-          slugChecking ||
-          nameAvailable === false ||
-          slugAvailable === false
-        ) {
+        if (nameChecking || nameAvailable === false) {
           return;
         }
 
@@ -548,7 +467,6 @@ export function CategoryForm({
 
         try {
           setNameChecking(true);
-          setSlugChecking(true);
 
           const response = await categoryService.checkAvailability({
             name: trimmedName,
@@ -567,9 +485,9 @@ export function CategoryForm({
           }
 
           if (response.data.slugAvailable === false) {
-            setSlugTouched(true);
-            setSlugAvailable(false);
-            setSlugAsyncError(
+            setNameTouched(true);
+            setNameAvailable(false);
+            setNameAsyncError(
               response.data.slugMessage ??
                 "Category slug already exists.",
             );
@@ -578,13 +496,10 @@ export function CategoryForm({
 
           setNameAvailable(true);
           setNameAsyncError(null);
-          setSlugAvailable(true);
-          setSlugAsyncError(null);
         } catch {
           // If the pre-check fails, still attempt submit and rely on backend.
         } finally {
           setNameChecking(false);
-          setSlugChecking(false);
         }
 
         try {
@@ -613,7 +528,9 @@ export function CategoryForm({
         </div>
       ) : null}
 
-      <IconField
+      <input type="hidden" {...register("slug")} />
+
+      <LeftIconField
         label="Name"
         required
         state={nameState}
@@ -625,7 +542,7 @@ export function CategoryForm({
           {...nameRegister}
           placeholder="Enter category name"
           disabled={isSubmitting}
-          className={iconInputClass(nameState)}
+          className={leftIconInputClass(nameState)}
           onBlur={(event) => {
             nameRegister.onBlur(event);
             setNameTouched(true);
@@ -633,67 +550,38 @@ export function CategoryForm({
           }}
           onChange={(event) => {
             nameRegister.onChange(event);
-            setNameTouched(true);
-            void trigger("name");
-          }}
-        />
-      </IconField>
-
-      <IconField
-        label={
-          isEdit ? "Slug" : "Slug (auto-generated from name)"
-        }
-        required={isEdit}
-        state={slugState}
-        errorMessage={slugAsyncError ?? errors.slug?.message}
-        successMessage="Available"
-        icon={Hash}
-      >
-        <Input
-          {...slugRegister}
-          placeholder="category-slug"
-          disabled={isSubmitting}
-          className={iconInputClass(slugState)}
-          onBlur={(event) => {
-            slugRegister.onBlur(event);
-            setSlugTouched(true);
-            void trigger("slug");
-          }}
-          onChange={(event) => {
-            const value = event.target.value;
-            const normalized = normalizeCategorySlug(value);
-
-            if (
-              normalized &&
-              normalized !== lastSuggestedSlugRef.current
-            ) {
-              slugManuallyEditedRef.current = true;
+            if (nameTouched) {
+              void trigger("name");
             }
-
-            slugRegister.onChange(event);
-            setSlugTouched(true);
-            void trigger("slug");
           }}
         />
-      </IconField>
+      </LeftIconField>
 
       <ValidatedField
-        label="Description"
+        label="Description (Optional)"
         textarea
-        rightDecorIcon={FileText}
-        rightDecorAlignTop
         state={descriptionField.state}
         errorMessage={descriptionField.errorMessage}
       >
-        <Textarea
-          {...descriptionField.inputProps}
-          placeholder="Enter category description"
-          disabled={isSubmitting}
-          className={cn(
-            iconInputClass(descriptionField.state),
-            "min-h-[96px] resize-y",
-          )}
-        />
+        <div className="relative w-full min-w-0">
+          <span
+            className="pointer-events-none absolute left-3 top-3 z-[1] text-[#8AA0BB]"
+            aria-hidden
+          >
+            <FileText className="h-4 w-4" />
+          </span>
+          <Textarea
+            {...descriptionField.inputProps}
+            placeholder="Enter category description"
+            disabled={isSubmitting}
+            className={cn(
+              leftIconInputClass(descriptionField.state, "", {
+                textarea: true,
+              }),
+              "min-h-[96px] resize-y pt-3 leading-normal",
+            )}
+          />
+        </div>
       </ValidatedField>
       <WordCount
         value={values.description ?? ""}
@@ -808,7 +696,7 @@ export function CategoryForm({
 
       {isEdit ? (
         <>
-          <IconField
+          <LeftIconField
             label="Display Order"
             icon={ListOrdered}
             state={displayOrderField.state}
@@ -827,7 +715,7 @@ export function CategoryForm({
                     ? undefined
                     : Number(value),
               })}
-              className={iconInputClass(displayOrderField.state)}
+              className={leftIconInputClass(displayOrderField.state)}
               onBlur={(event) => {
                 displayOrderField.inputProps.onBlur(event);
               }}
@@ -835,27 +723,12 @@ export function CategoryForm({
                 displayOrderField.inputProps.onChange(event);
               }}
             />
-          </IconField>
+          </LeftIconField>
           <p className="mt-1 text-xs text-slate-500">
             Lower numbers appear first in category lists.
           </p>
         </>
       ) : null}
-
-      <Button
-        type="submit"
-        loading={isSubmitting}
-        disabled={
-          isSubmitting ||
-          nameChecking ||
-          slugChecking ||
-          nameAvailable === false ||
-          slugAvailable === false
-        }
-        className="w-full"
-      >
-        {submitLabel}
-      </Button>
     </form>
   );
 }

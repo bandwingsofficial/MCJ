@@ -1,3 +1,8 @@
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+
+import { formatCategoryArchiveBlockingMessage } from '../shared/format-category-deactivate-blocking-message';
+
 import type { CategoryRepository } from '../../domain/repositories/category.repository';
 import { CategoryDomainService } from '../../domain/services/category-domain.service';
 
@@ -16,6 +21,26 @@ export class DeleteCategoryHandler {
     const category = await this.domainService.ensureExists(
       await this.categoryRepo.findById(command.id),
     );
+
+    const refs = await this.categoryRepo.countBlockingReferences(
+      category.id,
+    );
+
+    if (refs.courses > 0) {
+      const blockingCourseNames =
+        await this.categoryRepo.findBlockingCourseNames(
+          category.id,
+        );
+
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        formatCategoryArchiveBlockingMessage(
+          blockingCourseNames,
+          refs.courses,
+        ),
+        409,
+      );
+    }
 
     const deletedDisplayOrder = category.displayOrder;
 

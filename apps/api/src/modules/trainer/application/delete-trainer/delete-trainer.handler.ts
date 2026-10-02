@@ -1,3 +1,8 @@
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+
+import { formatTrainerBranchBlockingMessage } from '../shared/format-trainer-branch-blocking-message';
+
 import type { TrainerRepository } from '../../domain/repositories/trainer.repository';
 import { TrainerDomainService } from '../../domain/services/trainer-domain.service';
 
@@ -16,6 +21,26 @@ export class DeleteTrainerHandler {
     const trainer = await this.domainService.ensureExists(
       await this.trainerRepo.findById(command.id),
     );
+
+    const branchCount =
+      await this.trainerRepo.countBranchAssignments(trainer.id);
+
+    if (branchCount > 0) {
+      const branchNames =
+        await this.trainerRepo.findBranchAssignmentNames(
+          trainer.id,
+        );
+
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        formatTrainerBranchBlockingMessage(
+          branchNames,
+          branchCount,
+          'delete',
+        ),
+        409,
+      );
+    }
 
     const deletedDisplayOrder = trainer.displayOrder;
 

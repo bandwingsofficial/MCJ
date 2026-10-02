@@ -32,6 +32,7 @@ import { CreateTrainerCommand } from '../../application/create-trainer/create-tr
 import { CreateTrainerHandler } from '../../application/create-trainer/create-trainer.handler';
 import { DeleteTrainerCommand } from '../../application/delete-trainer/delete-trainer.command';
 import { DeleteTrainerHandler } from '../../application/delete-trainer/delete-trainer.handler';
+import { GetTrainerDependenciesHandler } from '../../application/get-trainer-dependencies/get-trainer-dependencies.handler';
 import { GetTrainerHandler } from '../../application/get-trainer/get-trainer.handler';
 import { GetTrainerQuery } from '../../application/get-trainer/get-trainer.query';
 import { ListTrainersHandler } from '../../application/list-trainers/list-trainers.handler';
@@ -66,6 +67,7 @@ export class AdminTrainerController {
     private readonly updateTrainerHandler: UpdateTrainerHandler,
     private readonly listTrainersHandler: ListTrainersHandler,
     private readonly getTrainerHandler: GetTrainerHandler,
+    private readonly getTrainerDependenciesHandler: GetTrainerDependenciesHandler,
     private readonly deleteTrainerHandler: DeleteTrainerHandler,
     private readonly restoreTrainerHandler: RestoreTrainerHandler,
     private readonly permanentDeleteTrainerHandler: PermanentDeleteTrainerHandler,
@@ -258,6 +260,22 @@ export class AdminTrainerController {
     return {
       success: true,
       message: 'Trainers permanently deleted successfully',
+      data: result,
+    };
+  }
+
+  @Get(':id/dependencies')
+  @ApiResponse({
+    status: 200,
+    description: 'Trainer branch assignment dependencies',
+  })
+  async getDependencies(@Param('id') id: string) {
+    const result =
+      await this.getTrainerDependenciesHandler.execute(id);
+
+    return {
+      success: true,
+      message: 'Trainer dependencies retrieved',
       data: result,
     };
   }

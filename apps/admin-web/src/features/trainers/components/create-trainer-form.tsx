@@ -6,7 +6,6 @@ import type { CreateTrainerFormValues } from "@/src/features/trainers/schemas/tr
 
 interface CreateTrainerFormProps {
   isSubmitting: boolean;
-  submitLabel: string;
   onSubmit: (
     values: CreateTrainerFormValues,
     image: File | null,
@@ -16,14 +15,12 @@ interface CreateTrainerFormProps {
 
 export function CreateTrainerForm({
   isSubmitting,
-  submitLabel,
   onSubmit,
 }: CreateTrainerFormProps) {
   return (
     <TrainerForm
       mode="create"
       isSubmitting={isSubmitting}
-      submitLabel={submitLabel}
       onSubmit={onSubmit}
     />
   );

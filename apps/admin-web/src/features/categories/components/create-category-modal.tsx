@@ -1,8 +1,12 @@
 "use client";
 
 import { Modal } from "@/src/shared/components/ui/model";
+import { Button } from "@/src/shared/components/ui/button";
 
-import { CategoryForm } from "@/src/features/categories/components/category-form";
+import {
+  CategoryForm,
+  CATEGORY_FORM_ID,
+} from "@/src/features/categories/components/category-form";
 
 import { useCreateCategory } from "@/src/features/categories/hooks/use-create-category";
 
@@ -54,10 +58,24 @@ export function CreateCategoryModal({
       title="Create Category"
       onClose={onClose}
       contentClassName="!max-w-xl"
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form={CATEGORY_FORM_ID}
+            loading={isLoading}
+            disabled={isLoading}
+          >
+            Create Category
+          </Button>
+        </>
+      }
     >
       <CategoryForm
         key={open ? "create-category-open" : "create-category-closed"}
-        submitLabel="Create Category"
         isSubmitting={isLoading}
         onSubmit={async (values, image) => {
           await handleSubmit(values, image);

@@ -21,6 +21,7 @@ import { BulkRestoreTrainersHandler } from './application/bulk-restore-trainers/
 import { BulkUpdateTrainerStatusHandler } from './application/bulk-update-trainer-status/bulk-update-trainer-status.handler';
 import { CreateTrainerHandler } from './application/create-trainer/create-trainer.handler';
 import { DeleteTrainerHandler } from './application/delete-trainer/delete-trainer.handler';
+import { GetTrainerDependenciesHandler } from './application/get-trainer-dependencies/get-trainer-dependencies.handler';
 import { GetTrainerHandler } from './application/get-trainer/get-trainer.handler';
 import { ListTrainersHandler } from './application/list-trainers/list-trainers.handler';
 import { PermanentDeleteTrainerHandler } from './application/permanent-delete-trainer/permanent-delete-trainer.handler';
@@ -191,6 +192,22 @@ import { BranchModule } from '../branch/branch.module';
         domainService: TrainerDomainService,
       ) =>
         new UpdateTrainerStatusHandler(
+          trainerRepo,
+          domainService,
+        ),
+      inject: [
+        TRAINER_TOKENS.TRAINER_REPOSITORY,
+        TrainerDomainService,
+      ],
+    },
+
+    {
+      provide: GetTrainerDependenciesHandler,
+      useFactory: (
+        trainerRepo: TrainerRepository,
+        domainService: TrainerDomainService,
+      ) =>
+        new GetTrainerDependenciesHandler(
           trainerRepo,
           domainService,
         ),

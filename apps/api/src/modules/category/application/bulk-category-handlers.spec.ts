@@ -127,6 +127,12 @@ describe('Bulk category handlers', () => {
 
       const categoryRepo = {
         findById: jest.fn().mockResolvedValue(active),
+        countBlockingReferences: jest.fn().mockResolvedValue({
+          courses: 0,
+          enrollments: 0,
+          articles: 0,
+          branches: 0,
+        }),
         closeDisplayOrderGap: jest.fn().mockResolvedValue(undefined),
         removeBranchAssignments: jest.fn().mockResolvedValue(undefined),
         save: jest.fn().mockResolvedValue(undefined),
@@ -152,6 +158,65 @@ describe('Bulk category handlers', () => {
       expect(active.status).toBe(CategoryStatus.INACTIVE);
       expect(active.displayOrder).toBeNull();
     });
+
+    it('blocks bulk deactivation atomically when any selected category has courses', async () => {
+      const blocked = makeCategory({
+        id: 'blocked',
+        status: CategoryStatus.ACTIVE,
+        displayOrder: 2,
+      });
+      const clear = makeCategory({
+        id: 'clear',
+        status: CategoryStatus.ACTIVE,
+        displayOrder: 1,
+      });
+
+      const categoryRepo = {
+        findById: jest
+          .fn()
+          .mockImplementation(async (id: string) => {
+            if (id === 'blocked') {
+              return blocked;
+            }
+            if (id === 'clear') {
+              return clear;
+            }
+            return null;
+          }),
+        countBlockingReferences: jest
+          .fn()
+          .mockImplementation(async (id: string) => ({
+            courses: id === 'blocked' ? 1 : 0,
+            enrollments: 0,
+            articles: 0,
+            branches: 0,
+          })),
+        findBlockingCourseNames: jest
+          .fn()
+          .mockResolvedValue(['Junior Accountant']),
+        closeDisplayOrderGap: jest.fn(),
+        removeBranchAssignments: jest.fn(),
+        save: jest.fn(),
+        normalizeOrderedDisplayOrders: jest.fn(),
+      };
+
+      const handler = new BulkUpdateCategoryStatusHandler(
+        categoryRepo as never,
+      );
+
+      const result = await handler.execute(
+        new BulkUpdateCategoryStatusCommand(
+          ['blocked', 'clear'],
+          CategoryStatus.INACTIVE,
+        ),
+      );
+
+      expect(result.successCount).toBe(0);
+      expect(result.failedCount).toBe(2);
+      expect(categoryRepo.save).not.toHaveBeenCalled();
+      expect(blocked.status).toBe(CategoryStatus.ACTIVE);
+      expect(clear.status).toBe(CategoryStatus.ACTIVE);
+    });
   });
 
   describe('BulkDeleteCategoryHandler', () => {
@@ -175,6 +240,12 @@ describe('Bulk category handlers', () => {
             }
             return archived;
           }),
+        countBlockingReferences: jest.fn().mockResolvedValue({
+          courses: 0,
+          enrollments: 0,
+          articles: 0,
+          branches: 0,
+        }),
         removeBranchAssignments: jest.fn().mockResolvedValue(undefined),
         closeDisplayOrderGap: jest.fn().mockResolvedValue(undefined),
         save: jest.fn().mockResolvedValue(undefined),
@@ -192,6 +263,52 @@ describe('Bulk category handlers', () => {
       expect(result.successCount).toBe(2);
       expect(categoryRepo.save).toHaveBeenCalledTimes(1);
       expect(active.isDeleted).toBe(true);
+    });
+
+    it('blocks bulk archive atomically when any selected category has courses', async () => {
+      const blocked = makeCategory({ id: 'blocked', displayOrder: 2 });
+      const clear = makeCategory({ id: 'clear', displayOrder: 1 });
+
+      const categoryRepo = {
+        findById: jest
+          .fn()
+          .mockImplementation(async (id: string) => {
+            if (id === 'blocked') {
+              return blocked;
+            }
+            if (id === 'clear') {
+              return clear;
+            }
+            return null;
+          }),
+        countBlockingReferences: jest
+          .fn()
+          .mockImplementation(async (id: string) => ({
+            courses: id === 'blocked' ? 2 : 0,
+            enrollments: 0,
+            articles: 0,
+            branches: 0,
+          })),
+        findBlockingCourseNames: jest
+          .fn()
+          .mockResolvedValue(['Course A', 'Course B']),
+        removeBranchAssignments: jest.fn(),
+        closeDisplayOrderGap: jest.fn(),
+        save: jest.fn(),
+        normalizeOrderedDisplayOrders: jest.fn(),
+      };
+
+      const handler = new BulkDeleteCategoryHandler(categoryRepo as never);
+
+      const result = await handler.execute(
+        new BulkDeleteCategoryCommand(['blocked', 'clear']),
+      );
+
+      expect(result.successCount).toBe(0);
+      expect(result.failedCount).toBe(2);
+      expect(categoryRepo.save).not.toHaveBeenCalled();
+      expect(blocked.isDeleted).toBe(false);
+      expect(clear.isDeleted).toBe(false);
     });
   });
 

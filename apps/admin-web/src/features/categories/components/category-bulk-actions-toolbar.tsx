@@ -1,5 +1,7 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
+
 import { Button } from "@/src/shared/components/ui/button";
 
 import type { CategoryListItem } from "@/src/features/categories/types/category.types";
@@ -22,6 +24,7 @@ interface Props {
   categories: CategoryListItem[];
   selectedCategoryIds: string[];
   disabled?: boolean;
+  pendingBulkLifecycleCheck?: "deactivate" | "archive" | null;
   onAction: (action: BulkCategoryAction) => void;
 }
 
@@ -29,6 +32,7 @@ export function CategoryBulkActionsToolbar({
   categories,
   selectedCategoryIds = [],
   disabled = false,
+  pendingBulkLifecycleCheck = null,
   onAction,
 }: Props) {
   const selectedCount = selectedCategoryIds.length;
@@ -39,24 +43,28 @@ export function CategoryBulkActionsToolbar({
 
   const activateCount = getEligibleActivateIds(
     categories,
-    selectedCategoryIds
+    selectedCategoryIds,
   ).length;
   const deactivateCount = getEligibleDeactivateIds(
     categories,
-    selectedCategoryIds
+    selectedCategoryIds,
   ).length;
   const deleteCount = getEligibleDeleteIds(
     categories,
-    selectedCategoryIds
+    selectedCategoryIds,
   ).length;
   const restoreCount = getEligibleRestoreIds(
     categories,
-    selectedCategoryIds
+    selectedCategoryIds,
   ).length;
   const permanentDeleteCount = getEligiblePermanentDeleteIds(
     categories,
-    selectedCategoryIds
+    selectedCategoryIds,
   ).length;
+
+  const checkingDeactivate = pendingBulkLifecycleCheck === "deactivate";
+  const checkingArchive = pendingBulkLifecycleCheck === "archive";
+  const bulkCheckInFlight = pendingBulkLifecycleCheck !== null;
 
   return (
     <div className="flex flex-col gap-1.5 border-b border-[#2563EB]/15 bg-[#2563EB]/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -69,7 +77,7 @@ export function CategoryBulkActionsToolbar({
           type="button"
           variant="outline"
           className="h-7 px-2.5 text-xs"
-          disabled={disabled || activateCount === 0}
+          disabled={disabled || activateCount === 0 || bulkCheckInFlight}
           onClick={() => onAction("activate")}
         >
           Activate
@@ -78,28 +86,38 @@ export function CategoryBulkActionsToolbar({
         <Button
           type="button"
           variant="outline"
-          className="h-7 px-2.5 text-xs"
-          disabled={disabled || deactivateCount === 0}
+          className="h-7 gap-1 px-2.5 text-xs"
+          disabled={
+            disabled || deactivateCount === 0 || bulkCheckInFlight
+          }
+          aria-busy={checkingDeactivate}
           onClick={() => onAction("deactivate")}
         >
+          {checkingDeactivate ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          ) : null}
           Deactivate
         </Button>
 
         <Button
           type="button"
           variant="outline"
-          className="h-7 px-2.5 text-xs"
-          disabled={disabled || deleteCount === 0}
+          className="h-7 gap-1 px-2.5 text-xs"
+          disabled={disabled || deleteCount === 0 || bulkCheckInFlight}
+          aria-busy={checkingArchive}
           onClick={() => onAction("delete")}
         >
-          Delete
+          {checkingArchive ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          ) : null}
+          Archive
         </Button>
 
         <Button
           type="button"
           variant="outline"
           className="h-7 px-2.5 text-xs"
-          disabled={disabled || restoreCount === 0}
+          disabled={disabled || restoreCount === 0 || bulkCheckInFlight}
           onClick={() => onAction("restore")}
         >
           Restore
@@ -109,7 +127,9 @@ export function CategoryBulkActionsToolbar({
           type="button"
           variant="danger"
           className="h-7 px-2.5 text-xs"
-          disabled={disabled || permanentDeleteCount === 0}
+          disabled={
+            disabled || permanentDeleteCount === 0 || bulkCheckInFlight
+          }
           onClick={() => onAction("permanent-delete")}
         >
           Permanent Delete

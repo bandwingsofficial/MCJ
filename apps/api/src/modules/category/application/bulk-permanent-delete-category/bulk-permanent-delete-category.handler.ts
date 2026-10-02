@@ -6,7 +6,6 @@ import { UploadDomainService } from '@modules/uploads/domain/services/upload-dom
 import { CategoryStatus } from '../../domain/enums/category-status.enum';
 import type { CategoryRepository } from '../../domain/repositories/category.repository';
 
-import { formatCategoryBlockingMessage } from '../shared/format-category-blocking-message';
 import type { BulkCategoryItemResult } from '../shared/bulk-category-operation.result';
 import { parseBulkCategoryIds } from '../shared/parse-bulk-category-ids';
 
@@ -79,25 +78,6 @@ export class BulkPermanentDeleteCategoryHandler {
           success: false,
           message:
             'Only archived categories can be permanently deleted',
-        });
-        continue;
-      }
-
-      const refs = await this.categoryRepo.countBlockingReferences(
-        category.id,
-      );
-
-      const blockingMessage = formatCategoryBlockingMessage({
-        courses: refs.courses,
-        enrollments: refs.enrollments,
-        articles: refs.articles,
-      });
-
-      if (blockingMessage) {
-        itemResults.push({
-          categoryId,
-          success: false,
-          message: blockingMessage,
         });
         continue;
       }

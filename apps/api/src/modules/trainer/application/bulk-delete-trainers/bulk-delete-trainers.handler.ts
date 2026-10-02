@@ -9,6 +9,8 @@ import { ValidationError } from '../errors/validation.error';
 import type { BulkTrainerItemResult } from '../shared/bulk-trainer-operation.result';
 import { parseBulkTrainerIds } from '../shared/parse-bulk-trainer-ids';
 
+import { formatTrainerBranchBlockingMessage } from '../shared/format-trainer-branch-blocking-message';
+
 import { BulkDeleteTrainersCommand } from './bulk-delete-trainers.command';
 import { BulkDeleteTrainersResult } from './bulk-delete-trainers.result';
 
@@ -62,6 +64,29 @@ export class BulkDeleteTrainersHandler {
 
       for (const trainer of trainersToDelete) {
         try {
+          const branchCount =
+            await this.trainerRepo.countBranchAssignments(
+              trainer.id,
+            );
+
+          if (branchCount > 0) {
+            const branchNames =
+              await this.trainerRepo.findBranchAssignmentNames(
+                trainer.id,
+              );
+
+            itemResults.push({
+              trainerId: trainer.id,
+              success: false,
+              message: formatTrainerBranchBlockingMessage(
+                branchNames,
+                branchCount,
+                'delete',
+              ),
+            });
+            continue;
+          }
+
           const deletedDisplayOrder = trainer.displayOrder;
 
           trainer.softDelete();

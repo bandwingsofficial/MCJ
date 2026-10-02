@@ -17,6 +17,9 @@ export class GetCategoryDependenciesResult {
     public readonly canDelete: boolean,
     public readonly removable: CategoryDependencyCounts,
     public readonly blocking: CategoryDependencyCounts,
+    public readonly blockingCourseNames: string[],
+    public readonly canDeactivate: boolean,
+    public readonly canArchive: boolean,
   ) {}
 }
 
@@ -59,12 +62,26 @@ export class GetCategoryDependenciesHandler {
         blocking.articles ===
       0;
 
+    const blockingCourseNames =
+      refs.courses > 0
+        ? await this.categoryRepo.findBlockingCourseNames(
+            category.id,
+          )
+        : [];
+
+    const coursesClear = refs.courses === 0;
+    const canDeactivate = coursesClear;
+    const canArchive = coursesClear;
+
     return new GetCategoryDependenciesResult(
       category.id,
       category.name.getValue(),
       canDelete,
       removable,
       blocking,
+      blockingCourseNames,
+      canDeactivate,
+      canArchive,
     );
   }
 }

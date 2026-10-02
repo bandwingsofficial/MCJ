@@ -3,8 +3,10 @@
 import { useState } from "react";
 
 import { Modal } from "@/src/shared/components/ui/model";
+import { Button } from "@/src/shared/components/ui/button";
 
 import { CreateTrainerForm } from "./create-trainer-form";
+import { TRAINER_FORM_ID } from "@/src/features/trainers/components/trainer-form";
 
 import { useCreateTrainer } from "@/src/features/trainers/hooks/use-create-trainer";
 
@@ -110,10 +112,29 @@ export function CreateTrainerModal({
       title="Create Trainer"
       onClose={onClose}
       bodyClassName="overflow-y-auto bg-white px-6 py-5"
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={isPending || isUploadingImage}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form={TRAINER_FORM_ID}
+            loading={isPending || isUploadingImage}
+            disabled={isPending || isUploadingImage}
+          >
+            Create Trainer
+          </Button>
+        </>
+      }
     >
       <CreateTrainerForm
         key={open ? "create-trainer-open" : "create-trainer-closed"}
-        submitLabel="Create Trainer"
         isSubmitting={isPending || isUploadingImage}
         onSubmit={handleSubmit}
       />

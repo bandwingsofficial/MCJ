@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import type { Category } from '../../domain/entities/category.entity';
 import type { CategoryRepository } from '../../domain/repositories/category.repository';
 
+import { formatCategoryArchiveBlockingMessage } from '../shared/format-category-deactivate-blocking-message';
 import type { BulkCategoryItemResult } from '../shared/bulk-category-operation.result';
 import { parseBulkCategoryIds } from '../shared/parse-bulk-category-ids';
 
@@ -59,6 +60,53 @@ export class BulkDeleteCategoryHandler {
       const rightOrder = right.displayOrder ?? -1;
       return rightOrder - leftOrder;
     });
+
+    const archiveCourseBlockers: {
+      categoryId: string;
+      blockingCourseNames: string[];
+      courseCount: number;
+    }[] = [];
+
+    for (const category of categoriesToDelete) {
+      const refs = await this.categoryRepo.countBlockingReferences(
+        category.id,
+      );
+
+      if (refs.courses > 0) {
+        const blockingCourseNames =
+          await this.categoryRepo.findBlockingCourseNames(category.id);
+
+        archiveCourseBlockers.push({
+          categoryId: category.id,
+          blockingCourseNames,
+          courseCount: refs.courses,
+        });
+      }
+    }
+
+    if (archiveCourseBlockers.length > 0) {
+      for (const category of categoriesToDelete) {
+        const blocker = archiveCourseBlockers.find(
+          (entry) => entry.categoryId === category.id,
+        );
+
+        itemResults.push({
+          categoryId: category.id,
+          success: false,
+          message: blocker
+            ? formatCategoryArchiveBlockingMessage(
+                blocker.blockingCourseNames,
+                blocker.courseCount,
+              )
+            : 'Archive cancelled because other selected categories are used by courses.',
+        });
+      }
+
+      return BulkDeleteCategoriesResult.fromItemResults(
+        categoryIds.length,
+        itemResults,
+      );
+    }
 
     for (const category of categoriesToDelete) {
       try {

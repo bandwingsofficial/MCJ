@@ -143,6 +143,33 @@ export class PrismaTrainerRepository implements TrainerRepository {
     });
   }
 
+  async countBranchAssignments(trainerId: string): Promise<number> {
+    return this.prisma.branchTrainer.count({
+      where: { trainerId },
+    });
+  }
+
+  async findBranchAssignmentNames(
+    trainerId: string,
+    limit = 50,
+  ): Promise<string[]> {
+    const assignments = await this.prisma.branchTrainer.findMany({
+      where: { trainerId },
+      select: {
+        branch: {
+          select: { branchName: true },
+        },
+      },
+      distinct: ['branchId'],
+      orderBy: {
+        branch: { branchName: 'asc' },
+      },
+      take: limit,
+    });
+
+    return assignments.map((row) => row.branch.branchName);
+  }
+
   async assignCourse(trainerId: string, courseId: string): Promise<void> {
     await this.prisma.trainerCourse.createMany({
       data: [{ trainerId, courseId }],

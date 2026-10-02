@@ -43,6 +43,11 @@ export interface CategoryRepository {
     branches: number;
   }>;
 
+  findBlockingCourseNames(
+    categoryId: string,
+    limit?: number,
+  ): Promise<string[]>;
+
   deletePermanent(id: string): Promise<void>;
 
   removeBranchAssignments(categoryId: string): Promise<number>;

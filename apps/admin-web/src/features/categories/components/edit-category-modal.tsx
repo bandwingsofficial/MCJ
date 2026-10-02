@@ -1,8 +1,12 @@
 "use client";
 
 import { Modal } from "@/src/shared/components/ui/model";
+import { Button } from "@/src/shared/components/ui/button";
 
-import { CategoryForm } from "@/src/features/categories/components/category-form";
+import {
+  CategoryForm,
+  CATEGORY_FORM_ID,
+} from "@/src/features/categories/components/category-form";
 
 import { useUpdateCategory } from "@/src/features/categories/hooks/use-update-category";
 
@@ -68,11 +72,25 @@ export function EditCategoryModal({
       title="Edit Category"
       onClose={onClose}
       contentClassName="!max-w-xl"
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form={CATEGORY_FORM_ID}
+            loading={isLoading}
+            disabled={isLoading}
+          >
+            Save Changes
+          </Button>
+        </>
+      }
     >
       <CategoryForm
         key={`${category.id}-${category.updatedAt}`}
         excludeId={category.id}
-        submitLabel="Update Category"
         isSubmitting={isLoading}
         defaultValues={{
           name: category.name,

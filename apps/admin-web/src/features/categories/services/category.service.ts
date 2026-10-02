@@ -272,6 +272,9 @@ class CategoryService {
         enrollments: number;
         articles: number;
       };
+      blockingCourseNames: string[];
+      canDeactivate: boolean;
+      canArchive: boolean;
     }>
   > {
     const response = await apiClient.get<
@@ -291,6 +294,9 @@ class CategoryService {
           enrollments: number;
           articles: number;
         };
+        blockingCourseNames: string[];
+        canDeactivate: boolean;
+        canArchive: boolean;
       }>
     >(`${this.basePath}/${id}/dependencies`);
 

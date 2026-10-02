@@ -39,6 +39,11 @@ export interface TrainerRepository {
   ): Promise<Trainer | null>;
   findAll(filters?: TrainerListFilters): Promise<Trainer[]>;
   count(filters?: TrainerListFilters): Promise<number>;
+  countBranchAssignments(trainerId: string): Promise<number>;
+  findBranchAssignmentNames(
+    trainerId: string,
+    limit?: number,
+  ): Promise<string[]>;
   assignCourse(trainerId: string, courseId: string): Promise<void>;
   unassignCourse(trainerId: string, courseId: string): Promise<void>;
   getMaxNumericSuffixForPrefix(prefix: string): Promise<number>;
