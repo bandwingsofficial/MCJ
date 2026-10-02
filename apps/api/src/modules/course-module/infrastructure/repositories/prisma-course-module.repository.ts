@@ -5,6 +5,7 @@ import { reorderIdsByRank } from '../../../../common/utils/reorder-by-rank.util'
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { CourseModule } from '../../domain/entities/course-module.entity';
+import type { CourseModuleDeleteBlockingLesson } from '../../domain/types/course-module-delete-blocking-lesson';
 import {
   CourseModuleListFilters,
   CourseModuleRepository,
@@ -316,6 +317,27 @@ export class PrismaCourseModuleRepository
         },
       });
     });
+  }
+
+  async findDeleteBlockingLessons(
+    moduleId: string,
+  ): Promise<CourseModuleDeleteBlockingLesson[]> {
+    const lessons = await this.prisma.courseLesson.findMany({
+      where: {
+        moduleId,
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        title: true,
+      },
+      orderBy: { title: 'asc' },
+    });
+
+    return lessons.map((lesson) => ({
+      lessonId: lesson.id,
+      lessonTitle: lesson.title,
+    }));
   }
 
   private buildWhere(

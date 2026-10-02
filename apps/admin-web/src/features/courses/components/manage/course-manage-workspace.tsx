@@ -99,7 +99,6 @@ export function CourseManageWorkspace({
           course={course}
           disabled={contentDisabled}
           onRefresh={onSummaryRefresh}
-          onMutationSuccess={onMutationSuccess}
         />
       </TabsContent>
 

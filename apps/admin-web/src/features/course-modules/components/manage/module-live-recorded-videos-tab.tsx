@@ -14,6 +14,7 @@ import {
   useActivateCourseLesson,
   useMoveCourseLesson,
 } from "@/src/features/course-lessons/hooks";
+import { useCourseLessonDeleteDialog } from "@/src/features/course-lessons/hooks/use-course-lesson-delete-dialog";
 import type {
   CourseLesson,
   LiveRecordedScope,
@@ -125,7 +126,7 @@ export function ModuleLiveRecordedVideosTab({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [formOpen, setFormOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const lessonDeleteDialog = useCourseLessonDeleteDialog();
   const [statusOpen, setStatusOpen] = useState(false);
   const [selected, setSelected] = useState<CourseLesson | null>(null);
 
@@ -272,8 +273,11 @@ export function ModuleLiveRecordedVideosTab({
                 setFormOpen(true);
               }}
               onDelete={() => {
-                setSelected(row);
-                setDeleteOpen(true);
+                void lessonDeleteDialog.openDeleteDialog({
+                  lessonId: row.id,
+                  lessonTitle: row.title,
+                  contentLabel: "Live Recorded Video",
+                });
               }}
             />
           )}
@@ -330,23 +334,25 @@ export function ModuleLiveRecordedVideosTab({
       />
 
       <CourseLessonDeleteDialog
-        open={deleteOpen}
-        loading={isDeleting}
-        lessonTitle={selected?.title}
-        contentLabel="Live Recorded Video"
+        open={lessonDeleteDialog.open}
+        loading={isDeleting || lessonDeleteDialog.checking}
+        description={lessonDeleteDialog.description}
+        canDelete={lessonDeleteDialog.canDelete}
+        contentLabel={lessonDeleteDialog.contentLabel}
         onClose={() => {
-          setDeleteOpen(false);
-          setSelected(null);
+          if (!isDeleting) {
+            lessonDeleteDialog.close();
+          }
         }}
         onConfirm={async () => {
-          if (!selected) {
+          const lessonId = lessonDeleteDialog.lessonId;
+          if (!lessonId) {
             return;
           }
           try {
-            await deleteCourseLesson(selected.id);
+            await deleteCourseLesson(lessonId);
             appToast.success("Live recorded video permanently deleted");
-            setDeleteOpen(false);
-            setSelected(null);
+            lessonDeleteDialog.close();
             await onRefresh();
           } catch (error) {
             appToast.error(getErrorMessage(error));

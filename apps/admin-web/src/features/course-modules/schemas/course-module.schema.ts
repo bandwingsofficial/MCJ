@@ -21,11 +21,11 @@ export const createCourseModuleSchema =
       .trim()
       .min(
         1,
-        "Title is required."
+        "Module Name is required."
       )
       .max(
         COURSE_MODULE_CONSTANTS.MAX_TITLE_LENGTH,
-        `Title cannot exceed ${COURSE_MODULE_CONSTANTS.MAX_TITLE_LENGTH} characters.`
+        `Module Name cannot exceed ${COURSE_MODULE_CONSTANTS.MAX_TITLE_LENGTH} characters.`
       ),
 
     description: z

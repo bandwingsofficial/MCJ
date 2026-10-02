@@ -23,6 +23,18 @@ function pluralize(count: number, singular: string, plural?: string): string {
   return `${count} ${label}`;
 }
 
+/** Matches backend delete rules (live recordings do not block lesson delete). */
+export function lessonHasDeleteBlockingContent(
+  counts: LessonContentSummaryCounts,
+): boolean {
+  return (
+    counts.learn > 0 ||
+    counts.resources > 0 ||
+    counts.quizzes > 0 ||
+    counts.selfPacedVideos > 0
+  );
+}
+
 export function formatLessonContentSummary(
   counts: LessonContentSummaryCounts,
 ): string | null {

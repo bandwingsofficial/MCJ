@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { BookOpen, FileText } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Input } from "@/src/shared/components/ui/input";
@@ -194,26 +195,34 @@ export function CourseModuleForm({
         <ValidatedField
           label="Module Name"
           required
+          leftIcon={<BookOpen className="h-4 w-4" aria-hidden />}
           state={titleState}
           errorMessage={errors.title?.message}
         >
           <Input
             placeholder="Enter module name"
-            className={validatedFieldInputClass(titleState)}
+            className={validatedFieldInputClass(titleState, undefined, {
+              leftIcon: true,
+            })}
             disabled={loading}
             {...register("title")}
           />
         </ValidatedField>
 
         <ValidatedField
-          label="Description"
+          label="Description (Optional)"
+          textarea
+          leftIcon={<FileText className="h-4 w-4" aria-hidden />}
           state={descriptionState}
           errorMessage={errors.description?.message}
         >
           <Textarea
             rows={4}
             placeholder="Enter module description"
-            className={validatedFieldInputClass(descriptionState)}
+            className={validatedFieldInputClass(descriptionState, undefined, {
+              leftIcon: true,
+              textarea: true,
+            })}
             disabled={loading}
             value={descriptionValue}
             onChange={(event) => {
@@ -240,6 +249,13 @@ export function CourseModuleForm({
         <KeySkillsInput
           value={keySkillsValue ?? []}
           disabled={loading}
+          fieldState={
+            touchedFields.keySkills || showValidation
+              ? errors.keySkills
+                ? "invalid"
+                : "neutral"
+              : "neutral"
+          }
           errorMessage={errors.keySkills?.message}
           onChange={(skills) => {
             setValue("keySkills", skills, {

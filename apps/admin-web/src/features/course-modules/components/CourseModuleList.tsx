@@ -29,6 +29,7 @@ interface CourseModuleListProps {
   onDelete: (
     module: CourseModule,
   ) => void;
+
 }
 
 export function CourseModuleList({

@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { LessonContentType, Prisma } from '@prisma/client';
 
 import { reorderIdsByRank } from '../../../../common/utils/reorder-by-rank.util';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
@@ -10,6 +10,7 @@ import {
   CourseLessonRepository,
 } from '../../domain/repositories/course-lesson.repository';
 import { CourseLessonMapper } from '../mappers/course-lesson.mapper';
+import type { CourseLessonDeleteBlockingDependencies } from '../../domain/types/course-lesson-delete-blocking';
 
 export class PrismaCourseLessonRepository
   implements CourseLessonRepository
@@ -302,6 +303,69 @@ export class PrismaCourseLessonRepository
         });
       }
     });
+  }
+
+  async findDeleteBlockingDependencies(
+    lessonId: string,
+  ): Promise<CourseLessonDeleteBlockingDependencies> {
+    const [childLessons, learnItems, resources, quiz] = await Promise.all([
+      this.prisma.courseLesson.findMany({
+        where: {
+          parentLessonId: lessonId,
+          isDeleted: false,
+        },
+        select: {
+          id: true,
+          title: true,
+          contentType: true,
+        },
+        orderBy: { title: 'asc' },
+      }),
+      this.prisma.courseLearnItem.findMany({
+        where: { lessonId },
+        select: { id: true, title: true },
+        orderBy: { title: 'asc' },
+      }),
+      this.prisma.courseResource.findMany({
+        where: { lessonId, isDeleted: false },
+        select: { id: true, title: true },
+        orderBy: { title: 'asc' },
+      }),
+      this.prisma.courseQuiz.findFirst({
+        where: { lessonId, isDeleted: false },
+        select: { id: true, title: true },
+      }),
+    ]);
+
+    const selfPacedVideos = childLessons
+      .filter(
+        (lesson) =>
+          lesson.contentType === LessonContentType.SELF_PACED_VIDEO,
+      )
+      .map((lesson) => ({ id: lesson.id, title: lesson.title }));
+
+    const liveRecordedVideos = childLessons
+      .filter(
+        (lesson) =>
+          lesson.contentType === LessonContentType.LIVE_RECORDED_VIDEO,
+      )
+      .map((lesson) => ({ id: lesson.id, title: lesson.title }));
+
+    return {
+      selfPacedVideos,
+      liveRecordedVideos,
+      learnItems: learnItems.map((item) => ({
+        id: item.id,
+        title: item.title,
+      })),
+      resources: resources.map((resource) => ({
+        id: resource.id,
+        title: resource.title,
+      })),
+      quizzes: quiz
+        ? [{ id: quiz.id, title: quiz.title }]
+        : [],
+    };
   }
 
   private buildWhere(

@@ -5,7 +5,8 @@ import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 interface CourseLessonDeleteDialogProps {
   open: boolean;
   loading: boolean;
-  lessonTitle?: string;
+  description: string;
+  canDelete: boolean;
   contentLabel?: string;
   onClose: () => void;
   onConfirm: () => void;
@@ -14,28 +15,35 @@ interface CourseLessonDeleteDialogProps {
 export function CourseLessonDeleteDialog({
   open,
   loading,
-  lessonTitle,
+  description,
+  canDelete,
   contentLabel = "lesson",
   onClose,
   onConfirm,
 }: CourseLessonDeleteDialogProps) {
-  const title = `Delete ${contentLabel}?`;
-
-  const description = lessonTitle
-    ? `This action will permanently delete "${lessonTitle}".\nThis cannot be undone.`
-    : `This action will permanently delete this ${contentLabel.toLowerCase()}.\nThis cannot be undone.`;
+  const title = canDelete
+    ? `Delete ${contentLabel}?`
+    : `Cannot delete ${contentLabel.toLowerCase()}`;
 
   return (
     <ConfirmDialog
       open={open}
       title={title}
       description={description}
-      loading={loading}
-      confirmLabel="Delete Permanently"
+      loading={loading && canDelete}
+      confirmLabel={canDelete ? "Delete Permanently" : "OK"}
       loadingLabel="Deleting..."
-      confirmVariant="danger"
+      confirmVariant={canDelete ? "danger" : "primary"}
+      showCancel={canDelete}
       onCancel={onClose}
-      onConfirm={onConfirm}
+      onConfirm={() => {
+        if (!canDelete) {
+          onClose();
+          return;
+        }
+
+        onConfirm();
+      }}
     />
   );
 }

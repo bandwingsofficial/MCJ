@@ -1,5 +1,9 @@
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+
 import type { CourseModuleRepository } from '../../domain/repositories/course-module.repository';
 import { CourseModuleDomainService } from '../../domain/services/course-module-domain.service';
+import { formatCourseModuleDeactivateBlockingMessage } from '../shared/format-course-module-deactivate-blocking-message';
 import { CourseModuleResponseMapper } from '../../infrastructure/mappers/course-module-response.mapper';
 import { CourseModuleResult } from '../course-module.result';
 import { CourseHierarchyService } from '../../../course/infrastructure/services/course-hierarchy.service';
@@ -23,6 +27,17 @@ export class DeactivateCourseModuleHandler {
       return CourseModuleResponseMapper.toResultWithCounts(
         module,
         this.hierarchyService,
+      );
+    }
+
+    const blockingLessons =
+      await this.courseModuleRepo.findDeleteBlockingLessons(module.id);
+
+    if (blockingLessons.length > 0) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        formatCourseModuleDeactivateBlockingMessage(blockingLessons),
+        409,
       );
     }
 

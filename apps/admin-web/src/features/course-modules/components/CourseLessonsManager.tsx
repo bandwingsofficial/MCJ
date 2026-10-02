@@ -28,6 +28,7 @@ import {
   useMoveCourseLesson,
   useRestoreCourseLesson,
 } from "@/src/features/course-lessons/hooks";
+import { useCourseLessonDeleteDialog } from "@/src/features/course-lessons/hooks/use-course-lesson-delete-dialog";
 
 import type {
   CourseLesson,
@@ -101,10 +102,7 @@ export function CourseLessonsManager({
     setFormOpen,
   ] = useState(false);
 
-  const [
-    deleteOpen,
-    setDeleteOpen,
-  ] = useState(false);
+  const lessonDeleteDialog = useCourseLessonDeleteDialog();
 
   const [
     moveOpen,
@@ -146,15 +144,6 @@ export function CourseLessonsManager({
 
     setFormOpen(false);
   };
-
-  const closeDeleteDialog =
-    () => {
-      setSelectedLesson(
-        null,
-      );
-
-      setDeleteOpen(false);
-    };
 
   const closeMoveDialog =
     () => {
@@ -220,16 +209,11 @@ export function CourseLessonsManager({
     `/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/resources`,
   );
 }}
-            onDelete={(
-              lesson,
-            ) => {
-              setSelectedLesson(
-                lesson,
-              );
-
-              setDeleteOpen(
-                true,
-              );
+            onDelete={(lesson) => {
+              void lessonDeleteDialog.openDeleteDialog({
+                lessonId: lesson.id,
+                lessonTitle: lesson.title,
+              });
             }}
             onRestore={async (
               lesson,
@@ -316,36 +300,28 @@ export function CourseLessonsManager({
       />
 
       <CourseLessonDeleteDialog
-        open={deleteOpen}
-        loading={
-          isDeleting
-        }
-        onClose={
-          closeDeleteDialog
-        }
+        open={lessonDeleteDialog.open}
+        loading={isDeleting || lessonDeleteDialog.checking}
+        description={lessonDeleteDialog.description}
+        canDelete={lessonDeleteDialog.canDelete}
+        onClose={() => {
+          if (!isDeleting) {
+            lessonDeleteDialog.close();
+          }
+        }}
         onConfirm={async () => {
-          if (
-            !selectedLesson
-          ) {
+          const lessonId = lessonDeleteDialog.lessonId;
+          if (!lessonId) {
             return;
           }
 
-          await appToast.promise(
-            deleteCourseLesson(
-              selectedLesson.id,
-            ),
-            {
-              loading:
-                "Deleting lesson...",
-              success:
-                "Lesson deleted successfully.",
-              error:
-                "Failed to delete lesson.",
-            },
-          );
+          await appToast.promise(deleteCourseLesson(lessonId), {
+            loading: "Deleting lesson...",
+            success: "Lesson deleted successfully.",
+            error: "Failed to delete lesson.",
+          });
 
-          closeDeleteDialog();
-
+          lessonDeleteDialog.close();
           await refetch();
         }}
       />

@@ -7,6 +7,7 @@ import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
+import { useCourseModuleDeleteDialog } from "@/src/features/course-modules/hooks/use-course-module-delete-dialog";
 import {
   CourseModuleDeleteDialog,
 } from "@/src/features/course-modules/components";
@@ -121,7 +122,7 @@ export function CourseManageOverviewPanel({
   const { deleteCourseModule, isSubmitting: isDeletingModule } =
     useDeleteCourseModule();
 
-  const [deleteTarget, setDeleteTarget] = useState<CourseModule | null>(null);
+  const moduleDeleteDialog = useCourseModuleDeleteDialog();
 
   const moduleTreeById = useMemo(
     () => new Map((course.modules ?? []).map((module) => [module.id, module])),
@@ -177,23 +178,8 @@ export function CourseManageOverviewPanel({
     );
   };
 
-  const handleDeleteModule = async () => {
-    if (!deleteTarget) {
-      return;
-    }
-
-    try {
-      await deleteCourseModule(deleteTarget.id);
-      appToast.success("Module deleted successfully");
-      setDeleteTarget(null);
-      await refetch();
-      await onRefresh?.();
-    } catch (err) {
-      appToast.error(getErrorMessage(err));
-    }
-  };
-
-  const moduleActionsDisabled = disabled || isDeletingModule;
+  const moduleActionsDisabled =
+    disabled || isDeletingModule || moduleDeleteDialog.checking;
 
   return (
     <div className="space-y-4">
@@ -233,7 +219,13 @@ export function CourseManageOverviewPanel({
           modules={sortedModules}
           getModuleCounts={getModuleCounts}
           actionsDisabled={moduleActionsDisabled}
-          onDelete={setDeleteTarget}
+          onDelete={(module) => {
+            void moduleDeleteDialog.openDeleteDialog({
+              moduleId: module.id,
+              moduleTitle: module.title,
+              contentCounts: getModuleCounts(module),
+            });
+          }}
         />
       )}
 
@@ -307,19 +299,30 @@ export function CourseManageOverviewPanel({
       </SectionCard>
 
       <CourseModuleDeleteDialog
-        open={deleteTarget !== null}
-        moduleTitle={deleteTarget?.title}
-        contentCounts={
-          deleteTarget ? getModuleCounts(deleteTarget) : undefined
-        }
-        loading={isDeletingModule}
+        open={moduleDeleteDialog.open}
+        description={moduleDeleteDialog.description}
+        canDelete={moduleDeleteDialog.canDelete}
+        loading={isDeletingModule || moduleDeleteDialog.checking}
         onClose={() => {
           if (!isDeletingModule) {
-            setDeleteTarget(null);
+            moduleDeleteDialog.close();
           }
         }}
-        onConfirm={() => {
-          void handleDeleteModule();
+        onConfirm={async () => {
+          const moduleId = moduleDeleteDialog.moduleId;
+          if (!moduleId) {
+            return;
+          }
+
+          try {
+            await deleteCourseModule(moduleId);
+            appToast.success("Module deleted successfully");
+            moduleDeleteDialog.close();
+            await refetch();
+            await onRefresh?.();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          }
         }}
       />
     </div>

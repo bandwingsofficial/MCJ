@@ -1,4 +1,5 @@
 import { CourseLesson } from '../entities/course-lesson.entity';
+import type { CourseLessonDeleteBlockingDependencies } from '../types/course-lesson-delete-blocking';
 
 export interface CourseLessonListFilters {
   moduleId?: string;
@@ -77,4 +78,8 @@ export interface CourseLessonRepository {
   ): Promise<void>;
 
   cascadeRestore(lessonId: string): Promise<void>;
+
+  findDeleteBlockingDependencies(
+    lessonId: string,
+  ): Promise<CourseLessonDeleteBlockingDependencies>;
 }

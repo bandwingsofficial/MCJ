@@ -22,6 +22,7 @@ import { DeactivateCourseModuleCommand } from '../../application/deactivate-cour
 import { DeactivateCourseModuleHandler } from '../../application/deactivate-course-module/deactivate-course-module.handler';
 import { DeleteCourseModuleCommand } from '../../application/delete-course-module/delete-course-module.command';
 import { DeleteCourseModuleHandler } from '../../application/delete-course-module/delete-course-module.handler';
+import { GetCourseModuleDependenciesHandler } from '../../application/get-course-module-dependencies/get-course-module-dependencies.handler';
 import { GetCourseModuleHandler } from '../../application/get-course-module/get-course-module.handler';
 import { GetCourseModuleQuery } from '../../application/get-course-module/get-course-module.query';
 import { ListCourseModulesHandler } from '../../application/list-course-modules/list-course-modules.handler';
@@ -47,6 +48,7 @@ export class AdminCourseModuleController {
     private readonly updateCourseModuleHandler: UpdateCourseModuleHandler,
     private readonly listCourseModulesHandler: ListCourseModulesHandler,
     private readonly getCourseModuleHandler: GetCourseModuleHandler,
+    private readonly getCourseModuleDependenciesHandler: GetCourseModuleDependenciesHandler,
     private readonly deleteCourseModuleHandler: DeleteCourseModuleHandler,
     private readonly deactivateCourseModuleHandler: DeactivateCourseModuleHandler,
     private readonly restoreCourseModuleHandler: RestoreCourseModuleHandler,
@@ -93,6 +95,24 @@ export class AdminCourseModuleController {
       success: true,
       message: 'Course modules fetched successfully',
       data: result,
+    };
+  }
+
+  @Get(':id/dependencies')
+  async getDependencies(@Param('id') id: string) {
+    const result =
+      await this.getCourseModuleDependenciesHandler.execute(id);
+
+    return {
+      success: true,
+      message: 'Course module dependencies retrieved',
+      data: {
+        moduleId: result.moduleId,
+        moduleTitle: result.moduleTitle,
+        canDelete: result.canDelete,
+        canDeactivate: result.canDeactivate,
+        blockingLessons: result.blockingLessons,
+      },
     };
   }
 

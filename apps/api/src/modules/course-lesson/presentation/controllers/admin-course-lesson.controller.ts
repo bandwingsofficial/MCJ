@@ -20,6 +20,7 @@ import { CreateCourseLessonCommand } from '../../application/create-course-lesso
 import { CreateCourseLessonHandler } from '../../application/create-course-lesson/create-course-lesson.handler';
 import { DeleteCourseLessonCommand } from '../../application/delete-course-lesson/delete-course-lesson.command';
 import { DeleteCourseLessonHandler } from '../../application/delete-course-lesson/delete-course-lesson.handler';
+import { GetCourseLessonDependenciesHandler } from '../../application/get-course-lesson-dependencies/get-course-lesson-dependencies.handler';
 import { GetCourseLessonHandler } from '../../application/get-course-lesson/get-course-lesson.handler';
 import { GetCourseLessonQuery } from '../../application/get-course-lesson/get-course-lesson.query';
 import { ListCourseLessonsHandler } from '../../application/list-course-lessons/list-course-lessons.handler';
@@ -54,6 +55,7 @@ export class AdminCourseLessonController {
     private readonly updateCourseLessonHandler: UpdateCourseLessonHandler,
     private readonly listCourseLessonsHandler: ListCourseLessonsHandler,
     private readonly getCourseLessonHandler: GetCourseLessonHandler,
+    private readonly getCourseLessonDependenciesHandler: GetCourseLessonDependenciesHandler,
     private readonly deleteCourseLessonHandler: DeleteCourseLessonHandler,
     private readonly permanentDeleteCourseLessonHandler: PermanentDeleteCourseLessonHandler,
     private readonly restoreCourseLessonHandler: RestoreCourseLessonHandler,
@@ -114,6 +116,23 @@ export class AdminCourseLessonController {
       success: true,
       message: 'Course lessons fetched successfully',
       data: result,
+    };
+  }
+
+  @Get(':id/dependencies')
+  async getDependencies(@Param('id') id: string) {
+    const result =
+      await this.getCourseLessonDependenciesHandler.execute(id);
+
+    return {
+      success: true,
+      message: 'Course lesson dependencies retrieved',
+      data: {
+        lessonId: result.lessonId,
+        lessonTitle: result.lessonTitle,
+        canDelete: result.canDelete,
+        blocking: result.blocking,
+      },
     };
   }
 

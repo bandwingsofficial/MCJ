@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { BookOpen, FileText } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Input } from "@/src/shared/components/ui/input";
@@ -173,12 +174,15 @@ export function ModuleLessonForm({
         <ValidatedField
           label="Title"
           required
+          leftIcon={<BookOpen className="h-4 w-4" aria-hidden />}
           state={titleState}
           errorMessage={errors.title?.message}
         >
           <Input
             placeholder="Enter lesson title"
-            className={validatedFieldInputClass(titleState)}
+            className={validatedFieldInputClass(titleState, undefined, {
+              leftIcon: true,
+            })}
             disabled={loading}
             {...register("title")}
           />
@@ -187,13 +191,18 @@ export function ModuleLessonForm({
         <ValidatedField
           label="Description"
           required
+          textarea
+          leftIcon={<FileText className="h-4 w-4" aria-hidden />}
           state={descriptionState}
           errorMessage={errors.description?.message}
         >
           <Textarea
             rows={4}
             placeholder="Enter lesson description"
-            className={validatedFieldInputClass(descriptionState)}
+            className={validatedFieldInputClass(descriptionState, undefined, {
+              leftIcon: true,
+              textarea: true,
+            })}
             disabled={loading}
             value={descriptionValue}
             onChange={(event) => {

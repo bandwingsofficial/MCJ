@@ -1,7 +1,13 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
+
 import { Input } from "@/src/shared/components/ui/input";
-import { Label } from "@/src/shared/components/ui/label";
+import {
+  ValidatedField,
+  validatedFieldInputClass,
+  type FieldVisualState,
+} from "@/src/shared/components/ui/validated-field";
 
 import { COURSE_MODULE_CONSTANTS } from "@/src/features/course-modules/constants/course-module.constants";
 
@@ -10,6 +16,7 @@ interface KeySkillsInputProps {
   onChange: (skills: string[]) => void;
   disabled?: boolean;
   errorMessage?: string;
+  fieldState?: FieldVisualState;
 }
 
 function parseKeySkillsInput(raw: string): string[] {
@@ -28,32 +35,30 @@ export function KeySkillsInput({
   onChange,
   disabled = false,
   errorMessage,
+  fieldState = "neutral",
 }: KeySkillsInputProps) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor="keySkills">
-        Key Skills
-        <span className="ml-1 font-normal text-slate-500">
-          (shown under &quot;What You&apos;ll Learn&quot; on the course page)
-        </span>
-      </Label>
-
+    <ValidatedField
+      label="Key Skills (Optional)"
+      leftIcon={<Sparkles className="h-4 w-4" aria-hidden />}
+      state={fieldState}
+      errorMessage={errorMessage}
+    >
       <Input
         id="keySkills"
         placeholder="Understand Python basics, Build REST APIs"
+        className={validatedFieldInputClass(fieldState, undefined, {
+          leftIcon: true,
+        })}
         value={value.join(", ")}
         disabled={disabled}
         onChange={(event) => onChange(parseKeySkillsInput(event.target.value))}
       />
-
-      <p className="text-xs text-slate-500">
+      <p className="mt-1 text-xs text-slate-500">
         Enter up to {COURSE_MODULE_CONSTANTS.MAX_KEY_SKILLS} skills, separated
-        by commas.
+        by commas. Shown under &quot;What You&apos;ll Learn&quot; on the course
+        page.
       </p>
-
-      {errorMessage ? (
-        <p className="text-xs text-red-600">{errorMessage}</p>
-      ) : null}
-    </div>
+    </ValidatedField>
   );
 }

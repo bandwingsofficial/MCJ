@@ -136,6 +136,34 @@ class CourseModuleService {
     return response.data;
   }
 
+  async getCourseModuleDependencies(moduleId: string): Promise<
+    ApiSuccessResponse<{
+      moduleId: string;
+      moduleTitle: string;
+      canDelete: boolean;
+      canDeactivate: boolean;
+      blockingLessons: Array<{
+        lessonId: string;
+        lessonTitle: string;
+      }>;
+    }>
+  > {
+    const response = await apiClient.get<
+      ApiSuccessResponse<{
+        moduleId: string;
+        moduleTitle: string;
+        canDelete: boolean;
+        canDeactivate: boolean;
+        blockingLessons: Array<{
+          lessonId: string;
+          lessonTitle: string;
+        }>;
+      }>
+    >(`${this.basePath}/${moduleId}/dependencies`);
+
+    return response.data;
+  }
+
   async restoreCourseModule(
     moduleId: string
   ): Promise<

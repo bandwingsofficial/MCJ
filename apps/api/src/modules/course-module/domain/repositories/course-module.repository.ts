@@ -1,4 +1,5 @@
 import { CourseModule } from '../entities/course-module.entity';
+import type { CourseModuleDeleteBlockingLesson } from '../types/course-module-delete-blocking-lesson';
 
 export interface CourseModuleListFilters {
   courseId?: string;
@@ -62,4 +63,8 @@ export interface CourseModuleRepository {
   ): Promise<void>;
 
   cascadeRestore(moduleId: string): Promise<void>;
+
+  findDeleteBlockingLessons(
+    moduleId: string,
+  ): Promise<CourseModuleDeleteBlockingLesson[]>;
 }

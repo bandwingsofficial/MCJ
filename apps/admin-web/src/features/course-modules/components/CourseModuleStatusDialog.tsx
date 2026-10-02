@@ -2,11 +2,11 @@
 
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 
-import type { CourseModule } from "@/src/features/course-modules/types/course-module.types";
-
 interface Props {
   open: boolean;
-  module: CourseModule | null;
+  mode: "deactivate" | "activate";
+  description: string;
+  canProceed: boolean;
   isLoading: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
@@ -14,23 +14,38 @@ interface Props {
 
 export function CourseModuleStatusDialog({
   open,
-  module,
+  mode,
+  description,
+  canProceed,
   isLoading,
   onClose,
   onConfirm,
 }: Props) {
-  const isArchived = Boolean(module?.isDeleted || module?.deletedAt);
+  const isActivate = mode === "activate";
+
+  const title = !canProceed
+    ? "Cannot deactivate module"
+    : isActivate
+      ? "Activate Module"
+      : "Deactivate Module";
 
   return (
     <ConfirmDialog
       open={open}
-      title={isArchived ? "Activate Module" : "Deactivate Module"}
-      description={`Are you sure you want to ${
-        isArchived ? "activate" : "deactivate"
-      } "${module?.title ?? ""}"?`}
-      loading={isLoading}
+      title={title}
+      description={description}
+      confirmLabel={canProceed ? "Confirm" : "OK"}
+      confirmVariant={canProceed ? (isActivate ? "primary" : "danger") : "primary"}
+      loading={isLoading && canProceed}
+      loadingLabel={isActivate ? "Activating..." : "Deactivating..."}
+      showCancel={canProceed}
       onCancel={onClose}
       onConfirm={() => {
+        if (!canProceed) {
+          onClose();
+          return;
+        }
+
         void onConfirm();
       }}
     />

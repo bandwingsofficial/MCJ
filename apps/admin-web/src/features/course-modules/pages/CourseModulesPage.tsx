@@ -28,6 +28,9 @@ import {
   useMoveCourseModule,
   useRestoreCourseModule,
 } from "@/src/features/course-modules/hooks";
+import { useCourseModuleDeleteDialog } from "@/src/features/course-modules/hooks/use-course-module-delete-dialog";
+import { useCourseModuleStatusDialog } from "@/src/features/course-modules/hooks/use-course-module-status-dialog";
+import { getModuleContentCounts } from "@/src/features/courses/utils/course-content-stats.util";
 
 import type {
   CourseModule,
@@ -99,15 +102,8 @@ export function CourseModulesPage({
     setFormOpen,
   ] = useState(false);
 
-  const [
-    deleteOpen,
-    setDeleteOpen,
-  ] = useState(false);
-
-  const [
-    statusOpen,
-    setStatusOpen,
-  ] = useState(false);
+  const moduleDeleteDialog = useCourseModuleDeleteDialog();
+  const moduleStatusDialog = useCourseModuleStatusDialog();
 
   const [
     moveOpen,
@@ -154,18 +150,27 @@ export function CourseModulesPage({
           }}
           onDeactivate={(module) => {
             setSelectedModule(module);
-            setStatusOpen(true);
+            void moduleStatusDialog.openStatusDialog({
+              moduleId: module.id,
+              moduleTitle: module.title,
+              mode: "deactivate",
+            });
           }}
           onActivate={(module) => {
             setSelectedModule(module);
-            setStatusOpen(true);
+            void moduleStatusDialog.openStatusDialog({
+              moduleId: module.id,
+              moduleTitle: module.title,
+              mode: "activate",
+            });
           }}
           onDelete={(module) => {
-            setSelectedModule(
-              module,
-            );
-
-            setDeleteOpen(true);
+            setSelectedModule(module);
+            void moduleDeleteDialog.openDeleteDialog({
+              moduleId: module.id,
+              moduleTitle: module.title,
+              contentCounts: getModuleContentCounts(module),
+            });
           }}
         />
       )}
@@ -230,32 +235,37 @@ export function CourseModulesPage({
       />
 
       <CourseModuleStatusDialog
-        open={statusOpen}
-        module={selectedModule}
-        isLoading={isDeactivating || isRestoring}
+        open={moduleStatusDialog.open}
+        mode={moduleStatusDialog.mode}
+        description={moduleStatusDialog.description}
+        canProceed={moduleStatusDialog.canProceed}
+        isLoading={
+          isDeactivating ||
+          isRestoring ||
+          moduleStatusDialog.checking
+        }
         onClose={() => {
-          setStatusOpen(false);
-          setSelectedModule(null);
+          if (!isDeactivating && !isRestoring) {
+            moduleStatusDialog.close();
+            setSelectedModule(null);
+          }
         }}
         onConfirm={async () => {
-          if (!selectedModule) {
+          const moduleId = moduleStatusDialog.moduleId;
+          if (!moduleId) {
             return;
           }
 
           try {
-            const isArchived = Boolean(
-              selectedModule.isDeleted || selectedModule.deletedAt,
-            );
-
-            if (isArchived) {
-              await restoreCourseModule(selectedModule.id);
+            if (moduleStatusDialog.mode === "activate") {
+              await restoreCourseModule(moduleId);
               appToast.success("Module activated successfully");
             } else {
-              await deactivateCourseModule(selectedModule.id);
+              await deactivateCourseModule(moduleId);
               appToast.success("Module deactivated successfully");
             }
 
-            setStatusOpen(false);
+            moduleStatusDialog.close();
             setSelectedModule(null);
             await refetch();
           } catch (err) {
@@ -265,28 +275,26 @@ export function CourseModulesPage({
       />
 
       <CourseModuleDeleteDialog
-        open={deleteOpen}
-        moduleTitle={selectedModule?.title}
-        loading={isDeleting}
+        open={moduleDeleteDialog.open}
+        description={moduleDeleteDialog.description}
+        canDelete={moduleDeleteDialog.canDelete}
+        loading={isDeleting || moduleDeleteDialog.checking}
         onClose={() => {
           if (!isDeleting) {
-            setDeleteOpen(false);
+            moduleDeleteDialog.close();
             setSelectedModule(null);
           }
         }}
         onConfirm={async () => {
-          if (
-            !selectedModule
-          ) {
+          const moduleId = moduleDeleteDialog.moduleId;
+          if (!moduleId) {
             return;
           }
 
           try {
-            await deleteCourseModule(
-              selectedModule.id
-            );
+            await deleteCourseModule(moduleId);
             appToast.success("Module deleted successfully");
-            setDeleteOpen(false);
+            moduleDeleteDialog.close();
             setSelectedModule(null);
             await refetch();
           } catch (err) {

@@ -14,6 +14,7 @@ import {
   useActivateCourseLesson,
   useMoveCourseLesson,
 } from "@/src/features/course-lessons/hooks";
+import { useCourseLessonDeleteDialog } from "@/src/features/course-lessons/hooks/use-course-lesson-delete-dialog";
 import type { CourseLesson } from "@/src/features/course-lessons/types";
 import { ModuleContentActions } from "@/src/features/course-modules/components/manage/module-content-actions";
 import { ModuleContentSection } from "@/src/features/course-modules/components/manage/module-content-section";
@@ -66,7 +67,7 @@ export function ModuleVideosTab({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [formOpen, setFormOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const lessonDeleteDialog = useCourseLessonDeleteDialog();
   const [statusOpen, setStatusOpen] = useState(false);
   const [selected, setSelected] = useState<CourseLesson | null>(null);
 
@@ -197,8 +198,11 @@ export function ModuleVideosTab({
                 setFormOpen(true);
               }}
               onDelete={() => {
-                setSelected(row);
-                setDeleteOpen(true);
+                void lessonDeleteDialog.openDeleteDialog({
+                  lessonId: row.id,
+                  lessonTitle: row.title,
+                  contentLabel: "Self-Paced Video",
+                });
               }}
             />
           )}
@@ -253,23 +257,25 @@ export function ModuleVideosTab({
       />
 
       <CourseLessonDeleteDialog
-        open={deleteOpen}
-        loading={isDeleting}
-        lessonTitle={selected?.title}
-        contentLabel="Self-Paced Video"
+        open={lessonDeleteDialog.open}
+        loading={isDeleting || lessonDeleteDialog.checking}
+        description={lessonDeleteDialog.description}
+        canDelete={lessonDeleteDialog.canDelete}
+        contentLabel={lessonDeleteDialog.contentLabel}
         onClose={() => {
-          setDeleteOpen(false);
-          setSelected(null);
+          if (!isDeleting) {
+            lessonDeleteDialog.close();
+          }
         }}
         onConfirm={async () => {
-          if (!selected) {
+          const lessonId = lessonDeleteDialog.lessonId;
+          if (!lessonId) {
             return;
           }
           try {
-            await deleteCourseLesson(selected.id);
+            await deleteCourseLesson(lessonId);
             appToast.success("Self-paced video permanently deleted");
-            setDeleteOpen(false);
-            setSelected(null);
+            lessonDeleteDialog.close();
             await onRefresh();
           } catch (error) {
             appToast.error(getErrorMessage(error));

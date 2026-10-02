@@ -24,6 +24,27 @@ class CourseLessonService {
     return data;
   }
 
+  async getCourseLessonDependencies(id: string) {
+    const { data } = await apiClient.get<{
+      success: boolean;
+      message: string;
+      data: {
+        lessonId: string;
+        lessonTitle: string;
+        canDelete: boolean;
+        blocking: {
+          selfPacedVideos: Array<{ id: string; title: string }>;
+          liveRecordedVideos: Array<{ id: string; title: string }>;
+          learnItems: Array<{ id: string; title: string }>;
+          resources: Array<{ id: string; title: string }>;
+          quizzes: Array<{ id: string; title: string }>;
+        };
+      };
+    }>(`${this.basePath}/${id}/dependencies`);
+
+    return data;
+  }
+
   async getCourseLessons(
     filters: GetCourseLessonsRequest,
   ) {

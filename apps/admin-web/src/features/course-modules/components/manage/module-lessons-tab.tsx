@@ -25,6 +25,7 @@ import {
   useMoveCourseLesson,
   useSetLessonPreview,
 } from "@/src/features/course-lessons/hooks";
+import { useCourseLessonDeleteDialog } from "@/src/features/course-lessons/hooks/use-course-lesson-delete-dialog";
 import type { CourseLesson } from "@/src/features/course-lessons/types";
 import { ModuleLessonForm } from "@/src/features/course-modules/components/manage/module-lesson-form";
 import { paginateRows } from "@/src/features/course-modules/components/manage/module-content-pagination";
@@ -74,7 +75,7 @@ export function ModuleLessonsTab({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [formOpen, setFormOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const lessonDeleteDialog = useCourseLessonDeleteDialog();
   const [selected, setSelected] = useState<CourseLesson | null>(null);
   const [togglingLessonId, setTogglingLessonId] = useState<string | null>(
     null,
@@ -227,7 +228,10 @@ export function ModuleLessonsTab({
         renderActions={(row) => (
           <LessonTableActions
             isPreview={row.isPreview}
-            disabled={isTogglingPreview && togglingLessonId === row.id}
+            disabled={
+              (isTogglingPreview && togglingLessonId === row.id) ||
+              lessonDeleteDialog.checking
+            }
             onTogglePreview={async () => {
               setTogglingLessonId(row.id);
               try {
@@ -255,8 +259,10 @@ export function ModuleLessonsTab({
               setFormOpen(true);
             }}
             onDelete={() => {
-              setSelected(row);
-              setDeleteOpen(true);
+              void lessonDeleteDialog.openDeleteDialog({
+                lessonId: row.id,
+                lessonTitle: row.title,
+              });
             }}
           />
         )}
@@ -332,22 +338,24 @@ export function ModuleLessonsTab({
       />
 
       <CourseLessonDeleteDialog
-        open={deleteOpen}
-        loading={isDeleting}
-        lessonTitle={selected?.title}
+        open={lessonDeleteDialog.open}
+        loading={isDeleting || lessonDeleteDialog.checking}
+        description={lessonDeleteDialog.description}
+        canDelete={lessonDeleteDialog.canDelete}
         onClose={() => {
-          setDeleteOpen(false);
-          setSelected(null);
+          if (!isDeleting) {
+            lessonDeleteDialog.close();
+          }
         }}
         onConfirm={async () => {
-          if (!selected) {
+          const lessonId = lessonDeleteDialog.lessonId;
+          if (!lessonId) {
             return;
           }
           try {
-            await deleteCourseLesson(selected.id);
+            await deleteCourseLesson(lessonId);
             appToast.success("Lesson deleted successfully");
-            setDeleteOpen(false);
-            setSelected(null);
+            lessonDeleteDialog.close();
             await onRefresh();
           } catch (error) {
             appToast.error(getErrorMessage(error));
