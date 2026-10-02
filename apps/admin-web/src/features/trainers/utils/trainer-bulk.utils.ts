@@ -81,6 +81,13 @@ export function getEligiblePermanentDeleteIds(
   return getEligibleRestoreIds(trainers, selectedIds);
 }
 
+export function isBulkActionEnabledForSelection(
+  selectedCount: number,
+  eligibleCount: number,
+): boolean {
+  return selectedCount > 0 && eligibleCount === selectedCount;
+}
+
 export function formatBulkResultToast(
   result: BulkTrainerOperationResult,
   successLabel: string

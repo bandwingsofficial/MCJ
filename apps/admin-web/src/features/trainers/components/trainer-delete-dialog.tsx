@@ -26,8 +26,8 @@ export function TrainerDeleteDialog({
       description={description}
       confirmLabel={canDelete ? "Archive" : "OK"}
       confirmVariant={canDelete ? "danger" : "primary"}
-      loading={isLoading}
-      loadingLabel={isLoading ? "Checking..." : "Archiving..."}
+      loading={isLoading && canDelete}
+      loadingLabel="Archiving..."
       showCancel={canDelete}
       onCancel={onClose}
       onConfirm={() => {

@@ -62,31 +62,55 @@ export class BulkDeleteTrainersHandler {
         return rightOrder - leftOrder;
       });
 
+      const archiveBranchBlockers: {
+        trainerId: string;
+        branchNames: string[];
+        branchCount: number;
+      }[] = [];
+
+      for (const trainer of trainersToDelete) {
+        const branchCount =
+          await this.trainerRepo.countBranchAssignments(trainer.id);
+
+        if (branchCount > 0) {
+          const branchNames =
+            await this.trainerRepo.findBranchAssignmentNames(trainer.id);
+
+          archiveBranchBlockers.push({
+            trainerId: trainer.id,
+            branchNames,
+            branchCount,
+          });
+        }
+      }
+
+      if (archiveBranchBlockers.length > 0) {
+        for (const trainer of trainersToDelete) {
+          const blocker = archiveBranchBlockers.find(
+            (entry) => entry.trainerId === trainer.id,
+          );
+
+          itemResults.push({
+            trainerId: trainer.id,
+            success: false,
+            message: blocker
+              ? formatTrainerBranchBlockingMessage(
+                  blocker.branchNames,
+                  blocker.branchCount,
+                  'delete',
+                )
+              : 'Archive cancelled because other selected trainers are assigned to branches.',
+          });
+        }
+
+        return BulkDeleteTrainersResult.fromItemResults(
+          trainerIds.length,
+          itemResults,
+        );
+      }
+
       for (const trainer of trainersToDelete) {
         try {
-          const branchCount =
-            await this.trainerRepo.countBranchAssignments(
-              trainer.id,
-            );
-
-          if (branchCount > 0) {
-            const branchNames =
-              await this.trainerRepo.findBranchAssignmentNames(
-                trainer.id,
-              );
-
-            itemResults.push({
-              trainerId: trainer.id,
-              success: false,
-              message: formatTrainerBranchBlockingMessage(
-                branchNames,
-                branchCount,
-                'delete',
-              ),
-            });
-            continue;
-          }
-
           const deletedDisplayOrder = trainer.displayOrder;
 
           trainer.softDelete();

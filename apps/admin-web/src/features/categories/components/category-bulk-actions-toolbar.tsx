@@ -11,6 +11,7 @@ import {
   getEligibleDeleteIds,
   getEligiblePermanentDeleteIds,
   getEligibleRestoreIds,
+  isBulkActionEnabledForSelection,
 } from "@/src/features/categories/utils/category-bulk.utils";
 
 export type BulkCategoryAction =
@@ -66,6 +67,27 @@ export function CategoryBulkActionsToolbar({
   const checkingArchive = pendingBulkLifecycleCheck === "archive";
   const bulkCheckInFlight = pendingBulkLifecycleCheck !== null;
 
+  const activateEnabled = isBulkActionEnabledForSelection(
+    selectedCount,
+    activateCount,
+  );
+  const deactivateEnabled = isBulkActionEnabledForSelection(
+    selectedCount,
+    deactivateCount,
+  );
+  const deleteEnabled = isBulkActionEnabledForSelection(
+    selectedCount,
+    deleteCount,
+  );
+  const restoreEnabled = isBulkActionEnabledForSelection(
+    selectedCount,
+    restoreCount,
+  );
+  const permanentDeleteEnabled = isBulkActionEnabledForSelection(
+    selectedCount,
+    permanentDeleteCount,
+  );
+
   return (
     <div className="flex flex-col gap-1.5 border-b border-[#2563EB]/15 bg-[#2563EB]/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-xs font-medium text-slate-800">
@@ -77,7 +99,7 @@ export function CategoryBulkActionsToolbar({
           type="button"
           variant="outline"
           className="h-7 px-2.5 text-xs"
-          disabled={disabled || activateCount === 0 || bulkCheckInFlight}
+          disabled={disabled || !activateEnabled || bulkCheckInFlight}
           onClick={() => onAction("activate")}
         >
           Activate
@@ -88,7 +110,7 @@ export function CategoryBulkActionsToolbar({
           variant="outline"
           className="h-7 gap-1 px-2.5 text-xs"
           disabled={
-            disabled || deactivateCount === 0 || bulkCheckInFlight
+            disabled || !deactivateEnabled || bulkCheckInFlight
           }
           aria-busy={checkingDeactivate}
           onClick={() => onAction("deactivate")}
@@ -103,7 +125,7 @@ export function CategoryBulkActionsToolbar({
           type="button"
           variant="outline"
           className="h-7 gap-1 px-2.5 text-xs"
-          disabled={disabled || deleteCount === 0 || bulkCheckInFlight}
+          disabled={disabled || !deleteEnabled || bulkCheckInFlight}
           aria-busy={checkingArchive}
           onClick={() => onAction("delete")}
         >
@@ -117,7 +139,7 @@ export function CategoryBulkActionsToolbar({
           type="button"
           variant="outline"
           className="h-7 px-2.5 text-xs"
-          disabled={disabled || restoreCount === 0 || bulkCheckInFlight}
+          disabled={disabled || !restoreEnabled || bulkCheckInFlight}
           onClick={() => onAction("restore")}
         >
           Restore
@@ -128,7 +150,7 @@ export function CategoryBulkActionsToolbar({
           variant="danger"
           className="h-7 px-2.5 text-xs"
           disabled={
-            disabled || permanentDeleteCount === 0 || bulkCheckInFlight
+            disabled || !permanentDeleteEnabled || bulkCheckInFlight
           }
           onClick={() => onAction("permanent-delete")}
         >

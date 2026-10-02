@@ -75,6 +75,13 @@ export function getEligiblePermanentDeleteIds<
   return getEligibleRestoreIds(categories, selectedIds);
 }
 
+export function isBulkActionEnabledForSelection(
+  selectedCount: number,
+  eligibleCount: number,
+): boolean {
+  return selectedCount > 0 && eligibleCount === selectedCount;
+}
+
 export function formatBulkResultToast(
   result: {
     successCount: number;

@@ -3,6 +3,7 @@
 import {
   Archive,
   CircleCheck,
+  Loader2,
   Pencil,
   Power,
   RotateCcw,
@@ -28,6 +29,10 @@ interface Props {
   onDelete: (trainer: TrainerListItem) => void;
   onRestore: (trainer: TrainerListItem) => void;
   onPermanentDelete: (trainer: TrainerListItem) => void;
+  pendingLifecycleCheck?: {
+    trainerId: string;
+    action: "deactivate" | "delete";
+  } | null;
 }
 
 export function TrainerActions({
@@ -39,10 +44,19 @@ export function TrainerActions({
   onDelete,
   onRestore,
   onPermanentDelete,
+  pendingLifecycleCheck = null,
 }: Props) {
-  const isArchived = isArchivedTrainer(trainer);
+  const archived = isArchivedTrainer(trainer);
+  const isActive = trainer.status === "ACTIVE";
 
-  if (isArchived) {
+  const deactivateChecking =
+    pendingLifecycleCheck?.trainerId === trainer.id &&
+    pendingLifecycleCheck.action === "deactivate";
+  const deleteChecking =
+    pendingLifecycleCheck?.trainerId === trainer.id &&
+    pendingLifecycleCheck.action === "delete";
+
+  if (archived) {
     return (
       <div className="flex items-center justify-end gap-2">
         <Tooltip content="Restore trainer">
@@ -72,29 +86,38 @@ export function TrainerActions({
     );
   }
 
-  const isActive = trainer.status === "ACTIVE";
-
   return (
     <div className="flex items-center justify-end gap-2">
-      <Tooltip
-        content={isActive ? "Deactivate trainer" : "Activate trainer"}
-      >
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() =>
-            isActive ? onDeactivate(trainer) : onActivate(trainer)
-          }
-          aria-label={isActive ? "Deactivate trainer" : "Activate trainer"}
-          className={`${iconButtonClass} text-orange-700`}
-        >
-          {isActive ? (
-            <Power className={iconClass} />
-          ) : (
+      {isActive ? (
+        <Tooltip content="Deactivate trainer">
+          <button
+            type="button"
+            disabled={disabled || deactivateChecking}
+            aria-busy={deactivateChecking}
+            onClick={() => onDeactivate(trainer)}
+            aria-label="Deactivate trainer"
+            className={`${iconButtonClass} text-orange-700`}
+          >
+            {deactivateChecking ? (
+              <Loader2 className={`${iconClass} animate-spin`} aria-hidden />
+            ) : (
+              <Power className={iconClass} />
+            )}
+          </button>
+        </Tooltip>
+      ) : (
+        <Tooltip content="Activate trainer">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onActivate(trainer)}
+            aria-label="Activate trainer"
+            className={`${iconButtonClass} text-green-800`}
+          >
             <CircleCheck className={iconClass} />
-          )}
-        </button>
-      </Tooltip>
+          </button>
+        </Tooltip>
+      )}
 
       <Tooltip content="Edit trainer">
         <button
@@ -111,12 +134,17 @@ export function TrainerActions({
       <Tooltip content="Archive trainer">
         <button
           type="button"
-          disabled={disabled}
+          disabled={disabled || deleteChecking}
+          aria-busy={deleteChecking}
           onClick={() => onDelete(trainer)}
           aria-label="Archive trainer"
           className={`${iconButtonClass} text-red-800`}
         >
-          <Archive className={iconClass} />
+          {deleteChecking ? (
+            <Loader2 className={`${iconClass} animate-spin`} aria-hidden />
+          ) : (
+            <Archive className={iconClass} />
+          )}
         </button>
       </Tooltip>
     </div>

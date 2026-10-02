@@ -8,7 +8,6 @@ import type { TrainerRepository } from '../../domain/repositories/trainer.reposi
 
 import { ValidationError } from '../errors/validation.error';
 import type { BulkTrainerItemResult } from '../shared/bulk-trainer-operation.result';
-import { formatTrainerBranchBlockingMessage } from '../shared/format-trainer-branch-blocking-message';
 import { parseBulkTrainerIds } from '../shared/parse-bulk-trainer-ids';
 
 import { BulkPermanentDeleteTrainersCommand } from './bulk-permanent-delete-trainers.command';
@@ -78,27 +77,6 @@ export class BulkPermanentDeleteTrainersHandler {
         }
 
         const displayOrder = trainer.displayOrder;
-
-        const branchCount =
-          await this.trainerRepo.countBranchAssignments(trainer.id);
-
-        if (branchCount > 0) {
-          const branchNames =
-            await this.trainerRepo.findBranchAssignmentNames(
-              trainer.id,
-            );
-
-          itemResults.push({
-            trainerId,
-            success: false,
-            message: formatTrainerBranchBlockingMessage(
-              branchNames,
-              branchCount,
-              'delete',
-            ),
-          });
-          continue;
-        }
 
         try {
           await this.trainerRepo.deletePermanent(trainer.id);

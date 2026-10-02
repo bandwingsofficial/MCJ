@@ -33,6 +33,10 @@ interface Props {
     trainerId: string;
     newDisplayOrder: number;
   }) => Promise<void>;
+  pendingLifecycleCheck?: {
+    trainerId: string;
+    action: "deactivate" | "delete";
+  } | null;
 }
 
 function canReorder(trainer: TrainerListItem): boolean {
@@ -58,6 +62,7 @@ export function TrainerTable({
   onRestore,
   onPermanentDelete,
   onReorder,
+  pendingLifecycleCheck = null,
 }: Props) {
   const [rows, setRows] = useState(trainers);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -351,6 +356,7 @@ export function TrainerTable({
                     <TrainerActions
                       trainer={trainer}
                       disabled={actionsDisabled || isSavingOrder}
+                      pendingLifecycleCheck={pendingLifecycleCheck}
                       onEdit={onEdit}
                       onActivate={onActivate}
                       onDeactivate={onDeactivate}

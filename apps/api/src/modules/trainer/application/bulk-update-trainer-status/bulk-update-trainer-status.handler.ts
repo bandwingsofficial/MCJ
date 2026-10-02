@@ -90,6 +90,59 @@ export class BulkUpdateTrainerStatusHandler {
         });
       }
 
+      const trainersToDeactivate =
+        command.status === TrainerStatus.INACTIVE
+          ? trainersToUpdate
+          : [];
+
+      const deactivateBranchBlockers: {
+        trainerId: string;
+        branchNames: string[];
+        branchCount: number;
+      }[] = [];
+
+      for (const trainer of trainersToDeactivate) {
+        const branchCount =
+          await this.trainerRepo.countBranchAssignments(trainer.id);
+
+        if (branchCount > 0) {
+          const branchNames =
+            await this.trainerRepo.findBranchAssignmentNames(trainer.id);
+
+          deactivateBranchBlockers.push({
+            trainerId: trainer.id,
+            branchNames,
+            branchCount,
+          });
+        }
+      }
+
+      if (deactivateBranchBlockers.length > 0) {
+        for (const trainer of trainersToDeactivate) {
+          const blocker = deactivateBranchBlockers.find(
+            (entry) => entry.trainerId === trainer.id,
+          );
+
+          itemResults.push({
+            trainerId: trainer.id,
+            success: false,
+            message: blocker
+              ? formatTrainerBranchBlockingMessage(
+                  blocker.branchNames,
+                  blocker.branchCount,
+                  'deactivate',
+                )
+              : 'Deactivation cancelled because other selected trainers are assigned to branches.',
+          });
+        }
+
+        return BulkUpdateTrainerStatusResult.create(
+          command.status,
+          trainerIds.length,
+          itemResults,
+        );
+      }
+
       for (const trainer of trainersToUpdate) {
         try {
           if (command.status === TrainerStatus.ACTIVE) {
@@ -99,29 +152,6 @@ export class BulkUpdateTrainerStatusHandler {
             trainer.changeDisplayOrder(nextDisplayOrder);
             trainer.activate();
           } else {
-            const branchCount =
-              await this.trainerRepo.countBranchAssignments(
-                trainer.id,
-              );
-
-            if (branchCount > 0) {
-              const branchNames =
-                await this.trainerRepo.findBranchAssignmentNames(
-                  trainer.id,
-                );
-
-              itemResults.push({
-                trainerId: trainer.id,
-                success: false,
-                message: formatTrainerBranchBlockingMessage(
-                  branchNames,
-                  branchCount,
-                  'deactivate',
-                ),
-              });
-              continue;
-            }
-
             if (trainer.displayOrder != null) {
               await this.trainerRepo.closeDisplayOrderGap(
                 trainer.displayOrder,

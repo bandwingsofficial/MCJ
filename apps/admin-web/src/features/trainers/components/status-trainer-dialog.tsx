@@ -49,7 +49,7 @@ export function StatusTrainerDialog({
       }
       confirmLabel={blocked ? "OK" : isDeactivate ? "Deactivate" : "Activate"}
       confirmVariant={blocked ? "primary" : isDeactivate ? "danger" : "success"}
-      loading={isLoading}
+      loading={isLoading && !blocked}
       showCancel={!blocked}
       onCancel={onClose}
       onConfirm={() => {

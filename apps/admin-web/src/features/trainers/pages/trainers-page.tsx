@@ -94,9 +94,17 @@ import {
   getEligibleRestoreIds,
 } from "@/src/features/trainers/utils/trainer-bulk.utils";
 import {
+  buildBulkTrainerDeactivateBlockedDescription,
+  buildBulkTrainerDeactivateConfirmDescription,
+  buildBulkTrainerDeleteBlockedDescription,
+  buildBulkTrainerDeleteConfirmDescription,
   buildTrainerDeactivateDescription,
   buildTrainerDeleteDescription,
   buildTrainerPermanentDeleteDescription,
+  collectBulkBranchBlocks,
+  isTrainerDeactivateAllowed,
+  isTrainerDeleteAllowed,
+  parseTrainerDependencySummary,
   type TrainerDependencySummary,
 } from "@/src/features/trainers/utils/trainer-dependency-copy.utils";
 
@@ -146,6 +154,18 @@ export function TrainersPage() {
   >([]);
   const [bulkConfirmAction, setBulkConfirmAction] =
     useState<BulkTrainerAction | null>(null);
+  const [bulkBlockedDescription, setBulkBlockedDescription] = useState<
+    string | null
+  >(null);
+  const [pendingBulkLifecycleCheck, setPendingBulkLifecycleCheck] = useState<
+    "deactivate" | "delete" | null
+  >(null);
+  const bulkCheckRequestIdRef = useRef(0);
+  const lifecycleCheckRequestIdRef = useRef(0);
+  const [pendingLifecycleCheck, setPendingLifecycleCheck] = useState<{
+    trainerId: string;
+    action: "deactivate" | "delete";
+  } | null>(null);
   const [selectedTrainer, setSelectedTrainer] =
     useState<TrainerListItem | null>(null);
   const [statusTarget, setStatusTarget] = useState<
@@ -153,7 +173,6 @@ export function TrainersPage() {
   >(null);
   const [dependencySummary, setDependencySummary] =
     useState<TrainerDependencySummary | null>(null);
-  const [dependencyLoading, setDependencyLoading] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
 
   const { activateTrainer, isLoading: isActivating } =
@@ -199,48 +218,152 @@ export function TrainersPage() {
     [filters],
   );
 
-  const loadTrainerDependencies = async (trainerId: string) => {
+  const loadTrainerDependencySummary = async (trainerId: string) => {
     const response = await trainerService.getTrainerDependencies(trainerId);
-
-    return {
-      canDelete: response.data.canDelete,
-      canDeactivate: response.data.canDeactivate,
-      branchAssignmentCount: response.data.branchAssignmentCount,
-      blockingBranchNames: response.data.blockingBranchNames ?? [],
-    };
+    return parseTrainerDependencySummary(response.data);
   };
 
-  const openWithDependencies = async (
-    trainer: TrainerListItem,
-    action: "deactivate" | "delete" | "permanent-delete",
-  ) => {
+  const closeLifecycleDialogs = () => {
+    lifecycleCheckRequestIdRef.current += 1;
+    setPendingLifecycleCheck(null);
+    setIsStatusOpen(false);
+    setIsDeleteOpen(false);
+    setStatusTarget(null);
+    setSelectedTrainer(null);
+    setDependencySummary(null);
+  };
+
+  const openActivateDialog = (trainer: TrainerListItem) => {
+    lifecycleCheckRequestIdRef.current += 1;
+    setPendingLifecycleCheck(null);
     setSelectedTrainer(trainer);
     setDependencySummary(null);
-    setDependencyLoading(true);
+    setStatusTarget("ACTIVE");
+    setIsStatusOpen(true);
+  };
 
-    if (action === "deactivate") {
-      setStatusTarget("INACTIVE");
-      setIsStatusOpen(true);
-    } else if (action === "delete") {
-      setIsDeleteOpen(true);
-    } else {
-      setIsPermanentDeleteOpen(true);
-    }
+  const openRestoreDialog = (trainer: TrainerListItem) => {
+    setSelectedTrainer(trainer);
+    setIsRestoreOpen(true);
+  };
+
+  const openPermanentDeleteDialog = (trainer: TrainerListItem) => {
+    lifecycleCheckRequestIdRef.current += 1;
+    setPendingLifecycleCheck(null);
+    setSelectedTrainer(trainer);
+    setDependencySummary(null);
+    setIsPermanentDeleteOpen(true);
+  };
+
+  const startLifecycleDependencyCheck = async (
+    trainer: TrainerListItem,
+    action: "deactivate" | "delete",
+  ) => {
+    const requestId = ++lifecycleCheckRequestIdRef.current;
+    setPendingLifecycleCheck({ trainerId: trainer.id, action });
 
     try {
-      const summary = await loadTrainerDependencies(trainer.id);
+      const summary = await loadTrainerDependencySummary(trainer.id);
+
+      if (requestId !== lifecycleCheckRequestIdRef.current) {
+        return;
+      }
+
+      setSelectedTrainer(trainer);
       setDependencySummary(summary);
+
+      if (action === "deactivate") {
+        setStatusTarget("INACTIVE");
+        setIsStatusOpen(true);
+      } else {
+        setIsDeleteOpen(true);
+      }
     } catch (error) {
-      appToast.error(getErrorMessage(error));
-      setSelectedTrainer(null);
-      setDependencySummary(null);
-      setIsStatusOpen(false);
-      setIsDeleteOpen(false);
-      setIsPermanentDeleteOpen(false);
-      setStatusTarget(null);
+      if (requestId !== lifecycleCheckRequestIdRef.current) {
+        return;
+      }
+
+      appToast.error(
+        getErrorMessage(error) ||
+          "Unable to verify branch assignments. Please try again.",
+      );
     } finally {
-      setDependencyLoading(false);
+      if (requestId === lifecycleCheckRequestIdRef.current) {
+        setPendingLifecycleCheck(null);
+      }
     }
+  };
+
+  const closeBulkDialog = () => {
+    bulkCheckRequestIdRef.current += 1;
+    setPendingBulkLifecycleCheck(null);
+    setBulkConfirmAction(null);
+    setBulkBlockedDescription(null);
+  };
+
+  const handleBulkToolbarAction = (action: BulkTrainerAction) => {
+    if (pendingBulkLifecycleCheck) {
+      return;
+    }
+
+    if (action === "deactivate" || action === "delete") {
+      const eligibleIds =
+        action === "deactivate"
+          ? getEligibleDeactivateIds(trainers, selectedTrainerIds)
+          : getEligibleDeleteIds(trainers, selectedTrainerIds);
+
+      if (eligibleIds.length === 0) {
+        return;
+      }
+
+      const requestId = ++bulkCheckRequestIdRef.current;
+      setPendingBulkLifecycleCheck(action);
+
+      void (async () => {
+        try {
+          const blocks = await collectBulkBranchBlocks(
+            trainers,
+            eligibleIds,
+            loadTrainerDependencySummary,
+            action === "deactivate" ? "deactivate" : "delete",
+          );
+
+          if (requestId !== bulkCheckRequestIdRef.current) {
+            return;
+          }
+
+          if (blocks.length > 0) {
+            setBulkBlockedDescription(
+              action === "deactivate"
+                ? buildBulkTrainerDeactivateBlockedDescription(blocks)
+                : buildBulkTrainerDeleteBlockedDescription(blocks),
+            );
+          } else {
+            setBulkBlockedDescription(null);
+          }
+
+          setBulkConfirmAction(action);
+        } catch (error) {
+          if (requestId !== bulkCheckRequestIdRef.current) {
+            return;
+          }
+
+          appToast.error(
+            getErrorMessage(error) ||
+              "Unable to verify branch assignments. Please try again.",
+          );
+        } finally {
+          if (requestId === bulkCheckRequestIdRef.current) {
+            setPendingBulkLifecycleCheck(null);
+          }
+        }
+      })();
+
+      return;
+    }
+
+    setBulkBlockedDescription(null);
+    setBulkConfirmAction(action);
   };
 
   useEffect(() => {
@@ -307,7 +430,7 @@ export function TrainersPage() {
     isBulkRestoring ||
     isBulkPermanentDeleting;
 
-  const actionLoading =
+  const tableActionLoading =
     isActivating ||
     isDeactivating ||
     isDeleting ||
@@ -392,7 +515,11 @@ export function TrainersPage() {
 
   const handleBulkConfirm = async () => {
     if (!bulkConfirmAction || eligibleBulkIds.length === 0) {
-      setBulkConfirmAction(null);
+      closeBulkDialog();
+      return;
+    }
+
+    if (bulkBlockedDescription) {
       return;
     }
 
@@ -458,7 +585,7 @@ export function TrainersPage() {
 
     if (result) {
       setSelectedTrainerIds([]);
-      setBulkConfirmAction(null);
+      closeBulkDialog();
       await refetch();
     }
   };
@@ -476,15 +603,15 @@ export function TrainersPage() {
         };
       case "deactivate":
         return {
-          title: "Deactivate selected trainers?",
-          description: `Deactivate ${count} selected trainer${count === 1 ? "" : "s"}? They will be removed from active ordering.`,
+          title: "Deactivate trainers?",
+          description: buildBulkTrainerDeactivateConfirmDescription(),
           confirmLabel: "Deactivate",
           confirmVariant: "danger" as const,
         };
       case "delete":
         return {
-          title: "Archive selected trainers?",
-          description: `Archive ${count} selected trainer${count === 1 ? "" : "s"}? They can be restored later.`,
+          title: "Archive trainers?",
+          description: buildBulkTrainerDeleteConfirmDescription(),
           confirmLabel: "Archive",
           confirmVariant: "danger" as const,
         };
@@ -558,8 +685,9 @@ export function TrainersPage() {
           <TrainerBulkActionsToolbar
             trainers={trainers}
             selectedTrainerIds={selectedTrainerIds}
-            disabled={actionLoading || isFetching}
-            onAction={setBulkConfirmAction}
+            disabled={tableActionLoading || isFetching}
+            pendingBulkLifecycleCheck={pendingBulkLifecycleCheck}
+            onAction={handleBulkToolbarAction}
           />
 
           {isInitialLoading ? (
@@ -592,8 +720,9 @@ export function TrainersPage() {
                   trainers={trainers}
                   selectedTrainerIds={selectedTrainerIds}
                   onSelectionChange={setSelectedTrainerIds}
-                  actionsDisabled={actionLoading || isFetching}
-                  selectionDisabled={actionLoading || isFetching}
+                  pendingLifecycleCheck={pendingLifecycleCheck}
+                  actionsDisabled={tableActionLoading || isFetching}
+                  selectionDisabled={tableActionLoading || isFetching}
                   reorderDisabled={
                     isReordering ||
                     !!filters.status ||
@@ -607,26 +736,15 @@ export function TrainersPage() {
                     setSelectedTrainer(trainer);
                     setIsEditOpen(true);
                   }}
-                  onActivate={(trainer) => {
-                    setSelectedTrainer(trainer);
-                    setStatusTarget("ACTIVE");
-                    setDependencySummary(null);
-                    setDependencyLoading(false);
-                    setIsStatusOpen(true);
-                  }}
+                  onActivate={openActivateDialog}
                   onDeactivate={(trainer) => {
-                    void openWithDependencies(trainer, "deactivate");
+                    void startLifecycleDependencyCheck(trainer, "deactivate");
                   }}
                   onDelete={(trainer) => {
-                    void openWithDependencies(trainer, "delete");
+                    void startLifecycleDependencyCheck(trainer, "delete");
                   }}
-                  onRestore={(trainer) => {
-                    setSelectedTrainer(trainer);
-                    setIsRestoreOpen(true);
-                  }}
-                  onPermanentDelete={(trainer) => {
-                    void openWithDependencies(trainer, "permanent-delete");
-                  }}
+                  onRestore={openRestoreDialog}
+                  onPermanentDelete={openPermanentDeleteDialog}
                   onReorder={handleReorder}
                 />
               </div>
@@ -701,7 +819,9 @@ export function TrainersPage() {
         />
       ) : null}
 
-      {isStatusOpen ? (
+      {isStatusOpen &&
+      (statusTarget === "ACTIVE" ||
+        (statusTarget === "INACTIVE" && dependencySummary)) ? (
       <StatusTrainerDialog
         open
         trainer={selectedTrainer}
@@ -709,24 +829,14 @@ export function TrainersPage() {
         description={
           statusTarget === "ACTIVE"
             ? ""
-            : buildTrainerDeactivateDescription(
-                dependencySummary,
-                dependencyLoading,
-              )
+            : buildTrainerDeactivateDescription(dependencySummary)
         }
-        isLoading={
-          isActivating || isDeactivating || dependencyLoading
-        }
+        isLoading={isActivating || isDeactivating}
         canProceed={
           statusTarget === "ACTIVE" ||
-          dependencySummary?.canDeactivate !== false
+          isTrainerDeactivateAllowed(dependencySummary)
         }
-        onClose={() => {
-          setIsStatusOpen(false);
-          setStatusTarget(null);
-          setDependencySummary(null);
-          setDependencyLoading(false);
-        }}
+        onClose={closeLifecycleDialogs}
         onConfirm={async () => {
           if (!selectedTrainer || !statusTarget) {
             return;
@@ -734,8 +844,7 @@ export function TrainersPage() {
 
           if (
             statusTarget === "INACTIVE" &&
-            dependencySummary &&
-            !dependencySummary.canDeactivate
+            !isTrainerDeactivateAllowed(dependencySummary)
           ) {
             return;
           }
@@ -746,46 +855,56 @@ export function TrainersPage() {
               : await deactivateTrainer(selectedTrainer.id);
 
           if (success) {
-            setIsStatusOpen(false);
-            setStatusTarget(null);
-            setDependencySummary(null);
+            closeLifecycleDialogs();
             await refetch();
+            return;
+          }
+
+          if (statusTarget === "INACTIVE") {
+            try {
+              const summary = await loadTrainerDependencySummary(
+                selectedTrainer.id,
+              );
+              setDependencySummary(summary);
+            } catch {
+              // Toast handled in hook.
+            }
           }
         }}
       />
       ) : null}
 
-      {isDeleteOpen ? (
+      {isDeleteOpen && dependencySummary ? (
       <TrainerDeleteDialog
         open
-        isLoading={isDeleting || dependencyLoading}
-        canDelete={dependencySummary?.canDelete ?? true}
-        description={buildTrainerDeleteDescription(
-          dependencySummary,
-          dependencyLoading,
-        )}
-        onClose={() => {
-          setIsDeleteOpen(false);
-          setDependencySummary(null);
-          setDependencyLoading(false);
-        }}
+        isLoading={isDeleting}
+        canDelete={isTrainerDeleteAllowed(dependencySummary)}
+        description={buildTrainerDeleteDescription(dependencySummary)}
+        onClose={closeLifecycleDialogs}
         onConfirm={async () => {
           if (!selectedTrainer) {
             return;
           }
 
-          if (dependencySummary && !dependencySummary.canDelete) {
+          if (!isTrainerDeleteAllowed(dependencySummary)) {
             return;
           }
 
-          const success = await deleteTrainer(
-            selectedTrainer.id,
-          );
+          const success = await deleteTrainer(selectedTrainer.id);
 
           if (success) {
-            setIsDeleteOpen(false);
-            setDependencySummary(null);
+            closeLifecycleDialogs();
             await refetch();
+            return;
+          }
+
+          try {
+            const summary = await loadTrainerDependencySummary(
+              selectedTrainer.id,
+            );
+            setDependencySummary(summary);
+          } catch {
+            // Toast handled in hook.
           }
         }}
       />
@@ -817,23 +936,14 @@ export function TrainersPage() {
       <PermanentDeleteTrainerDialog
         open
         trainer={selectedTrainer}
-        isLoading={isPermanentDeleting || dependencyLoading}
-        canDelete={dependencySummary?.canDelete ?? true}
-        description={buildTrainerPermanentDeleteDescription(
-          dependencySummary,
-          dependencyLoading,
-        )}
+        isLoading={isPermanentDeleting}
+        description={buildTrainerPermanentDeleteDescription()}
         onClose={() => {
           setIsPermanentDeleteOpen(false);
-          setDependencySummary(null);
-          setDependencyLoading(false);
+          setSelectedTrainer(null);
         }}
         onConfirm={async () => {
           if (!selectedTrainer) {
-            return;
-          }
-
-          if (dependencySummary && !dependencySummary.canDelete) {
             return;
           }
 
@@ -843,7 +953,7 @@ export function TrainersPage() {
 
           if (success) {
             setIsPermanentDeleteOpen(false);
-            setDependencySummary(null);
+            setSelectedTrainer(null);
             await refetch();
           }
         }}
@@ -852,17 +962,37 @@ export function TrainersPage() {
 
       <ConfirmDialog
         open={bulkConfirmAction !== null}
-        title={bulkDialogCopy.title}
-        description={bulkDialogCopy.description}
-        confirmLabel={bulkDialogCopy.confirmLabel}
-        confirmVariant={bulkDialogCopy.confirmVariant}
-        loading={bulkActionLoading}
+        title={
+          bulkBlockedDescription
+            ? bulkConfirmAction === "delete"
+              ? "Cannot delete selected trainers"
+              : "Cannot deactivate selected trainers"
+            : bulkDialogCopy.title
+        }
+        description={
+          bulkBlockedDescription ?? bulkDialogCopy.description
+        }
+        confirmLabel={
+          bulkBlockedDescription ? "OK" : bulkDialogCopy.confirmLabel
+        }
+        confirmVariant={
+          bulkBlockedDescription
+            ? "primary"
+            : bulkDialogCopy.confirmVariant
+        }
+        loading={bulkActionLoading && !bulkBlockedDescription}
+        showCancel={!bulkBlockedDescription}
         onCancel={() => {
           if (!bulkActionLoading) {
-            setBulkConfirmAction(null);
+            closeBulkDialog();
           }
         }}
         onConfirm={() => {
+          if (bulkBlockedDescription) {
+            closeBulkDialog();
+            return;
+          }
+
           void handleBulkConfirm();
         }}
       />
