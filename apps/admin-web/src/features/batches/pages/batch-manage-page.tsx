@@ -53,6 +53,7 @@ export function BatchManagePage({ batchId }: Props) {
   const {
     summary,
     isLoading: summaryLoading,
+    refetch: refetchSummary,
   } = useBatchSummary(batchId);
 
   const { deleteBatch, isLoading: isArchiving } = useDeleteBatch();
@@ -137,7 +138,7 @@ export function BatchManagePage({ batchId }: Props) {
         batch={batch}
         onClose={() => setIsEditOpen(false)}
         onSuccess={async () => {
-          await refetch();
+          await Promise.all([refetch(), refetchSummary()]);
         }}
       />
 

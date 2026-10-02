@@ -1,7 +1,10 @@
 "use client";
 
+import { forwardRef, type Ref } from "react";
+
 import {
   AssignBatchCreateForm,
+  type AssignBatchCreateFormHandle,
 } from "@/src/features/batches/components/assign-batch-create-form";
 import {
   AssignBatchEditForm,
@@ -9,7 +12,6 @@ import {
 } from "@/src/features/batches/components/assign-batch-edit-form";
 import type { Batch } from "@/src/features/batches/types/batch.types";
 import type { AssignBatchFormSubmitPayload } from "@/src/features/batches/utils/assign-batch-form.utils";
-import { forwardRef, type Ref } from "react";
 
 export interface AssignBatchFormHandle {
   submit: () => void;
@@ -20,8 +22,7 @@ export interface AssignBatchFormProps {
   open?: boolean;
   batch?: Batch | null;
   batchLoading?: boolean;
-  isSubmitting?: boolean;
-  onCancel?: () => void;
+  onCanSubmitChange?: (canSubmit: boolean) => void;
   onSubmit: (payload: AssignBatchFormSubmitPayload) => Promise<void>;
   idPrefix?: string;
 }
@@ -35,8 +36,7 @@ export const AssignBatchForm = forwardRef<
     open = true,
     batch = null,
     batchLoading = false,
-    isSubmitting = false,
-    onCancel,
+    onCanSubmitChange,
     onSubmit,
     idPrefix = "assign",
   },
@@ -47,10 +47,10 @@ export const AssignBatchForm = forwardRef<
   if (!isEdit) {
     return (
       <AssignBatchCreateForm
+        ref={ref as Ref<AssignBatchCreateFormHandle>}
         open={open}
         idPrefix={idPrefix}
-        isSubmitting={isSubmitting}
-        onCancel={onCancel}
+        onCanSubmitChange={onCanSubmitChange}
         onSubmit={onSubmit}
       />
     );
@@ -63,6 +63,7 @@ export const AssignBatchForm = forwardRef<
       batch={batch}
       batchLoading={batchLoading}
       idPrefix={idPrefix}
+      onCanSubmitChange={onCanSubmitChange}
       onSubmit={onSubmit}
     />
   );

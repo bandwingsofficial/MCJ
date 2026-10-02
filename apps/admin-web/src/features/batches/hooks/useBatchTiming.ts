@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { batchService } from "@/src/features/batches/services/batch.service";
+import { useBatchLifecycleRefetch } from "@/src/features/batches/hooks/use-batch-lifecycle-refetch";
 import { batchTimingManagePath } from "@/src/features/batches/utils/batch-manage.routes";
 
 import type {
@@ -68,6 +69,8 @@ export const useBatchTiming = (
 
     void fetchTiming();
   }, [fetchTiming, batchId, timingId]);
+
+  useBatchLifecycleRefetch(fetchTiming);
 
   return { timing, batch, isLoading, error, refetch: fetchTiming };
 };

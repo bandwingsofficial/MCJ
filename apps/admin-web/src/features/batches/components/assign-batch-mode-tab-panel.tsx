@@ -1,11 +1,10 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, Percent } from "lucide-react";
 
 import { Input } from "@/src/shared/components/ui/input";
 import { Label } from "@/src/shared/components/ui/label";
 import {
-  type FieldVisualState,
   ValidatedField,
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
@@ -28,6 +27,7 @@ import {
   formatTemplateTime,
 } from "@/src/features/batch-templates/utils/batch-template-display.utils";
 import type { BatchTemplate } from "@/src/features/batch-templates/types/batch-template.types";
+import { batchFieldVisualState } from "@/src/features/batches/utils/batch-form-field-styles";
 
 export interface ModeTabFormState {
   originalPrice: string;
@@ -38,19 +38,6 @@ export interface ModeTabFormState {
   priceTouched: boolean;
   percentTouched: boolean;
   amountTouched: boolean;
-}
-
-function fieldState(
-  error: string | null,
-  touched: boolean,
-): FieldVisualState {
-  if (error) {
-    return "invalid";
-  }
-  if (touched) {
-    return "valid";
-  }
-  return "neutral";
 }
 
 interface Props {
@@ -83,15 +70,15 @@ export function AssignBatchModeTabPanel({
     originalPriceNumber,
   );
 
-  const originalPriceState = fieldState(
+  const originalPriceState = batchFieldVisualState(
     originalPriceError,
     state.priceTouched,
   );
-  const discountPercentState = fieldState(
+  const discountPercentState = batchFieldVisualState(
     discountPercentError,
     state.percentTouched,
   );
-  const discountAmountState = fieldState(
+  const discountAmountState = batchFieldVisualState(
     discountAmountError,
     state.amountTouched,
   );
@@ -174,23 +161,19 @@ export function AssignBatchModeTabPanel({
                 if (state.lastEditedDiscount === "PERCENTAGE") {
                   patch({
                     originalPrice: value,
-                    priceTouched: true,
                     discountAmount: syncAmountFromPercent(
                       state.discountPercent,
                       value,
                     ),
-                    amountTouched: true,
                   });
                   return;
                 }
                 patch({
                   originalPrice: value,
-                  priceTouched: true,
                   discountPercent: syncPercentFromAmount(
                     state.discountAmount,
                     value,
                   ),
-                  percentTouched: true,
                 });
               }}
               onBlur={() => patch({ priceTouched: true })}
@@ -203,7 +186,7 @@ export function AssignBatchModeTabPanel({
           </ValidatedField>
 
           <ValidatedField
-            label="Discount Amount"
+            label="Discount Amount (Optional)"
             state={discountAmountState}
             errorMessage={discountAmountError}
             leftIcon={<span className="text-sm text-[#8AA0BB]">₹</span>}
@@ -219,12 +202,10 @@ export function AssignBatchModeTabPanel({
                 patch({
                   lastEditedDiscount: "AMOUNT",
                   discountAmount: value,
-                  amountTouched: true,
                   discountPercent: syncPercentFromAmount(
                     value,
                     state.originalPrice,
                   ),
-                  percentTouched: true,
                 });
               }}
               onBlur={() => patch({ amountTouched: true })}
@@ -237,9 +218,10 @@ export function AssignBatchModeTabPanel({
           </ValidatedField>
 
           <ValidatedField
-            label="Discount Percentage"
+            label="Discount Percentage (Optional)"
             state={discountPercentState}
             errorMessage={discountPercentError}
+            leftIcon={<Percent className="h-4 w-4" aria-hidden />}
           >
             <div className="relative">
               <Input
@@ -254,17 +236,17 @@ export function AssignBatchModeTabPanel({
                   patch({
                     lastEditedDiscount: "PERCENTAGE",
                     discountPercent: value,
-                    percentTouched: true,
                     discountAmount: syncAmountFromPercent(
                       value,
                       state.originalPrice,
                     ),
-                    amountTouched: true,
                   });
                 }}
                 onBlur={() => patch({ percentTouched: true })}
                 className={cn(
-                  validatedFieldInputClass(discountPercentState),
+                  validatedFieldInputClass(discountPercentState, undefined, {
+                    leftIcon: true,
+                  }),
                   "pr-14",
                 )}
               />

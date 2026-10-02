@@ -112,18 +112,13 @@ export interface BatchDisplayStatus {
 type BatchTimingStatusLike = Pick<BatchLike, "status">;
 
 /**
- * Child timing display status: parent CANCELLED overrides timing date lifecycle.
- * Align with API resolveBatchTimingApiStatus.
+ * Child timing display status follows the parent batch (API resolveBatchTimingApiStatus).
  */
 export function resolveBatchTimingDisplayStatus(
   batch: BatchTimingStatusLike,
-  timing: BatchTimingStatusLike,
+  _timing: BatchTimingStatusLike,
 ): NonNullable<BatchLike["status"]> {
-  if (batch.status === "CANCELLED") {
-    return "CANCELLED";
-  }
-
-  return (timing.status ?? "ONGOING") as NonNullable<BatchLike["status"]>;
+  return (batch.status ?? "ONGOING") as NonNullable<BatchLike["status"]>;
 }
 
 export function getBatchDisplayStatus(batch: BatchLike): BatchDisplayStatus {

@@ -133,17 +133,11 @@ export type BatchTimingStatusInput = {
 
 /**
  * Resolve status shown for a child batch timing.
- * Parent cancellation overrides date-derived timing lifecycle.
+ * The parent batch's current lifecycle is the single source of truth.
  */
 export function resolveBatchTimingApiStatus(
   parent: BatchTimingStatusInput,
-  timing: BatchTimingStatusInput,
+  _timing: BatchTimingStatusInput,
 ): BatchStatus {
-  const parentStatus = resolveBatchApiStatus(parent);
-
-  if (parentStatus === BatchStatus.CANCELLED) {
-    return BatchStatus.CANCELLED;
-  }
-
-  return resolveBatchApiStatus(timing);
+  return resolveBatchApiStatus(parent);
 }

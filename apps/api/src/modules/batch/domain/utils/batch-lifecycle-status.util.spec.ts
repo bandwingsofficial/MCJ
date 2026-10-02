@@ -194,7 +194,7 @@ describe('resolveBatchTimingApiStatus', () => {
     ).toBe(BatchStatus.CANCELLED);
   });
 
-  it('uses timing lifecycle when parent is not cancelled', () => {
+  it('uses parent batch lifecycle when parent is not cancelled', () => {
     expect(
       resolveBatchTimingApiStatus(
         {
@@ -207,5 +207,24 @@ describe('resolveBatchTimingApiStatus', () => {
         },
       ),
     ).toBe(BatchStatus.ONGOING);
+  });
+
+  it('ignores stale timing stored status when parent lifecycle differs', () => {
+    expect(
+      resolveBatchTimingApiStatus(
+        {
+          storedStatus: BatchStatus.UPCOMING,
+          startDate: new Date(Date.UTC(2026, 10, 1)),
+          startTime: '10:00',
+          endDate: new Date(Date.UTC(2026, 11, 1)),
+          endTime: '16:00',
+          now: new Date(Date.UTC(2026, 8, 20)),
+        },
+        {
+          storedStatus: BatchStatus.ONGOING,
+          ...activeRange,
+        },
+      ),
+    ).toBe(BatchStatus.UPCOMING);
   });
 });

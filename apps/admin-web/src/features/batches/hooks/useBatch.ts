@@ -12,6 +12,7 @@ import type {
   Batch,
 } from "@/src/features/batches/types/batch.types";
 import { useRealtimeRefetch } from "@/src/core/realtime/use-realtime-refetch";
+import { useBatchLifecycleRefetch } from "@/src/features/batches/hooks/use-batch-lifecycle-refetch";
 
 interface UseBatchReturn {
   batch: Batch | null;
@@ -65,6 +66,7 @@ export const useBatch = (
   }, [fetchBatch, id]);
 
   useRealtimeRefetch("batch", fetchBatch);
+  useBatchLifecycleRefetch(fetchBatch);
 
   return {
     batch,

@@ -8,9 +8,6 @@ import {
   useState,
 } from "react";
 
-import { Input } from "@/src/shared/components/ui/input";
-import { Label } from "@/src/shared/components/ui/label";
-import { AppSelect } from "@/src/shared/components/ui/select";
 import { Loader } from "@/src/shared/components/ui/loader";
 import {
   Tabs,
@@ -18,16 +15,14 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/src/shared/components/ui/tabs";
-import {
-  type FieldVisualState,
-  ValidatedField,
-  validatedFieldInputClass,
-} from "@/src/shared/components/ui/validated-field";
 import { appToast } from "@/src/shared/components/ui/toast";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import { FILTER_BATCH_MODES } from "@/src/features/batches/constants/batch.constants";
-import { BatchDurationField } from "@/src/features/batches/components/batch-duration-field";
+import {
+  AssignBatchCommonDetails,
+  touchAllAssignBatchDetailFields,
+} from "@/src/features/batches/components/assign-batch-common-details";
 import {
   AssignBatchModeTabPanel,
   createDefaultModeTabState,
@@ -57,7 +52,6 @@ import {
 } from "@/src/features/batches/utils/batch-mode.utils";
 import {
   getBatchDurationErrorMessage,
-  getBatchDurationFieldStates,
   parseBatchDuration,
 } from "@/src/features/batches/utils/batch-duration.utils";
 import {
@@ -68,21 +62,6 @@ import {
 import { uniqueSelectOptions } from "@/src/features/batches/utils/batch-select.utils";
 import { batchTemplateService } from "@/src/features/batch-templates/services/batch-template.service";
 import type { BatchTemplate } from "@/src/features/batch-templates/types/batch-template.types";
-
-function fieldState(
-  error: string | null,
-  touched: boolean,
-): FieldVisualState {
-  if (!touched) {
-    return "neutral";
-  }
-
-  if (error) {
-    return "invalid";
-  }
-
-  return "valid";
-}
 
 function buildModeTabStateFromBatch(
   batch: Batch,
@@ -187,6 +166,9 @@ export const AssignBatchEditForm = forwardRef<
   const [courseId, setCourseId] = useState("");
   const [batchName, setBatchName] = useState("");
   const [batchNameTouched, setBatchNameTouched] = useState(false);
+  const [courseTouched, setCourseTouched] = useState(false);
+  const [startDateTouched, setStartDateTouched] = useState(false);
+  const [endDateTouched, setEndDateTouched] = useState(false);
   const [batchNumber, setBatchNumber] = useState("");
   const [durationValue, setDurationValue] = useState(
     DEFAULT_BATCH_DURATION.durationValue,
@@ -225,6 +207,9 @@ export const AssignBatchEditForm = forwardRef<
     setModeStates(buildModeStatesFromBatch(source));
     setActiveTab(getInitialActiveTab(source));
     setBatchNameTouched(false);
+    setCourseTouched(false);
+    setStartDateTouched(false);
+    setEndDateTouched(false);
     setDurationTouched(false);
   };
 
@@ -286,12 +271,6 @@ export const AssignBatchEditForm = forwardRef<
     [durationType, durationValue],
   );
   const durationError = getBatchDurationErrorMessage(durationValidation);
-  const { valueState: durationValueState, typeState: durationTypeState } =
-    getBatchDurationFieldStates(durationTouched, durationError);
-
-  const batchNameError =
-    batchName.trim().length === 0 ? "Enter a batch name." : null;
-  const batchNameState = fieldState(batchNameError, batchNameTouched);
 
   const configuredModes = BATCH_MODE_ORDER.filter(
     (mode) => modeStates[mode].selectedIds.length > 0,
@@ -312,8 +291,25 @@ export const AssignBatchEditForm = forwardRef<
   }, [canSubmit, onCanSubmitChange]);
 
   const handleSubmit = async () => {
-    setBatchNameTouched(true);
-    setDurationTouched(true);
+    touchAllAssignBatchDetailFields({
+      setBatchNameTouched,
+      setCourseTouched,
+      setDurationTouched,
+      setStartDateTouched,
+      setEndDateTouched,
+    });
+    setModeStates((prev) => {
+      const next = { ...prev };
+      for (const mode of BATCH_MODE_ORDER) {
+        next[mode] = {
+          ...next[mode],
+          priceTouched: true,
+          percentTouched: true,
+          amountTouched: true,
+        };
+      }
+      return next;
+    });
 
     if (!canSubmit || !durationValidation.success) {
       return;
@@ -370,97 +366,41 @@ export const AssignBatchEditForm = forwardRef<
 
   return (
     <div className="space-y-5">
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <header className="border-b border-slate-200 bg-[#F6F9FD] px-4 py-3">
-          <h3 className="text-sm font-semibold text-[#102A56]">
-            Common Batch Details
-          </h3>
-          <p className="mt-0.5 text-xs text-[#647A9B]">
-            Shared information that applies to all learning modes.
-          </p>
-        </header>
-
-        <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
-          <ValidatedField
-            label="Batch Name"
-            required
-            state={batchNameState}
-            errorMessage={batchNameError}
-          >
-            <Input
-              id={`${idPrefix}-batch-name`}
-              value={batchName}
-              onChange={(event) => {
-                setBatchName(event.target.value);
-                setBatchNameTouched(true);
-              }}
-              onBlur={() => setBatchNameTouched(true)}
-              placeholder="Enter batch name"
-              className={validatedFieldInputClass(batchNameState)}
-            />
-          </ValidatedField>
-
-          <div className="space-y-1.5">
-            <Label>Batch Number</Label>
-            <div className="flex min-h-10 w-full flex-col justify-center rounded-md border border-[#D9E3F0] bg-slate-50 px-3 py-1.5">
-              <span className="text-sm font-semibold leading-tight text-[#102A56]">
-                {batchNumber ? `#${batchNumber}` : "—"}
-              </span>
-              <span className="text-[11px] leading-tight text-[#8AA0BB]">
-                Auto-generated
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label required>Course</Label>
-            <AppSelect
-              value={courseId || undefined}
-              onValueChange={setCourseId}
-              options={courseOptions}
-              placeholder={loading ? "Loading courses..." : "Select Course"}
-              disabled={loading}
-            />
-          </div>
-
-          <BatchDurationField
-            idPrefix={idPrefix}
-            durationValue={durationValue}
-            durationType={durationType}
-            onDurationValueChange={(value) => {
-              setDurationValue(value);
-              setDurationTouched(true);
-            }}
-            onDurationTypeChange={(value) => {
-              setDurationType(value);
-              setDurationTouched(true);
-            }}
-            onDurationValueBlur={() => setDurationTouched(true)}
-            valueState={durationValueState}
-            typeState={durationTypeState}
-            valueErrorMessage={durationError}
-          />
-
-          <div className="space-y-1.5">
-            <Label htmlFor={`${idPrefix}-start`}>Start Date</Label>
-            <Input
-              id={`${idPrefix}-start`}
-              type="date"
-              value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor={`${idPrefix}-end`}>End Date</Label>
-            <Input
-              id={`${idPrefix}-end`}
-              type="date"
-              value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
-            />
-          </div>
-        </div>
-      </section>
+      <AssignBatchCommonDetails
+        idPrefix={idPrefix}
+        batchName={batchName}
+        onBatchNameChange={setBatchName}
+        onBatchNameBlur={() => setBatchNameTouched(true)}
+        batchNameTouched={batchNameTouched}
+        batchNumber={batchNumber}
+        courseId={courseId}
+        onCourseChange={(value) => {
+          setCourseId(value);
+          setCourseTouched(true);
+        }}
+        courseTouched={courseTouched}
+        courseOptions={courseOptions}
+        coursesLoading={loading}
+        durationValue={durationValue}
+        durationType={durationType}
+        onDurationValueChange={(value) => {
+          setDurationValue(value);
+        }}
+        onDurationTypeChange={(value) => {
+          setDurationType(value);
+        }}
+        onDurationBlur={() => setDurationTouched(true)}
+        durationTouched={durationTouched}
+        durationError={durationError}
+        startDate={startDate}
+        onStartDateChange={setStartDate}
+        onStartDateBlur={() => setStartDateTouched(true)}
+        startDateTouched={startDateTouched}
+        endDate={endDate}
+        onEndDateChange={setEndDate}
+        onEndDateBlur={() => setEndDateTouched(true)}
+        endDateTouched={endDateTouched}
+      />
 
       <section className="space-y-3">
         <div>

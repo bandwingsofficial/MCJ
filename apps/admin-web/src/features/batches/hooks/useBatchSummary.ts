@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { batchService } from "@/src/features/batches/services/batch.service";
+import { useBatchLifecycleRefetch } from "@/src/features/batches/hooks/use-batch-lifecycle-refetch";
 import type { BatchSummary } from "@/src/features/batches/types/batch.types";
 
 interface UseBatchSummaryReturn {
@@ -39,6 +40,8 @@ export function useBatchSummary(batchId: string): UseBatchSummaryReturn {
   useEffect(() => {
     void refetch();
   }, [refetch]);
+
+  useBatchLifecycleRefetch(refetch);
 
   return {
     summary,
