@@ -46,6 +46,11 @@ import {
   getEligiblePermanentDeleteIds,
   getEligibleRestoreIds,
 } from "@/src/features/branches/utils/branch-bulk.utils";
+import {
+  buildBranchAdmittedBlockTitle,
+  formatBranchAdmittedBlockDescription,
+  type BranchDestructiveOperation,
+} from "@/src/features/branches/utils/branch-admitted-block.utils";
 
 export default function BranchesPage() {
   const router = useRouter();
@@ -80,6 +85,12 @@ export default function BranchesPage() {
     "ACTIVE" | "INACTIVE" | null
   >(null);
   const [isReordering, setIsReordering] = useState(false);
+  const [isAdmittedCheckLoading, setIsAdmittedCheckLoading] =
+    useState(false);
+  const [admittedBlockedDialog, setAdmittedBlockedDialog] = useState<{
+    title: string;
+    description: string;
+  } | null>(null);
 
   const { updateStatus, isPending: isUpdatingStatus } =
     useUpdateStatus();
@@ -125,7 +136,94 @@ export default function BranchesPage() {
     isRestoring ||
     isPermanentDeleting ||
     isReordering ||
+    isAdmittedCheckLoading ||
     bulkActionLoading;
+
+  const bulkActionNeedsAdmittedCheck = (
+    action: BulkBranchAction,
+  ): action is "deactivate" | "delete" | "permanent-delete" =>
+    action === "deactivate" ||
+    action === "delete" ||
+    action === "permanent-delete";
+
+  const bulkActionToOperation = (
+    action: "deactivate" | "delete" | "permanent-delete",
+  ): BranchDestructiveOperation => {
+    if (action === "deactivate") {
+      return "deactivate";
+    }
+    if (action === "permanent-delete") {
+      return "delete";
+    }
+    return "archive";
+  };
+
+  const openAfterAdmittedCheck = async (
+    branchId: string,
+    operation: BranchDestructiveOperation,
+    onAllowed: () => void,
+  ) => {
+    setIsAdmittedCheckLoading(true);
+    try {
+      const blocks =
+        await branchService.getAdmittedStudentBlocks(branchId);
+
+      if (blocks.length > 0) {
+        setAdmittedBlockedDialog({
+          title: buildBranchAdmittedBlockTitle(operation, false),
+          description: formatBranchAdmittedBlockDescription(
+            blocks,
+            operation,
+          ),
+        });
+        return;
+      }
+
+      onAllowed();
+    } catch (err) {
+      appToast.error(getErrorMessage(err));
+    } finally {
+      setIsAdmittedCheckLoading(false);
+    }
+  };
+
+  const handleBulkToolbarAction = async (action: BulkBranchAction) => {
+    if (!bulkActionNeedsAdmittedCheck(action)) {
+      setBulkConfirmAction(action);
+      return;
+    }
+
+    if (selectedBranchIds.length === 0) {
+      return;
+    }
+
+    const operation = bulkActionToOperation(action);
+
+    setIsAdmittedCheckLoading(true);
+    try {
+      const blocks =
+        await branchService.getBulkAdmittedStudentBlocks(
+          selectedBranchIds,
+        );
+
+      if (blocks.length > 0) {
+        setAdmittedBlockedDialog({
+          title: buildBranchAdmittedBlockTitle(operation, true),
+          description: formatBranchAdmittedBlockDescription(
+            blocks,
+            operation,
+          ),
+        });
+        return;
+      }
+
+      setBulkConfirmAction(action);
+    } catch (err) {
+      appToast.error(getErrorMessage(err));
+    } finally {
+      setIsAdmittedCheckLoading(false);
+    }
+  };
 
   const {
     branch: editBranch,
@@ -386,7 +484,9 @@ export default function BranchesPage() {
             branches={branches}
             selectedBranchIds={selectedBranchIds}
             disabled={actionLoading || isFetching}
-            onAction={setBulkConfirmAction}
+            onAction={(action) => {
+              void handleBulkToolbarAction(action);
+            }}
           />
 
           {isInitialLoading ? (
@@ -439,21 +539,39 @@ export default function BranchesPage() {
                     setIsStatusOpen(true);
                   }}
                   onDeactivate={(item) => {
-                    setSelectedBranch(item);
-                    setStatusTarget("INACTIVE");
-                    setIsStatusOpen(true);
+                    void openAfterAdmittedCheck(
+                      item.id,
+                      "deactivate",
+                      () => {
+                        setSelectedBranch(item);
+                        setStatusTarget("INACTIVE");
+                        setIsStatusOpen(true);
+                      },
+                    );
                   }}
                   onDelete={(item) => {
-                    setSelectedBranch(item);
-                    setIsDeleteOpen(true);
+                    void openAfterAdmittedCheck(
+                      item.id,
+                      "archive",
+                      () => {
+                        setSelectedBranch(item);
+                        setIsDeleteOpen(true);
+                      },
+                    );
                   }}
                   onRestore={(item) => {
                     setSelectedBranch(item);
                     setIsRestoreOpen(true);
                   }}
                   onPermanentDelete={(item) => {
-                    setSelectedBranch(item);
-                    setIsPermanentDeleteOpen(true);
+                    void openAfterAdmittedCheck(
+                      item.id,
+                      "delete",
+                      () => {
+                        setSelectedBranch(item);
+                        setIsPermanentDeleteOpen(true);
+                      },
+                    );
                   }}
                   onReorder={handleReorder}
                 />
@@ -614,6 +732,17 @@ export default function BranchesPage() {
         onConfirm={() => {
           void handleBulkConfirm();
         }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(admittedBlockedDialog)}
+        title={admittedBlockedDialog?.title ?? ""}
+        description={admittedBlockedDialog?.description ?? ""}
+        confirmLabel="OK"
+        confirmVariant="primary"
+        showCancel={false}
+        onCancel={() => setAdmittedBlockedDialog(null)}
+        onConfirm={() => setAdmittedBlockedDialog(null)}
       />
     </div>
   );

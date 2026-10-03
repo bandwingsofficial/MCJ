@@ -14,6 +14,7 @@ import { ERROR_CODES } from '@common/constants/error-codes';
 import { ValidationError } from '../errors/validation.error';
 
 import { BRANCH_TOKENS } from '../../branch.tokens';
+import { assertBranchesHaveNoAdmittedStudents } from '../shared/branch-admitted-student.guard';
 
 export class UpdateBranchStatusHandler {
   private readonly logger = new Logger(
@@ -65,6 +66,14 @@ export class UpdateBranchStatusHandler {
           branch.branchCode.getValue(),
           branch.status,
           branch.updatedAt,
+        );
+      }
+
+      if (command.status === BranchStatus.INACTIVE) {
+        await assertBranchesHaveNoAdmittedStudents(
+          this.branchRepo,
+          [branch.id],
+          'deactivate',
         );
       }
 

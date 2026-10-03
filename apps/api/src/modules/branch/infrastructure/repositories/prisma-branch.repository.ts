@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 
 import type {
+  BranchAdmittedStudentBlock,
   BranchListFilters,
   BranchRepository,
 } from '../../domain/repositories/branch.repository';
@@ -131,6 +132,59 @@ export class PrismaBranchRepository
       categories,
       courseBranches,
     };
+  }
+
+  async findAdmittedStudentBlocksByBranchIds(
+    branchIds: string[],
+  ): Promise<BranchAdmittedStudentBlock[]> {
+    const uniqueIds = [
+      ...new Set(
+        branchIds.map((id) => id?.trim()).filter(Boolean),
+      ),
+    ];
+
+    if (uniqueIds.length === 0) {
+      return [];
+    }
+
+    const rows = await this.prisma.enrollment.findMany({
+      where: {
+        branchId: { in: uniqueIds },
+        status: 'ADMITTED',
+        isDeleted: false,
+        student: { isDeleted: false },
+      },
+      select: {
+        branchId: true,
+        studentId: true,
+        branch: {
+          select: { branchName: true },
+        },
+        student: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      orderBy: [
+        { branch: { branchName: 'asc' } },
+        { student: { firstName: 'asc' } },
+      ],
+    });
+
+    return rows.map((row) => {
+      const parts = [row.student.firstName, row.student.lastName].filter(
+        (part) => part != null && String(part).trim() !== '',
+      );
+
+      return {
+        branchId: row.branchId,
+        branchName: row.branch.branchName,
+        studentId: row.studentId,
+        studentName: parts.join(' ').trim() || 'Student',
+      };
+    });
   }
 
   async getManagementCounts(branchId: string): Promise<{

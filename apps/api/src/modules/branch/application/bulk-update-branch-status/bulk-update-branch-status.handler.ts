@@ -13,6 +13,8 @@ import { parseBulkBranchIds } from '../shared/parse-bulk-branch-ids';
 
 import { BRANCH_TOKENS } from '../../branch.tokens';
 
+import { assertBranchesHaveNoAdmittedStudents } from '../shared/branch-admitted-student.guard';
+
 import { BulkUpdateBranchStatusCommand } from './bulk-update-branch-status.command';
 import { BulkUpdateBranchStatusResult } from './bulk-update-branch-status.result';
 
@@ -35,6 +37,14 @@ export class BulkUpdateBranchStatusHandler {
       );
 
       const branchIds = parseBulkBranchIds(command.branchIds);
+
+      if (command.status === BranchStatus.INACTIVE) {
+        await assertBranchesHaveNoAdmittedStudents(
+          this.branchRepo,
+          branchIds,
+          'deactivate',
+        );
+      }
 
       if (
         command.status !== BranchStatus.ACTIVE &&

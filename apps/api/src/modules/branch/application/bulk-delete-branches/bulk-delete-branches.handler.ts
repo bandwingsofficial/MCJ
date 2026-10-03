@@ -11,6 +11,8 @@ import { parseBulkBranchIds } from '../shared/parse-bulk-branch-ids';
 
 import { BRANCH_TOKENS } from '../../branch.tokens';
 
+import { assertBranchesHaveNoAdmittedStudents } from '../shared/branch-admitted-student.guard';
+
 import { BulkDeleteBranchesCommand } from './bulk-delete-branches.command';
 import { BulkDeleteBranchesResult } from './bulk-delete-branches.result';
 
@@ -33,6 +35,13 @@ export class BulkDeleteBranchesHandler {
       );
 
       const branchIds = parseBulkBranchIds(command.branchIds);
+
+      await assertBranchesHaveNoAdmittedStudents(
+        this.branchRepo,
+        branchIds,
+        'archive',
+      );
+
       const itemResults: BulkBranchItemResult[] = [];
       const branchesToDelete: Branch[] = [];
 

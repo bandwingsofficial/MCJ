@@ -18,6 +18,13 @@ import { RestoreBranchDialog } from "@/src/features/branches/components/restore-
 import { BranchManageHeader } from "@/src/features/branches/components/manage/branch-manage-header";
 import { BranchManageWorkspace } from "@/src/features/branches/components/manage/branch-manage-workspace";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
+import { branchService } from "@/src/features/branches/services/branch.service";
+import {
+  buildBranchAdmittedBlockTitle,
+  formatBranchAdmittedBlockDescription,
+  type BranchDestructiveOperation,
+} from "@/src/features/branches/utils/branch-admitted-block.utils";
 
 interface Props {
   branchId: string;
@@ -73,9 +80,46 @@ export function BranchManagePage({ branchId }: Props) {
   const [activeSection, setActiveSection] = useState<string | undefined>(
     undefined,
   );
+  const [isAdmittedCheckLoading, setIsAdmittedCheckLoading] =
+    useState(false);
+  const [admittedBlockedDialog, setAdmittedBlockedDialog] = useState<{
+    title: string;
+    description: string;
+  } | null>(null);
 
   const actionsDisabled =
-    isArchiving || isRestoring || isPermanentlyDeleting;
+    isArchiving ||
+    isRestoring ||
+    isPermanentlyDeleting ||
+    isAdmittedCheckLoading;
+
+  const openAfterAdmittedCheck = async (
+    operation: BranchDestructiveOperation,
+    onAllowed: () => void,
+  ) => {
+    setIsAdmittedCheckLoading(true);
+    try {
+      const blocks =
+        await branchService.getAdmittedStudentBlocks(branchId);
+
+      if (blocks.length > 0) {
+        setAdmittedBlockedDialog({
+          title: buildBranchAdmittedBlockTitle(operation, false),
+          description: formatBranchAdmittedBlockDescription(
+            blocks,
+            operation,
+          ),
+        });
+        return;
+      }
+
+      onAllowed();
+    } catch (error) {
+      appToast.error(getErrorMessage(error));
+    } finally {
+      setIsAdmittedCheckLoading(false);
+    }
+  };
 
   if (isLoading) {
     return <Loader />;
@@ -119,11 +163,17 @@ export function BranchManagePage({ branchId }: Props) {
         branch={branch}
         activeSection={activeSection}
         actionsDisabled={actionsDisabled}
-        onArchive={() => setIsArchiveOpen(true)}
+        onArchive={() => {
+          void openAfterAdmittedCheck("archive", () => {
+            setIsArchiveOpen(true);
+          });
+        }}
         onRestore={() => setIsRestoreOpen(true)}
-        onPermanentDelete={() =>
-          setIsPermanentDeleteOpen(true)
-        }
+        onPermanentDelete={() => {
+          void openAfterAdmittedCheck("delete", () => {
+            setIsPermanentDeleteOpen(true);
+          });
+        }}
       />
 
       <BranchManageWorkspace
@@ -184,6 +234,17 @@ export function BranchManagePage({ branchId }: Props) {
           setIsPermanentDeleteOpen(false);
           router.push("/branches");
         }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(admittedBlockedDialog)}
+        title={admittedBlockedDialog?.title ?? ""}
+        description={admittedBlockedDialog?.description ?? ""}
+        confirmLabel="OK"
+        confirmVariant="primary"
+        showCancel={false}
+        onCancel={() => setAdmittedBlockedDialog(null)}
+        onConfirm={() => setAdmittedBlockedDialog(null)}
       />
     </div>
   );

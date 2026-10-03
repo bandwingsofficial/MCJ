@@ -12,6 +12,7 @@ import { ValidationError } from '../errors/validation.error';
 import { formatBranchBlockingMessage } from '../shared/format-branch-blocking-message';
 import type { BulkBranchItemResult } from '../shared/bulk-branch-operation.result';
 import { parseBulkBranchIds } from '../shared/parse-bulk-branch-ids';
+import { assertBranchesHaveNoAdmittedStudents } from '../shared/branch-admitted-student.guard';
 
 import { BulkPermanentDeleteBranchesCommand } from './bulk-permanent-delete-branches.command';
 import { BulkPermanentDeleteBranchesResult } from './bulk-permanent-delete-branches.result';
@@ -59,6 +60,13 @@ export class BulkPermanentDeleteBranchesHandler {
       );
 
       const branchIds = parseBulkBranchIds(command.branchIds);
+
+      await assertBranchesHaveNoAdmittedStudents(
+        this.branchRepo,
+        branchIds,
+        'delete',
+      );
+
       const itemResults: BulkBranchItemResult[] = [];
 
       for (const branchId of branchIds) {

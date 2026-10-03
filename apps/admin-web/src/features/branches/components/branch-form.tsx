@@ -40,8 +40,6 @@ import { Label } from "@/src/shared/components/ui/label";
 import { FormError } from "@/src/shared/components/ui/form-error";
 import {
   FieldVisualState,
-  IconValidatedField,
-  iconDecorInputClass,
   ValidatedField,
   validatedFieldInputClass,
 } from "@/src/shared/components/ui/validated-field";
@@ -65,19 +63,27 @@ const ACCEPTED_TYPES = [
   "image/gif",
 ];
 
-function iconInputClass(state: FieldVisualState, extra = "") {
-  return iconDecorInputClass(state, cn("w-full min-w-0 max-w-full", extra));
+function leftIconInputClass(
+  state: FieldVisualState,
+  extra = "",
+  options?: { textarea?: boolean },
+) {
+  return validatedFieldInputClass(
+    state,
+    cn("w-full min-w-0 max-w-full", extra),
+    { leftIcon: true, textarea: options?.textarea },
+  );
 }
 
-function IconField({
+function LeftIconField({
   label,
   required,
   state,
   errorMessage,
   checkingMessage,
   successMessage,
-  icon,
-  select,
+  icon: Icon,
+  textarea,
   children,
 }: {
   label: string;
@@ -87,22 +93,22 @@ function IconField({
   checkingMessage?: string;
   successMessage?: string;
   icon: LucideIcon;
-  select?: boolean;
+  textarea?: boolean;
   children: ReactNode;
 }) {
   return (
-    <IconValidatedField
+    <ValidatedField
       label={label}
       required={required}
       state={state}
       errorMessage={errorMessage}
       checkingMessage={checkingMessage}
       successMessage={successMessage}
-      icon={icon}
-      select={select}
+      textarea={textarea}
+      leftIcon={<Icon className="h-4 w-4" aria-hidden />}
     >
       {children}
-    </IconValidatedField>
+    </ValidatedField>
   );
 }
 
@@ -444,10 +450,10 @@ export function BranchForm({
 
   const nameState: FieldVisualState = nameChecking
     ? "checking"
-    : nameAvailable === false || errors.branchName
-      ? "invalid"
-      : !nameTouched
-        ? "neutral"
+    : !nameTouched
+      ? "neutral"
+      : nameAvailable === false || errors.branchName
+        ? "invalid"
         : nameAvailable === true
           ? "valid"
           : errors.branchName
@@ -458,10 +464,10 @@ export function BranchForm({
     ? "checking"
     : codeChecking
       ? "checking"
-      : codeAvailable === false || errors.branchCode
-        ? "invalid"
-        : !codeTouched
-          ? "neutral"
+      : !codeTouched
+        ? "neutral"
+        : codeAvailable === false || errors.branchCode
+          ? "invalid"
           : codeAvailable === true
             ? "valid"
             : errors.branchCode
@@ -493,6 +499,12 @@ export function BranchForm({
       return "invalid";
     }
 
+    if (typeof raw === "number") {
+      if (!Number.isFinite(raw) || raw <= 0) {
+        return "invalid";
+      }
+    }
+
     return "valid";
   };
 
@@ -508,7 +520,7 @@ export function BranchForm({
       errorMessage: errors[name]?.message,
       inputProps: {
         ...registration,
-        className: iconInputClass(state),
+        className: leftIconInputClass(state),
         onBlur: (
           event: FocusEvent<HTMLInputElement>
         ) => {
@@ -663,7 +675,7 @@ export function BranchForm({
       noValidate
     >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <IconField
+        <LeftIconField
           label="Branch Name"
           required
           state={nameState}
@@ -676,7 +688,7 @@ export function BranchForm({
           <Input
             {...nameRegister}
             placeholder="Enter branch name"
-            className={iconInputClass(nameState)}
+            className={leftIconInputClass(nameState)}
             onBlur={(event) => {
               nameRegister.onBlur(event);
               setNameTouched(true);
@@ -688,9 +700,9 @@ export function BranchForm({
               void trigger("branchName");
             }}
           />
-        </IconField>
+        </LeftIconField>
 
-        <IconField
+        <LeftIconField
           label="Branch Code"
           required
           state={codeState}
@@ -705,16 +717,16 @@ export function BranchForm({
             {...codeRegister}
             readOnly
             placeholder="MCJB001"
-            className={iconInputClass(codeState, "bg-slate-50")}
+            className={leftIconInputClass(codeState, "bg-slate-50")}
             onBlur={(event) => {
               codeRegister.onBlur(event);
               setCodeTouched(true);
               void trigger("branchCode");
             }}
           />
-        </IconField>
+        </LeftIconField>
 
-        <IconField
+        <LeftIconField
           label="Email"
           required
           state={emailField.state}
@@ -725,9 +737,9 @@ export function BranchForm({
             {...emailField.inputProps}
             placeholder="Enter branch email"
           />
-        </IconField>
+        </LeftIconField>
 
-        <IconField
+        <LeftIconField
           label="Phone"
           required
           state={phoneField.state}
@@ -738,9 +750,9 @@ export function BranchForm({
             {...phoneField.inputProps}
             placeholder="Enter branch phone number"
           />
-        </IconField>
+        </LeftIconField>
 
-        <IconField
+        <LeftIconField
           label="Address Line 1"
           required
           state={address1Field.state}
@@ -751,21 +763,21 @@ export function BranchForm({
             {...address1Field.inputProps}
             placeholder="Enter address line 1"
           />
-        </IconField>
+        </LeftIconField>
 
-        <IconField
-          label="Address Line 2"
+        <LeftIconField
+          label="Address Line 2 (Optional)"
           state="neutral"
           icon={MapPinned}
         >
           <Input
             {...register("addressLine2")}
-            placeholder="Enter address line 2 (optional)"
-            className={iconInputClass("neutral")}
+            placeholder="Enter address line 2"
+            className={leftIconInputClass("neutral")}
           />
-        </IconField>
+        </LeftIconField>
 
-        <IconField
+        <LeftIconField
           label="City"
           required
           state={cityField.state}
@@ -776,9 +788,9 @@ export function BranchForm({
             {...cityField.inputProps}
             placeholder="Enter city"
           />
-        </IconField>
+        </LeftIconField>
 
-        <IconField
+        <LeftIconField
           label="State"
           required
           state={stateField.state}
@@ -789,9 +801,9 @@ export function BranchForm({
             {...stateField.inputProps}
             placeholder="Enter state"
           />
-        </IconField>
+        </LeftIconField>
 
-        <IconField
+        <LeftIconField
           label="Country"
           required
           state={countryField.state}
@@ -802,9 +814,9 @@ export function BranchForm({
             {...countryField.inputProps}
             placeholder="Enter country"
           />
-        </IconField>
+        </LeftIconField>
 
-        <IconField
+        <LeftIconField
           label="Postal Code"
           required
           state={postalField.state}
@@ -815,9 +827,9 @@ export function BranchForm({
             {...postalField.inputProps}
             placeholder="Enter postal code"
           />
-        </IconField>
+        </LeftIconField>
 
-        <IconField
+        <LeftIconField
           label="Latitude"
           required
           state={latField.state}
@@ -830,9 +842,9 @@ export function BranchForm({
             {...latField.inputProps}
             placeholder="Enter latitude"
           />
-        </IconField>
+        </LeftIconField>
 
-        <IconField
+        <LeftIconField
           label="Longitude"
           required
           state={lngField.state}
@@ -845,26 +857,24 @@ export function BranchForm({
             {...lngField.inputProps}
             placeholder="Enter longitude"
           />
-        </IconField>
+        </LeftIconField>
       </div>
 
-      <div>
-        <Label>Description</Label>
-        <div className="relative mt-1.5">
-          <Textarea
-            {...register("description")}
-            placeholder="Enter branch description (optional)"
-            className="min-h-[96px] pr-16"
-          />
-          <FileText
-            className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-slate-400"
-            aria-hidden="true"
-          />
-        </div>
-        <FormError
-          message={errors.description?.message}
+      <LeftIconField
+        label="Description (Optional)"
+        state="neutral"
+        icon={FileText}
+        textarea
+      >
+        <Textarea
+          {...register("description")}
+          placeholder="Enter branch description"
+          className={leftIconInputClass("neutral", "min-h-[96px]", {
+            textarea: true,
+          })}
         />
-      </div>
+      </LeftIconField>
+      <FormError message={errors.description?.message} />
 
       <div className="min-w-0">
         <Label required>Branch Image</Label>

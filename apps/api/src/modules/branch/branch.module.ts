@@ -36,6 +36,7 @@ import { BulkUpdateBranchStatusHandler } from './application/bulk-update-branch-
 import { BulkDeleteBranchesHandler } from './application/bulk-delete-branches/bulk-delete-branches.handler';
 import { BulkRestoreBranchesHandler } from './application/bulk-restore-branches/bulk-restore-branches.handler';
 import { BulkPermanentDeleteBranchesHandler } from './application/bulk-permanent-delete-branches/bulk-permanent-delete-branches.handler';
+import { GetBranchAdmittedStudentBlocksHandler } from './application/get-branch-admitted-student-blocks/get-branch-admitted-student-blocks.handler';
 
 import type { BranchRepository } from './domain/repositories/branch.repository';
 import { BranchDomainService } from './domain/services/branch-domain.service';
@@ -277,6 +278,13 @@ import type { BatchRepository } from '../batch/domain/repositories/batch.reposit
         BRANCH_TOKENS.BRANCH_REPOSITORY,
         UploadDomainService,
       ],
+    },
+
+    {
+      provide: GetBranchAdmittedStudentBlocksHandler,
+      useFactory: (branchRepo: BranchRepository) =>
+        new GetBranchAdmittedStudentBlocksHandler(branchRepo),
+      inject: [BRANCH_TOKENS.BRANCH_REPOSITORY],
     },
 
     {

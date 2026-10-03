@@ -59,6 +59,8 @@ import { UpdateBranchStatusDto } from '../dtos/update-branch-status.dto';
 import { ReorderBranchesDto } from '../dtos/reorder-branches.dto';
 import { RestoreBranchCommand } from '../../application/restore-branch/restore-branch.command';
 import { RestoreBranchHandler } from '../../application/restore-branch/restore-branch.handler';
+import { GetBranchAdmittedStudentBlocksHandler } from '../../application/get-branch-admitted-student-blocks/get-branch-admitted-student-blocks.handler';
+import { GetBranchAdmittedStudentBlocksQuery } from '../../application/get-branch-admitted-student-blocks/get-branch-admitted-student-blocks.query';
 
 @UseGuards(JwtAuthGuard)
 @Controller('admin/branches')
@@ -95,6 +97,8 @@ export class BranchController {
     private readonly bulkRestoreBranchesHandler: BulkRestoreBranchesHandler,
 
     private readonly bulkPermanentDeleteBranchesHandler: BulkPermanentDeleteBranchesHandler,
+
+    private readonly getBranchAdmittedStudentBlocksHandler: GetBranchAdmittedStudentBlocksHandler,
   ) {}
 
   @Post()
@@ -202,6 +206,21 @@ export class BranchController {
       data: result,
     };
   }
+  @Post('bulk/admitted-student-blocks')
+  async getBulkAdmittedStudentBlocks(
+    @Body() dto: BulkBranchIdsDto,
+  ) {
+    const result =
+      await this.getBranchAdmittedStudentBlocksHandler.execute(
+        new GetBranchAdmittedStudentBlocksQuery(dto.branchIds),
+      );
+
+    return {
+      message: 'Branch admitted student blocks fetched successfully',
+      data: result,
+    };
+  }
+
   @Patch('bulk/status')
   async bulkUpdateStatus(
     @Body() dto: BulkUpdateBranchStatusDto,
@@ -289,6 +308,19 @@ export class BranchController {
 
     return {
       message: 'Branches permanently deleted successfully',
+      data: result,
+    };
+  }
+
+  @Get(':id/admitted-student-blocks')
+  async getAdmittedStudentBlocks(@Param('id') id: string) {
+    const result =
+      await this.getBranchAdmittedStudentBlocksHandler.execute(
+        new GetBranchAdmittedStudentBlocksQuery([id]),
+      );
+
+    return {
+      message: 'Branch admitted student blocks fetched successfully',
       data: result,
     };
   }

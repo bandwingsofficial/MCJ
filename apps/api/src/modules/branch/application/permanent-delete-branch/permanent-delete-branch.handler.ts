@@ -10,6 +10,7 @@ import { UploadDomainService } from '@/modules/uploads/domain/services/upload-do
 import { BRANCH_TOKENS } from '../../branch.tokens';
 
 import { ValidationError } from '../errors/validation.error';
+import { assertBranchesHaveNoAdmittedStudents } from '../shared/branch-admitted-student.guard';
 
 import { PermanentDeleteBranchCommand } from './permanent-delete-branch.command';
 import { PermanentDeleteBranchResult } from './permanent-delete-branch.result';
@@ -70,6 +71,12 @@ export class PermanentDeleteBranchHandler {
           400,
         );
       }
+
+      await assertBranchesHaveNoAdmittedStudents(
+        this.branchRepo,
+        [branch.id],
+        'delete',
+      );
 
       const refs = await this.branchRepo.countBlockingReferences(
         branch.id,

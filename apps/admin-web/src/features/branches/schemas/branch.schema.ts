@@ -1,5 +1,29 @@
 import { z } from "zod";
 
+function requiredPositiveCoordinate(
+  fieldLabel: "Latitude" | "Longitude",
+) {
+  const requiredMessage =
+    fieldLabel === "Latitude"
+      ? "Latitude is required."
+      : "Longitude is required.";
+  const greaterThanZeroMessage =
+    fieldLabel === "Latitude"
+      ? "Latitude must be greater than 0."
+      : "Longitude must be greater than 0.";
+
+  return z.coerce
+    .number({
+      message: requiredMessage,
+    })
+    .refine((value) => Number.isFinite(value), {
+      message: requiredMessage,
+    })
+    .refine((value) => value > 0, {
+      message: greaterThanZeroMessage,
+    });
+}
+
 export const createBranchSchema = z.object({
   branchName: z
     .string()
@@ -47,13 +71,9 @@ export const createBranchSchema = z.object({
     .trim()
     .min(3, "Postal Code is required."),
 
-  latitude: z.coerce.number({
-    message: "Latitude is required.",
-  }),
+  latitude: requiredPositiveCoordinate("Latitude"),
 
-  longitude: z.coerce.number({
-    message: "Longitude is required.",
-  }),
+  longitude: requiredPositiveCoordinate("Longitude"),
 
   description: z.string().optional(),
 });

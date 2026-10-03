@@ -104,6 +104,26 @@ class BranchService {
     }
   }
 
+  async getAdmittedStudentBlocks(branchId: string) {
+    try {
+      const response =
+        await branchApi.getAdmittedStudentBlocks(branchId);
+      return response.data.blocks ?? [];
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getBulkAdmittedStudentBlocks(branchIds: string[]) {
+    try {
+      const response =
+        await branchApi.getBulkAdmittedStudentBlocks(branchIds);
+      return response.data.blocks ?? [];
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async assignCategories(
     branchId: string,
     categoryIds: string[]

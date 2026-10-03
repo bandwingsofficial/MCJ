@@ -68,4 +68,36 @@ describe("createBranchSchema", () => {
       );
     }
   });
+
+  it("rejects latitude of 0", () => {
+    const result = createBranchSchema.safeParse({
+      ...validBase,
+      latitude: 0,
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some(
+          (issue) =>
+            issue.message === "Latitude must be greater than 0.",
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it("rejects longitude of 0", () => {
+    const result = createBranchSchema.safeParse({
+      ...validBase,
+      longitude: 0,
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some(
+          (issue) =>
+            issue.message === "Longitude must be greater than 0.",
+        ),
+      ).toBe(true);
+    }
+  });
 });

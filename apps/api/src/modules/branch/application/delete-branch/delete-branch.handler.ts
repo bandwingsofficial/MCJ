@@ -13,6 +13,7 @@ import { ERROR_CODES } from '@common/constants/error-codes';
 import { ValidationError } from '../errors/validation.error';
 
 import { BRANCH_TOKENS } from '../../branch.tokens';
+import { assertBranchesHaveNoAdmittedStudents } from '../shared/branch-admitted-student.guard';
 
 export class DeleteBranchHandler {
   private readonly logger = new Logger(
@@ -46,6 +47,12 @@ export class DeleteBranchHandler {
 
       this.domainService.ensureBranchExists(
         branch,
+      );
+
+      await assertBranchesHaveNoAdmittedStudents(
+        this.branchRepo,
+        [branch.id],
+        'archive',
       );
 
       const deletedDisplayOrder = branch.displayOrder;

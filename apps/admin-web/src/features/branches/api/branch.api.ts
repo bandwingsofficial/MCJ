@@ -6,6 +6,7 @@ import {
   BranchFilters,
   BranchListResponse,
   BulkBranchOperationResult,
+  BranchAdmittedStudentBlocksResponse,
   CheckBranchAvailabilityResponse,
   CreateBranchRequest,
   SuggestBranchCodeResponse,
@@ -346,6 +347,24 @@ export const branchApi = {
         displayOrder: number;
       }>
     >("/admin/branches/reorder", payload);
+
+    return response.data;
+  },
+
+  async getAdmittedStudentBlocks(branchId: string) {
+    const response = await apiClient.get<
+      ApiResponse<BranchAdmittedStudentBlocksResponse>
+    >(`/admin/branches/${branchId}/admitted-student-blocks`);
+
+    return response.data;
+  },
+
+  async getBulkAdmittedStudentBlocks(branchIds: string[]) {
+    const response = await apiClient.post<
+      ApiResponse<BranchAdmittedStudentBlocksResponse>
+    >("/admin/branches/bulk/admitted-student-blocks", {
+      branchIds,
+    });
 
     return response.data;
   },

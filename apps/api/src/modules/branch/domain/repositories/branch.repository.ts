@@ -30,6 +30,13 @@ export interface BranchBlockingReferences {
   courseBranches: number;
 }
 
+export interface BranchAdmittedStudentBlock {
+  branchId: string;
+  branchName: string;
+  studentId: string;
+  studentName: string;
+}
+
 export interface BranchAssignableTrainer {
   id: string;
   status: string;
@@ -106,6 +113,10 @@ export interface BranchRepository {
   countBlockingReferences(
     branchId: string,
   ): Promise<BranchBlockingReferences>;
+
+  findAdmittedStudentBlocksByBranchIds(
+    branchIds: string[],
+  ): Promise<BranchAdmittedStudentBlock[]>;
 
   getManagementCounts(branchId: string): Promise<{
     students: number;

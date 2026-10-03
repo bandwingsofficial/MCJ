@@ -197,6 +197,17 @@ export interface BulkBranchItemResult {
   status?: BranchStatus;
 }
 
+export interface BranchAdmittedStudentBlock {
+  branchId: string;
+  branchName: string;
+  studentId: string;
+  studentName: string;
+}
+
+export interface BranchAdmittedStudentBlocksResponse {
+  blocks: BranchAdmittedStudentBlock[];
+}
+
 export interface BulkBranchOperationResult {
   requestedCount: number;
   processedCount: number;
