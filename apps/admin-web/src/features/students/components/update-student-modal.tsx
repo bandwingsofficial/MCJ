@@ -91,6 +91,7 @@ export function UpdateStudentModal({
   const handleSubmit = async (
     values: CreateStudentFormValues,
     image: File | null,
+    removeImage: boolean,
   ) => {
     if (!student) {
       return;
@@ -107,9 +108,16 @@ export function UpdateStudentModal({
         try {
           const uploadResponse = await studentService.uploadStudentImage(image);
           profileImageFileId = getUploadFileId(uploadResponse);
+        } catch (uploadError) {
+          setServerErrors({
+            profileImage: getErrorMessage(uploadError),
+          });
+          return;
         } finally {
           setIsUploadingImage(false);
         }
+      } else if (removeImage) {
+        profileImageFileId = null;
       }
 
       const payload: UpdateStudentRequest = {
@@ -119,8 +127,8 @@ export function UpdateStudentModal({
 
       await updateStudent(student.id, payload);
       appToast.success("Student updated successfully");
-      await onSuccess();
       onClose();
+      await onSuccess();
     } catch (error) {
       applySubmitError(error);
     }

@@ -4,6 +4,7 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
@@ -41,25 +42,25 @@ export class CreateStudentDto {
   @Transform(({ value }) => trimOrUndefined(value))
   lastName?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
   @IsEmail()
+  @IsNotEmpty()
   @Transform(({ value }) =>
     typeof value === 'string'
       ? value.trim().toLowerCase()
       : value,
   )
-  email?: string;
+  email!: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty()
+  @IsNotEmpty()
   @Matches(/^\+?[0-9]{7,15}$/)
   @Transform(({ value }) =>
     typeof value === 'string'
       ? value.replace(/[\s-]/g, '').trim()
       : value,
   )
-  phone?: string;
+  phone!: string;
 
   @ApiPropertyOptional({ enum: StudentGender })
   @IsOptional()

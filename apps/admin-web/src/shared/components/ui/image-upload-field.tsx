@@ -46,6 +46,7 @@ export function ImageUploadField({
   const [isDragging, setIsDragging] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [imageBroken, setImageBroken] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!file) {
@@ -63,14 +64,28 @@ export function ImageUploadField({
   }, [file]);
 
   const displayUrl = localPreview ?? previewUrl ?? null;
+  const isLocalBlobPreview = Boolean(
+    localPreview && displayUrl?.startsWith("blob:"),
+  );
   const hasPreview = Boolean(displayUrl && !imageBroken);
-  const visualState: FieldVisualState = error ? "invalid" : state;
+  const displayError = error ?? validationError;
+  const visualState: FieldVisualState = displayError ? "invalid" : state;
 
   const handleFile = (nextFile: File | null) => {
     if (!nextFile) {
       return;
     }
 
+    if (validateFile) {
+      const validationMessage = validateFile(nextFile);
+      if (validationMessage) {
+        setValidationError(validationMessage);
+        onFileSelect(null);
+        return;
+      }
+    }
+
+    setValidationError(null);
     onFileSelect(nextFile);
   };
 
@@ -100,14 +115,24 @@ export function ImageUploadField({
               compact ? "h-28" : "h-40",
             )}
           >
-            <Image
-              src={displayUrl!}
-              alt={previewAlt ?? `${entityLabel} image preview`}
-              width={480}
-              height={270}
-              className="h-full w-full object-cover"
-              onError={() => setImageBroken(true)}
-            />
+            {isLocalBlobPreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={displayUrl!}
+                alt={previewAlt ?? `${entityLabel} image preview`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <Image
+                src={displayUrl!}
+                alt={previewAlt ?? `${entityLabel} image preview`}
+                width={480}
+                height={270}
+                unoptimized
+                className="h-full w-full object-cover"
+                onError={() => setImageBroken(true)}
+              />
+            )}
           </div>
 
           <div className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700">
@@ -188,7 +213,11 @@ export function ImageUploadField({
         </div>
       )}
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {displayError ? (
+        <p role="alert" className="text-sm text-red-600">
+          {displayError}
+        </p>
+      ) : null}
 
       <input
         ref={inputRef}
@@ -202,7 +231,7 @@ export function ImageUploadField({
         }}
       />
 
-      {imageBroken && previewUrl ? (
+      {imageBroken && previewUrl && !localPreview ? (
         <div className="flex items-center gap-2 text-sm text-[#647A9B]">
           <ImageIcon className="h-4 w-4" />
           Unable to preview the existing image.

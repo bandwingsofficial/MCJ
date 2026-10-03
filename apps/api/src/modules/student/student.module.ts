@@ -47,6 +47,7 @@ import { BulkDeleteStudentsHandler } from './application/bulk-delete-students/bu
 import { BulkRestoreStudentsHandler } from './application/bulk-restore-students/bulk-restore-students.handler';
 import { BulkUpdateStudentStatusHandler } from './application/bulk-update-student-status/bulk-update-student-status.handler';
 import { BulkPermanentDeleteStudentsHandler } from './application/bulk-permanent-delete-students/bulk-permanent-delete-students.handler';
+import { GetStudentAdmittedEnrollmentBlocksHandler } from './application/get-student-admitted-enrollment-blocks/get-student-admitted-enrollment-blocks.handler';
 import { CreateStudentDocumentHandler } from './application/create-student-document/create-student-document.handler';
 import { DeleteStudentDocumentHandler } from './application/delete-student-document/delete-student-document.handler';
 import { ListStudentDocumentsHandler } from './application/list-student-documents/list-student-documents.handler';
@@ -422,6 +423,13 @@ import { PublicStudentController } from './presentation/controllers/public-stude
         STUDENT_TOKENS.STUDENT_REPOSITORY,
         StudentDomainService,
       ],
+    },
+
+    {
+      provide: GetStudentAdmittedEnrollmentBlocksHandler,
+      useFactory: (studentRepo: StudentRepository) =>
+        new GetStudentAdmittedEnrollmentBlocksHandler(studentRepo),
+      inject: [STUDENT_TOKENS.STUDENT_REPOSITORY],
     },
 
     {

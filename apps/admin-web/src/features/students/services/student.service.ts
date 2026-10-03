@@ -237,17 +237,41 @@ class StudentService {
   }
 
   async uploadStudentImage(file: File) {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("folder", "students");
-    formData.append("fileName", file.name);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "students");
+      formData.append("fileName", file.name);
 
-    const response = await apiClient.post("/admin/uploads", formData, {
-      headers: { "Content-Type": undefined },
-      transformRequest: [(data) => data],
-    });
+      const response = await apiClient.post("/admin/uploads", formData, {
+        headers: { "Content-Type": undefined },
+        transformRequest: [(data) => data],
+      });
 
-    return response.data;
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getAdmittedEnrollmentBlocks(studentId: string) {
+    try {
+      const response =
+        await studentApi.getAdmittedEnrollmentBlocks(studentId);
+      return response.data.blocks ?? [];
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getBulkAdmittedEnrollmentBlocks(studentIds: string[]) {
+    try {
+      const response =
+        await studentApi.getBulkAdmittedEnrollmentBlocks(studentIds);
+      return response.data.blocks ?? [];
+    } catch (error) {
+      throw this.handleError(error);
+    }
   }
 }
 

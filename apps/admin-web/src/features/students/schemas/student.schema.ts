@@ -16,14 +16,17 @@ const optionalPhone = z
     message: "Please enter a valid phone number",
   });
 
-const optionalEmail = z
+const requiredEmail = z
   .string()
   .trim()
-  .optional()
-  .or(z.literal(""))
-  .refine((value) => !value || z.string().email().safeParse(value).success, {
-    message: "Please enter a valid email address",
-  });
+  .min(1, "Email is required.")
+  .email("Please enter a valid email address.");
+
+const requiredPhone = z
+  .string()
+  .trim()
+  .min(1, "Phone is required.")
+  .regex(phoneRegex, "Please enter a valid phone number.");
 
 export const studentSchema = z.object({
   studentCode: z.string().optional(),
@@ -41,9 +44,9 @@ export const studentSchema = z.object({
     .optional()
     .or(z.literal("")),
 
-  email: optionalEmail,
+  email: requiredEmail,
 
-  phone: optionalPhone,
+  phone: requiredPhone,
 
   gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
 
@@ -60,11 +63,36 @@ export const studentSchema = z.object({
   collegeName: z.string().trim().max(200).optional().or(z.literal("")),
   specialization: z.string().trim().max(160).optional().or(z.literal("")),
 
-  passingYear: z
-    .number()
-    .min(1900)
-    .max(currentYear + 10)
-    .optional(),
+  passingYear: z.preprocess((value) => {
+    if (value === "" || value === null || value === undefined) {
+      return undefined;
+    }
+
+    if (typeof value === "number" && Number.isNaN(value)) {
+      return undefined;
+    }
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed === "") {
+        return undefined;
+      }
+
+      const parsed = Number(trimmed);
+      return Number.isNaN(parsed) ? value : parsed;
+    }
+
+    return value;
+  }, z
+    .number({
+      message: "Passing year must be a valid number.",
+    })
+    .min(1900, "Passing year must be at least 1900.")
+    .max(
+      currentYear + 10,
+      `Passing year cannot exceed ${currentYear + 10}.`,
+    )
+    .optional()),
 
   parentName: z.string().trim().max(80).optional().or(z.literal("")),
   parentPhone: optionalPhone,

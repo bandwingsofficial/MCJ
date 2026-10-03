@@ -16,15 +16,12 @@ import { useCreateStudent } from "@/src/features/students/hooks/useCreateStudent
 import { studentService } from "@/src/features/students/services/student.service";
 import { toCreateStudentRequest } from "@/src/features/students/utils/student-form.utils";
 import type { CreateStudentFormValues } from "@/src/features/students/schemas/create-student.schema";
-import type {
-  CreateStudentRequest,
-  Student,
-} from "@/src/features/students/types/student.types";
+import type { CreateStudentRequest } from "@/src/features/students/types/student.types";
 
 interface CreateStudentModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: (student: Student) => void | Promise<void>;
+  onSuccess: () => void | Promise<void>;
 }
 
 export function CreateStudentModal({
@@ -79,15 +76,20 @@ export function CreateStudentModal({
         try {
           const uploadResponse = await studentService.uploadStudentImage(image);
           payload.profileImageFileId = getUploadFileId(uploadResponse);
+        } catch (uploadError) {
+          setServerErrors({
+            profileImage: getErrorMessage(uploadError),
+          });
+          return;
         } finally {
           setIsUploadingImage(false);
         }
       }
 
-      const createdStudent = await createStudent(payload);
+      await createStudent(payload);
       appToast.success("Student created successfully");
-      await onSuccess(createdStudent);
       onClose();
+      await onSuccess();
     } catch (error) {
       applySubmitError(error);
     }

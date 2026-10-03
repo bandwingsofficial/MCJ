@@ -39,6 +39,10 @@ import {
   getEligibleRestoreIds,
 } from "@/src/features/students/utils/student-bulk.utils";
 import { studentManagePath } from "@/src/features/students/utils/student-manage.routes";
+import {
+  buildStudentDeleteBlockedTitle,
+  formatStudentAdmittedEnrollmentBlockDescription,
+} from "@/src/features/students/utils/student-admitted-enrollment-block.utils";
 
 export function StudentsPage() {
   const router = useRouter();
@@ -74,6 +78,11 @@ export function StudentsPage() {
   const [permanentDeleteTarget, setPermanentDeleteTarget] =
     useState<StudentListItem | null>(null);
   const [isBulkLoading, setIsBulkLoading] = useState(false);
+  const [isDeleteCheckLoading, setIsDeleteCheckLoading] = useState(false);
+  const [deleteBlockedDialog, setDeleteBlockedDialog] = useState<{
+    title: string;
+    description: string;
+  } | null>(null);
   const [branches, setBranches] = useState<BranchOption[]>([]);
 
   const pageSize = filters.pageSize ?? 20;
@@ -96,7 +105,8 @@ export function StudentsPage() {
     isDeactivating ||
     isRestoring ||
     isPermanentlyDeleting ||
-    isBulkLoading;
+    isBulkLoading ||
+    isDeleteCheckLoading;
 
   useEffect(() => {
     const loadFilterOptions = async () => {
@@ -151,6 +161,41 @@ export function StudentsPage() {
         return [];
     }
   }, [bulkConfirmAction, students, selectedStudentIds]);
+
+  const handleBulkToolbarAction = async (action: BulkStudentAction) => {
+    if (action !== "delete") {
+      setBulkConfirmAction(action);
+      return;
+    }
+
+    if (selectedStudentIds.length === 0) {
+      return;
+    }
+
+    setIsDeleteCheckLoading(true);
+    try {
+      const blocks =
+        await studentService.getBulkAdmittedEnrollmentBlocks(
+          selectedStudentIds,
+        );
+
+      if (blocks.length > 0) {
+        setDeleteBlockedDialog({
+          title: buildStudentDeleteBlockedTitle(true),
+          description: formatStudentAdmittedEnrollmentBlockDescription(
+            blocks,
+          ),
+        });
+        return;
+      }
+
+      setBulkConfirmAction(action);
+    } catch (err) {
+      appToast.error(getErrorMessage(err));
+    } finally {
+      setIsDeleteCheckLoading(false);
+    }
+  };
 
   const handleBulkConfirm = async () => {
     if (!bulkConfirmAction || eligibleBulkIds.length === 0) {
@@ -288,7 +333,9 @@ export function StudentsPage() {
             students={students}
             selectedStudentIds={selectedStudentIds}
             disabled={actionLoading || isFetching}
-            onAction={setBulkConfirmAction}
+            onAction={(action) => {
+              void handleBulkToolbarAction(action);
+            }}
           />
 
           {isInitialLoading ? (
@@ -390,9 +437,9 @@ export function StudentsPage() {
       <CreateStudentModal
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        onSuccess={async (createdStudent) => {
+        onSuccess={async () => {
+          setIsCreateOpen(false);
           await refetch();
-          router.push(studentManagePath(createdStudent.id));
         }}
       />
 
@@ -402,6 +449,7 @@ export function StudentsPage() {
           student={editTarget}
           onClose={() => setEditTarget(null)}
           onSuccess={async () => {
+            setEditTarget(null);
             await refetch();
           }}
         />
@@ -510,6 +558,17 @@ export function StudentsPage() {
         onConfirm={() => {
           void handleBulkConfirm();
         }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteBlockedDialog)}
+        title={deleteBlockedDialog?.title ?? ""}
+        description={deleteBlockedDialog?.description ?? ""}
+        confirmLabel="OK"
+        confirmVariant="primary"
+        showCancel={false}
+        onCancel={() => setDeleteBlockedDialog(null)}
+        onConfirm={() => setDeleteBlockedDialog(null)}
       />
     </div>
   );

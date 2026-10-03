@@ -61,6 +61,8 @@ import { BulkRestoreStudentsCommand } from '../../application/bulk-restore-stude
 import { BulkRestoreStudentsHandler } from '../../application/bulk-restore-students/bulk-restore-students.handler';
 import { BulkUpdateStudentStatusCommand } from '../../application/bulk-update-student-status/bulk-update-student-status.command';
 import { BulkUpdateStudentStatusHandler } from '../../application/bulk-update-student-status/bulk-update-student-status.handler';
+import { GetStudentAdmittedEnrollmentBlocksHandler } from '../../application/get-student-admitted-enrollment-blocks/get-student-admitted-enrollment-blocks.handler';
+import { GetStudentAdmittedEnrollmentBlocksQuery } from '../../application/get-student-admitted-enrollment-blocks/get-student-admitted-enrollment-blocks.query';
 import { BulkStudentIdsDto } from '../dtos/bulk-student-ids.dto';
 import { BulkUpdateStudentStatusDto } from '../dtos/bulk-update-student-status.dto';
 import { CreateStudentDto } from '../dtos/create-student.dto';
@@ -99,6 +101,7 @@ export class AdminStudentController {
     private readonly updateStudentDocumentHandler: UpdateStudentDocumentHandler,
     private readonly deleteStudentDocumentHandler: DeleteStudentDocumentHandler,
     private readonly assessments: BranchAssessmentService,
+    private readonly getStudentAdmittedEnrollmentBlocksHandler: GetStudentAdmittedEnrollmentBlocksHandler,
   ) {}
 
   @Post()
@@ -305,6 +308,47 @@ export class AdminStudentController {
       success: true,
       message: 'Students restored successfully',
       data: result.summary,
+    };
+  }
+
+  @Post('bulk/admitted-enrollment-blocks')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async getBulkAdmittedEnrollmentBlocks(
+    @Body() dto: BulkStudentIdsDto,
+  ) {
+    const result =
+      await this.getStudentAdmittedEnrollmentBlocksHandler.execute(
+        new GetStudentAdmittedEnrollmentBlocksQuery(dto.studentIds),
+      );
+
+    return {
+      success: true,
+      message: 'Student admitted enrollment blocks fetched successfully',
+      data: result,
+    };
+  }
+
+  @Get(':id/admitted-enrollment-blocks')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+    BranchAccessGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async getAdmittedEnrollmentBlocks(@Param('id') id: string) {
+    const result =
+      await this.getStudentAdmittedEnrollmentBlocksHandler.execute(
+        new GetStudentAdmittedEnrollmentBlocksQuery([id]),
+      );
+
+    return {
+      success: true,
+      message: 'Student admitted enrollment blocks fetched successfully',
+      data: result,
     };
   }
 

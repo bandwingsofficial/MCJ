@@ -13,6 +13,11 @@ import { useStudent } from "@/src/features/students/hooks/useStudent";
 import { useDeleteStudent } from "@/src/features/students/hooks/useDeleteStudent";
 import { useRestoreStudent } from "@/src/features/students/hooks/useRestoreStudent";
 import { usePermanentDeleteStudent } from "@/src/features/students/hooks/usePermanentDeleteStudent";
+import { studentService } from "@/src/features/students/services/student.service";
+import {
+  buildStudentDeleteBlockedTitle,
+  formatStudentAdmittedEnrollmentBlockDescription,
+} from "@/src/features/students/utils/student-admitted-enrollment-block.utils";
 
 import { UpdateStudentModal } from "@/src/features/students/components/update-student-modal";
 import { StudentManageHeader } from "@/src/features/students/components/manage/student-manage-header";
@@ -89,6 +94,11 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isRestoreOpen, setIsRestoreOpen] = useState(false);
   const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] = useState(false);
+  const [isDeleteCheckLoading, setIsDeleteCheckLoading] = useState(false);
+  const [deleteBlockedDialog, setDeleteBlockedDialog] = useState<{
+    title: string;
+    description: string;
+  } | null>(null);
 
   useEffect(() => {
     setActiveTab(resolveInitialTab(initialTab));
@@ -137,7 +147,34 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
   );
 
   const actionsDisabled =
-    isArchiving || isRestoring || isPermanentlyDeleting;
+    isArchiving ||
+    isRestoring ||
+    isPermanentlyDeleting ||
+    isDeleteCheckLoading;
+
+  const openArchiveAfterDeleteCheck = async () => {
+    setIsDeleteCheckLoading(true);
+    try {
+      const blocks =
+        await studentService.getAdmittedEnrollmentBlocks(studentId);
+
+      if (blocks.length > 0) {
+        setDeleteBlockedDialog({
+          title: buildStudentDeleteBlockedTitle(false),
+          description: formatStudentAdmittedEnrollmentBlockDescription(
+            blocks,
+          ),
+        });
+        return;
+      }
+
+      setIsArchiveOpen(true);
+    } catch (error) {
+      appToast.error(getErrorMessage(error));
+    } finally {
+      setIsDeleteCheckLoading(false);
+    }
+  };
 
   const activeSection = useMemo(() => TAB_LABELS[activeTab], [activeTab]);
 
@@ -164,7 +201,9 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
         activeSection={activeSection}
         actionsDisabled={actionsDisabled}
         onEdit={() => setIsEditOpen(true)}
-        onArchive={() => setIsArchiveOpen(true)}
+        onArchive={() => {
+          void openArchiveAfterDeleteCheck();
+        }}
         onRestore={() => setIsRestoreOpen(true)}
         onPermanentDelete={() => setIsPermanentDeleteOpen(true)}
       />
@@ -183,7 +222,7 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
         onClose={() => setIsEditOpen(false)}
         onSuccess={async () => {
           setIsEditOpen(false);
-          await returnToOverview();
+          router.push("/students");
         }}
       />
 
@@ -242,6 +281,17 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
             appToast.error(getErrorMessage(err));
           }
         }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteBlockedDialog)}
+        title={deleteBlockedDialog?.title ?? ""}
+        description={deleteBlockedDialog?.description ?? ""}
+        confirmLabel="OK"
+        confirmVariant="primary"
+        showCancel={false}
+        onCancel={() => setDeleteBlockedDialog(null)}
+        onConfirm={() => setDeleteBlockedDialog(null)}
       />
     </div>
   );

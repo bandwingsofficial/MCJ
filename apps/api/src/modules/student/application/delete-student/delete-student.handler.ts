@@ -1,6 +1,8 @@
 import type { StudentRepository } from '../../domain/repositories/student.repository';
 import { StudentDomainService } from '../../domain/services/student-domain.service';
 
+import { assertStudentsHaveNoAdmittedEnrollments } from '../shared/student-admitted-enrollment.guard';
+
 import { DeleteStudentCommand } from './delete-student.command';
 import { DeleteStudentResult } from './delete-student.result';
 
@@ -20,6 +22,11 @@ export class DeleteStudentHandler {
     this.domainService.ensureBranchAccess(
       student,
       command.actorBranchId,
+    );
+
+    await assertStudentsHaveNoAdmittedEnrollments(
+      this.studentRepo,
+      [student.id],
     );
 
     student.softDelete(command.deletedBy);

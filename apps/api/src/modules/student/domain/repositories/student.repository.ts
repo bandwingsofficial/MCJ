@@ -1,6 +1,17 @@
 import { Student } from '../entities/student.entity';
 import { StudentStatus } from '../enums/student-status.enum';
 
+export interface StudentAdmittedEnrollmentBlock {
+  studentId: string;
+  studentName: string;
+  enrollmentId: string;
+  branchId: string;
+  branchName: string;
+  courseId: string;
+  courseTitle: string;
+  status: string;
+}
+
 export interface StudentListFilters {
   branchId?: string;
   status?: StudentStatus;
@@ -38,6 +49,10 @@ export interface StudentRepository {
   count(filters?: StudentListFilters): Promise<number>;
   getMaxStudentCodeNumber(): Promise<number>;
   deletePermanent(id: string): Promise<void>;
+
+  findAdmittedEnrollmentBlocksByStudentIds(
+    studentIds: string[],
+  ): Promise<StudentAdmittedEnrollmentBlock[]>;
   findByUserId(
   userId: string,
   includeDeleted?: boolean,

@@ -10,6 +10,8 @@ import { ValidationError } from '../errors/validation.error';
 import type { BulkStudentItemResult } from '../shared/bulk-student-operation.result';
 import { parseBulkStudentIds } from '../shared/parse-bulk-student-ids';
 
+import { assertStudentsHaveNoAdmittedEnrollments } from '../shared/student-admitted-enrollment.guard';
+
 import { BulkDeleteStudentsCommand } from './bulk-delete-students.command';
 import { BulkDeleteStudentsResult } from './bulk-delete-students.result';
 
@@ -28,6 +30,12 @@ export class BulkDeleteStudentsHandler {
       this.logger.log('Bulk delete students request received');
 
       const studentIds = parseBulkStudentIds(command.studentIds);
+
+      await assertStudentsHaveNoAdmittedEnrollments(
+        this.studentRepo,
+        studentIds,
+      );
+
       const itemResults: BulkStudentItemResult[] = [];
       const studentsToDelete: Student[] = [];
 

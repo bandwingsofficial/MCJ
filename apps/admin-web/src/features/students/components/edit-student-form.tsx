@@ -30,12 +30,18 @@ import { AppSelect } from "@/src/shared/components/ui/select";
 import { Textarea } from "@/src/shared/components/ui/textarea";
 import { ImageUploadField } from "@/src/shared/components/ui/image-upload-field";
 import {
-  IconValidatedField,
-  iconDecorInputClass,
   ValidatedField,
-  validatedFieldInputClass,
   type FieldVisualState,
 } from "@/src/shared/components/ui/validated-field";
+import {
+  LeftIconField,
+  leftIconInputClass,
+  selectTriggerClass,
+} from "@/src/features/students/utils/student-form-field-ui";
+import {
+  STUDENT_PROFILE_IMAGE_ACCEPT,
+  validateStudentProfileImage,
+} from "@/src/features/students/utils/student-profile-image.util";
 import { cn } from "@/src/shared/lib/cn";
 import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
 
@@ -57,7 +63,11 @@ interface EditStudentFormProps {
   profileImageUrl?: string | null;
   isSubmitting: boolean;
   serverErrors?: Record<string, string>;
-  onSubmit: (values: CreateStudentFormValues, image: File | null) => Promise<void>;
+  onSubmit: (
+    values: CreateStudentFormValues,
+    image: File | null,
+    removeImage: boolean,
+  ) => Promise<void>;
   onCancel?: () => void;
 }
 
@@ -87,17 +97,6 @@ function FormSection({
   );
 }
 
-function iconInputClass(state: FieldVisualState, extra = "") {
-  return iconDecorInputClass(state, cn("w-full min-w-0 max-w-full", extra));
-}
-
-function selectTriggerClass(state: FieldVisualState) {
-  return validatedFieldInputClass(state, "w-full min-w-0 max-w-full", {
-    leftIcon: true,
-    select: true,
-  });
-}
-
 export function EditStudentForm({
   defaultValues,
   profileImageUrl,
@@ -108,6 +107,7 @@ export function EditStudentForm({
 }: EditStudentFormProps) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const selectedImageRef = useRef<File | null>(null);
+  const removeImageRef = useRef(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     profileImageUrl ?? null,
   );
@@ -132,6 +132,7 @@ export function EditStudentForm({
     onReset: () => {
       setSelectedImage(null);
       selectedImageRef.current = null;
+      removeImageRef.current = false;
       setPreviewUrl(profileImageUrl ?? null);
     },
   });
@@ -153,6 +154,9 @@ export function EditStudentForm({
   const values = watch();
   const notesLength = (values.notes ?? "").length;
   const studentId = values.studentCode ?? defaultValues.studentCode ?? "";
+  const passingYearRegister = register("passingYear", {
+    valueAsNumber: true,
+  });
 
   const getFieldState = (
     name: FieldName,
@@ -189,12 +193,16 @@ export function EditStudentForm({
       return "neutral";
     }
 
+    if (typeof raw === "number" && Number.isNaN(raw)) {
+      return "neutral";
+    }
+
     if (typeof raw === "string" && raw.trim() === "") {
       if (
         name === "lastName" ||
-        name === "email" ||
-        name === "phone" ||
         name === "dateOfBirth" ||
+        name === "gender" ||
+        name === "passingYear" ||
         name === "notes" ||
         name === "addressLine1" ||
         name === "addressLine2" ||
@@ -220,7 +228,7 @@ export function EditStudentForm({
   const inputClass = (
     name: FieldName,
     options?: { forceValid?: boolean },
-  ) => iconInputClass(getFieldState(name, options));
+  ) => leftIconInputClass(getFieldState(name, options));
 
   const registerField = (name: FieldName) => {
     const registration = register(name);
@@ -244,7 +252,7 @@ export function EditStudentForm({
 
     return {
       ...registration,
-      className: iconInputClass(getFieldState(name)),
+      className: leftIconInputClass(getFieldState(name)),
       onBlur: (event: FocusEvent<HTMLInputElement>) => {
         registration.onBlur(event);
         void trigger(name);
@@ -259,7 +267,11 @@ export function EditStudentForm({
   return (
     <form
       onSubmit={handleSubmit(async (formValues) => {
-        await onSubmit(formValues, selectedImageRef.current);
+        await onSubmit(
+          formValues,
+          selectedImageRef.current,
+          removeImageRef.current,
+        );
       })}
       className="flex min-h-0 flex-1 flex-col"
       autoComplete="off"
@@ -271,31 +283,42 @@ export function EditStudentForm({
         >
           <div className="md:col-span-2">
             <ValidatedField
-              label="Profile Image"
+              label="Profile Image (Optional)"
               state={getFieldState("profileImageFileId")}
             >
               <ImageUploadField
                 previewUrl={previewUrl}
                 file={selectedImage}
                 disabled={isSubmitting}
+                entityLabel="student"
+                accept={STUDENT_PROFILE_IMAGE_ACCEPT}
+                validateFile={validateStudentProfileImage}
+                error={serverErrors?.profileImage ?? null}
                 state={getFieldState("profileImageFileId")}
                 onFileSelect={(file) => {
+                  if (!file) {
+                    return;
+                  }
+
+                  removeImageRef.current = false;
                   selectedImageRef.current = file;
                   setSelectedImage(file);
-                  if (!file) {
-                    setPreviewUrl(profileImageUrl ?? null);
-                  }
                 }}
                 onRemove={() => {
+                  removeImageRef.current = true;
                   setSelectedImage(null);
                   selectedImageRef.current = null;
-                  setPreviewUrl(profileImageUrl ?? null);
+                  setPreviewUrl(null);
+                  setValue("profileImageFileId", "", {
+                    shouldDirty: true,
+                    shouldValidate: false,
+                  });
                 }}
               />
             </ValidatedField>
           </div>
 
-          <IconValidatedField
+          <LeftIconField
             label="Student ID"
             icon={Hash}
             state={getFieldState("studentCode", { forceValid: true })}
@@ -307,17 +330,18 @@ export function EditStudentForm({
               placeholder="MCJ-STU-001"
               autoComplete="off"
               className={cn(
-                iconInputClass(
+                leftIconInputClass(
                   getFieldState("studentCode", { forceValid: true }),
                 ),
                 "cursor-default bg-slate-50",
               )}
             />
             <p className="mt-1 text-[11px] text-[#8AA0BB]">Read-only</p>
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
+          <LeftIconField
             label="Status"
+            required
             select
             icon={FileText}
             state={getFieldState("status")}
@@ -335,9 +359,9 @@ export function EditStudentForm({
               options={uniqueSelectOptions([...STUDENT_STATUSES])}
               triggerClassName={selectTriggerClass(getFieldState("status"))}
             />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
+          <LeftIconField
             label="First Name"
             required
             state={getFieldState("firstName")}
@@ -348,10 +372,10 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("firstName")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Last Name"
+          <LeftIconField
+            label="Last Name (Optional)"
             state={getFieldState("lastName")}
             errorMessage={errors.lastName?.message}
            icon={User}>
@@ -360,13 +384,15 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("lastName")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Gender"
+          <LeftIconField
+            label="Gender (Optional)"
             state={getFieldState("gender")}
             errorMessage={errors.gender?.message}
-           select icon={Users}>
+            select
+            icon={Users}
+          >
               <AppSelect
                 value={values.gender}
                 onValueChange={(value) =>
@@ -378,10 +404,10 @@ export function EditStudentForm({
                 options={uniqueSelectOptions([...STUDENT_GENDER_OPTIONS])}
                 triggerClassName={selectTriggerClass(getFieldState("gender"))}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Date of Birth"
+          <LeftIconField
+            label="Date of Birth (Optional)"
             icon={Calendar}
             state={getFieldState("dateOfBirth")}
             errorMessage={errors.dateOfBirth?.message}
@@ -391,15 +417,16 @@ export function EditStudentForm({
               autoComplete="off"
               {...registerDateField("dateOfBirth")}
             />
-          </IconValidatedField>
+          </LeftIconField>
         </FormSection>
 
         <FormSection
           title="Contact Information"
           description="Primary email and phone details."
         >
-          <IconValidatedField
+          <LeftIconField
             label="Email"
+            required
             state={getFieldState("email")}
             errorMessage={errors.email?.message}
            icon={Mail}>
@@ -409,10 +436,11 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("email")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
+          <LeftIconField
             label="Phone"
+            required
             state={getFieldState("phone")}
             errorMessage={errors.phone?.message}
            icon={Phone}>
@@ -421,18 +449,20 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("phone")}
               />
-          </IconValidatedField>
+          </LeftIconField>
         </FormSection>
 
         <FormSection
           title="Education"
           description="Academic background and specialization."
         >
-          <IconValidatedField
-            label="Qualification"
+          <LeftIconField
+            label="Qualification (Optional)"
             state={getFieldState("qualification")}
             errorMessage={errors.qualification?.message}
-           select icon={GraduationCap}>
+            select
+            icon={GraduationCap}
+          >
               <AppSelect
                 value={values.qualification || undefined}
                 placeholder="Select qualification"
@@ -449,10 +479,10 @@ export function EditStudentForm({
                   getFieldState("qualification"),
                 )}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="College Name"
+          <LeftIconField
+            label="College Name (Optional)"
             state={getFieldState("collegeName")}
             errorMessage={errors.collegeName?.message}
            icon={GraduationCap}>
@@ -461,10 +491,10 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("collegeName")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Specialization"
+          <LeftIconField
+            label="Specialization (Optional)"
             state={getFieldState("specialization")}
             errorMessage={errors.specialization?.message}
            icon={GraduationCap}>
@@ -473,28 +503,36 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("specialization")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Passing Year"
+          <LeftIconField
+            label="Passing Year (Optional)"
             state={getFieldState("passingYear")}
             errorMessage={errors.passingYear?.message}
            icon={Calendar}>
               <Input
                 type="number"
                 autoComplete="off"
-                {...register("passingYear", { valueAsNumber: true })}
+                {...passingYearRegister}
                 className={inputClass("passingYear")}
+                onBlur={(event) => {
+                  passingYearRegister.onBlur(event);
+                  void trigger("passingYear");
+                }}
+                onChange={(event) => {
+                  passingYearRegister.onChange(event);
+                  void trigger("passingYear");
+                }}
               />
-          </IconValidatedField>
+          </LeftIconField>
         </FormSection>
 
         <FormSection
           title="Address"
           description="Residential address details."
         >
-          <IconValidatedField
-            label="Address Line 1"
+          <LeftIconField
+            label="Address Line 1 (Optional)"
             state={getFieldState("addressLine1")}
             errorMessage={errors.addressLine1?.message}
            icon={MapPin}>
@@ -503,10 +541,10 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("addressLine1")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Address Line 2"
+          <LeftIconField
+            label="Address Line 2 (Optional)"
             state={getFieldState("addressLine2")}
             errorMessage={errors.addressLine2?.message}
            icon={MapPin}>
@@ -515,10 +553,10 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("addressLine2")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="City"
+          <LeftIconField
+            label="City (Optional)"
             state={getFieldState("city")}
             errorMessage={errors.city?.message}
            icon={MapPin}>
@@ -527,10 +565,10 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("city")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="State"
+          <LeftIconField
+            label="State (Optional)"
             state={getFieldState("state")}
             errorMessage={errors.state?.message}
            icon={MapPin}>
@@ -539,10 +577,10 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("state")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Country"
+          <LeftIconField
+            label="Country (Optional)"
             state={getFieldState("country")}
             errorMessage={errors.country?.message}
            icon={MapPin}>
@@ -551,10 +589,10 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("country")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Postal Code"
+          <LeftIconField
+            label="Postal Code (Optional)"
             state={getFieldState("postalCode")}
             errorMessage={errors.postalCode?.message}
            icon={MapPin}>
@@ -563,15 +601,15 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("postalCode")}
               />
-          </IconValidatedField>
+          </LeftIconField>
         </FormSection>
 
         <FormSection
           title="Parent / Guardian"
           description="Primary parent or guardian contact."
         >
-          <IconValidatedField
-            label="Parent Name"
+          <LeftIconField
+            label="Parent Name (Optional)"
             state={getFieldState("parentName")}
             errorMessage={errors.parentName?.message}
            icon={User}>
@@ -580,10 +618,10 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("parentName")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Parent Phone"
+          <LeftIconField
+            label="Parent Phone (Optional)"
             state={getFieldState("parentPhone")}
             errorMessage={errors.parentPhone?.message}
            icon={Phone}>
@@ -592,13 +630,13 @@ export function EditStudentForm({
                 autoComplete="off"
                 {...registerField("parentPhone")}
               />
-          </IconValidatedField>
+          </LeftIconField>
         </FormSection>
 
         <FormSection title="Additional Notes" description="Optional internal notes.">
           <div className="md:col-span-2">
-            <IconValidatedField
-              label="Notes"
+            <LeftIconField
+              label="Notes (Optional)"
               icon={FileText}
               textarea
               state={getFieldState("notes")}
@@ -609,7 +647,12 @@ export function EditStudentForm({
                 rows={4}
                 autoComplete="off"
                 {...register("notes")}
-                className={cn(inputClass("notes"), "min-h-[96px] resize-y")}
+                className={cn(
+                  leftIconInputClass(getFieldState("notes"), "min-h-[96px] resize-y", {
+                    textarea: true,
+                  }),
+                  "resize-y",
+                )}
               />
               <p
                 className={`mt-1 text-right text-xs tabular-nums ${
@@ -621,7 +664,7 @@ export function EditStudentForm({
                 {Math.min(notesLength, NOTES_MAX_LENGTH)}/{NOTES_MAX_LENGTH}{" "}
                 characters
               </p>
-            </IconValidatedField>
+            </LeftIconField>
           </div>
         </FormSection>
       </div>

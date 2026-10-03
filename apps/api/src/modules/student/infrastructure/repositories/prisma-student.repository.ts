@@ -8,6 +8,7 @@ import { PrismaService } from '../../../../infrastructure/prisma/prisma.service'
 import { Student } from '../../domain/entities/student.entity';
 import { StudentStatus } from '../../domain/enums/student-status.enum';
 import {
+  StudentAdmittedEnrollmentBlock,
   StudentListFilters,
   StudentRepository,
 } from '../../domain/repositories/student.repository';
@@ -285,5 +286,68 @@ export class PrismaStudentRepository implements StudentRepository {
     }
 
     return where;
+  }
+
+  async findAdmittedEnrollmentBlocksByStudentIds(
+    studentIds: string[],
+  ): Promise<StudentAdmittedEnrollmentBlock[]> {
+    const uniqueIds = [
+      ...new Set(
+        studentIds.map((id) => id?.trim()).filter(Boolean),
+      ),
+    ];
+
+    if (uniqueIds.length === 0) {
+      return [];
+    }
+
+    const rows = await this.prisma.enrollment.findMany({
+      where: {
+        studentId: { in: uniqueIds },
+        status: 'ADMITTED',
+        isDeleted: false,
+      },
+      select: {
+        id: true,
+        status: true,
+        studentId: true,
+        branchId: true,
+        courseId: true,
+        student: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+        branch: {
+          select: { branchName: true },
+        },
+        course: {
+          select: { title: true },
+        },
+      },
+      orderBy: [
+        { student: { firstName: 'asc' } },
+        { branch: { branchName: 'asc' } },
+      ],
+    });
+
+    return rows.map((row) => {
+      const nameParts = [
+        row.student.firstName,
+        row.student.lastName,
+      ].filter((part) => part != null && String(part).trim() !== '');
+
+      return {
+        studentId: row.studentId,
+        studentName: nameParts.join(' ').trim() || 'Student',
+        enrollmentId: row.id,
+        branchId: row.branchId,
+        branchName: row.branch.branchName,
+        courseId: row.courseId,
+        courseTitle: row.course.title,
+        status: row.status,
+      };
+    });
   }
 }

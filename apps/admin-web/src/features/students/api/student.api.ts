@@ -9,6 +9,7 @@ import type {
   StudentDocument,
   StudentFilters,
   StudentListResponse,
+  StudentAdmittedEnrollmentBlocksResponse,
   SuggestStudentCodeResponse,
   UpdateStudentDocumentRequest,
   UpdateStudentAdmissionStatusRequest,
@@ -183,6 +184,24 @@ export const studentApi = {
     const response = await apiClient.patch<
       ApiSuccessResponse<BulkStudentOperationResult>
     >("/admin/students/bulk/deactivate", { studentIds });
+
+    return response.data;
+  },
+
+  async getAdmittedEnrollmentBlocks(studentId: string) {
+    const response = await apiClient.get<
+      ApiSuccessResponse<StudentAdmittedEnrollmentBlocksResponse>
+    >(`/admin/students/${studentId}/admitted-enrollment-blocks`);
+
+    return response.data;
+  },
+
+  async getBulkAdmittedEnrollmentBlocks(studentIds: string[]) {
+    const response = await apiClient.post<
+      ApiSuccessResponse<StudentAdmittedEnrollmentBlocksResponse>
+    >("/admin/students/bulk/admitted-enrollment-blocks", {
+      studentIds,
+    });
 
     return response.data;
   },

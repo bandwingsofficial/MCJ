@@ -63,8 +63,8 @@ export function toCreateStudentRequest(
   return {
     firstName: values.firstName.trim(),
     lastName: emptyToUndefined(values.lastName),
-    email: emptyToUndefined(values.email),
-    phone: emptyToUndefined(values.phone),
+    email: values.email.trim(),
+    phone: values.phone.trim(),
     gender: values.gender,
     dateOfBirth: emptyToUndefined(values.dateOfBirth),
     addressLine1: emptyToUndefined(values.addressLine1),
@@ -76,7 +76,12 @@ export function toCreateStudentRequest(
     qualification: emptyToUndefined(values.qualification),
     collegeName: emptyToUndefined(values.collegeName),
     specialization: emptyToUndefined(values.specialization),
-    passingYear: values.passingYear,
+    passingYear:
+      values.passingYear === undefined ||
+      (typeof values.passingYear === "number" &&
+        Number.isNaN(values.passingYear))
+        ? undefined
+        : values.passingYear,
     parentName: emptyToUndefined(values.parentName),
     parentPhone: emptyToUndefined(values.parentPhone),
     notes: emptyToUndefined(values.notes),

@@ -149,6 +149,21 @@ export interface BulkStudentOperationResult {
   failures: BulkStudentItemResult[];
 }
 
+export interface StudentAdmittedEnrollmentBlock {
+  studentId: string;
+  studentName: string;
+  enrollmentId: string;
+  branchId: string;
+  branchName: string;
+  courseId: string;
+  courseTitle: string;
+  status: string;
+}
+
+export interface StudentAdmittedEnrollmentBlocksResponse {
+  blocks: StudentAdmittedEnrollmentBlock[];
+}
+
 export interface ApiSuccessResponse<T> {
   success: boolean;
   message: string;

@@ -30,12 +30,18 @@ import { AppSelect } from "@/src/shared/components/ui/select";
 import { Textarea } from "@/src/shared/components/ui/textarea";
 import { ImageUploadField } from "@/src/shared/components/ui/image-upload-field";
 import {
-  IconValidatedField,
-  iconDecorInputClass,
   ValidatedField,
-  validatedFieldInputClass,
   type FieldVisualState,
 } from "@/src/shared/components/ui/validated-field";
+import {
+  LeftIconField,
+  leftIconInputClass,
+  selectTriggerClass,
+} from "@/src/features/students/utils/student-form-field-ui";
+import {
+  STUDENT_PROFILE_IMAGE_ACCEPT,
+  validateStudentProfileImage,
+} from "@/src/features/students/utils/student-profile-image.util";
 import { cn } from "@/src/shared/lib/cn";
 
 import { buildStudentQualificationSelectOptions } from "@mcj/shared-constants";
@@ -56,7 +62,11 @@ import { uniqueSelectOptions } from "@/src/features/students/utils/student-selec
 interface CreateStudentFormProps {
   isSubmitting: boolean;
   serverErrors?: Record<string, string>;
-  onSubmit: (values: CreateStudentFormValues, image: File | null) => Promise<void>;
+  onSubmit: (
+    values: CreateStudentFormValues,
+    image: File | null,
+    removeImage?: boolean,
+  ) => Promise<void>;
   onCancel?: () => void;
 }
 
@@ -84,17 +94,6 @@ function FormSection({
       <div className={cn(GRID_CLASS, "p-4")}>{children}</div>
     </section>
   );
-}
-
-function iconInputClass(state: FieldVisualState, extra = "") {
-  return iconDecorInputClass(state, cn("w-full min-w-0 max-w-full", extra));
-}
-
-function selectTriggerClass(state: FieldVisualState) {
-  return validatedFieldInputClass(state, "w-full min-w-0 max-w-full", {
-    leftIcon: true,
-    select: true,
-  });
 }
 
 export function CreateStudentForm({
@@ -141,6 +140,9 @@ export function CreateStudentForm({
 
   const values = watch();
   const notesLength = (values.notes ?? "").length;
+  const passingYearRegister = register("passingYear", {
+    valueAsNumber: true,
+  });
 
   useEffect(() => {
     const requestId = ++suggestRequestIdRef.current;
@@ -216,12 +218,16 @@ export function CreateStudentForm({
       return "neutral";
     }
 
+    if (typeof raw === "number" && Number.isNaN(raw)) {
+      return "neutral";
+    }
+
     if (typeof raw === "string" && raw.trim() === "") {
       if (
         name === "lastName" ||
-        name === "email" ||
-        name === "phone" ||
         name === "dateOfBirth" ||
+        name === "gender" ||
+        name === "passingYear" ||
         name === "notes" ||
         name === "addressLine1" ||
         name === "addressLine2" ||
@@ -247,7 +253,7 @@ export function CreateStudentForm({
   const inputClass = (
     name: FieldName,
     options?: { forceValid?: boolean },
-  ) => iconInputClass(getFieldState(name, options));
+  ) => leftIconInputClass(getFieldState(name, options));
 
   const registerField = (name: FieldName) => {
     const registration = register(name);
@@ -271,7 +277,7 @@ export function CreateStudentForm({
 
     return {
       ...registration,
-      className: iconInputClass(getFieldState(name)),
+      className: leftIconInputClass(getFieldState(name)),
       onBlur: (event: FocusEvent<HTMLInputElement>) => {
         registration.onBlur(event);
         void trigger(name);
@@ -286,7 +292,7 @@ export function CreateStudentForm({
   return (
     <form
       onSubmit={handleSubmit(async (formValues) => {
-        await onSubmit(formValues, selectedImageRef.current);
+        await onSubmit(formValues, selectedImageRef.current, false);
       })}
       className="flex min-h-0 flex-1 flex-col"
       autoComplete="off"
@@ -298,13 +304,17 @@ export function CreateStudentForm({
         >
           <div className="md:col-span-2">
             <ValidatedField
-              label="Profile Image"
+              label="Profile Image (Optional)"
               state={getFieldState("profileImageFileId")}
             >
               <ImageUploadField
                 previewUrl={previewUrl}
                 file={selectedImage}
                 disabled={isSubmitting}
+                entityLabel="student"
+                accept={STUDENT_PROFILE_IMAGE_ACCEPT}
+                validateFile={validateStudentProfileImage}
+                error={serverErrors?.profileImage ?? null}
                 state={getFieldState("profileImageFileId")}
                 onFileSelect={(file) => {
                   selectedImageRef.current = file;
@@ -322,7 +332,7 @@ export function CreateStudentForm({
             </ValidatedField>
           </div>
 
-          <IconValidatedField
+          <LeftIconField
             label="Student ID"
             icon={Hash}
             state={getFieldState("studentCode", { forceValid: true })}
@@ -335,17 +345,18 @@ export function CreateStudentForm({
               placeholder="MCJ-STU-001"
               autoComplete="off"
               className={cn(
-                iconInputClass(
+                leftIconInputClass(
                   getFieldState("studentCode", { forceValid: true }),
                 ),
                 "cursor-default bg-slate-50",
               )}
             />
             <p className="mt-1 text-[11px] text-[#8AA0BB]">Auto-generated</p>
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
+          <LeftIconField
             label="Status"
+            required
             select
             icon={FileText}
             state={getFieldState("status")}
@@ -363,9 +374,9 @@ export function CreateStudentForm({
               options={uniqueSelectOptions([...STUDENT_STATUSES])}
               triggerClassName={selectTriggerClass(getFieldState("status"))}
             />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
+          <LeftIconField
             label="First Name"
             required
             state={getFieldState("firstName")}
@@ -376,10 +387,10 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("firstName")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Last Name"
+          <LeftIconField
+            label="Last Name (Optional)"
             state={getFieldState("lastName")}
             errorMessage={errors.lastName?.message}
            icon={User}>
@@ -388,13 +399,15 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("lastName")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Gender"
+          <LeftIconField
+            label="Gender (Optional)"
             state={getFieldState("gender")}
             errorMessage={errors.gender?.message}
-           select icon={Users}>
+            select
+            icon={Users}
+          >
               <AppSelect
                 value={values.gender}
                 onValueChange={(value) =>
@@ -406,27 +419,29 @@ export function CreateStudentForm({
                 options={uniqueSelectOptions([...STUDENT_GENDER_OPTIONS])}
                 triggerClassName={selectTriggerClass(getFieldState("gender"))}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <ValidatedField
-            label="Date of Birth"
+          <LeftIconField
+            label="Date of Birth (Optional)"
             state={getFieldState("dateOfBirth")}
             errorMessage={errors.dateOfBirth?.message}
+            icon={Calendar}
           >
             <Input
               type="date"
               autoComplete="off"
               {...registerDateField("dateOfBirth")}
             />
-          </ValidatedField>
+          </LeftIconField>
         </FormSection>
 
         <FormSection
           title="Contact Information"
           description="Primary email and phone details."
         >
-          <IconValidatedField
+          <LeftIconField
             label="Email"
+            required
             state={getFieldState("email")}
             errorMessage={errors.email?.message}
            icon={Mail}>
@@ -436,10 +451,11 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("email")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
+          <LeftIconField
             label="Phone"
+            required
             state={getFieldState("phone")}
             errorMessage={errors.phone?.message}
            icon={Phone}>
@@ -448,18 +464,20 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("phone")}
               />
-          </IconValidatedField>
+          </LeftIconField>
         </FormSection>
 
         <FormSection
           title="Education"
           description="Academic background and specialization."
         >
-          <IconValidatedField
-            label="Qualification"
+          <LeftIconField
+            label="Qualification (Optional)"
             state={getFieldState("qualification")}
             errorMessage={errors.qualification?.message}
-           select icon={GraduationCap}>
+            select
+            icon={GraduationCap}
+          >
               <AppSelect
                 value={values.qualification || undefined}
                 placeholder="Select qualification"
@@ -476,10 +494,10 @@ export function CreateStudentForm({
                   getFieldState("qualification"),
                 )}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="College Name"
+          <LeftIconField
+            label="College Name (Optional)"
             state={getFieldState("collegeName")}
             errorMessage={errors.collegeName?.message}
            icon={GraduationCap}>
@@ -488,10 +506,10 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("collegeName")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Specialization"
+          <LeftIconField
+            label="Specialization (Optional)"
             state={getFieldState("specialization")}
             errorMessage={errors.specialization?.message}
            icon={GraduationCap}>
@@ -500,28 +518,36 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("specialization")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Passing Year"
+          <LeftIconField
+            label="Passing Year (Optional)"
             state={getFieldState("passingYear")}
             errorMessage={errors.passingYear?.message}
            icon={Calendar}>
               <Input
                 type="number"
                 autoComplete="off"
-                {...register("passingYear", { valueAsNumber: true })}
+                {...passingYearRegister}
                 className={inputClass("passingYear")}
+                onBlur={(event) => {
+                  passingYearRegister.onBlur(event);
+                  void trigger("passingYear");
+                }}
+                onChange={(event) => {
+                  passingYearRegister.onChange(event);
+                  void trigger("passingYear");
+                }}
               />
-          </IconValidatedField>
+          </LeftIconField>
         </FormSection>
 
         <FormSection
           title="Address"
           description="Residential address details."
         >
-          <IconValidatedField
-            label="Address Line 1"
+          <LeftIconField
+            label="Address Line 1 (Optional)"
             state={getFieldState("addressLine1")}
             errorMessage={errors.addressLine1?.message}
            icon={MapPin}>
@@ -530,10 +556,10 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("addressLine1")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Address Line 2"
+          <LeftIconField
+            label="Address Line 2 (Optional)"
             state={getFieldState("addressLine2")}
             errorMessage={errors.addressLine2?.message}
            icon={MapPin}>
@@ -542,10 +568,10 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("addressLine2")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="City"
+          <LeftIconField
+            label="City (Optional)"
             state={getFieldState("city")}
             errorMessage={errors.city?.message}
            icon={MapPin}>
@@ -554,10 +580,10 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("city")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="State"
+          <LeftIconField
+            label="State (Optional)"
             state={getFieldState("state")}
             errorMessage={errors.state?.message}
            icon={MapPin}>
@@ -566,10 +592,10 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("state")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Country"
+          <LeftIconField
+            label="Country (Optional)"
             state={getFieldState("country")}
             errorMessage={errors.country?.message}
            icon={MapPin}>
@@ -578,10 +604,10 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("country")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Postal Code"
+          <LeftIconField
+            label="Postal Code (Optional)"
             state={getFieldState("postalCode")}
             errorMessage={errors.postalCode?.message}
            icon={MapPin}>
@@ -590,15 +616,15 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("postalCode")}
               />
-          </IconValidatedField>
+          </LeftIconField>
         </FormSection>
 
         <FormSection
           title="Parent / Guardian"
           description="Primary parent or guardian contact."
         >
-          <IconValidatedField
-            label="Parent Name"
+          <LeftIconField
+            label="Parent Name (Optional)"
             state={getFieldState("parentName")}
             errorMessage={errors.parentName?.message}
            icon={User}>
@@ -607,10 +633,10 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("parentName")}
               />
-          </IconValidatedField>
+          </LeftIconField>
 
-          <IconValidatedField
-            label="Parent Phone"
+          <LeftIconField
+            label="Parent Phone (Optional)"
             state={getFieldState("parentPhone")}
             errorMessage={errors.parentPhone?.message}
            icon={Phone}>
@@ -619,13 +645,13 @@ export function CreateStudentForm({
                 autoComplete="off"
                 {...registerField("parentPhone")}
               />
-          </IconValidatedField>
+          </LeftIconField>
         </FormSection>
 
         <FormSection title="Additional Notes" description="Optional internal notes.">
           <div className="md:col-span-2">
-            <IconValidatedField
-              label="Notes"
+            <LeftIconField
+              label="Notes (Optional)"
               icon={FileText}
               textarea
               state={getFieldState("notes")}
@@ -636,7 +662,12 @@ export function CreateStudentForm({
                 rows={4}
                 autoComplete="off"
                 {...register("notes")}
-                className={cn(inputClass("notes"), "min-h-[96px] resize-y")}
+                className={cn(
+                  leftIconInputClass(getFieldState("notes"), "min-h-[96px] resize-y", {
+                    textarea: true,
+                  }),
+                  "resize-y",
+                )}
               />
               <p
                 className={`mt-1 text-right text-xs tabular-nums ${
@@ -648,7 +679,7 @@ export function CreateStudentForm({
                 {Math.min(notesLength, NOTES_MAX_LENGTH)}/{NOTES_MAX_LENGTH}{" "}
                 characters
               </p>
-            </IconValidatedField>
+            </LeftIconField>
           </div>
         </FormSection>
       </div>
