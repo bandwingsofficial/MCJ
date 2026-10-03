@@ -289,9 +289,7 @@ import { PublicStudentController } from './presentation/controllers/public-stude
 
     {
       provide: StudentEnrollmentDisplayStatusService,
-      useFactory: (enrollmentDomainService: EnrollmentDomainService) =>
-        new StudentEnrollmentDisplayStatusService(enrollmentDomainService),
-      inject: [EnrollmentDomainService],
+      useFactory: () => new StudentEnrollmentDisplayStatusService(),
     },
 
     {
@@ -567,6 +565,7 @@ import { PublicStudentController } from './presentation/controllers/public-stude
     STUDENT_TOKENS.STUDENT_REPOSITORY,
     STUDENT_TOKENS.RESOLVE_AUTHENTICATED_STUDENT,
     StudentDomainService,
+    StudentAdmissionStatusSyncService,
     SyncStudentFromProfileHandler,
   ],
 })

@@ -39,6 +39,8 @@ interface EnrollmentTableProps {
 
   admitAdvancedDisabled?: boolean;
 
+  onChangeStatus?: (enrollment: Enrollment) => void;
+
 }
 
 
@@ -66,6 +68,8 @@ export function EnrollmentTable({
   onAdmitAdvanced,
 
   admitAdvancedDisabled = false,
+
+  onChangeStatus,
 
 }: EnrollmentTableProps) {
 
@@ -307,6 +311,10 @@ export function EnrollmentTable({
                       showAdmitAdvanced={canAdmitAdvanced}
 
                       onAdmitAdvanced={onAdmitAdvanced}
+
+                      displayStatus={displayStatus}
+
+                      onChangeStatus={onChangeStatus}
 
                     />
 

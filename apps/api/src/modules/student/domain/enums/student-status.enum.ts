@@ -1,6 +1,5 @@
 export enum StudentStatus {
   LEAD = 'LEAD',
-  ENQUIRED = 'ENQUIRED',
   ADVANCED = 'ADVANCED',
   ADMITTED = 'ADMITTED',
   COMPLETED = 'COMPLETED',

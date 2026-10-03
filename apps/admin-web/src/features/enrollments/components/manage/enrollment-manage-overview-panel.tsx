@@ -8,6 +8,7 @@ import { PaymentStatusBadge } from "@/src/features/enrollments/components/table/
 import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { formatCurrency } from "@/src/features/enrollments/utils/format-payment";
+import { enrollmentListDisplayStatus } from "@/src/features/enrollments/utils/current-enrollment";
 import {
   formatEnrollmentOverviewBatchName,
   formatEnrollmentOverviewBatchNumber,
@@ -107,7 +108,9 @@ export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <EnrollmentStatusBadge status={enrollment.status} />
+            <EnrollmentStatusBadge
+              status={enrollmentListDisplayStatus(enrollment)}
+            />
             <PaymentStatusBadge status={enrollment.paymentStatus} />
           </div>
         </div>

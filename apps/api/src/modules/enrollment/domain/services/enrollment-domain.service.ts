@@ -18,6 +18,12 @@ import type { CourseRepository } from '@modules/course/domain/repositories/cours
 import type { Student } from '@modules/student/domain/entities/student.entity';
 import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
 import { StudentStatus } from '@modules/student/domain/enums/student-status.enum';
+import {
+  canTransitionStudentEnrollmentWorkflowStatus,
+  normalizeStudentEnrollmentWorkflowStatus,
+  resolveLifecycleStatusFromEnrollmentStatuses,
+  type StudentEnrollmentWorkflowStatus,
+} from '@mcj/shared-constants';
 
 import { ERROR_CODES } from '@common/constants/error-codes';
 
@@ -153,6 +159,11 @@ export class EnrollmentDomainService {
         EnrollmentStatus.REJECTED,
         EnrollmentStatus.CANCELLED,
       ],
+      [EnrollmentStatus.LEAD]: [
+        EnrollmentStatus.ADVANCED,
+        EnrollmentStatus.ADMITTED,
+        EnrollmentStatus.CANCELLED,
+      ],
       [EnrollmentStatus.ADVANCED]: [
         EnrollmentStatus.ADMITTED,
         EnrollmentStatus.CANCELLED,
@@ -161,6 +172,7 @@ export class EnrollmentDomainService {
         EnrollmentStatus.ACTIVE,
         EnrollmentStatus.CANCELLED,
       ],
+      [EnrollmentStatus.PLACED]: [],
       [EnrollmentStatus.ACTIVE]: [
         EnrollmentStatus.COMPLETED,
         EnrollmentStatus.DROPPED,
@@ -692,14 +704,68 @@ export class EnrollmentDomainService {
   /** Maps student admission workflow status to a target current-enrollment status. */
   resolveEnrollmentStatusForStudentAdmissionStatus(
     status: StudentStatus,
-  ): EnrollmentStatus | null {
-    switch (status) {
-      case StudentStatus.ADVANCED:
+  ): EnrollmentStatus {
+    const workflow =
+      normalizeStudentEnrollmentWorkflowStatus(status) ?? 'LEAD';
+
+    return this.resolveEnrollmentStatusForWorkflowTarget(workflow);
+  }
+
+  resolveEnrollmentStatusForWorkflowTarget(
+    workflow: StudentEnrollmentWorkflowStatus,
+  ): EnrollmentStatus {
+    switch (workflow) {
+      case 'LEAD':
+        return EnrollmentStatus.LEAD;
+      case 'ADVANCED':
         return EnrollmentStatus.ADVANCED;
-      case StudentStatus.ADMITTED:
+      case 'ADMITTED':
         return EnrollmentStatus.ADMITTED;
+      case 'COMPLETED':
+        return EnrollmentStatus.COMPLETED;
+      case 'DROPPED':
+        return EnrollmentStatus.DROPPED;
+      case 'PLACED':
+        return EnrollmentStatus.PLACED;
       default:
-        return null;
+        return EnrollmentStatus.LEAD;
+    }
+  }
+
+  resolveWorkflowStatusFromEnrollmentStatus(
+    status: EnrollmentStatus,
+  ): StudentEnrollmentWorkflowStatus {
+    switch (status) {
+      case EnrollmentStatus.ADVANCED:
+        return 'ADVANCED';
+      case EnrollmentStatus.ADMITTED:
+      case EnrollmentStatus.ACTIVE:
+        return 'ADMITTED';
+      case EnrollmentStatus.COMPLETED:
+        return 'COMPLETED';
+      case EnrollmentStatus.DROPPED:
+        return 'DROPPED';
+      case EnrollmentStatus.PLACED:
+        return 'PLACED';
+      case EnrollmentStatus.LEAD:
+      case EnrollmentStatus.PENDING:
+      case EnrollmentStatus.PENDING_APPROVAL:
+      case EnrollmentStatus.CANCELLED:
+      case EnrollmentStatus.REJECTED:
+        return 'LEAD';
+      default:
+        return 'LEAD';
+    }
+  }
+
+  ensureValidWorkflowStatusTransition(
+    from: StudentEnrollmentWorkflowStatus,
+    to: StudentEnrollmentWorkflowStatus,
+  ): void {
+    if (
+      !canTransitionStudentEnrollmentWorkflowStatus(from, to)
+    ) {
+      throw new InvalidStatusTransitionException(from, to);
     }
   }
 
@@ -707,47 +773,63 @@ export class EnrollmentDomainService {
   resolveStudentStatus(
     status: EnrollmentStatus,
   ): StudentStatus | null {
-    switch (status) {
-      case EnrollmentStatus.ADVANCED:
-        return StudentStatus.ADVANCED;
-      case EnrollmentStatus.ADMITTED:
-      case EnrollmentStatus.ACTIVE:
-        return StudentStatus.ADMITTED;
-      case EnrollmentStatus.COMPLETED:
-        return StudentStatus.COMPLETED;
-      case EnrollmentStatus.DROPPED:
-        return StudentStatus.DROPPED;
-      default:
-        return null;
-    }
+    const workflow = this.resolveWorkflowStatusFromEnrollmentStatus(status);
+    return workflow as StudentStatus;
   }
 
-  /** Derives student status from all non-deleted enrollments for that student. */
+  /** Derives synced student lifecycle from enrollment rows (Admitted / Completed / Dropped). */
   resolveStudentStatusFromEnrollmentStatuses(
     statuses: EnrollmentStatus[],
   ): StudentStatus {
-    if (
-      statuses.some(
-        (status) =>
-          status === EnrollmentStatus.ADMITTED ||
-          status === EnrollmentStatus.ACTIVE,
-      )
-    ) {
-      return StudentStatus.ADMITTED;
+    if (statuses.length === 0) {
+      return StudentStatus.LEAD;
     }
 
-    if (statuses.some((status) => status === EnrollmentStatus.ADVANCED)) {
-      return StudentStatus.ADVANCED;
+    const current = statuses.filter((status) =>
+      Enrollment.isCurrentStatus(status),
+    );
+    const pool = current.length > 0 ? current : statuses;
+
+    if (pool.length === 1) {
+      return this.resolveWorkflowStatusFromEnrollmentStatus(
+        pool[0],
+      ) as StudentStatus;
     }
 
-    if (statuses.some((status) => status === EnrollmentStatus.COMPLETED)) {
-      return StudentStatus.COMPLETED;
+    const priority: StudentEnrollmentWorkflowStatus[] = [
+      'COMPLETED',
+      'ADMITTED',
+      'PLACED',
+      'ADVANCED',
+      'LEAD',
+    ];
+
+    for (const workflow of priority) {
+      if (
+        pool.some(
+          (status) =>
+            this.resolveWorkflowStatusFromEnrollmentStatus(status) ===
+            workflow,
+        )
+      ) {
+        return workflow as StudentStatus;
+      }
     }
 
-    if (statuses.some((status) => status === EnrollmentStatus.DROPPED)) {
-      return StudentStatus.DROPPED;
+    return this.resolveWorkflowStatusFromEnrollmentStatus(
+      pool[0],
+    ) as StudentStatus;
+  }
+
+  resolveLifecycleStatusFromEnrollment(
+    status: EnrollmentStatus,
+  ): StudentStatus | null {
+    const lifecycle = resolveLifecycleStatusFromEnrollmentStatuses([status]);
+
+    if (!lifecycle) {
+      return null;
     }
 
-    return StudentStatus.LEAD;
+    return lifecycle as StudentStatus;
   }
 }

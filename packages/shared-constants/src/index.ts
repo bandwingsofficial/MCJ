@@ -47,3 +47,21 @@ export {
   type JobApplicationSchedulingSuggestion,
   type JobApplicationSchedulingWaitingKind,
 } from "./branch-interview-scheduling.js";
+
+export {
+  STUDENT_ENROLLMENT_WORKFLOW_STATUSES,
+  STUDENT_ENROLLMENT_WORKFLOW_STATUS_LABELS,
+  canTransitionStudentEnrollmentWorkflowStatus,
+  getAllowedNextStudentEnrollmentWorkflowStatuses,
+  canTransitionEnrollmentRecordStatus,
+  getAllowedNextEnrollmentRecordStatuses,
+  normalizeStudentEnrollmentWorkflowStatus,
+  mapWorkflowStatusToEnrollmentRecordStatus,
+  isEnrollmentRecordWorkflowStatus,
+  normalizeEnrollmentRecordLifecycleStatus,
+  resolveLifecycleStatusFromEnrollmentStatuses,
+  ENROLLMENT_RECORD_WORKFLOW_STATUSES,
+  ENROLLMENT_RECORD_STATUS_LABELS,
+  type EnrollmentRecordWorkflowStatus,
+  type StudentEnrollmentWorkflowStatus,
+} from "./student-enrollment-workflow-status.js";

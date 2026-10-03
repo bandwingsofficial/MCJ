@@ -2,6 +2,7 @@
 
 import {
   CircleCheck,
+  GitBranch,
   Pencil,
   Power,
   RotateCcw,
@@ -13,6 +14,7 @@ import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { StudentListItem } from "@/src/features/students/types/student.types";
 import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.utils";
+import { canChangeStudentWorkflowStatus } from "@/src/features/students/utils/student-workflow-status.utils";
 
 const iconButtonClass =
   "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40";
@@ -29,6 +31,7 @@ interface Props {
   onDelete?: (student: StudentListItem) => void;
   onRestore?: (student: StudentListItem) => void;
   onPermanentDelete?: (student: StudentListItem) => void;
+  onChangeStatus?: (student: StudentListItem) => void;
 }
 
 export function StudentRowActionsMenu({
@@ -40,6 +43,7 @@ export function StudentRowActionsMenu({
   onDeactivate,
   onRestore,
   onPermanentDelete,
+  onChangeStatus,
 }: Props) {
   if (isArchivedStudent(student)) {
     return (
@@ -76,9 +80,25 @@ export function StudentRowActionsMenu({
   }
 
   const isActive = student.isActive !== false;
+  const showStatusChange =
+    Boolean(onChangeStatus) &&
+    canChangeStudentWorkflowStatus(student.status);
 
   return (
     <div className="flex items-center justify-end gap-2">
+      {showStatusChange ? (
+        <Tooltip content="Change status">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onChangeStatus?.(student)}
+            aria-label="Change status"
+            className={`${iconButtonClass} text-violet-800`}
+          >
+            <GitBranch className={iconClass} />
+          </button>
+        </Tooltip>
+      ) : null}
       <Tooltip content={isActive ? "Deactivate student" : "Activate student"}>
         <button
           type="button"

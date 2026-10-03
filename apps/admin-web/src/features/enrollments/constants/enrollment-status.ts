@@ -4,51 +4,20 @@ import { EnrollmentStatus } from "../types";
 
 export const CREATE_ENROLLMENT_STATUS_OPTIONS = [
   {
-    label: "Advanced",
-    value: EnrollmentStatus.ADVANCED,
-  },
-  {
     label: "Admitted",
     value: EnrollmentStatus.ADMITTED,
   },
 ];
 
+/** Admin enrollment lifecycle: Admitted and Completed only. */
 export const ENROLLMENT_STATUS_OPTIONS = [
-  {
-    label: "Pending",
-    value: EnrollmentStatus.PENDING,
-  },
-  {
-    label: "Pending Approval",
-    value: EnrollmentStatus.PENDING_APPROVAL,
-  },
-  {
-    label: "Advanced",
-    value: EnrollmentStatus.ADVANCED,
-  },
   {
     label: "Admitted",
     value: EnrollmentStatus.ADMITTED,
   },
   {
-    label: "Active",
-    value: EnrollmentStatus.ACTIVE,
-  },
-  {
     label: "Completed",
     value: EnrollmentStatus.COMPLETED,
-  },
-  {
-    label: "Cancelled",
-    value: EnrollmentStatus.CANCELLED,
-  },
-  {
-    label: "Dropped",
-    value: EnrollmentStatus.DROPPED,
-  },
-  {
-    label: "Rejected",
-    value: EnrollmentStatus.REJECTED,
   },
 ];
 

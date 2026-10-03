@@ -130,6 +130,11 @@ export class UpdateStudentHandler {
     await this.studentRepo.save(student);
 
     if (shouldSyncAdmissionStatus && command.status) {
+      this.admissionStatusSync.ensureValidWorkflowTransition(
+        student.status,
+        command.status,
+      );
+
       const synced = await this.admissionStatusSync.applyStudentAdmissionStatus(
         {
           student: (await this.studentRepo.findById(student.id)) ?? student,

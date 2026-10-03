@@ -7,15 +7,12 @@ import { Modal } from "@/src/shared/components/ui/model";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { Label } from "@/src/shared/components/ui/label";
 
-import {
-  STUDENT_ADMISSION_STATUS_OPTIONS,
-  STUDENT_STATUSES,
-} from "@/src/features/students/constants/student.constants";
 import type {
   StudentListItem,
   StudentStatus,
 } from "@/src/features/students/types/student.types";
 import { StudentStatusBadge } from "@/src/features/students/components/StudentStatusBadge";
+import { getStudentStatusSelectOptions } from "@/src/features/students/utils/student-workflow-status.utils";
 
 interface UpdateStudentAdmissionStatusDialogProps {
   open: boolean;
@@ -36,38 +33,35 @@ export function UpdateStudentAdmissionStatusDialog({
   onClose,
   onSubmit,
 }: UpdateStudentAdmissionStatusDialogProps) {
-  const [status, setStatus] = useState<StudentStatus>("LEAD");
+  const [nextStatus, setNextStatus] = useState<string>("");
 
   useEffect(() => {
     if (open && student) {
-      setStatus(student.status);
+      setNextStatus(student.status);
     }
-  }, [open, student]);
+  }, [open, student?.id, student?.status]);
 
   const statusOptions = useMemo(() => {
     if (!student) {
-      return [...STUDENT_ADMISSION_STATUS_OPTIONS];
+      return [];
     }
 
-    const options = [...STUDENT_ADMISSION_STATUS_OPTIONS];
-    if (!options.some((option) => option.value === student.status)) {
-      const label =
-        STUDENT_STATUSES.find((item) => item.value === student.status)
-          ?.label ?? student.status;
-      options.unshift({ label, value: student.status });
-    }
-
-    return options;
+    return getStudentStatusSelectOptions(student.status);
   }, [student]);
 
   if (!student) {
     return null;
   }
 
+  const canSave =
+    Boolean(nextStatus) &&
+    nextStatus !== student.status &&
+    statusOptions.some((option) => option.value === nextStatus);
+
   return (
     <Modal
       open={open}
-      title="Update Admission Status"
+      title="Change Status"
       onClose={() => {
         if (loading) {
           return;
@@ -88,10 +82,11 @@ export function UpdateStudentAdmissionStatusDialog({
         </div>
 
         <div className="grid gap-1">
-          <Label required>Status</Label>
+          <Label required>Change status</Label>
           <AppSelect
-            value={status}
-            onValueChange={(value) => setStatus(value as StudentStatus)}
+            value={nextStatus}
+            placeholder="Select status"
+            onValueChange={(value) => setNextStatus(value)}
             options={statusOptions}
           />
         </div>
@@ -107,9 +102,10 @@ export function UpdateStudentAdmissionStatusDialog({
           </Button>
           <Button
             loading={loading}
-            onClick={() => onSubmit(status)}
+            disabled={!canSave}
+            onClick={() => onSubmit(nextStatus as StudentStatus)}
           >
-            Update
+            Save
           </Button>
         </div>
       </div>

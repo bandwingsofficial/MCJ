@@ -43,8 +43,8 @@ import { buildStudentQualificationSelectOptions } from "@mcj/shared-constants";
 import {
   DEFAULT_STUDENT_FORM_VALUES,
   STUDENT_GENDER_OPTIONS,
-  STUDENT_STATUSES,
 } from "@/src/features/students/constants/student.constants";
+import { getStudentStatusSelectOptions } from "@/src/features/students/utils/student-workflow-status.utils";
 import {
   studentSchema,
   type StudentFormValues,
@@ -141,6 +141,9 @@ export function StudentForm({
   }, [serverErrors, setError]);
 
   const values = watch();
+  const statusOptions = getStudentStatusSelectOptions(
+    values.status ?? defaultValues?.status ?? "LEAD",
+  );
   const notesLength = (values.notes ?? "").length;
   const studentCode = isEdit
     ? values.studentCode || suggestedCode
@@ -649,7 +652,7 @@ export function StudentForm({
                     shouldDirty: true,
                   })
                 }
-                options={uniqueSelectOptions([...STUDENT_STATUSES])}
+                options={uniqueSelectOptions(statusOptions)}
                 triggerClassName={selectTriggerClass(getFieldState("status"))}
               />
           </IconValidatedField>

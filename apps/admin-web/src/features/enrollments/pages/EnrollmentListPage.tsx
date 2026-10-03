@@ -46,6 +46,7 @@ import { usePermanentDeleteEnrollment } from "@/src/features/enrollments/hooks/u
 import { useUnenrollEnrollment } from "@/src/features/enrollments/hooks/useUnenrollEnrollment";
 import { useUpdateEnrollmentStatus } from "@/src/features/enrollments/hooks/useUpdateEnrollmentStatus";
 import { AdmitEnrollmentConfirmDialog } from "@/src/features/enrollments/components/dialogs/admit-enrollment-confirm-dialog";
+import { UpdateEnrollmentStatusDialog } from "@/src/features/enrollments/components/dialogs/update-enrollment-status-dialog";
 import type { Enrollment } from "@/src/features/enrollments/types";
 import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
 import { enrollmentManagePath } from "@/src/features/enrollments/utils/enrollment-manage.routes";
@@ -73,6 +74,8 @@ export function EnrollmentListPage() {
   const [permanentDeleteTarget, setPermanentDeleteTarget] =
     useState<Enrollment | null>(null);
   const [admitTarget, setAdmitTarget] = useState<Enrollment | null>(null);
+  const [statusChangeTarget, setStatusChangeTarget] =
+    useState<Enrollment | null>(null);
   const { unenrollEnrollment, isLoading: isUnenrolling } =
     useUnenrollEnrollment();
   const { updateStatus, isLoading: isUpdatingStatus } =
@@ -226,6 +229,10 @@ export function EnrollmentListPage() {
                   onPermanentDelete={setPermanentDeleteTarget}
                   onAdmitAdvanced={setAdmitTarget}
                   admitAdvancedDisabled={isUpdatingStatus}
+                  actionsDisabled={
+                    isUpdatingStatus || isUnenrolling
+                  }
+                  onChangeStatus={setStatusChangeTarget}
                 />
               </div>
 
@@ -271,6 +278,28 @@ export function EnrollmentListPage() {
             </>
           )}
         </Card>
+
+      <UpdateEnrollmentStatusDialog
+        open={Boolean(statusChangeTarget)}
+        enrollment={statusChangeTarget}
+        loading={isUpdatingStatus}
+        onClose={() => setStatusChangeTarget(null)}
+        onSubmit={async (nextStatus) => {
+          if (!statusChangeTarget) {
+            return;
+          }
+
+          try {
+            await updateStatus(statusChangeTarget.id, {
+              status: nextStatus,
+            });
+            setStatusChangeTarget(null);
+            await refetch();
+          } catch {
+            // Toast handled in hook.
+          }
+        }}
+      />
 
       {isCreateOpen ? (
         <CreateEnrollmentModal

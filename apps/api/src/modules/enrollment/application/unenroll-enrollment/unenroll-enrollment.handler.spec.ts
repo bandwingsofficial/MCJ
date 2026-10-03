@@ -12,6 +12,10 @@ import { UnenrollEnrollmentHandler } from './unenroll-enrollment.handler';
 import { UnenrollEnrollmentCommand } from './unenroll-enrollment.command';
 
 import type { BatchRepository } from '@modules/batch/domain/repositories/batch.repository';
+import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
+import { Student } from '@modules/student/domain/entities/student.entity';
+import { StudentStatus } from '@modules/student/domain/enums/student-status.enum';
+import { EnrollmentCoinService } from '../shared/enrollment-coin.service';
 import { Batch } from '@modules/batch/domain/entities/batch.entity';
 import { BatchStatus } from '@modules/batch/domain/enums/batch-status.enum';
 import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
@@ -31,9 +35,10 @@ function makeEnrollment(
     batchId: string;
     branchId: string;
     studentId: string;
+    isActive: boolean;
   }>,
 ): Enrollment {
-  return Enrollment.create({
+  const enrollment = Enrollment.create({
     id: overrides?.id ?? 'enroll-1',
     enrollmentNumber: 'ENR-TEST-001',
     studentId: overrides?.studentId ?? STUDENT_ID,
@@ -45,6 +50,12 @@ function makeEnrollment(
     paidAmount: 0,
     source: EnrollmentSource.ADMIN,
   });
+
+  if (overrides?.isActive === false) {
+    enrollment.update({ isActive: false });
+  }
+
+  return enrollment;
 }
 
 function makeBatch(
@@ -158,8 +169,10 @@ function makeDetail(enrollment: Enrollment) {
 
 describe('UnenrollEnrollmentHandler', () => {
   let enrollmentRepo: jest.Mocked<EnrollmentRepository>;
+  let studentRepo: jest.Mocked<StudentRepository>;
   let batchRepo: jest.Mocked<BatchRepository>;
   let sideEffects: jest.Mocked<EnrollmentSideEffectsService>;
+  let coinService: jest.Mocked<EnrollmentCoinService>;
   let handler: UnenrollEnrollmentHandler;
   let savedEnrollment: Enrollment | null;
 
@@ -191,11 +204,30 @@ describe('UnenrollEnrollmentHandler', () => {
       transferSeat: jest.fn(),
     } as unknown as jest.Mocked<EnrollmentSideEffectsService>;
 
+    studentRepo = {
+      findById: jest.fn().mockResolvedValue(
+        Student.create({
+          id: STUDENT_ID,
+          studentCode: 'STU0001',
+          firstName: 'Akshay',
+          lastName: 'Badiger',
+          status: StudentStatus.ADMITTED,
+        }),
+      ),
+      save: jest.fn(),
+    } as unknown as jest.Mocked<StudentRepository>;
+
+    coinService = {
+      releaseCoinsForEnrollment: jest.fn(),
+    } as unknown as jest.Mocked<EnrollmentCoinService>;
+
     handler = new UnenrollEnrollmentHandler(
       enrollmentRepo,
+      studentRepo,
       batchRepo,
       new EnrollmentDomainService(),
       sideEffects,
+      coinService,
     );
   });
 
@@ -212,20 +244,23 @@ describe('UnenrollEnrollmentHandler', () => {
       new UnenrollEnrollmentCommand('enroll-1', ACTOR_ID),
     );
 
-    expect(result.status).toBe(EnrollmentStatus.CANCELLED);
-    expect(savedEnrollment?.status).toBe(EnrollmentStatus.CANCELLED);
+    expect(result.status).toBe(EnrollmentStatus.ACTIVE);
+    expect(savedEnrollment?.status).toBe(EnrollmentStatus.ACTIVE);
     expect(savedEnrollment?.isActive).toBe(false);
     expect(sideEffects.apply).toHaveBeenCalledWith(
-      expect.objectContaining({ status: EnrollmentStatus.CANCELLED }),
+      expect.objectContaining({ status: EnrollmentStatus.ACTIVE }),
       EnrollmentStatus.ACTIVE,
       ACTOR_ID,
+      { skipStudentStatusSync: true },
     );
+    expect(studentRepo.save).toHaveBeenCalled();
   });
 
-  // TEST 18: Already cancelled → business error
+  // TEST 18: Already dropped/cancelled → business error
   it('returns a business error when enrollment is already cancelled', async () => {
     const enrollment = makeEnrollment({
-      status: EnrollmentStatus.CANCELLED,
+      status: EnrollmentStatus.ADMITTED,
+      isActive: false,
     });
     enrollmentRepo.findById.mockResolvedValue(enrollment);
     batchRepo.findById.mockResolvedValue(makeBatch(BATCH_A, BRANCH_A));

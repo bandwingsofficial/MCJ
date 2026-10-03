@@ -100,6 +100,21 @@ export class PrismaEnrollmentRepository
     return record ? EnrollmentMapper.toDomain(record) : null;
   }
 
+  async findLatestByStudentId(
+    studentId: string,
+    includeDeleted = false,
+  ): Promise<Enrollment | null> {
+    const record = await this.prisma.enrollment.findFirst({
+      where: {
+        studentId,
+        ...(includeDeleted ? {} : { isDeleted: false }),
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    return record ? EnrollmentMapper.toDomain(record) : null;
+  }
+
   async findEnrollmentStatusesByStudentIds(
     studentIds: string[],
   ): Promise<Array<{ studentId: string; status: EnrollmentStatus }>> {

@@ -8,6 +8,7 @@ import {
 
 import { enrollmentService } from "../services/enrollment.service";
 import { parseEnrollmentListResponse } from "../utils/enrollment-list.utils";
+import { isEnrollmentVisibleInAdminList } from "../utils/enrollment-workflow-status.utils";
 
 import {
   Enrollment,
@@ -83,8 +84,15 @@ export const useEnrollments =
 
           const parsed = parseEnrollmentListResponse(response);
 
-          setEnrollments(parsed.items);
-          setCount(parsed.total);
+          const visibleItems = parsed.items.filter((enrollment) =>
+            isEnrollmentVisibleInAdminList({
+              enrollmentStatus: enrollment.status,
+              studentStatus: enrollment.student?.status,
+            }),
+          );
+
+          setEnrollments(visibleItems);
+          setCount(visibleItems.length);
         } catch (error) {
           const message =
             error instanceof Error
@@ -102,6 +110,7 @@ export const useEnrollments =
     }, [fetchEnrollments]);
 
     useRealtimeRefetch("enrollment", fetchEnrollments);
+    useRealtimeRefetch("student", fetchEnrollments);
 
     return {
       enrollments,

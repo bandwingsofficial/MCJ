@@ -248,6 +248,10 @@ export interface EnrollmentRepository {
     studentId: string,
     excludeId?: string,
   ): Promise<Enrollment | null>;
+  findLatestByStudentId(
+    studentId: string,
+    includeDeleted?: boolean,
+  ): Promise<Enrollment | null>;
   findEnrollmentStatusesByStudentIds(
     studentIds: string[],
   ): Promise<Array<{ studentId: string; status: EnrollmentStatus }>>;

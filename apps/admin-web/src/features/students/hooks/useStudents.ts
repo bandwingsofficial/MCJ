@@ -137,6 +137,7 @@ export const useStudents = (): UseStudentsReturn => {
   }, [fetchStudents]);
 
   useRealtimeRefetch("student", fetchStudents);
+  useRealtimeRefetch("enrollment", fetchStudents);
 
   return {
     students,

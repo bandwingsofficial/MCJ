@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -49,8 +50,8 @@ import { buildStudentQualificationSelectOptions } from "@mcj/shared-constants";
 import {
   DEFAULT_CREATE_STUDENT_FORM_VALUES,
   STUDENT_GENDER_OPTIONS,
-  STUDENT_STATUSES,
 } from "@/src/features/students/constants/student.constants";
+import { getStudentStatusSelectOptions } from "@/src/features/students/utils/student-workflow-status.utils";
 import {
   createStudentSchema,
   type CreateStudentFormValues,
@@ -139,6 +140,10 @@ export function CreateStudentForm({
   }, [serverErrors, setError]);
 
   const values = watch();
+  const statusOptions = useMemo(
+    () => getStudentStatusSelectOptions(values.status ?? "LEAD"),
+    [values.status],
+  );
   const notesLength = (values.notes ?? "").length;
   const passingYearRegister = register("passingYear", {
     valueAsNumber: true,
@@ -371,7 +376,7 @@ export function CreateStudentForm({
                   shouldDirty: true,
                 })
               }
-              options={uniqueSelectOptions([...STUDENT_STATUSES])}
+              options={uniqueSelectOptions(statusOptions)}
               triggerClassName={selectTriggerClass(getFieldState("status"))}
             />
           </LeftIconField>

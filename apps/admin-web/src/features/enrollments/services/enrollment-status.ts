@@ -1,48 +1,29 @@
 // src/features/enrollments/services/enrollment-status.ts
 
+import {
+  canTransitionStudentEnrollmentWorkflowStatus,
+} from "@mcj/shared-constants";
+
 import { EnrollmentStatus } from "../types";
-
-const transitions: Record<
-  EnrollmentStatus,
-  EnrollmentStatus[]
-> = {
-  [EnrollmentStatus.PENDING]: [
-    EnrollmentStatus.PENDING_APPROVAL,
-    EnrollmentStatus.CANCELLED,
-  ],
-
-  [EnrollmentStatus.PENDING_APPROVAL]: [
-    EnrollmentStatus.ADMITTED,
-    EnrollmentStatus.REJECTED,
-  ],
-
-  [EnrollmentStatus.ADVANCED]: [
-    EnrollmentStatus.ADMITTED,
-    EnrollmentStatus.CANCELLED,
-  ],
-
-  [EnrollmentStatus.ADMITTED]: [
-    EnrollmentStatus.ACTIVE,
-    EnrollmentStatus.CANCELLED,
-  ],
-
-  [EnrollmentStatus.ACTIVE]: [
-    EnrollmentStatus.COMPLETED,
-    EnrollmentStatus.DROPPED,
-  ],
-
-  [EnrollmentStatus.COMPLETED]: [],
-
-  [EnrollmentStatus.CANCELLED]: [],
-
-  [EnrollmentStatus.DROPPED]: [],
-
-  [EnrollmentStatus.REJECTED]: [],
-};
+import {
+  resolveEnrollmentWorkflowStatus,
+  enrollmentWorkflowStatusToEnrollmentStatus,
+} from "../utils/enrollment-workflow-status.utils";
 
 export const canUpdateStatus = (
   current: EnrollmentStatus,
   next: EnrollmentStatus,
 ): boolean => {
-  return transitions[current].includes(next);
+  const from = resolveEnrollmentWorkflowStatus(current);
+  const to = resolveEnrollmentWorkflowStatus(next);
+
+  return canTransitionStudentEnrollmentWorkflowStatus(from, to);
 };
+
+export function toWorkflowEnrollmentStatus(
+  status: EnrollmentStatus,
+): EnrollmentStatus {
+  return enrollmentWorkflowStatusToEnrollmentStatus(
+    resolveEnrollmentWorkflowStatus(status),
+  );
+}

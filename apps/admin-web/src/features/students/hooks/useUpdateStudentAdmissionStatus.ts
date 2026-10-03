@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+import { appToast } from "@/src/shared/components/ui/toast";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
+
 import { studentService } from "@/src/features/students/services/student.service";
 import type { StudentStatus } from "@/src/features/students/types/student.types";
 
@@ -15,7 +18,14 @@ export function useUpdateStudentAdmissionStatus() {
     setIsLoading(true);
 
     try {
-      return await studentService.updateStudentAdmissionStatus(id, { status });
+      const response = await studentService.updateStudentAdmissionStatus(id, {
+        status,
+      });
+      appToast.success(response.message ?? "Student status updated.");
+      return response;
+    } catch (error) {
+      appToast.error(getErrorMessage(error));
+      throw error;
     } finally {
       setIsLoading(false);
     }

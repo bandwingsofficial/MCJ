@@ -1,12 +1,18 @@
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
+import {
+  resolveEnrollmentAdminDisplayStatus,
+  resolveEnrollmentListWorkflowStatus,
+} from "@/src/features/enrollments/utils/enrollment-workflow-status.utils";
 
 export const CURRENT_ENROLLMENT_STATUSES = [
   "PENDING",
   "PENDING_APPROVAL",
+  "LEAD",
   "ADVANCED",
   "ADMITTED",
   "ACTIVE",
+  "PLACED",
 ] as const;
 
 const TERMINAL_ENROLLMENT_STATUSES = [
@@ -55,15 +61,23 @@ export function isArchivedEnrollment(enrollment: {
   return Boolean(enrollment.isDeleted || enrollment.deletedAt);
 }
 
-/** Status for list UI — never infer Cancelled from isActive alone (inactive ≠ unenrolled). */
+/** Status badge on admin list — Admitted or Completed only. */
 export function enrollmentListDisplayStatus(
-  enrollment: Pick<Enrollment, "status">,
+  enrollment: Pick<Enrollment, "status"> & {
+    student?: { status?: string | null } | null;
+  },
 ): EnrollmentStatus {
-  const normalized = normalizeEnrollmentStatus(enrollment.status);
-  if (normalized) {
-    return normalized as EnrollmentStatus;
+  const workflow = resolveEnrollmentListWorkflowStatus({
+    enrollmentStatus: (enrollment.status ??
+      EnrollmentStatus.PENDING) as EnrollmentStatus,
+    studentStatus: enrollment.student?.status,
+  });
+
+  if (workflow === "COMPLETED") {
+    return EnrollmentStatus.COMPLETED;
   }
-  return EnrollmentStatus.PENDING;
+
+  return EnrollmentStatus.ADMITTED;
 }
 
 /** Matches backend Enrollment.isCurrent() for list/manage action visibility. */
@@ -125,6 +139,14 @@ export function canPermanentlyDeleteEnrollmentFromList(enrollment: {
 }): boolean {
   if (isArchivedEnrollment(enrollment)) {
     return true;
+  }
+
+  const adminLifecycle = resolveEnrollmentAdminDisplayStatus({
+    enrollmentStatus: enrollment.status ?? EnrollmentStatus.PENDING,
+  });
+
+  if (adminLifecycle === EnrollmentStatus.COMPLETED) {
+    return false;
   }
 
   return isTerminalEnrollmentStatus(enrollment.status);

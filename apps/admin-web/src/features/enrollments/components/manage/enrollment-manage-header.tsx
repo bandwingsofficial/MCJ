@@ -7,7 +7,10 @@ import type { Enrollment } from "@/src/features/enrollments/types/enrollment.typ
 import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/table/EnrollmentStatusBadge";
 import { PaymentStatusBadge } from "@/src/features/enrollments/components/table/PaymentStatusBadge";
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
-import { isCurrentEnrollmentStatus } from "@/src/features/enrollments/utils/current-enrollment";
+import {
+  enrollmentListDisplayStatus,
+  isCurrentEnrollmentStatus,
+} from "@/src/features/enrollments/utils/current-enrollment";
 import { formatEnrollmentOverviewContextLabel } from "@/src/features/enrollments/utils/enrollment-overview.utils";
 
 interface Props {
@@ -56,7 +59,9 @@ export function EnrollmentManageHeader({ enrollment, activeSection }: Props) {
               <h1 className="min-w-0 text-xl font-bold tracking-tight text-[#102A56] sm:text-2xl">
                 {studentName || "Enrollment"}
               </h1>
-              <EnrollmentStatusBadge status={enrollment.status} />
+              <EnrollmentStatusBadge
+                status={enrollmentListDisplayStatus(enrollment)}
+              />
               <PaymentStatusBadge status={enrollment.paymentStatus} />
             </div>
 

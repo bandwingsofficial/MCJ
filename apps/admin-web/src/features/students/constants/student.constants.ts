@@ -24,7 +24,6 @@ export const STUDENT_GENDER_OPTIONS: ReadonlyArray<{
   { label: "Other", value: "OTHER" },
 ];
 
-/** Admission workflow statuses kept in sync with the student's current enrollment. */
 export const STUDENT_ADMISSION_STATUS_OPTIONS: ReadonlyArray<{
   label: string;
   value: StudentStatus;
@@ -32,20 +31,15 @@ export const STUDENT_ADMISSION_STATUS_OPTIONS: ReadonlyArray<{
   { label: "Lead", value: "LEAD" },
   { label: "Advanced", value: "ADVANCED" },
   { label: "Admitted", value: "ADMITTED" },
+  { label: "Completed", value: "COMPLETED" },
+  { label: "Dropped", value: "DROPPED" },
+  { label: "Placed", value: "PLACED" },
 ];
 
 export const STUDENT_STATUSES: ReadonlyArray<{
   label: string;
   value: StudentStatus;
-}> = [
-  { label: "Lead", value: "LEAD" },
-  { label: "Enquired", value: "ENQUIRED" },
-  { label: "Advanced", value: "ADVANCED" },
-  { label: "Admitted", value: "ADMITTED" },
-  { label: "Completed", value: "COMPLETED" },
-  { label: "Dropped", value: "DROPPED" },
-  { label: "Placed", value: "PLACED" },
-];
+}> = [...STUDENT_ADMISSION_STATUS_OPTIONS];
 
 export const STUDENT_STATUS_FILTER_OPTIONS = [
   { label: "Active", value: ACTIVE_STUDENTS_FILTER },

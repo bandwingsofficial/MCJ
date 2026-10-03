@@ -1898,7 +1898,6 @@ enum BatchCalendarExceptionStatus {
 
 enum StudentStatus {
   LEAD
-  ENQUIRED
   ADVANCED
   ADMITTED
   COMPLETED
@@ -1922,11 +1921,13 @@ enum StudentDocumentType {
 enum EnrollmentStatus {
   PENDING
   PENDING_APPROVAL
+  LEAD
   ADVANCED
   ADMITTED
   ACTIVE
   COMPLETED
   DROPPED
+  PLACED
   CANCELLED
   REJECTED
 }

@@ -30,6 +30,8 @@ import { PaymentDomainService } from '../payment/domain/services/payment-domain.
 import { STUDENT_TOKENS } from '../student/student.tokens';
 import { StudentModule } from '../student/student.module';
 import type { StudentRepository } from '../student/domain/repositories/student.repository';
+import { StudentAdmissionStatusSyncService } from '../student/application/shared/student-admission-status-sync.service';
+import { StudentDomainService } from '../student/domain/services/student-domain.service';
 import { ResolveAuthenticatedStudentService } from '../student/domain/services/resolve-authenticated-student.service';
 import { ENROLLMENT_TOKENS } from './enrollment.tokens';
 import { ApproveEnrollmentHandler } from './application/approve-enrollment/approve-enrollment.handler';
@@ -351,18 +353,27 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
       provide: UpdateEnrollmentStatusHandler,
       useFactory: (
         enrollmentRepo: EnrollmentRepository,
+        studentRepo: StudentRepository,
         domainService: EnrollmentDomainService,
         sideEffects: EnrollmentSideEffectsService,
+        workflowSync: StudentAdmissionStatusSyncService,
+        studentDomainService: StudentDomainService,
       ) =>
         new UpdateEnrollmentStatusHandler(
           enrollmentRepo,
+          studentRepo,
           domainService,
           sideEffects,
+          workflowSync,
+          studentDomainService,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
         EnrollmentDomainService,
         EnrollmentSideEffectsService,
+        StudentAdmissionStatusSyncService,
+        StudentDomainService,
       ],
     },
 
@@ -462,6 +473,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
       provide: UnenrollEnrollmentHandler,
       useFactory: (
         enrollmentRepo: EnrollmentRepository,
+        studentRepo: StudentRepository,
         batchRepo: BatchRepository,
         domainService: EnrollmentDomainService,
         sideEffects: EnrollmentSideEffectsService,
@@ -469,6 +481,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
       ) =>
         new UnenrollEnrollmentHandler(
           enrollmentRepo,
+          studentRepo,
           batchRepo,
           domainService,
           sideEffects,
@@ -476,6 +489,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
+        STUDENT_TOKENS.STUDENT_REPOSITORY,
         BATCH_TOKENS.BATCH_REPOSITORY,
         EnrollmentDomainService,
         EnrollmentSideEffectsService,

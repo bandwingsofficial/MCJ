@@ -1,5 +1,6 @@
 import type { BatchRepository } from '@modules/batch/domain/repositories/batch.repository';
 import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
+import { StudentStatus } from '@modules/student/domain/enums/student-status.enum';
 
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
@@ -12,6 +13,7 @@ import {
   isTimingLinkedEnrollmentStatus,
   syncBatchTimingEnrolledCount,
 } from '../../infrastructure/utils/enrollment-timing-count.util';
+import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
 
 /** Status update on an enrollment already in the batch — not a new seat. */
 function isInPlaceSeatPromotion(
@@ -42,6 +44,7 @@ export class EnrollmentSideEffectsService {
     enrollment: Enrollment,
     previousStatus: EnrollmentStatus | null,
     actorId?: string | null,
+    options?: { skipStudentStatusSync?: boolean },
   ): Promise<void> {
     await this.syncBatchSeatCount(
       enrollment,
@@ -53,10 +56,12 @@ export class EnrollmentSideEffectsService {
       previousStatus,
     );
     await this.syncStudentBranchFromEnrollment(enrollment, actorId);
-    await this.syncStudentStatusForStudentId(
-      enrollment.studentId,
-      actorId,
-    );
+    if (!options?.skipStudentStatusSync) {
+      await this.syncStudentStatusForStudentId(
+        enrollment.studentId,
+        actorId,
+      );
+    }
   }
 
   async syncStudentStatusForStudentId(
@@ -64,29 +69,40 @@ export class EnrollmentSideEffectsService {
     actorId?: string | null,
     excludeEnrollmentId?: string,
   ): Promise<void> {
-    const records = await this.prisma.enrollment.findMany({
+    const currentRecord = await this.prisma.enrollment.findFirst({
       where: {
         studentId,
         isDeleted: false,
+        status: { in: Enrollment.currentStatuses() },
         ...(excludeEnrollmentId
           ? { id: { not: excludeEnrollmentId } }
           : {}),
       },
+      orderBy: { createdAt: 'asc' },
       select: { status: true },
     });
 
-    const statuses = records
-      .map((record) => record.status as EnrollmentStatus)
-      .filter((status) => Enrollment.isCurrentStatus(status));
+    const primaryRecord =
+      currentRecord ??
+      (await this.prisma.enrollment.findFirst({
+        where: {
+          studentId,
+          isDeleted: false,
+          ...(excludeEnrollmentId
+            ? { id: { not: excludeEnrollmentId } }
+            : {}),
+        },
+        orderBy: { updatedAt: 'desc' },
+        select: { status: true },
+      }));
 
-    if (statuses.length === 0) {
+    if (!primaryRecord) {
       return;
     }
 
-    const nextStatus =
-      this.domainService.resolveStudentStatusFromEnrollmentStatuses(
-        statuses,
-      );
+    const nextStatus = this.domainService.resolveWorkflowStatusFromEnrollmentStatus(
+      primaryRecord.status as EnrollmentStatus,
+    ) as StudentStatus;
 
     const student = await this.studentRepo.findById(studentId);
     if (!student) {
@@ -103,6 +119,13 @@ export class EnrollmentSideEffectsService {
     });
 
     await this.studentRepo.save(student);
+
+    notifyDomainMutation({
+      domain: 'student',
+      action: 'status_changed',
+      entityId: student.id,
+      branchId: student.branchId ?? undefined,
+    });
   }
 
   async assertCapacityForTransition(

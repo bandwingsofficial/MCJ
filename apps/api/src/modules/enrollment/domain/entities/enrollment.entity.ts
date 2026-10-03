@@ -239,9 +239,11 @@ export class Enrollment {
     return [
       EnrollmentStatus.PENDING,
       EnrollmentStatus.PENDING_APPROVAL,
+      EnrollmentStatus.LEAD,
       EnrollmentStatus.ADVANCED,
       EnrollmentStatus.ADMITTED,
       EnrollmentStatus.ACTIVE,
+      EnrollmentStatus.PLACED,
     ];
   }
 

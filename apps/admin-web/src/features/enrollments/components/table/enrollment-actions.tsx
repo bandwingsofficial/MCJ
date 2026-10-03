@@ -1,17 +1,29 @@
 "use client";
 
-import { GraduationCap, Pencil, Settings2, Trash2, UserMinus } from "lucide-react";
+import {
+  GitBranch,
+  GraduationCap,
+  Pencil,
+  Settings2,
+  Trash2,
+  UserMinus,
+} from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import type { Enrollment } from "@/src/features/enrollments/types";
+import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
 import {
   canArchiveEnrollmentFromList,
   canPermanentlyDeleteEnrollmentFromList,
   canUnenrollEnrollment,
   isCurrentEnrollmentRecord,
 } from "@/src/features/enrollments/utils/current-enrollment";
+import {
+  canChangeSyncedEnrollmentWorkflowStatus,
+  isAdmittedWorkflowEnrollment,
+} from "@/src/features/enrollments/utils/enrollment-workflow-status.utils";
 
 const iconBtnClass =
   "h-9 w-9 shrink-0 rounded-lg p-0 transition-colors";
@@ -27,6 +39,8 @@ interface Props {
   onPermanentDelete?: (enrollment: Enrollment) => void;
   onAdmitAdvanced?: (enrollment: Enrollment) => void;
   showAdmitAdvanced?: boolean;
+  displayStatus?: EnrollmentStatus;
+  onChangeStatus?: (enrollment: Enrollment) => void;
 }
 
 export function EnrollmentActions({
@@ -39,10 +53,28 @@ export function EnrollmentActions({
   onPermanentDelete,
   onAdmitAdvanced,
   showAdmitAdvanced = false,
+  displayStatus,
+  onChangeStatus,
 }: Props) {
   const isCurrent = isCurrentEnrollmentRecord(enrollment);
+  const statusForActions =
+    displayStatus ?? (enrollment.status as EnrollmentStatus);
+  const showStatusChange =
+    Boolean(onChangeStatus) &&
+    !enrollment.isDeleted &&
+    canChangeSyncedEnrollmentWorkflowStatus({
+      enrollmentStatus: statusForActions,
+      studentStatus: enrollment.student?.status,
+    });
   const showUnenroll =
-    isCurrent && onUnenroll && canUnenrollEnrollment(enrollment);
+    isCurrent &&
+    onUnenroll &&
+    canUnenrollEnrollment(enrollment) &&
+    isAdmittedWorkflowEnrollment({
+      enrollmentStatus: statusForActions,
+      studentStatus: enrollment.student?.status,
+      isActive: enrollment.isActive,
+    });
   const showArchive =
     onArchive && canArchiveEnrollmentFromList(enrollment);
   const showPermanentDelete =
@@ -51,6 +83,22 @@ export function EnrollmentActions({
 
   return (
     <div className="flex shrink-0 items-center justify-end gap-1">
+      {showStatusChange ? (
+        <Tooltip content="Change status">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={() => onChangeStatus?.(enrollment)}
+            aria-label="Change status"
+            className={`${iconBtnClass} text-violet-800 hover:bg-violet-50 hover:text-violet-900`}
+          >
+            <GitBranch className={iconClass} />
+          </Button>
+        </Tooltip>
+      ) : null}
+
       {showUnenroll ? (
         <Tooltip content="Unenroll student">
           <Button
