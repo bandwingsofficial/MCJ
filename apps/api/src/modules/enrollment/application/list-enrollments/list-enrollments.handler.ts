@@ -2,6 +2,7 @@ import type {
   EnrollmentListFilters,
   EnrollmentRepository,
 } from '../../domain/repositories/enrollment.repository';
+import { dedupeEnrollmentsToOnePerStudent } from '../../domain/utils/primary-enrollment-per-student.util';
 
 import { ListEnrollmentsQuery } from './list-enrollments.query';
 import { ListEnrollmentsResult } from './list-enrollments.result';
@@ -14,6 +15,9 @@ export class ListEnrollmentsHandler {
   async execute(
     query: ListEnrollmentsQuery,
   ): Promise<ListEnrollmentsResult> {
+    const skip = query.skip ?? 0;
+    const take = query.take ?? 10;
+
     const filters: EnrollmentListFilters = {
       search: query.search,
       studentId: query.studentId,
@@ -34,23 +38,29 @@ export class ListEnrollmentsHandler {
       admissionDateTo: query.admissionDateTo,
       createdAtFrom: query.createdAtFrom,
       createdAtTo: query.createdAtTo,
-      skip: query.skip,
-      take: query.take,
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
       currentOnly: query.currentOnly,
     };
 
-    const [items, total] = await Promise.all([
-      this.enrollmentRepo.findSummaries(filters),
-      this.enrollmentRepo.count(filters),
-    ]);
+    if (query.studentId) {
+      const [items, total] = await Promise.all([
+        this.enrollmentRepo.findSummaries({
+          ...filters,
+          skip,
+          take,
+        }),
+        this.enrollmentRepo.count(filters),
+      ]);
 
-    return new ListEnrollmentsResult(
-      items,
-      total,
-      query.skip ?? 0,
-      query.take ?? items.length,
-    );
+      return new ListEnrollmentsResult(items, total, skip, take);
+    }
+
+    const allMatching = await this.enrollmentRepo.findSummaries(filters);
+    const deduped = dedupeEnrollmentsToOnePerStudent(allMatching);
+    const total = deduped.length;
+    const items = deduped.slice(skip, skip + take);
+
+    return new ListEnrollmentsResult(items, total, skip, take);
   }
 }

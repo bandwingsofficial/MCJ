@@ -4,6 +4,10 @@ import { EnrollmentStatus } from "../types";
 
 export const CREATE_ENROLLMENT_STATUS_OPTIONS = [
   {
+    label: "Advanced",
+    value: EnrollmentStatus.ADVANCED,
+  },
+  {
     label: "Admitted",
     value: EnrollmentStatus.ADMITTED,
   },

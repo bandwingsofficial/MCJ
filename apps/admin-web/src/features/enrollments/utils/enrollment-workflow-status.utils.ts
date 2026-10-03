@@ -203,7 +203,11 @@ export function isEnrollmentVisibleInAdminList(input: {
   studentStatus?: string | null;
 }): boolean {
   const workflow = resolveEnrollmentListWorkflowStatus(input);
-  return workflow === "ADMITTED" || workflow === "COMPLETED";
+  return (
+    workflow === "ADVANCED" ||
+    workflow === "ADMITTED" ||
+    workflow === "COMPLETED"
+  );
 }
 
 /** Admin enrollment popup lifecycle (Admitted / Completed only). */

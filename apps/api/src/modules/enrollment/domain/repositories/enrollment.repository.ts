@@ -248,6 +248,11 @@ export interface EnrollmentRepository {
     studentId: string,
     excludeId?: string,
   ): Promise<Enrollment | null>;
+  /** Newest current-status enrollment (primary for student ↔ enrollment sync). */
+  findPrimaryByStudentId(
+    studentId: string,
+    excludeId?: string,
+  ): Promise<Enrollment | null>;
   findLatestByStudentId(
     studentId: string,
     includeDeleted?: boolean,

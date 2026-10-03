@@ -7,6 +7,7 @@ import type { BranchRepository } from '@modules/branch/domain/repositories/branc
 import type { CategoryRepository } from '@modules/category/domain/repositories/category.repository';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
+import { StudentStatus } from '@modules/student/domain/enums/student-status.enum';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import { ApplicationType } from '../../domain/enums/application-type.enum';
@@ -70,6 +71,10 @@ export class CreateEnrollmentHandler {
         batchId: command.batchId,
         expectedBranchId: command.expectedBranchId,
       },
+    );
+
+    this.domainService.ensureStudentEligibleForNewAdminEnrollment(
+      hierarchy.student,
     );
 
     await this.domainService.ensureNoBlockingCourseEnrollment(
@@ -150,7 +155,9 @@ export class CreateEnrollmentHandler {
     const admissionDate = command.admissionDate ?? new Date();
     const isAdminSource = command.source === EnrollmentSource.ADMIN;
     const enrollmentStatus = this.resolveCreateStatus(command, isAdminSource);
-    const isActive = enrollmentStatus === EnrollmentStatus.ADMITTED;
+    const isActive =
+      enrollmentStatus === EnrollmentStatus.ADMITTED ||
+      enrollmentStatus === EnrollmentStatus.ADVANCED;
 
     const enrollment = Enrollment.create({
       id: randomUUID(),
@@ -187,7 +194,28 @@ export class CreateEnrollmentHandler {
 
     await this.enrollmentRepo.save(enrollment);
 
-    await this.sideEffects.apply(enrollment, null, command.createdBy);
+    const syncedStudentStatus = this.domainService
+      .resolveWorkflowStatusFromEnrollmentStatus(enrollmentStatus) as StudentStatus;
+
+    const student = await this.studentRepo.findById(command.studentId);
+    if (student && student.status !== syncedStudentStatus) {
+      student.update({
+        status: syncedStudentStatus,
+        updatedBy: command.createdBy,
+      });
+      await this.studentRepo.save(student);
+
+      notifyDomainMutation({
+        domain: 'student',
+        action: 'status_changed',
+        entityId: student.id,
+        branchId: student.branchId ?? undefined,
+      });
+    }
+
+    await this.sideEffects.apply(enrollment, null, command.createdBy, {
+      skipStudentStatusSync: true,
+    });
 
     const currency = 'INR';
 

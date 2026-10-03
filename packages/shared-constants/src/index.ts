@@ -55,6 +55,7 @@ export {
   getAllowedNextStudentEnrollmentWorkflowStatuses,
   canTransitionEnrollmentRecordStatus,
   getAllowedNextEnrollmentRecordStatuses,
+  canStudentStartNewAdminEnrollment,
   normalizeStudentEnrollmentWorkflowStatus,
   mapWorkflowStatusToEnrollmentRecordStatus,
   isEnrollmentRecordWorkflowStatus,

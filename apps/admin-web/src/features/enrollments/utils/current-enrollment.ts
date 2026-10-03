@@ -77,6 +77,10 @@ export function enrollmentListDisplayStatus(
     return EnrollmentStatus.COMPLETED;
   }
 
+  if (workflow === "ADVANCED") {
+    return EnrollmentStatus.ADVANCED;
+  }
+
   return EnrollmentStatus.ADMITTED;
 }
 

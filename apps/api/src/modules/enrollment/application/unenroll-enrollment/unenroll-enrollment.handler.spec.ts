@@ -16,6 +16,7 @@ import type { StudentRepository } from '@modules/student/domain/repositories/stu
 import { Student } from '@modules/student/domain/entities/student.entity';
 import { StudentStatus } from '@modules/student/domain/enums/student-status.enum';
 import { EnrollmentCoinService } from '../shared/enrollment-coin.service';
+import { StudentAdmissionStatusSyncService } from '@modules/student/application/shared/student-admission-status-sync.service';
 import { Batch } from '@modules/batch/domain/entities/batch.entity';
 import { BatchStatus } from '@modules/batch/domain/enums/batch-status.enum';
 import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
@@ -173,6 +174,7 @@ describe('UnenrollEnrollmentHandler', () => {
   let batchRepo: jest.Mocked<BatchRepository>;
   let sideEffects: jest.Mocked<EnrollmentSideEffectsService>;
   let coinService: jest.Mocked<EnrollmentCoinService>;
+  let workflowSync: jest.Mocked<StudentAdmissionStatusSyncService>;
   let handler: UnenrollEnrollmentHandler;
   let savedEnrollment: Enrollment | null;
 
@@ -221,6 +223,16 @@ describe('UnenrollEnrollmentHandler', () => {
       releaseCoinsForEnrollment: jest.fn(),
     } as unknown as jest.Mocked<EnrollmentCoinService>;
 
+    workflowSync = {
+      applyEnrollmentWorkflowTarget: jest.fn(
+        async (enrollment: Enrollment) => {
+          enrollment.changeStatus(EnrollmentStatus.DROPPED, ACTOR_ID);
+          enrollment.deactivate(ACTOR_ID);
+        },
+      ),
+      syncStudentToWorkflowStatus: jest.fn(),
+    } as unknown as jest.Mocked<StudentAdmissionStatusSyncService>;
+
     handler = new UnenrollEnrollmentHandler(
       enrollmentRepo,
       studentRepo,
@@ -228,6 +240,7 @@ describe('UnenrollEnrollmentHandler', () => {
       new EnrollmentDomainService(),
       sideEffects,
       coinService,
+      workflowSync,
     );
   });
 
@@ -244,16 +257,22 @@ describe('UnenrollEnrollmentHandler', () => {
       new UnenrollEnrollmentCommand('enroll-1', ACTOR_ID),
     );
 
-    expect(result.status).toBe(EnrollmentStatus.ACTIVE);
-    expect(savedEnrollment?.status).toBe(EnrollmentStatus.ACTIVE);
+    expect(result.status).toBe(EnrollmentStatus.DROPPED);
+    expect(savedEnrollment?.status).toBe(EnrollmentStatus.DROPPED);
     expect(savedEnrollment?.isActive).toBe(false);
+    expect(workflowSync.applyEnrollmentWorkflowTarget).toHaveBeenCalled();
+    expect(workflowSync.syncStudentToWorkflowStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        studentId: STUDENT_ID,
+        targetStatus: StudentStatus.DROPPED,
+      }),
+    );
     expect(sideEffects.apply).toHaveBeenCalledWith(
-      expect.objectContaining({ status: EnrollmentStatus.ACTIVE }),
+      expect.objectContaining({ status: EnrollmentStatus.DROPPED }),
       EnrollmentStatus.ACTIVE,
       ACTOR_ID,
       { skipStudentStatusSync: true },
     );
-    expect(studentRepo.save).toHaveBeenCalled();
   });
 
   // TEST 18: Already dropped/cancelled → business error
@@ -284,7 +303,7 @@ describe('UnenrollEnrollmentHandler', () => {
       handler.execute(
         new UnenrollEnrollmentCommand('enroll-1', ACTOR_ID, BRANCH_A),
       ),
-    ).resolves.toMatchObject({ status: EnrollmentStatus.CANCELLED });
+    ).resolves.toMatchObject({ status: EnrollmentStatus.DROPPED });
   });
 
   // TEST 20: Branch manager cannot unenroll another branch student
@@ -317,7 +336,7 @@ describe('UnenrollEnrollmentHandler', () => {
 
     expect(enrollmentRepo.save).toHaveBeenCalledTimes(1);
     expect(savedEnrollment?.isDeleted).toBe(false);
-    expect(savedEnrollment?.status).toBe(EnrollmentStatus.CANCELLED);
+    expect(savedEnrollment?.status).toBe(EnrollmentStatus.DROPPED);
   });
 
   // TEST 25: Batch seat side effects invoked on unenroll
@@ -335,6 +354,7 @@ describe('UnenrollEnrollmentHandler', () => {
       expect.any(Enrollment),
       EnrollmentStatus.ADMITTED,
       ACTOR_ID,
+      { skipStudentStatusSync: true },
     );
   });
 });
@@ -404,6 +424,7 @@ describe('EnrollmentSideEffectsService seat release', () => {
       {
         enrollment: {
           findMany: jest.fn().mockResolvedValue([]),
+          findFirst: jest.fn().mockResolvedValue(null),
         },
         batchTiming: {
           findFirst: jest.fn().mockResolvedValue(null),
@@ -412,12 +433,13 @@ describe('EnrollmentSideEffectsService seat release', () => {
       } as unknown as import('../../../../infrastructure/prisma/prisma.service').PrismaService,
     );
 
-    const enrollment = makeEnrollment({ status: EnrollmentStatus.CANCELLED });
+    const enrollment = makeEnrollment({ status: EnrollmentStatus.DROPPED });
 
     await sideEffects.apply(
       enrollment,
       EnrollmentStatus.ADMITTED,
       ACTOR_ID,
+      { skipStudentStatusSync: true },
     );
 
     expect(batch.enrolledCount).toBe(0);

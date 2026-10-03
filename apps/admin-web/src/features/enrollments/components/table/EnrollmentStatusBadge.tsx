@@ -12,7 +12,13 @@ interface EnrollmentStatusBadgeProps {
 
 const compactClass = "px-2 py-0 text-[11px] font-semibold leading-5";
 
+const ADMIN_LABELS: Record<string, string> = {
+  ...ENROLLMENT_ADMIN_STATUS_LABELS,
+  [EnrollmentStatus.ADVANCED]: "Advanced",
+};
+
 const ADMIN_VARIANTS = {
+  [EnrollmentStatus.ADVANCED]: "warning",
   [EnrollmentStatus.ADMITTED]: "info",
   [EnrollmentStatus.COMPLETED]: "success",
 } as const;
@@ -32,14 +38,16 @@ export function EnrollmentStatusBadge({
   const adminStatus =
     status === EnrollmentStatus.COMPLETED
       ? EnrollmentStatus.COMPLETED
-      : EnrollmentStatus.ADMITTED;
+      : status === EnrollmentStatus.ADVANCED
+        ? EnrollmentStatus.ADVANCED
+        : EnrollmentStatus.ADMITTED;
 
   const variant =
     ADMIN_VARIANTS[adminStatus] ?? ("default" as const);
 
   return (
     <Badge variant={variant} className={compactClass}>
-      {ENROLLMENT_ADMIN_STATUS_LABELS[adminStatus]}
+      {ADMIN_LABELS[adminStatus] ?? adminStatus}
     </Badge>
   );
 }

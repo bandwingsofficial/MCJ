@@ -78,7 +78,7 @@ export class EnrollmentSideEffectsService {
           ? { id: { not: excludeEnrollmentId } }
           : {}),
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { updatedAt: 'desc' },
       select: { status: true },
     });
 

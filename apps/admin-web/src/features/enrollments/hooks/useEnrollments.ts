@@ -91,8 +91,28 @@ export const useEnrollments =
             }),
           );
 
-          setEnrollments(visibleItems);
-          setCount(visibleItems.length);
+          const byStudent = new Map<string, (typeof visibleItems)[number]>();
+          for (const enrollment of visibleItems) {
+            const studentId = enrollment.student?.id ?? enrollment.id;
+            const existing = byStudent.get(studentId);
+            if (!existing) {
+              byStudent.set(studentId, enrollment);
+              continue;
+            }
+            const existingTime = new Date(existing.createdAt ?? 0).getTime();
+            const candidateTime = new Date(enrollment.createdAt ?? 0).getTime();
+            if (candidateTime > existingTime) {
+              byStudent.set(studentId, enrollment);
+            }
+          }
+
+          const deduped = [...byStudent.values()];
+          setEnrollments(deduped);
+          setCount(
+            deduped.length < visibleItems.length
+              ? deduped.length
+              : parsed.total,
+          );
         } catch (error) {
           const message =
             error instanceof Error

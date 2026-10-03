@@ -19,6 +19,7 @@ import type { Student } from '@modules/student/domain/entities/student.entity';
 import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
 import { StudentStatus } from '@modules/student/domain/enums/student-status.enum';
 import {
+  canStudentStartNewAdminEnrollment,
   canTransitionStudentEnrollmentWorkflowStatus,
   normalizeStudentEnrollmentWorkflowStatus,
   resolveLifecycleStatusFromEnrollmentStatuses,
@@ -251,14 +252,23 @@ export class EnrollmentDomainService {
     }
   }
 
+  /** Admin create: student must be Lead, Completed, Dropped, or Placed (not Advanced/Admitted). */
+  ensureStudentEligibleForNewAdminEnrollment(student: Student): void {
+    if (!canStudentStartNewAdminEnrollment(student.status)) {
+      throw new EnrollmentAlreadyExistsException(
+        ERROR_CODES.STUDENT_ALREADY_ENROLLED,
+        'Cannot create a new enrollment while the student is Advanced or Admitted. Update the student status first.',
+      );
+    }
+  }
+
   async ensureNotDuplicate(
     enrollmentRepo: EnrollmentRepository,
     studentId: string,
     batchId: string,
     excludeId?: string,
   ): Promise<void> {
-    // One student may have multiple current enrollments across batches.
-    // Only block a second CURRENT enrollment for the same student + batch.
+    // Block a second CURRENT enrollment for the same student + batch.
     const existing = await enrollmentRepo.findByStudentAndBatch(
       studentId,
       batchId,

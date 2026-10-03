@@ -100,6 +100,22 @@ export class PrismaEnrollmentRepository
     return record ? EnrollmentMapper.toDomain(record) : null;
   }
 
+  async findPrimaryByStudentId(
+    studentId: string,
+    excludeId?: string,
+  ): Promise<Enrollment | null> {
+    const current = await this.prisma.enrollment.findFirst({
+      where: this.currentEnrollmentWhere(studentId, excludeId),
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    if (current) {
+      return EnrollmentMapper.toDomain(current);
+    }
+
+    return this.findLatestByStudentId(studentId);
+  }
+
   async findLatestByStudentId(
     studentId: string,
     includeDeleted = false,

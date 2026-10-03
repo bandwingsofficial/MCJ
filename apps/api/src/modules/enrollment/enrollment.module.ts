@@ -478,6 +478,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         domainService: EnrollmentDomainService,
         sideEffects: EnrollmentSideEffectsService,
         coinService: EnrollmentCoinService,
+        workflowSync: StudentAdmissionStatusSyncService,
       ) =>
         new UnenrollEnrollmentHandler(
           enrollmentRepo,
@@ -486,6 +487,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
           domainService,
           sideEffects,
           coinService,
+          workflowSync,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
@@ -494,6 +496,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         EnrollmentDomainService,
         EnrollmentSideEffectsService,
         EnrollmentCoinService,
+        StudentAdmissionStatusSyncService,
       ],
     },
 
