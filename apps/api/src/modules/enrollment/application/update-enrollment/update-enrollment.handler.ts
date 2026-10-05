@@ -4,13 +4,20 @@ import type { CategoryRepository } from '@modules/category/domain/repositories/c
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 import type { StudentRepository } from '@modules/student/domain/repositories/student.repository';
 
+import { ERROR_CODES } from '@common/constants/error-codes';
+import { BaseException } from '@common/exceptions/base.exception';
+
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import type { EnrollmentRepository } from '../../domain/repositories/enrollment.repository';
+import { EnrollmentMode } from '../../domain/enums/enrollment-mode.enum';
 import {
+  BatchBranchMismatchException,
+  BatchCourseMismatchException,
   BatchNotFoundException,
   InvalidDiscountException,
 } from '../../domain/errors/enrollment-business.exception';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
+import { mapCourseModeToEnrollmentMode } from '../../domain/utils/map-course-mode-to-enrollment-mode';
 import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
 import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
 
@@ -71,25 +78,87 @@ export class UpdateEnrollmentHandler {
     let categoryId: string | undefined;
     let courseId: string | undefined;
     let batchTimingId: string | null | undefined;
+    let mode: EnrollmentMode | undefined;
+    let resolvedBatchTiming:
+      | Awaited<ReturnType<UpdateEnrollmentHandler['resolveBatchTiming']>>
+      | null = null;
+
+    if (hierarchyChanged) {
+      const hierarchy = await this.domainService.validateHierarchy(
+        {
+          studentRepo: this.studentRepo,
+          branchRepo: this.branchRepo,
+          categoryRepo: this.categoryRepo,
+          courseRepo: this.courseRepo,
+          batchRepo: this.batchRepo,
+        },
+        {
+          studentId: nextStudentId,
+          batchId: nextBatchId,
+          actorBranchId: command.actorBranchId,
+        },
+      );
+
+      await this.domainService.ensureNotDuplicate(
+        this.enrollmentRepo,
+        nextStudentId,
+        nextBatchId,
+        enrollment.id,
+      );
+
+      branchId = hierarchy.branchId;
+      categoryId = hierarchy.categoryId;
+      courseId = hierarchy.courseId;
+      joiningDate = joiningDate ?? hierarchy.batch.startDate;
+      expectedCompletionDate =
+        expectedCompletionDate ?? hierarchy.batch.endDate;
+    }
 
     if (command.batchTimingId !== undefined) {
       if (command.batchTimingId) {
-        const batchTiming = await this.resolveBatchTiming(
+        resolvedBatchTiming = await this.resolveBatchTiming(
           nextBatchId,
           command.batchTimingId,
         );
 
-        batchTimingId = batchTiming.id;
+        batchTimingId = resolvedBatchTiming.id;
+        mode = mapCourseModeToEnrollmentMode(resolvedBatchTiming.mode);
+
+        if (
+          command.mode !== undefined &&
+          command.mode !== mode
+        ) {
+          throw new BaseException(
+            ERROR_CODES.VALIDATION_ERROR,
+            'Selected mode does not match the batch timing.',
+            400,
+          );
+        }
+
+        const assignmentBranchId =
+          branchId ?? command.actorBranchId ?? enrollment.branchId;
+        const assignmentCourseId = courseId ?? enrollment.courseId;
+
+        await this.assertEnrollmentAssignmentContext(
+          assignmentBranchId,
+          assignmentCourseId,
+          nextBatchId,
+          resolvedBatchTiming.id,
+          resolvedBatchTiming.mode,
+        );
 
         if (command.joiningDate === undefined) {
-          joiningDate = batchTiming.startDate;
+          joiningDate = resolvedBatchTiming.startDate;
         }
 
         if (command.expectedCompletionDate === undefined) {
-          expectedCompletionDate = batchTiming.endDate;
+          expectedCompletionDate = resolvedBatchTiming.endDate;
         }
       } else {
         batchTimingId = null;
+        if (command.mode !== undefined) {
+          mode = command.mode;
+        }
       }
     } else if (
       command.batchId !== undefined &&
@@ -108,36 +177,8 @@ export class UpdateEnrollmentHandler {
       if (!timingStillValid) {
         batchTimingId = null;
       }
-    }
-
-    if (hierarchyChanged) {
-      const hierarchy = await this.domainService.validateHierarchy(
-        {
-          studentRepo: this.studentRepo,
-          branchRepo: this.branchRepo,
-          categoryRepo: this.categoryRepo,
-          courseRepo: this.courseRepo,
-          batchRepo: this.batchRepo,
-        },
-        {
-          studentId: nextStudentId,
-          batchId: nextBatchId,
-        },
-      );
-
-      await this.domainService.ensureNotDuplicate(
-        this.enrollmentRepo,
-        nextStudentId,
-        nextBatchId,
-        enrollment.id,
-      );
-
-      branchId = hierarchy.branchId;
-      categoryId = hierarchy.categoryId;
-      courseId = hierarchy.courseId;
-      joiningDate = joiningDate ?? hierarchy.batch.startDate;
-      expectedCompletionDate =
-        expectedCompletionDate ?? hierarchy.batch.endDate;
+    } else if (command.mode !== undefined) {
+      mode = command.mode;
     }
 
     if (
@@ -169,6 +210,7 @@ export class UpdateEnrollmentHandler {
       remarks: command.remarks,
       status: command.status,
       isActive: command.isActive,
+      mode,
       updatedBy: command.updatedBy,
     });
 
@@ -238,6 +280,7 @@ export class UpdateEnrollmentHandler {
       select: {
         id: true,
         batchId: true,
+        mode: true,
         enrolledCount: true,
         capacity: true,
         startDate: true,
@@ -250,5 +293,46 @@ export class UpdateEnrollmentHandler {
     }
 
     return timing;
+  }
+
+  private async assertEnrollmentAssignmentContext(
+    branchId: string,
+    courseId: string,
+    batchId: string,
+    batchTimingId: string,
+    mode: string,
+  ): Promise<void> {
+    try {
+      await this.branchRepo.validateCourseBatchTrainerContext(branchId, {
+        courseId,
+        batchId,
+        batchTimingId,
+        mode,
+      });
+    } catch (error) {
+      if (!(error instanceof Error)) {
+        throw error;
+      }
+
+      switch (error.message) {
+        case 'BRANCH_COURSE_NOT_LINKED':
+          throw new BatchCourseMismatchException();
+        case 'BRANCH_BATCH_NOT_LINKED':
+          throw new BatchBranchMismatchException();
+        case 'BATCH_NOT_FOUND':
+        case 'BATCH_TIMING_NOT_FOUND':
+          throw new BatchNotFoundException();
+        case 'BATCH_COURSE_MISMATCH':
+          throw new BatchCourseMismatchException();
+        case 'BATCH_TIMING_MODE_MISMATCH':
+          throw new BaseException(
+            ERROR_CODES.VALIDATION_ERROR,
+            'Selected mode does not match the batch timing.',
+            400,
+          );
+        default:
+          throw error;
+      }
+    }
   }
 }

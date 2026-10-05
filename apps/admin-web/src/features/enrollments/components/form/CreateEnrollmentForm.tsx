@@ -35,6 +35,10 @@ import {
 } from "@/src/features/enrollments/constants/enrollment-create.constants";
 import { CREATE_ENROLLMENT_STATUS_OPTIONS } from "@/src/features/enrollments/constants/enrollment-status";
 import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
+import {
+  batchModeToEnrollmentMode,
+  enrollmentModeToBatchMode,
+} from "@/src/features/enrollments/utils/enrollment-mode.utils";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types";
 import {
@@ -91,18 +95,6 @@ function buildEnrollmentStudentOption(enrollment: Enrollment | undefined) {
       .join(" · "),
     enrolledElsewhere: false as const,
   };
-}
-
-function enrollmentModeToBatchMode(
-  mode: string | null | undefined,
-): BatchMode | "" {
-  if (mode === "SELF_PACED" || mode === "RECORDED") {
-    return "RECORDED";
-  }
-  if (mode === "ONLINE" || mode === "OFFLINE") {
-    return mode;
-  }
-  return "";
 }
 
 function formatApplicationTypeLabel(
@@ -392,17 +384,26 @@ export function CreateEnrollmentForm({
         let nextTimingId = batchTimingId;
 
         if (isEdit && enrollment && savedBatchId === batchId) {
-          // Enrollment payload is the source of truth for edit prefill.
-          nextTimingId = savedTimingId || nextTimingId;
-          const savedTiming = nextTimingId
-            ? findBatchTimingById(batch, nextTimingId)
-            : undefined;
+          const userChangedMode =
+            Boolean(selectedMode) && selectedMode !== savedMode;
+          const userChangedTiming =
+            Boolean(batchTimingId) && batchTimingId !== savedTimingId;
 
-          if (savedTiming) {
-            nextMode = savedTiming.mode;
-            nextTimingId = savedTiming.id;
+          if (!userChangedMode && !userChangedTiming) {
+            nextTimingId = savedTimingId || nextTimingId;
+            const savedTiming = nextTimingId
+              ? findBatchTimingById(batch, nextTimingId)
+              : undefined;
+
+            if (savedTiming) {
+              nextMode = savedTiming.mode;
+              nextTimingId = savedTiming.id;
+            } else {
+              nextMode = savedMode || nextMode;
+            }
           } else {
-            nextMode = savedMode || nextMode;
+            nextMode = selectedMode || nextMode;
+            nextTimingId = batchTimingId || nextTimingId;
           }
         } else if (isEdit && enrollment?.mode) {
           nextMode =
@@ -656,6 +657,17 @@ export function CreateEnrollmentForm({
       return;
     }
 
+    const enrollmentModeForEdit =
+      isEdit && enrollment
+        ? batchModeToEnrollmentMode(selectedTiming?.mode ?? selectedMode) ??
+          batchModeToEnrollmentMode(selectedMode)
+        : undefined;
+
+    if (isEdit && enrollment && !enrollmentModeForEdit) {
+      appToast.error("Select batch mode and batch timing.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       if (isEdit && enrollment) {
@@ -663,6 +675,7 @@ export function CreateEnrollmentForm({
           studentId,
           batchId,
           batchTimingId,
+          mode: enrollmentModeForEdit,
           admissionDate: apiAdmissionDate,
           feeAmount,
           discountAmount,

@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
+import { EnrollmentMode } from '../../domain/enums/enrollment-mode.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 
 const toNumber = (value: unknown) =>
@@ -96,4 +97,9 @@ export class UpdateEnrollmentDto {
   @IsOptional()
   @IsUUID()
   batchTimingId?: string;
+
+  @ApiPropertyOptional({ enum: EnrollmentMode })
+  @IsOptional()
+  @IsEnum(EnrollmentMode)
+  mode?: EnrollmentMode;
 }

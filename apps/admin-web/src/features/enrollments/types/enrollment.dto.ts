@@ -5,6 +5,7 @@ import {
 } from "./enrollment.types";
 
 import {
+  EnrollmentMode,
   EnrollmentStatus,
 } from "./enrollment.enums";
 
@@ -34,6 +35,7 @@ export interface UpdateEnrollmentRequest {
   studentId?: string;
   batchId?: string;
   batchTimingId?: string;
+  mode?: EnrollmentMode;
   admissionDate?: string;
   joiningDate?: string;
   expectedCompletionDate?: string;

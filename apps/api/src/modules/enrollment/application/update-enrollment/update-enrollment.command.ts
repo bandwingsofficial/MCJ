@@ -1,3 +1,4 @@
+import { EnrollmentMode } from '../../domain/enums/enrollment-mode.enum';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 
 export class UpdateEnrollmentCommand {
@@ -15,6 +16,7 @@ export class UpdateEnrollmentCommand {
     public readonly studentId?: string,
     public readonly batchId?: string,
     public readonly batchTimingId?: string | null,
+    public readonly mode?: EnrollmentMode,
     public readonly updatedBy?: string,
     public readonly actorBranchId?: string,
   ) {}
