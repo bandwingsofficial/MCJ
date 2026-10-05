@@ -4,33 +4,16 @@ import type { StudentManageEnrollmentTab } from "@mcj/shared-constants";
 import { useEffect, useMemo, useState } from "react";
 
 import { Card } from "@/src/shared/components/ui/card";
-import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Pagination } from "@/src/shared/components/ui/pagination";
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
-import { appToast } from "@/src/shared/components/ui/toast";
-import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
-import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
-import {
-  UnenrollEnrollmentDialog,
-  type UnenrollEnrollmentTarget,
-} from "@/src/features/enrollments/components/dialogs/unenroll-enrollment-dialog";
-import { useUnenrollEnrollment } from "@/src/features/enrollments/hooks/useUnenrollEnrollment";
-import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
-import { UpdateEnrollmentStatusDialog } from "@/src/features/enrollments/components/dialogs/update-enrollment-status-dialog";
-import { useUpdateEnrollmentStatus } from "@/src/features/enrollments/hooks/useUpdateEnrollmentStatus";
-import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
-import { adminEnrollmentListTabAfterStatusChange } from "@/src/features/enrollments/utils/enrollment-workflow-status.utils";
 import { useStudentEnrollments } from "@/src/features/students/hooks/useStudentEnrollments";
 import { StudentEnrollmentManageTabs } from "@/src/features/students/components/manage/student-enrollment-manage-tabs";
 import { studentService } from "@/src/features/students/services/student.service";
 import type { BranchOption, Student } from "@/src/features/students/types/student.types";
 
-import { UpdateStudentEnrollmentModal } from "./update-student-enrollment-modal";
 import { StudentEnrollmentTable } from "./student-enrollment-table";
-import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
-import { resolveEnrollmentBranchName } from "@/src/features/students/utils/enrollment-display.utils";
 
 interface Props {
   student: Student;
@@ -42,8 +25,6 @@ interface Props {
 export function StudentManageEnrollmentsPanel({
   student,
   refreshKey = 0,
-  onStudentRefresh,
-  onEnrollmentMutation,
 }: Props) {
   const [enrollmentTab, setEnrollmentTab] =
     useState<StudentManageEnrollmentTab>("all");
@@ -64,24 +45,7 @@ export function StudentManageEnrollmentsPanel({
     enrollmentTab,
   });
 
-  const [editTarget, setEditTarget] = useState<Enrollment | null>(null);
-  const [statusChangeTarget, setStatusChangeTarget] =
-    useState<Enrollment | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Enrollment | null>(null);
-  const [permanentDeleteTarget, setPermanentDeleteTarget] =
-    useState<Enrollment | null>(null);
-  const [unenrollTarget, setUnenrollTarget] =
-    useState<UnenrollEnrollmentTarget | null>(null);
-  const [statusTarget, setStatusTarget] = useState<{
-    enrollment: Enrollment;
-    activate: boolean;
-  } | null>(null);
-  const [isActionLoading, setIsActionLoading] = useState(false);
   const [branches, setBranches] = useState<BranchOption[]>([]);
-  const { unenrollEnrollment, isLoading: isUnenrolling } =
-    useUnenrollEnrollment();
-  const { updateStatus, isLoading: isUpdatingStatus } =
-    useUpdateEnrollmentStatus();
 
   const branchMap = useMemo(
     () =>
@@ -94,8 +58,6 @@ export function StudentManageEnrollmentsPanel({
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
-
-  const actionDisabled = isActionLoading;
 
   useEffect(() => {
     const loadBranches = async () => {
@@ -113,120 +75,6 @@ export function StudentManageEnrollmentsPanel({
   useEffect(() => {
     void refetch();
   }, [refetch, refreshKey]);
-
-  const loadEnrollmentDetail = async (id: string) => {
-    const response = await enrollmentService.getEnrollment(id);
-    return response.data;
-  };
-
-  const handleEdit = async (enrollment: Enrollment) => {
-    try {
-      const detail = await loadEnrollmentDetail(enrollment.id);
-      setEditTarget(detail);
-    } catch (err) {
-      appToast.error(getErrorMessage(err));
-    }
-  };
-
-  const handleActivateDeactivate = async () => {
-    if (!statusTarget) {
-      return;
-    }
-
-    try {
-      setIsActionLoading(true);
-      await enrollmentService.updateEnrollment(statusTarget.enrollment.id, {
-        isActive: statusTarget.activate,
-      });
-      appToast.success(
-        statusTarget.activate
-          ? "Enrollment activated successfully"
-          : "Enrollment deactivated successfully",
-      );
-      setStatusTarget(null);
-      await refetch();
-      await onStudentRefresh?.();
-      await onEnrollmentMutation?.();
-    } catch (err) {
-      appToast.error(getErrorMessage(err));
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTarget) {
-      return;
-    }
-
-    try {
-      setIsActionLoading(true);
-      await enrollmentService.deleteEnrollment(deleteTarget.id);
-      appToast.success("Enrollment deleted successfully");
-      setDeleteTarget(null);
-      await refetch();
-      await onStudentRefresh?.();
-      await onEnrollmentMutation?.();
-    } catch (err) {
-      appToast.error(getErrorMessage(err));
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
-
-  const handlePermanentDelete = async () => {
-    if (!permanentDeleteTarget) {
-      return;
-    }
-
-    try {
-      setIsActionLoading(true);
-      await enrollmentService.permanentDeleteEnrollment(permanentDeleteTarget.id);
-      appToast.success("Enrollment permanently deleted");
-      setPermanentDeleteTarget(null);
-      await refetch();
-      await onStudentRefresh?.();
-      await onEnrollmentMutation?.();
-    } catch (err) {
-      appToast.error(getErrorMessage(err));
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
-
-  const handleUnenroll = async (reason?: string) => {
-    if (!unenrollTarget) {
-      return;
-    }
-
-    try {
-      await unenrollEnrollment(unenrollTarget.enrollmentId, reason);
-      setUnenrollTarget(null);
-      await refetch();
-      await onStudentRefresh?.();
-      await onEnrollmentMutation?.();
-    } catch {
-      // Toast handled in hook.
-    }
-  };
-
-  const statusDialogCopy = useMemo(() => {
-    if (!statusTarget) {
-      return { title: "", description: "" };
-    }
-
-    const batchName = statusTarget.enrollment.batch?.name ?? "this batch";
-
-    return statusTarget.activate
-      ? {
-          title: "Activate enrollment?",
-          description: `Activate enrollment for ${batchName}?`,
-        }
-      : {
-          title: "Deactivate enrollment?",
-          description: `Deactivate enrollment for ${batchName}? This only changes the active status and does not delete the enrollment.`,
-        };
-  }, [statusTarget]);
 
   if (error && enrollments.length === 0 && !isLoading) {
     return (
@@ -276,36 +124,8 @@ export function StudentManageEnrollmentsPanel({
         ) : (
           <div className="overflow-x-auto">
             <StudentEnrollmentTable
-              student={student}
               enrollments={enrollments}
               branchMap={branchMap}
-              disabled={actionDisabled}
-              onManageEdit={(enrollment) => {
-                void handleEdit(enrollment);
-              }}
-              onManageDelete={setDeleteTarget}
-              onManagePermanentDelete={setPermanentDeleteTarget}
-              onUnenroll={(enrollment) => {
-                setUnenrollTarget({
-                  enrollmentId: enrollment.id,
-                  studentName: formatPersonName(
-                    enrollment.student?.firstName,
-                    enrollment.student?.lastName,
-                  ),
-                  branchName:
-                    resolveEnrollmentBranchName(enrollment, branchMap) ||
-                    undefined,
-                  batchName: enrollment.batch?.name ?? undefined,
-                  courseTitle: enrollment.course?.title ?? undefined,
-                });
-              }}
-              onActivate={(enrollment) =>
-                setStatusTarget({ enrollment, activate: true })
-              }
-              onDeactivate={(enrollment) =>
-                setStatusTarget({ enrollment, activate: false })
-              }
-              onChangeStatus={setStatusChangeTarget}
             />
           </div>
         )}
@@ -323,99 +143,6 @@ export function StudentManageEnrollmentsPanel({
           />
         </div>
       ) : null}
-
-      {editTarget ? (
-        <UpdateStudentEnrollmentModal
-          open={Boolean(editTarget)}
-          student={student}
-          enrollment={editTarget}
-          branchMap={branchMap}
-          onClose={() => setEditTarget(null)}
-          onSuccess={async () => {
-            await refetch();
-            await onStudentRefresh?.();
-            await onEnrollmentMutation?.();
-          }}
-        />
-      ) : null}
-
-      <ConfirmDialog
-        open={Boolean(statusTarget)}
-        title={statusDialogCopy.title}
-        description={statusDialogCopy.description}
-        confirmLabel={statusTarget?.activate ? "Activate" : "Deactivate"}
-        loading={isActionLoading}
-        onCancel={() => setStatusTarget(null)}
-        onConfirm={() => {
-          void handleActivateDeactivate();
-        }}
-      />
-
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        title="Delete enrollment?"
-        description="This enrollment will be archived. You can permanently delete it from archived enrollments."
-        confirmLabel="Delete"
-        loading={isActionLoading}
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={() => {
-          void handleDelete();
-        }}
-      />
-
-      <ConfirmDialog
-        open={Boolean(permanentDeleteTarget)}
-        title="Permanently delete enrollment?"
-        description="This action cannot be undone."
-        confirmLabel="Permanently Delete"
-        loading={isActionLoading}
-        onCancel={() => setPermanentDeleteTarget(null)}
-        onConfirm={() => {
-          void handlePermanentDelete();
-        }}
-      />
-
-      <UnenrollEnrollmentDialog
-        open={Boolean(unenrollTarget)}
-        target={unenrollTarget}
-        loading={isUnenrolling}
-        onClose={() => setUnenrollTarget(null)}
-        onConfirm={(reason) => {
-          void handleUnenroll(reason);
-        }}
-      />
-
-      <UpdateEnrollmentStatusDialog
-        open={Boolean(statusChangeTarget)}
-        enrollmentId={statusChangeTarget?.id ?? null}
-        loading={isUpdatingStatus}
-        onClose={() => setStatusChangeTarget(null)}
-        onSubmit={async (nextStatus: EnrollmentStatus) => {
-          if (!statusChangeTarget) {
-            return;
-          }
-
-          try {
-            await updateStatus(statusChangeTarget.id, { status: nextStatus });
-
-            const listTab = adminEnrollmentListTabAfterStatusChange(nextStatus);
-            const manageTab: StudentManageEnrollmentTab =
-              listTab === "active"
-                ? "active"
-                : listTab === "completed"
-                  ? "completed"
-                  : "cancelled";
-
-            setStatusChangeTarget(null);
-            await refetch({ enrollmentTab: manageTab, page: 1 });
-            setEnrollmentTab(manageTab);
-            await onStudentRefresh?.();
-            await onEnrollmentMutation?.();
-          } catch {
-            // Toast handled in hook.
-          }
-        }}
-      />
     </>
   );
 }
