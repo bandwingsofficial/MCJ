@@ -31,6 +31,16 @@ export const enrollmentService = {
     }
   },
 
+  async getOnlineEnrollmentNotifications(since?: string) {
+    try {
+      const response =
+        await enrollmentApi.getOnlineEnrollmentNotifications(since);
+      return response.data.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
+  },
+
   async getEnrollmentTabCounts(
     filters: Pick<
       EnrollmentFilters,

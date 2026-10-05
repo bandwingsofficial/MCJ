@@ -472,7 +472,8 @@ export class PrismaEnrollmentRepository
 
     if (
       filters.createdAtFrom !== undefined ||
-      filters.createdAtTo !== undefined
+      filters.createdAtTo !== undefined ||
+      filters.createdAfter !== undefined
     ) {
       where.createdAt = {
         ...(filters.createdAtFrom !== undefined
@@ -480,6 +481,9 @@ export class PrismaEnrollmentRepository
           : {}),
         ...(filters.createdAtTo !== undefined
           ? { lte: filters.createdAtTo }
+          : {}),
+        ...(filters.createdAfter !== undefined
+          ? { gt: filters.createdAfter }
           : {}),
       };
     }

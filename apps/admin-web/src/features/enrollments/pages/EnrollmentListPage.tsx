@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Card } from "@/src/shared/components/ui/card";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -50,12 +50,17 @@ import type { Enrollment } from "@/src/features/enrollments/types";
 import { UpdateEnrollmentStatusDialog } from "@/src/features/enrollments/components/dialogs/update-enrollment-status-dialog";
 import { useUpdateEnrollmentStatus } from "@/src/features/enrollments/hooks/useUpdateEnrollmentStatus";
 import { adminEnrollmentListTabAfterStatusChange } from "@/src/features/enrollments/utils/enrollment-workflow-status.utils";
-import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
+import {
+  ApplicationType,
+  EnrollmentStatus,
+} from "@/src/features/enrollments/types/enrollment.enums";
+import type { AdminEnrollmentListTab } from "@mcj/shared-constants";
 import { enrollmentManagePath } from "@/src/features/enrollments/utils/enrollment-manage.routes";
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
 
 export function EnrollmentListPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     enrollments,
     count,
@@ -114,6 +119,39 @@ export function EnrollmentListPage() {
       });
     }
   }, [count, page, pageSize, filters, setFilters]);
+
+  useEffect(() => {
+    const adminTabParam = searchParams.get("adminTab");
+    const applicationTypeParam = searchParams.get("applicationType");
+
+    const nextAdminTab =
+      adminTabParam === "active" ||
+      adminTabParam === "completed" ||
+      adminTabParam === "cancelled"
+        ? (adminTabParam as AdminEnrollmentListTab)
+        : undefined;
+
+    const nextApplicationType =
+      applicationTypeParam === ApplicationType.ONLINE ||
+      applicationTypeParam === ApplicationType.OFFLINE
+        ? applicationTypeParam
+        : undefined;
+
+    if (!nextAdminTab && !nextApplicationType) {
+      return;
+    }
+
+    setFilters({
+      ...filters,
+      skip: 0,
+      ...(nextAdminTab ? { adminTab: nextAdminTab } : {}),
+      ...(nextApplicationType
+        ? { applicationType: nextApplicationType }
+        : {}),
+    });
+    // Apply deep-link query params once when landing from notifications.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const emptyTitle = useMemo(() => {
     if (

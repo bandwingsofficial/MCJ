@@ -5,6 +5,8 @@ export const ENROLLMENT_ENDPOINTS = {
 
   TAB_COUNTS: "/admin/enrollments/tab-counts",
 
+  NOTIFICATIONS: "/admin/enrollments/notifications",
+
   CREATE: "/admin/enrollments",
 
   DETAILS: (id: string) =>

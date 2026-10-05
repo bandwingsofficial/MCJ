@@ -26,6 +26,8 @@ export interface EnrollmentListFilters {
   admissionDateTo?: Date;
   createdAtFrom?: Date;
   createdAtTo?: Date;
+  /** Strictly after this timestamp (for notification watermarks). */
+  createdAfter?: Date;
   skip?: number;
   take?: number;
   sortBy?: string;

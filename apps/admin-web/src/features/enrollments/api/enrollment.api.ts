@@ -32,6 +32,19 @@ export const enrollmentApi = {
     );
   },
 
+  async getOnlineEnrollmentNotifications(since?: string) {
+    return apiClient.get<{
+      success: boolean;
+      data: {
+        count: number;
+        latestCreatedAt: string | null;
+        enrollmentIds: string[];
+      };
+    }>(ENROLLMENT_ENDPOINTS.NOTIFICATIONS, {
+      params: since ? { since } : undefined,
+    });
+  },
+
   async getEnrollmentTabCounts(
     filters: Pick<
       EnrollmentFilters,

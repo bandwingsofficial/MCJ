@@ -3,6 +3,7 @@
 
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { Avatar } from "@/src/shared/components/ui/avatar";
 
@@ -29,6 +30,11 @@ import { toast } from "sonner";
 import { cn } from "@/src/shared/lib/cn";
 
 import { AdminGlobalSearch } from "@/src/shared/components/header/admin-global-search";
+import { useOnlineEnrollmentNotifications } from "@/src/features/enrollments/hooks/use-online-enrollment-notifications";
+import { formatCount } from "@/src/features/dashboard/utils/dashboard-date.utils";
+
+const ENROLLMENT_NOTIFICATIONS_HREF =
+  "/enrollments?adminTab=active&applicationType=ONLINE";
 
 
 
@@ -86,9 +92,21 @@ export function AdminHeader({ onOpenMobileNav }: AdminHeaderProps) {
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  const [notificationOpen, setNotificationOpen] = useState(false);
+
   const profileRef = useRef<HTMLDivElement>(null);
 
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  const router = useRouter();
+
   const { logout, user } = useAuth();
+
+  const {
+    count: onlineEnrollmentNotificationCount,
+    acknowledge: acknowledgeEnrollmentNotifications,
+    refresh: refreshEnrollmentNotifications,
+  } = useOnlineEnrollmentNotifications();
 
 
 
@@ -166,6 +184,13 @@ export function AdminHeader({ onOpenMobileNav }: AdminHeaderProps) {
 
         setDropdownOpen(false);
 
+      }
+
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target as Node)
+      ) {
+        setNotificationOpen(false);
       }
 
     };
@@ -291,19 +316,72 @@ export function AdminHeader({ onOpenMobileNav }: AdminHeaderProps) {
 
 
 
-          <button
+          <div ref={notificationRef} className="relative">
+            <button
+              type="button"
+              className={cn(iconActionClass, "relative")}
+              aria-label="Notifications"
+              aria-expanded={notificationOpen}
+              onClick={() => {
+                setNotificationOpen((open) => !open);
+                setDropdownOpen(false);
+              }}
+            >
+              <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} />
+              {onlineEnrollmentNotificationCount > 0 ? (
+                <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                  {onlineEnrollmentNotificationCount > 9
+                    ? "9+"
+                    : formatCount(onlineEnrollmentNotificationCount)}
+                </span>
+              ) : null}
+            </button>
 
-            type="button"
-
-            className={iconActionClass}
-
-            aria-label="Notifications"
-
-          >
-
-            <Bell className="h-[18px] w-[18px]" strokeWidth={1.75} />
-
-          </button>
+            {notificationOpen ? (
+              <div
+                className={cn(
+                  "absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-2xl",
+                  "border border-[#DCE8F5] bg-white",
+                  "shadow-[0_12px_40px_rgba(16,42,86,0.12)]",
+                )}
+              >
+                <div className="border-b border-[#E8F1FF] bg-gradient-to-br from-[#F8FBFF] to-white px-4 py-3">
+                  <p className="text-sm font-semibold text-[#102A56]">
+                    Notifications
+                  </p>
+                </div>
+                <div className="p-1.5">
+                  {onlineEnrollmentNotificationCount > 0 ? (
+                    <button
+                      type="button"
+                      className="flex w-full flex-col items-start gap-0.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors hover:bg-[#F4F9FF]"
+                      onClick={() => {
+                        void (async () => {
+                          await refreshEnrollmentNotifications();
+                          acknowledgeEnrollmentNotifications();
+                          setNotificationOpen(false);
+                          router.push(ENROLLMENT_NOTIFICATIONS_HREF);
+                        })();
+                      }}
+                    >
+                      <span className="font-semibold text-[#102A56]">
+                        {formatCount(onlineEnrollmentNotificationCount)} new
+                        online enrollment
+                        {onlineEnrollmentNotificationCount === 1 ? "" : "s"}
+                      </span>
+                      <span className="text-xs text-[#647A9B]">
+                        View in Advanced / Admitted
+                      </span>
+                    </button>
+                  ) : (
+                    <p className="px-3 py-4 text-center text-sm text-[#647A9B]">
+                      No new online enrollments
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </div>
 
 
 
@@ -398,24 +476,6 @@ export function AdminHeader({ onOpenMobileNav }: AdminHeaderProps) {
 
 
                 <div className="p-1.5">
-
-                  <Link
-
-                    href="/settings"
-
-                    onClick={() => setDropdownOpen(false)}
-
-                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-[#102A56] transition-colors hover:bg-[#F4F9FF]"
-
-                  >
-
-                    <Settings className="h-4 w-4 text-[#2563EB]" />
-
-                    Security settings
-
-                  </Link>
-
-
 
                   <button
 

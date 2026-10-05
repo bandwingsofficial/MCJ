@@ -36,6 +36,8 @@ import { DeleteEnrollmentHandler } from '../../application/delete-enrollment/del
 import { GetEnrollmentHandler } from '../../application/get-enrollment/get-enrollment.handler';
 import { GetEnrollmentQuery } from '../../application/get-enrollment/get-enrollment.query';
 import { GetEnrollmentAdminTabCountsHandler } from '../../application/get-enrollment-admin-tab-counts/get-enrollment-admin-tab-counts.handler';
+import { GetEnrollmentOnlineNotificationsHandler } from '../../application/get-enrollment-online-notifications/get-enrollment-online-notifications.handler';
+import { EnrollmentNotificationsQueryDto } from '../dtos/enrollment-notifications-query.dto';
 import { ListEnrollmentsHandler } from '../../application/list-enrollments/list-enrollments.handler';
 import { ListEnrollmentsQuery } from '../../application/list-enrollments/list-enrollments.query';
 import { PermanentDeleteEnrollmentCommand } from '../../application/permanent-delete-enrollment/permanent-delete-enrollment.command';
@@ -90,6 +92,7 @@ export class AdminEnrollmentController {
     private readonly updateEnrollmentStatusHandler: UpdateEnrollmentStatusHandler,
     private readonly listEnrollmentsHandler: ListEnrollmentsHandler,
     private readonly enrollmentAdminTabCountsHandler: GetEnrollmentAdminTabCountsHandler,
+    private readonly enrollmentOnlineNotificationsHandler: GetEnrollmentOnlineNotificationsHandler,
     private readonly getEnrollmentHandler: GetEnrollmentHandler,
     private readonly deleteEnrollmentHandler: DeleteEnrollmentHandler,
     private readonly restoreEnrollmentHandler: RestoreEnrollmentHandler,
@@ -190,6 +193,31 @@ export class AdminEnrollmentController {
       success: true,
       message: 'Enrollments fetched successfully',
       data: result,
+    };
+  }
+
+  @Get('notifications')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+    BranchAccessGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async onlineEnrollmentNotifications(
+    @Query() query: EnrollmentNotificationsQueryDto,
+    @CurrentUser() user: EnrollmentAdminUser,
+  ) {
+    const since = query.since ? new Date(query.since) : undefined;
+
+    const data = await this.enrollmentOnlineNotificationsHandler.execute({
+      since,
+      branchId: this.resolveBranchId(undefined, user),
+    });
+
+    return {
+      success: true,
+      message: 'Enrollment notifications fetched successfully',
+      data,
     };
   }
 

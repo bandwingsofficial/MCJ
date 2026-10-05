@@ -49,6 +49,7 @@ import { GetEnrollmentHandler } from './application/get-enrollment/get-enrollmen
 import { GetMyEnrollmentByIdHandler } from './application/get-my-enrollment-by-id/get-my-enrollment-by-id.handler';
 import { GetMyEnrollmentHandler } from './application/get-my-enrollment/get-my-enrollment.handler';
 import { GetEnrollmentAdminTabCountsHandler } from './application/get-enrollment-admin-tab-counts/get-enrollment-admin-tab-counts.handler';
+import { GetEnrollmentOnlineNotificationsHandler } from './application/get-enrollment-online-notifications/get-enrollment-online-notifications.handler';
 import { ListEnrollmentsHandler } from './application/list-enrollments/list-enrollments.handler';
 import { PermanentDeleteEnrollmentHandler } from './application/permanent-delete-enrollment/permanent-delete-enrollment.handler';
 import { RejectEnrollmentHandler } from './application/reject-enrollment/reject-enrollment.handler';
@@ -389,6 +390,13 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
       provide: GetEnrollmentAdminTabCountsHandler,
       useFactory: (enrollmentRepo: EnrollmentRepository) =>
         new GetEnrollmentAdminTabCountsHandler(enrollmentRepo),
+      inject: [ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY],
+    },
+
+    {
+      provide: GetEnrollmentOnlineNotificationsHandler,
+      useFactory: (enrollmentRepo: EnrollmentRepository) =>
+        new GetEnrollmentOnlineNotificationsHandler(enrollmentRepo),
       inject: [ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY],
     },
 
