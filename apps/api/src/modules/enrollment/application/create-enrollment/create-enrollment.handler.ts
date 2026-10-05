@@ -73,20 +73,23 @@ export class CreateEnrollmentHandler {
       },
     );
 
-    this.domainService.ensureStudentEligibleForNewAdminEnrollment(
+    const slotReleases =
+      await this.domainService.releaseUniqueEnrollmentSlotsForReenrollment(
+        hierarchy.student,
+        this.enrollmentRepo,
+        command.createdBy,
+      );
+
+    for (const { enrollment, previousStatus } of slotReleases) {
+      await this.enrollmentRepo.save(enrollment);
+      await this.sideEffects.apply(enrollment, previousStatus, command.createdBy, {
+        skipStudentStatusSync: true,
+      });
+    }
+
+    await this.domainService.ensureStudentEligibleForNewAdminEnrollment(
       hierarchy.student,
-    );
-
-    await this.domainService.ensureNoBlockingCourseEnrollment(
       this.enrollmentRepo,
-      command.studentId,
-      hierarchy.courseId,
-    );
-
-    await this.domainService.ensureNotDuplicate(
-      this.enrollmentRepo,
-      command.studentId,
-      command.batchId,
     );
 
     const batchTiming = command.batchTimingId
@@ -154,7 +157,8 @@ export class CreateEnrollmentHandler {
 
     const admissionDate = command.admissionDate ?? new Date();
     const isAdminSource = command.source === EnrollmentSource.ADMIN;
-    const enrollmentStatus = this.resolveCreateStatus(command, isAdminSource);
+    const { enrollmentStatus, studentStatusOnCreate } =
+      this.resolveAdminCreateStatuses(command, isAdminSource);
     const isActive =
       enrollmentStatus === EnrollmentStatus.ADMITTED ||
       enrollmentStatus === EnrollmentStatus.ADVANCED;
@@ -185,7 +189,7 @@ export class CreateEnrollmentHandler {
       createdBy: command.createdBy,
     });
 
-    if (enrollmentStatus === EnrollmentStatus.ADMITTED) {
+    if (Enrollment.statusOccupiesSeat(enrollmentStatus)) {
       await this.sideEffects.assertCapacityForTransition(
         enrollment,
         null,
@@ -194,8 +198,7 @@ export class CreateEnrollmentHandler {
 
     await this.enrollmentRepo.save(enrollment);
 
-    const syncedStudentStatus = this.domainService
-      .resolveWorkflowStatusFromEnrollmentStatus(enrollmentStatus) as StudentStatus;
+    const syncedStudentStatus = studentStatusOnCreate;
 
     const student = await this.studentRepo.findById(command.studentId);
     if (student && student.status !== syncedStudentStatus) {
@@ -275,28 +278,40 @@ export class CreateEnrollmentHandler {
     );
   }
 
-  private resolveCreateStatus(
+  private resolveAdminCreateStatuses(
     command: CreateEnrollmentCommand,
     isAdminSource: boolean,
-  ): EnrollmentStatus {
+  ): {
+    enrollmentStatus: EnrollmentStatus;
+    studentStatusOnCreate: StudentStatus;
+  } {
     if (!isAdminSource) {
-      return EnrollmentStatus.PENDING;
+      return {
+        enrollmentStatus: EnrollmentStatus.PENDING,
+        studentStatusOnCreate: StudentStatus.LEAD,
+      };
     }
 
-    const status = command.status ?? EnrollmentStatus.ADVANCED;
+    const requested = command.status ?? EnrollmentStatus.ADMITTED;
 
     if (
-      status !== EnrollmentStatus.ADVANCED &&
-      status !== EnrollmentStatus.ADMITTED
+      requested !== EnrollmentStatus.ADVANCED &&
+      requested !== EnrollmentStatus.ADMITTED
     ) {
       throw new BaseException(
         ERROR_CODES.INVALID_STATUS_TRANSITION,
-        'Admin enrollment status must be ADVANCED or ADMITTED.',
+        'Admin enrollment start must be Advanced or Admitted for the student.',
         400,
       );
     }
 
-    return status;
+    return {
+      enrollmentStatus: requested,
+      studentStatusOnCreate:
+        requested === EnrollmentStatus.ADVANCED
+          ? StudentStatus.ADVANCED
+          : StudentStatus.ADMITTED,
+    };
   }
 
   private async resolveBatchTiming(batchId: string, batchTimingId: string) {

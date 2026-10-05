@@ -8,7 +8,6 @@ import {
 
 import { enrollmentService } from "../services/enrollment.service";
 import { parseEnrollmentListResponse } from "../utils/enrollment-list.utils";
-import { isEnrollmentVisibleInAdminList } from "../utils/enrollment-workflow-status.utils";
 
 import {
   Enrollment,
@@ -58,6 +57,7 @@ export const useEnrollments =
         skip: 0,
         take: 10,
         search: "",
+        adminTab: "active",
         paymentStatus:
           undefined,
         branchId: undefined,
@@ -84,35 +84,8 @@ export const useEnrollments =
 
           const parsed = parseEnrollmentListResponse(response);
 
-          const visibleItems = parsed.items.filter((enrollment) =>
-            isEnrollmentVisibleInAdminList({
-              enrollmentStatus: enrollment.status,
-              studentStatus: enrollment.student?.status,
-            }),
-          );
-
-          const byStudent = new Map<string, (typeof visibleItems)[number]>();
-          for (const enrollment of visibleItems) {
-            const studentId = enrollment.student?.id ?? enrollment.id;
-            const existing = byStudent.get(studentId);
-            if (!existing) {
-              byStudent.set(studentId, enrollment);
-              continue;
-            }
-            const existingTime = new Date(existing.createdAt ?? 0).getTime();
-            const candidateTime = new Date(enrollment.createdAt ?? 0).getTime();
-            if (candidateTime > existingTime) {
-              byStudent.set(studentId, enrollment);
-            }
-          }
-
-          const deduped = [...byStudent.values()];
-          setEnrollments(deduped);
-          setCount(
-            deduped.length < visibleItems.length
-              ? deduped.length
-              : parsed.total,
-          );
+          setEnrollments(parsed.items);
+          setCount(parsed.total);
         } catch (error) {
           const message =
             error instanceof Error

@@ -250,10 +250,10 @@ export class InvalidPaymentAmountException extends BaseException {
 }
 
 export class InvalidStatusTransitionException extends BaseException {
-  constructor(from: string, to: string) {
+  constructor(from: string, to: string, message?: string) {
     super(
       ERROR_CODES.INVALID_STATUS_TRANSITION,
-      `Cannot change status from ${from} to ${to}.`,
+      message ?? `Cannot change status from ${from} to ${to}.`,
       400,
     );
   }

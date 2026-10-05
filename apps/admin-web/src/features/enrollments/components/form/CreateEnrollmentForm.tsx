@@ -1,5 +1,6 @@
 "use client";
 
+import { canStudentStartNewAdminEnrollment } from "@mcj/shared-constants";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/src/shared/components/ui/button";
@@ -36,11 +37,6 @@ import { CREATE_ENROLLMENT_STATUS_OPTIONS } from "@/src/features/enrollments/con
 import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
 import type { Enrollment } from "@/src/features/enrollments/types";
-import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
-import {
-  currentEnrollmentByStudentId,
-  formatEnrollmentLocation,
-} from "@/src/features/enrollments/utils/current-enrollment";
 import {
   formatCurrency,
   normalizeMoney,
@@ -487,23 +483,12 @@ export function CreateEnrollmentForm({
     const loadStudents = async () => {
       setIsLoadingContext(true);
       try {
-        const [currentEnrollmentResponse, studentResponse] = await Promise.all([
-          enrollmentService.getEnrollments({
-            currentOnly: true,
-            skip: 0,
-            take: 100,
-          }),
-          studentService.getStudents({
-            includeDeleted: false,
-            onlyActive: true,
-            page: 1,
-            pageSize: 100,
-          }),
-        ]);
-
-        const currentByStudent = currentEnrollmentByStudentId(
-          parseEnrollmentListResponse(currentEnrollmentResponse).items,
-        );
+        const studentResponse = await studentService.getStudents({
+          includeDeleted: false,
+          onlyActive: true,
+          page: 1,
+          pageSize: 100,
+        });
 
         const studentPayload = parseStudentListResponse(studentResponse.data);
         const mappedStudents = studentPayload.items
@@ -516,30 +501,22 @@ export function CreateEnrollmentForm({
             return item.isActive && !isArchivedStudent(item);
           })
           .map((item) => {
-            const current = currentByStudent.get(item.id);
-            const enrolledElsewhere =
-              Boolean(current) &&
-              current?.id !== enrollment?.id &&
-              current?.batch?.id !== batchId;
-            const enrolledHere =
-              Boolean(current) &&
-              current?.id !== enrollment?.id &&
-              current?.batch?.id === batchId;
-            const location = current
-              ? formatEnrollmentLocation(current)
-              : "";
+            const blockedForNewEnrollment = !canStudentStartNewAdminEnrollment(
+              item.status,
+              {
+                hasOpenEnrollmentSlot: item.hasOpenEnrollmentSlot,
+              },
+            );
 
             return {
               id: item.id,
               label: formatPersonName(item.firstName, item.lastName),
-              meta: enrolledElsewhere
-                ? `Already enrolled · ${location}`
-                : enrolledHere
-                  ? `Already enrolled in this batch · ${location}`
-                  : [item.studentCode, item.phone, item.email]
-                      .filter(Boolean)
-                      .join(" · "),
-              enrolledElsewhere: enrolledElsewhere || enrolledHere,
+              meta: blockedForNewEnrollment
+                ? "Cannot enroll while student is Advanced or Admitted"
+                : [item.studentCode, item.phone, item.email]
+                    .filter(Boolean)
+                    .join(" · "),
+              enrolledElsewhere: blockedForNewEnrollment,
             };
           });
 
@@ -640,9 +617,7 @@ export function CreateEnrollmentForm({
 
     if (!isEdit && selectedStudentEnrollment?.enrolledElsewhere) {
       appToast.error(
-        selectedStudentEnrollment.meta
-          ? `Student is already actively enrolled. ${selectedStudentEnrollment.meta}`
-          : "Student is already actively enrolled. A student can have only one active enrollment at a time.",
+        "Cannot create a new enrollment while the student is Advanced or Admitted. Update the student status first.",
       );
       return;
     }
@@ -904,10 +879,7 @@ export function CreateEnrollmentForm({
           )}
           {!isEdit && selectedStudentEnrollment?.enrolledElsewhere ? (
             <p className="text-sm text-amber-700">
-              Student is already actively enrolled in{" "}
-              {selectedStudentEnrollment.meta}. A student can have only one
-              active enrollment at a time. Unenroll/cancel the current
-              enrollment before creating another.
+              {selectedStudentEnrollment.meta}
             </p>
           ) : null}
         </div>

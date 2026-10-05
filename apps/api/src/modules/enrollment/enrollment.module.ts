@@ -48,6 +48,7 @@ import { DeleteEnrollmentHandler } from './application/delete-enrollment/delete-
 import { GetEnrollmentHandler } from './application/get-enrollment/get-enrollment.handler';
 import { GetMyEnrollmentByIdHandler } from './application/get-my-enrollment-by-id/get-my-enrollment-by-id.handler';
 import { GetMyEnrollmentHandler } from './application/get-my-enrollment/get-my-enrollment.handler';
+import { GetEnrollmentAdminTabCountsHandler } from './application/get-enrollment-admin-tab-counts/get-enrollment-admin-tab-counts.handler';
 import { ListEnrollmentsHandler } from './application/list-enrollments/list-enrollments.handler';
 import { PermanentDeleteEnrollmentHandler } from './application/permanent-delete-enrollment/permanent-delete-enrollment.handler';
 import { RejectEnrollmentHandler } from './application/reject-enrollment/reject-enrollment.handler';
@@ -355,7 +356,6 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         enrollmentRepo: EnrollmentRepository,
         studentRepo: StudentRepository,
         domainService: EnrollmentDomainService,
-        sideEffects: EnrollmentSideEffectsService,
         workflowSync: StudentAdmissionStatusSyncService,
         studentDomainService: StudentDomainService,
       ) =>
@@ -363,7 +363,6 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
           enrollmentRepo,
           studentRepo,
           domainService,
-          sideEffects,
           workflowSync,
           studentDomainService,
         ),
@@ -371,7 +370,6 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
         STUDENT_TOKENS.STUDENT_REPOSITORY,
         EnrollmentDomainService,
-        EnrollmentSideEffectsService,
         StudentAdmissionStatusSyncService,
         StudentDomainService,
       ],
@@ -381,6 +379,13 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
       provide: ListEnrollmentsHandler,
       useFactory: (enrollmentRepo: EnrollmentRepository) =>
         new ListEnrollmentsHandler(enrollmentRepo),
+      inject: [ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY],
+    },
+
+    {
+      provide: GetEnrollmentAdminTabCountsHandler,
+      useFactory: (enrollmentRepo: EnrollmentRepository) =>
+        new GetEnrollmentAdminTabCountsHandler(enrollmentRepo),
       inject: [ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY],
     },
 

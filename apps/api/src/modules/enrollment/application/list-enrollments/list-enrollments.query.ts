@@ -1,3 +1,8 @@
+import type {
+  AdminEnrollmentListTab,
+  StudentManageEnrollmentTab,
+} from '@mcj/shared-constants';
+
 import { ApplicationType } from '../../domain/enums/application-type.enum';
 import { EnrollmentMode } from '../../domain/enums/enrollment-mode.enum';
 import { EnrollmentSource } from '../../domain/enums/enrollment-source.enum';
@@ -30,5 +35,7 @@ export class ListEnrollmentsQuery {
     public readonly currentOnly?: boolean,
     public readonly applicationType?: ApplicationType,
     public readonly mode?: EnrollmentMode,
+    public readonly adminTab?: AdminEnrollmentListTab,
+    public readonly studentEnrollmentTab?: StudentManageEnrollmentTab,
   ) {}
 }

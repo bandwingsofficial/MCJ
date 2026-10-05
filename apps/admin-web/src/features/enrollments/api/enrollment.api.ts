@@ -32,6 +32,25 @@ export const enrollmentApi = {
     );
   },
 
+  async getEnrollmentTabCounts(
+    filters: Pick<
+      EnrollmentFilters,
+      "branchId" | "search" | "applicationType" | "studentId"
+    >,
+  ) {
+    return apiClient.get<{
+      success: boolean;
+      data: {
+        active: number;
+        completed: number;
+        cancelled?: number;
+        all?: number;
+      };
+    }>(ENROLLMENT_ENDPOINTS.TAB_COUNTS, {
+      params: buildEnrollmentQuery(filters),
+    });
+  },
+
   async getEnrollment(id: string) {
     return apiClient.get<EnrollmentResponse>(
       ENROLLMENT_ENDPOINTS.DETAILS(id),

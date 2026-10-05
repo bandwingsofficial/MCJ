@@ -38,13 +38,13 @@ interface Props {
 
 const TAB_LABELS: Record<TabKey, string> = {
   overview: "Overview",
+  enrollments: "Enrollments",
   documents: "Documents",
   "job-applications": "Job Applications",
   activity: "Activity",
 };
 
 const REMOVED_TABS = new Set([
-  "enrollments",
   "attendance",
   "assessments",
   "payments",
@@ -214,6 +214,7 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
         overviewRefreshKey={overviewRefreshKey}
         onTabChange={handleTabChange}
         onDocumentsChanged={bumpOverviewRefresh}
+        onEnrollmentMutation={handleStudentDataRefresh}
       />
 
       <UpdateStudentModal
@@ -293,6 +294,7 @@ export function StudentManagePage({ studentId, initialTab }: Props) {
         onCancel={() => setDeleteBlockedDialog(null)}
         onConfirm={() => setDeleteBlockedDialog(null)}
       />
+
     </div>
   );
 }

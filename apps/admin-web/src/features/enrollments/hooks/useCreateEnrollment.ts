@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { appToast } from "@/src/shared/components/ui/toast";
+import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
 import {
   CreateEnrollmentRequest,
@@ -33,14 +34,7 @@ export const useCreateEnrollment =
 
           return response;
         } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : "Failed to create enrollment";
-
-          appToast.error(
-            message,
-          );
+          appToast.error(getErrorMessage(error));
 
           throw error;
         } finally {

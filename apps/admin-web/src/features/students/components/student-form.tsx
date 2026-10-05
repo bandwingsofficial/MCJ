@@ -44,7 +44,6 @@ import {
   DEFAULT_STUDENT_FORM_VALUES,
   STUDENT_GENDER_OPTIONS,
 } from "@/src/features/students/constants/student.constants";
-import { getStudentStatusSelectOptions } from "@/src/features/students/utils/student-workflow-status.utils";
 import {
   studentSchema,
   type StudentFormValues,
@@ -141,9 +140,6 @@ export function StudentForm({
   }, [serverErrors, setError]);
 
   const values = watch();
-  const statusOptions = getStudentStatusSelectOptions(
-    values.status ?? defaultValues?.status ?? "LEAD",
-  );
   const notesLength = (values.notes ?? "").length;
   const studentCode = isEdit
     ? values.studentCode || suggestedCode
@@ -637,24 +633,6 @@ export function StudentForm({
               autoComplete="off"
               {...registerDateField("admissionDate")}
             />
-          </IconValidatedField>
-
-          <IconValidatedField
-            label="Status"
-            state={getFieldState("status")}
-            errorMessage={errors.status?.message}
-           select icon={FileText}>
-              <AppSelect
-                value={values.status}
-                onValueChange={(value) =>
-                  setValue("status", value as StudentFormValues["status"], {
-                    shouldValidate: true,
-                    shouldDirty: true,
-                  })
-                }
-                options={uniqueSelectOptions(statusOptions)}
-                triggerClassName={selectTriggerClass(getFieldState("status"))}
-              />
           </IconValidatedField>
 
           <div className="md:col-span-2">

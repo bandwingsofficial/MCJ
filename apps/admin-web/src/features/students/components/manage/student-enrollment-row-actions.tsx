@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheck, Power, Settings2 } from "lucide-react";
+import { CircleCheck, GitBranch, Power, Settings2 } from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Dropdown } from "@/src/shared/components/ui/dropdown";
@@ -10,6 +10,7 @@ import {
   canUnenrollEnrollment,
   isCurrentEnrollmentStatus,
 } from "@/src/features/enrollments/utils/current-enrollment";
+import { canChangeEnrollmentRowWorkflowStatus } from "@/src/features/enrollments/utils/enrollment-workflow-status.utils";
 
 const iconBtnClass = "h-10 w-10 shrink-0 rounded-lg p-0";
 const iconClass = "h-[1.35rem] w-[1.35rem]";
@@ -27,6 +28,7 @@ interface Props {
   onUnenroll?: (enrollment: Enrollment) => void;
   onActivate: (enrollment: Enrollment) => void;
   onDeactivate: (enrollment: Enrollment) => void;
+  onChangeStatus?: (enrollment: Enrollment) => void;
 }
 
 export function StudentEnrollmentRowActions({
@@ -38,12 +40,21 @@ export function StudentEnrollmentRowActions({
   onUnenroll,
   onActivate,
   onDeactivate,
+  onChangeStatus,
 }: Props) {
   const archived = isArchivedEnrollment(enrollment);
   const isCurrent =
     !archived && isCurrentEnrollmentStatus(enrollment.status);
   const showUnenroll =
     !archived && onUnenroll && canUnenrollEnrollment(enrollment);
+  const showStatusChange =
+    !archived &&
+    Boolean(onChangeStatus) &&
+    canChangeEnrollmentRowWorkflowStatus({
+      enrollmentStatus: enrollment.status,
+      studentStatus: enrollment.student?.status,
+      isActive: enrollment.isActive,
+    });
 
   const manageItems = archived
     ? [
@@ -100,6 +111,21 @@ export function StudentEnrollmentRowActions({
 
   return (
     <div className="flex items-center justify-end gap-1">
+      {showStatusChange ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={disabled}
+          onClick={() => onChangeStatus?.(enrollment)}
+          title="Change status"
+          aria-label="Change status"
+          className={`${iconBtnClass} text-violet-800 hover:bg-violet-50 hover:text-violet-900`}
+        >
+          <GitBranch className={iconClass} />
+        </Button>
+      ) : null}
+
       <Dropdown
         trigger={
           <Button

@@ -1,10 +1,10 @@
-/** Student / enrollment workflow statuses (aligned with StudentStatus, excluding ENQUIRED). */
+/** Student lifecycle statuses (admin). No Dropped — use Cancelled. */
 export const STUDENT_ENROLLMENT_WORKFLOW_STATUSES = [
   "LEAD",
   "ADVANCED",
   "ADMITTED",
   "COMPLETED",
-  "DROPPED",
+  "CANCELLED",
   "PLACED",
 ] as const;
 
@@ -15,15 +15,15 @@ const STUDENT_TRANSITIONS: Record<
   StudentEnrollmentWorkflowStatus,
   readonly StudentEnrollmentWorkflowStatus[]
 > = {
-  LEAD: ["PLACED"],
-  ADVANCED: ["LEAD", "PLACED", "DROPPED"],
-  ADMITTED: ["LEAD", "ADVANCED", "COMPLETED", "PLACED", "DROPPED"],
+  LEAD: ["ADVANCED", "ADMITTED"],
+  ADVANCED: ["ADMITTED", "CANCELLED"],
+  ADMITTED: ["COMPLETED", "CANCELLED"],
   COMPLETED: ["LEAD", "PLACED"],
-  DROPPED: ["LEAD"],
-  PLACED: ["LEAD"],
+  CANCELLED: ["LEAD"],
+  PLACED: ["COMPLETED", "LEAD"],
 };
 
-/** Admin enrollment records: Admitted and Completed only. */
+/** Admin enrollment record statuses (course enrollment row). */
 export const ENROLLMENT_RECORD_WORKFLOW_STATUSES = [
   "ADMITTED",
   "COMPLETED",
@@ -47,9 +47,12 @@ export function normalizeStudentEnrollmentWorkflowStatus(
     return null;
   }
 
-  const normalized = String(status).trim().toUpperCase();
+  let normalized = String(status).trim().toUpperCase();
   if (normalized === "ENQUIRED") {
-    return "LEAD";
+    normalized = "LEAD";
+  }
+  if (normalized === "DROPPED") {
+    normalized = "CANCELLED";
   }
 
   if (
@@ -105,7 +108,7 @@ export const STUDENT_ENROLLMENT_WORKFLOW_STATUS_LABELS: Record<
   ADVANCED: "Advanced",
   ADMITTED: "Admitted",
   COMPLETED: "Completed",
-  DROPPED: "Dropped",
+  CANCELLED: "Cancelled",
   PLACED: "Placed",
 };
 
@@ -129,6 +132,18 @@ export function mapWorkflowStatusToEnrollmentRecordStatus(
   return null;
 }
 
+/** Student workflow targets that mutate a linked enrollment row (not Placed / Lead alone). */
+export function studentWorkflowSyncsEnrollmentRow(
+  workflow: StudentEnrollmentWorkflowStatus,
+): boolean {
+  return (
+    workflow === "ADVANCED" ||
+    workflow === "ADMITTED" ||
+    workflow === "COMPLETED" ||
+    workflow === "CANCELLED"
+  );
+}
+
 export function isEnrollmentRecordWorkflowStatus(
   workflow: StudentEnrollmentWorkflowStatus,
 ): workflow is EnrollmentRecordWorkflowStatus {
@@ -137,7 +152,7 @@ export function isEnrollmentRecordWorkflowStatus(
   ).includes(workflow);
 }
 
-/** Maps stored enrollment row status to admin Admitted | Completed (or null if not applicable). */
+/** Maps stored enrollment row status to admin Admitted | Completed (or null). */
 export function normalizeEnrollmentRecordLifecycleStatus(
   status: string | null | undefined,
 ): EnrollmentRecordWorkflowStatus | null {
@@ -155,9 +170,6 @@ export function normalizeEnrollmentRecordLifecycleStatus(
     normalized === "ADMITTED" ||
     normalized === "ACTIVE" ||
     normalized === "ADVANCED" ||
-    normalized === "LEAD" ||
-    normalized === "PLACED" ||
-    normalized === "ENQUIRED" ||
     normalized === "PENDING" ||
     normalized === "PENDING_APPROVAL"
   ) {
@@ -167,21 +179,225 @@ export function normalizeEnrollmentRecordLifecycleStatus(
   return null;
 }
 
-/** Primary admin lifecycle from enrollment rows (Completed wins over Admitted). */
-/** Admin create enrollment: allowed when student is Lead, Completed, Dropped, or Placed. */
-export function canStudentStartNewAdminEnrollment(
+/** Admin enrollment row lifecycle (Advanced / Admitted / Completed / Cancelled). */
+export const ADMIN_ENROLLMENT_LIFECYCLE_STATUSES = [
+  "ADVANCED",
+  "ADMITTED",
+  "COMPLETED",
+  "CANCELLED",
+] as const;
+
+export type AdminEnrollmentLifecycleStatus =
+  (typeof ADMIN_ENROLLMENT_LIFECYCLE_STATUSES)[number];
+
+export function normalizeAdminEnrollmentRowLifecycle(
+  enrollmentStatus: string | null | undefined,
+): AdminEnrollmentLifecycleStatus | null {
+  if (enrollmentStatus == null) {
+    return null;
+  }
+
+  const normalized = String(enrollmentStatus).trim().toUpperCase();
+
+  if (normalized === "COMPLETED") {
+    return "COMPLETED";
+  }
+
+  if (
+    normalized === "CANCELLED" ||
+    normalized === "DROPPED" ||
+    normalized === "REJECTED"
+  ) {
+    return "CANCELLED";
+  }
+
+  if (normalized === "ADVANCED") {
+    return "ADVANCED";
+  }
+
+  if (
+    normalized === "ADMITTED" ||
+    normalized === "ACTIVE" ||
+    normalized === "PENDING" ||
+    normalized === "PENDING_APPROVAL"
+  ) {
+    return "ADMITTED";
+  }
+
+  return null;
+}
+
+/** Admin list/actions: enrollment row status only (never student lifecycle). */
+export function resolveAdminEnrollmentLifecycleStatus(input: {
+  enrollmentStatus: string | null | undefined;
+  studentStatus?: string | null;
+}): AdminEnrollmentLifecycleStatus | null {
+  return normalizeAdminEnrollmentRowLifecycle(input.enrollmentStatus);
+}
+
+/** Row actions / Change Status modal: enrollment record status only. */
+export function resolveAdminEnrollmentLifecycleForRowActions(input: {
+  enrollmentStatus: string | null | undefined;
+  studentStatus?: string | null;
+  isActive?: boolean;
+}): AdminEnrollmentLifecycleStatus | null {
+  return normalizeAdminEnrollmentRowLifecycle(input.enrollmentStatus);
+}
+
+export const ADMIN_ENROLLMENT_LIFECYCLE_TRANSITIONS: Record<
+  AdminEnrollmentLifecycleStatus,
+  readonly AdminEnrollmentLifecycleStatus[]
+> = {
+  ADVANCED: ["ADMITTED", "CANCELLED"],
+  ADMITTED: ["COMPLETED", "CANCELLED"],
+  COMPLETED: [],
+  CANCELLED: [],
+};
+
+export function canTransitionAdminEnrollmentLifecycle(
+  from: AdminEnrollmentLifecycleStatus,
+  to: AdminEnrollmentLifecycleStatus,
+): boolean {
+  if (from === to) {
+    return true;
+  }
+
+  return ADMIN_ENROLLMENT_LIFECYCLE_TRANSITIONS[from].includes(to);
+}
+
+/** Student status after an admin enrollment lifecycle change (not Placed — student-only). */
+export function studentStatusAfterAdminEnrollmentLifecycleChange(
+  target: AdminEnrollmentLifecycleStatus,
+): StudentEnrollmentWorkflowStatus {
+  if (target === "CANCELLED") {
+    return "LEAD";
+  }
+
+  return target;
+}
+
+export function adminEnrollmentLifecycleFromWorkflowTarget(
+  status: string | null | undefined,
+): AdminEnrollmentLifecycleStatus | null {
+  const normalized = normalizeStudentEnrollmentWorkflowStatus(status);
+  if (
+    normalized === "ADVANCED" ||
+    normalized === "ADMITTED" ||
+    normalized === "COMPLETED" ||
+    normalized === "CANCELLED"
+  ) {
+    return normalized;
+  }
+
+  return null;
+}
+
+/** Block admin create-enrollment picker only for in-progress admission statuses. */
+export function isStudentStatusBlockingNewAdminEnrollment(
   status: string | null | undefined,
 ): boolean {
   const workflow = normalizeStudentEnrollmentWorkflowStatus(status);
   if (!workflow) {
-    return true;
+    return false;
   }
 
-  return (
-    workflow === "LEAD" ||
-    workflow === "COMPLETED" ||
-    workflow === "DROPPED" ||
-    workflow === "PLACED"
+  return workflow === "ADVANCED" || workflow === "ADMITTED";
+}
+
+/**
+ * Lead, Completed, Cancelled, Placed may start a new enrollment.
+ * When `hasOpenEnrollmentSlot` is provided, it wins over student status (handles stale Advanced/Admitted after cancel).
+ */
+export function canStudentStartNewAdminEnrollment(
+  status: string | null | undefined,
+  options?: { hasOpenEnrollmentSlot?: boolean },
+): boolean {
+  if (options?.hasOpenEnrollmentSlot !== undefined) {
+    return !options.hasOpenEnrollmentSlot;
+  }
+
+  return !isStudentStatusBlockingNewAdminEnrollment(status);
+}
+
+export type AdminEnrollmentListTab = "active" | "completed" | "cancelled";
+
+export type StudentManageEnrollmentTab =
+  | "all"
+  | "active"
+  | "completed"
+  | "cancelled";
+
+/** Global admin list — active enrollments (Admitted). */
+export const ADMIN_ENROLLMENT_ACTIVE_TAB_STATUSES = [
+  "ADMITTED",
+  "ACTIVE",
+  "ADVANCED",
+] as const;
+
+export const ADMIN_ENROLLMENT_COMPLETED_TAB_STATUSES = ["COMPLETED"] as const;
+
+export const ADMIN_ENROLLMENT_CANCELLED_TAB_STATUSES = [
+  "CANCELLED",
+  "DROPPED",
+  "REJECTED",
+] as const;
+
+export const STUDENT_MANAGE_ENROLLMENT_CANCELLED_STATUSES = [
+  "CANCELLED",
+  "DROPPED",
+  "REJECTED",
+] as const;
+
+/** DB partial-unique slot (one open admitted enrollment per student). */
+export const ADMIN_ENROLLMENT_UNIQUE_SLOT_STATUSES = [
+  "PENDING",
+  "PENDING_APPROVAL",
+  "ADVANCED",
+  "ADMITTED",
+  "ACTIVE",
+] as const;
+
+export function adminEnrollmentTabStatusIn(
+  tab: AdminEnrollmentListTab,
+): readonly string[] {
+  switch (tab) {
+    case "completed":
+      return ADMIN_ENROLLMENT_COMPLETED_TAB_STATUSES;
+    case "cancelled":
+      return ADMIN_ENROLLMENT_CANCELLED_TAB_STATUSES;
+    case "active":
+    default:
+      return ADMIN_ENROLLMENT_ACTIVE_TAB_STATUSES;
+  }
+}
+
+export function studentManageEnrollmentTabStatusIn(
+  tab: StudentManageEnrollmentTab,
+): readonly string[] | undefined {
+  switch (tab) {
+    case "all":
+      return undefined;
+    case "active":
+      return ADMIN_ENROLLMENT_ACTIVE_TAB_STATUSES;
+    case "completed":
+      return ADMIN_ENROLLMENT_COMPLETED_TAB_STATUSES;
+    case "cancelled":
+      return STUDENT_MANAGE_ENROLLMENT_CANCELLED_STATUSES;
+    default:
+      return undefined;
+  }
+}
+
+export function enrollmentStatusOccupiesUniqueStudentSlot(
+  status: string | null | undefined,
+): boolean {
+  if (status == null || String(status).trim() === "") {
+    return false;
+  }
+
+  const normalized = String(status).trim().toUpperCase();
+  return (ADMIN_ENROLLMENT_UNIQUE_SLOT_STATUSES as readonly string[]).includes(
+    normalized,
   );
 }
 
@@ -204,4 +420,3 @@ export function resolveLifecycleStatusFromEnrollmentStatuses(
 
   return "ADMITTED";
 }
-

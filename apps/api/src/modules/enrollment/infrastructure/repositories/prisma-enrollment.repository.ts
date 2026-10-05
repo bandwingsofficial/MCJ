@@ -13,6 +13,8 @@ import {
   EnrollmentRepository,
   EnrollmentSummaryView,
 } from '../../domain/repositories/enrollment.repository';
+import { ADMIN_ENROLLMENT_UNIQUE_SLOT_STATUSES } from '@mcj/shared-constants';
+
 import { EnrollmentMapper } from '../mappers/enrollment.mapper';
 import {
   enrollmentDetailInclude,
@@ -86,6 +88,27 @@ export class PrismaEnrollmentRepository
     });
 
     return record ? EnrollmentMapper.toDomain(record) : null;
+  }
+
+  async findByStudentIdAndStatuses(
+    studentId: string,
+    statuses: EnrollmentStatus[],
+    includeDeleted = false,
+  ): Promise<Enrollment[]> {
+    if (statuses.length === 0) {
+      return [];
+    }
+
+    const records = await this.prisma.enrollment.findMany({
+      where: {
+        studentId,
+        status: { in: statuses },
+        ...(includeDeleted ? {} : { isDeleted: false }),
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    return records.map((record) => EnrollmentMapper.toDomain(record));
   }
 
   async findCurrentByStudentId(
@@ -270,6 +293,59 @@ export class PrismaEnrollmentRepository
     return this.prisma.enrollment.count({
       where: this.buildWhere(filters),
     });
+  }
+
+  async countByStudentIds(
+    studentIds: string[],
+    includeDeleted = false,
+  ): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+
+    if (studentIds.length === 0) {
+      return map;
+    }
+
+    const groups = await this.prisma.enrollment.groupBy({
+      by: ['studentId'],
+      where: {
+        studentId: { in: studentIds },
+        ...(includeDeleted ? {} : { isDeleted: false }),
+      },
+      _count: { _all: true },
+    });
+
+    for (const group of groups) {
+      map.set(group.studentId, group._count._all);
+    }
+
+    return map;
+  }
+
+  async findStudentIdsWithOpenEnrollmentSlots(
+    studentIds: string[],
+  ): Promise<Set<string>> {
+    const result = new Set<string>();
+
+    if (studentIds.length === 0) {
+      return result;
+    }
+
+    const groups = await this.prisma.enrollment.groupBy({
+      by: ['studentId'],
+      where: {
+        studentId: { in: studentIds },
+        isDeleted: false,
+        status: {
+          in: [...ADMIN_ENROLLMENT_UNIQUE_SLOT_STATUSES] as EnrollmentStatus[],
+        },
+      },
+    });
+
+    for (const group of groups) {
+      result.add(group.studentId);
+    }
+
+    return result;
   }
 
   async deletePermanent(id: string): Promise<void> {
@@ -465,18 +541,35 @@ export class PrismaEnrollmentRepository
       );
     }
 
-    const existing = await this.findCurrentDetailByStudentId(
-      enrollment.studentId,
-      enrollment.id,
-    );
+    const existing = await this.prisma.enrollment.findFirst({
+      where: {
+        studentId: enrollment.studentId,
+        isDeleted: false,
+        id: { not: enrollment.id },
+        status: {
+          in: [
+            EnrollmentStatus.PENDING,
+            EnrollmentStatus.PENDING_APPROVAL,
+            EnrollmentStatus.ADVANCED,
+            EnrollmentStatus.ADMITTED,
+            EnrollmentStatus.ACTIVE,
+          ],
+        },
+      },
+      include: enrollmentDetailInclude,
+      orderBy: { updatedAt: 'desc' },
+    });
 
     if (existing) {
       throw EnrollmentAlreadyExistsException.forCurrentEnrollment(
-        existing,
+        EnrollmentResponseMapper.toDetail(existing),
         enrollment.batchId,
       );
     }
 
-    throw new EnrollmentAlreadyExistsException();
+    throw new EnrollmentAlreadyExistsException(
+      ERROR_CODES.STUDENT_ALREADY_ENROLLED,
+      'Cannot create a new enrollment while the student has an active Advanced or Admitted enrollment.',
+    );
   }
 }

@@ -12,7 +12,6 @@ import {
   Users,
 } from "lucide-react";
 
-import { StudentStatusBadge } from "@/src/features/students/components/StudentStatusBadge";
 import type { Student } from "@/src/features/students/types/student.types";
 import { withImageCacheBust } from "@/src/shared/utils/upload-image.util";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
@@ -123,7 +122,6 @@ export function StudentOverviewInformation({
   infoGridClassName = "sm:grid-cols-2 xl:grid-cols-3",
   sectionGridClassName = "sm:grid-cols-2",
 }: Props) {
-  const isArchived = Boolean(student.deletedAt || student.isDeleted);
   const fullName = formatStudentName(student.firstName, student.lastName);
 
   const hasEducation =
@@ -188,13 +186,6 @@ export function StudentOverviewInformation({
             <p className="mt-0.5 font-mono text-sm text-[#647A9B]">
               {student.studentCode}
             </p>
-            <div className="mt-2">
-              <StudentStatusBadge
-                status={student.status}
-                isActive={student.isActive}
-                isDeleted={isArchived}
-              />
-            </div>
           </div>
         </div>
 
@@ -235,19 +226,6 @@ export function StudentOverviewInformation({
             icon={Calendar}
             iconClass="text-amber-600"
             bgClass="bg-amber-50"
-          />
-          <InfoBlock
-            label="Status"
-            value={
-              <StudentStatusBadge
-                status={student.status}
-                isActive={student.isActive}
-                isDeleted={isArchived}
-              />
-            }
-            icon={User}
-            iconClass="text-[#2563EB]"
-            bgClass="bg-blue-50"
           />
           {hasText(student.email) ? (
             <InfoBlock

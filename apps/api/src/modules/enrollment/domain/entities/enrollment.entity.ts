@@ -230,6 +230,7 @@ export class Enrollment {
 
   static statusOccupiesSeat(status: EnrollmentStatus): boolean {
     return (
+      status === EnrollmentStatus.ADVANCED ||
       status === EnrollmentStatus.ADMITTED ||
       status === EnrollmentStatus.ACTIVE
     );

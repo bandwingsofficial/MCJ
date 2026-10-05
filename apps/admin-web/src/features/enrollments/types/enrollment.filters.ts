@@ -1,5 +1,10 @@
 // src/features/enrollments/types/enrollment.filters.ts
 
+import type {
+  AdminEnrollmentListTab,
+  StudentManageEnrollmentTab,
+} from "@mcj/shared-constants";
+
 import {
   EnrollmentStatus,
   PaymentStatus,
@@ -42,4 +47,9 @@ export interface EnrollmentFilters {
   sortBy?: string;
 
   sortOrder?: SortOrder;
+
+  /** Admin list tab: active | completed | cancelled */
+  adminTab?: AdminEnrollmentListTab;
+
+  studentEnrollmentTab?: StudentManageEnrollmentTab;
 }

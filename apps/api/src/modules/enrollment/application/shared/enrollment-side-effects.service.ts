@@ -228,14 +228,21 @@ export class EnrollmentSideEffectsService {
 
     if (isOccupying) {
       if (!inPlacePromotion) {
-        if (enrollment.batchTimingId) {
-          await assertBatchTimingHasLiveCapacity(
-            this.prisma,
-            enrollment.batchTimingId,
-          );
-        } else {
-          this.domainService.ensureBatchHasCapacity(batch);
+        // Capacity is validated before the enrollment row is saved (create/update).
+        // Re-checking here after save counts the new row and falsely throws "batch full".
+        const skipCapacityAssert = previousStatus === null;
+
+        if (!skipCapacityAssert) {
+          if (enrollment.batchTimingId) {
+            await assertBatchTimingHasLiveCapacity(
+              this.prisma,
+              enrollment.batchTimingId,
+            );
+          } else {
+            this.domainService.ensureBatchHasCapacity(batch);
+          }
         }
+
         batch.update({
           enrolledCount: batch.enrolledCount + 1,
           updatedBy: actorId,

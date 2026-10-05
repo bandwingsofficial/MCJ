@@ -5,6 +5,13 @@ import {
   ENROLLMENT_RECORD_WORKFLOW_STATUSES,
 
   getAllowedNextEnrollmentRecordStatuses,
+  getAllowedNextStudentEnrollmentWorkflowStatuses,
+  STUDENT_ENROLLMENT_WORKFLOW_STATUS_LABELS,
+  ADMIN_ENROLLMENT_LIFECYCLE_TRANSITIONS,
+  adminEnrollmentLifecycleFromWorkflowTarget,
+  resolveAdminEnrollmentLifecycleStatus,
+  resolveAdminEnrollmentLifecycleForRowActions,
+  type AdminEnrollmentLifecycleStatus,
 
   isEnrollmentRecordWorkflowStatus,
 
@@ -16,6 +23,7 @@ import {
 
   resolveLifecycleStatusFromEnrollmentStatuses,
 
+  type AdminEnrollmentListTab,
   type EnrollmentRecordWorkflowStatus,
 
   type StudentEnrollmentWorkflowStatus,
@@ -68,7 +76,7 @@ export function resolveEnrollmentWorkflowStatus(
 
     case EnrollmentStatus.DROPPED:
 
-      return "DROPPED";
+      return "CANCELLED";
 
     case EnrollmentStatus.PLACED:
 
@@ -84,7 +92,7 @@ export function resolveEnrollmentWorkflowStatus(
 
     case EnrollmentStatus.REJECTED:
 
-      return "LEAD";
+      return "CANCELLED";
 
     default:
 
@@ -162,15 +170,18 @@ export function resolveEnrollmentAdminDisplayStatus(input: {
 
 
 
-/** Single source of truth: linked student status, else enrollment row. */
+/** Admin list/actions: enrollment row first; student only for Advanced vs Admitted. */
 export function resolveEnrollmentListWorkflowStatus(input: {
   enrollmentStatus: EnrollmentStatus | string;
   studentStatus?: string | null;
 }): StudentEnrollmentWorkflowStatus {
-  if (input.studentStatus) {
-    return (
-      normalizeStudentEnrollmentWorkflowStatus(input.studentStatus) ?? "LEAD"
-    );
+  const lifecycle = resolveAdminEnrollmentLifecycleStatus({
+    enrollmentStatus: input.enrollmentStatus,
+    studentStatus: input.studentStatus,
+  });
+
+  if (lifecycle) {
+    return lifecycle;
   }
 
   return resolveEnrollmentWorkflowStatus(input.enrollmentStatus);
@@ -188,8 +199,8 @@ export function workflowStatusToEnrollmentStatus(
       return EnrollmentStatus.ADMITTED;
     case "COMPLETED":
       return EnrollmentStatus.COMPLETED;
-    case "DROPPED":
-      return EnrollmentStatus.DROPPED;
+    case "CANCELLED":
+      return EnrollmentStatus.CANCELLED;
     case "PLACED":
       return EnrollmentStatus.PLACED;
     default:
@@ -253,6 +264,103 @@ export function getEnrollmentStatusChangeOptions(
 
 }
 
+const LIFECYCLE_STATUS_LABELS: Record<
+  AdminEnrollmentLifecycleStatus,
+  string
+> = {
+  ADVANCED: "Advanced",
+  ADMITTED: "Admitted",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+function lifecycleToEnrollmentStatus(
+  lifecycle: AdminEnrollmentLifecycleStatus,
+): EnrollmentStatus {
+  switch (lifecycle) {
+    case "ADVANCED":
+      return EnrollmentStatus.ADVANCED;
+    case "ADMITTED":
+      return EnrollmentStatus.ADMITTED;
+    case "COMPLETED":
+      return EnrollmentStatus.COMPLETED;
+    case "CANCELLED":
+      return EnrollmentStatus.CANCELLED;
+    default:
+      return EnrollmentStatus.ADMITTED;
+  }
+}
+
+export type EnrollmentRowWorkflowInput = {
+  enrollmentStatus: EnrollmentStatus | string;
+  studentStatus?: string | null;
+  isActive?: boolean;
+};
+
+/** Change Status modal — per enrollment row status from backend. */
+export function getEnrollmentWorkflowStatusChangeOptions(
+  input: EnrollmentRowWorkflowInput,
+): Array<{ label: string; value: EnrollmentStatus }> {
+  const current = resolveAdminEnrollmentLifecycleForRowActions({
+    enrollmentStatus: input.enrollmentStatus,
+    isActive: input.isActive,
+  });
+
+  if (!current) {
+    return [];
+  }
+
+  if (current === "COMPLETED") {
+    const studentWorkflow = normalizeStudentEnrollmentWorkflowStatus(
+      input.studentStatus,
+    );
+    if (studentWorkflow !== "COMPLETED") {
+      return [];
+    }
+
+    return [
+      {
+        label: STUDENT_ENROLLMENT_WORKFLOW_STATUS_LABELS.PLACED,
+        value: EnrollmentStatus.PLACED,
+      },
+    ];
+  }
+
+  return ADMIN_ENROLLMENT_LIFECYCLE_TRANSITIONS[current].map((lifecycle) => ({
+    label: LIFECYCLE_STATUS_LABELS[lifecycle],
+    value: lifecycleToEnrollmentStatus(lifecycle),
+  }));
+}
+
+export function adminEnrollmentListTabForWorkflow(
+  workflow: StudentEnrollmentWorkflowStatus,
+): AdminEnrollmentListTab {
+  if (workflow === "COMPLETED" || workflow === "PLACED") {
+    return "completed";
+  }
+  if (workflow === "CANCELLED") {
+    return "cancelled";
+  }
+  return "active";
+}
+
+export function adminEnrollmentListTabAfterStatusChange(
+  nextStatus: EnrollmentStatus,
+): AdminEnrollmentListTab {
+  if (nextStatus === EnrollmentStatus.PLACED) {
+    return "completed";
+  }
+
+  const lifecycle = adminEnrollmentLifecycleFromWorkflowTarget(nextStatus);
+  if (lifecycle === "COMPLETED") {
+    return "completed";
+  }
+  if (lifecycle === "CANCELLED") {
+    return "cancelled";
+  }
+  return "active";
+}
+
 
 
 export function getEnrollmentStatusSelectOptions(
@@ -291,18 +399,17 @@ export function canChangeEnrollmentWorkflowStatus(
 
 
 
-export function canChangeSyncedEnrollmentWorkflowStatus(input: {
+export function canChangeEnrollmentRowWorkflowStatus(
+  input: EnrollmentRowWorkflowInput,
+): boolean {
+  return getEnrollmentWorkflowStatusChangeOptions(input).length > 0;
+}
 
-  enrollmentStatus: EnrollmentStatus | string;
-
-  studentStatus?: string | null;
-
-}): boolean {
-
-  const workflow = resolveSyncedLifecycleWorkflow(input);
-
-  return getEnrollmentStatusChangeOptions(workflow).length > 0;
-
+/** @deprecated Use canChangeEnrollmentRowWorkflowStatus */
+export function canChangeSyncedEnrollmentWorkflowStatus(
+  input: EnrollmentRowWorkflowInput,
+): boolean {
+  return canChangeEnrollmentRowWorkflowStatus(input);
 }
 
 

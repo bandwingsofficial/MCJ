@@ -6,6 +6,7 @@ import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 
 /** Statuses that occupy a parent batch seat. */
 export const BATCH_SEAT_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
+  EnrollmentStatus.ADVANCED,
   EnrollmentStatus.ADMITTED,
   EnrollmentStatus.ACTIVE,
 ];
@@ -15,6 +16,7 @@ export const BATCH_SEAT_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
  * Cancelled / completed / pending enrollments are excluded.
  */
 export const TIMING_LINKED_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
+  EnrollmentStatus.ADVANCED,
   EnrollmentStatus.ADMITTED,
   EnrollmentStatus.ACTIVE,
 ];

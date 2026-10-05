@@ -7,13 +7,17 @@ import { enrollmentService } from "@/src/features/enrollments/services/enrollmen
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import type { EnrollmentFilters } from "@/src/features/enrollments/types/enrollment.filters";
 import { SortOrder } from "@/src/features/enrollments/types/enrollment.enums";
+import type { StudentManageEnrollmentTab } from "@mcj/shared-constants";
+
 import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
+import { useRealtimeRefetch } from "@/src/core/realtime/use-realtime-refetch";
 
 const DEFAULT_PAGE_SIZE = 10;
 
 interface UseStudentEnrollmentsOptions {
   studentId: string;
   pageSize?: number;
+  enrollmentTab?: StudentManageEnrollmentTab;
 }
 
 interface UseStudentEnrollmentsReturn {
@@ -32,6 +36,7 @@ interface UseStudentEnrollmentsReturn {
 export function useStudentEnrollments({
   studentId,
   pageSize = DEFAULT_PAGE_SIZE,
+  enrollmentTab = "all",
 }: UseStudentEnrollmentsOptions): UseStudentEnrollmentsReturn {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [total, setTotal] = useState(0);
@@ -53,6 +58,7 @@ export function useStudentEnrollments({
 
       const filters: EnrollmentFilters = {
         studentId,
+        studentEnrollmentTab: enrollmentTab,
         skip: (page - 1) * pageSize,
         take: pageSize,
         sortBy: "createdAt",
@@ -72,7 +78,7 @@ export function useStudentEnrollments({
     } finally {
       setIsLoading(false);
     }
-  }, [studentId, page, pageSize, includeDeleted]);
+  }, [studentId, page, pageSize, includeDeleted, enrollmentTab]);
 
   useEffect(() => {
     void fetchEnrollments();
@@ -80,7 +86,10 @@ export function useStudentEnrollments({
 
   useEffect(() => {
     setPage(1);
-  }, [studentId, includeDeleted]);
+  }, [studentId, includeDeleted, enrollmentTab]);
+
+  useRealtimeRefetch("enrollment", fetchEnrollments);
+  useRealtimeRefetch("student", fetchEnrollments);
 
   return {
     enrollments,

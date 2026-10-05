@@ -37,7 +37,7 @@ export interface ExistingEnrollmentMeta {
 export class EnrollmentAlreadyExistsException extends BaseException {
   constructor(
     code: ErrorCode = ERROR_CODES.STUDENT_ALREADY_ENROLLED,
-    message = 'Student is already actively enrolled. A student can have only one active enrollment at a time.',
+    message = 'Cannot create a new enrollment while the student is Advanced or Admitted. Update the student status first.',
     metadata?: Record<string, unknown>,
   ) {
     super(code, message, 409, metadata);
@@ -51,8 +51,8 @@ export class EnrollmentAlreadyExistsException extends BaseException {
     const batchName = detail.batch.name.trim();
     const sameBatch = intendedBatchId === detail.batch.id;
     const message = sameBatch
-      ? `Student is already actively enrolled in ${branchName} - ${batchName} batch. A student can have only one active enrollment at a time.`
-      : `Student is already actively enrolled in ${branchName} - ${batchName} batch. A student can have only one active enrollment at a time.`;
+      ? `Cannot create a new enrollment: an active Advanced or Admitted enrollment already exists in ${branchName} - ${batchName} batch.`
+      : `Cannot create a new enrollment: the student already has an active Advanced or Admitted enrollment in ${branchName} - ${batchName} batch.`;
 
     return new EnrollmentAlreadyExistsException(
       ERROR_CODES.STUDENT_ALREADY_ENROLLED,

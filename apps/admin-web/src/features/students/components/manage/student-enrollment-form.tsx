@@ -42,12 +42,7 @@ import {
   formatCurrency,
   normalizeMoney,
 } from "@/src/features/enrollments/utils/format-payment";
-import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
-import { parseEnrollmentListResponse } from "@/src/features/enrollments/utils/enrollment-list.utils";
-import {
-  currentEnrollmentByStudentId,
-  formatEnrollmentLocation,
-} from "@/src/features/enrollments/utils/current-enrollment";
+import { canStudentStartNewAdminEnrollment } from "@mcj/shared-constants";
 import type { Student } from "@/src/features/students/types/student.types";
 import {
   DEFAULT_STUDENT_ENROLLMENT_FORM_VALUES,
@@ -122,9 +117,10 @@ export function StudentEnrollmentForm({
   const [batchDetails, setBatchDetails] =
     useState<StudentEnrollmentBatchDetailsData | null>(null);
   const [isBatchEligible, setIsBatchEligible] = useState(mode !== "create");
-  const [currentEnrollmentLabel, setCurrentEnrollmentLabel] = useState<
-    string | null
-  >(null);
+  const blockedForNewEnrollment = !canStudentStartNewAdminEnrollment(
+    student.status,
+    { hasOpenEnrollmentSlot: student.hasOpenEnrollmentSlot },
+  );
 
   const mergedDefaults = useMemo(
     () => ({
@@ -170,20 +166,12 @@ export function StudentEnrollmentForm({
       try {
         setIsLoadingOptions(true);
 
-        const [batchResponse, enrollmentResponse] = await Promise.all([
-          batchService.getBatches({
-            ...(student.branchId ? { branchId: student.branchId } : {}),
-            page: 1,
-            pageSize: 100,
-            includeDeleted: false,
-          }),
-          enrollmentService.getEnrollments({
-            studentId: student.id,
-            currentOnly: true,
-            skip: 0,
-            take: 10,
-          }),
-        ]);
+        const batchResponse = await batchService.getBatches({
+          ...(student.branchId ? { branchId: student.branchId } : {}),
+          page: 1,
+          pageSize: 100,
+          includeDeleted: false,
+        });
 
         const items = batchResponse.data?.items ?? [];
 
@@ -201,12 +189,6 @@ export function StudentEnrollmentForm({
           })),
         );
 
-        const current = currentEnrollmentByStudentId(
-          parseEnrollmentListResponse(enrollmentResponse).items,
-        ).get(student.id);
-        setCurrentEnrollmentLabel(
-          current ? formatEnrollmentLocation(current) : null,
-        );
       } catch (error) {
         appToast.error(getErrorMessage(error));
         setBatches([]);
@@ -361,9 +343,9 @@ export function StudentEnrollmentForm({
       onSubmit={
         onSubmit
           ? handleSubmit(async (values) => {
-              if (mode === "create" && currentEnrollmentLabel) {
+              if (mode === "create" && blockedForNewEnrollment) {
                 appToast.error(
-                  `Student already enrolled. ${currentEnrollmentLabel}`,
+                  "Cannot create a new enrollment while the student is Advanced or Admitted. Update the student status first.",
                 );
                 return;
               }
@@ -384,13 +366,12 @@ export function StudentEnrollmentForm({
       className="space-y-4"
       autoComplete="off"
     >
-      {mode === "create" && currentEnrollmentLabel ? (
+      {mode === "create" && blockedForNewEnrollment ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <p className="font-medium">Student already enrolled</p>
-          <p className="mt-1">{currentEnrollmentLabel}</p>
+          <p className="font-medium">Cannot create enrollment</p>
           <p className="mt-1 text-amber-800">
-            Complete, cancel, or withdraw the current enrollment before creating
-            another.
+            New enrollments are only blocked while the student is Advanced or
+            Admitted. Update the student status first.
           </p>
         </div>
       ) : null}
@@ -502,7 +483,7 @@ export function StudentEnrollmentForm({
           disabled={
             isSubmitting ||
             isLoadingDetails ||
-            Boolean(mode === "create" && currentEnrollmentLabel) ||
+            Boolean(mode === "create" && blockedForNewEnrollment) ||
             (mode === "create" && (!batchId || !isBatchEligible))
           }
         >

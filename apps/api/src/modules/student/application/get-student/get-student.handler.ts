@@ -30,9 +30,11 @@ export class GetStudentHandler {
       query.branchId,
     );
 
-    const enrollmentStatusRows =
-      await this.enrollmentRepo.findEnrollmentStatusesByStudentIds([
-        student.id,
+    const [enrollmentStatusRows, openSlotStudentIds, enrollmentCounts] =
+      await Promise.all([
+        this.enrollmentRepo.findEnrollmentStatusesByStudentIds([student.id]),
+        this.enrollmentRepo.findStudentIdsWithOpenEnrollmentSlots([student.id]),
+        this.enrollmentRepo.countByStudentIds([student.id]),
       ]);
     const statusesByStudentId =
       this.displayStatusService.groupEnrollmentStatusesByStudentId(
@@ -45,6 +47,8 @@ export class GetStudentHandler {
         student,
         statusesByStudentId.get(student.id),
       ),
+      enrollmentCounts.get(student.id) ?? 0,
+      openSlotStudentIds.has(student.id),
     );
   }
 }

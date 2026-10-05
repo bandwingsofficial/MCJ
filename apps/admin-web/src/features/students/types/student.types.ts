@@ -9,7 +9,7 @@ export type StudentStatus =
   | "ADVANCED"
   | "ADMITTED"
   | "COMPLETED"
-  | "DROPPED"
+  | "CANCELLED"
   | "PLACED";
 
 export type StudentJobStatus = "JOB_APPLIED";
@@ -62,6 +62,9 @@ export interface Student {
   updatedBy: string | null;
   createdAt: string;
   updatedAt: string;
+  totalEnrollments?: number;
+  /** True when a non-deleted enrollment holds an active Advanced/Admitted slot. */
+  hasOpenEnrollmentSlot?: boolean;
 }
 
 export interface StudentFilters {

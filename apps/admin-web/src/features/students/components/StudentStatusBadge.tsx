@@ -20,7 +20,7 @@ const STATUS_VARIANTS: Record<
   ADVANCED: "info",
   ADMITTED: "info",
   COMPLETED: "default",
-  DROPPED: "danger",
+  CANCELLED: "danger",
   PLACED: "success",
 };
 

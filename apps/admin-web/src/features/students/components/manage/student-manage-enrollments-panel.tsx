@@ -1,9 +1,8 @@
 "use client";
 
+import type { StudentManageEnrollmentTab } from "@mcj/shared-constants";
 import { useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
 
-import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -19,11 +18,15 @@ import {
 } from "@/src/features/enrollments/components/dialogs/unenroll-enrollment-dialog";
 import { useUnenrollEnrollment } from "@/src/features/enrollments/hooks/useUnenrollEnrollment";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
+import { UpdateEnrollmentStatusDialog } from "@/src/features/enrollments/components/dialogs/update-enrollment-status-dialog";
+import { useUpdateEnrollmentStatus } from "@/src/features/enrollments/hooks/useUpdateEnrollmentStatus";
+import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
+import { adminEnrollmentListTabAfterStatusChange } from "@/src/features/enrollments/utils/enrollment-workflow-status.utils";
 import { useStudentEnrollments } from "@/src/features/students/hooks/useStudentEnrollments";
+import { StudentEnrollmentManageTabs } from "@/src/features/students/components/manage/student-enrollment-manage-tabs";
 import { studentService } from "@/src/features/students/services/student.service";
 import type { BranchOption, Student } from "@/src/features/students/types/student.types";
 
-import { CreateStudentEnrollmentModal } from "./create-student-enrollment-modal";
 import { UpdateStudentEnrollmentModal } from "./update-student-enrollment-modal";
 import { StudentEnrollmentTable } from "./student-enrollment-table";
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
@@ -42,6 +45,9 @@ export function StudentManageEnrollmentsPanel({
   onStudentRefresh,
   onEnrollmentMutation,
 }: Props) {
+  const [enrollmentTab, setEnrollmentTab] =
+    useState<StudentManageEnrollmentTab>("all");
+
   const {
     enrollments,
     total,
@@ -53,10 +59,14 @@ export function StudentManageEnrollmentsPanel({
     setPage,
     setIncludeDeleted,
     refetch,
-  } = useStudentEnrollments({ studentId: student.id });
+  } = useStudentEnrollments({
+    studentId: student.id,
+    enrollmentTab,
+  });
 
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Enrollment | null>(null);
+  const [statusChangeTarget, setStatusChangeTarget] =
+    useState<Enrollment | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Enrollment | null>(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] =
     useState<Enrollment | null>(null);
@@ -70,6 +80,8 @@ export function StudentManageEnrollmentsPanel({
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const { unenrollEnrollment, isLoading: isUnenrolling } =
     useUnenrollEnrollment();
+  const { updateStatus, isLoading: isUpdatingStatus } =
+    useUpdateEnrollmentStatus();
 
   const branchMap = useMemo(
     () =>
@@ -230,20 +242,22 @@ export function StudentManageEnrollmentsPanel({
 
   return (
     <>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-[#102A56]">Enrollments</h2>
-          <p className="text-sm text-[#647A9B]">
-            Manage batch enrollments for this student
-          </p>
-        </div>
-        <Button type="button" onClick={() => setIsCreateOpen(true)}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          Create Enrollment
-        </Button>
+      <div className="mb-4">
+        <h2 className="text-base font-semibold text-[#102A56]">Enrollments</h2>
+        <p className="text-sm text-[#647A9B]">
+          Enrollment history for this student
+        </p>
       </div>
 
-      <div className="mb-3 flex items-center gap-3">
+      <StudentEnrollmentManageTabs
+        activeTab={enrollmentTab}
+        onChange={(tab) => {
+          setEnrollmentTab(tab);
+          setPage(1);
+        }}
+      />
+
+      <div className="mb-3 mt-3 flex items-center gap-3">
         <label className="flex items-center gap-2 text-sm text-slate-600">
           <input
             type="checkbox"
@@ -291,6 +305,7 @@ export function StudentManageEnrollmentsPanel({
               onDeactivate={(enrollment) =>
                 setStatusTarget({ enrollment, activate: false })
               }
+              onChangeStatus={setStatusChangeTarget}
             />
           </div>
         )}
@@ -308,17 +323,6 @@ export function StudentManageEnrollmentsPanel({
           />
         </div>
       ) : null}
-
-      <CreateStudentEnrollmentModal
-        open={isCreateOpen}
-        student={student}
-        onClose={() => setIsCreateOpen(false)}
-        onSuccess={async () => {
-          await refetch();
-          await onStudentRefresh?.();
-          await onEnrollmentMutation?.();
-        }}
-      />
 
       {editTarget ? (
         <UpdateStudentEnrollmentModal
@@ -378,6 +382,38 @@ export function StudentManageEnrollmentsPanel({
         onClose={() => setUnenrollTarget(null)}
         onConfirm={(reason) => {
           void handleUnenroll(reason);
+        }}
+      />
+
+      <UpdateEnrollmentStatusDialog
+        open={Boolean(statusChangeTarget)}
+        enrollmentId={statusChangeTarget?.id ?? null}
+        loading={isUpdatingStatus}
+        onClose={() => setStatusChangeTarget(null)}
+        onSubmit={async (nextStatus: EnrollmentStatus) => {
+          if (!statusChangeTarget) {
+            return;
+          }
+
+          try {
+            await updateStatus(statusChangeTarget.id, { status: nextStatus });
+
+            const listTab = adminEnrollmentListTabAfterStatusChange(nextStatus);
+            const manageTab: StudentManageEnrollmentTab =
+              listTab === "active"
+                ? "active"
+                : listTab === "completed"
+                  ? "completed"
+                  : "cancelled";
+            setEnrollmentTab(manageTab);
+            setPage(1);
+            setStatusChangeTarget(null);
+            await refetch();
+            await onStudentRefresh?.();
+            await onEnrollmentMutation?.();
+          } catch {
+            // Toast handled in hook.
+          }
         }}
       />
     </>

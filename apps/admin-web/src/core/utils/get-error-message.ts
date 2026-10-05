@@ -60,7 +60,7 @@ const CODE_MESSAGES: Record<string, string> = {
   ROLE_ASSIGNMENT_DENIED:
     "You are not authorized to create or assign this role.",
   STUDENT_ALREADY_ENROLLED:
-    "Student is already actively enrolled. A student can have only one active enrollment at a time.",
+    "Cannot create a new enrollment while the student is Advanced or Admitted. Update the student status first.",
   STUDENT_EMAIL_EXISTS:
     "A student with this email already exists. Use a different email address.",
   STUDENT_PHONE_EXISTS:
@@ -299,7 +299,7 @@ function withExistingEnrollment(
   const batch = existing.batch?.name?.trim();
 
   if (branch && batch) {
-    return `Student is already actively enrolled in ${branch} - ${batch} batch. A student can have only one active enrollment at a time.`;
+    return `Cannot create a new enrollment: the student already has an active Advanced or Admitted enrollment in ${branch} - ${batch} batch.`;
   }
 
   return message;

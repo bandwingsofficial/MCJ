@@ -1,8 +1,13 @@
+import {
+  adminEnrollmentTabStatusIn,
+  studentManageEnrollmentTabStatusIn,
+} from '@mcj/shared-constants';
+
+import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import type {
   EnrollmentListFilters,
   EnrollmentRepository,
 } from '../../domain/repositories/enrollment.repository';
-import { dedupeEnrollmentsToOnePerStudent } from '../../domain/utils/primary-enrollment-per-student.util';
 
 import { ListEnrollmentsQuery } from './list-enrollments.query';
 import { ListEnrollmentsResult } from './list-enrollments.result';
@@ -18,6 +23,16 @@ export class ListEnrollmentsHandler {
     const skip = query.skip ?? 0;
     const take = query.take ?? 10;
 
+    const studentTabStatusIn = query.studentEnrollmentTab
+      ? (studentManageEnrollmentTabStatusIn(
+          query.studentEnrollmentTab,
+        ) as EnrollmentStatus[] | undefined)
+      : undefined;
+
+    const tabStatusIn = query.adminTab
+      ? (adminEnrollmentTabStatusIn(query.adminTab) as EnrollmentStatus[])
+      : studentTabStatusIn;
+
     const filters: EnrollmentListFilters = {
       search: query.search,
       studentId: query.studentId,
@@ -27,7 +42,7 @@ export class ListEnrollmentsHandler {
       batchId: query.batchId,
       batchTimingId: query.batchTimingId,
       status: query.status,
-      statusIn: query.statusIn,
+      statusIn: tabStatusIn ?? query.statusIn,
       paymentStatus: query.paymentStatus,
       source: query.source,
       applicationType: query.applicationType,
@@ -43,23 +58,14 @@ export class ListEnrollmentsHandler {
       currentOnly: query.currentOnly,
     };
 
-    if (query.studentId) {
-      const [items, total] = await Promise.all([
-        this.enrollmentRepo.findSummaries({
-          ...filters,
-          skip,
-          take,
-        }),
-        this.enrollmentRepo.count(filters),
-      ]);
-
-      return new ListEnrollmentsResult(items, total, skip, take);
-    }
-
-    const allMatching = await this.enrollmentRepo.findSummaries(filters);
-    const deduped = dedupeEnrollmentsToOnePerStudent(allMatching);
-    const total = deduped.length;
-    const items = deduped.slice(skip, skip + take);
+    const [items, total] = await Promise.all([
+      this.enrollmentRepo.findSummaries({
+        ...filters,
+        skip,
+        take,
+      }),
+      this.enrollmentRepo.count(filters),
+    ]);
 
     return new ListEnrollmentsResult(items, total, skip, take);
   }

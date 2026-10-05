@@ -2,7 +2,6 @@
 
 import {
   GitBranch,
-  GraduationCap,
   Pencil,
   Settings2,
   Trash2,
@@ -21,7 +20,7 @@ import {
   isCurrentEnrollmentRecord,
 } from "@/src/features/enrollments/utils/current-enrollment";
 import {
-  canChangeSyncedEnrollmentWorkflowStatus,
+  canChangeEnrollmentRowWorkflowStatus,
   isAdmittedWorkflowEnrollment,
 } from "@/src/features/enrollments/utils/enrollment-workflow-status.utils";
 
@@ -37,8 +36,6 @@ interface Props {
   onUnenroll?: (enrollment: Enrollment) => void;
   onArchive?: (enrollment: Enrollment) => void;
   onPermanentDelete?: (enrollment: Enrollment) => void;
-  onAdmitAdvanced?: (enrollment: Enrollment) => void;
-  showAdmitAdvanced?: boolean;
   displayStatus?: EnrollmentStatus;
   onChangeStatus?: (enrollment: Enrollment) => void;
 }
@@ -51,8 +48,6 @@ export function EnrollmentActions({
   onUnenroll,
   onArchive,
   onPermanentDelete,
-  onAdmitAdvanced,
-  showAdmitAdvanced = false,
   displayStatus,
   onChangeStatus,
 }: Props) {
@@ -62,9 +57,10 @@ export function EnrollmentActions({
   const showStatusChange =
     Boolean(onChangeStatus) &&
     !enrollment.isDeleted &&
-    canChangeSyncedEnrollmentWorkflowStatus({
-      enrollmentStatus: statusForActions,
+    canChangeEnrollmentRowWorkflowStatus({
+      enrollmentStatus: enrollment.status,
       studentStatus: enrollment.student?.status,
+      isActive: enrollment.isActive,
     });
   const showUnenroll =
     isCurrent &&
@@ -143,22 +139,6 @@ export function EnrollmentActions({
             className={`${iconBtnClass} text-red-700 hover:bg-red-50 hover:text-red-800`}
           >
             <Trash2 className={iconClass} />
-          </Button>
-        </Tooltip>
-      ) : null}
-
-      {showAdmitAdvanced && onAdmitAdvanced ? (
-        <Tooltip content="Admit student (Advanced → Admitted)">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={disabled}
-            onClick={() => onAdmitAdvanced(enrollment)}
-            aria-label="Admit student"
-            className={`${iconBtnClass} text-[#2563EB] hover:bg-blue-50 hover:text-[#1E3A8A]`}
-          >
-            <GraduationCap className={iconClass} />
           </Button>
         </Tooltip>
       ) : null}

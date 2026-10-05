@@ -92,7 +92,7 @@ export class UnenrollEnrollmentHandler {
 
         enrollment.status,
 
-        EnrollmentStatus.DROPPED,
+        EnrollmentStatus.CANCELLED,
 
       );
 
@@ -114,7 +114,7 @@ export class UnenrollEnrollmentHandler {
 
         enrollment.status,
 
-        EnrollmentStatus.DROPPED,
+        EnrollmentStatus.CANCELLED,
 
       );
 
@@ -146,7 +146,7 @@ export class UnenrollEnrollmentHandler {
 
       enrollment,
 
-      'DROPPED',
+      'CANCELLED',
 
       command.updatedBy,
 
@@ -196,7 +196,7 @@ export class UnenrollEnrollmentHandler {
 
       studentId: enrollment.studentId,
 
-      targetStatus: StudentStatus.DROPPED,
+      targetStatus: StudentStatus.LEAD,
 
       updatedBy: command.updatedBy,
 

@@ -15,7 +15,6 @@ import { Dropdown } from "@/src/shared/components/ui/dropdown";
 
 import type { Student } from "@/src/features/students/types/student.types";
 import { withImageCacheBust } from "@/src/shared/utils/upload-image.util";
-import { StudentStatusBadge } from "@/src/features/students/components/StudentStatusBadge";
 import {
   formatStudentName,
   getStudentInitials,
@@ -113,16 +112,9 @@ export function StudentManageHeader({
             </div>
 
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-start gap-2">
-                <h1 className="min-w-0 text-xl font-bold tracking-tight text-[#102A56] sm:text-2xl">
-                  {fullName}
-                </h1>
-                <StudentStatusBadge
-                  status={student.status}
-                  isActive={student.isActive}
-                  isDeleted={isArchived}
-                />
-              </div>
+              <h1 className="min-w-0 text-xl font-bold tracking-tight text-[#102A56] sm:text-2xl">
+                {fullName}
+              </h1>
 
               <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-snug text-[#102A56]">
                 <span>

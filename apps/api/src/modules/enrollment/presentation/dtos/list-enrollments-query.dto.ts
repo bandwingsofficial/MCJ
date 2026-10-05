@@ -10,6 +10,8 @@ import {
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
+import type { AdminEnrollmentListTab } from '@mcj/shared-constants';
+
 import { PaginationQueryDto } from '@common/pagination/pagination-query.dto';
 import { ApplicationType } from '../../domain/enums/application-type.enum';
 import { EnrollmentMode } from '../../domain/enums/enrollment-mode.enum';
@@ -105,6 +107,23 @@ export class ListEnrollmentsQueryDto extends PaginationQueryDto {
   @IsBoolean()
   @Transform(({ value }) => toBoolean(value))
   currentOnly?: boolean;
+
+  @ApiPropertyOptional({
+    enum: ['active', 'completed', 'cancelled'],
+    description:
+      'Admin list tab: active = Advanced/Admitted, completed = Completed, cancelled = Cancelled',
+  })
+  @IsOptional()
+  @IsIn(['active', 'completed', 'cancelled'])
+  adminTab?: AdminEnrollmentListTab;
+
+  @ApiPropertyOptional({
+    enum: ['all', 'active', 'completed', 'cancelled'],
+    description: 'Student manage enrollments tab (requires studentId)',
+  })
+  @IsOptional()
+  @IsIn(['all', 'active', 'completed', 'cancelled'])
+  studentEnrollmentTab?: 'all' | 'active' | 'completed' | 'cancelled';
 
   @ApiPropertyOptional()
   @IsOptional()

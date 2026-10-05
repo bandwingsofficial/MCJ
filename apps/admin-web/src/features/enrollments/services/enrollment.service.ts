@@ -31,6 +31,22 @@ export const enrollmentService = {
     }
   },
 
+  async getEnrollmentTabCounts(
+    filters: Pick<
+      EnrollmentFilters,
+      "branchId" | "search" | "applicationType" | "studentId"
+    >,
+  ) {
+    try {
+      const response =
+        await enrollmentApi.getEnrollmentTabCounts(filters);
+
+      return response.data.data;
+    } catch (error) {
+      throw wrapError(error);
+    }
+  },
+
   async getEnrollment(id: string) {
     try {
       const response =

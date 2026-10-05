@@ -32,7 +32,7 @@ export const STUDENT_ADMISSION_STATUS_OPTIONS: ReadonlyArray<{
   { label: "Advanced", value: "ADVANCED" },
   { label: "Admitted", value: "ADMITTED" },
   { label: "Completed", value: "COMPLETED" },
-  { label: "Dropped", value: "DROPPED" },
+  { label: "Cancelled", value: "CANCELLED" },
   { label: "Placed", value: "PLACED" },
 ];
 

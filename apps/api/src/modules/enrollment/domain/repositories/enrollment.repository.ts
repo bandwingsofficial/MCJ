@@ -244,6 +244,11 @@ export interface EnrollmentRepository {
     batchId: string,
     includeDeleted?: boolean,
   ): Promise<Enrollment | null>;
+  findByStudentIdAndStatuses(
+    studentId: string,
+    statuses: EnrollmentStatus[],
+    includeDeleted?: boolean,
+  ): Promise<Enrollment[]>;
   findCurrentByStudentId(
     studentId: string,
     excludeId?: string,
@@ -285,5 +290,12 @@ export interface EnrollmentRepository {
     filters?: EnrollmentListFilters,
   ): Promise<EnrollmentSummaryView[]>;
   count(filters?: EnrollmentListFilters): Promise<number>;
+  countByStudentIds(
+    studentIds: string[],
+    includeDeleted?: boolean,
+  ): Promise<Map<string, number>>;
+  findStudentIdsWithOpenEnrollmentSlots(
+    studentIds: string[],
+  ): Promise<Set<string>>;
   deletePermanent(id: string): Promise<void>;
 }

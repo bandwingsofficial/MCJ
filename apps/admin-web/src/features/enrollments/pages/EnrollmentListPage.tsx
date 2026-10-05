@@ -35,19 +35,21 @@ const UnenrollEnrollmentDialog = dynamic(
     ),
   { ssr: false },
 );
+import { EnrollmentListTabs } from "@/src/features/enrollments/components/table/enrollment-list-tabs";
 import { EnrollmentSummaryHeader } from "@/src/features/enrollments/components/table/enrollment-summary-header";
 import { EnrollmentTable } from "@/src/features/enrollments/components/table/EnrollmentTable";
 import { useEnrollment } from "@/src/features/enrollments/hooks/useEnrollment";
+import { useEnrollmentTabCounts } from "@/src/features/enrollments/hooks/useEnrollmentTabCounts";
 import { useEnrollments } from "@/src/features/enrollments/hooks/useEnrollments";
 import { DeleteEnrollmentDialog } from "@/src/features/enrollments/components/dialogs/DeleteEnrollmentDialog";
 import { PermanentDeleteEnrollmentDialog } from "@/src/features/enrollments/components/dialogs/PermanentDeleteEnrollmentDialog";
 import { useDeleteEnrollment } from "@/src/features/enrollments/hooks/useDeleteEnrollment";
 import { usePermanentDeleteEnrollment } from "@/src/features/enrollments/hooks/usePermanentDeleteEnrollment";
 import { useUnenrollEnrollment } from "@/src/features/enrollments/hooks/useUnenrollEnrollment";
-import { useUpdateEnrollmentStatus } from "@/src/features/enrollments/hooks/useUpdateEnrollmentStatus";
-import { AdmitEnrollmentConfirmDialog } from "@/src/features/enrollments/components/dialogs/admit-enrollment-confirm-dialog";
-import { UpdateEnrollmentStatusDialog } from "@/src/features/enrollments/components/dialogs/update-enrollment-status-dialog";
 import type { Enrollment } from "@/src/features/enrollments/types";
+import { UpdateEnrollmentStatusDialog } from "@/src/features/enrollments/components/dialogs/update-enrollment-status-dialog";
+import { useUpdateEnrollmentStatus } from "@/src/features/enrollments/hooks/useUpdateEnrollmentStatus";
+import { adminEnrollmentListTabAfterStatusChange } from "@/src/features/enrollments/utils/enrollment-workflow-status.utils";
 import { EnrollmentStatus } from "@/src/features/enrollments/types/enrollment.enums";
 import { enrollmentManagePath } from "@/src/features/enrollments/utils/enrollment-manage.routes";
 import { formatPersonName } from "@/src/features/branches/utils/branch-display.utils";
@@ -64,6 +66,14 @@ export function EnrollmentListPage() {
     refetch,
   } = useEnrollments();
 
+  const tabCountFilters = {
+    branchId: filters.branchId,
+    search: filters.search,
+    applicationType: filters.applicationType,
+  };
+  const { refetch: refetchTabCounts } =
+    useEnrollmentTabCounts(tabCountFilters);
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedEnrollment, setSelectedEnrollment] =
@@ -73,7 +83,6 @@ export function EnrollmentListPage() {
   const [archiveTarget, setArchiveTarget] = useState<Enrollment | null>(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] =
     useState<Enrollment | null>(null);
-  const [admitTarget, setAdmitTarget] = useState<Enrollment | null>(null);
   const [statusChangeTarget, setStatusChangeTarget] =
     useState<Enrollment | null>(null);
   const { unenrollEnrollment, isLoading: isUnenrolling } =
@@ -176,6 +185,17 @@ export function EnrollmentListPage() {
         onFiltersChange={setFilters}
       />
 
+      <EnrollmentListTabs
+        activeTab={filters.adminTab ?? "active"}
+        onChange={(adminTab) =>
+          setFilters({
+            ...filters,
+            adminTab,
+            skip: 0,
+          })
+        }
+      />
+
       <Card className="overflow-hidden rounded-xl border-[#E1EBF5] p-0 shadow-sm">
           {isLoading && enrollments.length === 0 ? (
             <SkeletonTable rows={10} />
@@ -227,8 +247,6 @@ export function EnrollmentListPage() {
                   }}
                   onArchive={setArchiveTarget}
                   onPermanentDelete={setPermanentDeleteTarget}
-                  onAdmitAdvanced={setAdmitTarget}
-                  admitAdvancedDisabled={isUpdatingStatus}
                   actionsDisabled={
                     isUpdatingStatus || isUnenrolling
                   }
@@ -281,10 +299,10 @@ export function EnrollmentListPage() {
 
       <UpdateEnrollmentStatusDialog
         open={Boolean(statusChangeTarget)}
-        enrollment={statusChangeTarget}
+        enrollmentId={statusChangeTarget?.id ?? null}
         loading={isUpdatingStatus}
         onClose={() => setStatusChangeTarget(null)}
-        onSubmit={async (nextStatus) => {
+        onSubmit={async (nextStatus: EnrollmentStatus) => {
           if (!statusChangeTarget) {
             return;
           }
@@ -293,7 +311,15 @@ export function EnrollmentListPage() {
             await updateStatus(statusChangeTarget.id, {
               status: nextStatus,
             });
+
+            setFilters({
+              ...filters,
+              adminTab: adminEnrollmentListTabAfterStatusChange(nextStatus),
+              skip: 0,
+            });
+
             setStatusChangeTarget(null);
+            await refetchTabCounts();
             await refetch();
           } catch {
             // Toast handled in hook.
@@ -307,6 +333,7 @@ export function EnrollmentListPage() {
           onClose={() => setIsCreateOpen(false)}
           onSuccess={() => {
             void refetch();
+            void refetchTabCounts();
           }}
         />
       ) : null}
@@ -386,28 +413,6 @@ export function EnrollmentListPage() {
         }}
       />
 
-      {admitTarget ? (
-        <AdmitEnrollmentConfirmDialog
-          open
-          loading={isUpdatingStatus}
-          onClose={() => setAdmitTarget(null)}
-          onConfirm={async () => {
-            if (!admitTarget) {
-              return;
-            }
-
-            try {
-              await updateStatus(admitTarget.id, {
-                status: EnrollmentStatus.ADMITTED,
-              });
-              setAdmitTarget(null);
-              void refetch();
-            } catch {
-              // Toast handled in hook.
-            }
-          }}
-        />
-      ) : null}
     </div>
   );
 }

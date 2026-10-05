@@ -85,7 +85,7 @@ export function toCreateStudentRequest(
     parentName: emptyToUndefined(values.parentName),
     parentPhone: emptyToUndefined(values.parentPhone),
     notes: emptyToUndefined(values.notes),
-    status: values.status,
+    status: "LEAD",
     profileImageFileId: emptyToUndefined(values.profileImageFileId),
   };
 }
@@ -93,8 +93,11 @@ export function toCreateStudentRequest(
 export function toUpdateStudentRequest(
   values: CreateStudentFormValues & { branchId?: string | null },
 ): UpdateStudentRequest {
+  const createPayload = toCreateStudentRequest(values);
+  const { status: _status, ...payloadWithoutStatus } = createPayload;
+
   return {
-    ...toCreateStudentRequest(values),
+    ...payloadWithoutStatus,
     studentCode: values.studentCode?.trim() || undefined,
     ...(values.branchId !== undefined ? { branchId: values.branchId } : {}),
   };

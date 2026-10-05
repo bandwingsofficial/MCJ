@@ -49,7 +49,6 @@ import { useFormSessionReset } from "@/src/shared/hooks/use-form-session-reset";
 import { buildStudentQualificationSelectOptions } from "@mcj/shared-constants";
 
 import { STUDENT_GENDER_OPTIONS } from "@/src/features/students/constants/student.constants";
-import { getStudentStatusSelectOptions } from "@/src/features/students/utils/student-workflow-status.utils";
 import {
   createStudentSchema,
   type CreateStudentFormValues,
@@ -151,10 +150,6 @@ export function EditStudentForm({
   }, [serverErrors, setError]);
 
   const values = watch();
-  const statusOptions = useMemo(
-    () => getStudentStatusSelectOptions(values.status ?? defaultValues.status),
-    [defaultValues.status, values.status],
-  );
   const notesLength = (values.notes ?? "").length;
   const studentId = values.studentCode ?? defaultValues.studentCode ?? "";
   const passingYearRegister = register("passingYear", {
@@ -282,7 +277,7 @@ export function EditStudentForm({
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
         <FormSection
           title="Student Identity"
-          description="Basic profile details and status for the student."
+          description="Basic profile details for the student."
         >
           <div className="md:col-span-2">
             <ValidatedField
@@ -340,28 +335,6 @@ export function EditStudentForm({
               )}
             />
             <p className="mt-1 text-[11px] text-[#8AA0BB]">Read-only</p>
-          </LeftIconField>
-
-          <LeftIconField
-            label="Status"
-            required
-            select
-            icon={FileText}
-            state={getFieldState("status")}
-            errorMessage={errors.status?.message}
-          >
-            <AppSelect
-              value={values.status}
-              placeholder="Select status"
-              onValueChange={(value) =>
-                setValue("status", value as CreateStudentFormValues["status"], {
-                  shouldValidate: true,
-                  shouldDirty: true,
-                })
-              }
-              options={uniqueSelectOptions(statusOptions)}
-              triggerClassName={selectTriggerClass(getFieldState("status"))}
-            />
           </LeftIconField>
 
           <LeftIconField

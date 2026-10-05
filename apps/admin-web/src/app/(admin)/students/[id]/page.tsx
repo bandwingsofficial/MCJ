@@ -8,13 +8,13 @@ interface Props {
 
 const VALID_TABS = new Set<TabKey>([
   "overview",
+  "enrollments",
   "documents",
   "job-applications",
   "activity",
 ]);
 
 const REMOVED_TABS = new Set([
-  "enrollments",
   "attendance",
   "assessments",
   "payments",

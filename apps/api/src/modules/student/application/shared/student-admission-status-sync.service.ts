@@ -1,7 +1,7 @@
 import {
   canTransitionStudentEnrollmentWorkflowStatus,
-  isEnrollmentRecordWorkflowStatus,
   normalizeStudentEnrollmentWorkflowStatus,
+  studentWorkflowSyncsEnrollmentRow,
   type StudentEnrollmentWorkflowStatus,
 } from '@mcj/shared-constants';
 
@@ -26,7 +26,7 @@ const WORKFLOW_STATUSES = new Set<StudentStatus>([
   StudentStatus.ADVANCED,
   StudentStatus.ADMITTED,
   StudentStatus.COMPLETED,
-  StudentStatus.DROPPED,
+  StudentStatus.CANCELLED,
   StudentStatus.PLACED,
 ]);
 
@@ -62,7 +62,10 @@ export class StudentAdmissionStatusSyncService {
     updatedBy?: string | null;
     actorBranchId?: string;
   }): Promise<Student> {
-    const { student, targetStatus, updatedBy, actorBranchId } = params;
+    const { targetStatus, updatedBy, actorBranchId } = params;
+
+    const student =
+      (await this.studentRepo.findById(params.student.id)) ?? params.student;
 
     if (!this.isAdmissionSyncStatus(targetStatus)) {
       return student;
@@ -80,10 +83,7 @@ export class StudentAdmissionStatusSyncService {
       student.id,
     );
 
-    if (
-      !primaryEnrollment &&
-      isEnrollmentRecordWorkflowStatus(toWorkflow)
-    ) {
+    if (!primaryEnrollment && studentWorkflowSyncsEnrollmentRow(toWorkflow)) {
       throw new BaseException(
         ERROR_CODES.ENROLLMENT_NOT_FOUND,
         'No enrollment found for this student.',
@@ -91,7 +91,7 @@ export class StudentAdmissionStatusSyncService {
       );
     }
 
-    if (primaryEnrollment) {
+    if (primaryEnrollment && studentWorkflowSyncsEnrollmentRow(toWorkflow)) {
       this.enrollmentDomainService.ensureBranchAccess(
         primaryEnrollment,
         actorBranchId,
@@ -150,14 +150,20 @@ export class StudentAdmissionStatusSyncService {
     } else {
       enrollment.changeStatus(targetEnrollmentStatus, updatedBy);
 
-      if (targetEnrollmentStatus === EnrollmentStatus.COMPLETED) {
+      if (
+        targetEnrollmentStatus === EnrollmentStatus.COMPLETED ||
+        targetEnrollmentStatus === EnrollmentStatus.CANCELLED
+      ) {
         enrollment.deactivate(updatedBy);
       } else {
         enrollment.update({ isActive: true, updatedBy });
       }
     }
 
-    if (targetEnrollmentStatus === EnrollmentStatus.ADMITTED) {
+    if (
+      targetEnrollmentStatus === EnrollmentStatus.ADMITTED &&
+      !Enrollment.statusOccupiesSeat(previousStatus)
+    ) {
       await this.enrollmentSideEffects.assertCapacityForTransition(
         enrollment,
         previousStatus,

@@ -171,6 +171,7 @@ export class EnrollmentDomainService {
       ],
       [EnrollmentStatus.ADMITTED]: [
         EnrollmentStatus.ACTIVE,
+        EnrollmentStatus.COMPLETED,
         EnrollmentStatus.CANCELLED,
       ],
       [EnrollmentStatus.PLACED]: [],
@@ -252,14 +253,69 @@ export class EnrollmentDomainService {
     }
   }
 
-  /** Admin create: student must be Lead, Completed, Dropped, or Placed (not Advanced/Admitted). */
-  ensureStudentEligibleForNewAdminEnrollment(student: Student): void {
-    if (!canStudentStartNewAdminEnrollment(student.status)) {
+  /** Admin create: block when an open enrollment slot exists (not stale student status alone). */
+  async ensureStudentEligibleForNewAdminEnrollment(
+    student: Student,
+    enrollmentRepo: EnrollmentRepository,
+  ): Promise<void> {
+    const openSlotIds =
+      await enrollmentRepo.findStudentIdsWithOpenEnrollmentSlots([
+        student.id,
+      ]);
+
+    if (openSlotIds.has(student.id)) {
       throw new EnrollmentAlreadyExistsException(
         ERROR_CODES.STUDENT_ALREADY_ENROLLED,
         'Cannot create a new enrollment while the student is Advanced or Admitted. Update the student status first.',
       );
     }
+  }
+
+  /**
+   * Closes enrollments that still hold a unique “active slot” so re-enrollment
+   * can create a new Advanced/Admitted row without deleting history.
+   */
+  async releaseUniqueEnrollmentSlotsForReenrollment(
+    student: Student,
+    enrollmentRepo: EnrollmentRepository,
+    updatedBy?: string | null,
+  ): Promise<
+    Array<{ enrollment: Enrollment; previousStatus: EnrollmentStatus }>
+  > {
+    const slotStatuses: EnrollmentStatus[] = [
+      EnrollmentStatus.PENDING,
+      EnrollmentStatus.PENDING_APPROVAL,
+      EnrollmentStatus.ADVANCED,
+      EnrollmentStatus.ADMITTED,
+      EnrollmentStatus.ACTIVE,
+    ];
+
+    const enrollments = await enrollmentRepo.findByStudentIdAndStatuses(
+      student.id,
+      slotStatuses,
+    );
+
+    if (enrollments.length === 0) {
+      return [];
+    }
+
+    const targetStatus =
+      this.resolveEnrollmentStatusForStudentAdmissionStatus(student.status);
+
+    return enrollments.map((enrollment) => {
+      const previousStatus = enrollment.status;
+
+      if (previousStatus !== targetStatus) {
+        enrollment.changeStatus(targetStatus, updatedBy);
+      }
+
+      enrollment.update({
+        isActive: false,
+        updatedBy,
+      });
+
+      return { enrollment, previousStatus };
+    });
   }
 
   async ensureNotDuplicate(
@@ -733,8 +789,8 @@ export class EnrollmentDomainService {
         return EnrollmentStatus.ADMITTED;
       case 'COMPLETED':
         return EnrollmentStatus.COMPLETED;
-      case 'DROPPED':
-        return EnrollmentStatus.DROPPED;
+      case 'CANCELLED':
+        return EnrollmentStatus.CANCELLED;
       case 'PLACED':
         return EnrollmentStatus.PLACED;
       default:
@@ -753,14 +809,14 @@ export class EnrollmentDomainService {
         return 'ADMITTED';
       case EnrollmentStatus.COMPLETED:
         return 'COMPLETED';
+      case EnrollmentStatus.CANCELLED:
       case EnrollmentStatus.DROPPED:
-        return 'DROPPED';
+        return 'CANCELLED';
       case EnrollmentStatus.PLACED:
         return 'PLACED';
       case EnrollmentStatus.LEAD:
       case EnrollmentStatus.PENDING:
       case EnrollmentStatus.PENDING_APPROVAL:
-      case EnrollmentStatus.CANCELLED:
       case EnrollmentStatus.REJECTED:
         return 'LEAD';
       default:

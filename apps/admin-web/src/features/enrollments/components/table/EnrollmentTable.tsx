@@ -35,10 +35,6 @@ interface EnrollmentTableProps {
 
   onPermanentDelete?: (enrollment: Enrollment) => void;
 
-  onAdmitAdvanced?: (enrollment: Enrollment) => void;
-
-  admitAdvancedDisabled?: boolean;
-
   onChangeStatus?: (enrollment: Enrollment) => void;
 
 }
@@ -64,10 +60,6 @@ export function EnrollmentTable({
   onArchive,
 
   onPermanentDelete,
-
-  onAdmitAdvanced,
-
-  admitAdvancedDisabled = false,
 
   onChangeStatus,
 
@@ -179,10 +171,6 @@ export function EnrollmentTable({
 
             enrollments.map((enrollment) => {
               const displayStatus = enrollmentListDisplayStatus(enrollment);
-              const canAdmitAdvanced =
-                Boolean(onAdmitAdvanced) &&
-                !enrollment.isDeleted &&
-                displayStatus === EnrollmentStatus.ADVANCED;
 
               const studentName =
 
@@ -294,9 +282,7 @@ export function EnrollmentTable({
 
                       enrollment={enrollment}
 
-                      disabled={
-                        actionsDisabled || admitAdvancedDisabled
-                      }
+                      disabled={actionsDisabled}
 
                       onEdit={onEdit}
 
@@ -307,10 +293,6 @@ export function EnrollmentTable({
                       onArchive={onArchive}
 
                       onPermanentDelete={onPermanentDelete}
-
-                      showAdmitAdvanced={canAdmitAdvanced}
-
-                      onAdmitAdvanced={onAdmitAdvanced}
 
                       displayStatus={displayStatus}
 

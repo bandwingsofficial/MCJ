@@ -43,11 +43,15 @@ export class GetStudentResult {
     public readonly deletedAt: Date | null,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
+    public readonly totalEnrollments: number = 0,
+    public readonly hasOpenEnrollmentSlot: boolean = false,
   ) {}
 
   static fromEntity(
     student: Student,
     statusOverride?: StudentStatus,
+    totalEnrollments = 0,
+    hasOpenEnrollmentSlot = false,
   ): GetStudentResult {
     return new GetStudentResult(
       student.id,
@@ -87,6 +91,8 @@ export class GetStudentResult {
       student.deletedAt,
       student.createdAt,
       student.updatedAt,
+      totalEnrollments,
+      hasOpenEnrollmentSlot,
     );
   }
 }

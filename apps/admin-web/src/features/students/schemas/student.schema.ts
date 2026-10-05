@@ -117,7 +117,7 @@ export const studentSchema = z.object({
     "ADVANCED",
     "ADMITTED",
     "COMPLETED",
-    "DROPPED",
+    "CANCELLED",
     "PLACED",
   ]),
 

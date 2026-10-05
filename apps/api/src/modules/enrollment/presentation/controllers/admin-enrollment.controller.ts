@@ -35,6 +35,7 @@ import { DeleteEnrollmentCommand } from '../../application/delete-enrollment/del
 import { DeleteEnrollmentHandler } from '../../application/delete-enrollment/delete-enrollment.handler';
 import { GetEnrollmentHandler } from '../../application/get-enrollment/get-enrollment.handler';
 import { GetEnrollmentQuery } from '../../application/get-enrollment/get-enrollment.query';
+import { GetEnrollmentAdminTabCountsHandler } from '../../application/get-enrollment-admin-tab-counts/get-enrollment-admin-tab-counts.handler';
 import { ListEnrollmentsHandler } from '../../application/list-enrollments/list-enrollments.handler';
 import { ListEnrollmentsQuery } from '../../application/list-enrollments/list-enrollments.query';
 import { PermanentDeleteEnrollmentCommand } from '../../application/permanent-delete-enrollment/permanent-delete-enrollment.command';
@@ -88,6 +89,7 @@ export class AdminEnrollmentController {
     private readonly updateEnrollmentHandler: UpdateEnrollmentHandler,
     private readonly updateEnrollmentStatusHandler: UpdateEnrollmentStatusHandler,
     private readonly listEnrollmentsHandler: ListEnrollmentsHandler,
+    private readonly enrollmentAdminTabCountsHandler: GetEnrollmentAdminTabCountsHandler,
     private readonly getEnrollmentHandler: GetEnrollmentHandler,
     private readonly deleteEnrollmentHandler: DeleteEnrollmentHandler,
     private readonly restoreEnrollmentHandler: RestoreEnrollmentHandler,
@@ -179,6 +181,8 @@ export class AdminEnrollmentController {
         query.currentOnly,
         query.applicationType,
         query.mode,
+        query.adminTab,
+        query.studentEnrollmentTab,
       ),
     );
 
@@ -186,6 +190,31 @@ export class AdminEnrollmentController {
       success: true,
       message: 'Enrollments fetched successfully',
       data: result,
+    };
+  }
+
+  @Get('tab-counts')
+  @UseGuards(
+    JwtOrBranchJwtAuthGuard,
+    AdminOrBranchRoleGuard,
+    BranchAccessGuard,
+  )
+  @Roles(BranchUserRole.BRANCH_MANAGER, BranchUserRole.STAFF)
+  async tabCounts(
+    @Query() query: ListEnrollmentsQueryDto,
+    @CurrentUser() user: EnrollmentAdminUser,
+  ) {
+    const counts = await this.enrollmentAdminTabCountsHandler.execute({
+      branchId: this.resolveBranchId(query.branchId, user),
+      studentId: query.studentId,
+      search: query.search,
+      applicationType: query.applicationType,
+    });
+
+    return {
+      success: true,
+      message: 'Enrollment tab counts fetched successfully',
+      data: counts,
     };
   }
 

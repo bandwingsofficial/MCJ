@@ -3,6 +3,8 @@
 export const ENROLLMENT_ENDPOINTS = {
   LIST: "/admin/enrollments",
 
+  TAB_COUNTS: "/admin/enrollments/tab-counts",
+
   CREATE: "/admin/enrollments",
 
   DETAILS: (id: string) =>

@@ -9,7 +9,6 @@ import { isArchivedStudent } from "@/src/features/students/utils/student-bulk.ut
 import { Tooltip } from "@/src/shared/components/ui/tooltip";
 
 import { StudentJobStatusBadge } from "./StudentJobStatusBadge";
-import { StudentStatusBadge } from "./StudentStatusBadge";
 import { StudentRowActionsMenu } from "./student-row-actions-menu";
 
 interface Props {
@@ -26,7 +25,6 @@ interface Props {
   onDeactivate: (student: StudentListItem) => void;
   onRestore?: (student: StudentListItem) => void;
   onPermanentDelete?: (student: StudentListItem) => void;
-  onChangeStatus?: (student: StudentListItem) => void;
 }
 
 function formatStudentName(student: StudentListItem): string {
@@ -47,14 +45,13 @@ export function StudentTable({
   onDeactivate,
   onRestore,
   onPermanentDelete,
-  onChangeStatus,
 }: Props) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
   const safeSelectedIds = selectedStudentIds ?? [];
   const selectionEnabled = Boolean(onSelectionChange);
   const visibleIds = students.map((student) => student.id);
-  const columnCount = selectionEnabled ? 9 : 8;
+  const columnCount = selectionEnabled ? 9 : 8; // code, name, email, phone, app type, enrollments, job, actions
   const selectedVisibleCount = visibleIds.filter((id) =>
     safeSelectedIds.includes(id),
   ).length;
@@ -133,8 +130,8 @@ export function StudentTable({
             <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               App Type
             </th>
-            <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
-              Status
+            <th className="w-28 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
+              Total Enrollments
             </th>
             <th className="w-28 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide text-[#526581]">
               Job Status
@@ -210,12 +207,8 @@ export function StudentTable({
                     {student.applicationType === "ONLINE" ? "Online" : "Offline"}
                   </td>
 
-                  <td className="!px-4 !py-4 align-middle">
-                    <StudentStatusBadge
-                      status={student.status}
-                      isActive={student.isActive}
-                      isDeleted={isArchived}
-                    />
+                  <td className="!px-4 !py-4 align-middle text-sm font-semibold tabular-nums text-[#102A56]">
+                    {student.totalEnrollments ?? 0}
                   </td>
 
                   <td className="!px-4 !py-4 align-middle">
@@ -232,7 +225,6 @@ export function StudentTable({
                       onDeactivate={onDeactivate}
                       onRestore={onRestore}
                       onPermanentDelete={onPermanentDelete}
-                      onChangeStatus={onChangeStatus}
                     />
                   </td>
                 </tr>

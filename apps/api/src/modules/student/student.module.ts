@@ -297,17 +297,14 @@ import { PublicStudentController } from './presentation/controllers/public-stude
       useFactory: (
         studentRepo: StudentRepository,
         enrollmentRepo: EnrollmentRepository,
-        displayStatusService: StudentEnrollmentDisplayStatusService,
       ) =>
         new ListStudentsHandler(
           studentRepo,
           enrollmentRepo,
-          displayStatusService,
         ),
       inject: [
         STUDENT_TOKENS.STUDENT_REPOSITORY,
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
-        StudentEnrollmentDisplayStatusService,
       ],
     },
 

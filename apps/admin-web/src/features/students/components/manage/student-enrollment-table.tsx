@@ -10,20 +10,18 @@ import {
 } from "@/src/shared/components/ui/table";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 
+import { EnrollmentStatusBadge } from "@/src/features/enrollments/components/table/EnrollmentStatusBadge";
 import { PaymentStatusBadge } from "@/src/features/enrollments/components/table/PaymentStatusBadge";
+import { enrollmentListDisplayStatus } from "@/src/features/enrollments/utils/current-enrollment";
 import type { Enrollment } from "@/src/features/enrollments/types/enrollment.types";
 import type { Student } from "@/src/features/students/types/student.types";
 import { formatStudentDate } from "@/src/features/students/utils/student-form.utils";
 import {
   formatEnrollmentBalance,
-  formatEnrollmentCategoryName,
-  formatEnrollmentFinalPrice,
   formatEnrollmentPaidAmount,
-  formatEnrollmentTrainerNames,
   resolveEnrollmentBranchName,
 } from "@/src/features/students/utils/enrollment-display.utils";
 
-import { StudentEnrollmentActiveBadge } from "./student-enrollment-active-badge";
 import { StudentEnrollmentRowActions } from "./student-enrollment-row-actions";
 
 interface Props {
@@ -37,6 +35,7 @@ interface Props {
   onUnenroll?: (enrollment: Enrollment) => void;
   onActivate: (enrollment: Enrollment) => void;
   onDeactivate: (enrollment: Enrollment) => void;
+  onChangeStatus?: (enrollment: Enrollment) => void;
 }
 
 export function StudentEnrollmentTable({
@@ -50,6 +49,7 @@ export function StudentEnrollmentTable({
   onUnenroll,
   onActivate,
   onDeactivate,
+  onChangeStatus,
 }: Props) {
   if (enrollments.length === 0) {
     return (
@@ -66,12 +66,8 @@ export function StudentEnrollmentTable({
         <TableRow>
           <TableHead>Branch</TableHead>
           <TableHead>Batch</TableHead>
-          <TableHead>Batch Code</TableHead>
           <TableHead>Course</TableHead>
-          <TableHead>Category</TableHead>
-          <TableHead>Trainer</TableHead>
           <TableHead>Enrollment Date</TableHead>
-          <TableHead>Final Price</TableHead>
           <TableHead>Paid</TableHead>
           <TableHead>Balance</TableHead>
           <TableHead>Payment</TableHead>
@@ -86,25 +82,22 @@ export function StudentEnrollmentTable({
               {resolveEnrollmentBranchName(enrollment, branchMap)}
             </TableCell>
             <TableCell>{enrollment.batch?.name ?? "—"}</TableCell>
-            <TableCell className="font-mono text-sm">
-              {enrollment.batch?.code ?? "—"}
-            </TableCell>
             <TableCell>{enrollment.course?.title ?? "—"}</TableCell>
-            <TableCell>{formatEnrollmentCategoryName(enrollment)}</TableCell>
-            <TableCell>{formatEnrollmentTrainerNames(enrollment)}</TableCell>
             <TableCell>
               {formatStudentDate(
                 enrollment.admissionDate ?? enrollment.createdAt,
               )}
             </TableCell>
-            <TableCell>{formatEnrollmentFinalPrice(enrollment)}</TableCell>
             <TableCell>{formatEnrollmentPaidAmount(enrollment)}</TableCell>
             <TableCell>{formatEnrollmentBalance(enrollment)}</TableCell>
             <TableCell>
               <PaymentStatusBadge status={enrollment.paymentStatus} />
             </TableCell>
             <TableCell>
-              <StudentEnrollmentActiveBadge enrollment={enrollment} />
+              <EnrollmentStatusBadge
+                status={enrollmentListDisplayStatus(enrollment)}
+                isDeleted={enrollment.isDeleted}
+              />
             </TableCell>
             <TableCell className="text-right">
               <StudentEnrollmentRowActions
@@ -116,6 +109,7 @@ export function StudentEnrollmentTable({
                 onUnenroll={onUnenroll}
                 onActivate={onActivate}
                 onDeactivate={onDeactivate}
+                onChangeStatus={onChangeStatus}
               />
             </TableCell>
           </TableRow>

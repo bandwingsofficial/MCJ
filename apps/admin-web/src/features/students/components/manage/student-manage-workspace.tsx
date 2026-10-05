@@ -5,6 +5,7 @@ import {
   Activity,
   ClipboardList,
   FileText,
+  GraduationCap,
   LayoutDashboard,
 } from "lucide-react";
 
@@ -22,6 +23,7 @@ import { StudentManageActivityPanel } from "./student-manage-activity-panel";
 import { StudentManageDocumentsPanel } from "./student-manage-documents-panel";
 import { StudentManageOverviewPanel } from "./student-manage-overview-panel";
 import { StudentManageJobApplicationsPanel } from "./student-manage-job-applications-panel";
+import { StudentManageEnrollmentsPanel } from "./student-manage-enrollments-panel";
 
 interface Props {
   student: Student;
@@ -29,9 +31,15 @@ interface Props {
   overviewRefreshKey?: number;
   onTabChange?: (tab: TabKey) => void;
   onDocumentsChanged?: () => void;
+  onEnrollmentMutation?: () => Promise<void>;
 }
 
-export type TabKey = "overview" | "documents" | "job-applications" | "activity";
+export type TabKey =
+  | "overview"
+  | "enrollments"
+  | "documents"
+  | "job-applications"
+  | "activity";
 
 const TAB_CLASS =
   "inline-flex items-center rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
@@ -42,6 +50,7 @@ const TAB_ITEMS: ReadonlyArray<{
   icon: LucideIcon;
 }> = [
   { value: "overview", label: "Overview", icon: LayoutDashboard },
+  { value: "enrollments", label: "Enrollments", icon: GraduationCap },
   { value: "documents", label: "Documents", icon: FileText },
   { value: "job-applications", label: "Job Applications", icon: ClipboardList },
   { value: "activity", label: "Activity", icon: Activity },
@@ -53,6 +62,7 @@ export function StudentManageWorkspace({
   overviewRefreshKey = 0,
   onTabChange,
   onDocumentsChanged,
+  onEnrollmentMutation,
 }: Props) {
   return (
     <Tabs
@@ -75,6 +85,15 @@ export function StudentManageWorkspace({
           student={student}
           refreshKey={overviewRefreshKey}
           onNavigateToTab={(tab) => onTabChange?.(tab)}
+        />
+      </TabsContent>
+
+      <TabsContent value="enrollments">
+        <StudentManageEnrollmentsPanel
+          student={student}
+          refreshKey={overviewRefreshKey}
+          onStudentRefresh={onEnrollmentMutation}
+          onEnrollmentMutation={onEnrollmentMutation}
         />
       </TabsContent>
 

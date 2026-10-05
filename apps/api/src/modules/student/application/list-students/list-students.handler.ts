@@ -1,7 +1,6 @@
 import type { EnrollmentRepository } from '@modules/enrollment/domain/repositories/enrollment.repository';
 
 import type { StudentRepository } from '../../domain/repositories/student.repository';
-import { StudentEnrollmentDisplayStatusService } from '../shared/student-enrollment-display-status.service';
 import { GetStudentResult } from '../get-student/get-student.result';
 
 import { ListStudentsQuery } from './list-students.query';
@@ -11,7 +10,6 @@ export class ListStudentsHandler {
   constructor(
     private readonly studentRepo: StudentRepository,
     private readonly enrollmentRepo: EnrollmentRepository,
-    private readonly displayStatusService: StudentEnrollmentDisplayStatusService,
   ) {}
 
   async execute(
@@ -33,23 +31,19 @@ export class ListStudentsHandler {
       this.studentRepo.count(filters),
     ]);
 
-    const enrollmentStatusRows =
-      await this.enrollmentRepo.findEnrollmentStatusesByStudentIds(
-        students.map((student) => student.id),
-      );
-    const statusesByStudentId =
-      this.displayStatusService.groupEnrollmentStatusesByStudentId(
-        enrollmentStatusRows,
-      );
+    const studentIds = students.map((student) => student.id);
+    const [enrollmentCounts, openSlotStudentIds] = await Promise.all([
+      this.enrollmentRepo.countByStudentIds(studentIds),
+      this.enrollmentRepo.findStudentIdsWithOpenEnrollmentSlots(studentIds),
+    ]);
 
     return new ListStudentsResult(
       students.map((student) =>
         GetStudentResult.fromEntity(
           student,
-          this.displayStatusService.resolveDisplayStatus(
-            student,
-            statusesByStudentId.get(student.id),
-          ),
+          student.status,
+          enrollmentCounts.get(student.id) ?? 0,
+          openSlotStudentIds.has(student.id),
         ),
       ),
       count,

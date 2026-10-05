@@ -81,7 +81,7 @@ describe("getErrorMessage", () => {
         }),
       ),
     ).toBe(
-      "Student is already actively enrolled in Malleswaram - morning batch. A student can have only one active enrollment at a time.",
+      "Cannot create a new enrollment: the student already has an active Advanced or Admitted enrollment in Malleswaram - morning batch.",
     );
   });
 

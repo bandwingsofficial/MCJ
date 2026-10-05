@@ -16,10 +16,7 @@ import { useActivateStudent } from "@/src/features/students/hooks/useActivateStu
 import { useDeactivateStudent } from "@/src/features/students/hooks/useDeactivateStudent";
 import { useRestoreStudent } from "@/src/features/students/hooks/useRestoreStudent";
 import { usePermanentDeleteStudent } from "@/src/features/students/hooks/usePermanentDeleteStudent";
-import { useUpdateStudentAdmissionStatus } from "@/src/features/students/hooks/useUpdateStudentAdmissionStatus";
-import type { StudentStatus } from "@/src/features/students/types/student.types";
 import { studentService } from "@/src/features/students/services/student.service";
-import { UpdateStudentAdmissionStatusDialog } from "@/src/features/students/components/update-student-admission-status-dialog";
 
 import { StudentSummaryHeader } from "@/src/features/students/components/student-summary-header";
 import { StudentTable } from "@/src/features/students/components/student-table";
@@ -66,10 +63,6 @@ export function StudentsPage() {
   const { restoreStudent, isPending: isRestoring } = useRestoreStudent();
   const { permanentDeleteStudent, isPending: isPermanentlyDeleting } =
     usePermanentDeleteStudent();
-  const {
-    updateStudentAdmissionStatus,
-    isLoading: isUpdatingAdmissionStatus,
-  } = useUpdateStudentAdmissionStatus();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<StudentListItem | null>(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -79,8 +72,6 @@ export function StudentsPage() {
     student: StudentListItem;
     action: "activate" | "deactivate";
   } | null>(null);
-  const [statusChangeTarget, setStatusChangeTarget] =
-    useState<StudentListItem | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<StudentListItem | null>(
     null,
   );
@@ -115,8 +106,7 @@ export function StudentsPage() {
     isRestoring ||
     isPermanentlyDeleting ||
     isBulkLoading ||
-    isDeleteCheckLoading ||
-    isUpdatingAdmissionStatus;
+    isDeleteCheckLoading;
 
   useEffect(() => {
     const loadFilterOptions = async () => {
@@ -400,7 +390,6 @@ export function StudentsPage() {
                   }
                   onRestore={setRestoreTarget}
                   onPermanentDelete={setPermanentDeleteTarget}
-                  onChangeStatus={setStatusChangeTarget}
                 />
               </div>
 
@@ -444,29 +433,6 @@ export function StudentsPage() {
             </>
           )}
         </Card>
-
-      <UpdateStudentAdmissionStatusDialog
-        open={Boolean(statusChangeTarget)}
-        student={statusChangeTarget}
-        loading={isUpdatingAdmissionStatus}
-        onClose={() => setStatusChangeTarget(null)}
-        onSubmit={async (nextStatus) => {
-          if (!statusChangeTarget) {
-            return;
-          }
-
-          try {
-            await updateStudentAdmissionStatus(
-              statusChangeTarget.id,
-              nextStatus as StudentStatus,
-            );
-            setStatusChangeTarget(null);
-            await refetch();
-          } catch {
-            // Toast handled in hook.
-          }
-        }}
-      />
 
       <CreateStudentModal
         open={isCreateOpen}
