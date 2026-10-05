@@ -18,6 +18,8 @@ import { BranchMapper } from '../mappers/branch.mapper';
 import { BranchStatus } from '../../domain/enums/branch-status.enum';
 import {
   linkCoursesForAssignedBatches,
+  linkCoursesForAssignedCategories,
+  reconcileCourseBranchLinksForBatch,
   reconcileCourseBranchLinksForBranch,
   resolveActiveCourseIdsForBranch,
   resolveDerivedCategoryIdsForBranch,
@@ -811,7 +813,7 @@ export class PrismaBranchRepository
         },
       });
 
-      if (existing?.linkedViaManual) {
+      if (existing?.manualAssignedAt) {
         continue;
       }
 
@@ -824,6 +826,7 @@ export class PrismaBranchRepository
           branchId,
           linkedViaManual: true,
           linkedViaBatch: existing?.linkedViaBatch ?? false,
+          linkedViaCategory: existing?.linkedViaCategory ?? false,
           manualAssignedAt: new Date(),
         },
         update: {
@@ -834,7 +837,7 @@ export class PrismaBranchRepository
 
       if (!existing) {
         assignedCount += 1;
-      } else if (!existing.linkedViaManual) {
+      } else if (!existing.manualAssignedAt) {
         assignedCount += 1;
       }
     }
@@ -856,20 +859,33 @@ export class PrismaBranchRepository
       return;
     }
 
-    if (!row.linkedViaManual && row.linkedViaBatch) {
+    const manualLink = Boolean(row.manualAssignedAt);
+
+    if (
+      !manualLink &&
+      (row.linkedViaBatch || row.linkedViaCategory)
+    ) {
       throw new Error(
-        'COURSE_LINKED_VIA_BATCH',
+        row.linkedViaBatch
+          ? 'COURSE_LINKED_VIA_BATCH'
+          : 'COURSE_LINKED_VIA_CATEGORY',
       );
     }
 
-    if (row.linkedViaManual && row.linkedViaBatch) {
+    if (
+      manualLink &&
+      (row.linkedViaBatch || row.linkedViaCategory)
+    ) {
       await this.prisma.courseBranch.update({
         where: {
           courseId_branchId: { courseId, branchId },
         },
-        data: { linkedViaManual: false },
+        data: {
+          linkedViaManual: false,
+          manualAssignedAt: null,
+        },
       });
-      await syncBranchCategoryLinksForBranch(this.prisma, branchId);
+      await reconcileCourseBranchLinksForBranch(this.prisma, branchId);
       return;
     }
 
@@ -1262,6 +1278,26 @@ export class PrismaBranchRepository
     );
   }
 
+  async linkCoursesForAssignedCategories(
+    branchId: string,
+    categoryIds: string[],
+  ): Promise<void> {
+    await linkCoursesForAssignedCategories(
+      this.prisma,
+      branchId,
+      categoryIds,
+    );
+  }
+
+  async reconcileCourseBranchLinksForBatch(
+    batchId: string,
+  ): Promise<void> {
+    await reconcileCourseBranchLinksForBatch(
+      this.prisma,
+      batchId,
+    );
+  }
+
   async reconcileBranchAssignmentLinks(
     branchId: string,
   ): Promise<void> {
@@ -1277,13 +1313,21 @@ export class PrismaBranchRepository
   ): Promise<
     Map<
       string,
-      { linkedViaManual: boolean; linkedViaBatch: boolean }
+      {
+        linkedViaManual: boolean;
+        linkedViaBatch: boolean;
+        linkedViaCategory: boolean;
+      }
     >
   > {
     const uniqueIds = [...new Set(courseIds.filter(Boolean))];
     const map = new Map<
       string,
-      { linkedViaManual: boolean; linkedViaBatch: boolean }
+      {
+        linkedViaManual: boolean;
+        linkedViaBatch: boolean;
+        linkedViaCategory: boolean;
+      }
     >();
 
     if (uniqueIds.length === 0) {
@@ -1297,15 +1341,17 @@ export class PrismaBranchRepository
       },
       select: {
         courseId: true,
-        linkedViaManual: true,
         linkedViaBatch: true,
+        linkedViaCategory: true,
+        manualAssignedAt: true,
       },
     });
 
     for (const row of rows) {
       map.set(row.courseId, {
-        linkedViaManual: row.linkedViaManual,
+        linkedViaManual: Boolean(row.manualAssignedAt),
         linkedViaBatch: row.linkedViaBatch,
+        linkedViaCategory: row.linkedViaCategory,
       });
     }
 

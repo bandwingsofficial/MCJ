@@ -126,6 +126,11 @@ export function enrollmentListDisplayStatus(
     student?: { status?: string | null } | null;
   },
 ): EnrollmentStatus {
+  const raw = normalizeEnrollmentStatus(enrollment.status);
+  if (raw === "PLACED") {
+    return EnrollmentStatus.PLACED;
+  }
+
   const lifecycle = normalizeAdminEnrollmentRowLifecycle(
     enrollment.status ?? EnrollmentStatus.PENDING,
   );

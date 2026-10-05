@@ -26,9 +26,11 @@ import {
   BRANCH_TABLE_CARD_CLASS,
 } from "@/src/features/branches/components/manage/branch-manage-layout.constants";
 import {
+  canUnassignBranchCourseFromManage,
   filterAssignedBranchCourses,
   getActiveCoursesForBranchAssignment,
-  isCourseAssignedViaBranchBatch,
+  isBranchCourseDirectlyAssigned,
+  isBranchCourseInheritedAssignment,
   loadBranchAssignedCourses,
 } from "@/src/features/branches/utils/branch-course-relation.utils";
 import { branchService } from "@/src/features/branches/services/branch.service";
@@ -45,6 +47,7 @@ interface Props {
   assignOnMount?: boolean;
   onAssignOnMountHandled?: () => void;
   onSummaryRefresh?: () => Promise<void>;
+  manageDataSyncKey?: number;
 }
 
 export function BranchManageCoursesPanel({
@@ -53,16 +56,11 @@ export function BranchManageCoursesPanel({
   assignOnMount = false,
   onAssignOnMountHandled,
   onSummaryRefresh,
+  manageDataSyncKey = 0,
 }: Props) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [assignedCourses, setAssignedCourses] = useState<CourseListItem[]>([]);
-  const [batchAssignedCourseIds, setBatchAssignedCourseIds] = useState<
-    Set<string>
-  >(new Set());
-  const [manualBranchCourseIds, setManualBranchCourseIds] = useState<
-    Set<string>
-  >(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,8 +99,6 @@ export function BranchManageCoursesPanel({
   const loadData = useCallback(async () => {
     if (!branchId) {
       setAssignedCourses([]);
-      setBatchAssignedCourseIds(new Set());
-      setManualBranchCourseIds(new Set());
       setIsLoading(false);
       return;
     }
@@ -111,21 +107,13 @@ export function BranchManageCoursesPanel({
     setError(null);
 
     try {
-      const {
-        courses,
-        batchAssignedCourseIds: batchCourseIds,
-        manualBranchCourseIds: manualCourseIds,
-      } = await loadBranchAssignedCourses(branchId);
+      const { courses } = await loadBranchAssignedCourses(branchId);
 
       setAssignedCourses(courses);
-      setBatchAssignedCourseIds(batchCourseIds);
-      setManualBranchCourseIds(manualCourseIds);
     } catch (loadError) {
       const message = getErrorMessage(loadError);
       setError(message);
       setAssignedCourses([]);
-      setBatchAssignedCourseIds(new Set());
-      setManualBranchCourseIds(new Set());
       appToast.error(message);
     } finally {
       setIsLoading(false);
@@ -134,7 +122,7 @@ export function BranchManageCoursesPanel({
 
   useEffect(() => {
     void loadData();
-  }, [loadData]);
+  }, [loadData, manageDataSyncKey]);
 
   useEffect(() => {
     setPage(1);
@@ -148,6 +136,8 @@ export function BranchManageCoursesPanel({
 
   const loadAvailableCourses = useCallback(async () => {
     setAssignModalLoading(true);
+    setModalAssignedCourseIds([]);
+
     try {
       const [{ assignedCourseIds: assignedIds }, activeCourses] =
         await Promise.all([
@@ -156,7 +146,7 @@ export function BranchManageCoursesPanel({
         ]);
 
       setAvailableCourses(activeCourses);
-      setModalAssignedCourseIds(Array.from(assignedIds));
+      setModalAssignedCourseIds([...assignedIds]);
     } catch (loadError) {
       appToast.error(getErrorMessage(loadError));
       setAssignOpen(false);
@@ -166,7 +156,6 @@ export function BranchManageCoursesPanel({
   }, [branchId]);
 
   const openAssignModal = async () => {
-    setModalAssignedCourseIds(Array.from(assignedCourseIds));
     setAssignOpen(true);
     await loadAvailableCourses();
   };
@@ -177,6 +166,7 @@ export function BranchManageCoursesPanel({
     }
 
     setAssignOpen(false);
+    setModalAssignedCourseIds([]);
   };
 
   useEffect(() => {
@@ -210,6 +200,7 @@ export function BranchManageCoursesPanel({
           : `${uniqueCourseIds.length} courses assigned successfully`,
       );
       setAssignOpen(false);
+      setModalAssignedCourseIds([]);
       await loadData();
       await onSummaryRefresh?.();
     } catch (assignError) {
@@ -224,21 +215,16 @@ export function BranchManageCoursesPanel({
       return;
     }
 
-    if (
-      isCourseAssignedViaBranchBatch(
-        unassignTarget.id,
-        batchAssignedCourseIds,
-      )
-    ) {
+    if (isBranchCourseInheritedAssignment(unassignTarget)) {
       appToast.error(
-        "This course is assigned through a batch and cannot be unassigned here.",
+        "This course is assigned through a batch or category and cannot be unassigned here.",
       );
       setUnassignTarget(null);
       return;
     }
 
-    if (!manualBranchCourseIds.has(unassignTarget.id)) {
-      appToast.error("This course is not manually assigned to this branch.");
+    if (!isBranchCourseDirectlyAssigned(unassignTarget)) {
+      appToast.error("This course is not directly assigned to this branch.");
       setUnassignTarget(null);
       return;
     }
@@ -321,19 +307,16 @@ export function BranchManageCoursesPanel({
             emptyIcon={BookOpen}
           >
             {paginatedCourses.map((course) => {
-              const isBatchAssigned = isCourseAssignedViaBranchBatch(
-                course.id,
-                batchAssignedCourseIds,
-              );
-              const canUnassign =
-                manualBranchCourseIds.has(course.id) && !isBatchAssigned;
+              const isInheritedAssignment =
+                isBranchCourseInheritedAssignment(course);
+              const showUnassign = canUnassignBranchCourseFromManage(course);
 
               return (
                 <tr
                   key={course.id}
                   className={cn(
                     "border-b border-slate-100 transition-colors",
-                    isBatchAssigned
+                    isInheritedAssignment
                       ? "cursor-not-allowed bg-slate-50/80 text-slate-500"
                       : "bg-white hover:bg-slate-50",
                   )}
@@ -341,7 +324,7 @@ export function BranchManageCoursesPanel({
                   <td
                     className={cn(
                       `${TABLE_CELL_CLASS} font-medium`,
-                      isBatchAssigned ? "text-slate-500" : "text-[#102A56]",
+                      isInheritedAssignment ? "text-slate-500" : "text-[#102A56]",
                     )}
                   >
                     <span className="block truncate" title={course.title}>
@@ -365,11 +348,11 @@ export function BranchManageCoursesPanel({
                   </td>
                   <td className={TABLE_CELL_CLASS}>
                     <div className="flex items-center justify-end">
-                      {isBatchAssigned ? (
+                      {isInheritedAssignment ? (
                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                           {ALREADY_ASSIGNED_LABEL}
                         </span>
-                      ) : canUnassign ? (
+                      ) : showUnassign ? (
                         <BranchIconAction
                           icon={Link2Off}
                           label="Unassign"

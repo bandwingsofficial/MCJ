@@ -25,6 +25,7 @@ export class BranchCourseLinkResult {
   constructor(
     public readonly linkedViaManual: boolean,
     public readonly linkedViaBatch: boolean,
+    public readonly linkedViaCategory: boolean,
   ) {}
 }
 

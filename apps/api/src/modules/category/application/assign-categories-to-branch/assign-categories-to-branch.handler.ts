@@ -66,6 +66,11 @@ export class AssignCategoriesToBranchHandler {
         uniqueIds,
       );
 
+    await this.branchRepo.linkCoursesForAssignedCategories(
+      command.branchId,
+      uniqueIds,
+    );
+
     return new AssignCategoriesToBranchResult(
       command.branchId,
       assignedCount,

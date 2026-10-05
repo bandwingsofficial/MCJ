@@ -150,6 +150,7 @@ export function BranchManageWorkspace({
           assignOnMount={assignOnMountTab === "courses"}
           onAssignOnMountHandled={() => clearAssignOnMount("courses")}
           onSummaryRefresh={onSummaryRefresh}
+          manageDataSyncKey={manageDataSyncKey}
         />
       </TabsContent>
 

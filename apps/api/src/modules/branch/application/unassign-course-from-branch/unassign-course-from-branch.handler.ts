@@ -37,15 +37,22 @@ export class UnassignCourseFromBranchHandler {
         command.courseId,
       );
     } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message === 'COURSE_LINKED_VIA_BATCH'
-      ) {
-        throw new BaseException(
-          ERROR_CODES.VALIDATION_ERROR,
-          'This course is linked through an assigned batch. Unassign the batch to remove it.',
-          400,
-        );
+      if (error instanceof Error) {
+        if (error.message === 'COURSE_LINKED_VIA_BATCH') {
+          throw new BaseException(
+            ERROR_CODES.VALIDATION_ERROR,
+            'This course is linked through an assigned batch. Unassign the batch to remove it.',
+            400,
+          );
+        }
+
+        if (error.message === 'COURSE_LINKED_VIA_CATEGORY') {
+          throw new BaseException(
+            ERROR_CODES.VALIDATION_ERROR,
+            'This course is linked through an assigned category. Unassign the category to remove it.',
+            400,
+          );
+        }
       }
 
       throw error;

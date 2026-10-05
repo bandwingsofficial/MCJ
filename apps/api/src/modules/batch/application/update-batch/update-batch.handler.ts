@@ -197,6 +197,8 @@ export class UpdateBatchHandler {
       });
     }
 
+    await this.branchRepo.reconcileCourseBranchLinksForBatch(batch.id);
+
     if (command.templateIds !== undefined) {
       await syncBatchTimings(this.prisma, this.templateRepo, {
         batchId: batch.id,

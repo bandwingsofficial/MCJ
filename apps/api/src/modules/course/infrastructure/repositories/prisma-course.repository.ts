@@ -63,9 +63,11 @@ export class PrismaCourseRepository
             branchId,
             linkedViaManual: true,
             linkedViaBatch: false,
+            manualAssignedAt: new Date(),
           },
           update: {
             linkedViaManual: true,
+            manualAssignedAt: new Date(),
           },
         });
       }
@@ -75,8 +77,8 @@ export class PrismaCourseRepository
           continue;
         }
 
-        if (link.linkedViaBatch) {
-          if (link.linkedViaManual) {
+        if (link.linkedViaBatch || link.linkedViaCategory) {
+          if (link.manualAssignedAt) {
             await tx.courseBranch.update({
               where: {
                 courseId_branchId: {
@@ -84,7 +86,10 @@ export class PrismaCourseRepository
                   branchId: link.branchId,
                 },
               },
-              data: { linkedViaManual: false },
+              data: {
+                linkedViaManual: false,
+                manualAssignedAt: null,
+              },
             });
           }
           continue;
@@ -518,12 +523,17 @@ export class PrismaCourseRepository
     }
 
     if (filters.branchId) {
-  where.courseBranches = {
-    some: {
-      branchId: filters.branchId,
-    },
-  };
-}
+      where.courseBranches = {
+        some: {
+          branchId: filters.branchId,
+          OR: [
+            { manualAssignedAt: { not: null } },
+            { linkedViaBatch: true },
+            { linkedViaCategory: true },
+          ],
+        },
+      };
+    }
 
     if (filters.isFeatured !== undefined) {
       where.isFeatured = filters.isFeatured;

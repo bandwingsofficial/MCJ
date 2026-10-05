@@ -2,6 +2,8 @@ import { BaseException } from '@common/exceptions/base.exception';
 import { ERROR_CODES } from '@common/constants/error-codes';
 import type { CourseRepository } from '@modules/course/domain/repositories/course.repository';
 
+import type { BranchRepository } from '@modules/branch/domain/repositories/branch.repository';
+
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
 import type { PrismaBatchCourseRepository } from '../../infrastructure/repositories/prisma-batch-course.repository';
@@ -12,6 +14,7 @@ export class AssignBatchCourseHandler {
     private readonly batchRepo: BatchRepository,
     private readonly batchCourseRepo: PrismaBatchCourseRepository,
     private readonly courseRepo: CourseRepository,
+    private readonly branchRepo: BranchRepository,
     private readonly domainService: BatchDomainService,
   ) {}
 
@@ -29,7 +32,11 @@ export class AssignBatchCourseHandler {
     );
 
     try {
-      return await this.batchCourseRepo.assign(params);
+      const assignment = await this.batchCourseRepo.assign(params);
+      await this.branchRepo.reconcileCourseBranchLinksForBatch(
+        params.batchId,
+      );
+      return assignment;
     } catch (error) {
       if (error instanceof Error && error.message.includes('already assigned')) {
         throw new BaseException(

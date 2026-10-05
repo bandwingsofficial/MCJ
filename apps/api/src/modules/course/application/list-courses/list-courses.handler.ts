@@ -63,7 +63,11 @@ export class ListCoursesHandler {
           )
         : new Map<
             string,
-            { linkedViaManual: boolean; linkedViaBatch: boolean }
+            {
+              linkedViaManual: boolean;
+              linkedViaBatch: boolean;
+              linkedViaCategory: boolean;
+            }
           >();
 
     const categoryCache = new Map<string, CourseCategoryResult | null>();
@@ -114,6 +118,7 @@ export class ListCoursesHandler {
           ? new BranchCourseLinkResult(
               link.linkedViaManual,
               link.linkedViaBatch,
+              link.linkedViaCategory,
             )
           : null;
 

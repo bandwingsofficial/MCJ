@@ -16,12 +16,14 @@ const ADMIN_LABELS: Record<string, string> = {
   ...ENROLLMENT_ADMIN_STATUS_LABELS,
   [EnrollmentStatus.ADVANCED]: "Advanced",
   [EnrollmentStatus.CANCELLED]: "Cancelled",
+  [EnrollmentStatus.PLACED]: "Placed",
 };
 
 const ADMIN_VARIANTS = {
   [EnrollmentStatus.ADVANCED]: "warning",
   [EnrollmentStatus.ADMITTED]: "info",
   [EnrollmentStatus.COMPLETED]: "success",
+  [EnrollmentStatus.PLACED]: "success",
   [EnrollmentStatus.CANCELLED]: "danger",
 } as const;
 
@@ -38,13 +40,15 @@ export function EnrollmentStatusBadge({
   }
 
   const adminStatus =
-    status === EnrollmentStatus.COMPLETED
-      ? EnrollmentStatus.COMPLETED
-      : status === EnrollmentStatus.ADVANCED
-        ? EnrollmentStatus.ADVANCED
-        : status === EnrollmentStatus.CANCELLED
-          ? EnrollmentStatus.CANCELLED
-          : EnrollmentStatus.ADMITTED;
+    status === EnrollmentStatus.PLACED
+      ? EnrollmentStatus.PLACED
+      : status === EnrollmentStatus.COMPLETED
+        ? EnrollmentStatus.COMPLETED
+        : status === EnrollmentStatus.ADVANCED
+          ? EnrollmentStatus.ADVANCED
+          : status === EnrollmentStatus.CANCELLED
+            ? EnrollmentStatus.CANCELLED
+            : EnrollmentStatus.ADMITTED;
 
   const variant =
     ADMIN_VARIANTS[adminStatus] ?? ("default" as const);

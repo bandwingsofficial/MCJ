@@ -311,13 +311,6 @@ export function getEnrollmentWorkflowStatusChangeOptions(
   }
 
   if (current === "COMPLETED") {
-    const studentWorkflow = normalizeStudentEnrollmentWorkflowStatus(
-      input.studentStatus,
-    );
-    if (studentWorkflow !== "COMPLETED") {
-      return [];
-    }
-
     return [
       {
         label: STUDENT_ENROLLMENT_WORKFLOW_STATUS_LABELS.PLACED,

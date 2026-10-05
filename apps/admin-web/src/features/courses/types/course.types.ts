@@ -283,6 +283,7 @@ export interface CourseListItem {
   branchCourseLink?: {
     linkedViaManual: boolean;
     linkedViaBatch: boolean;
+    linkedViaCategory: boolean;
   } | null;
 
   /** True when the course is assigned to an upcoming or ongoing batch. */

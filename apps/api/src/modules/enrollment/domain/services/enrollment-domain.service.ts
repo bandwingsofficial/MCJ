@@ -180,7 +180,7 @@ export class EnrollmentDomainService {
         EnrollmentStatus.DROPPED,
         EnrollmentStatus.CANCELLED,
       ],
-      [EnrollmentStatus.COMPLETED]: [],
+      [EnrollmentStatus.COMPLETED]: [EnrollmentStatus.PLACED],
       [EnrollmentStatus.DROPPED]: [],
       [EnrollmentStatus.CANCELLED]: [],
       [EnrollmentStatus.REJECTED]: [],

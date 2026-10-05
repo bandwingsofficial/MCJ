@@ -190,17 +190,6 @@ export function UpdateEnrollmentStatusDialog({
               </div>
             ) : null}
             {normalizeAdminEnrollmentRowLifecycle(enrollment.status) ===
-              "COMPLETED" &&
-            enrollment.student?.status &&
-            enrollment.student.status !== "COMPLETED" ? (
-              <p className="mt-2 text-xs text-amber-800">
-                Placed is only available when the student&apos;s current status
-                is Completed. This enrollment is completed, but the student is{" "}
-                {enrollment.student.status.toLowerCase()} (for example after
-                re-enrollment or cancellation).
-              </p>
-            ) : null}
-            {normalizeAdminEnrollmentRowLifecycle(enrollment.status) ===
             null ? (
               <p className="mt-2 text-xs text-amber-700">
                 This enrollment status cannot be changed from the admin list.

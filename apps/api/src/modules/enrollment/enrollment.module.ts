@@ -358,6 +358,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         domainService: EnrollmentDomainService,
         workflowSync: StudentAdmissionStatusSyncService,
         studentDomainService: StudentDomainService,
+        sideEffects: EnrollmentSideEffectsService,
       ) =>
         new UpdateEnrollmentStatusHandler(
           enrollmentRepo,
@@ -365,6 +366,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
           domainService,
           workflowSync,
           studentDomainService,
+          sideEffects,
         ),
       inject: [
         ENROLLMENT_TOKENS.ENROLLMENT_REPOSITORY,
@@ -372,6 +374,7 @@ import { PublicEnrollmentController } from './presentation/controllers/public-en
         EnrollmentDomainService,
         StudentAdmissionStatusSyncService,
         StudentDomainService,
+        EnrollmentSideEffectsService,
       ],
     },
 

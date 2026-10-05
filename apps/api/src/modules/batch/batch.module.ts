@@ -302,18 +302,21 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
         batchRepo: BatchRepository,
         batchCourseRepo: PrismaBatchCourseRepository,
         courseRepo: CourseRepository,
+        branchRepo: BranchRepository,
         domainService: BatchDomainService,
       ) =>
         new AssignBatchCourseHandler(
           batchRepo,
           batchCourseRepo,
           courseRepo,
+          branchRepo,
           domainService,
         ),
       inject: [
         BATCH_TOKENS.BATCH_REPOSITORY,
         PrismaBatchCourseRepository,
         COURSE_TOKENS.COURSE_REPOSITORY,
+        BRANCH_TOKENS.BRANCH_REPOSITORY,
         BatchDomainService,
       ],
     },
@@ -323,16 +326,19 @@ import type { BranchRepository } from '../branch/domain/repositories/branch.repo
       useFactory: (
         batchRepo: BatchRepository,
         batchCourseRepo: PrismaBatchCourseRepository,
+        branchRepo: BranchRepository,
         domainService: BatchDomainService,
       ) =>
         new RemoveBatchCourseHandler(
           batchRepo,
           batchCourseRepo,
+          branchRepo,
           domainService,
         ),
       inject: [
         BATCH_TOKENS.BATCH_REPOSITORY,
         PrismaBatchCourseRepository,
+        BRANCH_TOKENS.BRANCH_REPOSITORY,
         BatchDomainService,
       ],
     },

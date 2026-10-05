@@ -17,6 +17,7 @@ import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 import { EnrollmentDomainService } from '../../domain/services/enrollment-domain.service';
 import { InvalidStatusTransitionException } from '../../domain/errors/enrollment-business.exception';
 import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
+import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
 
 import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
 
@@ -35,6 +36,7 @@ export class UpdateEnrollmentStatusHandler {
     private readonly domainService: EnrollmentDomainService,
     private readonly workflowSync: StudentAdmissionStatusSyncService,
     private readonly studentDomainService: StudentDomainService,
+    private readonly sideEffects: EnrollmentSideEffectsService,
   ) {}
 
   async execute(
@@ -116,38 +118,54 @@ export class UpdateEnrollmentStatusHandler {
       );
     }
 
-    const student = await this.studentRepo.findById(freshEnrollment.studentId);
-    if (!student) {
-      throw new InvalidStatusTransitionException(
-        freshEnrollment.status,
-        EnrollmentStatus.PLACED,
-      );
-    }
-
-    if (student.status !== StudentStatus.COMPLETED) {
-      throw new InvalidStatusTransitionException(
-        student.status,
-        StudentStatus.PLACED,
-        `Cannot mark as Placed: enrollment is Completed but student status is ${student.status}. Student must be Completed (not Lead/Advanced/Admitted from a newer enrollment).`,
-      );
-    }
-
-    this.workflowSync.ensureValidWorkflowTransition(
-      StudentStatus.COMPLETED,
-      StudentStatus.PLACED,
+    this.domainService.ensureValidStatusTransition(
+      EnrollmentStatus.COMPLETED,
+      EnrollmentStatus.PLACED,
     );
 
-    student.update({
-      status: StudentStatus.PLACED,
-      updatedBy: command.updatedBy,
-    });
-    await this.studentRepo.save(student);
+    const previousStatus = freshEnrollment.status;
+
+    freshEnrollment.changeStatus(EnrollmentStatus.PLACED, command.updatedBy);
+    freshEnrollment.deactivate(command.updatedBy);
+
+    await this.enrollmentRepo.save(freshEnrollment);
+
+    await this.sideEffects.apply(
+      freshEnrollment,
+      previousStatus,
+      command.updatedBy,
+      { skipStudentStatusSync: true },
+    );
+
+    const student = await this.studentRepo.findById(freshEnrollment.studentId);
+    if (student && student.status === StudentStatus.COMPLETED) {
+      this.workflowSync.ensureValidWorkflowTransition(
+        StudentStatus.COMPLETED,
+        StudentStatus.PLACED,
+      );
+
+      student.update({
+        status: StudentStatus.PLACED,
+        updatedBy: command.updatedBy,
+      });
+      await this.studentRepo.save(student);
+
+      notifyDomainMutation({
+        domain: 'student',
+        action: 'status_changed',
+        entityId: student.id,
+        branchId: student.branchId ?? undefined,
+      });
+    }
 
     notifyDomainMutation({
-      domain: 'student',
+      domain: 'enrollment',
       action: 'status_changed',
-      entityId: student.id,
-      branchId: student.branchId ?? undefined,
+      entityId: freshEnrollment.id,
+      batchId: freshEnrollment.batchId,
+      studentId: freshEnrollment.studentId,
+      courseId: freshEnrollment.courseId,
+      branchId: freshEnrollment.branchId,
     });
 
     return this.domainService.ensureDetailExists(

@@ -84,6 +84,14 @@ export function AssignBranchCourseModal({
     [assignedIds, selectedIds],
   );
 
+  const unassignedCourseCount = useMemo(
+    () => courses.filter((course) => !assignedIds.has(course.id)).length,
+    [assignedIds, courses],
+  );
+
+  const allCoursesAssigned =
+    !isLoading && courses.length > 0 && unassignedCourseCount === 0;
+
   useEffect(() => {
     if (!open) {
       return;
@@ -92,7 +100,7 @@ export function AssignBranchCourseModal({
     setSearch("");
     setValidationError(null);
     setSelectedIds([]);
-  }, [open]);
+  }, [open, branchId]);
 
   useEffect(() => {
     setSelectedIds((current) => current.filter((id) => !assignedIds.has(id)));
@@ -165,6 +173,10 @@ export function AssignBranchCourseModal({
           {isLoading ? (
             <p className="px-2 py-6 text-center text-sm text-[#647A9B]">
               Loading courses...
+            </p>
+          ) : allCoursesAssigned && !search.trim() ? (
+            <p className="px-2 py-6 text-center text-sm text-[#647A9B]">
+              All courses are already assigned.
             </p>
           ) : filteredCourses.length === 0 ? (
             <p className="px-2 py-6 text-center text-sm text-[#647A9B]">

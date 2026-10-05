@@ -34,6 +34,10 @@ export class UnassignCategoryFromBranchHandler {
       command.categoryId,
     );
 
+    await this.branchRepo.reconcileBranchAssignmentLinks(
+      command.branchId,
+    );
+
     return new UnassignCategoryFromBranchResult(
       command.branchId,
       command.categoryId,

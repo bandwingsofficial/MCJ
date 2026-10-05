@@ -1,3 +1,5 @@
+import type { BranchRepository } from '@modules/branch/domain/repositories/branch.repository';
+
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
 import type { PrismaBatchCourseRepository } from '../../infrastructure/repositories/prisma-batch-course.repository';
@@ -6,6 +8,7 @@ export class RemoveBatchCourseHandler {
   constructor(
     private readonly batchRepo: BatchRepository,
     private readonly batchCourseRepo: PrismaBatchCourseRepository,
+    private readonly branchRepo: BranchRepository,
     private readonly domainService: BatchDomainService,
   ) {}
 
@@ -18,5 +21,8 @@ export class RemoveBatchCourseHandler {
     );
 
     await this.batchCourseRepo.remove(params.assignmentId, params.batchId);
+    await this.branchRepo.reconcileCourseBranchLinksForBatch(
+      params.batchId,
+    );
   }
 }

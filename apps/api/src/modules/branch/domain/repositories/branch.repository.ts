@@ -297,6 +297,15 @@ export interface BranchRepository {
     batchId: string,
   ): Promise<void>;
 
+  linkCoursesForAssignedCategories(
+    branchId: string,
+    categoryIds: string[],
+  ): Promise<void>;
+
+  reconcileCourseBranchLinksForBatch(
+    batchId: string,
+  ): Promise<void>;
+
   reconcileBranchAssignmentLinks(
     branchId: string,
   ): Promise<void>;
@@ -307,7 +316,11 @@ export interface BranchRepository {
   ): Promise<
     Map<
       string,
-      { linkedViaManual: boolean; linkedViaBatch: boolean }
+      {
+        linkedViaManual: boolean;
+        linkedViaBatch: boolean;
+        linkedViaCategory: boolean;
+      }
     >
   >;
 }

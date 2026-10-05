@@ -420,6 +420,8 @@ model CourseBranch {
   linkedViaManual   Boolean   @default(false)
   /// Set when the course is linked because a parent batch is assigned to the branch.
   linkedViaBatch    Boolean   @default(false)
+  /// Set when the course is linked because a category is manually assigned to the branch.
+  linkedViaCategory Boolean   @default(false)
   /// Set only by Branch → Courses assign (distinguishes real manual links from legacy flags).
   manualAssignedAt  DateTime?
   branch            Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
