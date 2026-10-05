@@ -27,6 +27,7 @@ import {
   isUpcomingBatch,
   isUpcomingTiming,
   resolveModePricing,
+  resolvePrimaryBranchAssignedTrainerForTiming,
 } from "@/src/features/courses/utils/course-batch.utils";
 import { getCourseEnrollPath } from "@/src/features/courses/utils/course-route.utils";
 import { useMyEnrollments } from "@/src/features/enrollments/hooks/useMyEnrollments";
@@ -698,12 +699,22 @@ export function CourseEnrollmentSidebar({
                 return;
               }
 
+              const assignedTrainer = selectedBatch
+                ? resolvePrimaryBranchAssignedTrainerForTiming(
+                    selectedBatch,
+                    selectedOption.branchId,
+                    selectedOption.timingId,
+                    selectedOption.mode,
+                  )
+                : null;
+
               saveEnrollmentSelection({
                 courseId,
                 branchId: selectedOption.branchId,
                 batchId: selectedOption.batchId,
                 batchTimingId: selectedOption.timingId,
                 mode: selectedOption.mode,
+                trainerId: assignedTrainer?.id ?? null,
                 timing: {
                   id: selectedOption.timingId,
                   name: selectedOption.timingName,

@@ -19,6 +19,7 @@ export interface EnrollmentSelectionSnapshot {
   batchId: string;
   batchTimingId: string;
   mode: BatchMode | string;
+  trainerId?: string | null;
   timing: EnrollmentTimingSnapshot;
   savedAt: number;
 }

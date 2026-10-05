@@ -16,6 +16,12 @@ export class BatchTrainerResult {
     public readonly firstName: string,
     public readonly lastName: string | null,
     public readonly employeeCode: string | null,
+    public readonly qualification: string | null = null,
+    public readonly specialization: string | null = null,
+    public readonly bio: string | null = null,
+    public readonly experienceYears: number = 0,
+    public readonly trainerType: string | null = null,
+    public readonly profileImageUrl: string | null = null,
   ) {}
 }
 export class BatchCourseResult {

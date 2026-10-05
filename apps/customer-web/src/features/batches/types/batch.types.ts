@@ -49,6 +49,18 @@ export interface BatchTrainer {
   lastName: string;
 
   employeeCode: string;
+
+  qualification?: string | null;
+
+  specialization?: string | null;
+
+  bio?: string | null;
+
+  experienceYears?: number;
+
+  trainerType?: string | null;
+
+  profileImageUrl?: string | null;
 }
 
 export interface BatchTiming {

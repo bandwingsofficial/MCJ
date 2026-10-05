@@ -24,8 +24,11 @@ import {
   formatCurrency,
 } from "@/src/features/batches/utils/batch-pricing.utils";
 import { useBranches } from "@/src/features/branches/hooks/useBranches";
-import { resolveModePricing } from "@/src/features/courses/utils/course-batch.utils";
-import type { BatchMode } from "@/src/features/batches/types/batch.types";
+import {
+  resolveBranchAssignedTrainersForTiming,
+  resolveModePricing,
+} from "@/src/features/courses/utils/course-batch.utils";
+import type { Batch, BatchMode } from "@/src/features/batches/types/batch.types";
 import {
   EnrollmentPaymentCancelled,
   EnrollmentSuccessView,
@@ -217,17 +220,50 @@ export function EnrollPage({ slug }: EnrollPageProps) {
   const selectedBatchTimingId = urlBatchTimingId;
   const selectedMode = urlMode;
 
-  const selectedBatch = useMemo(() => {
+  const selectedBatch = useMemo((): Batch | null => {
     if (!selectedBatchId) {
       return null;
     }
 
-    if (fetchedBatch?.id === selectedBatchId) {
+    if (fetchedBatch?.id !== selectedBatchId) {
+      return null;
+    }
+
+    if (
+      !selectedBranchId ||
+      !selectedBatchTimingId ||
+      !fetchedBatch.timings?.length
+    ) {
       return fetchedBatch;
     }
 
-    return null;
-  }, [fetchedBatch, selectedBatchId]);
+    const branchTrainers = resolveBranchAssignedTrainersForTiming(
+      fetchedBatch,
+      selectedBranchId,
+      selectedBatchTimingId,
+      selectedMode,
+    );
+
+    if (branchTrainers.length === 0) {
+      return fetchedBatch;
+    }
+
+    return {
+      ...fetchedBatch,
+      trainers: branchTrainers.map((trainer) => ({
+        id: trainer.id,
+        firstName: trainer.firstName,
+        lastName: trainer.lastName ?? "",
+        employeeCode: trainer.employeeCode ?? "",
+      })),
+    };
+  }, [
+    fetchedBatch,
+    selectedBatchId,
+    selectedBatchTimingId,
+    selectedBranchId,
+    selectedMode,
+  ]);
 
   const publicBranchNames = useMemo(() => {
     const map = new Map<string, string>();

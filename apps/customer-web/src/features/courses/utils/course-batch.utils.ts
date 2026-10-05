@@ -3,7 +3,13 @@ import type {
   BatchMode,
   BatchPricing,
   BatchTiming,
+  BatchTrainer,
 } from "@/src/features/batches/types/batch.types";
+import type { Trainer } from "@/src/features/trainers/types/trainer.types";
+import {
+  isBatchAssignedToCourseBranches,
+  resolveBatchBranchIds,
+} from "@/src/features/enrollments/utils/enrollment-batch.utils";
 import {
   formatBatchPrice,
   getBatchPricing,
@@ -568,40 +574,134 @@ export function buildCourseUpcomingBatchGroups(
     .filter((row): row is CourseUpcomingBatchGroup => row !== null);
 }
 
-export function collectBatchTrainerIds(batches: Batch[]): string[] {
-  const ids = new Set<string>();
+function mapBatchTrainerToCourseTrainer(trainer: BatchTrainer): Trainer {
+  return {
+    id: trainer.id,
+    firstName: trainer.firstName,
+    lastName: trainer.lastName ?? "",
+    email: "",
+    phone: "",
+    gender: "",
+    bio: trainer.bio ?? null,
+    qualification: trainer.qualification ?? null,
+    experienceYears: trainer.experienceYears ?? 0,
+    specialization: trainer.specialization ?? null,
+    skills: [],
+    profileImageFileId: null,
+    profileImageUrl: trainer.profileImageUrl ?? null,
+    employeeCode: trainer.employeeCode ?? "",
+    trainerType: trainer.trainerType ?? "",
+    linkedInUrl: null,
+    youtubeUrl: null,
+    instagramUrl: null,
+    branch: null,
+    averageRating: 0,
+    totalReviews: 0,
+    isFeatured: false,
+    status: "ACTIVE",
+    joinedAt: "",
+    courses: [],
+    createdBy: "",
+    updatedBy: null,
+    isDeleted: false,
+    deletedAt: null,
+    createdAt: "",
+    updatedAt: "",
+  };
+}
+
+export function resolveBranchAssignedTrainersForTiming(
+  batch: Batch,
+  branchId: string,
+  batchTimingId: string,
+  mode?: BatchMode | string | null,
+): BatchTrainer[] {
+  const timing = (batch.timings ?? []).find((row) => row.id === batchTimingId);
+  if (!timing) {
+    return [];
+  }
+
+  if (mode && timing.mode !== mode) {
+    return [];
+  }
+
+  if (!isUpcomingTiming(timing) || !isUpcomingBatch(batch)) {
+    return [];
+  }
+
+  if (!isBatchAssignedToCourseBranches(batch, [branchId])) {
+    return [];
+  }
+
+  return timing.branchAssignedTrainers?.[branchId] ?? [];
+}
+
+export function resolvePrimaryBranchAssignedTrainerForTiming(
+  batch: Batch,
+  branchId: string,
+  batchTimingId: string,
+  mode?: BatchMode | string | null,
+): BatchTrainer | null {
+  const trainers = resolveBranchAssignedTrainersForTiming(
+    batch,
+    branchId,
+    batchTimingId,
+    mode,
+  );
+
+  return trainers[0] ?? null;
+}
+
+export function collectBranchAssignedCourseTrainers(
+  batches: Batch[],
+  courseBranchIds: string[],
+): Trainer[] {
+  const allowedBranches = new Set(courseBranchIds);
+  const byId = new Map<string, Trainer>();
 
   batches.filter(isUpcomingBatch).forEach((batch) => {
-    let usedBranchScoped = false;
-
-    (batch.timings ?? []).forEach((timing) => {
-      const byBranch = timing.branchAssignedTrainers;
-      if (!byBranch) {
-        return;
-      }
-
-      usedBranchScoped = true;
-      Object.values(byBranch).forEach((trainers) => {
-        trainers.forEach((trainer) => {
-          if (trainer.id) {
-            ids.add(trainer.id);
-          }
-        });
-      });
-    });
-
-    if (usedBranchScoped) {
+    if (!isBatchAssignedToCourseBranches(batch, courseBranchIds)) {
       return;
     }
 
-    batch.trainers?.forEach((trainer) => {
-      if (trainer.id) {
-        ids.add(trainer.id);
-      }
+    const batchBranchIds = resolveBatchBranchIds(batch).filter((branchId) =>
+      allowedBranches.size === 0 ? true : allowedBranches.has(branchId),
+    );
+
+    (batch.timings ?? []).filter(isUpcomingTiming).forEach((timing) => {
+      batchBranchIds.forEach((branchId) => {
+        const trainers = timing.branchAssignedTrainers?.[branchId] ?? [];
+        trainers.forEach((trainer) => {
+          if (!trainer.id || byId.has(trainer.id)) {
+            return;
+          }
+
+          byId.set(trainer.id, mapBatchTrainerToCourseTrainer(trainer));
+        });
+      });
     });
   });
 
-  return Array.from(ids);
+  return Array.from(byId.values()).sort((left, right) =>
+    `${left.firstName} ${left.lastName}`.localeCompare(
+      `${right.firstName} ${right.lastName}`,
+    ),
+  );
+}
+
+export function collectBatchTrainerIds(batches: Batch[]): string[] {
+  return collectBranchAssignedCourseTrainers(batches, []).map(
+    (trainer) => trainer.id,
+  );
+}
+
+export function collectBatchTrainerIdsForCourseBranches(
+  batches: Batch[],
+  courseBranchIds: string[],
+): string[] {
+  return collectBranchAssignedCourseTrainers(batches, courseBranchIds).map(
+    (trainer) => trainer.id,
+  );
 }
 
 export function getModePricingRecord(

@@ -41,7 +41,7 @@ import type {
   CoursePreviewModule,
 } from "@/src/features/courses/types/course.types";
 import {
-  collectBatchTrainerIds,
+  collectBranchAssignedCourseTrainers,
   COURSE_MODE_ORDER,
   isUpcomingBatch,
   isUpcomingTiming,
@@ -52,7 +52,6 @@ import {
   formatDuration,
   getCourseLearningOutcomes,
 } from "@/src/features/courses/utils/course-display.utils";
-import { useCourseTrainers } from "@/src/features/trainers/hooks/useCourseTrainers";
 import type { Trainer } from "@/src/features/trainers/types/trainer.types";
 
 interface CourseDetailsProps {
@@ -153,17 +152,13 @@ export function CourseDetails({ course }: CourseDetailsProps) {
     }
   }, []);
 
-  const { batches: courseBatches, isLoading: courseBatchesLoading } =
-    useCourseBatches(course.id);
+  const {
+    batches: courseBatches,
+    isLoading: courseBatchesLoading,
+    refetch: refetchCourseBatches,
+  } = useCourseBatches(course.id);
   const { data: summary } = useCourseSummary(course.id);
   const { data: faqs = [], isLoading: faqsLoading } = useCourseFaqs(course.id);
-  const {
-    data: courseTrainers = [],
-    isLoading: trainersLoading,
-    isError: trainersError,
-    refetch: refetchTrainers,
-  } = useCourseTrainers(course.id);
-
   const courseBranchIds = useMemo(
     () => (course.branches ?? []).map((branch) => branch.id).filter(Boolean),
     [course.branches],
@@ -208,26 +203,11 @@ export function CourseDetails({ course }: CourseDetailsProps) {
     ? formatDuration(course.duration, course.durationType)
     : null;
 
-  const batchTrainerIds = useMemo(
-    () => new Set(collectBatchTrainerIds(upcomingBatches)),
-    [upcomingBatches],
+  const displayTrainers = useMemo(
+    () =>
+      collectBranchAssignedCourseTrainers(upcomingBatches, courseBranchIds),
+    [courseBranchIds, upcomingBatches],
   );
-
-  const displayTrainers = useMemo(() => {
-    const trainers = Array.isArray(courseTrainers) ? courseTrainers : [];
-    const byId = new Map<string, Trainer>();
-
-    const source =
-      batchTrainerIds.size > 0
-        ? trainers.filter((trainer) => batchTrainerIds.has(trainer.id))
-        : trainers;
-
-    (source.length > 0 ? source : trainers).forEach((trainer) => {
-      byId.set(trainer.id, trainer);
-    });
-
-    return Array.from(byId.values());
-  }, [batchTrainerIds, courseTrainers]);
 
   const tagline = course.tagline?.trim() || null;
   const shortDescription = course.shortDescription?.trim() || null;
@@ -518,9 +498,9 @@ export function CourseDetails({ course }: CourseDetailsProps) {
               {activeTab === "instructors" ? (
                 <InstructorsPanel
                   trainers={displayTrainers}
-                  isLoading={trainersLoading}
-                  isError={trainersError}
-                  onRetry={() => void refetchTrainers()}
+                  isLoading={courseBatchesLoading}
+                  isError={false}
+                  onRetry={() => void refetchCourseBatches()}
                 />
               ) : null}
 
