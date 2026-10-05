@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { enrollmentService } from "@/src/features/enrollments/services/enrollment.service";
@@ -20,6 +20,12 @@ interface UseStudentEnrollmentsOptions {
   enrollmentTab?: StudentManageEnrollmentTab;
 }
 
+export interface StudentEnrollmentsFetchOverride {
+  enrollmentTab?: StudentManageEnrollmentTab;
+  page?: number;
+  includeDeleted?: boolean;
+}
+
 interface UseStudentEnrollmentsReturn {
   enrollments: Enrollment[];
   total: number;
@@ -30,7 +36,7 @@ interface UseStudentEnrollmentsReturn {
   includeDeleted: boolean;
   setPage: (page: number) => void;
   setIncludeDeleted: (value: boolean) => void;
-  refetch: () => Promise<void>;
+  refetch: (override?: StudentEnrollmentsFetchOverride) => Promise<void>;
 }
 
 export function useStudentEnrollments({
@@ -45,48 +51,109 @@ export function useStudentEnrollments({
   const [page, setPage] = useState(1);
   const [includeDeleted, setIncludeDeleted] = useState(false);
 
-  const fetchEnrollments = useCallback(async () => {
-    if (!studentId) {
-      setEnrollments([]);
-      setTotal(0);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const filters: EnrollmentFilters = {
-        studentId,
-        studentEnrollmentTab: enrollmentTab,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        sortBy: "createdAt",
-        sortOrder: SortOrder.DESC,
-        includeDeleted,
-      };
-
-      const response = await enrollmentService.getEnrollments(filters);
-      const parsed = parseEnrollmentListResponse(response);
-
-      setEnrollments(parsed.items);
-      setTotal(parsed.total);
-    } catch (err) {
-      setError(getErrorMessage(err));
-      setEnrollments([]);
-      setTotal(0);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [studentId, page, pageSize, includeDeleted, enrollmentTab]);
+  const skipNextEffectRef = useRef(false);
+  const requestIdRef = useRef(0);
+  const enrollmentTabRef = useRef(enrollmentTab);
+  const pageRef = useRef(page);
+  const includeDeletedRef = useRef(includeDeleted);
 
   useEffect(() => {
-    void fetchEnrollments();
-  }, [fetchEnrollments]);
+    enrollmentTabRef.current = enrollmentTab;
+  }, [enrollmentTab]);
+
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+
+  useEffect(() => {
+    includeDeletedRef.current = includeDeleted;
+  }, [includeDeleted]);
+
+  const fetchEnrollments = useCallback(
+    async (override?: StudentEnrollmentsFetchOverride) => {
+      if (!studentId) {
+        setEnrollments([]);
+        setTotal(0);
+        return;
+      }
+
+      const activeTab =
+        override?.enrollmentTab ?? enrollmentTabRef.current;
+      const activePage = override?.page ?? pageRef.current;
+      const activeIncludeDeleted =
+        override?.includeDeleted ?? includeDeletedRef.current;
+      const requestId = ++requestIdRef.current;
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const filters: EnrollmentFilters = {
+          studentId,
+          studentEnrollmentTab: activeTab,
+          skip: (activePage - 1) * pageSize,
+          take: pageSize,
+          sortBy: "createdAt",
+          sortOrder: SortOrder.DESC,
+          includeDeleted: activeIncludeDeleted,
+        };
+
+        const response = await enrollmentService.getEnrollments(filters);
+        const parsed = parseEnrollmentListResponse(response);
+
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        setEnrollments(parsed.items);
+        setTotal(parsed.total);
+
+        if (override) {
+          skipNextEffectRef.current = true;
+
+          if (override.enrollmentTab !== undefined) {
+            enrollmentTabRef.current = override.enrollmentTab;
+          }
+
+          if (override.page !== undefined) {
+            pageRef.current = override.page;
+            setPage(override.page);
+          }
+
+          if (override.includeDeleted !== undefined) {
+            includeDeletedRef.current = override.includeDeleted;
+            setIncludeDeleted(override.includeDeleted);
+          }
+        }
+      } catch (err) {
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        setError(getErrorMessage(err));
+        setEnrollments([]);
+        setTotal(0);
+      } finally {
+        if (requestId === requestIdRef.current) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [pageSize, studentId],
+  );
 
   useEffect(() => {
     setPage(1);
-  }, [studentId, includeDeleted, enrollmentTab]);
+  }, [studentId, includeDeleted]);
+
+  useEffect(() => {
+    if (skipNextEffectRef.current) {
+      skipNextEffectRef.current = false;
+      return;
+    }
+
+    void fetchEnrollments();
+  }, [fetchEnrollments, enrollmentTab, page, includeDeleted]);
 
   useRealtimeRefetch("enrollment", fetchEnrollments);
   useRealtimeRefetch("student", fetchEnrollments);

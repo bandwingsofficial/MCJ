@@ -4,6 +4,8 @@ import type { PrismaService } from '../../../../infrastructure/prisma/prisma.ser
 import { BatchFullException } from '../../domain/errors/batch-full.exception';
 import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 
+type EnrollmentCountClient = PrismaService | Prisma.TransactionClient;
+
 /** Statuses that occupy a parent batch seat. */
 export const BATCH_SEAT_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
   EnrollmentStatus.ADVANCED,
@@ -38,7 +40,7 @@ export function buildTimingLinkedEnrollmentWhere(
 }
 
 export async function countTimingLinkedEnrollments(
-  prisma: PrismaService,
+  prisma: EnrollmentCountClient,
   batchTimingId: string,
 ): Promise<number> {
   return prisma.enrollment.count({
@@ -61,7 +63,7 @@ export function hasTimingCapacityAvailable(
 }
 
 export async function syncBatchTimingEnrolledCount(
-  prisma: PrismaService,
+  prisma: EnrollmentCountClient,
   batchTimingId: string,
 ): Promise<void> {
   const liveCount = await countTimingLinkedEnrollments(
@@ -76,7 +78,7 @@ export async function syncBatchTimingEnrolledCount(
 }
 
 export async function syncAllBatchTimingEnrolledCounts(
-  prisma: PrismaService,
+  prisma: EnrollmentCountClient,
   batchId: string,
 ): Promise<void> {
   const timings = await prisma.batchTiming.findMany({
@@ -92,7 +94,7 @@ export async function syncAllBatchTimingEnrolledCounts(
 }
 
 export async function assertBatchTimingHasLiveCapacity(
-  prisma: PrismaService,
+  prisma: EnrollmentCountClient,
   batchTimingId: string,
 ): Promise<void> {
   const timing = await prisma.batchTiming.findFirst({

@@ -180,19 +180,18 @@ export class UpdateEnrollmentHandler {
 
     await this.enrollmentRepo.save(enrollment);
 
+    const batchChanged = previousBatchId !== enrollment.batchId;
     const timingChanged =
       previousBatchTimingId !== enrollment.batchTimingId;
 
-    if (
-      enrollment.occupiesSeat() &&
-      previousBatchId !== enrollment.batchId
-    ) {
-      await this.sideEffects.transferSeat(
+    if (batchChanged || timingChanged) {
+      await this.sideEffects.reconcileBatchAssignmentSeatCounts({
+        enrollment,
         previousBatchId,
-        enrollment.batchId,
-        command.updatedBy,
-        { batchTimingId: enrollment.batchTimingId },
-      );
+        previousBatchTimingId,
+        previousStatus,
+        actorId: command.updatedBy,
+      });
     } else if (
       command.status !== undefined &&
       command.status !== previousStatus
@@ -210,15 +209,6 @@ export class UpdateEnrollmentHandler {
         enrollment,
         previousStatus,
         command.updatedBy,
-      );
-    }
-
-    if (timingChanged) {
-      await this.sideEffects.syncBatchTimingTransfer(
-        previousBatchTimingId,
-        enrollment.batchTimingId,
-        previousStatus,
-        enrollment.status,
       );
     }
 

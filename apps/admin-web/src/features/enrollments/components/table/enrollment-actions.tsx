@@ -76,6 +76,10 @@ export function EnrollmentActions({
     );
   }
 
+  const isAdvancedOrAdmittedRow =
+    statusForActions === EnrollmentStatus.ADVANCED ||
+    statusForActions === EnrollmentStatus.ADMITTED;
+
   const showStatusChange =
     Boolean(onChangeStatus) &&
     !enrollment.isDeleted &&
@@ -85,6 +89,7 @@ export function EnrollmentActions({
       isActive: enrollment.isActive,
     });
   const showUnenroll =
+    !isAdvancedOrAdmittedRow &&
     isCurrent &&
     onUnenroll &&
     canUnenrollEnrollment(enrollment) &&
@@ -94,7 +99,9 @@ export function EnrollmentActions({
       isActive: enrollment.isActive,
     });
   const showArchive =
-    onArchive && canArchiveEnrollmentFromList(enrollment);
+    !isAdvancedOrAdmittedRow &&
+    onArchive &&
+    canArchiveEnrollmentFromList(enrollment);
   const showPermanentDelete =
     onPermanentDelete &&
     canPermanentlyDeleteEnrollmentFromList(enrollment);

@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -31,7 +32,7 @@ interface UseEnrollmentsReturn {
     filters: EnrollmentFilters,
   ) => void;
 
-  refetch: () => Promise<void>;
+  refetch: (override?: Partial<EnrollmentFilters>) => Promise<void>;
 }
 
 export const useEnrollments =
@@ -52,41 +53,66 @@ export const useEnrollments =
         null,
       );
 
+    const skipNextFilterEffectRef = useRef(false);
+    const requestIdRef = useRef(0);
+    const filtersRef = useRef<EnrollmentFilters>({
+      skip: 0,
+      take: 10,
+      search: "",
+      adminTab: "active",
+      paymentStatus: undefined,
+      branchId: undefined,
+      batchId: undefined,
+      courseId: undefined,
+      isActive: undefined,
+      sortBy: "createdAt",
+      sortOrder: SortOrder.DESC,
+    });
+
     const [filters, setFilters] =
-      useState<EnrollmentFilters>({
-        skip: 0,
-        take: 10,
-        search: "",
-        adminTab: "active",
-        paymentStatus:
-          undefined,
-        branchId: undefined,
-        batchId: undefined,
-        courseId: undefined,
-        isActive: undefined,
-        sortBy: "createdAt",
-        sortOrder:
-          SortOrder.DESC,
-      });
+      useState<EnrollmentFilters>(filtersRef.current);
+
+    useEffect(() => {
+      filtersRef.current = filters;
+    }, [filters]);
 
     const fetchEnrollments =
-      useCallback(async () => {
+      useCallback(async (override?: Partial<EnrollmentFilters>) => {
+        const activeFilters = {
+          ...filtersRef.current,
+          ...override,
+        };
+        const requestId = ++requestIdRef.current;
+
         try {
           setIsLoading(true);
-
           setError(null);
 
           const response =
             await enrollmentService.getEnrollments({
-              ...filters,
+              ...activeFilters,
               status: undefined,
             });
+
+          if (requestId !== requestIdRef.current) {
+            return;
+          }
 
           const parsed = parseEnrollmentListResponse(response);
 
           setEnrollments(parsed.items);
           setCount(parsed.total);
+
+          if (override) {
+            skipNextFilterEffectRef.current = true;
+            filtersRef.current = activeFilters;
+            setFilters(activeFilters);
+          }
         } catch (error) {
+          if (requestId !== requestIdRef.current) {
+            return;
+          }
+
           const message =
             error instanceof Error
               ? error.message
@@ -94,13 +120,20 @@ export const useEnrollments =
 
           setError(message);
         } finally {
-          setIsLoading(false);
+          if (requestId === requestIdRef.current) {
+            setIsLoading(false);
+          }
         }
-      }, [filters]);
+      }, []);
 
     useEffect(() => {
+      if (skipNextFilterEffectRef.current) {
+        skipNextFilterEffectRef.current = false;
+        return;
+      }
+
       void fetchEnrollments();
-    }, [fetchEnrollments]);
+    }, [filters, fetchEnrollments]);
 
     useRealtimeRefetch("enrollment", fetchEnrollments);
     useRealtimeRefetch("student", fetchEnrollments);
@@ -112,7 +145,6 @@ export const useEnrollments =
       error,
       filters,
       setFilters,
-      refetch:
-        fetchEnrollments,
+      refetch: fetchEnrollments,
     };
   };

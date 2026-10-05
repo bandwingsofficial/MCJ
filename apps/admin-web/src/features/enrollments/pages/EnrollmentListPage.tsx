@@ -312,15 +312,15 @@ export function EnrollmentListPage() {
               status: nextStatus,
             });
 
-            setFilters({
-              ...filters,
-              adminTab: adminEnrollmentListTabAfterStatusChange(nextStatus),
-              skip: 0,
-            });
+            const nextTab =
+              adminEnrollmentListTabAfterStatusChange(nextStatus);
 
             setStatusChangeTarget(null);
             await refetchTabCounts();
-            await refetch();
+            await refetch({
+              adminTab: nextTab,
+              skip: 0,
+            });
           } catch {
             // Toast handled in hook.
           }
@@ -347,8 +347,9 @@ export function EnrollmentListPage() {
             setIsEditOpen(false);
             setSelectedEnrollment(null);
           }}
-          onSuccess={() => {
-            void refetch();
+          onSuccess={async () => {
+            await refetch();
+            await refetchTabCounts();
           }}
         />
       ) : null}

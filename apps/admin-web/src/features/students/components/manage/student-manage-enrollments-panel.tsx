@@ -405,10 +405,10 @@ export function StudentManageEnrollmentsPanel({
                 : listTab === "completed"
                   ? "completed"
                   : "cancelled";
-            setEnrollmentTab(manageTab);
-            setPage(1);
+
             setStatusChangeTarget(null);
-            await refetch();
+            await refetch({ enrollmentTab: manageTab, page: 1 });
+            setEnrollmentTab(manageTab);
             await onStudentRefresh?.();
             await onEnrollmentMutation?.();
           } catch {

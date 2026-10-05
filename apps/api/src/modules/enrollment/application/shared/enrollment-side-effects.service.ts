@@ -11,6 +11,7 @@ import { EnrollmentDomainService } from '../../domain/services/enrollment-domain
 import {
   assertBatchTimingHasLiveCapacity,
   isTimingLinkedEnrollmentStatus,
+  syncAllBatchTimingEnrolledCounts,
   syncBatchTimingEnrolledCount,
 } from '../../infrastructure/utils/enrollment-timing-count.util';
 import { notifyDomainMutation } from '../../../../infrastructure/realtime/realtime-notify';
@@ -300,6 +301,70 @@ export class EnrollmentSideEffectsService {
     });
 
     await this.studentRepo.save(student);
+  }
+
+  async reconcileBatchAssignmentSeatCounts(params: {
+    enrollment: Enrollment;
+    previousBatchId: string;
+    previousBatchTimingId: string | null;
+    previousStatus: EnrollmentStatus;
+    actorId?: string | null;
+  }): Promise<void> {
+    const {
+      enrollment,
+      previousBatchId,
+      previousBatchTimingId,
+      previousStatus,
+      actorId,
+    } = params;
+
+    const batchChanged = previousBatchId !== enrollment.batchId;
+    const timingChanged =
+      previousBatchTimingId !== enrollment.batchTimingId;
+
+    if (!batchChanged && !timingChanged) {
+      return;
+    }
+
+    const wasOccupying = Enrollment.statusOccupiesSeat(previousStatus);
+    const isOccupying = enrollment.occupiesSeat();
+
+    if (!wasOccupying && !isOccupying) {
+      return;
+    }
+
+    if (
+      batchChanged &&
+      wasOccupying &&
+      isOccupying
+    ) {
+      await this.transferSeat(
+        previousBatchId,
+        enrollment.batchId,
+        actorId,
+        { batchTimingId: enrollment.batchTimingId },
+      );
+    }
+
+    if (timingChanged || batchChanged) {
+      await this.syncBatchTimingTransfer(
+        previousBatchTimingId,
+        enrollment.batchTimingId,
+        previousStatus,
+        enrollment.status,
+      );
+    }
+
+    if (batchChanged) {
+      await syncAllBatchTimingEnrolledCounts(
+        this.prisma,
+        previousBatchId,
+      );
+      await syncAllBatchTimingEnrolledCounts(
+        this.prisma,
+        enrollment.batchId,
+      );
+    }
   }
 
   async syncBatchTimingTransfer(
