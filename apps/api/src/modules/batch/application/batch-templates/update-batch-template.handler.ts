@@ -3,6 +3,8 @@ import { BaseException } from '@common/exceptions/base.exception';
 
 import type { BatchTemplateRepository } from '../../domain/repositories/batch-template.repository';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
+import { BatchStatus } from '../../domain/enums/batch-status.enum';
+import { resolveBatchApiStatus } from '../../domain/utils/batch-lifecycle-status.util';
 import { validateBatchTemplateSchedule } from '../../domain/utils/batch-template-schedule.util';
 import { UpdateBatchTemplateCommand } from './update-batch-template.command';
 import { BatchTemplateResult } from './batch-template.result';
@@ -81,16 +83,55 @@ export class UpdateBatchTemplateHandler {
     });
 
     if (command.capacity !== undefined) {
-      await this.prisma.batchTiming.updateMany({
+      const linkedTimings = await this.prisma.batchTiming.findMany({
         where: {
           batchTemplateId: command.id,
           isDeleted: false,
+          batch: { isDeleted: false },
         },
-        data: {
-          capacity: command.capacity,
-          updatedBy: command.updatedBy ?? null,
+        select: {
+          id: true,
+          batch: {
+            select: {
+              status: true,
+              startDate: true,
+              endDate: true,
+              startTime: true,
+              endTime: true,
+              isDeleted: true,
+            },
+          },
         },
       });
+
+      const liveTimingIds = linkedTimings
+        .filter((row) => {
+          const batch = row.batch;
+          const resolved = resolveBatchApiStatus({
+            storedStatus: batch.status as BatchStatus,
+            isDeleted: batch.isDeleted,
+            startDate: batch.startDate,
+            startTime: batch.startTime,
+            endDate: batch.endDate,
+            endTime: batch.endTime,
+          });
+
+          return (
+            resolved === BatchStatus.UPCOMING ||
+            resolved === BatchStatus.ONGOING
+          );
+        })
+        .map((row) => row.id);
+
+      if (liveTimingIds.length > 0) {
+        await this.prisma.batchTiming.updateMany({
+          where: { id: { in: liveTimingIds } },
+          data: {
+            capacity: command.capacity,
+            updatedBy: command.updatedBy ?? null,
+          },
+        });
+      }
     }
 
     return BatchTemplateResult.fromRecord(updated);

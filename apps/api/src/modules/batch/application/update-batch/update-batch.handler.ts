@@ -13,7 +13,7 @@ import { GetBatchResult } from '../get-batch/get-batch.result';
 import type { BranchRepository } from '@modules/branch/domain/repositories/branch.repository';
 import { BranchNotFoundException } from '@/modules/student/domain/errors/branch-not-found.exception';
 import {
-  ensureBatchOpenForLifecycleMutation,
+  ensureBatchEditable,
   ensureBatchSelectableForAssignment,
 } from '../../domain/utils/batch-selection.util';
 
@@ -44,7 +44,7 @@ export class UpdateBatchHandler {
       await this.batchRepo.findById(command.id),
     );
 
-    ensureBatchOpenForLifecycleMutation(batch);
+    ensureBatchEditable(batch);
 
     if (command.categoryId) {
       await this.domainService.ensureCategoryExists(

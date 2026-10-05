@@ -33,6 +33,7 @@ import {
   getBatchLifecycleStatusLabel,
   isBatchLifecycleBlockingDeactivateOrArchive,
 } from "@/src/features/batches/utils/batch-lifecycle-block.utils";
+import { isBatchEditableForDataChanges } from "@/src/features/batches/utils/batch-select.utils";
 
 interface Props {
   batchId: string;
@@ -128,7 +129,10 @@ export function BatchManagePage({ batchId }: Props) {
               setActiveSection(TAB_LABELS[tab]);
             }}
             onEditBatch={() => setIsEditOpen(true)}
-            editDisabled={actionsDisabled}
+            editDisabled={
+              actionsDisabled || !isBatchEditableForDataChanges(batch)
+            }
+            showEditBatch={isBatchEditableForDataChanges(batch)}
           />
         </div>
       </div>

@@ -35,6 +35,7 @@ interface Props {
   onRestore: (batch: BatchListItem) => void;
   onPermanentDelete: (batch: BatchListItem) => void;
   onDeleteUpcoming: (batch: BatchListItem) => void;
+  onCancel: (batch: BatchListItem) => void;
 }
 
 export function BatchTable({
@@ -51,6 +52,7 @@ export function BatchTable({
   onRestore,
   onPermanentDelete,
   onDeleteUpcoming,
+  onCancel,
 }: Props) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
@@ -282,6 +284,7 @@ export function BatchTable({
                       onRestore={onRestore}
                       onPermanentDelete={onPermanentDelete}
                       onDeleteUpcoming={onDeleteUpcoming}
+                      onCancel={onCancel}
                     />
                   </td>
                 </tr>

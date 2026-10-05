@@ -33,6 +33,7 @@ interface Props {
   onTabChange?: (tab: BatchManageTabKey) => void;
   onEditBatch: () => void;
   editDisabled?: boolean;
+  showEditBatch?: boolean;
   returnContext?: BatchManageReturnContext;
 }
 
@@ -59,6 +60,7 @@ export function BatchManageWorkspace({
   onTabChange,
   onEditBatch,
   editDisabled = false,
+  showEditBatch = true,
   returnContext,
 }: Props) {
   return (
@@ -90,6 +92,7 @@ export function BatchManageWorkspace({
           batch={batch}
           onEdit={onEditBatch}
           editDisabled={editDisabled}
+          showEdit={showEditBatch}
         />
       </TabsContent>
 

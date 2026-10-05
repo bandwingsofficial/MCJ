@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import {
   CircleCheck,
+  CircleX,
   Pencil,
   Power,
   RotateCcw,
@@ -18,7 +19,10 @@ import {
   isBatchEligibleForUpcomingDelete,
 } from "@/src/features/batches/utils/batch-bulk.utils";
 import { isBatchLifecycleBlockingDeactivateOrArchive } from "@/src/features/batches/utils/batch-lifecycle-block.utils";
-import { isBatchClosedForMainListMutations } from "@/src/features/batches/utils/batch-select.utils";
+import {
+  isBatchClosedForMainListMutations,
+  isBatchEditableForDataChanges,
+} from "@/src/features/batches/utils/batch-select.utils";
 import { batchManagePath } from "@/src/features/batches/utils/batch-manage.routes";
 
 const iconButtonClass =
@@ -36,6 +40,7 @@ interface Props {
   onRestore: (batch: BatchListItem) => void;
   onPermanentDelete: (batch: BatchListItem) => void;
   onDeleteUpcoming: (batch: BatchListItem) => void;
+  onCancel: (batch: BatchListItem) => void;
 }
 
 export function BatchActions({
@@ -48,6 +53,7 @@ export function BatchActions({
   onRestore,
   onPermanentDelete,
   onDeleteUpcoming,
+  onCancel,
 }: Props) {
   const router = useRouter();
   const isArchived = isArchivedBatch(batch);
@@ -154,17 +160,33 @@ export function BatchActions({
         </Tooltip>
       ) : null}
 
-      <Tooltip content="Edit batch">
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => onEdit(batch)}
-          aria-label="Edit batch"
-          className={`${iconButtonClass} text-blue-900`}
-        >
-          <Pencil className={iconClass} />
-        </button>
-      </Tooltip>
+      {batch.status === "ONGOING" ? (
+        <Tooltip content="Cancel batch">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onCancel(batch)}
+            aria-label="Cancel batch"
+            className={`${iconButtonClass} text-red-800`}
+          >
+            <CircleX className={iconClass} />
+          </button>
+        </Tooltip>
+      ) : null}
+
+      {isBatchEditableForDataChanges(batch) ? (
+        <Tooltip content="Edit batch">
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onEdit(batch)}
+            aria-label="Edit batch"
+            className={`${iconButtonClass} text-blue-900`}
+          >
+            <Pencil className={iconClass} />
+          </button>
+        </Tooltip>
+      ) : null}
 
       <Tooltip content="Manage batch">
         <button

@@ -59,6 +59,35 @@ export function ensureBatchOpenForLifecycleMutation(
   }
 }
 
+/** Only Upcoming batches accept data edits (Ongoing is locked except cancel). */
+export function ensureBatchEditable(
+  batch: BatchLifecycleMutationGuard,
+  referenceDate: Date = new Date(),
+): void {
+  ensureBatchOpenForLifecycleMutation(batch, referenceDate);
+
+  const resolved = resolveBatchApiStatus({
+    storedStatus: batch.status,
+    isDeleted: batch.isDeleted,
+    startDate: batch.startDate,
+    startTime: batch.startTime,
+    endDate: batch.endDate,
+    endTime: batch.endTime,
+    now: referenceDate,
+  });
+
+  if (resolved === BatchStatus.ONGOING) {
+    throw new BatchNotSelectableException(
+      'Ongoing batches cannot be edited. Cancel the batch instead.',
+    );
+  }
+
+  if (resolved !== BatchStatus.UPCOMING) {
+    throw new BatchNotSelectableException('This batch cannot be edited.');
+  }
+}
+
+
 function formatBatchLifecycleStatusLabel(
   status: BatchStatus,
 ): string {

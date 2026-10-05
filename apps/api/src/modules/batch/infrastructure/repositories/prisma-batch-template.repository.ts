@@ -4,6 +4,8 @@ import { CourseMode as PrismaCourseMode, DayOfWeek as PrismaDayOfWeek } from '@p
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { CourseMode } from '@modules/course/domain/enums/course-mode.enum';
 import { DayOfWeek } from '../../domain/enums/day-of-week.enum';
+import { BatchStatus } from '../../domain/enums/batch-status.enum';
+import { resolveBatchApiStatus } from '../../domain/utils/batch-lifecycle-status.util';
 import type {
   BatchTemplateLifecycleBlockRecord,
   BatchTemplateRecord,
@@ -321,6 +323,12 @@ export class PrismaBatchTemplateRepository
     const batchSelect = {
       id: true,
       name: true,
+      status: true,
+      startDate: true,
+      endDate: true,
+      startTime: true,
+      endTime: true,
+      isDeleted: true,
       batchTemplateId: true,
     } as const;
 
@@ -347,9 +355,34 @@ export class PrismaBatchTemplateRepository
 
     const appendUsage = (
       templateId: string | null | undefined,
-      batch: { id: string; name: string },
+      batch: {
+        id: string;
+        name: string;
+        status: string;
+        startDate: Date;
+        endDate: Date | null;
+        startTime: string;
+        endTime: string;
+        isDeleted: boolean;
+      },
     ) => {
-      if (!templateId || !result[templateId]) {
+      if (!templateId || !result[templateId] || batch.isDeleted) {
+        return;
+      }
+
+      const resolved = resolveBatchApiStatus({
+        storedStatus: batch.status as BatchStatus,
+        isDeleted: batch.isDeleted,
+        startDate: batch.startDate,
+        startTime: batch.startTime,
+        endDate: batch.endDate,
+        endTime: batch.endTime,
+      });
+
+      if (
+        resolved !== BatchStatus.UPCOMING &&
+        resolved !== BatchStatus.ONGOING
+      ) {
         return;
       }
 

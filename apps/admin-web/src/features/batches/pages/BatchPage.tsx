@@ -27,6 +27,7 @@ import {
 } from "@/src/features/batches/components/batch-bulk-actions-toolbar";
 import { PermanentDeleteBatchDialog } from "@/src/features/batches/components/permanent-delete-batch-dialog";
 import { BatchDeleteDialog } from "@/src/features/batches/components/BatchDeleteDialog";
+import { CancelBatchDialog } from "@/src/features/batches/components/cancel-batch-dialog";
 
 const AssignBatchesModal = dynamic(
   () =>
@@ -118,6 +119,8 @@ export function BatchPage() {
     title: string;
     description: string;
   } | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<BatchListItem | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [courses, setCourses] = useState<CourseOption[]>([]);
 
   const pageSize = filters.pageSize ?? 50;
@@ -135,6 +138,7 @@ export function BatchPage() {
     isArchiving ||
     isPermanentDeleting ||
     isUpcomingDeleting ||
+    isCancelling ||
     isBulkLoading;
 
   const openDeactivateDialog = (batch: BatchListItem) => {
@@ -428,6 +432,7 @@ export function BatchPage() {
                 onDeleteUpcoming={(batch) => {
                   void openUpcomingDeleteDialog(batch);
                 }}
+                onCancel={setCancelTarget}
               />
             </div>
 
@@ -482,6 +487,31 @@ export function BatchPage() {
           }}
         />
       ) : null}
+
+      <CancelBatchDialog
+        open={Boolean(cancelTarget)}
+        batchName={cancelTarget?.name}
+        loading={isCancelling}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={async (reason) => {
+          if (!cancelTarget) {
+            return;
+          }
+
+          try {
+            setIsCancelling(true);
+            await batchService.cancelBatch(cancelTarget.id, reason);
+            appToast.success("Batch cancelled successfully");
+            setCancelTarget(null);
+            await refetch();
+            notifyBatchLifecycleChanged();
+          } catch (err) {
+            appToast.error(getErrorMessage(err));
+          } finally {
+            setIsCancelling(false);
+          }
+        }}
+      />
 
       {isEditOpen && selectedBatch ? (
         <UpdateBatchModal

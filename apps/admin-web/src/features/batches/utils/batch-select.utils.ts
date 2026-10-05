@@ -64,6 +64,19 @@ export function isBatchClosedForMainListMutations(batch: BatchLike): boolean {
   return batch.status === "EXPIRED" || batch.status === "CANCELLED";
 }
 
+/** Only Upcoming batches accept configuration edits (Ongoing is locked except cancel). */
+export function isBatchEditableForDataChanges(batch: BatchLike): boolean {
+  if (batch.isDeleted || batch.deletedAt) {
+    return false;
+  }
+
+  if (isBatchClosedForMainListMutations(batch)) {
+    return false;
+  }
+
+  return batch.status === "UPCOMING";
+}
+
 /**
  * Row checkboxes on list tables: Upcoming/Ongoing/Inactive for bulk archive
  * and activate/deactivate. Soft-deleted rows stay selectable for Restore /

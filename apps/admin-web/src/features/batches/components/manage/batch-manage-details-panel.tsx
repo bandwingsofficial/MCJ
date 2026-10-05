@@ -29,6 +29,7 @@ interface Props {
   batch: Batch;
   onEdit: () => void;
   editDisabled?: boolean;
+  showEdit?: boolean;
 }
 
 const iconButtonClass =
@@ -57,6 +58,7 @@ export function BatchManageDetailsPanel({
   batch,
   onEdit,
   editDisabled = false,
+  showEdit = true,
 }: Props) {
   const isArchived = Boolean(batch.deletedAt || batch.isDeleted);
   const aggregateStats = getBatchAggregateStats(batch);
@@ -68,19 +70,21 @@ export function BatchManageDetailsPanel({
         title="Common Batch Details"
         description="Shared parent batch information across all learning modes."
         action={
-          <Tooltip content="Edit Batch">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={editDisabled || isArchived}
-              onClick={onEdit}
-              aria-label="Edit Batch"
-              className={iconButtonClass}
-            >
-              <Pencil className="h-[1.25rem] w-[1.25rem]" />
-            </Button>
-          </Tooltip>
+          showEdit ? (
+            <Tooltip content="Edit Batch">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={editDisabled || isArchived}
+                onClick={onEdit}
+                aria-label="Edit Batch"
+                className={iconButtonClass}
+              >
+                <Pencil className="h-[1.25rem] w-[1.25rem]" />
+              </Button>
+            </Tooltip>
+          ) : undefined
         }
       >
         <dl className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">

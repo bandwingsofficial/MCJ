@@ -1,5 +1,6 @@
 import { BatchStatus } from '../enums/batch-status.enum';
 import {
+  ensureBatchEditable,
   ensureBatchSelectableForAssignment,
   isBatchCompletedOrExpired,
   isBatchDateExpired,
@@ -82,6 +83,38 @@ describe('batch-selection.util', () => {
         ref,
       ),
     ).toThrow(BatchNotSelectableException);
+  });
+
+  it('rejects ongoing batch via ensureBatchEditable', () => {
+    expect(() =>
+      ensureBatchEditable(
+        {
+          status: BatchStatus.ONGOING,
+          startDate: new Date('2026-08-01'),
+          endDate: new Date('2026-09-30'),
+          startTime: '09:00',
+          endTime: '10:00',
+          isDeleted: false,
+        },
+        ref,
+      ),
+    ).toThrow(BatchNotSelectableException);
+  });
+
+  it('allows upcoming batch via ensureBatchEditable', () => {
+    expect(() =>
+      ensureBatchEditable(
+        {
+          status: BatchStatus.UPCOMING,
+          startDate: new Date('2026-09-01'),
+          endDate: new Date('2026-12-31'),
+          startTime: '09:00',
+          endTime: '10:00',
+          isDeleted: false,
+        },
+        ref,
+      ),
+    ).not.toThrow();
   });
 
   it('rejects expired batch via ensureBatchSelectableForAssignment', () => {
