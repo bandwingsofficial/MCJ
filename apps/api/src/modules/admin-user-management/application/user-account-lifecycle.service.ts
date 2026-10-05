@@ -235,13 +235,14 @@ export class UserAccountLifecycleService {
         throw new BadRequestException('Admin accounts cannot be deleted here');
       }
 
-      const tombstoneEmail = `deleted+${user.id}@deleted.mcj.local`;
       const normalizedOriginal = user.email.trim().toLowerCase();
 
       await tx.userDeletionRecord.create({
         data: {
           userId: user.id,
           originalEmailNormalized: normalizedOriginal,
+          originalEmail: user.email.trim(),
+          originalName: user.name.trim(),
           originalPhone: user.phone,
           deletedByUserId: input.actorUserId ?? null,
           deletionReason: input.reason?.trim() || null,
@@ -252,9 +253,6 @@ export class UserAccountLifecycleService {
       await tx.user.update({
         where: { id: user.id },
         data: {
-          name: 'Deleted User',
-          email: tombstoneEmail,
-          phone: null,
           passwordHash: randomBytes(32).toString('hex'),
           status: AccountStatus.INACTIVE,
           deletedAt: new Date(),

@@ -2251,6 +2251,8 @@ model UserDeletionRecord {
   id                      String   @id @default(uuid())
   userId                  String   @unique
   originalEmailNormalized String   @unique
+  originalEmail           String?
+  originalName            String?
   originalPhone           String?  @unique
   deletedAt               DateTime @default(now())
   deletedByUserId         String?

@@ -90,17 +90,15 @@ export function UserTable({
                   <p className="truncate text-sm font-medium leading-snug text-[#102A56]">
                     {user.name}
                   </p>
-                  {user.email ? (
-                    <Tooltip content={user.email}>
-                      <span className="mt-0.5 block truncate text-xs text-[#647A9B]">
-                        {user.email}
-                      </span>
-                    </Tooltip>
-                  ) : null}
+                  <Tooltip content={user.email?.trim() || "No email on file"}>
+                    <span className="mt-0.5 block truncate text-xs text-[#647A9B]">
+                      {user.email?.trim() || "—"}
+                    </span>
+                  </Tooltip>
                 </td>
 
                 <td className="whitespace-nowrap !px-4 !py-3 align-middle text-sm text-slate-700">
-                  {user.phone ?? "—"}
+                  {user.phone?.trim() || "—"}
                 </td>
 
                 <td className="whitespace-nowrap !px-4 !py-3 align-middle font-mono text-xs text-slate-700">

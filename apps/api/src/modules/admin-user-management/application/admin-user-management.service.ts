@@ -10,6 +10,7 @@ import {
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { ReferralQueryService } from '../../referral-rewards/application/referral-query.service';
 import { resolvePortalAccountStatus } from '../utils/account-status.util';
+import { resolvePortalUserDisplay } from '../utils/portal-user-display.util';
 
 export interface AdminUserListQuery {
   search?: string;
@@ -117,7 +118,27 @@ export class AdminUserManagementService {
         { email: { contains: term, mode: 'insensitive' } },
         { phone: { contains: term, mode: 'insensitive' } },
         { referralCode: { contains: term, mode: 'insensitive' } },
-        { id: term },
+        {
+          student: {
+            OR: [
+              { firstName: { contains: term, mode: 'insensitive' } },
+              { lastName: { contains: term, mode: 'insensitive' } },
+              { email: { contains: term, mode: 'insensitive' } },
+              { phone: { contains: term, mode: 'insensitive' } },
+              { studentCode: { contains: term, mode: 'insensitive' } },
+            ],
+          },
+        },
+        {
+          userDeletionRecord: {
+            OR: [
+              { originalEmail: { contains: term, mode: 'insensitive' } },
+              { originalEmailNormalized: { contains: term, mode: 'insensitive' } },
+              { originalName: { contains: term, mode: 'insensitive' } },
+              { originalPhone: { contains: term, mode: 'insensitive' } },
+            ],
+          },
+        },
       ];
     }
 
@@ -151,6 +172,22 @@ export class AdminUserManagementService {
               referrer: { select: { id: true, name: true } },
             },
           },
+          student: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          userDeletionRecord: {
+            select: {
+              originalEmailNormalized: true,
+              originalEmail: true,
+              originalName: true,
+              originalPhone: true,
+            },
+          },
           _count: {
             select: {
               referralsAsReferrer: true,
@@ -161,20 +198,24 @@ export class AdminUserManagementService {
       this.prisma.user.count({ where }),
     ]);
 
-    const items = users.map((user) => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      referralCode: user.referralCode,
-      referredBy: user.referralAsReferred?.referrer ?? null,
-      totalReferrals: user._count.referralsAsReferrer,
-      availableCoins: user.coinWallet?.availableCoins ?? 0,
-      lockedCoins: user.coinWallet?.lockedCoins ?? 0,
-      accountStatus: resolvePortalAccountStatus(user),
-      createdAt: user.createdAt,
-      lastLoginAt: user.lastLoginAt,
-    }));
+    const items = users.map((user) => {
+      const display = resolvePortalUserDisplay(user);
+
+      return {
+        id: user.id,
+        name: display.name,
+        email: display.email,
+        phone: display.phone,
+        referralCode: display.referralCode,
+        referredBy: user.referralAsReferred?.referrer ?? null,
+        totalReferrals: user._count.referralsAsReferrer,
+        availableCoins: user.coinWallet?.availableCoins ?? 0,
+        lockedCoins: user.coinWallet?.lockedCoins ?? 0,
+        accountStatus: resolvePortalAccountStatus(user),
+        createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
+      };
+    });
 
     return { items, total, take, skip };
   }
@@ -196,10 +237,27 @@ export class AdminUserManagementService {
         suspensionReason: true,
         deletionReason: true,
         deletionSource: true,
-        userDeletionRecord: true,
+        student: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+            phone: true,
+          },
+        },
+        userDeletionRecord: {
+          select: {
+            originalEmailNormalized: true,
+            originalEmail: true,
+            originalName: true,
+            originalPhone: true,
+          },
+        },
       },
     });
     if (!user) throw new NotFoundException('User not found');
+
+    const display = resolvePortalUserDisplay(user);
 
     const referralSummary = await this.referralQuery.getAdminUserReferralSummary(userId);
 
@@ -213,10 +271,18 @@ export class AdminUserManagementService {
       },
     });
 
+    const { student: _student, userDeletionRecord: _record, ...userFields } =
+      user;
+
     return {
       user: {
-        ...user,
+        ...userFields,
+        name: display.name,
+        email: display.email,
+        phone: display.phone,
+        referralCode: display.referralCode,
         accountStatus: resolvePortalAccountStatus(user),
+        userDeletionRecord: user.userDeletionRecord,
       },
       referralSummary,
       referralStats: {
