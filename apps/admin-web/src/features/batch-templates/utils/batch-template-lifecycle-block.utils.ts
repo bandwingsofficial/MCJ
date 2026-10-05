@@ -3,6 +3,9 @@ import type {
   BatchTemplateLifecycleBlock,
 } from "@/src/features/batch-templates/types/batch-template.types";
 
+export const BATCH_TIMING_IN_USE_BY_BATCH_MESSAGE =
+  "Already being used by this batch.";
+
 export function getBatchTemplateLifecycleBlocks(
   template: Pick<BatchTemplate, "lifecycleBlocks">,
 ): BatchTemplateLifecycleBlock[] {
@@ -15,35 +18,36 @@ export function isBatchTemplateLifecycleBlocked(
   return getBatchTemplateLifecycleBlocks(template).length > 0;
 }
 
-function lifecycleStatusLabel(
-  status: BatchTemplateLifecycleBlock["lifecycleStatus"],
-): string {
-  return status === "UPCOMING" ? "Upcoming" : "Ongoing";
-}
-
 export function buildBatchTemplateLifecycleBlockedDescription(
-  templateName: string,
+  _templateName: string,
   blocks: BatchTemplateLifecycleBlock[],
-  action: "deactivate" | "archive",
+  _action: "deactivate" | "archive",
 ): string {
-  const verb = action === "deactivate" ? "deactivated" : "archived";
-
-  if (blocks.length === 1) {
-    const block = blocks[0]!;
-    return `Batch timing cannot be ${verb} because it is linked to ${block.batchName}, which is currently ${lifecycleStatusLabel(block.lifecycleStatus)}.`;
+  if (blocks.length === 0) {
+    return BATCH_TIMING_IN_USE_BY_BATCH_MESSAGE;
   }
 
-  const lines = blocks.map(
-    (block) => `${block.batchName} — ${lifecycleStatusLabel(block.lifecycleStatus)}`,
+  return BATCH_TIMING_IN_USE_BY_BATCH_MESSAGE;
+}
+
+export function mergeBatchTemplateUsageBlocks(
+  blocks: BatchTemplateLifecycleBlock[],
+): BatchTemplateLifecycleBlock[] {
+  const seen = new Set<string>();
+  const merged: BatchTemplateLifecycleBlock[] = [];
+
+  for (const block of blocks) {
+    if (seen.has(block.batchId)) {
+      continue;
+    }
+
+    seen.add(block.batchId);
+    merged.push(block);
+  }
+
+  return merged.sort((left, right) =>
+    left.batchName.localeCompare(right.batchName),
   );
-
-  const actionVerb = action === "deactivate" ? "deactivate" : "archive";
-
-  return [
-    `Cannot ${actionVerb} the selected batch timings because the following linked batches are Upcoming/Ongoing:`,
-    "",
-    ...lines,
-  ].join("\n");
 }
 
 export function collectSelectedBatchTemplateLifecycleBlocks(
@@ -60,12 +64,11 @@ export function collectSelectedBatchTemplateLifecycleBlocks(
     }
 
     for (const block of getBatchTemplateLifecycleBlocks(template)) {
-      const key = `${block.batchId}:${block.lifecycleStatus}`;
-      if (seen.has(key)) {
+      if (seen.has(block.batchId)) {
         continue;
       }
 
-      seen.add(key);
+      seen.add(block.batchId);
       blocks.push(block);
     }
   }

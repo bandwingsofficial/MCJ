@@ -9,18 +9,10 @@ import {
 
 import { batchTemplateService } from "@/src/features/batch-templates/services/batch-template.service";
 import type { BatchTemplate } from "@/src/features/batch-templates/types/batch-template.types";
-import type {
-  BatchLifecycleStatus,
-  BatchMode,
-} from "@/src/features/batches/types/batch.types";
-import { BATCH_LIFECYCLE_CHANGED_EVENT } from "@/src/features/batches/utils/batch-lifecycle-sync";
+import type { BatchMode } from "@/src/features/batches/types/batch.types";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 
-export type BatchTimingStatusFilter =
-  | "ACTIVE"
-  | "INACTIVE"
-  | "ARCHIVED"
-  | BatchLifecycleStatus;
+export type BatchTimingStatusFilter = "ACTIVE" | "INACTIVE" | "ARCHIVED";
 export type BatchTimingModeFilter = BatchMode;
 
 export type BatchTimingFilters = {
@@ -30,14 +22,6 @@ export type BatchTimingFilters = {
   page: number;
   pageSize: number;
 };
-
-export function isBatchTimingLifecycleStatusFilter(
-  status?: BatchTimingStatusFilter,
-): status is BatchLifecycleStatus {
-  return (
-    status === "UPCOMING" || status === "ONGOING" || status === "EXPIRED"
-  );
-}
 
 const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
@@ -93,19 +77,10 @@ export function useBatchTemplates() {
     setError(null);
 
     try {
-      const lifecycleFilter = isBatchTimingLifecycleStatusFilter(
-        filters.status,
-      )
-        ? filters.status
-        : undefined;
-      const statusParams = lifecycleFilter
-        ? { includeDeleted: true }
-        : listParamsForStatus(filters.status);
       const result = await batchTemplateService.listTemplatesPage({
         search: debouncedSearch || undefined,
         mode: filters.mode,
-        linkedBatchLifecycle: lifecycleFilter,
-        ...statusParams,
+        ...listParamsForStatus(filters.status),
         page: filters.page,
         pageSize: filters.pageSize,
       });
@@ -138,24 +113,6 @@ export function useBatchTemplates() {
 
   useEffect(() => {
     void load();
-  }, [load]);
-
-  useEffect(() => {
-    const handleLifecycleChanged = () => {
-      void load();
-    };
-
-    window.addEventListener(
-      BATCH_LIFECYCLE_CHANGED_EVENT,
-      handleLifecycleChanged,
-    );
-
-    return () => {
-      window.removeEventListener(
-        BATCH_LIFECYCLE_CHANGED_EVENT,
-        handleLifecycleChanged,
-      );
-    };
   }, [load]);
 
   return {

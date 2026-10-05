@@ -1,6 +1,5 @@
 import { apiClient } from "@/src/core/api/axios";
 
-import type { BatchLifecycleStatus } from "@/src/features/batches/types/batch.types";
 import type {
   ApiSuccessResponse,
   BatchTemplate,
@@ -24,7 +23,6 @@ export type BatchTemplateListFilters = {
   isDeleted?: boolean;
   /** When true, All Status includes archived rows (Categories-style). */
   includeDeleted?: boolean;
-  linkedBatchLifecycle?: BatchLifecycleStatus;
   page?: number;
   pageSize?: number;
 };
@@ -72,7 +70,6 @@ class BatchTemplateService {
         isActive: filters.isActive,
         isDeleted: filters.isDeleted,
         includeDeleted: filters.includeDeleted,
-        linkedBatchLifecycle: filters.linkedBatchLifecycle,
         skip,
         take: pageSize,
       },

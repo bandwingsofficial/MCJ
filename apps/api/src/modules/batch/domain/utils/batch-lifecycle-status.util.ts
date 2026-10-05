@@ -122,22 +122,20 @@ export function resolveBatchApiStatus(params: {
 }
 
 export type BatchTimingStatusInput = {
-  storedStatus: BatchStatus;
+  isActive?: boolean;
   isDeleted?: boolean;
-  startDate: Date;
-  startTime: string;
-  endDate: Date | null;
-  endTime: string;
-  now?: Date;
 };
 
-/**
- * Resolve status shown for a child batch timing.
- * The parent batch's current lifecycle is the single source of truth.
- */
+/** Stored active flag only — not derived from dates or parent batch lifecycle. */
 export function resolveBatchTimingApiStatus(
-  parent: BatchTimingStatusInput,
-  _timing: BatchTimingStatusInput,
+  _parent: BatchTimingStatusInput,
+  timing: BatchTimingStatusInput,
 ): BatchStatus {
-  return resolveBatchApiStatus(parent);
+  if (timing.isDeleted) {
+    return BatchStatus.ARCHIVED;
+  }
+
+  return timing.isActive === false
+    ? BatchStatus.ARCHIVED
+    : BatchStatus.ONGOING;
 }

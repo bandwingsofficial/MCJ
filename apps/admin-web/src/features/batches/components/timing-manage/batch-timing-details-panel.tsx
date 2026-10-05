@@ -1,13 +1,12 @@
 "use client";
 
 import { BatchModeBadge } from "@/src/features/batches/components/BatchModeBadge";
-import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
+import { BatchTemplateStatusBadge } from "@/src/features/batch-templates/components/batch-template-status-badge";
 import {
   BatchManageField,
   BatchManageSection,
 } from "@/src/features/batches/components/manage/batch-manage-section";
 import type { Batch, BatchTiming } from "@/src/features/batches/types/batch.types";
-import { resolveBatchTimingDisplayStatus } from "@/src/features/batches/utils/batch-select.utils";
 import { formatBatchOverviewDate } from "@/src/features/batches/utils/batch-progress.utils";
 import {
   formatTimingDays,
@@ -67,12 +66,9 @@ export function BatchTimingDetailsPanel({ batch, timing }: Props) {
         <BatchManageField
           label="Status"
           value={
-            <BatchStatusBadge
-              status={resolveBatchTimingDisplayStatus(batch, timing)}
+            <BatchTemplateStatusBadge
               isActive={timing.isActive}
               isDeleted={timing.isDeleted}
-              startDate={timing.startDate}
-              endDate={timing.endDate}
             />
           }
         />

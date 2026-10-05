@@ -130,9 +130,6 @@ export function BatchTemplateSummaryHeader({
                   }
                   options={[
                     { label: "All Status", value: "ALL" },
-                    { label: "Upcoming", value: "UPCOMING" },
-                    { label: "Ongoing", value: "ONGOING" },
-                    { label: "Expired", value: "EXPIRED" },
                     { label: "Active", value: "ACTIVE" },
                     { label: "Inactive", value: "INACTIVE" },
                     { label: "Archived", value: "ARCHIVED" },

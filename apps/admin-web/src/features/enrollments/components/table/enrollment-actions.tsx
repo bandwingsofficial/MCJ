@@ -54,6 +54,28 @@ export function EnrollmentActions({
   const isCurrent = isCurrentEnrollmentRecord(enrollment);
   const statusForActions =
     displayStatus ?? (enrollment.status as EnrollmentStatus);
+  const isPlacedEnrollment = statusForActions === EnrollmentStatus.PLACED;
+
+  if (isPlacedEnrollment) {
+    return (
+      <div className="flex shrink-0 items-center justify-end gap-1">
+        <Tooltip content="Manage enrollment">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={() => onManage(enrollment)}
+            aria-label="Manage enrollment"
+            className={`${iconBtnClass} text-slate-700 hover:bg-slate-100 hover:text-[#102A56]`}
+          >
+            <Settings2 className={iconClass} />
+          </Button>
+        </Tooltip>
+      </div>
+    );
+  }
+
   const showStatusChange =
     Boolean(onChangeStatus) &&
     !enrollment.isDeleted &&

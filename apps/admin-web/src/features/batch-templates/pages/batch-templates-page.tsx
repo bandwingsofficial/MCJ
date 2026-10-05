@@ -27,6 +27,7 @@ import {
 } from "@/src/features/batch-templates/utils/batch-template-bulk.utils";
 import {
   buildBatchTemplateLifecycleBlockedDescription,
+  mergeBatchTemplateUsageBlocks,
 } from "@/src/features/batch-templates/utils/batch-template-lifecycle-block.utils";
 import type { BatchTemplateLifecycleBlock } from "@/src/features/batch-templates/types/batch-template.types";
 
@@ -124,29 +125,6 @@ export function BatchTemplatesPage() {
     setDialogBlockedDescription(null);
   };
 
-  const mergeLifecycleBlocks = (
-    blocks: BatchTemplateLifecycleBlock[],
-  ): BatchTemplateLifecycleBlock[] => {
-    const byBatchId = new Map<string, BatchTemplateLifecycleBlock>();
-
-    for (const block of blocks) {
-      const existing = byBatchId.get(block.batchId);
-
-      if (!existing) {
-        byBatchId.set(block.batchId, block);
-        continue;
-      }
-
-      if (block.lifecycleStatus === "ONGOING") {
-        byBatchId.set(block.batchId, block);
-      }
-    }
-
-    return Array.from(byBatchId.values()).sort((left, right) =>
-      left.batchName.localeCompare(right.batchName),
-    );
-  };
-
   const runLifecycleProtectedAction = async (
     template: BatchTemplate,
     action: "deactivate" | "archive",
@@ -217,7 +195,7 @@ export function BatchTemplatesPage() {
             return;
           }
 
-          const blocks = mergeLifecycleBlocks(
+          const blocks = mergeBatchTemplateUsageBlocks(
             dependencyResults.flatMap((result) => result.lifecycleBlocks ?? []),
           );
 

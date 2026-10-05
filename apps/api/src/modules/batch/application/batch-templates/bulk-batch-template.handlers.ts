@@ -34,7 +34,6 @@ export class BulkSetBatchTemplateActiveHandler {
             blockedEntries.map((entry) => ({
               batchId: entry.batchId,
               batchName: entry.batchName,
-              lifecycleStatus: entry.lifecycleStatus,
             })),
           ),
         );
@@ -80,7 +79,6 @@ export class BulkArchiveBatchTemplatesHandler {
             blockedEntries.map((entry) => ({
               batchId: entry.batchId,
               batchName: entry.batchName,
-              lifecycleStatus: entry.lifecycleStatus,
             })),
           ),
         );

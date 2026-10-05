@@ -45,11 +45,6 @@ export type UpdateBatchTemplateInput = {
   updatedBy?: string;
 };
 
-export type BatchTemplateLinkedBatchLifecycle =
-  | 'UPCOMING'
-  | 'ONGOING'
-  | 'EXPIRED';
-
 export type ListBatchTemplatesParams = {
   search?: string;
   mode?: CourseMode;
@@ -57,7 +52,6 @@ export type ListBatchTemplatesParams = {
   /** When true, only archived. When false/undefined with includeDeleted false, exclude archived. */
   isDeleted?: boolean;
   includeDeleted?: boolean;
-  linkedBatchLifecycle?: BatchTemplateLinkedBatchLifecycle;
   skip?: number;
   take?: number;
 };
@@ -71,7 +65,6 @@ export type ListBatchTemplatesResult = {
 export type BatchTemplateLifecycleBlockRecord = {
   batchId: string;
   batchName: string;
-  lifecycleStatus: 'UPCOMING' | 'ONGOING';
 };
 
 export interface BatchTemplateRepository {
@@ -93,11 +86,5 @@ export interface BatchTemplateRepository {
   findLifecycleBlocksByTemplateIds(
     templateIds: string[],
   ): Promise<Record<string, BatchTemplateLifecycleBlockRecord[]>>;
-  findPrimaryLinkedBatchLifecycleByTemplateIds(
-    templateIds: string[],
-  ): Promise<Record<string, BatchTemplateLinkedBatchLifecycle | null>>;
-  findTemplateIdsByLinkedBatchLifecycle(
-    lifecycle: BatchTemplateLinkedBatchLifecycle,
-  ): Promise<string[]>;
   getMaxDisplayOrder(): Promise<number>;
 }

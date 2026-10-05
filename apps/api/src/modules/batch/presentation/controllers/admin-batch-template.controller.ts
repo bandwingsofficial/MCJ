@@ -78,7 +78,6 @@ export class AdminBatchTemplateController {
       isActive: query.isActive,
       isDeleted: query.isDeleted,
       includeDeleted: query.includeDeleted,
-      linkedBatchLifecycle: query.linkedBatchLifecycle,
       skip: query.skip,
       take: query.take,
     });

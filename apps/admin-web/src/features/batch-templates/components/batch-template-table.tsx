@@ -7,29 +7,11 @@ import { Checkbox } from "@/src/shared/components/ui/checkbox";
 import { BatchTemplateActions } from "@/src/features/batch-templates/components/batch-template-actions";
 import { BatchTemplateModeBadge } from "@/src/features/batch-templates/components/batch-template-mode-badge";
 import { BatchTemplateStatusBadge } from "@/src/features/batch-templates/components/batch-template-status-badge";
-import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
-import type { BatchLifecycleStatus } from "@/src/features/batches/types/batch.types";
-import type { BatchDisplayStatus } from "@/src/features/batches/utils/batch-select.utils";
 import {
   formatTemplateDays,
   formatTemplateTime,
 } from "@/src/features/batch-templates/utils/batch-template-display.utils";
 import type { BatchTemplate } from "@/src/features/batch-templates/types/batch-template.types";
-
-function linkedBatchLifecycleDisplayStatus(
-  status: BatchLifecycleStatus,
-): BatchDisplayStatus {
-  switch (status) {
-    case "UPCOMING":
-      return { key: "UPCOMING", label: "Upcoming", variant: "info" };
-    case "ONGOING":
-      return { key: "ONGOING", label: "Ongoing", variant: "success" };
-    case "EXPIRED":
-      return { key: "EXPIRED", label: "Expired", variant: "default" };
-    default:
-      return { key: "ACTIVE", label: "Active", variant: "success" };
-  }
-}
 
 interface Props {
   templates: BatchTemplate[];
@@ -195,18 +177,10 @@ export function BatchTemplateTable({
                     {template.capacity}
                   </td>
                   <td className="!px-4 !py-4 align-middle">
-                    {template.linkedBatchLifecycleStatus ? (
-                      <BatchStatusBadge
-                        displayStatus={linkedBatchLifecycleDisplayStatus(
-                          template.linkedBatchLifecycleStatus,
-                        )}
-                      />
-                    ) : (
-                      <BatchTemplateStatusBadge
-                        isActive={template.isActive}
-                        isDeleted={template.isDeleted}
-                      />
-                    )}
+                    <BatchTemplateStatusBadge
+                      isActive={template.isActive}
+                      isDeleted={template.isDeleted}
+                    />
                   </td>
                   <td className="!px-8 !py-4 align-middle">
                     <BatchTemplateActions

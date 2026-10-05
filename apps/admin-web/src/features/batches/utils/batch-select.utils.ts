@@ -111,14 +111,12 @@ export interface BatchDisplayStatus {
  */
 type BatchTimingStatusLike = Pick<BatchLike, "status">;
 
-/**
- * Child timing display status follows the parent batch (API resolveBatchTimingApiStatus).
- */
+/** @deprecated Use timing.isActive with BatchTemplateStatusBadge instead. */
 export function resolveBatchTimingDisplayStatus(
-  batch: BatchTimingStatusLike,
-  _timing: BatchTimingStatusLike,
+  _batch: BatchTimingStatusLike,
+  timing: BatchTimingStatusLike & { isActive?: boolean },
 ): NonNullable<BatchLike["status"]> {
-  return (batch.status ?? "ONGOING") as NonNullable<BatchLike["status"]>;
+  return timing.isActive === false ? "ARCHIVED" : "ONGOING";
 }
 
 export function getBatchDisplayStatus(batch: BatchLike): BatchDisplayStatus {

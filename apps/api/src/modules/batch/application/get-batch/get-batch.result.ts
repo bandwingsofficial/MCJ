@@ -94,21 +94,10 @@ export class BatchTimingResult {
     >,
   ): BatchTimingResult {
     const status = resolveBatchTimingApiStatus(
+      { isDeleted: parent.isDeleted },
       {
-        storedStatus: parent.status,
-        isDeleted: parent.isDeleted,
-        startDate: parent.startDate,
-        startTime: parent.startTime,
-        endDate: parent.endDate,
-        endTime: parent.endTime,
-      },
-      {
-        storedStatus: timing.status,
+        isActive: timing.isActive,
         isDeleted: timing.isDeleted,
-        startDate: timing.startDate,
-        startTime: timing.startTime,
-        endDate: timing.endDate,
-        endTime: timing.endTime,
       },
     );
 

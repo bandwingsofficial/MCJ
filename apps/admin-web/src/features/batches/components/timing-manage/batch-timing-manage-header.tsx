@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 
 import { BatchModeBadge } from "@/src/features/batches/components/BatchModeBadge";
-import { BatchStatusBadge } from "@/src/features/batches/components/BatchStatusBadge";
+import { BatchTemplateStatusBadge } from "@/src/features/batch-templates/components/batch-template-status-badge";
 import type {
   Batch,
   BatchTiming,
@@ -19,7 +19,6 @@ import {
   courseManageTabPath,
 } from "@/src/features/courses/utils/course-manage.routes";
 import { formatTimingRange } from "@/src/features/batches/utils/batch-timing.utils";
-import { resolveBatchTimingDisplayStatus } from "@/src/features/batches/utils/batch-select.utils";
 
 interface Props {
   batch: Batch;
@@ -132,12 +131,9 @@ export function BatchTimingManageHeader({
               <h1 className="min-w-0 text-xl font-bold tracking-tight text-[#102A56] sm:text-2xl">
                 {timing.name}
               </h1>
-              <BatchStatusBadge
-                status={resolveBatchTimingDisplayStatus(batch, timing)}
+              <BatchTemplateStatusBadge
                 isActive={timing.isActive}
                 isDeleted={timing.isDeleted}
-                startDate={timing.startDate}
-                endDate={timing.endDate}
               />
               <BatchModeBadge mode={timing.mode} />
             </div>
