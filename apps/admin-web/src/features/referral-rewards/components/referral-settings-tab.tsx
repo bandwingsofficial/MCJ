@@ -54,10 +54,14 @@ function toSettingsRecord(data: Record<string, unknown>): ReferralSettingsRecord
 }
 
 interface ReferralSettingsTabProps {
-  createTrigger?: number;
+  createRequested?: boolean;
+  onCreateRequestHandled?: () => void;
 }
 
-export function ReferralSettingsTab({ createTrigger = 0 }: ReferralSettingsTabProps) {
+export function ReferralSettingsTab({
+  createRequested = false,
+  onCreateRequestHandled,
+}: ReferralSettingsTabProps) {
   const queryClient = useQueryClient();
   const [modalMode, setModalMode] = useState<ReferralConfigurationModalMode | null>(
     null,
@@ -75,7 +79,7 @@ export function ReferralSettingsTab({ createTrigger = 0 }: ReferralSettingsTabPr
   const activeSettingsQuery = useQuery({
     queryKey: ["admin-referral-rewards", "settings", "active"],
     queryFn: () => adminReferralRewardsService.getActiveSettings(),
-    enabled: createTrigger > 0,
+    enabled: modalMode === "create",
   });
 
   const [createTemplate, setCreateTemplate] = useState<ReferralSettingsRecord | null>(
@@ -83,26 +87,22 @@ export function ReferralSettingsTab({ createTrigger = 0 }: ReferralSettingsTabPr
   );
 
   useEffect(() => {
-    if (createTrigger <= 0) return;
+    if (!createRequested) return;
+    onCreateRequestHandled?.();
     setSelected(null);
+    setCreateTemplate(null);
     setModalMode("create");
-    void activeSettingsQuery.refetch();
-  }, [createTrigger]);
+  }, [createRequested, onCreateRequestHandled]);
 
   useEffect(() => {
-    if (createTrigger <= 0 || modalMode !== "create") return;
+    if (modalMode !== "create") return;
     if (activeSettingsQuery.data) {
       const base = toSettingsRecord(activeSettingsQuery.data);
       setCreateTemplate({ ...base, name: "", isActive: false });
     } else if (!activeSettingsQuery.isFetching) {
       setCreateTemplate(null);
     }
-  }, [
-    createTrigger,
-    modalMode,
-    activeSettingsQuery.data,
-    activeSettingsQuery.isFetching,
-  ]);
+  }, [modalMode, activeSettingsQuery.data, activeSettingsQuery.isFetching]);
 
   const rows = useMemo(
     () => (listQuery.data ?? []).map((row) => toSettingsRecord(row)),
@@ -250,6 +250,7 @@ export function ReferralSettingsTab({ createTrigger = 0 }: ReferralSettingsTabPr
         onClose={() => {
           setModalMode(null);
           setSelected(null);
+          setCreateTemplate(null);
         }}
         onSave={(payload) => {
           if (!modalMode || modalMode === "view") return;

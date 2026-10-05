@@ -94,7 +94,7 @@ const menu = [
       {
         name: "Referral & Rewards",
         icon: Gift,
-        path: "/referral-rewards",
+        path: "/referral-rewards?tab=settings",
       },
     ],
   },

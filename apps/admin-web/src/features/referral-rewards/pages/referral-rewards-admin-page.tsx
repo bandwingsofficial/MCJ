@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleCheck, Eye, PlayCircle, Plus, X } from "lucide-react";
 
@@ -37,8 +38,13 @@ import {
   formatRedemptionValuePaise,
   formatReferralDateTime,
   isCoinTransactionCredit,
-  type ReferralRewardsTab,
 } from "@/src/features/referral-rewards/components/referral-rewards-shared";
+import {
+  isReferralRewardsTabSlug,
+  referralRewardsPagePath,
+  REFERRAL_REWARDS_DEFAULT_TAB,
+  resolveReferralRewardsTab,
+} from "@/src/features/referral-rewards/utils/referral-rewards.routes";
 
 const SEARCH_DEBOUNCE_MS = 400;
 const DEFAULT_PAGE_SIZE = 20;
@@ -71,9 +77,36 @@ const REDEMPTION_STATUS_OPTIONS = [
 ];
 
 export function ReferralRewardsAdminPage() {
-  const [tab, setTab] = useState<ReferralRewardsTab>("Settings");
-  const [settingsCreateTrigger, setSettingsCreateTrigger] = useState(0);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tab = resolveReferralRewardsTab(searchParams.get("tab"));
+  const [settingsCreateRequested, setSettingsCreateRequested] = useState(false);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (!isReferralRewardsTabSlug(tabParam)) {
+      router.replace(referralRewardsPagePath(REFERRAL_REWARDS_DEFAULT_TAB), {
+        scroll: false,
+      });
+    }
+  }, [router, searchParams]);
+
+  const handleTabChange = useCallback(
+    (nextTab: typeof tab) => {
+      setSettingsCreateRequested(false);
+      router.replace(referralRewardsPagePath(nextTab), { scroll: false });
+    },
+    [router],
+  );
+
+  const requestSettingsCreate = useCallback(() => {
+    setSettingsCreateRequested(true);
+  }, []);
+
+  const handleSettingsCreateHandled = useCallback(() => {
+    setSettingsCreateRequested(false);
+  }, []);
 
   return (
     <div className="space-y-3">
@@ -82,7 +115,7 @@ export function ReferralRewardsAdminPage() {
           tab === "Settings" ? (
             <Button
               type="button"
-              onClick={() => setSettingsCreateTrigger((value) => value + 1)}
+              onClick={requestSettingsCreate}
               className="h-11 w-full shrink-0 border-0 bg-gradient-to-r from-[#0EA5E9] to-[#2563EB] px-6 text-sm font-semibold text-white shadow-[0_3px_10px_rgba(37,99,235,0.25)] transition-all hover:from-[#0284C7] hover:to-[#1D4ED8] hover:shadow-[0_4px_12px_rgba(37,99,235,0.3)] sm:w-auto"
             >
               <Plus className="mr-1 h-4 w-4" aria-hidden />
@@ -92,10 +125,13 @@ export function ReferralRewardsAdminPage() {
         }
       />
 
-      <ReferralRewardsNavTabs value={tab} onChange={setTab} />
+      <ReferralRewardsNavTabs value={tab} onChange={handleTabChange} />
 
       {tab === "Settings" ? (
-        <ReferralSettingsTab createTrigger={settingsCreateTrigger} />
+        <ReferralSettingsTab
+          createRequested={settingsCreateRequested}
+          onCreateRequestHandled={handleSettingsCreateHandled}
+        />
       ) : null}
       {tab === "Referrals" ? <ReferralsTab /> : null}
       {tab === "Redemptions" ? <RedemptionsTab queryClient={queryClient} /> : null}
