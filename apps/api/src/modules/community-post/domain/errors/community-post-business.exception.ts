@@ -30,3 +30,13 @@ export class PostNotDeletedException extends BaseException {
     super(ERROR_CODES.POST_NOT_DELETED, 'Post is not deleted.', 400);
   }
 }
+
+export class PostShareRequiresViewException extends BaseException {
+  constructor() {
+    super(
+      ERROR_CODES.POST_SHARE_REQUIRES_VIEW,
+      'View the post before sharing it.',
+      409,
+    );
+  }
+}

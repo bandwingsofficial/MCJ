@@ -1,3 +1,4 @@
+import type { CommunityPostEngagementRepository } from '../../domain/repositories/community-post-engagement.repository';
 import type { CommunityPostRepository } from '../../domain/repositories/community-post.repository';
 import { CommunityPostDomainService } from '../../domain/services/community-post-domain.service';
 import {
@@ -8,6 +9,7 @@ import {
 export class IncrementCommunityPostViewHandler {
   constructor(
     private readonly postRepo: CommunityPostRepository,
+    private readonly engagementRepo: CommunityPostEngagementRepository,
     private readonly domainService: CommunityPostDomainService,
   ) {}
 
@@ -20,15 +22,11 @@ export class IncrementCommunityPostViewHandler {
 
     this.domainService.ensurePubliclyVisible(post);
 
-    await this.postRepo.incrementViewCount(command.id);
-
-    const updated = this.domainService.ensureExists(
-      await this.postRepo.findById(command.id),
+    const viewCount = await this.engagementRepo.recordView(
+      command.id,
+      command.userId,
     );
 
-    return new IncrementCommunityPostViewResult(
-      updated.id,
-      updated.viewCount,
-    );
+    return new IncrementCommunityPostViewResult(command.id, viewCount);
   }
 }

@@ -32,6 +32,19 @@ export interface CommunityPostLike {
   createdAt: string;
 }
 
+export interface CommunityPostShareUser {
+  name: string;
+  email: string;
+  phone: string | null;
+}
+
+export interface CommunityPostShare {
+  id: string;
+  postId: string;
+  sharedAt: string;
+  user: CommunityPostShareUser;
+}
+
 export interface CommunityPostMediaItem {
   id: string;
   fileId: string;

@@ -34,6 +34,8 @@ model User {
   auditLogs             AuditLog[]
   communityPostComments CommunityPostComment[]
   communityPostLikes    CommunityPostLike[]
+  communityPostViews    CommunityPostView[]
+  communityPostShares   CommunityPostShare[]
   passwordResets        PasswordResetToken[]
   profile               Profile?
   sessions              Session[]
@@ -1589,6 +1591,8 @@ model CommunityPost {
   mediaItems         CommunityPostMedia[]
   comments           CommunityPostComment[]
   likes              CommunityPostLike[]
+  views              CommunityPostView[]
+  shares             CommunityPostShare[]
 
   @@index([status])
   @@index([isActive])
@@ -1629,6 +1633,33 @@ model CommunityPostLike {
   @@index([postId])
   @@index([userId])
   @@index([isDeleted])
+}
+
+model CommunityPostView {
+  id        String        @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime      @default(now())
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+  @@index([postId, userId])
+  @@index([createdAt])
+}
+
+model CommunityPostShare {
+  id        String        @id @default(uuid())
+  postId    String
+  userId    String
+  createdAt DateTime      @default(now())
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+  @@index([postId, createdAt])
 }
 
 model CommunityPostComment {

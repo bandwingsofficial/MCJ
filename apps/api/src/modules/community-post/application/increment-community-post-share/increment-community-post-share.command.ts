@@ -1,5 +1,8 @@
 export class IncrementCommunityPostShareCommand {
-  constructor(public readonly id: string) {}
+  constructor(
+    public readonly id: string,
+    public readonly userId: string,
+  ) {}
 }
 
 export class IncrementCommunityPostShareResult {

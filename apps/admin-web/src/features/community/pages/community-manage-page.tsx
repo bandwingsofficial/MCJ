@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -33,6 +33,10 @@ export function CommunityManagePage({ postId }: Props) {
   const [editPost, setEditPost] = useState<CommunityPostDetails | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isEditLoading, setIsEditLoading] = useState(false);
+
+  useEffect(() => {
+    void refetch();
+  }, [activeTab, refetch]);
 
   const handleEdit = useCallback(async () => {
     if (!data?.data) {

@@ -210,6 +210,12 @@ export class PrismaCommunityPostRepository
       this.prisma.communityPostLike.deleteMany({
         where: { postId: id },
       }),
+      this.prisma.communityPostView.deleteMany({
+        where: { postId: id },
+      }),
+      this.prisma.communityPostShare.deleteMany({
+        where: { postId: id },
+      }),
       this.prisma.communityPost.delete({ where: { id } }),
     ]);
   }

@@ -17,13 +17,16 @@ import { DeleteCommunityPostHandler } from './application/delete-community-post/
 import { GetCommunityPostHandler } from './application/get-community-post/get-community-post.handler';
 import { IncrementCommunityPostShareHandler } from './application/increment-community-post-share/increment-community-post-share.handler';
 import { IncrementCommunityPostViewHandler } from './application/increment-community-post-view/increment-community-post-view.handler';
+import { ListCommunityPostSharesHandler } from './application/list-community-post-shares/list-community-post-shares.handler';
 import { ListCommunityPostsHandler } from './application/list-community-posts/list-community-posts.handler';
 import { PermanentDeleteCommunityPostHandler } from './application/permanent-delete-community-post/permanent-delete-community-post.handler';
 import { RestoreCommunityPostHandler } from './application/restore-community-post/restore-community-post.handler';
 import { UpdateCommunityPostActivationHandler } from './application/update-community-post-activation/update-community-post-activation.handler';
 import { UpdateCommunityPostHandler } from './application/update-community-post/update-community-post.handler';
+import type { CommunityPostEngagementRepository } from './domain/repositories/community-post-engagement.repository';
 import type { CommunityPostRepository } from './domain/repositories/community-post.repository';
 import { CommunityPostDomainService } from './domain/services/community-post-domain.service';
+import { PrismaCommunityPostEngagementRepository } from './infrastructure/repositories/prisma-community-post-engagement.repository';
 import { PrismaCommunityPostRepository } from './infrastructure/repositories/prisma-community-post.repository';
 import { AdminCommunityPostController } from './presentation/controllers/admin-community-post.controller';
 import { CommunityPostController } from './presentation/controllers/community-post.controller';
@@ -44,6 +47,12 @@ import { CommunityPostController } from './presentation/controllers/community-po
       provide: COMMUNITY_POST_TOKENS.COMMUNITY_POST_REPOSITORY,
       useFactory: (prisma: PrismaService) =>
         new PrismaCommunityPostRepository(prisma),
+      inject: [PrismaService],
+    },
+    {
+      provide: COMMUNITY_POST_TOKENS.COMMUNITY_POST_ENGAGEMENT_REPOSITORY,
+      useFactory: (prisma: PrismaService) =>
+        new PrismaCommunityPostEngagementRepository(prisma),
       inject: [PrismaService],
     },
     {
@@ -80,11 +89,13 @@ import { CommunityPostController } from './presentation/controllers/community-po
       provide: GetCommunityPostHandler,
       useFactory: (
         repo: CommunityPostRepository,
+        engagementRepo: CommunityPostEngagementRepository,
         domain: CommunityPostDomainService,
         commentRepo: CommunityPostCommentRepository,
-      ) => new GetCommunityPostHandler(repo, domain, commentRepo),
+      ) => new GetCommunityPostHandler(repo, engagementRepo, domain, commentRepo),
       inject: [
         COMMUNITY_POST_TOKENS.COMMUNITY_POST_REPOSITORY,
+        COMMUNITY_POST_TOKENS.COMMUNITY_POST_ENGAGEMENT_REPOSITORY,
         CommunityPostDomainService,
         COMMUNITY_POST_COMMENT_TOKENS.COMMUNITY_POST_COMMENT_REPOSITORY,
       ],
@@ -144,10 +155,13 @@ import { CommunityPostController } from './presentation/controllers/community-po
       provide: IncrementCommunityPostViewHandler,
       useFactory: (
         repo: CommunityPostRepository,
+        engagementRepo: CommunityPostEngagementRepository,
         domain: CommunityPostDomainService,
-      ) => new IncrementCommunityPostViewHandler(repo, domain),
+      ) =>
+        new IncrementCommunityPostViewHandler(repo, engagementRepo, domain),
       inject: [
         COMMUNITY_POST_TOKENS.COMMUNITY_POST_REPOSITORY,
+        COMMUNITY_POST_TOKENS.COMMUNITY_POST_ENGAGEMENT_REPOSITORY,
         CommunityPostDomainService,
       ],
     },
@@ -155,10 +169,27 @@ import { CommunityPostController } from './presentation/controllers/community-po
       provide: IncrementCommunityPostShareHandler,
       useFactory: (
         repo: CommunityPostRepository,
+        engagementRepo: CommunityPostEngagementRepository,
         domain: CommunityPostDomainService,
-      ) => new IncrementCommunityPostShareHandler(repo, domain),
+      ) =>
+        new IncrementCommunityPostShareHandler(repo, engagementRepo, domain),
       inject: [
         COMMUNITY_POST_TOKENS.COMMUNITY_POST_REPOSITORY,
+        COMMUNITY_POST_TOKENS.COMMUNITY_POST_ENGAGEMENT_REPOSITORY,
+        CommunityPostDomainService,
+      ],
+    },
+    {
+      provide: ListCommunityPostSharesHandler,
+      useFactory: (
+        repo: CommunityPostRepository,
+        engagementRepo: CommunityPostEngagementRepository,
+        domain: CommunityPostDomainService,
+      ) =>
+        new ListCommunityPostSharesHandler(repo, engagementRepo, domain),
+      inject: [
+        COMMUNITY_POST_TOKENS.COMMUNITY_POST_REPOSITORY,
+        COMMUNITY_POST_TOKENS.COMMUNITY_POST_ENGAGEMENT_REPOSITORY,
         CommunityPostDomainService,
       ],
     },

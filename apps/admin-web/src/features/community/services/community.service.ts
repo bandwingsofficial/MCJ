@@ -15,6 +15,7 @@ import type {
   CommunityPermanentDeleteResponse,
   CommunityPostDetails,
   CommunityPostLike,
+  CommunityPostShare,
   CommunityPostListItem,
   CreateCommunityPostRequest,
   UpdateCommunityPostRequest,
@@ -87,6 +88,28 @@ class CommunityService {
       const response = await apiClient.get<
         ApiSuccessResponse<CommunityPostDetails>
       >(`${this.basePath}/${id}`);
+
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getPostShares(
+    postId: string,
+    options?: { skip?: number; take?: number },
+  ) {
+    try {
+      const response = await apiClient.get<
+        ApiSuccessResponse<CommunityPostShare[]> & {
+          meta?: { total: number; skip?: number; take?: number };
+        }
+      >(`${this.basePath}/${postId}/shares`, {
+        params: {
+          skip: options?.skip,
+          take: options?.take,
+        },
+      });
 
       return response.data;
     } catch (error) {

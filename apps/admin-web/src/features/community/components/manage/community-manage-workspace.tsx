@@ -92,7 +92,10 @@ export function CommunityManageWorkspace({
       </TabsContent>
 
       <TabsContent value="shares">
-        <CommunityManageSharesPanel shareCount={post.shareCount} />
+        <CommunityManageSharesPanel
+          postId={post.id}
+          shareCount={post.shareCount}
+        />
       </TabsContent>
     </Tabs>
   );

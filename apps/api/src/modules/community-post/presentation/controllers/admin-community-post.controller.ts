@@ -18,6 +18,9 @@ import { JwtAuthGuard } from '@modules/auth/presentation/guards/jwt-auth.guard';
 import { ListCommunityPostLikesHandler } from '@modules/community-post-like/application/list-community-post-likes/list-community-post-likes.handler';
 import { ListCommunityPostLikesQuery } from '@modules/community-post-like/application/list-community-post-likes/list-community-post-likes.query';
 
+import { ListCommunityPostSharesHandler } from '../../application/list-community-post-shares/list-community-post-shares.handler';
+import { ListCommunityPostSharesQuery } from '../../application/list-community-post-shares/list-community-post-shares.query';
+
 import { CreateCommunityPostCommand } from '../../application/create-community-post/create-community-post.command';
 import { CreateCommunityPostHandler } from '../../application/create-community-post/create-community-post.handler';
 import {
@@ -57,6 +60,7 @@ export class AdminCommunityPostController {
     private readonly permanentDeleteHandler: PermanentDeleteCommunityPostHandler,
     private readonly activationHandler: UpdateCommunityPostActivationHandler,
     private readonly listLikesHandler: ListCommunityPostLikesHandler,
+    private readonly listSharesHandler: ListCommunityPostSharesHandler,
   ) {}
 
   @Post()
@@ -132,6 +136,38 @@ export class AdminCommunityPostController {
       success: true,
       message: 'Likes fetched successfully',
       data: result.items,
+      meta: {
+        total: result.total,
+        skip,
+        take,
+      },
+    };
+  }
+
+  @Get(':id/shares')
+  async listShares(
+    @Param('id') id: string,
+    @Query('skip') skip?: number,
+    @Query('take') take?: number,
+  ) {
+    const result = await this.listSharesHandler.execute(
+      new ListCommunityPostSharesQuery(
+        id,
+        skip !== undefined ? Number(skip) : undefined,
+        take !== undefined ? Number(take) : undefined,
+        true,
+      ),
+    );
+
+    return {
+      success: true,
+      message: 'Shares fetched successfully',
+      data: result.items.map((item) => ({
+        id: item.id,
+        postId: item.postId,
+        sharedAt: item.sharedAt,
+        user: item.user,
+      })),
       meta: {
         total: result.total,
         skip,

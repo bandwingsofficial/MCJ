@@ -1,3 +1,4 @@
+import type { CommunityPostEngagementRepository } from '../../domain/repositories/community-post-engagement.repository';
 import type { CommunityPostRepository } from '../../domain/repositories/community-post.repository';
 import { CommunityPostDomainService } from '../../domain/services/community-post-domain.service';
 import type { CommunityPostCommentRepository } from '@modules/community-post-comment/domain/repositories/community-post-comment.repository';
@@ -7,6 +8,7 @@ import { GetCommunityPostQuery } from './get-community-post.query';
 export class GetCommunityPostHandler {
   constructor(
     private readonly postRepo: CommunityPostRepository,
+    private readonly engagementRepo: CommunityPostEngagementRepository,
     private readonly domainService: CommunityPostDomainService,
     private readonly commentRepo: CommunityPostCommentRepository,
   ) {}
@@ -14,6 +16,10 @@ export class GetCommunityPostHandler {
   async execute(
     query: GetCommunityPostQuery,
   ): Promise<GetCommunityPostResult> {
+    if (!query.onlyPublished) {
+      await this.engagementRepo.syncShareCountFromRecords(query.id);
+    }
+
     const post = this.domainService.ensureExists(
       await this.postRepo.findById(query.id, query.includeDeleted),
     );
