@@ -9,6 +9,6 @@ export function useAdminDashboard(query: AdminDashboardQuery) {
   return useQuery({
     queryKey: ["admin-dashboard", query],
     queryFn: () => adminDashboardService.getDashboard(query),
-    staleTime: 60_000,
+    staleTime: 0,
   });
 }

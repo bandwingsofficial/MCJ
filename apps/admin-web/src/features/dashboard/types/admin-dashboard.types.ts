@@ -1,9 +1,10 @@
 export type DashboardDatePreset =
   | "TODAY"
+  | "YESTERDAY"
   | "THIS_WEEK"
+  | "LAST_WEEK"
   | "THIS_MONTH"
-  | "THIS_YEAR"
-  | "ALL_TIME"
+  | "LAST_MONTH"
   | "CUSTOM";
 
 export interface DashboardMetricComparison {
@@ -63,12 +64,25 @@ export interface AdminDashboardData {
     byStatus: { status: string; count: number }[];
     byPaymentStatus: { status: string; count: number }[];
     trendSeries: { date: string; count: number }[];
+    modeDistribution: { mode: string; modeLabel: string; count: number }[];
+    offlineVsOnline: {
+      offlineCount: number;
+      onlineCount: number;
+      selfPacedCount: number;
+      offlineSharePercent: number | null;
+      onlineSharePercent: number | null;
+    };
   };
   batches: {
     upcoming: number;
     ongoing: number;
     expired: number;
-    modeDistribution: { mode: string; modeLabel: string; count: number }[];
+    topByEnrollmentsInPeriod: {
+      batchId: string;
+      batchName: string;
+      courseTitle: string | null;
+      enrollmentCount: number;
+    }[];
     upcomingList: {
       id: string;
       batchName: string;
@@ -94,12 +108,23 @@ export interface AdminDashboardData {
   branches: {
     total: number;
     active: number;
+    ranking: {
+      rank: number;
+      branchId: string;
+      branchName: string;
+      branchCode: string;
+      status: string | null;
+      enrollmentCount: number;
+      revenueAmount: number;
+    }[];
     enrollmentDistribution: {
       branchId: string;
       branchName: string;
       branchCode: string;
       status: string | null;
       enrollmentCount: number;
+      revenueAmount: number;
+      rank: number;
     }[];
   };
   courses: {

@@ -42,17 +42,18 @@ import { cn } from "@/src/shared/lib/cn";
 
 const PRESET_OPTIONS = [
   { value: "TODAY", label: "Today" },
+  { value: "YESTERDAY", label: "Yesterday" },
   { value: "THIS_WEEK", label: "This week" },
+  { value: "LAST_WEEK", label: "Last week" },
   { value: "THIS_MONTH", label: "This month" },
-  { value: "THIS_YEAR", label: "This year" },
-  { value: "ALL_TIME", label: "All time" },
+  { value: "LAST_MONTH", label: "Last month" },
   { value: "CUSTOM", label: "Custom range" },
 ];
 
 const QUICK_ACTIONS = [
   { label: "Create student", href: "/students/create", icon: UserPlus },
   { label: "Create enrollment", href: "/enrollments/create", icon: Layers },
-  { label: "Create batch", href: "/batches/create", icon: Boxes },
+  { label: "Batches", href: "/batches", icon: Boxes },
   { label: "Create course", href: "/courses/create", icon: BookOpen },
   { label: "Add trainer", href: "/trainers", icon: Users },
   { label: "Add branch", href: "/branches", icon: GitBranch },
@@ -267,7 +268,7 @@ export function AdminDashboardPage() {
               gradient="bg-gradient-to-br from-[#EFF6FF] via-[#F8FBFF] to-white"
             />
             <DashboardMetricCard
-              label="Total enrollments"
+              label="New enrollments"
               metric={data.metrics.totalEnrollments}
               icon={Layers}
               href="/enrollments"
@@ -322,7 +323,7 @@ export function AdminDashboardPage() {
               <div className="grid gap-2">
                 {QUICK_ACTIONS.map((action) => (
                   <Link
-                    key={action.href}
+                    key={action.label}
                     href={action.href}
                     className="flex items-center justify-between rounded-xl border border-[#E8EEF5] bg-white px-3 py-2.5 text-sm font-medium text-[#102A56] transition-colors hover:border-[#2563EB]/30 hover:bg-[#F8FBFF]"
                   >
@@ -330,7 +331,11 @@ export function AdminDashboardPage() {
                       <action.icon className="h-4 w-4 text-[#2563EB]" />
                       {action.label}
                     </span>
-                    <Plus className="h-4 w-4 text-[#94A3B8]" />
+                    {action.href.endsWith("/create") ? (
+                      <Plus className="h-4 w-4 text-[#94A3B8]" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4 text-[#94A3B8]" />
+                    )}
                   </Link>
                 ))}
               </div>
@@ -340,7 +345,7 @@ export function AdminDashboardPage() {
           <div className="grid gap-4 lg:grid-cols-2">
             <SectionShell
               title="Student analytics"
-              subtitle={`${formatCount(data.students.activeCount)} active · ${formatCount(data.students.newInPeriod)} new in period`}
+              subtitle={`${formatCount(data.students.newInPeriod)} new in period · ${formatCount(data.students.activeCount)} active overall`}
               className="bg-gradient-to-br from-[#EFF6FF]/70 to-white"
             >
               <DashboardGrowthBarChart
@@ -377,7 +382,7 @@ export function AdminDashboardPage() {
 
             <SectionShell
               title="Enrollment analytics"
-              subtitle={`${formatCount(data.enrollments.active)} active · ${formatCount(data.enrollments.newInPeriod)} new`}
+              subtitle={`${formatCount(data.enrollments.newInPeriod)} new in period · ${formatCount(data.enrollments.active)} active overall`}
               className="bg-gradient-to-br from-[#FAF5FF]/60 to-white"
             >
               <DashboardGrowthBarChart
@@ -415,6 +420,50 @@ export function AdminDashboardPage() {
                   />
                 </div>
               </div>
+              <div className="mt-4 rounded-xl border border-[#E8EEF5] bg-[#F8FBFF]/60 p-3">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#647A9B]">
+                  Offline vs online (new enrollments in period)
+                </p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <MiniStat
+                    label="Offline"
+                    value={data.enrollments.offlineVsOnline.offlineCount}
+                    detail={
+                      data.enrollments.offlineVsOnline.offlineSharePercent !=
+                      null
+                        ? `${data.enrollments.offlineVsOnline.offlineSharePercent}% of offline + online`
+                        : undefined
+                    }
+                  />
+                  <MiniStat
+                    label="Online"
+                    value={data.enrollments.offlineVsOnline.onlineCount}
+                    detail={
+                      data.enrollments.offlineVsOnline.onlineSharePercent != null
+                        ? `${data.enrollments.offlineVsOnline.onlineSharePercent}% of offline + online`
+                        : undefined
+                    }
+                  />
+                  <MiniStat
+                    label="Self-paced"
+                    value={data.enrollments.offlineVsOnline.selfPacedCount}
+                  />
+                </div>
+                {data.enrollments.modeDistribution.length > 0 ? (
+                  <div className="mt-4">
+                    <DashboardDonutChart
+                      segments={data.enrollments.modeDistribution.map(
+                        (row) => ({
+                          label: row.modeLabel,
+                          value: row.count,
+                        }),
+                      )}
+                      centerLabel="Modes"
+                      emptyLabel="No enrollment mode data in this period."
+                    />
+                  </div>
+                ) : null}
+              </div>
             </SectionShell>
           </div>
 
@@ -429,13 +478,16 @@ export function AdminDashboardPage() {
                 <BatchPill label="Ongoing" value={data.batches.ongoing} tone="green" />
                 <BatchPill label="Expired" value={data.batches.expired} tone="slate" />
               </div>
-              <DashboardDonutChart
-                segments={data.batches.modeDistribution.map((row) => ({
-                  label: row.modeLabel,
-                  value: row.count,
-                }))}
-                centerLabel="Modes"
-                emptyLabel="No batch mode data yet."
+              <DashboardHorizontalBarChart
+                legendLabel="Top batches by new enrollments"
+                valueLabel="Enrollments"
+                items={(data.batches.topByEnrollmentsInPeriod ?? []).map(
+                  (row) => ({
+                    label: row.batchName,
+                    value: row.enrollmentCount,
+                  }),
+                )}
+                emptyLabel="No batch enrollments in this period."
               />
               <div className="mt-5 space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#647A9B]">
@@ -475,17 +527,12 @@ export function AdminDashboardPage() {
 
             <SectionShell
               title="Branch performance"
-              subtitle={`${formatCount(data.branches.active)} active of ${formatCount(data.branches.total)} branches`}
+              subtitle={`Ranked by enrollments and revenue in period · ${formatCount(data.branches.active)} active branches`}
               className="xl:col-span-5 bg-gradient-to-br from-[#FFF7ED]/40 to-white"
+              headerAction={<SectionViewAllLink href="/branches" />}
             >
-              <DashboardHorizontalBarChart
-                legendLabel="Enrollments by branch"
-                valueLabel="Enrollments"
-                items={data.branches.enrollmentDistribution.map((row) => ({
-                  label: row.branchName,
-                  value: row.enrollmentCount,
-                }))}
-                emptyLabel="No branch enrollment data yet."
+              <BranchPerformanceRanking
+                rows={data.branches.ranking ?? data.branches.enrollmentDistribution}
               />
             </SectionShell>
           </div>
@@ -493,7 +540,7 @@ export function AdminDashboardPage() {
           <div className="grid gap-4 lg:grid-cols-2">
             <SectionShell
               title="Course analytics"
-              subtitle={`${formatCount(data.courses.active)} active courses`}
+              subtitle={`Top courses by new enrollments in period · ${formatCount(data.courses.active)} active`}
               className="bg-gradient-to-br from-[#F8FBFF] to-white"
             >
               <div className="mb-3 flex gap-4 text-sm">
@@ -669,7 +716,15 @@ export function AdminDashboardPage() {
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: number }) {
+function MiniStat({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: number;
+  detail?: string;
+}) {
   return (
     <div className="rounded-xl border border-[#E8EEF5] bg-white px-3 py-2.5 shadow-sm">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-[#647A9B]">
@@ -678,6 +733,84 @@ function MiniStat({ label, value }: { label: string; value: number }) {
       <p className="mt-0.5 text-lg font-bold tabular-nums text-[#102A56]">
         {formatCount(value)}
       </p>
+      {detail ? (
+        <p className="mt-0.5 text-[11px] text-[#647A9B]">{detail}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function BranchPerformanceRanking({
+  rows,
+}: {
+  rows: AdminDashboardData["branches"]["ranking"];
+}) {
+  if (!rows.length) {
+    return (
+      <p className="py-6 text-center text-sm text-[#647A9B]">
+        No branches available.
+      </p>
+    );
+  }
+
+  const maxEnrollments = Math.max(1, ...rows.map((row) => row.enrollmentCount));
+  const maxRevenue = Math.max(1, ...rows.map((row) => row.revenueAmount));
+
+  return (
+    <div className="max-h-[520px] space-y-3 overflow-y-auto pr-1">
+      {rows.map((row) => (
+        <Link
+          key={row.branchId}
+          href={`/branches/${row.branchId}`}
+          className="block rounded-xl border border-[#E8EEF5] bg-white px-3 py-2.5 transition-colors hover:border-[#2563EB]/25 hover:bg-[#F8FBFF]"
+        >
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-[#102A56]">
+                #{row.rank} {row.branchName}
+              </p>
+              {row.branchCode ? (
+                <p className="text-[11px] text-[#94A3B8]">{row.branchCode}</p>
+              ) : null}
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-[#94A3B8]" />
+          </div>
+          <div className="space-y-2">
+            <div>
+              <div className="mb-1 flex justify-between text-[11px] text-[#647A9B]">
+                <span>Enrollments</span>
+                <span className="font-semibold tabular-nums text-[#102A56]">
+                  {formatCount(row.enrollmentCount)}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-[#EEF2F8]">
+                <div
+                  className="h-full rounded-full bg-[#2563EB]"
+                  style={{
+                    width: `${Math.max(4, (row.enrollmentCount / maxEnrollments) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="mb-1 flex justify-between text-[11px] text-[#647A9B]">
+                <span>Revenue</span>
+                <span className="font-semibold tabular-nums text-[#102A56]">
+                  {formatInr(row.revenueAmount)}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-[#EEF2F8]">
+                <div
+                  className="h-full rounded-full bg-[#EA580C]"
+                  style={{
+                    width: `${Math.max(4, (row.revenueAmount / maxRevenue) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }

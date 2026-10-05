@@ -20,6 +20,13 @@ export function resolveDashboardDateRange(
     return { from: value, to: value };
   }
 
+  if (preset === "YESTERDAY") {
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const value = toLocalDateInput(yesterday);
+    return { from: value, to: value };
+  }
+
   if (preset === "THIS_WEEK") {
     const weekday = today.getDay();
     const mondayOffset = weekday === 0 ? -6 : 1 - weekday;
@@ -28,18 +35,39 @@ export function resolveDashboardDateRange(
     return { from: toLocalDateInput(from), to: toLocalDateInput(today) };
   }
 
+  if (preset === "LAST_WEEK") {
+    const weekday = today.getDay();
+    const mondayOffset = weekday === 0 ? -6 : 1 - weekday;
+    const thisMonday = new Date(today);
+    thisMonday.setDate(thisMonday.getDate() + mondayOffset);
+    const lastMonday = new Date(thisMonday);
+    lastMonday.setDate(lastMonday.getDate() - 7);
+    const lastSunday = new Date(thisMonday);
+    lastSunday.setDate(lastSunday.getDate() - 1);
+    return {
+      from: toLocalDateInput(lastMonday),
+      to: toLocalDateInput(lastSunday),
+    };
+  }
+
   if (preset === "THIS_MONTH") {
     const from = new Date(today.getFullYear(), today.getMonth(), 1);
     return { from: toLocalDateInput(from), to: toLocalDateInput(today) };
   }
 
-  if (preset === "THIS_YEAR") {
-    const from = new Date(today.getFullYear(), 0, 1);
-    return { from: toLocalDateInput(from), to: toLocalDateInput(today) };
-  }
-
-  if (preset === "ALL_TIME") {
-    return {};
+  if (preset === "LAST_MONTH") {
+    const firstThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(firstThisMonth);
+    lastDay.setDate(lastDay.getDate() - 1);
+    const firstLastMonth = new Date(
+      lastDay.getFullYear(),
+      lastDay.getMonth(),
+      1,
+    );
+    return {
+      from: toLocalDateInput(firstLastMonth),
+      to: toLocalDateInput(lastDay),
+    };
   }
 
   return {

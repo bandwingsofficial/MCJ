@@ -7,6 +7,7 @@ import {
   BranchStatus,
   CourseMode,
   CourseStatus,
+  EnrollmentMode,
   EnrollmentStatus,
   PaymentTransactionStatus,
   StudentStatus,
@@ -69,6 +70,27 @@ function modeLabel(mode: CourseMode): string {
   return 'Self-Paced / Pre-Recorded';
 }
 
+function enrollmentModeLabel(mode: EnrollmentMode): string {
+  if (mode === EnrollmentMode.OFFLINE) return 'Offline';
+  if (mode === EnrollmentMode.ONLINE) return 'Online';
+  return 'Self-Paced';
+}
+
+function paymentInDateRangeWhere(
+  from: Date,
+  toExclusive: Date,
+): Prisma.PaymentWhereInput {
+  return {
+    OR: [
+      { paidAt: { gte: from, lt: toExclusive } },
+      {
+        paidAt: null,
+        createdAt: { gte: from, lt: toExclusive },
+      },
+    ],
+  };
+}
+
 @Injectable()
 export class AdminDashboardService {
   constructor(private readonly prisma: PrismaService) {}
@@ -103,6 +125,23 @@ export class AdminDashboardService {
       EnrollmentStatus.ADMITTED,
     ];
 
+    const enrollmentInPeriod = {
+      ...enrollmentBase,
+      createdAt: { gte: from, lt: toExclusive },
+    } satisfies Prisma.EnrollmentWhereInput;
+
+    const studentInPeriod = {
+      ...studentBase,
+      createdAt: { gte: from, lt: toExclusive },
+    } satisfies Prisma.StudentWhereInput;
+
+    const paymentSuccessBase = {
+      isDeleted: false,
+      paymentStatus: PaymentTransactionStatus.SUCCESS,
+    } satisfies Prisma.PaymentWhereInput;
+
+    const paymentsWindowFrom = prev.from;
+
     const [
       totalStudents,
       activeStudentRows,
@@ -116,6 +155,7 @@ export class AdminDashboardService {
       enrollmentsPrevious,
       enrollmentStatusGroups,
       enrollmentPaymentGroups,
+      enrollmentModeGroups,
       totalBranches,
       activeBranches,
       totalCourses,
@@ -126,12 +166,12 @@ export class AdminDashboardService {
       lifecycleBatchRows,
       jobApplicationsInPeriod,
       jobApplicationsPreviousPeriod,
-      batchModeGroups,
-      timingModeGroups,
-      revenuePaymentsAll,
+      batchEnrollmentGroups,
+      revenuePaymentsInWindow,
       pendingDueAggregate,
       popularCoursesRaw,
       branchEnrollmentGroups,
+      allBranchRows,
       recentEnrollments,
       recentStudents,
       recentBatchTrainers,
@@ -153,7 +193,7 @@ export class AdminDashboardService {
       }),
       this.prisma.student.groupBy({
         by: ['status'],
-        where: studentBase,
+        where: studentInPeriod,
         _count: { _all: true },
       }),
       this.prisma.student.count({
@@ -193,12 +233,17 @@ export class AdminDashboardService {
       }),
       this.prisma.enrollment.groupBy({
         by: ['status'],
-        where: enrollmentBase,
+        where: enrollmentInPeriod,
         _count: { _all: true },
       }),
       this.prisma.enrollment.groupBy({
         by: ['paymentStatus'],
-        where: enrollmentBase,
+        where: enrollmentInPeriod,
+        _count: { _all: true },
+      }),
+      this.prisma.enrollment.groupBy({
+        by: ['mode'],
+        where: enrollmentInPeriod,
         _count: { _all: true },
       }),
       this.prisma.branch.count({ where: branchBase }),
@@ -247,44 +292,56 @@ export class AdminDashboardService {
           createdAt: { gte: prev.from, lt: prev.toExclusive },
         },
       }),
-      this.prisma.batch.groupBy({
-        by: ['mode'],
-        where: batchBase,
+      this.prisma.enrollment.groupBy({
+        by: ['batchId'],
+        where: enrollmentInPeriod,
         _count: { _all: true },
-      }),
-      this.prisma.batchTiming.groupBy({
-        by: ['mode'],
-        where: { isDeleted: false },
-        _count: { _all: true },
+        orderBy: { _count: { batchId: 'desc' } },
+        take: 8,
       }),
       this.prisma.payment.findMany({
         where: {
-          isDeleted: false,
-          paymentStatus: PaymentTransactionStatus.SUCCESS,
+          ...paymentSuccessBase,
+          ...paymentInDateRangeWhere(paymentsWindowFrom, toExclusive),
         },
         select: {
           amount: true,
           paidAt: true,
           createdAt: true,
+          enrollment: {
+            select: { branchId: true, batchId: true },
+          },
         },
       }),
       this.prisma.enrollment.aggregate({
-        where: enrollmentBase,
+        where: {
+          ...enrollmentBase,
+          isActive: true,
+          status: { in: activeEnrollmentStatuses },
+          dueAmount: { gt: 0 },
+        },
         _sum: { dueAmount: true },
       }),
       this.prisma.enrollment.groupBy({
         by: ['courseId'],
-        where: enrollmentBase,
+        where: enrollmentInPeriod,
         _count: { _all: true },
         orderBy: { _count: { courseId: 'desc' } },
         take: 6,
       }),
       this.prisma.enrollment.groupBy({
         by: ['branchId'],
-        where: enrollmentBase,
+        where: enrollmentInPeriod,
         _count: { _all: true },
-        orderBy: { _count: { branchId: 'desc' } },
-        take: 8,
+      }),
+      this.prisma.branch.findMany({
+        where: branchBase,
+        select: {
+          id: true,
+          branchName: true,
+          branchCode: true,
+          status: true,
+        },
       }),
       this.prisma.enrollment.findMany({
         where: enrollmentBase,
@@ -443,12 +500,12 @@ export class AdminDashboardService {
     ]);
 
     const revenueInPeriod = sumPaymentsInRange(
-      revenuePaymentsAll,
+      revenuePaymentsInWindow,
       from,
       toExclusive,
     );
     const revenuePrevious = sumPaymentsInRange(
-      revenuePaymentsAll,
+      revenuePaymentsInWindow,
       prev.from,
       prev.toExclusive,
     );
@@ -457,7 +514,7 @@ export class AdminDashboardService {
     for (const key of dateKeys) {
       revenueSeriesMap.set(key, 0);
     }
-    for (const payment of revenuePaymentsAll) {
+    for (const payment of revenuePaymentsInWindow) {
       const effective = paymentEffectiveDate(payment);
       if (
         effective.getTime() < from.getTime() ||
@@ -518,20 +575,70 @@ export class AdminDashboardService {
       coursesById.map((course) => [course.id, course]),
     );
 
-    const branchIds = branchEnrollmentGroups.map((row) => row.branchId);
-    const branchesById = branchIds.length
-      ? await this.prisma.branch.findMany({
-          where: { id: { in: branchIds } },
-          select: { id: true, branchName: true, branchCode: true, status: true },
+    const enrollmentCountByBranch = new Map<string, number>();
+    for (const row of branchEnrollmentGroups) {
+      enrollmentCountByBranch.set(row.branchId, row._count._all);
+    }
+
+    const revenueByBranch = new Map<string, number>();
+    for (const payment of revenuePaymentsInWindow) {
+      const effective = paymentEffectiveDate(payment);
+      if (
+        effective.getTime() < from.getTime() ||
+        effective.getTime() >= toExclusive.getTime()
+      ) {
+        continue;
+      }
+      const branchId = payment.enrollment?.branchId;
+      if (!branchId) continue;
+      revenueByBranch.set(
+        branchId,
+        (revenueByBranch.get(branchId) ?? 0) + decimalToNumber(payment.amount),
+      );
+    }
+
+    const branchRanking = allBranchRows
+      .map((branch) => ({
+        rank: 0,
+        branchId: branch.id,
+        branchName: branch.branchName,
+        branchCode: branch.branchCode,
+        status: branch.status,
+        enrollmentCount: enrollmentCountByBranch.get(branch.id) ?? 0,
+        revenueAmount: revenueByBranch.get(branch.id) ?? 0,
+      }))
+      .sort((a, b) => {
+        if (b.enrollmentCount !== a.enrollmentCount) {
+          return b.enrollmentCount - a.enrollmentCount;
+        }
+        return b.revenueAmount - a.revenueAmount;
+      })
+      .map((row, index) => ({ ...row, rank: index + 1 }));
+
+    const batchIds = batchEnrollmentGroups.map((row) => row.batchId);
+    const batchesById = batchIds.length
+      ? await this.prisma.batch.findMany({
+          where: { id: { in: batchIds } },
+          select: { id: true, name: true, course: { select: { title: true } } },
         })
       : [];
-    const branchMap = new Map(
-      branchesById.map((branch) => [branch.id, branch]),
+    const batchTitleMap = new Map(
+      batchesById.map((batch) => [batch.id, batch]),
     );
 
-    const batchTrainerAssignments = await this.prisma.batchTrainer.count();
+    const enrollmentModeCounts = new Map<EnrollmentMode, number>();
+    for (const row of enrollmentModeGroups) {
+      enrollmentModeCounts.set(row.mode, row._count._all);
+    }
+    const offlineEnrollments =
+      enrollmentModeCounts.get(EnrollmentMode.OFFLINE) ?? 0;
+    const onlineEnrollments =
+      enrollmentModeCounts.get(EnrollmentMode.ONLINE) ?? 0;
+    const selfPacedEnrollments =
+      enrollmentModeCounts.get(EnrollmentMode.SELF_PACED) ?? 0;
+    const offlineOnlineTotal = offlineEnrollments + onlineEnrollments;
 
-    const modeDistribution = mergeModeCounts(batchModeGroups, timingModeGroups);
+    const batchTrainerAssignments = await this.prisma.batchTrainer.count();
 
     const lifecycleCountsNow = countBatchesByLifecycleStatus(
       lifecycleBatchRows,
@@ -637,12 +744,42 @@ export class AdminDashboardService {
           date,
           count: enrollmentSeriesMap.get(date) ?? 0,
         })),
+        modeDistribution: enrollmentModeGroups.map((row) => ({
+          mode: row.mode,
+          modeLabel: enrollmentModeLabel(row.mode),
+          count: row._count._all,
+        })),
+        offlineVsOnline: {
+          offlineCount: offlineEnrollments,
+          onlineCount: onlineEnrollments,
+          selfPacedCount: selfPacedEnrollments,
+          offlineSharePercent:
+            offlineOnlineTotal > 0
+              ? Math.round((offlineEnrollments / offlineOnlineTotal) * 1000) /
+                10
+              : null,
+          onlineSharePercent:
+            offlineOnlineTotal > 0
+              ? Math.round((onlineEnrollments / offlineOnlineTotal) * 1000) / 10
+              : null,
+        },
       },
       batches: {
         upcoming: upcomingBatches,
         ongoing: ongoingBatches,
         expired: expiredBatches,
-        modeDistribution,
+        topByEnrollmentsInPeriod: batchEnrollmentGroups
+          .map((row) => {
+            const batch = batchTitleMap.get(row.batchId);
+            if (!batch) return null;
+            return {
+              batchId: batch.id,
+              batchName: batch.name,
+              courseTitle: batch.course?.title ?? null,
+              enrollmentCount: row._count._all,
+            };
+          })
+          .filter(Boolean),
         upcomingList: upcomingBatchRows.map((batch) => ({
           id: batch.id,
           batchName: batch.name,
@@ -668,16 +805,16 @@ export class AdminDashboardService {
       branches: {
         total: totalBranches,
         active: activeBranches,
-        enrollmentDistribution: branchEnrollmentGroups.map((row) => {
-          const branch = branchMap.get(row.branchId);
-          return {
-            branchId: row.branchId,
-            branchName: branch?.branchName ?? 'Unknown branch',
-            branchCode: branch?.branchCode ?? '',
-            status: branch?.status ?? null,
-            enrollmentCount: row._count._all,
-          };
-        }),
+        ranking: branchRanking,
+        enrollmentDistribution: branchRanking.map((row) => ({
+          branchId: row.branchId,
+          branchName: row.branchName,
+          branchCode: row.branchCode,
+          status: row.status,
+          enrollmentCount: row.enrollmentCount,
+          revenueAmount: row.revenueAmount,
+          rank: row.rank,
+        })),
       },
       courses: {
         total: totalCourses,
@@ -741,8 +878,10 @@ function sumPaymentsInRange(
 
 function metricWithComparison(current: number, previous: number) {
   const delta = current - previous;
-  const deltaPercent =
-    previous > 0 ? Math.round((delta / previous) * 1000) / 10 : null;
+  const hasBaseline = previous > 0;
+  const deltaPercent = hasBaseline
+    ? Math.round((delta / previous) * 1000) / 10
+    : null;
 
   return {
     value: current,
@@ -750,29 +889,13 @@ function metricWithComparison(current: number, previous: number) {
       previousValue: previous,
       delta,
       deltaPercent:
-        deltaPercent != null && Number.isFinite(deltaPercent)
+        hasBaseline &&
+        deltaPercent != null &&
+        Number.isFinite(deltaPercent)
           ? deltaPercent
           : null,
     },
   };
-}
-
-function mergeModeCounts(
-  batchGroups: { mode: CourseMode; _count: { _all: number } }[],
-  timingGroups: { mode: CourseMode; _count: { _all: number } }[],
-) {
-  const map = new Map<CourseMode, number>();
-  for (const row of batchGroups) {
-    map.set(row.mode, (map.get(row.mode) ?? 0) + row._count._all);
-  }
-  for (const row of timingGroups) {
-    map.set(row.mode, (map.get(row.mode) ?? 0) + row._count._all);
-  }
-  return Array.from(map.entries()).map(([mode, count]) => ({
-    mode,
-    modeLabel: modeLabel(mode),
-    count,
-  }));
 }
 
 function buildRecentActivity(input: {

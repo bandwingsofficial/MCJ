@@ -19,7 +19,11 @@ export function formatMetricComparisonLabel(
   }
 
   if (previousValue === 0 && current === 0) {
-    return "No previous data";
+    return "No previous period data";
+  }
+
+  if (current === 0 && previousValue > 0 && previousValue <= 2) {
+    return "No activity vs previous period";
   }
 
   if (delta === 0) {

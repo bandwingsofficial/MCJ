@@ -6,8 +6,11 @@ export class AdminDashboardQueryDto {
   @IsOptional()
   @IsIn([
     'TODAY',
+    'YESTERDAY',
     'THIS_WEEK',
+    'LAST_WEEK',
     'THIS_MONTH',
+    'LAST_MONTH',
     'THIS_YEAR',
     'ALL_TIME',
     'CUSTOM',
