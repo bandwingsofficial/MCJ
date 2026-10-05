@@ -18,15 +18,14 @@ import type { AssignBranchTrainersPayload } from "@/src/features/branches/types/
 import {
   formatTimingOptionLabel,
   formatTrainerDisplayName,
-  getUpcomingConfiguredModes,
-  getUpcomingTimingsForMode,
+  getTrainerAssignModesForBatch,
+  getTrainerAssignTimingsForMode,
   loadBatchForTrainerAssignment,
-  loadBranchCoursesForTrainerAssign,
-  loadUpcomingBranchCourseBatches,
+  loadLiveBranchBatchesForTrainerAssign,
+  resolveBatchCourseIdForTrainerAssign,
 } from "@/src/features/branches/utils/branch-trainer-relation.utils";
 import { trainerService } from "@/src/features/trainers/services/trainer.service";
 import type { TrainerListItem } from "@/src/features/trainers/types/trainer.types";
-import type { CourseListItem } from "@/src/features/courses/types/course.types";
 
 const ALREADY_ASSIGNED_LABEL = "ALREADY ASSIGNED";
 
@@ -54,8 +53,6 @@ export function AssignBranchTrainerModal({
     useState<AssignmentKind>("COURSE_BATCH");
   const [isLoading, setIsLoading] = useState(false);
 
-  const [courses, setCourses] = useState<CourseListItem[]>([]);
-  const [courseId, setCourseId] = useState("");
   const [batches, setBatches] = useState<Batch[]>([]);
   const [batchesLoading, setBatchesLoading] = useState(false);
   const [batchId, setBatchId] = useState("");
@@ -68,6 +65,11 @@ export function AssignBranchTrainerModal({
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  const courseId = useMemo(
+    () => resolveBatchCourseIdForTrainerAssign(batchDetail),
+    [batchDetail],
+  );
 
   const assignedIds = useMemo(() => {
     if (assignmentKind === "BRANCH_ONLY") {
@@ -83,18 +85,18 @@ export function AssignBranchTrainerModal({
   );
 
   const modes = useMemo(
-    () => getUpcomingConfiguredModes(batchDetail),
+    () => getTrainerAssignModesForBatch(batchDetail),
     [batchDetail],
   );
 
   const timings = useMemo(
-    () => (mode ? getUpcomingTimingsForMode(batchDetail, mode) : []),
+    () => (mode ? getTrainerAssignTimingsForMode(batchDetail, mode) : []),
     [batchDetail, mode],
   );
 
   const courseBatchReady =
-    Boolean(courseId) &&
     Boolean(batchId) &&
+    Boolean(courseId) &&
     Boolean(mode) &&
     Boolean(batchTimingId);
 
@@ -138,7 +140,6 @@ export function AssignBranchTrainerModal({
 
   const resetWizard = useCallback(() => {
     setAssignmentKind("COURSE_BATCH");
-    setCourseId("");
     setBatchId("");
     setBatchDetail(null);
     setMode("");
@@ -156,66 +157,34 @@ export function AssignBranchTrainerModal({
 
     resetWizard();
     setIsLoading(true);
+    setBatchesLoading(true);
 
     void (async () => {
       try {
-        const [branchCourses, activeTrainers] = await Promise.all([
-          loadBranchCoursesForTrainerAssign(branchId),
+        const [branchBatches, activeTrainers] = await Promise.all([
+          loadLiveBranchBatchesForTrainerAssign(branchId),
           trainerService.getActiveTrainersForAssignment(),
         ]);
-        setCourses(branchCourses);
+        setBatches(branchBatches);
         setTrainers(activeTrainers);
       } finally {
         setIsLoading(false);
+        setBatchesLoading(false);
       }
     })();
   }, [open, branchId, resetWizard]);
 
   useEffect(() => {
-    if (!open || !courseId) {
-      setBatches([]);
-      setBatchesLoading(false);
-      setBatchId("");
-      setBatchDetail(null);
-      setMode("");
-      setBatchTimingId("");
-      return;
-    }
-
-    setBatchesLoading(true);
-    setBatchId("");
-    setBatchDetail(null);
-    setMode("");
-    setBatchTimingId("");
-
-    void loadUpcomingBranchCourseBatches(branchId, courseId)
-      .then(setBatches)
-      .finally(() => {
-        setBatchesLoading(false);
-      });
-  }, [open, branchId, courseId]);
-
-  const noUpcomingBatchesForCourse =
-    Boolean(courseId) && !batchesLoading && batches.length === 0;
-
-  useEffect(() => {
     if (!open || !batchId) {
       setBatchDetail(null);
-      setMode("");
-      setBatchTimingId("");
       return;
     }
 
-    void loadBatchForTrainerAssignment(batchId).then((batch) => {
-      setBatchDetail(batch);
-      setMode("");
-      setBatchTimingId("");
-    });
+    void loadBatchForTrainerAssignment(batchId).then(setBatchDetail);
   }, [open, batchId]);
 
-  useEffect(() => {
-    setBatchTimingId("");
-  }, [mode]);
+  const noLiveBatches =
+    !batchesLoading && !isLoading && batches.length === 0;
 
   useEffect(() => {
     setSelectedIds([]);
@@ -254,6 +223,30 @@ export function AssignBranchTrainerModal({
     setSelectedIds((current) => current.filter((id) => !assignedIds.has(id)));
   }, [assignedIds]);
 
+  const handleBatchChange = (value: string) => {
+    setBatchId(value);
+    setMode("");
+    setBatchTimingId("");
+    setSelectedIds([]);
+    setContextAssignedIds([]);
+    setValidationError(null);
+  };
+
+  const handleModeChange = (value: BatchMode) => {
+    setMode(value);
+    setBatchTimingId("");
+    setSelectedIds([]);
+    setContextAssignedIds([]);
+    setValidationError(null);
+  };
+
+  const handleTimingChange = (value: string) => {
+    setBatchTimingId(value);
+    setSelectedIds([]);
+    setContextAssignedIds([]);
+    setValidationError(null);
+  };
+
   const toggleTrainer = (trainerId: string) => {
     if (!canPickTrainers || assignedIds.has(trainerId)) {
       return;
@@ -286,9 +279,9 @@ export function AssignBranchTrainerModal({
     }
 
     if (assignmentKind === "COURSE_BATCH") {
-      if (!courseBatchReady) {
+      if (!courseBatchReady || !courseId) {
         setValidationError(
-          "Complete course, batch, learning mode, and batch timing selection.",
+          "Complete batch, learning mode, and batch timing selection.",
         );
         return;
       }
@@ -328,7 +321,7 @@ export function AssignBranchTrainerModal({
         {!canPickTrainers ? (
           <p className="px-2 py-6 text-center text-sm text-[#647A9B]">
             {assignmentKind === "COURSE_BATCH"
-              ? "Select course, batch, learning mode, and batch timing first."
+              ? "Select batch, learning mode, and batch timing first."
               : "Loading trainers..."}
           </p>
         ) : isLoading ? (
@@ -488,47 +481,24 @@ export function AssignBranchTrainerModal({
         {assignmentKind === "COURSE_BATCH" ? (
           <div className="rounded-xl border border-slate-200 p-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="min-w-0 space-y-1.5">
-                <p className="text-sm font-medium text-[#102A56]">Course</p>
-                <AppSelect
-                  value={courseId || undefined}
-                  placeholder="Select course"
-                  disabled={isLoading || isSubmitting}
-                  options={courses.map((course) => ({
-                    value: course.id,
-                    label: course.title,
-                  }))}
-                  onValueChange={setCourseId}
-                />
-              </div>
-
-              <div className="min-w-0 space-y-1.5">
+              <div className="min-w-0 space-y-1.5 sm:col-span-2">
                 <p className="text-sm font-medium text-[#102A56]">Batch</p>
-                {noUpcomingBatchesForCourse ? (
+                {noLiveBatches ? (
                   <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-[#647A9B]">
-                    No upcoming batches available for this course.
+                    No upcoming or ongoing batches are assigned to this branch.
                   </p>
                 ) : (
                   <AppSelect
                     value={batchId || undefined}
                     placeholder={
-                      !courseId
-                        ? "Select a course first"
-                        : batchesLoading
-                          ? "Loading batches..."
-                          : "Select upcoming batch"
+                      batchesLoading ? "Loading batches..." : "Select batch"
                     }
-                    disabled={
-                      !courseId ||
-                      isSubmitting ||
-                      batchesLoading ||
-                      noUpcomingBatchesForCourse
-                    }
+                    disabled={isSubmitting || batchesLoading || noLiveBatches}
                     options={batches.map((batch) => ({
                       value: batch.id,
                       label: batch.name,
                     }))}
-                    onValueChange={setBatchId}
+                    onValueChange={handleBatchChange}
                   />
                 )}
               </div>
@@ -542,12 +512,17 @@ export function AssignBranchTrainerModal({
                   placeholder={
                     batchId ? "Select learning mode" : "Select a batch first"
                   }
-                  disabled={!batchId || isSubmitting || noUpcomingBatchesForCourse}
+                  disabled={
+                    !batchId ||
+                    isSubmitting ||
+                    noLiveBatches ||
+                    !batchDetail
+                  }
                   options={modes.map((item) => ({
                     value: item,
                     label: getBatchModeLabel(item),
                   }))}
-                  onValueChange={(value) => setMode(value as BatchMode)}
+                  onValueChange={(value) => handleModeChange(value as BatchMode)}
                 />
               </div>
 
@@ -558,12 +533,12 @@ export function AssignBranchTrainerModal({
                   placeholder={
                     mode ? "Select batch timing" : "Select a learning mode first"
                   }
-                  disabled={!mode || isSubmitting || noUpcomingBatchesForCourse}
+                  disabled={!mode || isSubmitting || noLiveBatches}
                   options={timings.map((timing) => ({
                     value: timing.id,
                     label: formatTimingOptionLabel(timing),
                   }))}
-                  onValueChange={setBatchTimingId}
+                  onValueChange={handleTimingChange}
                 />
               </div>
             </div>

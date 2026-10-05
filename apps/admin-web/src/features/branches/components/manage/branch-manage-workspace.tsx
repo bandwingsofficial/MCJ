@@ -114,14 +114,7 @@ export function BranchManageWorkspace({
       </TabsList>
 
       <TabsContent value="overview">
-        <BranchManageOverviewPanel
-          branch={branch}
-          summary={summary}
-          summaryLoading={summaryLoading}
-          manageDataSyncKey={manageDataSyncKey}
-          assignmentsDisabled={assignmentsDisabled}
-          onNavigateToTab={navigateToTab}
-        />
+        <BranchManageOverviewPanel branch={branch} />
       </TabsContent>
 
       <TabsContent value="users">

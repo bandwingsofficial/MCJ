@@ -14,7 +14,6 @@ import type {
   BranchTrainerAssignment,
   BranchTrainerAssignmentType,
 } from "@/src/features/branches/types/branch.types";
-import { loadBranchAssignedCourses } from "@/src/features/branches/utils/branch-course-relation.utils";
 
 export async function loadBranchTrainerAssignments(
   branchId: string,
@@ -98,14 +97,15 @@ export function filterBranchTrainerAssignments(
   });
 }
 
-export async function loadUpcomingBranchCourseBatches(
+const LIVE_BATCH_STATUSES = new Set<Batch["status"]>(["UPCOMING", "ONGOING"]);
+
+async function loadBranchBatchesByLifecycle(
   branchId: string,
-  courseId: string,
+  batchStatus: "UPCOMING" | "ONGOING",
 ): Promise<Batch[]> {
   const response = await batchService.getBatches({
     branchId,
-    courseId,
-    batchStatus: "UPCOMING",
+    batchStatus,
     includeDeleted: false,
     isDeleted: false,
     page: 1,
@@ -116,8 +116,46 @@ export async function loadUpcomingBranchCourseBatches(
     (batch) =>
       !batch.isDeleted &&
       !batch.deletedAt &&
-      batch.status === "UPCOMING",
+      LIVE_BATCH_STATUSES.has(batch.status),
   );
+}
+
+/** Upcoming and ongoing parent batches assigned to this branch only. */
+export async function loadLiveBranchBatchesForTrainerAssign(
+  branchId: string,
+): Promise<Batch[]> {
+  const [upcoming, ongoing] = await Promise.all([
+    loadBranchBatchesByLifecycle(branchId, "UPCOMING"),
+    loadBranchBatchesByLifecycle(branchId, "ONGOING"),
+  ]);
+
+  const byId = new Map<string, Batch>();
+
+  for (const batch of [...upcoming, ...ongoing]) {
+    byId.set(batch.id, batch);
+  }
+
+  return Array.from(byId.values()).sort((left, right) =>
+    left.name.localeCompare(right.name),
+  );
+}
+
+export function resolveBatchCourseIdForTrainerAssign(
+  batch: Batch | null,
+): string | null {
+  if (!batch) {
+    return null;
+  }
+
+  if (batch.courseId?.trim()) {
+    return batch.courseId.trim();
+  }
+
+  if (batch.course?.id?.trim()) {
+    return batch.course.id.trim();
+  }
+
+  return null;
 }
 
 export async function loadBatchForTrainerAssignment(
@@ -131,24 +169,20 @@ export async function loadBatchForTrainerAssignment(
   }
 }
 
-export function getUpcomingTimingsForMode(
+export function getTrainerAssignTimingsForMode(
   batch: Batch | null,
   mode: BatchMode,
 ): BatchTiming[] {
   return getTimingsForMode(batch, mode).filter(
-    (timing) =>
-      !timing.isDeleted && timing.isActive && timing.status === "UPCOMING",
+    (timing) => !timing.isDeleted && timing.isActive !== false,
   );
 }
 
-export function getUpcomingConfiguredModes(batch: Batch | null): BatchMode[] {
+export function getTrainerAssignModesForBatch(batch: Batch | null): BatchMode[] {
   const modes = getConfiguredBatchModes(batch);
-  return modes.filter((mode) => getUpcomingTimingsForMode(batch, mode).length > 0);
-}
-
-export async function loadBranchCoursesForTrainerAssign(branchId: string) {
-  const { courses } = await loadBranchAssignedCourses(branchId);
-  return courses.filter((course) => course.status === "ACTIVE");
+  return modes.filter(
+    (mode) => getTrainerAssignTimingsForMode(batch, mode).length > 0,
+  );
 }
 
 export function formatTimingOptionLabel(timing: BatchTiming): string {

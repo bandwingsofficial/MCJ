@@ -108,11 +108,14 @@ export class AssignTrainersToBranchHandler {
       BRANCH_BATCH_NOT_LINKED:
         'The selected batch is not assigned to this branch',
       BATCH_NOT_FOUND: 'Batch not found',
-      BATCH_NOT_UPCOMING: 'Only upcoming batches can be used for trainer assignment',
+      BATCH_NOT_LIVE:
+        'Only upcoming or ongoing batches can be used for trainer assignment',
+      BATCH_NOT_UPCOMING:
+        'Only upcoming or ongoing batches can be used for trainer assignment',
       BATCH_COURSE_MISMATCH: 'The selected batch does not belong to this course',
       BATCH_TIMING_NOT_FOUND: 'Batch timing not found',
       BATCH_TIMING_NOT_UPCOMING:
-        'Only upcoming batch timings can be used for trainer assignment',
+        'The selected batch timing is not available for trainer assignment',
       BATCH_TIMING_MODE_MISMATCH:
         'The selected timing does not match the learning mode',
     };

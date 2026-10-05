@@ -16,6 +16,8 @@ import { Branch } from '../../domain/entities/branch.entity';
 import { BranchMapper } from '../mappers/branch.mapper';
 
 import { BranchStatus } from '../../domain/enums/branch-status.enum';
+import { BatchStatus } from '@modules/batch/domain/enums/batch-status.enum';
+import { resolveBatchApiStatus } from '@modules/batch/domain/utils/batch-lifecycle-status.util';
 import {
   linkCoursesForAssignedBatches,
   linkCoursesForAssignedCategories,
@@ -1139,6 +1141,11 @@ export class PrismaBranchRepository
         id: true,
         courseId: true,
         status: true,
+        startDate: true,
+        endDate: true,
+        startTime: true,
+        endTime: true,
+        isDeleted: true,
         batchCourses: {
           where: { isDeleted: false },
           select: { courseId: true },
@@ -1150,8 +1157,20 @@ export class PrismaBranchRepository
       throw new Error('BATCH_NOT_FOUND');
     }
 
-    if (batch.status !== 'UPCOMING') {
-      throw new Error('BATCH_NOT_UPCOMING');
+    const resolvedStatus = resolveBatchApiStatus({
+      storedStatus: batch.status as BatchStatus,
+      isDeleted: batch.isDeleted,
+      startDate: batch.startDate,
+      startTime: batch.startTime,
+      endDate: batch.endDate,
+      endTime: batch.endTime,
+    });
+
+    if (
+      resolvedStatus !== BatchStatus.UPCOMING &&
+      resolvedStatus !== BatchStatus.ONGOING
+    ) {
+      throw new Error('BATCH_NOT_LIVE');
     }
 
     const batchCourseIds = new Set<string>();
@@ -1178,10 +1197,6 @@ export class PrismaBranchRepository
 
     if (!timing) {
       throw new Error('BATCH_TIMING_NOT_FOUND');
-    }
-
-    if (timing.status !== 'UPCOMING') {
-      throw new Error('BATCH_TIMING_NOT_UPCOMING');
     }
 
     if (timing.mode !== context.mode) {
