@@ -4,6 +4,7 @@ import { syncAllBatchTimingEnrolledCounts } from '@modules/enrollment/infrastruc
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 import { GetBatchResult } from '../get-batch/get-batch.result';
 
+import { attachBranchAssignedTrainersToBatchList } from './attach-branch-assigned-trainers.util';
 import { ListBatchesQuery } from './list-batches.query';
 import { ListBatchesResult } from './list-batches.result';
 
@@ -51,9 +52,14 @@ export class ListBatchesHandler {
         ? await this.batchRepo.findAll(filters)
         : batches;
 
-    return new ListBatchesResult(
-      refreshed.map(GetBatchResult.fromEntity),
-      count,
+    const items = refreshed.map(GetBatchResult.fromEntity);
+
+    await attachBranchAssignedTrainersToBatchList(
+      this.prisma,
+      items,
+      query.courseId,
     );
+
+    return new ListBatchesResult(items, count);
   }
 }

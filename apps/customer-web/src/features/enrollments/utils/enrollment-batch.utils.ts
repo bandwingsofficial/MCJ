@@ -1,4 +1,8 @@
-import type { Batch, BatchStatus } from "@/src/features/batches/types/batch.types";
+import type {
+  Batch,
+  BatchStatus,
+  BatchTiming,
+} from "@/src/features/batches/types/batch.types";
 
 export const BLOCKED_BATCH_SELECTION_MESSAGE =
   "Completed or expired batches cannot be selected.";
@@ -47,21 +51,125 @@ export function getBatchAvailableSeats(batch: Batch): number {
   return Math.max(0, capacity - enrolled);
 }
 
+export function getTimingAvailableSeats(
+  timing: Pick<BatchTiming, "capacity" | "enrolledCount">,
+): number {
+  const capacity = Number.isFinite(timing.capacity) ? timing.capacity : 0;
+  const enrolled = Number.isFinite(timing.enrolledCount)
+    ? timing.enrolledCount
+    : 0;
+
+  return Math.max(0, capacity - enrolled);
+}
+
 export function isBatchFull(batch: Batch): boolean {
   return getBatchAvailableSeats(batch) <= 0;
 }
 
-export function isBatchSelectable(batch: Batch): boolean {
-  if (!batch.branchId) {
+export function resolveBatchBranchIds(
+  batch: Pick<Batch, "branchId" | "assignedBranchIds">,
+): string[] {
+  const fromAssignments = batch.assignedBranchIds ?? [];
+  const ids = [
+    ...fromAssignments,
+    ...(batch.branchId ? [batch.branchId] : []),
+  ].filter(Boolean);
+
+  return Array.from(new Set(ids));
+}
+
+export function isBatchAssignedToCourseBranches(
+  batch: Pick<Batch, "branchId" | "assignedBranchIds">,
+  courseBranchIds: string[],
+): boolean {
+  if (courseBranchIds.length === 0) {
+    return resolveBatchBranchIds(batch).length > 0;
+  }
+
+  const allowed = new Set(courseBranchIds);
+  return resolveBatchBranchIds(batch).some((branchId) =>
+    allowed.has(branchId),
+  );
+}
+
+export function isBatchAssignedToBranch(
+  batch: Pick<Batch, "branchId" | "assignedBranchIds">,
+  branchId: string,
+): boolean {
+  if (!branchId) {
     return false;
   }
 
+  return resolveBatchBranchIds(batch).includes(branchId);
+}
+
+export interface BatchSelectionContext {
+  branchId?: string | null;
+  batchTimingId?: string | null;
+}
+
+export function isBatchSelectable(
+  batch: Batch,
+  context?: BatchSelectionContext,
+): boolean {
   if (!batch.courseId) {
+    return false;
+  }
+
+  if (context?.branchId && !isBatchAssignedToBranch(batch, context.branchId)) {
+    return false;
+  }
+
+  if (
+    !context?.branchId &&
+    resolveBatchBranchIds(batch).length === 0
+  ) {
     return false;
   }
 
   if (isBatchBlockedForSelection(batch)) {
     return false;
+  }
+
+  if (batch.status !== "UPCOMING") {
+    return false;
+  }
+
+  const timings = batch.timings ?? [];
+
+  if (context?.batchTimingId && timings.length > 0) {
+    const timing = timings.find((row) => row.id === context.batchTimingId);
+    if (!timing || !timing.isActive) {
+      return false;
+    }
+
+    if (
+      timing.status === "CANCELLED" ||
+      timing.status === "COMPLETED" ||
+      timing.status === "ONGOING"
+    ) {
+      return false;
+    }
+
+    if (timing.status !== "UPCOMING") {
+      return false;
+    }
+
+    if (isBatchDateExpired(timing)) {
+      return false;
+    }
+
+    return getTimingAvailableSeats(timing) > 0;
+  }
+
+  if (timings.length > 0) {
+    return timings.some(
+      (timing) =>
+        timing.isActive &&
+        timing.status === "UPCOMING" &&
+        !isBatchDateExpired(timing) &&
+        getTimingAvailableSeats(timing) > 0,
+    );
   }
 
   return !isBatchFull(batch);

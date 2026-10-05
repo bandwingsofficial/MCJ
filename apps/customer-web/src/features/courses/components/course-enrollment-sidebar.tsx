@@ -24,6 +24,7 @@ import { PAYMENT_GATEWAYS } from "@/src/features/payments/constants/payment.cons
 import type { CourseBranch } from "@/src/features/courses/types/course.types";
 import {
   COURSE_MODE_ORDER,
+  isUpcomingBatch,
   isUpcomingTiming,
   resolveModePricing,
 } from "@/src/features/courses/utils/course-batch.utils";
@@ -39,8 +40,9 @@ import {
   formatBatchDays,
   formatEnrollmentDate,
   formatEnrollmentTime,
-  isBatchDateExpired,
+  isBatchAssignedToBranch,
   isBatchSelectable,
+  resolveBatchBranchIds,
 } from "@/src/features/enrollments/utils/enrollment-batch.utils";
 
 interface CourseEnrollmentSidebarProps {
@@ -100,45 +102,6 @@ function isActiveBranchStatus(status: string | null | undefined): boolean {
   return status.toUpperCase() === "ACTIVE";
 }
 
-function resolveBatchBranchIds(batch: Batch): string[] {
-  const fromAssignments = batch.assignedBranchIds ?? [];
-  const ids = [
-    ...fromAssignments,
-    ...(batch.branchId ? [batch.branchId] : []),
-  ].filter(Boolean);
-  return Array.from(new Set(ids));
-}
-
-/*
- * Sidebar eligibility is intentionally broader than list-table "upcoming"
- * filtering: include any non-cancelled parent that still exposes upcoming
- * timings, so every branch with bookable slots appears in Preferred Branch.
- */
-function isSidebarEligibleBatch(batch: Batch): boolean {
-  if (batch.isDeleted) {
-    return false;
-  }
-
-  if (batch.status === "CANCELLED" || batch.status === "COMPLETED") {
-    return false;
-  }
-
-  if (resolveBatchBranchIds(batch).length === 0) {
-    return false;
-  }
-
-  const upcomingTimings = (batch.timings ?? []).filter(isUpcomingTiming);
-  if (upcomingTimings.length > 0) {
-    return true;
-  }
-
-  if (isBatchDateExpired(batch)) {
-    return false;
-  }
-
-  return batch.status === "UPCOMING";
-}
-
 function resolveBranchNameForId(
   branchId: string,
   batch: Batch,
@@ -165,10 +128,31 @@ function buildTimingOptions(
   publicBranchNames: Map<string, string>,
 ): TimingOption[] {
   const options: TimingOption[] = [];
+  const assignedCourseBranchIds = new Set(
+    courseBranches.map((branch) => branch.id).filter(Boolean),
+  );
+  const restrictToAssignedCourseBranches = assignedCourseBranchIds.size > 0;
 
-  batches.filter(isSidebarEligibleBatch).forEach((batch) => {
-    const branchIds = resolveBatchBranchIds(batch);
-    const joinEnabled = isBatchSelectable(batch);
+  batches.filter(isUpcomingBatch).forEach((batch) => {
+    const branchIds = resolveBatchBranchIds(batch).filter((branchId) => {
+      if (!isBatchAssignedToBranch(batch, branchId)) {
+        return false;
+      }
+
+      if (
+        restrictToAssignedCourseBranches &&
+        !assignedCourseBranchIds.has(branchId)
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (branchIds.length === 0) {
+      return;
+    }
+
     const upcomingTimings = (batch.timings ?? []).filter(isUpcomingTiming);
 
     branchIds.forEach((branchId) => {
@@ -185,6 +169,10 @@ function buildTimingOptions(
 
       if (upcomingTimings.length > 0) {
         upcomingTimings.forEach((timing) => {
+          const joinEnabled = isBatchSelectable(batch, {
+            branchId,
+            batchTimingId: timing.id,
+          });
           const showTimeRange =
             timing.mode !== "RECORDED" &&
             Boolean(timing.startTime) &&
@@ -213,35 +201,7 @@ function buildTimingOptions(
             joinEnabled,
           });
         });
-        return;
       }
-
-      const showTimeRange =
-        batch.mode !== "RECORDED" &&
-        Boolean(batch.startTime) &&
-        Boolean(batch.endTime);
-
-      options.push({
-        key: `${batch.id}:${branchId}:batch`,
-        batchId: batch.id,
-        branchId,
-        branchName: resolvedName,
-        mode: batch.mode,
-        timingName: batch.name,
-        days:
-          batch.mode === "RECORDED"
-            ? "Flexible Learning"
-            : formatBatchDays(batch.daysOfWeek ?? []),
-        daysOfWeek: batch.daysOfWeek ?? [],
-        startDateIso: batch.startDate,
-        startDateLabel: formatEnrollmentDate(batch.startDate),
-        startTimeLabel: formatEnrollmentTime(batch.startTime),
-        endTimeLabel: formatEnrollmentTime(batch.endTime),
-        startTime: batch.startTime,
-        endTime: batch.endTime,
-        showTimeRange,
-        joinEnabled,
-      });
     });
   });
 

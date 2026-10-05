@@ -311,7 +311,13 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       return "wrong_branch";
     }
 
-    if (selectedBatch && !isBatchSelectable(selectedBatch)) {
+    if (
+      selectedBatch &&
+      !isBatchSelectable(selectedBatch, {
+        branchId: selectedBranchId,
+        batchTimingId: selectedBatchTimingId,
+      })
+    ) {
       return "unavailable";
     }
 
@@ -330,6 +336,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     selectedBatch,
     selectedBatchId,
     selectedBranchId,
+    selectedBatchTimingId,
   ]);
 
   const pricing = selectedBatch
@@ -434,7 +441,12 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       return;
     }
 
-    if (!isBatchSelectable(selectedBatch)) {
+    if (
+      !isBatchSelectable(selectedBatch, {
+        branchId: selectedBranchId,
+        batchTimingId: selectedBatchTimingId,
+      })
+    ) {
       appToast.error(BLOCKED_BATCH_SELECTION_MESSAGE);
       return;
     }
@@ -756,7 +768,10 @@ export function EnrollPage({ slug }: EnrollPageProps) {
                       isBatchResolving ||
                       isProcessing ||
                       !selectedBatch ||
-                      !isBatchSelectable(selectedBatch)
+                      !isBatchSelectable(selectedBatch, {
+                        branchId: selectedBranchId,
+                        batchTimingId: selectedBatchTimingId,
+                      })
                     }
                     loading={isProcessing}
                     onClick={handlePayNow}

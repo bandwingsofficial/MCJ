@@ -5,9 +5,12 @@ export interface BatchListData {
   count: number;
 }
 
+import type { BatchStatus } from "@/src/features/batches/types/batch.types";
+
 export interface BatchFilters {
   courseId?: string;
   branchId?: string;
+  status?: BatchStatus;
   search?: string;
   skip?: number;
   take?: number;

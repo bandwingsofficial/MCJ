@@ -25,6 +25,7 @@ import { mapCourseModeToEnrollmentMode } from '../../domain/utils/map-course-mod
 import {
   assertBatchTimingHasLiveCapacity,
 } from '../../infrastructure/utils/enrollment-timing-count.util';
+import { assertPublicEnrollmentBranchContext } from '../../infrastructure/utils/public-enrollment-branch-context.util';
 import { GetEnrollmentResult } from '../get-enrollment/get-enrollment.result';
 import { EnrollmentSideEffectsService } from '../shared/enrollment-side-effects.service';
 
@@ -93,6 +94,14 @@ export class CreatePublicEnrollmentHandler {
       command.batchId,
       command.batchTimingId,
     );
+
+    await assertPublicEnrollmentBranchContext(this.branchRepo, {
+      branchId: hierarchy.branchId,
+      courseId: hierarchy.courseId,
+      batchId: command.batchId,
+      batchTimingId: batchTiming.id,
+      mode: batchTiming.mode,
+    });
 
     const pricing = hierarchy.batch.getPricing();
     const isComplimentary =

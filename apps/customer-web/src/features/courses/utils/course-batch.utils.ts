@@ -148,7 +148,11 @@ export function isUpcomingBatch(batch: Batch): boolean {
     return false;
   }
 
-  if (batch.status === "CANCELLED" || batch.status === "COMPLETED") {
+  if (
+    batch.status === "CANCELLED" ||
+    batch.status === "COMPLETED" ||
+    batch.status === "ONGOING"
+  ) {
     return false;
   }
 
@@ -156,22 +160,16 @@ export function isUpcomingBatch(batch: Batch): boolean {
     return false;
   }
 
-  const upcomingTimings = (batch.timings ?? []).filter(isUpcomingTiming);
+  if (batch.status !== "UPCOMING") {
+    return false;
+  }
 
-  /*
-   * Parent batches may already be ONGOING while still exposing upcoming
-   * timings at other branches/slots. Prefer timing eligibility first so
-   * those branches are not silently dropped from enrollment.
-   */
+  const upcomingTimings = (batch.timings ?? []).filter(isUpcomingTiming);
   if ((batch.timings?.length ?? 0) > 0) {
     return upcomingTimings.length > 0;
   }
 
-  if (batch.status === "ONGOING") {
-    return false;
-  }
-
-  return batch.status === "UPCOMING";
+  return true;
 }
 
 function getBatchAvailableSeats(batch: Batch): number {
@@ -360,8 +358,14 @@ function resolveTimingDays(mode: BatchMode, days: string): string {
 function isTimingJoinEnabled(
   batch: Batch,
   timing: Pick<CourseUpcomingTimingRow, "availableSeats" | "id">,
+  branchId?: string | null,
 ): boolean {
-  if (!isBatchSelectable(batch)) {
+  if (
+    !isBatchSelectable(batch, {
+      branchId,
+      batchTimingId: timing.id !== batch.id ? timing.id : null,
+    })
+  ) {
     return false;
   }
 
@@ -568,6 +572,28 @@ export function collectBatchTrainerIds(batches: Batch[]): string[] {
   const ids = new Set<string>();
 
   batches.filter(isUpcomingBatch).forEach((batch) => {
+    let usedBranchScoped = false;
+
+    (batch.timings ?? []).forEach((timing) => {
+      const byBranch = timing.branchAssignedTrainers;
+      if (!byBranch) {
+        return;
+      }
+
+      usedBranchScoped = true;
+      Object.values(byBranch).forEach((trainers) => {
+        trainers.forEach((trainer) => {
+          if (trainer.id) {
+            ids.add(trainer.id);
+          }
+        });
+      });
+    });
+
+    if (usedBranchScoped) {
+      return;
+    }
+
     batch.trainers?.forEach((trainer) => {
       if (trainer.id) {
         ids.add(trainer.id);

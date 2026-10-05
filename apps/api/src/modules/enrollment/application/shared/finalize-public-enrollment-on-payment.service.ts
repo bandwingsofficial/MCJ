@@ -35,6 +35,7 @@ import {
 import {
   assertBatchTimingHasLiveCapacity,
 } from '../../infrastructure/utils/enrollment-timing-count.util';
+import { assertPublicEnrollmentBranchContext } from '../../infrastructure/utils/public-enrollment-branch-context.util';
 import { EnrollmentCoinService } from './enrollment-coin.service';
 import { EnrollmentSideEffectsService } from './enrollment-side-effects.service';
 
@@ -132,6 +133,14 @@ export class FinalizePublicEnrollmentOnPaymentService {
       payload.batchId,
       payload.batchTimingId,
     );
+
+    await assertPublicEnrollmentBranchContext(this.branchRepo, {
+      branchId: hierarchy.branchId,
+      courseId: hierarchy.courseId,
+      batchId: payload.batchId,
+      batchTimingId: batchTiming.id,
+      mode: batchTiming.mode,
+    });
 
     await assertBatchTimingHasLiveCapacity(this.prisma, batchTiming.id);
 

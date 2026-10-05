@@ -6,6 +6,8 @@ import { PrismaService } from '../../../../infrastructure/prisma/prisma.service'
 import type { BatchRepository } from '../../domain/repositories/batch.repository';
 import { BatchDomainService } from '../../domain/services/batch-domain.service';
 
+import { attachBranchAssignedTrainersToBatchList } from '../list-batches/attach-branch-assigned-trainers.util';
+
 import { GetBatchQuery } from './get-batch.query';
 import { GetBatchResult } from './get-batch.result';
 
@@ -39,8 +41,14 @@ export class GetBatchHandler {
       query.includeDeleted,
     );
 
-    return GetBatchResult.fromEntity(
-      refreshed ?? batch,
+    const result = GetBatchResult.fromEntity(refreshed ?? batch);
+
+    await attachBranchAssignedTrainersToBatchList(
+      this.prisma,
+      [result],
+      result.courseId ?? undefined,
     );
+
+    return result;
   }
 }

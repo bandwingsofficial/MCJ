@@ -37,6 +37,7 @@ import { mapCourseModeToEnrollmentMode } from '../../domain/utils/map-course-mod
 import {
   assertBatchTimingHasLiveCapacity,
 } from '../../infrastructure/utils/enrollment-timing-count.util';
+import { assertPublicEnrollmentBranchContext } from '../../infrastructure/utils/public-enrollment-branch-context.util';
 import { EnrollmentCoinService } from '../shared/enrollment-coin.service';
 import { CancelUnpaidPublicEnrollmentService } from '../shared/cancel-unpaid-public-enrollment.service';
 
@@ -132,6 +133,14 @@ export class CreatePublicEnrollmentCheckoutHandler {
       command.batchId,
       command.batchTimingId,
     );
+
+    await assertPublicEnrollmentBranchContext(this.branchRepo, {
+      branchId: hierarchy.branchId,
+      courseId: hierarchy.courseId,
+      batchId: command.batchId,
+      batchTimingId: batchTiming.id,
+      mode: batchTiming.mode,
+    });
 
     await assertBatchTimingHasLiveCapacity(this.prisma, batchTiming.id);
 

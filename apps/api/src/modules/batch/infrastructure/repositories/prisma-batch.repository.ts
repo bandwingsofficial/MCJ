@@ -643,11 +643,64 @@ export class PrismaBatchRepository implements BatchRepository {
       where.status = filters.status;
     }
 
-    if (filters.courseId) where.courseId = filters.courseId;
+    if (filters.courseId) {
+      const courseScope: Prisma.BatchWhereInput = {
+        OR: [
+          { courseId: filters.courseId },
+          {
+            batchCourses: {
+              some: {
+                courseId: filters.courseId,
+                isDeleted: false,
+              },
+            },
+          },
+        ],
+      };
+
+      const branchAssignedForCourse: Prisma.BatchWhereInput = {
+        branchAssignments: {
+          some: {
+            branch: {
+              courseBranches: {
+                some: { courseId: filters.courseId },
+              },
+            },
+          },
+        },
+      };
+
+      where.AND = [
+        ...(Array.isArray(where.AND)
+          ? where.AND
+          : where.AND
+            ? [where.AND]
+            : []),
+        courseScope,
+        branchAssignedForCourse,
+      ];
+    }
     if (filters.branchId) {
       where.branchAssignments = {
         some: { branchId: filters.branchId },
       };
+
+      if (filters.courseId) {
+        where.AND = [
+          ...(Array.isArray(where.AND)
+            ? where.AND
+            : where.AND
+              ? [where.AND]
+              : []),
+          {
+            course: {
+              courseBranches: {
+                some: { branchId: filters.branchId },
+              },
+            },
+          },
+        ];
+      }
     }
     if (filters.mode) where.mode = filters.mode;
     if (filters.categoryId) {

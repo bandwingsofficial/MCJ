@@ -65,6 +65,8 @@ export interface BatchTiming {
   enrolledCount: number;
   status: BatchStatus;
   isActive: boolean;
+  /** Branch-scoped trainers from BranchTrainer (COURSE_BATCH) assignments. */
+  branchAssignedTrainers?: Record<string, BatchTrainer[]>;
 }
 
 export interface Batch {

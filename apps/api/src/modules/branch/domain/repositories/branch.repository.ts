@@ -273,6 +273,11 @@ export interface BranchRepository {
     context: CourseBatchTrainerAssignmentContext,
   ): Promise<void>;
 
+  validatePublicCustomerEnrollmentContext(
+    branchId: string,
+    context: CourseBatchTrainerAssignmentContext,
+  ): Promise<void>;
+
   findBatchesByIds(
     batchIds: string[],
   ): Promise<BranchAssignableBatch[]>;

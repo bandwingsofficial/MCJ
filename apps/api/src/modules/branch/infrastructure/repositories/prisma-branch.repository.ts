@@ -1204,6 +1204,88 @@ export class PrismaBranchRepository
     }
   }
 
+  async validatePublicCustomerEnrollmentContext(
+    branchId: string,
+    context: {
+      courseId: string;
+      batchId: string;
+      mode: string;
+      batchTimingId: string;
+    },
+  ): Promise<void> {
+    await this.validateCourseBatchTrainerContext(branchId, context);
+
+    const batch = await this.prisma.batch.findFirst({
+      where: {
+        id: context.batchId,
+        isDeleted: false,
+        isActive: true,
+      },
+      select: {
+        status: true,
+        startDate: true,
+        endDate: true,
+        startTime: true,
+        endTime: true,
+        isDeleted: true,
+      },
+    });
+
+    if (!batch) {
+      throw new Error('BATCH_NOT_FOUND');
+    }
+
+    const resolvedStatus = resolveBatchApiStatus({
+      storedStatus: batch.status as BatchStatus,
+      isDeleted: batch.isDeleted,
+      startDate: batch.startDate,
+      startTime: batch.startTime,
+      endDate: batch.endDate,
+      endTime: batch.endTime,
+    });
+
+    if (resolvedStatus !== BatchStatus.UPCOMING) {
+      throw new Error('BATCH_NOT_UPCOMING');
+    }
+
+    const timing = await this.prisma.batchTiming.findFirst({
+      where: {
+        id: context.batchTimingId,
+        batchId: context.batchId,
+        isDeleted: false,
+      },
+      select: {
+        status: true,
+        isActive: true,
+        startDate: true,
+        endDate: true,
+      },
+    });
+
+    if (!timing) {
+      throw new Error('BATCH_TIMING_NOT_FOUND');
+    }
+
+    if (!timing.isActive) {
+      throw new Error('BATCH_TIMING_INACTIVE');
+    }
+
+    if (timing.status !== BatchStatus.UPCOMING) {
+      throw new Error('BATCH_TIMING_NOT_UPCOMING');
+    }
+
+    const timingEnd = timing.endDate ?? timing.startDate;
+    if (timingEnd) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const endDay = new Date(timingEnd);
+      endDay.setHours(0, 0, 0, 0);
+      if (today.getTime() > endDay.getTime()) {
+        throw new Error('BATCH_TIMING_NOT_UPCOMING');
+      }
+    }
+  }
+
   async unassignTrainerFromBranch(
     branchId: string,
     trainerId: string,

@@ -122,20 +122,74 @@ export function resolveBatchApiStatus(params: {
 }
 
 export type BatchTimingStatusInput = {
+  storedStatus?: BatchStatus;
   isActive?: boolean;
   isDeleted?: boolean;
+  startDate?: Date;
+  startTime?: string;
+  endDate?: Date | null;
+  endTime?: string;
+  now?: Date;
 };
 
-/** Stored active flag only — not derived from dates or parent batch lifecycle. */
+/** Resolves timing lifecycle from parent batch + timing schedule (stored status is not trusted alone). */
 export function resolveBatchTimingApiStatus(
-  _parent: BatchTimingStatusInput,
-  timing: BatchTimingStatusInput,
+  parent: BatchTimingStatusInput & {
+    storedStatus: BatchStatus;
+    startDate: Date;
+    startTime: string;
+    endDate: Date | null;
+    endTime: string;
+  },
+  timing: BatchTimingStatusInput & {
+    storedStatus: BatchStatus;
+    startDate: Date;
+    startTime: string;
+    endDate: Date | null;
+    endTime: string;
+  },
 ): BatchStatus {
   if (timing.isDeleted) {
     return BatchStatus.ARCHIVED;
   }
 
-  return timing.isActive === false
-    ? BatchStatus.ARCHIVED
-    : BatchStatus.ONGOING;
+  if (timing.isActive === false) {
+    return BatchStatus.ARCHIVED;
+  }
+
+  if (parent.storedStatus === BatchStatus.CANCELLED) {
+    return BatchStatus.CANCELLED;
+  }
+
+  if (timing.storedStatus === BatchStatus.CANCELLED) {
+    return BatchStatus.CANCELLED;
+  }
+
+  const now = timing.now ?? parent.now;
+
+  const parentResolved = resolveBatchApiStatus({
+    storedStatus: parent.storedStatus,
+    isDeleted: parent.isDeleted,
+    startDate: parent.startDate,
+    startTime: parent.startTime,
+    endDate: parent.endDate,
+    endTime: parent.endTime,
+    now,
+  });
+
+  if (parentResolved === BatchStatus.ONGOING) {
+    return BatchStatus.ONGOING;
+  }
+
+  if (parentResolved === BatchStatus.UPCOMING) {
+    return BatchStatus.UPCOMING;
+  }
+
+  return calculateBatchLifecycleStatus({
+    startDate: timing.startDate,
+    startTime: timing.startTime,
+    endDate: timing.endDate,
+    endTime: timing.endTime,
+    now,
+  });
 }

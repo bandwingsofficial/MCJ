@@ -26,6 +26,7 @@ export function useCourseBatches(
       const data = await batchService.getAllBatches({
         courseId,
         branchId,
+        status: "UPCOMING",
       });
       setBatches(data);
       setError(null);

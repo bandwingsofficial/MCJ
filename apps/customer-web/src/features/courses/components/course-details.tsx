@@ -44,7 +44,9 @@ import {
   collectBatchTrainerIds,
   COURSE_MODE_ORDER,
   isUpcomingBatch,
+  isUpcomingTiming,
 } from "@/src/features/courses/utils/course-batch.utils";
+import { isBatchAssignedToCourseBranches } from "@/src/features/enrollments/utils/enrollment-batch.utils";
 import {
   formatCourseLevel,
   formatDuration,
@@ -162,21 +164,26 @@ export function CourseDetails({ course }: CourseDetailsProps) {
     refetch: refetchTrainers,
   } = useCourseTrainers(course.id);
 
+  const courseBranchIds = useMemo(
+    () => (course.branches ?? []).map((branch) => branch.id).filter(Boolean),
+    [course.branches],
+  );
+
   const upcomingBatches = useMemo(
     () =>
       (Array.isArray(courseBatches) ? courseBatches : []).filter(
-        isUpcomingBatch,
+        (batch) =>
+          isUpcomingBatch(batch) &&
+          isBatchAssignedToCourseBranches(batch, courseBranchIds),
       ),
-    [courseBatches],
+    [courseBatches, courseBranchIds],
   );
 
   const configuredModes = useMemo(() => {
     const modes = new Set<BatchMode>();
 
     upcomingBatches.forEach((batch) => {
-      const timings = (batch.timings ?? []).filter(
-        (timing) => timing.isActive && timing.status === "UPCOMING",
-      );
+      const timings = (batch.timings ?? []).filter(isUpcomingTiming);
 
       if (timings.length > 0) {
         timings.forEach((timing) => modes.add(timing.mode));
@@ -525,7 +532,7 @@ export function CourseDetails({ course }: CourseDetailsProps) {
 
           <aside className="min-w-0 pb-8 pt-4 sm:pb-10 lg:sticky lg:top-[92px] lg:self-start lg:pt-4">
             <CourseEnrollmentSidebar
-              batches={Array.isArray(courseBatches) ? courseBatches : []}
+              batches={upcomingBatches}
               courseBranches={course.branches}
               courseSlug={course.slug}
               courseId={course.id}

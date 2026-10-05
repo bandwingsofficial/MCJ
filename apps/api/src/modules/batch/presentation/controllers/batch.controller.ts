@@ -13,6 +13,7 @@ import { GetBatchHandler } from '../../application/get-batch/get-batch.handler';
 import { GetBatchQuery } from '../../application/get-batch/get-batch.query';
 import { ListBatchesHandler } from '../../application/list-batches/list-batches.handler';
 import { ListBatchesQuery } from '../../application/list-batches/list-batches.query';
+import { BatchStatus } from '../../domain/enums/batch-status.enum';
 import { ListBatchesQueryDto } from '../dtos/list-batches-query.dto';
 
 @ApiTags('Batches')
@@ -32,7 +33,7 @@ export class BatchController {
         query.branchId,
         query.trainerId,
         query.mode,
-        query.status,
+        query.status ?? BatchStatus.UPCOMING,
         query.search,
         query.isFeatured,
         false,
