@@ -7,6 +7,19 @@ export {
 } from "./student-qualification.js";
 
 export {
+  COURSE_MINIMUM_QUALIFICATION_VALUES,
+  COURSE_MINIMUM_QUALIFICATION_LABELS,
+  COURSE_MINIMUM_QUALIFICATION_GROUPS,
+  buildLegacyCourseMinimumQualificationGroup,
+  courseMinimumQualificationMatchesSearch,
+  filterCourseMinimumQualificationGroups,
+  getCourseMinimumQualificationLabel,
+  isCourseMinimumQualification,
+  type CourseMinimumQualification,
+  type CourseMinimumQualificationGroup,
+} from "./course-minimum-qualification.js";
+
+export {
   BRANCH_OPS_TIME_ZONE,
   buildBranchInterviewWorkflowAlerts,
   calendarDayKey,

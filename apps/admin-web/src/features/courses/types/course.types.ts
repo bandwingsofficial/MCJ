@@ -1,22 +1,13 @@
 // src/features/courses/types/course.types.ts
 
+import type { CourseMinimumQualification } from "@mcj/shared-constants";
+
 export type CourseLevel =
   | "BEGINNER"
   | "INTERMEDIATE"
   | "ADVANCED";
 
-export type CourseQualification =
-  | "B_COM"
-  | "M_COM"
-  | "BBA"
-  | "MBA"
-  | "BCA"
-  | "MCA"
-  | "CA"
-  | "CA_FOUNDATION"
-  | "CMA"
-  | "CS"
-  | "ACCA";
+export type CourseQualification = CourseMinimumQualification;
 
 export type CourseDurationType =
   | "DAYS"

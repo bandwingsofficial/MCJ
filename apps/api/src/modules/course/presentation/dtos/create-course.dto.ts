@@ -1,9 +1,12 @@
 import { Transform } from 'class-transformer';
-import { IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateBy, ValidationOptions } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateBy, ValidationOptions } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { CourseLevel } from '../../domain/enums/course-level.enum';
-import { CourseQualification } from '../../domain/enums/course-qualification.enum';
+import {
+  COURSE_QUALIFICATION_VALUES,
+  type CourseQualification,
+} from '../../domain/enums/course-qualification.enum';
 import { CourseStatus } from '../../domain/enums/course-status.enum';
 import { DurationType } from '../../domain/enums/duration-type.enum';
 
@@ -140,7 +143,7 @@ export class CreateCourseDto {
   level?: CourseLevel;
 
   @ApiPropertyOptional({
-    enum: CourseQualification,
+    enum: COURSE_QUALIFICATION_VALUES,
     isArray: true,
   })
   @IsOptional()
@@ -150,7 +153,7 @@ export class CreateCourseDto {
       : value,
   )
   @IsArray()
-  @IsEnum(CourseQualification, { each: true })
+  @IsIn([...COURSE_QUALIFICATION_VALUES], { each: true })
   minimumQualifications?: CourseQualification[];
 
   @ApiPropertyOptional({ default: 'English' })

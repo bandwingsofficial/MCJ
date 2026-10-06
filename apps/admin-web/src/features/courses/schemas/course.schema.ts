@@ -62,7 +62,14 @@ const courseFields = {
   level: z.enum(COURSE_LEVELS).default("BEGINNER"),
 
   minimumQualifications: z
-    .array(z.enum(COURSE_QUALIFICATIONS))
+    .array(
+      z.enum(
+        COURSE_QUALIFICATIONS as unknown as [
+          (typeof COURSE_QUALIFICATIONS)[number],
+          ...(typeof COURSE_QUALIFICATIONS)[number][],
+        ],
+      ),
+    )
     .default([]),
 
   language: z

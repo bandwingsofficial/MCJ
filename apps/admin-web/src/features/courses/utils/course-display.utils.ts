@@ -1,15 +1,13 @@
-import {
-  COURSE_QUALIFICATION_LABELS,
-} from "@/src/features/courses/constants/course.constants";
+import { getCourseMinimumQualificationLabel } from "@mcj/shared-constants";
 
 import type {
   CourseQualification,
 } from "@/src/features/courses/types/course.types";
 
 export function formatCourseQualification(
-  qualification: CourseQualification,
+  qualification: CourseQualification | string,
 ): string {
-  return COURSE_QUALIFICATION_LABELS[qualification] ?? qualification;
+  return getCourseMinimumQualificationLabel(qualification);
 }
 
 export function formatCourseQualifications(

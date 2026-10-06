@@ -1,3 +1,9 @@
+import {
+  COURSE_MINIMUM_QUALIFICATION_GROUPS,
+  COURSE_MINIMUM_QUALIFICATION_LABELS,
+  COURSE_MINIMUM_QUALIFICATION_VALUES,
+} from "@mcj/shared-constants";
+
 import type {
   CourseLevel,
   CourseQualification,
@@ -10,36 +16,14 @@ export const COURSE_LEVELS = [
   "ADVANCED",
 ] as const satisfies readonly CourseLevel[];
 
-export const COURSE_QUALIFICATIONS = [
-  "B_COM",
-  "M_COM",
-  "BBA",
-  "MBA",
-  "BCA",
-  "MCA",
-  "CA",
-  "CA_FOUNDATION",
-  "CMA",
-  "CS",
-  "ACCA",
-] as const satisfies readonly CourseQualification[];
+export const COURSE_QUALIFICATIONS = COURSE_MINIMUM_QUALIFICATION_VALUES;
 
 export const COURSE_QUALIFICATION_LABELS: Record<
   CourseQualification,
   string
-> = {
-  B_COM: "B.Com",
-  M_COM: "M.Com",
-  BBA: "BBA",
-  MBA: "MBA",
-  BCA: "BCA",
-  MCA: "MCA",
-  CA: "CA",
-  CA_FOUNDATION: "CA Foundation",
-  CMA: "CMA",
-  CS: "CS",
-  ACCA: "ACCA",
-};
+> = COURSE_MINIMUM_QUALIFICATION_LABELS;
+
+export const COURSE_QUALIFICATION_GROUPS = COURSE_MINIMUM_QUALIFICATION_GROUPS;
 
 export const COURSE_STATUSES = [
   "DRAFT",

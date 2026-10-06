@@ -1,13 +1,8 @@
-export enum CourseQualification {
-  B_COM = 'B_COM',
-  M_COM = 'M_COM',
-  BBA = 'BBA',
-  MBA = 'MBA',
-  BCA = 'BCA',
-  MCA = 'MCA',
-  CA = 'CA',
-  CA_FOUNDATION = 'CA_FOUNDATION',
-  CMA = 'CMA',
-  CS = 'CS',
-  ACCA = 'ACCA',
-}
+import {
+  COURSE_MINIMUM_QUALIFICATION_VALUES,
+  type CourseMinimumQualification,
+} from '@mcj/shared-constants';
+
+export type CourseQualification = CourseMinimumQualification;
+
+export const COURSE_QUALIFICATION_VALUES = COURSE_MINIMUM_QUALIFICATION_VALUES;
