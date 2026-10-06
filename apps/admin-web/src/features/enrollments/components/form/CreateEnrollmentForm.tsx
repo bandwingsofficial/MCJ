@@ -112,8 +112,8 @@ function formatApplicationTypeLabel(
 function formatEnrollmentModeLabel(
   mode: string | null | undefined,
 ): string {
-  if (mode === "SELF_PACED") {
-    return "Self-Paced";
+  if (mode === "SELF_PACED_RECORDED" || mode === "SELF_PACED") {
+    return "Self-Paced / Recorded";
   }
   if (mode === "ONLINE") {
     return "Online";
@@ -169,7 +169,7 @@ export function CreateEnrollmentForm({
       : todayDateInputValue(),
   );
   const [createEnrollmentStatus, setCreateEnrollmentStatus] =
-    useState<EnrollmentStatus>(EnrollmentStatus.ADVANCED);
+    useState<EnrollmentStatus>(EnrollmentStatus.ENROLLED);
   const [paymentDate, setPaymentDate] = useState(todayDateInputValue());
   const [batchId, setBatchId] = useState(
     () => resolveEnrollmentBatchId(enrollment),
@@ -513,7 +513,7 @@ export function CreateEnrollmentForm({
               id: item.id,
               label: formatPersonName(item.firstName, item.lastName),
               meta: blockedForNewEnrollment
-                ? "Cannot enroll while student is Advanced or Admitted"
+                ? "Cannot enroll while student is Enrolled or Joined"
                 : [item.studentCode, item.phone, item.email]
                     .filter(Boolean)
                     .join(" · "),
@@ -618,7 +618,7 @@ export function CreateEnrollmentForm({
 
     if (!isEdit && selectedStudentEnrollment?.enrolledElsewhere) {
       appToast.error(
-        "Cannot create a new enrollment while the student is Advanced or Admitted. Update the student status first.",
+        "Cannot create a new enrollment while the student is Enrolled or Joined. Update the student status first.",
       );
       return;
     }
@@ -771,7 +771,7 @@ export function CreateEnrollmentForm({
               }
             />
             <p className="text-xs text-slate-500">
-              Advanced: seat booked, admission may be pending. Admitted: student
+              Enrolled: seat booked, admission may be pending. Joined: student
               is fully admitted.
             </p>
           </div>

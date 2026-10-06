@@ -17,8 +17,8 @@ const STATUS_VARIANTS: Record<
   "success" | "warning" | "danger" | "info" | "default"
 > = {
   LEAD: "warning",
-  ADVANCED: "info",
-  ADMITTED: "info",
+  ENROLLED: "info",
+  JOINED: "info",
   COMPLETED: "default",
   CANCELLED: "danger",
   PLACED: "success",

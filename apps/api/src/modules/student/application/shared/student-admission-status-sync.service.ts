@@ -23,8 +23,8 @@ import { StudentStatus } from '../../domain/enums/student-status.enum';
 
 const WORKFLOW_STATUSES = new Set<StudentStatus>([
   StudentStatus.LEAD,
-  StudentStatus.ADVANCED,
-  StudentStatus.ADMITTED,
+  StudentStatus.ENROLLED,
+  StudentStatus.JOINED,
   StudentStatus.COMPLETED,
   StudentStatus.CANCELLED,
   StudentStatus.PLACED,
@@ -140,9 +140,9 @@ export class StudentAdmissionStatusSyncService {
       return;
     }
 
-    if (targetEnrollmentStatus === EnrollmentStatus.ADMITTED) {
+    if (targetEnrollmentStatus === EnrollmentStatus.JOINED) {
       enrollment.update({
-        status: EnrollmentStatus.ADMITTED,
+        status: EnrollmentStatus.JOINED,
         admissionDate: enrollment.admissionDate ?? new Date(),
         isActive: true,
         updatedBy,
@@ -161,7 +161,7 @@ export class StudentAdmissionStatusSyncService {
     }
 
     if (
-      targetEnrollmentStatus === EnrollmentStatus.ADMITTED &&
+      targetEnrollmentStatus === EnrollmentStatus.JOINED &&
       !Enrollment.statusOccupiesSeat(previousStatus)
     ) {
       await this.enrollmentSideEffects.assertCapacityForTransition(

@@ -42,12 +42,12 @@ import {
 import { buildSessionSummaryFromAttendanceRows } from './attendance-analytics.util';
 
 const VISIBLE_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
-  EnrollmentStatus.ADMITTED,
+  EnrollmentStatus.JOINED,
   EnrollmentStatus.ACTIVE,
 ];
 
 /** Batch/timing seat counts in Branch My Batches use ADMITTED enrollments only. */
-const BATCH_TIMING_ADMITTED_STATUS = EnrollmentStatus.ADMITTED;
+const BATCH_TIMING_ADMITTED_STATUS = EnrollmentStatus.JOINED;
 
 const DAY_INDEX: Record<DayOfWeek, number> = {
   SUNDAY: 0,
@@ -1162,7 +1162,7 @@ export class BranchBatchOpsService {
         (
           [
             EnrollmentStatus.ACTIVE,
-            EnrollmentStatus.ADMITTED,
+            EnrollmentStatus.JOINED,
           ] as EnrollmentStatus[]
         ).includes(row.status as EnrollmentStatus),
       );

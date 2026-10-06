@@ -47,7 +47,7 @@ function makeEnrollment(
     categoryId: 'cat-1',
     courseId: 'course-1',
     batchId: overrides?.batchId ?? BATCH_A,
-    status: overrides?.status ?? EnrollmentStatus.ADMITTED,
+    status: overrides?.status ?? EnrollmentStatus.JOINED,
     paidAmount: 0,
     source: EnrollmentSource.ADMIN,
   });
@@ -110,7 +110,7 @@ function makeDetail(enrollment: Enrollment) {
       gender: null,
       qualification: null,
       profileImageUrl: null,
-      status: 'ADMITTED',
+      status: 'JOINED',
       isActive: true,
     },
     branch: {
@@ -213,7 +213,7 @@ describe('UnenrollEnrollmentHandler', () => {
           studentCode: 'STU0001',
           firstName: 'Akshay',
           lastName: 'Badiger',
-          status: StudentStatus.ADMITTED,
+          status: StudentStatus.JOINED,
         }),
       ),
       save: jest.fn(),
@@ -278,7 +278,7 @@ describe('UnenrollEnrollmentHandler', () => {
   // TEST 18: Already dropped/cancelled → business error
   it('returns a business error when enrollment is already cancelled', async () => {
     const enrollment = makeEnrollment({
-      status: EnrollmentStatus.ADMITTED,
+      status: EnrollmentStatus.JOINED,
       isActive: false,
     });
     enrollmentRepo.findById.mockResolvedValue(enrollment);
@@ -292,7 +292,7 @@ describe('UnenrollEnrollmentHandler', () => {
 
   // TEST 19: Branch manager can unenroll own branch student
   it('allows unenrollment when batch belongs to the actor branch', async () => {
-    const enrollment = makeEnrollment({ status: EnrollmentStatus.ADMITTED });
+    const enrollment = makeEnrollment({ status: EnrollmentStatus.JOINED });
     enrollmentRepo.findById.mockResolvedValue(enrollment);
     batchRepo.findById.mockResolvedValue(makeBatch(BATCH_A, BRANCH_A));
     enrollmentRepo.findDetailById.mockImplementation(async () =>
@@ -309,7 +309,7 @@ describe('UnenrollEnrollmentHandler', () => {
   // TEST 20: Branch manager cannot unenroll another branch student
   it('denies unenrollment when batch belongs to another branch', async () => {
     const enrollment = makeEnrollment({
-      status: EnrollmentStatus.ADMITTED,
+      status: EnrollmentStatus.JOINED,
       branchId: BRANCH_B,
       batchId: BATCH_B,
     });
@@ -325,7 +325,7 @@ describe('UnenrollEnrollmentHandler', () => {
 
   // TEST 22: Historical cancelled enrollment remains in database (soft save, not delete)
   it('persists cancellation instead of deleting the enrollment record', async () => {
-    const enrollment = makeEnrollment({ status: EnrollmentStatus.ADMITTED });
+    const enrollment = makeEnrollment({ status: EnrollmentStatus.JOINED });
     enrollmentRepo.findById.mockResolvedValue(enrollment);
     batchRepo.findById.mockResolvedValue(makeBatch(BATCH_A, BRANCH_A));
     enrollmentRepo.findDetailById.mockImplementation(async () =>
@@ -341,7 +341,7 @@ describe('UnenrollEnrollmentHandler', () => {
 
   // TEST 25: Batch seat side effects invoked on unenroll
   it('releases the batch seat through side effects', async () => {
-    const enrollment = makeEnrollment({ status: EnrollmentStatus.ADMITTED });
+    const enrollment = makeEnrollment({ status: EnrollmentStatus.JOINED });
     enrollmentRepo.findById.mockResolvedValue(enrollment);
     batchRepo.findById.mockResolvedValue(makeBatch(BATCH_A, BRANCH_A, 1));
     enrollmentRepo.findDetailById.mockImplementation(async () =>
@@ -352,7 +352,7 @@ describe('UnenrollEnrollmentHandler', () => {
 
     expect(sideEffects.apply).toHaveBeenCalledWith(
       expect.any(Enrollment),
-      EnrollmentStatus.ADMITTED,
+      EnrollmentStatus.JOINED,
       ACTOR_ID,
       { skipStudentStatusSync: true },
     );
@@ -380,7 +380,7 @@ describe('Unenroll enables re-enrollment (one active enrollment rule)', () => {
     const enrollmentRepo = {
       findCurrentDetailByStudentId: jest.fn().mockResolvedValue({
         id: 'enroll-1',
-        status: EnrollmentStatus.ADMITTED,
+        status: EnrollmentStatus.JOINED,
         student: {
           id: STUDENT_ID,
           studentCode: 'STU0001',
@@ -437,7 +437,7 @@ describe('EnrollmentSideEffectsService seat release', () => {
 
     await sideEffects.apply(
       enrollment,
-      EnrollmentStatus.ADMITTED,
+      EnrollmentStatus.JOINED,
       ACTOR_ID,
       { skipStudentStatusSync: true },
     );

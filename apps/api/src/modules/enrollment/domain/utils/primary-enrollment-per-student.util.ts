@@ -15,11 +15,11 @@ function primaryEnrollmentScore(
     score += 100_000;
   }
 
-  if (enrollment.status === EnrollmentStatus.ADMITTED) {
+  if (enrollment.status === EnrollmentStatus.JOINED) {
     score += 10_000;
   }
 
-  if (enrollment.status === EnrollmentStatus.ADVANCED) {
+  if (enrollment.status === EnrollmentStatus.ENROLLED) {
     score += 5_000;
   }
 

@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 const CURRENT_STATUSES = [
   EnrollmentStatus.PENDING,
   EnrollmentStatus.PENDING_APPROVAL,
-  EnrollmentStatus.ADMITTED,
+  EnrollmentStatus.JOINED,
   EnrollmentStatus.ACTIVE,
 ];
 

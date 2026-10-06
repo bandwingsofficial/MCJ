@@ -67,7 +67,7 @@ export class ListEnrollmentsQueryDto extends PaginationQueryDto {
   status?: EnrollmentStatus;
 
   @ApiPropertyOptional({
-    description: 'Comma-separated enrollment statuses (e.g. ADMITTED,CANCELLED)',
+    description: 'Comma-separated enrollment statuses (e.g. JOINED,CANCELLED)',
   })
   @IsOptional()
   @IsString()

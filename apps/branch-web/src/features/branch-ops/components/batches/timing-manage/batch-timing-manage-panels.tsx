@@ -234,18 +234,18 @@ export function BatchTimingDetailsPanel({ timing }: { timing: BatchTimingListIte
   );
 }
 
-type StudentStatusFilter = "ALL" | "ADMITTED" | "CANCELLED";
+type StudentStatusFilter = "ALL" | "JOINED" | "CANCELLED";
 
 const STUDENT_STATUS_FILTER_OPTIONS: Array<{
   label: string;
   value: StudentStatusFilter;
 }> = [
-  { label: "Admitted", value: "ADMITTED" },
+  { label: "Joined", value: "JOINED" },
   { label: "Cancelled", value: "CANCELLED" },
   { label: "All", value: "ALL" },
 ];
 
-const TIMING_STUDENT_STATUS_IN = "ADMITTED,CANCELLED";
+const TIMING_STUDENT_STATUS_IN = "JOINED,CANCELLED";
 
 function formatBranchLabel(
   branch?: EnrollmentItem["branch"] | null,
@@ -291,7 +291,7 @@ export function BatchTimingStudentsPanel({ batchId, timing }: StudentsProps) {
   const branchId = useCurrentBranchId();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] =
-    useState<StudentStatusFilter>("ADMITTED");
+    useState<StudentStatusFilter>("JOINED");
   const [enrollments, setEnrollments] = useState<EnrollmentItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [admittedCount, setAdmittedCount] = useState(0);
@@ -315,7 +315,7 @@ export function BatchTimingStudentsPanel({ batchId, timing }: StudentsProps) {
           branchOpsApi.enrollments({
             batchId,
             batchTimingId: timing.id,
-            status: "ADMITTED",
+            status: "JOINED",
             skip: 0,
             take: 1,
           }),

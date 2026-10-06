@@ -79,8 +79,8 @@ export class RedemptionBackfillService {
           {
             status: {
               in: [
-                EnrollmentStatus.ADVANCED,
-                EnrollmentStatus.ADMITTED,
+                EnrollmentStatus.ENROLLED,
+                EnrollmentStatus.JOINED,
                 EnrollmentStatus.ACTIVE,
                 EnrollmentStatus.COMPLETED,
               ],

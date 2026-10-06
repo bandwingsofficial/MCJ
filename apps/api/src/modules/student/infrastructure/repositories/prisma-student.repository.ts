@@ -304,7 +304,7 @@ export class PrismaStudentRepository implements StudentRepository {
     const rows = await this.prisma.enrollment.findMany({
       where: {
         studentId: { in: uniqueIds },
-        status: 'ADMITTED',
+        status: 'JOINED',
         isDeleted: false,
       },
       select: {

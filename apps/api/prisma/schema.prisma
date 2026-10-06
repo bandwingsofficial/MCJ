@@ -2046,8 +2046,8 @@ enum BatchCalendarExceptionStatus {
 
 enum StudentStatus {
   LEAD
-  ADVANCED
-  ADMITTED
+  ENROLLED
+  JOINED
   COMPLETED
   CANCELLED
   DROPPED
@@ -2071,8 +2071,8 @@ enum EnrollmentStatus {
   PENDING
   PENDING_APPROVAL
   LEAD
-  ADVANCED
-  ADMITTED
+  ENROLLED
+  JOINED
   ACTIVE
   COMPLETED
   DROPPED
@@ -2100,7 +2100,7 @@ enum ApplicationType {
 enum EnrollmentMode {
   OFFLINE
   ONLINE
-  SELF_PACED
+  SELF_PACED_RECORDED
 }
 
 enum PaymentMethod {

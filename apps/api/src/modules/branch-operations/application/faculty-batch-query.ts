@@ -1,7 +1,7 @@
 import { EnrollmentStatus, Prisma } from '@prisma/client';
 
 export const FACULTY_VISIBLE_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
-  EnrollmentStatus.ADMITTED,
+  EnrollmentStatus.JOINED,
   EnrollmentStatus.ACTIVE,
 ];
 
@@ -66,7 +66,7 @@ export function facultyBatchTimingStudentWhere(
   return {
     ...facultyBranchEnrollmentWhere(branchId, { batchId }),
     batchTimingId,
-    status: EnrollmentStatus.ADMITTED,
+    status: EnrollmentStatus.JOINED,
   };
 }
 

@@ -5,7 +5,7 @@ import { EnrollmentStatus } from '../../domain/enums/enrollment-status.enum';
 
 /** Admin enrollment workflow targets (synced with student lifecycle). */
 const ADMIN_ENROLLMENT_WORKFLOW_STATUSES = [
-  EnrollmentStatus.ADMITTED,
+  EnrollmentStatus.JOINED,
   EnrollmentStatus.COMPLETED,
   EnrollmentStatus.CANCELLED,
   EnrollmentStatus.PLACED,

@@ -37,7 +37,7 @@ interface Props {
 
 export function EnrollmentManageOverviewPanel({ enrollment }: Props) {
   const totalFee = formatEnrollmentOverviewTotalFee(enrollment);
-  const isAdvanced = enrollment.status === EnrollmentStatus.ADVANCED;
+  const isAdvanced = enrollment.status === EnrollmentStatus.ENROLLED;
 
   const metrics: OverviewMetricItem[] = [
     {

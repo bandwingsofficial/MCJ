@@ -26,7 +26,7 @@ import { countBatchDateLifecycleTabs } from './utils/batch-date-lifecycle-tab.ut
 
 const ACTIVE_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
   EnrollmentStatus.ACTIVE,
-  EnrollmentStatus.ADMITTED,
+  EnrollmentStatus.JOINED,
 ];
 
 function isValidScheduleDate(value: Date | null | undefined): value is Date {

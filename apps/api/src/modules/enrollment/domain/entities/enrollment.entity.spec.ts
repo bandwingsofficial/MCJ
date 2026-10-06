@@ -6,10 +6,10 @@ describe('Enrollment current vs historical statuses', () => {
     expect(Enrollment.currentStatuses()).toEqual([
       EnrollmentStatus.PENDING,
       EnrollmentStatus.PENDING_APPROVAL,
-      EnrollmentStatus.ADMITTED,
+      EnrollmentStatus.JOINED,
       EnrollmentStatus.ACTIVE,
     ]);
-    expect(Enrollment.isCurrentStatus(EnrollmentStatus.ADMITTED)).toBe(true);
+    expect(Enrollment.isCurrentStatus(EnrollmentStatus.JOINED)).toBe(true);
     expect(Enrollment.isCurrentStatus(EnrollmentStatus.ACTIVE)).toBe(true);
   });
 
@@ -21,7 +21,7 @@ describe('Enrollment current vs historical statuses', () => {
   });
 
   it('does not occupy a batch seat for completed or cancelled enrollments', () => {
-    expect(Enrollment.statusOccupiesSeat(EnrollmentStatus.ADMITTED)).toBe(true);
+    expect(Enrollment.statusOccupiesSeat(EnrollmentStatus.JOINED)).toBe(true);
     expect(Enrollment.statusOccupiesSeat(EnrollmentStatus.ACTIVE)).toBe(true);
     expect(Enrollment.statusOccupiesSeat(EnrollmentStatus.COMPLETED)).toBe(
       false,

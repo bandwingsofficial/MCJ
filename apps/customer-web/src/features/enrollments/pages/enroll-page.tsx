@@ -526,7 +526,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       appToast.success(
         result.status === "success_free"
           ? "Enrollment confirmed successfully."
-          : "Advance payment verified. Your enrollment status is Advanced.",
+          : "Advance payment verified. Your enrollment status is Enrolled.",
       );
       return;
     }

@@ -238,7 +238,7 @@ export class PrismaEnrollmentRepository
         studentId,
         courseId,
         status: {
-          in: ['ADMITTED', 'ACTIVE'],
+          in: ['JOINED', 'ACTIVE'],
         },
         ...(includeDeleted ? {} : { isDeleted: false }),
       },
@@ -554,8 +554,8 @@ export class PrismaEnrollmentRepository
           in: [
             EnrollmentStatus.PENDING,
             EnrollmentStatus.PENDING_APPROVAL,
-            EnrollmentStatus.ADVANCED,
-            EnrollmentStatus.ADMITTED,
+            EnrollmentStatus.ENROLLED,
+            EnrollmentStatus.JOINED,
             EnrollmentStatus.ACTIVE,
           ],
         },
@@ -573,7 +573,7 @@ export class PrismaEnrollmentRepository
 
     throw new EnrollmentAlreadyExistsException(
       ERROR_CODES.STUDENT_ALREADY_ENROLLED,
-      'Cannot create a new enrollment while the student has an active Advanced or Admitted enrollment.',
+      'Cannot create a new enrollment while the student has an active Enrolled or Joined enrollment.',
     );
   }
 }

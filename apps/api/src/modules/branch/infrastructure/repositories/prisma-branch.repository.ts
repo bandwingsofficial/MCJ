@@ -154,7 +154,7 @@ export class PrismaBranchRepository
     const rows = await this.prisma.enrollment.findMany({
       where: {
         branchId: { in: uniqueIds },
-        status: 'ADMITTED',
+        status: 'JOINED',
         isDeleted: false,
         student: { isDeleted: false },
       },

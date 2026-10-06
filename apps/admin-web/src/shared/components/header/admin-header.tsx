@@ -370,7 +370,7 @@ export function AdminHeader({ onOpenMobileNav }: AdminHeaderProps) {
                         {onlineEnrollmentNotificationCount === 1 ? "" : "s"}
                       </span>
                       <span className="text-xs text-[#647A9B]">
-                        View in Advanced / Admitted
+                        View in Enrolled / Joined
                       </span>
                     </button>
                   ) : (

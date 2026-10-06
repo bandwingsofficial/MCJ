@@ -25,7 +25,7 @@ export function EnrollmentSuccessView({
 }: EnrollmentSuccessViewProps) {
   const isAdvanced = isAdvancedEnrollment(enrollment);
   const isAdmitted =
-    enrollment.status === "ADMITTED" ||
+    enrollment.status === "JOINED" ||
     enrollment.status === "ACTIVE" ||
     (enrollment.status === "PENDING" && enrollment.paymentStatus === "PAID");
   const isFree = enrollment.finalAmount <= 0;
@@ -35,8 +35,8 @@ export function EnrollmentSuccessView({
     "INR";
   const payment = enrollment.payments?.[0];
   const modeLabel =
-    enrollment.mode === "SELF_PACED"
-      ? "Self-Paced"
+    enrollment.mode === "SELF_PACED_RECORDED"
+      ? "Self-Paced / Recorded"
       : enrollment.mode === "ONLINE"
         ? "Online"
         : enrollment.mode === "OFFLINE"

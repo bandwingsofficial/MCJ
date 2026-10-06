@@ -29,8 +29,8 @@ export const STUDENT_ADMISSION_STATUS_OPTIONS: ReadonlyArray<{
   value: StudentStatus;
 }> = [
   { label: "Lead", value: "LEAD" },
-  { label: "Advanced", value: "ADVANCED" },
-  { label: "Admitted", value: "ADMITTED" },
+  { label: "Enrolled", value: "ENROLLED" },
+  { label: "Joined", value: "JOINED" },
   { label: "Completed", value: "COMPLETED" },
   { label: "Cancelled", value: "CANCELLED" },
   { label: "Placed", value: "PLACED" },

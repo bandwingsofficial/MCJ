@@ -33,7 +33,7 @@ function statusVariant(
   status: Enrollment["status"],
 ): "success" | "warning" | "default" | "danger" {
   switch (status) {
-    case "ADMITTED":
+    case "JOINED":
       return "success";
     case "PENDING":
       return "warning";

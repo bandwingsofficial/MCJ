@@ -14,14 +14,14 @@ const compactClass = "px-2 py-0 text-[11px] font-semibold leading-5";
 
 const ADMIN_LABELS: Record<string, string> = {
   ...ENROLLMENT_ADMIN_STATUS_LABELS,
-  [EnrollmentStatus.ADVANCED]: "Advanced",
+  [EnrollmentStatus.ENROLLED]: "Enrolled",
   [EnrollmentStatus.CANCELLED]: "Cancelled",
   [EnrollmentStatus.PLACED]: "Placed",
 };
 
 const ADMIN_VARIANTS = {
-  [EnrollmentStatus.ADVANCED]: "warning",
-  [EnrollmentStatus.ADMITTED]: "info",
+  [EnrollmentStatus.ENROLLED]: "warning",
+  [EnrollmentStatus.JOINED]: "info",
   [EnrollmentStatus.COMPLETED]: "success",
   [EnrollmentStatus.PLACED]: "success",
   [EnrollmentStatus.CANCELLED]: "danger",
@@ -44,11 +44,11 @@ export function EnrollmentStatusBadge({
       ? EnrollmentStatus.PLACED
       : status === EnrollmentStatus.COMPLETED
         ? EnrollmentStatus.COMPLETED
-        : status === EnrollmentStatus.ADVANCED
-          ? EnrollmentStatus.ADVANCED
+        : status === EnrollmentStatus.ENROLLED
+          ? EnrollmentStatus.ENROLLED
           : status === EnrollmentStatus.CANCELLED
             ? EnrollmentStatus.CANCELLED
-            : EnrollmentStatus.ADMITTED;
+            : EnrollmentStatus.JOINED;
 
   const variant =
     ADMIN_VARIANTS[adminStatus] ?? ("default" as const);

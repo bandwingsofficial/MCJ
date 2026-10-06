@@ -2,13 +2,13 @@ import type { ApiResponse } from "@/src/core/types/api-response.types";
 
 export type ApplicationType = "OFFLINE" | "ONLINE";
 
-export type EnrollmentMode = "OFFLINE" | "ONLINE" | "SELF_PACED";
+export type EnrollmentMode = "OFFLINE" | "ONLINE" | "SELF_PACED_RECORDED";
 
 export type EnrollmentStatus =
   | "PENDING"
   | "PENDING_APPROVAL"
-  | "ADVANCED"
-  | "ADMITTED"
+  | "ENROLLED"
+  | "JOINED"
   | "ACTIVE"
   | "REJECTED"
   | "COMPLETED"

@@ -56,7 +56,7 @@ export class PaymentEnrollmentSyncService {
 
     if (
       isAdvanceFlow &&
-      enrollment.status === EnrollmentStatus.ADVANCED &&
+      enrollment.status === EnrollmentStatus.ENROLLED &&
       hasPaidPublicOnlineAdvance(enrollment.paidAmount)
     ) {
       return;
@@ -65,7 +65,7 @@ export class PaymentEnrollmentSyncService {
     if (
       !isAdvanceFlow &&
       enrollment.paymentStatus === EnrollmentPaymentStatus.PAID &&
-      (enrollment.status === EnrollmentStatus.ADMITTED ||
+      (enrollment.status === EnrollmentStatus.JOINED ||
         enrollment.status === EnrollmentStatus.ACTIVE)
     ) {
       return;
@@ -95,7 +95,7 @@ export class PaymentEnrollmentSyncService {
         (previousStatus === EnrollmentStatus.PENDING ||
           previousStatus === EnrollmentStatus.PENDING_APPROVAL)
       ) {
-        status = EnrollmentStatus.ADVANCED;
+        status = EnrollmentStatus.ENROLLED;
         isActive = false;
       }
     } else if (
@@ -104,7 +104,7 @@ export class PaymentEnrollmentSyncService {
       (previousStatus === EnrollmentStatus.PENDING ||
         previousStatus === EnrollmentStatus.PENDING_APPROVAL)
     ) {
-      status = EnrollmentStatus.ADMITTED;
+      status = EnrollmentStatus.JOINED;
       admissionDate = new Date();
       isActive = true;
     }
@@ -121,7 +121,7 @@ export class PaymentEnrollmentSyncService {
       updatedBy: payment.createdBy,
     });
 
-    if (status === EnrollmentStatus.ADMITTED) {
+    if (status === EnrollmentStatus.JOINED) {
       await this.sideEffects.assertCapacityForTransition(
         enrollment,
         previousStatus,
@@ -132,13 +132,13 @@ export class PaymentEnrollmentSyncService {
 
     if (
       isAdvanceFlow &&
-      status === EnrollmentStatus.ADVANCED &&
+      status === EnrollmentStatus.ENROLLED &&
       enrollment.redeemedCoins > 0
     ) {
       await this.enrollmentCoinService.commitCoinsForEnrollment(enrollment);
     }
 
-    if (status === EnrollmentStatus.ADMITTED) {
+    if (status === EnrollmentStatus.JOINED) {
       await this.sideEffects.apply(
         enrollment,
         previousStatus,
@@ -158,7 +158,7 @@ export class PaymentEnrollmentSyncService {
         });
         await this.studentRepo.save(student);
       }
-    } else if (status === EnrollmentStatus.ADVANCED) {
+    } else if (status === EnrollmentStatus.ENROLLED) {
       await this.sideEffects.syncStudentStatusForStudentId(
         enrollment.studentId,
         payment.createdBy,

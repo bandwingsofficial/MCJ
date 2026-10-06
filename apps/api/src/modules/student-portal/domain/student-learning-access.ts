@@ -19,7 +19,7 @@ export function buildStudentLearningAccess(
   enrollment: EnrollmentDetailView,
 ): StudentLearningAccess {
   const canAccessLiveRecorded =
-    enrollment.mode !== EnrollmentMode.SELF_PACED;
+    enrollment.mode !== EnrollmentMode.SELF_PACED_RECORDED;
 
   return {
     enrollmentId: enrollment.id,
@@ -40,6 +40,6 @@ export function buildStudentHierarchyScope(
   return {
     branchId: enrollment.branchId,
     batchId: enrollment.batchId,
-    includeLiveRecorded: enrollment.mode !== EnrollmentMode.SELF_PACED,
+    includeLiveRecorded: enrollment.mode !== EnrollmentMode.SELF_PACED_RECORDED,
   };
 }

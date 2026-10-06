@@ -226,7 +226,7 @@ export interface LessonDetailPayloadDto {
 
 export interface StudentLearningAccessDto {
   enrollmentId: string;
-  enrollmentMode: "OFFLINE" | "ONLINE" | "SELF_PACED";
+  enrollmentMode: "OFFLINE" | "ONLINE" | "SELF_PACED_RECORDED";
   branchId: string;
   batchId: string;
   canAccessLiveRecorded: boolean;

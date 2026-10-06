@@ -24,10 +24,17 @@ export function EnrollmentStatusBadge({ status }: EnrollmentStatusBadgeProps) {
         </Badge>
       );
 
-    case "ADMITTED":
+    case "ENROLLED":
+      return (
+        <Badge variant="warning" className={compactClass}>
+          Enrolled
+        </Badge>
+      );
+
+    case "JOINED":
       return (
         <Badge variant="info" className={compactClass}>
-          Admitted
+          Joined
         </Badge>
       );
 

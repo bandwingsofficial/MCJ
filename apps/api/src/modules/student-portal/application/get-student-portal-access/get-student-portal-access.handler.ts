@@ -46,7 +46,7 @@ export class GetStudentPortalAccessHandler {
       throw new StudentPortalEnrollmentNotFoundException();
     }
 
-    if (student.status !== StudentStatus.ADMITTED) {
+    if (student.status !== StudentStatus.JOINED) {
       throw new StudentPortalStudentNotAdmittedException();
     }
 

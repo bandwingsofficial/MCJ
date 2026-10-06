@@ -104,14 +104,14 @@ export function UpdateEnrollmentStatusDialog({
         isActive: enrollment.isActive,
       }
     : {
-        enrollmentStatus: EnrollmentStatus.ADMITTED,
+        enrollmentStatus: EnrollmentStatus.JOINED,
         studentStatus: null,
         isActive: true,
       };
 
   const currentWorkflow = enrollment
-    ? lifecycleFromEnrollment(enrollment) ?? "ADMITTED"
-    : "ADMITTED";
+    ? lifecycleFromEnrollment(enrollment) ?? "JOINED"
+    : "JOINED";
 
   const statusOptions = useMemo(
     () => getEnrollmentWorkflowStatusChangeOptions(statusInput),
@@ -125,7 +125,7 @@ export function UpdateEnrollmentStatusDialog({
 
   const displayStatus = enrollment
     ? enrollmentListDisplayStatus(enrollment)
-    : EnrollmentStatus.ADMITTED;
+    : EnrollmentStatus.JOINED;
 
   const canSave =
     Boolean(enrollment) &&

@@ -150,7 +150,7 @@ export class CreatePublicEnrollmentHandler {
       feeAmount: pricing.originalPrice,
       discountAmount: pricing.discountAmount,
       paidAmount: 0,
-      status: EnrollmentStatus.ADMITTED,
+      status: EnrollmentStatus.JOINED,
       source: EnrollmentSource.PUBLIC,
       applicationType: ApplicationType.ONLINE,
       mode,

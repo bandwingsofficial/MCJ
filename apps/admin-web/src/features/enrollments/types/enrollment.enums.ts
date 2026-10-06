@@ -7,8 +7,8 @@ export enum EnrollmentStatus {
   PENDING = "PENDING",
   PENDING_APPROVAL = "PENDING_APPROVAL",
   LEAD = "LEAD",
-  ADVANCED = "ADVANCED",
-  ADMITTED = "ADMITTED",
+  ENROLLED = "ENROLLED",
+  JOINED = "JOINED",
   ACTIVE = "ACTIVE",
   COMPLETED = "COMPLETED",
   DROPPED = "DROPPED",
@@ -48,7 +48,7 @@ export enum ApplicationType {
 export enum EnrollmentMode {
   OFFLINE = "OFFLINE",
   ONLINE = "ONLINE",
-  SELF_PACED = "SELF_PACED",
+  SELF_PACED_RECORDED = "SELF_PACED_RECORDED",
 }
 
 /**

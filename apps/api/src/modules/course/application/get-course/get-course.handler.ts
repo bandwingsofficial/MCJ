@@ -179,7 +179,7 @@ export class GetCourseHandler {
       isEnrolled: blockingEnrollments.length > 0,
       isAdmitted: blockingEnrollments.some(
         (enrollment) =>
-          enrollment.status === EnrollmentStatus.ADMITTED ||
+          enrollment.status === EnrollmentStatus.JOINED ||
           enrollment.status === EnrollmentStatus.ACTIVE,
       ),
     };

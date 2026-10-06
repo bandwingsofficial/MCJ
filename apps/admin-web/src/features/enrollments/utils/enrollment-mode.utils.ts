@@ -12,8 +12,12 @@ export function batchModeToEnrollmentMode(
     return EnrollmentMode.ONLINE;
   }
 
-  if (mode === "RECORDED" || mode === "SELF_PACED") {
-    return EnrollmentMode.SELF_PACED;
+  if (
+    mode === "RECORDED" ||
+    mode === "SELF_PACED" ||
+    mode === "SELF_PACED_RECORDED"
+  ) {
+    return EnrollmentMode.SELF_PACED_RECORDED;
   }
 
   return undefined;
@@ -22,7 +26,11 @@ export function batchModeToEnrollmentMode(
 export function enrollmentModeToBatchMode(
   mode: string | null | undefined,
 ): BatchMode | "" {
-  if (mode === "SELF_PACED" || mode === "RECORDED") {
+  if (
+    mode === "SELF_PACED_RECORDED" ||
+    mode === "SELF_PACED" ||
+    mode === "RECORDED"
+  ) {
     return "RECORDED";
   }
 

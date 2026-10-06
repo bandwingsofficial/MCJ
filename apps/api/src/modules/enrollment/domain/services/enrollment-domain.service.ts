@@ -156,20 +156,20 @@ export class EnrollmentDomainService {
         EnrollmentStatus.CANCELLED,
       ],
       [EnrollmentStatus.PENDING_APPROVAL]: [
-        EnrollmentStatus.ADMITTED,
+        EnrollmentStatus.JOINED,
         EnrollmentStatus.REJECTED,
         EnrollmentStatus.CANCELLED,
       ],
       [EnrollmentStatus.LEAD]: [
-        EnrollmentStatus.ADVANCED,
-        EnrollmentStatus.ADMITTED,
+        EnrollmentStatus.ENROLLED,
+        EnrollmentStatus.JOINED,
         EnrollmentStatus.CANCELLED,
       ],
-      [EnrollmentStatus.ADVANCED]: [
-        EnrollmentStatus.ADMITTED,
+      [EnrollmentStatus.ENROLLED]: [
+        EnrollmentStatus.JOINED,
         EnrollmentStatus.CANCELLED,
       ],
-      [EnrollmentStatus.ADMITTED]: [
+      [EnrollmentStatus.JOINED]: [
         EnrollmentStatus.ACTIVE,
         EnrollmentStatus.COMPLETED,
         EnrollmentStatus.CANCELLED,
@@ -285,8 +285,8 @@ export class EnrollmentDomainService {
     const slotStatuses: EnrollmentStatus[] = [
       EnrollmentStatus.PENDING,
       EnrollmentStatus.PENDING_APPROVAL,
-      EnrollmentStatus.ADVANCED,
-      EnrollmentStatus.ADMITTED,
+      EnrollmentStatus.ENROLLED,
+      EnrollmentStatus.JOINED,
       EnrollmentStatus.ACTIVE,
     ];
 
@@ -783,10 +783,10 @@ export class EnrollmentDomainService {
     switch (workflow) {
       case 'LEAD':
         return EnrollmentStatus.LEAD;
-      case 'ADVANCED':
-        return EnrollmentStatus.ADVANCED;
-      case 'ADMITTED':
-        return EnrollmentStatus.ADMITTED;
+      case 'ENROLLED':
+        return EnrollmentStatus.ENROLLED;
+      case 'JOINED':
+        return EnrollmentStatus.JOINED;
       case 'COMPLETED':
         return EnrollmentStatus.COMPLETED;
       case 'CANCELLED':
@@ -802,11 +802,11 @@ export class EnrollmentDomainService {
     status: EnrollmentStatus,
   ): StudentEnrollmentWorkflowStatus {
     switch (status) {
-      case EnrollmentStatus.ADVANCED:
-        return 'ADVANCED';
-      case EnrollmentStatus.ADMITTED:
+      case EnrollmentStatus.ENROLLED:
+        return 'ENROLLED';
+      case EnrollmentStatus.JOINED:
       case EnrollmentStatus.ACTIVE:
-        return 'ADMITTED';
+        return 'JOINED';
       case EnrollmentStatus.COMPLETED:
         return 'COMPLETED';
       case EnrollmentStatus.CANCELLED:
@@ -864,9 +864,9 @@ export class EnrollmentDomainService {
 
     const priority: StudentEnrollmentWorkflowStatus[] = [
       'COMPLETED',
-      'ADMITTED',
+      'JOINED',
       'PLACED',
-      'ADVANCED',
+      'ENROLLED',
       'LEAD',
     ];
 

@@ -24,12 +24,12 @@ function getStatusVariant(
   status: Enrollment["status"],
 ): "success" | "warning" | "danger" | "info" | "default" {
   switch (status) {
-    case "ADMITTED":
+    case "JOINED":
     case "ACTIVE":
       return "success";
     case "PENDING":
     case "PENDING_APPROVAL":
-    case "ADVANCED":
+    case "ENROLLED":
       return "warning";
     case "REJECTED":
     case "CANCELLED":
@@ -127,8 +127,8 @@ export function EnrollmentCard({ enrollment }: EnrollmentCardProps) {
             {
               label: "Mode",
               value:
-                enrollment.mode === "SELF_PACED"
-                  ? "Self-Paced"
+                enrollment.mode === "SELF_PACED_RECORDED"
+                  ? "Self-Paced / Recorded"
                   : enrollment.mode === "ONLINE"
                     ? "Online"
                     : enrollment.mode === "OFFLINE"
@@ -261,7 +261,7 @@ export function EnrollmentCard({ enrollment }: EnrollmentCardProps) {
         </Link>
         {canPay ? (
           <PaymentButton enrollmentId={enrollment.id} />
-        ) : enrollment.status === "ADMITTED" ||
+        ) : enrollment.status === "JOINED" ||
           enrollment.status === "ACTIVE" ? (
           <Link href={`/student/my-learning`}>
             <Button className="font-semibold">Go to My Course</Button>

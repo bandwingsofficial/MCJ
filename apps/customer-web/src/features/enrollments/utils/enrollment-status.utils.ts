@@ -2,18 +2,18 @@ import type { Enrollment } from "@/src/features/enrollments/types/enrollment.typ
 
 export function getEnrollmentStatusLabel(enrollment: Enrollment): string {
   switch (enrollment.status) {
-    case "ADMITTED":
+    case "JOINED":
     case "ACTIVE":
-      return "Admitted";
-    case "ADVANCED":
-      return "Advanced";
+      return "Joined";
+    case "ENROLLED":
+      return "Enrolled";
     case "PENDING_APPROVAL":
       return "Pending Approval";
     case "REJECTED":
       return "Rejected";
     case "PENDING":
       return enrollment.paymentStatus === "PAID"
-        ? "Admitted"
+        ? "Joined"
         : "Pending Payment";
     default:
       return enrollment.status.replaceAll("_", " ");
@@ -23,7 +23,7 @@ export function getEnrollmentStatusLabel(enrollment: Enrollment): string {
 export function getEnrollmentPaymentStatusLabel(
   enrollment: Enrollment,
 ): string {
-  if (enrollment.status === "ADVANCED") {
+  if (enrollment.status === "ENROLLED") {
     return "Advance Paid / Due Offline";
   }
 
@@ -34,8 +34,13 @@ export function getEnrollmentPaymentStatusLabel(
   return enrollment.paymentStatus.replaceAll("_", " ");
 }
 
+/** @deprecated Use isEnrolledStatusEnrollment */
 export function isAdvancedEnrollment(enrollment: Enrollment): boolean {
-  return enrollment.status === "ADVANCED";
+  return isEnrolledStatusEnrollment(enrollment);
+}
+
+export function isEnrolledStatusEnrollment(enrollment: Enrollment): boolean {
+  return enrollment.status === "ENROLLED";
 }
 
 export function canPayEnrollmentAdvance(enrollment: Enrollment): boolean {

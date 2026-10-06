@@ -1,5 +1,5 @@
 export enum EnrollmentMode {
   OFFLINE = 'OFFLINE',
   ONLINE = 'ONLINE',
-  SELF_PACED = 'SELF_PACED',
+  SELF_PACED_RECORDED = 'SELF_PACED_RECORDED',
 }

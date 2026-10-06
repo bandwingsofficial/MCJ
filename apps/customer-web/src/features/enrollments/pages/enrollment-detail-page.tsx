@@ -33,7 +33,7 @@ function getStatusVariant(
   status: string,
 ): "success" | "warning" | "danger" | "info" | "default" {
   switch (status) {
-    case "ADMITTED":
+    case "JOINED":
     case "ACTIVE":
       return "success";
     case "PENDING_APPROVAL":

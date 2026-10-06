@@ -160,8 +160,8 @@ export class CreateEnrollmentHandler {
     const { enrollmentStatus, studentStatusOnCreate } =
       this.resolveAdminCreateStatuses(command, isAdminSource);
     const isActive =
-      enrollmentStatus === EnrollmentStatus.ADMITTED ||
-      enrollmentStatus === EnrollmentStatus.ADVANCED;
+      enrollmentStatus === EnrollmentStatus.JOINED ||
+      enrollmentStatus === EnrollmentStatus.ENROLLED;
 
     const enrollment = Enrollment.create({
       id: randomUUID(),
@@ -292,11 +292,11 @@ export class CreateEnrollmentHandler {
       };
     }
 
-    const requested = command.status ?? EnrollmentStatus.ADMITTED;
+    const requested = command.status ?? EnrollmentStatus.JOINED;
 
     if (
-      requested !== EnrollmentStatus.ADVANCED &&
-      requested !== EnrollmentStatus.ADMITTED
+      requested !== EnrollmentStatus.ENROLLED &&
+      requested !== EnrollmentStatus.JOINED
     ) {
       throw new BaseException(
         ERROR_CODES.INVALID_STATUS_TRANSITION,
@@ -308,9 +308,9 @@ export class CreateEnrollmentHandler {
     return {
       enrollmentStatus: requested,
       studentStatusOnCreate:
-        requested === EnrollmentStatus.ADVANCED
-          ? StudentStatus.ADVANCED
-          : StudentStatus.ADMITTED,
+        requested === EnrollmentStatus.ENROLLED
+          ? StudentStatus.ENROLLED
+          : StudentStatus.JOINED,
     };
   }
 

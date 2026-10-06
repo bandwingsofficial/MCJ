@@ -1598,7 +1598,7 @@ export class BranchAssessmentService {
         branchId,
         studentId: { in: studentIds },
         batchTimingId: { not: null },
-        status: { in: ['ADMITTED', 'ACTIVE'] },
+        status: { in: ['JOINED', 'ACTIVE'] },
       },
       select: {
         batchTimingId: true,

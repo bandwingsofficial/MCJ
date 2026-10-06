@@ -77,7 +77,7 @@ export class CourseAccessService {
     return {
       isEnrolled: admitted,
       isAdmitted:
-        admitted && student.status === StudentStatus.ADMITTED,
+        admitted && student.status === StudentStatus.JOINED,
     };
   }
 

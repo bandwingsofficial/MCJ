@@ -102,7 +102,7 @@ export class FacultyDashboardService {
         batchIds: batchIds.length ? batchIds : [],
       }),
       status: {
-        in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
+        in: [EnrollmentStatus.JOINED, EnrollmentStatus.ACTIVE],
       },
     };
 
@@ -624,7 +624,7 @@ export class FacultyDashboardService {
             batchId: { in: batchIds },
             isDeleted: false,
             status: {
-              in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
+              in: [EnrollmentStatus.JOINED, EnrollmentStatus.ACTIVE],
             },
           },
           _count: { _all: true },
@@ -929,7 +929,7 @@ export class FacultyDashboardService {
           batchIds: batchId ? undefined : batchIds,
         }),
         status: {
-          in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
+          in: [EnrollmentStatus.JOINED, EnrollmentStatus.ACTIVE],
         },
       },
       include: {

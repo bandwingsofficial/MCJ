@@ -54,7 +54,7 @@ export class CreateEnrollmentDto {
 
   @ApiPropertyOptional({
     enum: EnrollmentStatus,
-    description: 'Admin offline create: ADVANCED or ADMITTED',
+    description: 'Admin offline create: ENROLLED or JOINED',
   })
   @IsOptional()
   @IsEnum(EnrollmentStatus)

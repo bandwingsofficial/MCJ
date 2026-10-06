@@ -114,8 +114,8 @@ export const studentSchema = z.object({
 
   status: z.enum([
     "LEAD",
-    "ADVANCED",
-    "ADMITTED",
+    "ENROLLED",
+    "JOINED",
     "COMPLETED",
     "CANCELLED",
     "PLACED",

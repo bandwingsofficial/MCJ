@@ -24,7 +24,7 @@ import { notifyDomainMutation } from '../../../../infrastructure/realtime/realti
 import { UpdateEnrollmentStatusCommand } from './update-enrollment-status.command';
 
 const ADMIN_ENROLLMENT_TARGETS = new Set<EnrollmentStatus>([
-  EnrollmentStatus.ADMITTED,
+  EnrollmentStatus.JOINED,
   EnrollmentStatus.COMPLETED,
   EnrollmentStatus.CANCELLED,
 ]);
@@ -73,9 +73,9 @@ export class UpdateEnrollmentStatusHandler {
       command.status,
     );
 
-    if (command.status === EnrollmentStatus.ADMITTED) {
+    if (command.status === EnrollmentStatus.JOINED) {
       enrollment.update({
-        status: EnrollmentStatus.ADMITTED,
+        status: EnrollmentStatus.JOINED,
         admissionDate: enrollment.admissionDate ?? new Date(),
         isActive: true,
         updatedBy: command.updatedBy,

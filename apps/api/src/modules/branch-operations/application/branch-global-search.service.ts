@@ -14,7 +14,7 @@ import {
 const PAGE_SIZE = 5;
 
 const VISIBLE_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
-  EnrollmentStatus.ADMITTED,
+  EnrollmentStatus.JOINED,
   EnrollmentStatus.ACTIVE,
 ];
 

@@ -6,8 +6,8 @@ export type ApplicationType = "OFFLINE" | "ONLINE";
 
 export type StudentStatus =
   | "LEAD"
-  | "ADVANCED"
-  | "ADMITTED"
+  | "ENROLLED"
+  | "JOINED"
   | "COMPLETED"
   | "CANCELLED"
   | "PLACED";

@@ -16,7 +16,7 @@ export function getEnrollmentStatusVariant(
     case EnrollmentStatus.ACTIVE:
       return "success";
 
-    case EnrollmentStatus.ADMITTED:
+    case EnrollmentStatus.JOINED:
       return "info";
 
     case EnrollmentStatus.PENDING:

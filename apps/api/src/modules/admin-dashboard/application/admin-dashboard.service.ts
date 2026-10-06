@@ -73,7 +73,7 @@ function modeLabel(mode: CourseMode): string {
 function enrollmentModeLabel(mode: EnrollmentMode): string {
   if (mode === EnrollmentMode.OFFLINE) return 'Offline';
   if (mode === EnrollmentMode.ONLINE) return 'Online';
-  return 'Self-Paced';
+  return 'Self-Paced / Recorded';
 }
 
 function paymentInDateRangeWhere(
@@ -122,7 +122,7 @@ export class AdminDashboardService {
 
     const activeEnrollmentStatuses: EnrollmentStatus[] = [
       EnrollmentStatus.ACTIVE,
-      EnrollmentStatus.ADMITTED,
+      EnrollmentStatus.JOINED,
     ];
 
     const enrollmentInPeriod = {
@@ -635,7 +635,7 @@ export class AdminDashboardService {
     const onlineEnrollments =
       enrollmentModeCounts.get(EnrollmentMode.ONLINE) ?? 0;
     const selfPacedEnrollments =
-      enrollmentModeCounts.get(EnrollmentMode.SELF_PACED) ?? 0;
+      enrollmentModeCounts.get(EnrollmentMode.SELF_PACED_RECORDED) ?? 0;
     const offlineOnlineTotal = offlineEnrollments + onlineEnrollments;
 
     const batchTrainerAssignments = await this.prisma.batchTrainer.count();

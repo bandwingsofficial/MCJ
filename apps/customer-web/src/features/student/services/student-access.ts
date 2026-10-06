@@ -1,22 +1,22 @@
-const ADMITTED_STATUS = "ADMITTED";
-const ADVANCED_STATUS = "ADVANCED";
+const JOINED_STATUS = "JOINED";
+const ENROLLED_STATUS = "ENROLLED";
 
 export const VALID_LEARNING_ENROLLMENT_STATUSES = [
-  "ADMITTED",
+  "JOINED",
   "ACTIVE",
 ] as const;
 
 export function isAdmittedStudentStatus(
   studentStatus: string | null | undefined,
 ): boolean {
-  return studentStatus === ADMITTED_STATUS;
+  return studentStatus === JOINED_STATUS;
 }
 
 export function isValidLearningEnrollmentStatus(
   enrollmentStatus: string | null | undefined,
 ): boolean {
   return (
-    enrollmentStatus === "ADMITTED" ||
+    enrollmentStatus === "JOINED" ||
     enrollmentStatus === "ACTIVE"
   );
 }
@@ -31,19 +31,19 @@ export function resolveCustomerStudentAccess(input: {
   showMyCourses: boolean;
   showMyEnrollment: boolean;
 } {
-  const admittedLearningAccess =
+  const joinedLearningAccess =
     input.hasStudentRecord &&
     isAdmittedStudentStatus(input.studentStatus) &&
     input.hasValidEnrollment;
 
-  const advancedEnrollmentAccess =
+  const enrolledEnrollmentAccess =
     input.hasStudentRecord &&
-    input.studentStatus === ADVANCED_STATUS;
+    input.studentStatus === ENROLLED_STATUS;
 
   return {
     showProfile: true,
     showMyApplications: input.hasStudentRecord,
-    showMyCourses: admittedLearningAccess,
-    showMyEnrollment: admittedLearningAccess || advancedEnrollmentAccess,
+    showMyCourses: joinedLearningAccess,
+    showMyEnrollment: joinedLearningAccess || enrolledEnrollmentAccess,
   };
 }

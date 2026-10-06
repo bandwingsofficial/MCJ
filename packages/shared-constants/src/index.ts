@@ -62,6 +62,14 @@ export {
 } from "./branch-interview-scheduling.js";
 
 export {
+  ENROLLMENT_MODES,
+  ENROLLMENT_MODE_LABELS,
+  formatEnrollmentModeLabel,
+  normalizeEnrollmentModeValue,
+  type EnrollmentModeValue,
+} from "./enrollment-mode.js";
+
+export {
   STUDENT_ENROLLMENT_WORKFLOW_STATUSES,
   STUDENT_ENROLLMENT_WORKFLOW_STATUS_LABELS,
   canTransitionStudentEnrollmentWorkflowStatus,

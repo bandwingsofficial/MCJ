@@ -1,18 +1,18 @@
 export const VALID_LEARNING_ENROLLMENT_STATUSES = [
-  "ADMITTED",
+  "JOINED",
   "ACTIVE",
 ] as const;
 
 export function isAdmittedStudentStatus(
   studentStatus: string | null | undefined,
 ): boolean {
-  return studentStatus === "ADMITTED";
+  return studentStatus === "JOINED";
 }
 
 export function isValidLearningEnrollmentStatus(
   enrollmentStatus: string | null | undefined,
 ): boolean {
   return (
-    enrollmentStatus === "ADMITTED" || enrollmentStatus === "ACTIVE"
+    enrollmentStatus === "JOINED" || enrollmentStatus === "ACTIVE"
   );
 }

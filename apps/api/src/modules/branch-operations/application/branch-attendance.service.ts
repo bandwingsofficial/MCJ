@@ -1378,7 +1378,7 @@ export class BranchAttendanceService {
           batchId,
           batchTimingId: { in: timingIds },
           isDeleted: false,
-          status: EnrollmentStatus.ADMITTED,
+          status: EnrollmentStatus.JOINED,
           student: { isDeleted: false },
           batch: facultyBranchBatchWhere(user.branchId),
         },

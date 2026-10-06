@@ -230,8 +230,8 @@ export class Enrollment {
 
   static statusOccupiesSeat(status: EnrollmentStatus): boolean {
     return (
-      status === EnrollmentStatus.ADVANCED ||
-      status === EnrollmentStatus.ADMITTED ||
+      status === EnrollmentStatus.ENROLLED ||
+      status === EnrollmentStatus.JOINED ||
       status === EnrollmentStatus.ACTIVE
     );
   }
@@ -241,8 +241,8 @@ export class Enrollment {
       EnrollmentStatus.PENDING,
       EnrollmentStatus.PENDING_APPROVAL,
       EnrollmentStatus.LEAD,
-      EnrollmentStatus.ADVANCED,
-      EnrollmentStatus.ADMITTED,
+      EnrollmentStatus.ENROLLED,
+      EnrollmentStatus.JOINED,
       EnrollmentStatus.ACTIVE,
       EnrollmentStatus.PLACED,
     ];

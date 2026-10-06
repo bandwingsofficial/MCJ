@@ -74,7 +74,7 @@ export class ApproveEnrollmentHandler {
     }
 
     enrollment.update({
-      status: EnrollmentStatus.ADMITTED,
+      status: EnrollmentStatus.JOINED,
       admissionDate: new Date(),
       joiningDate: batch?.startDate ?? enrollment.joiningDate,
       expectedCompletionDate:

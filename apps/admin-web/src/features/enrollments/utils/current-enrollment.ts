@@ -15,9 +15,9 @@ export const CURRENT_ENROLLMENT_STATUSES = [
 
   "LEAD",
 
-  "ADVANCED",
+  "ENROLLED",
 
-  "ADMITTED",
+  "JOINED",
 
   "ACTIVE",
 
@@ -140,12 +140,12 @@ export function enrollmentListDisplayStatus(
       return EnrollmentStatus.COMPLETED;
     case "CANCELLED":
       return EnrollmentStatus.CANCELLED;
-    case "ADVANCED":
-      return EnrollmentStatus.ADVANCED;
-    case "ADMITTED":
-      return EnrollmentStatus.ADMITTED;
+    case "ENROLLED":
+      return EnrollmentStatus.ENROLLED;
+    case "JOINED":
+      return EnrollmentStatus.JOINED;
     default:
-      return EnrollmentStatus.ADMITTED;
+      return EnrollmentStatus.JOINED;
   }
 }
 

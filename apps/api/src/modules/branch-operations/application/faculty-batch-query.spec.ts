@@ -35,7 +35,7 @@ describe('faculty batch query contracts', () => {
     });
     expect(morning.student).toEqual({ isDeleted: false });
     expect(morning.status).toEqual({
-      in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
+      in: [EnrollmentStatus.JOINED, EnrollmentStatus.ACTIVE],
     });
   });
 

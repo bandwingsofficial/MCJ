@@ -206,7 +206,7 @@ export class FinalizePublicEnrollmentOnPaymentService {
 
     persisted.update({
       paidAmount: payment.amount,
-      status: EnrollmentStatus.ADVANCED,
+      status: EnrollmentStatus.ENROLLED,
       updatedBy: payment.createdBy,
     });
 

@@ -1,8 +1,8 @@
 /** Student lifecycle statuses (admin). No Dropped — use Cancelled. */
 export const STUDENT_ENROLLMENT_WORKFLOW_STATUSES = [
   "LEAD",
-  "ADVANCED",
-  "ADMITTED",
+  "ENROLLED",
+  "JOINED",
   "COMPLETED",
   "CANCELLED",
   "PLACED",
@@ -15,9 +15,9 @@ const STUDENT_TRANSITIONS: Record<
   StudentEnrollmentWorkflowStatus,
   readonly StudentEnrollmentWorkflowStatus[]
 > = {
-  LEAD: ["ADVANCED", "ADMITTED"],
-  ADVANCED: ["ADMITTED", "CANCELLED"],
-  ADMITTED: ["COMPLETED", "CANCELLED"],
+  LEAD: ["ENROLLED", "JOINED"],
+  ENROLLED: ["JOINED", "CANCELLED"],
+  JOINED: ["COMPLETED", "CANCELLED"],
   COMPLETED: ["LEAD", "PLACED"],
   CANCELLED: ["LEAD"],
   PLACED: ["COMPLETED", "LEAD"],
@@ -25,7 +25,7 @@ const STUDENT_TRANSITIONS: Record<
 
 /** Admin enrollment record statuses (course enrollment row). */
 export const ENROLLMENT_RECORD_WORKFLOW_STATUSES = [
-  "ADMITTED",
+  "JOINED",
   "COMPLETED",
 ] as const;
 
@@ -36,9 +36,15 @@ const ENROLLMENT_RECORD_TRANSITIONS: Record<
   EnrollmentRecordWorkflowStatus,
   readonly EnrollmentRecordWorkflowStatus[]
 > = {
-  ADMITTED: ["COMPLETED"],
+  JOINED: ["COMPLETED"],
   COMPLETED: [],
 };
+
+const LEGACY_STUDENT_STATUS_ALIASES: Record<string, StudentEnrollmentWorkflowStatus> =
+  {
+    ADVANCED: "ENROLLED",
+    ADMITTED: "JOINED",
+  };
 
 export function normalizeStudentEnrollmentWorkflowStatus(
   status: string | null | undefined,
@@ -53,6 +59,10 @@ export function normalizeStudentEnrollmentWorkflowStatus(
   }
   if (normalized === "DROPPED") {
     normalized = "CANCELLED";
+  }
+  const legacyAlias = LEGACY_STUDENT_STATUS_ALIASES[normalized];
+  if (legacyAlias) {
+    normalized = legacyAlias;
   }
 
   if (
@@ -105,8 +115,8 @@ export const STUDENT_ENROLLMENT_WORKFLOW_STATUS_LABELS: Record<
   string
 > = {
   LEAD: "Lead",
-  ADVANCED: "Advanced",
-  ADMITTED: "Admitted",
+  ENROLLED: "Enrolled",
+  JOINED: "Joined",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
   PLACED: "Placed",
@@ -116,15 +126,15 @@ export const ENROLLMENT_RECORD_STATUS_LABELS: Record<
   EnrollmentRecordWorkflowStatus,
   string
 > = {
-  ADMITTED: "Admitted",
+  JOINED: "Joined",
   COMPLETED: "Completed",
 };
 
 export function mapWorkflowStatusToEnrollmentRecordStatus(
   workflow: StudentEnrollmentWorkflowStatus,
 ): EnrollmentRecordWorkflowStatus | null {
-  if (workflow === "ADMITTED") {
-    return "ADMITTED";
+  if (workflow === "JOINED") {
+    return "JOINED";
   }
   if (workflow === "COMPLETED") {
     return "COMPLETED";
@@ -137,8 +147,8 @@ export function studentWorkflowSyncsEnrollmentRow(
   workflow: StudentEnrollmentWorkflowStatus,
 ): boolean {
   return (
-    workflow === "ADVANCED" ||
-    workflow === "ADMITTED" ||
+    workflow === "ENROLLED" ||
+    workflow === "JOINED" ||
     workflow === "COMPLETED" ||
     workflow === "CANCELLED"
   );
@@ -152,7 +162,7 @@ export function isEnrollmentRecordWorkflowStatus(
   ).includes(workflow);
 }
 
-/** Maps stored enrollment row status to admin Admitted | Completed (or null). */
+/** Maps stored enrollment row status to admin Joined | Completed (or null). */
 export function normalizeEnrollmentRecordLifecycleStatus(
   status: string | null | undefined,
 ): EnrollmentRecordWorkflowStatus | null {
@@ -161,28 +171,34 @@ export function normalizeEnrollmentRecordLifecycleStatus(
   }
 
   const normalized = String(status).trim().toUpperCase();
+  if (normalized === "ADVANCED") {
+    return "JOINED";
+  }
+  if (normalized === "ADMITTED") {
+    return "JOINED";
+  }
 
   if (normalized === "COMPLETED") {
     return "COMPLETED";
   }
 
   if (
-    normalized === "ADMITTED" ||
+    normalized === "JOINED" ||
     normalized === "ACTIVE" ||
-    normalized === "ADVANCED" ||
+    normalized === "ENROLLED" ||
     normalized === "PENDING" ||
     normalized === "PENDING_APPROVAL"
   ) {
-    return "ADMITTED";
+    return "JOINED";
   }
 
   return null;
 }
 
-/** Admin enrollment row lifecycle (Advanced / Admitted / Completed / Cancelled). */
+/** Admin enrollment row lifecycle (Enrolled / Joined / Completed / Cancelled). */
 export const ADMIN_ENROLLMENT_LIFECYCLE_STATUSES = [
-  "ADVANCED",
-  "ADMITTED",
+  "ENROLLED",
+  "JOINED",
   "COMPLETED",
   "CANCELLED",
 ] as const;
@@ -198,6 +214,12 @@ export function normalizeAdminEnrollmentRowLifecycle(
   }
 
   const normalized = String(enrollmentStatus).trim().toUpperCase();
+  if (normalized === "ADVANCED") {
+    return "ENROLLED";
+  }
+  if (normalized === "ADMITTED") {
+    return "JOINED";
+  }
 
   if (normalized === "COMPLETED") {
     return "COMPLETED";
@@ -211,17 +233,17 @@ export function normalizeAdminEnrollmentRowLifecycle(
     return "CANCELLED";
   }
 
-  if (normalized === "ADVANCED") {
-    return "ADVANCED";
+  if (normalized === "ENROLLED") {
+    return "ENROLLED";
   }
 
   if (
-    normalized === "ADMITTED" ||
+    normalized === "JOINED" ||
     normalized === "ACTIVE" ||
     normalized === "PENDING" ||
     normalized === "PENDING_APPROVAL"
   ) {
-    return "ADMITTED";
+    return "JOINED";
   }
 
   return null;
@@ -248,8 +270,8 @@ export const ADMIN_ENROLLMENT_LIFECYCLE_TRANSITIONS: Record<
   AdminEnrollmentLifecycleStatus,
   readonly AdminEnrollmentLifecycleStatus[]
 > = {
-  ADVANCED: ["ADMITTED", "CANCELLED"],
-  ADMITTED: ["COMPLETED", "CANCELLED"],
+  ENROLLED: ["JOINED", "CANCELLED"],
+  JOINED: ["COMPLETED", "CANCELLED"],
   COMPLETED: [],
   CANCELLED: [],
 };
@@ -281,8 +303,8 @@ export function adminEnrollmentLifecycleFromWorkflowTarget(
 ): AdminEnrollmentLifecycleStatus | null {
   const normalized = normalizeStudentEnrollmentWorkflowStatus(status);
   if (
-    normalized === "ADVANCED" ||
-    normalized === "ADMITTED" ||
+    normalized === "ENROLLED" ||
+    normalized === "JOINED" ||
     normalized === "COMPLETED" ||
     normalized === "CANCELLED"
   ) {
@@ -301,12 +323,12 @@ export function isStudentStatusBlockingNewAdminEnrollment(
     return false;
   }
 
-  return workflow === "ADVANCED" || workflow === "ADMITTED";
+  return workflow === "ENROLLED" || workflow === "JOINED";
 }
 
 /**
  * Lead, Completed, Cancelled, Placed may start a new enrollment.
- * When `hasOpenEnrollmentSlot` is provided, it wins over student status (handles stale Advanced/Admitted after cancel).
+ * When `hasOpenEnrollmentSlot` is provided, it wins over student status (handles stale Enrolled/Joined after cancel).
  */
 export function canStudentStartNewAdminEnrollment(
   status: string | null | undefined,
@@ -327,11 +349,11 @@ export type StudentManageEnrollmentTab =
   | "completed"
   | "cancelled";
 
-/** Global admin list — active enrollments (Admitted). */
+/** Global admin list — active enrollments (Joined / Enrolled). */
 export const ADMIN_ENROLLMENT_ACTIVE_TAB_STATUSES = [
-  "ADMITTED",
+  "JOINED",
   "ACTIVE",
-  "ADVANCED",
+  "ENROLLED",
 ] as const;
 
 export const ADMIN_ENROLLMENT_COMPLETED_TAB_STATUSES = [
@@ -351,12 +373,12 @@ export const STUDENT_MANAGE_ENROLLMENT_CANCELLED_STATUSES = [
   "REJECTED",
 ] as const;
 
-/** DB partial-unique slot (one open admitted enrollment per student). */
+/** DB partial-unique slot (one open joined enrollment per student). */
 export const ADMIN_ENROLLMENT_UNIQUE_SLOT_STATUSES = [
   "PENDING",
   "PENDING_APPROVAL",
-  "ADVANCED",
-  "ADMITTED",
+  "ENROLLED",
+  "JOINED",
   "ACTIVE",
 ] as const;
 
@@ -398,7 +420,14 @@ export function enrollmentStatusOccupiesUniqueStudentSlot(
     return false;
   }
 
-  const normalized = String(status).trim().toUpperCase();
+  let normalized = String(status).trim().toUpperCase();
+  if (normalized === "ADVANCED") {
+    normalized = "ENROLLED";
+  }
+  if (normalized === "ADMITTED") {
+    normalized = "JOINED";
+  }
+
   return (ADMIN_ENROLLMENT_UNIQUE_SLOT_STATUSES as readonly string[]).includes(
     normalized,
   );
@@ -421,5 +450,5 @@ export function resolveLifecycleStatusFromEnrollmentStatuses(
     return "COMPLETED";
   }
 
-  return "ADMITTED";
+  return "JOINED";
 }

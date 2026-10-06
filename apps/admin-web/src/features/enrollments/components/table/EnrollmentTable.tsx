@@ -252,9 +252,9 @@ export function EnrollmentTable({
 
                   <td className="!px-4 !py-4 align-middle text-sm text-slate-700">
 
-                    {enrollment.mode === "SELF_PACED"
+                    {enrollment.mode === "SELF_PACED_RECORDED"
 
-                      ? "Self-Paced"
+                      ? "Self-Paced / Recorded"
 
                       : enrollment.mode === "ONLINE"
 

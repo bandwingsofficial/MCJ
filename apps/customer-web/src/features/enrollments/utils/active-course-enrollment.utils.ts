@@ -3,8 +3,8 @@ import type { Enrollment } from "@/src/features/enrollments/types/enrollment.typ
 const CURRENT_STATUSES = new Set([
   "PENDING",
   "PENDING_APPROVAL",
-  "ADVANCED",
-  "ADMITTED",
+  "ENROLLED",
+  "JOINED",
   "ACTIVE",
 ]);
 
@@ -111,13 +111,13 @@ export function getMyLearningCoursePath(courseId: string): string {
 export function isAdmittedLearningEnrollmentStatus(
   status: string | null | undefined,
 ): boolean {
-  return status === "ADMITTED" || status === "ACTIVE";
+  return status === "JOINED" || status === "ACTIVE";
 }
 
 export function isAdvancedEnrollmentStatus(
   status: string | null | undefined,
 ): boolean {
-  return status === "ADVANCED";
+  return status === "ENROLLED";
 }
 
 export interface ActiveEnrollmentBlockPresentation {

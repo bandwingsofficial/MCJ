@@ -11,7 +11,7 @@ export function mapCourseModeToEnrollmentMode(
       return EnrollmentMode.ONLINE;
     case CourseMode.RECORDED:
     case 'RECORDED':
-      return EnrollmentMode.SELF_PACED;
+      return EnrollmentMode.SELF_PACED_RECORDED;
     case CourseMode.OFFLINE:
     case 'OFFLINE':
     default:

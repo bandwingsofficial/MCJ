@@ -32,17 +32,17 @@ interface Props {
 
 type StudentStatusFilter =
   | "ALL"
-  | EnrollmentStatus.ADMITTED
+  | EnrollmentStatus.JOINED
   | EnrollmentStatus.CANCELLED;
 
 const DEFAULT_PAGE_SIZE = 10;
-const TIMING_STUDENT_STATUS_IN = "ADMITTED,CANCELLED";
+const TIMING_STUDENT_STATUS_IN = "JOINED,CANCELLED";
 
 const STUDENT_STATUS_FILTER_OPTIONS: Array<{
   label: string;
   value: StudentStatusFilter;
 }> = [
-  { label: "Admitted", value: EnrollmentStatus.ADMITTED },
+  { label: "Joined", value: EnrollmentStatus.JOINED },
   { label: "Cancelled", value: EnrollmentStatus.CANCELLED },
   { label: "All", value: "ALL" },
 ];
@@ -70,7 +70,7 @@ function paginationParams(page: number, pageSize: number) {
 export function BatchTimingStudentsPanel({ timing }: Props) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StudentStatusFilter>(
-    EnrollmentStatus.ADMITTED,
+    EnrollmentStatus.JOINED,
   );
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -92,7 +92,7 @@ export function BatchTimingStudentsPanel({ timing }: Props) {
         const [admittedResponse, listResponse] = await Promise.all([
           enrollmentService.getEnrollments({
             batchTimingId: timing.id,
-            status: EnrollmentStatus.ADMITTED,
+            status: EnrollmentStatus.JOINED,
             includeDeleted: false,
             skip: 0,
             take: 1,

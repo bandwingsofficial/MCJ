@@ -23,7 +23,7 @@ function detail(
   return {
     id: overrides?.id ?? 'enroll-1',
     enrollmentNumber: 'ENR-1',
-    status: overrides?.status ?? EnrollmentStatus.ADMITTED,
+    status: overrides?.status ?? EnrollmentStatus.JOINED,
     paymentStatus: 'UNPAID' as EnrollmentDetailView['paymentStatus'],
     source: 'ADMIN' as EnrollmentDetailView['source'],
     applicationType: 'OFFLINE' as EnrollmentDetailView['applicationType'],
@@ -51,7 +51,7 @@ function detail(
       gender: null,
       qualification: null,
       profileImageUrl: null,
-      status: 'ADMITTED',
+      status: 'JOINED',
       applicationType: 'OFFLINE',
       isActive: true,
       updatedAt: new Date(),
@@ -302,7 +302,7 @@ describe('EnrollmentDomainService same-course active enrollment block', () => {
 
     const existing = detail({
       batchId: BATCH_A,
-      status: EnrollmentStatus.ADMITTED,
+      status: EnrollmentStatus.JOINED,
     });
     existing.batch.endDate = endDate;
     existing.course.id = COURSE_ID;

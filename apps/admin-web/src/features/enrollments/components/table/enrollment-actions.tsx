@@ -77,8 +77,8 @@ export function EnrollmentActions({
   }
 
   const isAdvancedOrAdmittedRow =
-    statusForActions === EnrollmentStatus.ADVANCED ||
-    statusForActions === EnrollmentStatus.ADMITTED;
+    statusForActions === EnrollmentStatus.ENROLLED ||
+    statusForActions === EnrollmentStatus.JOINED;
 
   const showStatusChange =
     Boolean(onChangeStatus) &&

@@ -61,7 +61,7 @@ import { useAsyncData } from "@/src/shared/hooks/use-async-data";
 const TAB_CLASS =
   "rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
 
-const ACTIVE_ENROLLMENT_STATUSES = new Set(["ACTIVE", "ADMITTED"]);
+const ACTIVE_ENROLLMENT_STATUSES = new Set(["ACTIVE", "JOINED"]);
 
 function initials(student: Pick<StudentDetail, "firstName" | "lastName">) {
   const first = student.firstName?.charAt(0) ?? "";

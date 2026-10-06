@@ -65,7 +65,7 @@ export class BranchDashboardService {
       isDeleted: false,
       branchId: user.branchId,
       status: {
-        in: [EnrollmentStatus.ADMITTED, EnrollmentStatus.ACTIVE],
+        in: [EnrollmentStatus.JOINED, EnrollmentStatus.ACTIVE],
       },
       batch: batchWhere,
     };
