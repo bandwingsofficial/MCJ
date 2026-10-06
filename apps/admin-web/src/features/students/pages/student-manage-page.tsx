@@ -1,5 +1,6 @@
 "use client";
 
+import { formatMcjEntityPageTitle } from "@mcj/shared-constants";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -30,6 +31,8 @@ import {
   studentManagePath,
   studentManageTabPath,
 } from "@/src/features/students/utils/student-manage.routes";
+import { formatStudentName } from "@/src/features/students/utils/student-overview.utils";
+import { useBrowserPageTitle } from "@/src/shared/document-title/document-title-provider";
 
 interface Props {
   studentId: string;
@@ -80,6 +83,19 @@ function resolveInitialTab(
 export function StudentManagePage({ studentId, initialTab }: Props) {
   const router = useRouter();
   const { student, isLoading, error, refetch } = useStudent({ id: studentId });
+
+  const browserPageTitle = useMemo(() => {
+    if (!student) {
+      return null;
+    }
+
+    return formatMcjEntityPageTitle(
+      "Student",
+      formatStudentName(student.firstName, student.lastName),
+    );
+  }, [student]);
+
+  useBrowserPageTitle(browserPageTitle);
 
   const { deleteStudent, isPending: isArchiving } = useDeleteStudent();
   const { restoreStudent, isPending: isRestoring } = useRestoreStudent();

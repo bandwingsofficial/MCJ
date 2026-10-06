@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import { AuthProvider } from "@/src/core/providers/auth-provider";
+import { DocumentTitleProvider } from "@/src/shared/document-title/document-title-provider";
 
 interface Props {
   children: ReactNode;
@@ -17,7 +18,7 @@ export function AppProvider({
 }: Props) {
   return (
     <AuthProvider>
-      {children}
+      <DocumentTitleProvider>{children}</DocumentTitleProvider>
     </AuthProvider>
   );
 }

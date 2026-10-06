@@ -6,6 +6,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { getQueryClient } from "@/src/providers/query-client";
 import { RealtimeProvider } from "@/src/providers/realtime-provider";
 import { useAuthBootstrap } from "@/src/features/auth/hooks/use-auth-bootstrap";
+import { DocumentTitleProvider } from "@/src/shared/document-title/document-title-provider";
 
 interface Props {
   children: ReactNode;
@@ -22,8 +23,10 @@ export const AppProviders = ({ children }: Props) => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthBootstrap>
-        <RealtimeProvider />
-        {children}
+        <DocumentTitleProvider>
+          <RealtimeProvider />
+          {children}
+        </DocumentTitleProvider>
       </AuthBootstrap>
     </QueryClientProvider>
   );

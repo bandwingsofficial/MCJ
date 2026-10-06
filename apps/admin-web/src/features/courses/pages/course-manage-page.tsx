@@ -1,5 +1,6 @@
 "use client";
 
+import { formatMcjEntityPageTitle } from "@mcj/shared-constants";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -35,6 +36,7 @@ import {
   parseCourseDependencySummary,
   type CourseDependencySummary,
 } from "@/src/features/courses/utils/course-dependency-copy.utils";
+import { useBrowserPageTitle } from "@/src/shared/document-title/document-title-provider";
 
 interface Props {
   courseId: string;
@@ -58,6 +60,13 @@ export function CourseManagePage({ courseId }: Props) {
     refetch,
     setCourseData,
   } = useCourse(courseId);
+
+  const browserPageTitle = useMemo(
+    () => formatMcjEntityPageTitle("Course", course?.title),
+    [course?.title],
+  );
+
+  useBrowserPageTitle(browserPageTitle);
 
   const {
     summary,

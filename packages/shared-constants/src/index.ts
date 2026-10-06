@@ -1,4 +1,14 @@
 export {
+  MCJ_ACADEMY_BRAND,
+  MCJ_ROOT_METADATA_TITLE,
+  formatMcjEntityPageTitle,
+  formatMcjPageTitle,
+  isValidPageTitleSegment,
+  resolvePageTitleFromPathname,
+  type PageTitleRule,
+} from "./page-title.js";
+
+export {
   STUDENT_QUALIFICATION_OPTIONS,
   buildStudentQualificationSelectOptions,
   isStudentQualificationOption,

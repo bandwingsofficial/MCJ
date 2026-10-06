@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { formatMcjEntityPageTitle } from "@mcj/shared-constants";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Loader } from "@/src/shared/components/ui/loader";
@@ -10,6 +11,7 @@ import type { CourseModule } from "@/src/features/course-modules/types/course-mo
 import { ModuleManageWorkspace } from "@/src/features/course-modules/components/manage/module-manage-workspace";
 import { useCourse } from "@/src/features/courses/hooks/use-course";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { useBrowserPageTitle } from "@/src/shared/document-title/document-title-provider";
 
 interface Props {
   courseId: string;
@@ -47,6 +49,13 @@ export function CourseModuleManagePage({
   useEffect(() => {
     void loadModule();
   }, [loadModule]);
+
+  const browserPageTitle = useMemo(
+    () => formatMcjEntityPageTitle("Module", module?.title),
+    [module?.title],
+  );
+
+  useBrowserPageTitle(browserPageTitle);
 
   if (courseLoading || moduleLoading) {
     return <Loader />;

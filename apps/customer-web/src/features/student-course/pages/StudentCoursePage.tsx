@@ -1,6 +1,8 @@
 "use client";
 
+import { formatMcjEntityPageTitle } from "@mcj/shared-constants";
 import Link from "next/link";
+import { useMemo } from "react";
 import { ArrowLeft, BookOpen, Lock } from "lucide-react";
 
 import { Badge } from "@/src/shared/components/ui/badge";
@@ -15,6 +17,7 @@ import { CourseSkeleton } from "@/src/features/student-course/components/states/
 import { EmptyModules } from "@/src/features/student-course/components/states/EmptyModules";
 import { useStudentCourse } from "@/src/features/student-course/hooks/use-student-course";
 import type { CourseModule } from "@/src/features/student-course/types/module.types";
+import { useBrowserPageTitle } from "@/src/shared/document-title/document-title-provider";
 
 function toPreviewModules(modules: CourseModule[]): CoursePreviewModule[] {
   return modules.map((module) => ({
@@ -39,6 +42,13 @@ interface StudentCoursePageProps {
 export function StudentCoursePage({ courseId }: StudentCoursePageProps) {
   const { course, progress, isLoading, error, refetch } =
     useStudentCourse(courseId);
+
+  const browserPageTitle = useMemo(
+    () => formatMcjEntityPageTitle("Course", course?.title),
+    [course?.title],
+  );
+
+  useBrowserPageTitle(browserPageTitle);
 
   if (isLoading) {
     return <CourseSkeleton />;

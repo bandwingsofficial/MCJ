@@ -1,5 +1,6 @@
 "use client";
 
+import { formatMcjEntityPageTitle } from "@mcj/shared-constants";
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -34,6 +35,7 @@ import {
   isBatchLifecycleBlockingDeactivateOrArchive,
 } from "@/src/features/batches/utils/batch-lifecycle-block.utils";
 import { isBatchEditableForDataChanges } from "@/src/features/batches/utils/batch-select.utils";
+import { useBrowserPageTitle } from "@/src/shared/document-title/document-title-provider";
 
 interface Props {
   batchId: string;
@@ -51,6 +53,14 @@ export function BatchManagePage({ batchId }: Props) {
     [searchParams],
   );
   const { batch, isLoading, error, refetch } = useBatch(batchId);
+
+  const browserPageTitle = useMemo(
+    () => formatMcjEntityPageTitle("Batch", batch?.name),
+    [batch?.name],
+  );
+
+  useBrowserPageTitle(browserPageTitle);
+
   const {
     summary,
     isLoading: summaryLoading,

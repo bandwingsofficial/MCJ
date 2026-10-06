@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { formatMcjEntityPageTitle } from "@mcj/shared-constants";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -25,6 +26,7 @@ import {
   formatBranchAdmittedBlockDescription,
   type BranchDestructiveOperation,
 } from "@/src/features/branches/utils/branch-admitted-block.utils";
+import { useBrowserPageTitle } from "@/src/shared/document-title/document-title-provider";
 
 interface Props {
   branchId: string;
@@ -50,6 +52,13 @@ export function BranchManagePage({ branchId }: Props) {
     error,
     refetch,
   } = useBranch(branchId);
+
+  const browserPageTitle = useMemo(
+    () => formatMcjEntityPageTitle("Branch", branch?.branchName),
+    [branch?.branchName],
+  );
+
+  useBrowserPageTitle(browserPageTitle);
 
   const {
     summary,

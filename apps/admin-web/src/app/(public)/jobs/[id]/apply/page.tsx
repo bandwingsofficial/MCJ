@@ -9,7 +9,7 @@ interface Props {
 }
 
 export const metadata: Metadata = {
-  title: "Apply for this Job | MCJ Academy",
+  title: "Apply for Job",
   description: "Submit your application to MCJ Academy.",
 };
 

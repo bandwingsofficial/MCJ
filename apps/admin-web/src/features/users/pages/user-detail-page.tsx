@@ -9,7 +9,9 @@ import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { Button } from "@/src/shared/components/ui/button";
 import { adminUsersService } from "@/src/features/users/services/admin-users.service";
 import type { AdminUserDetailPayload } from "@/src/features/users/types/user-detail.types";
-import { useState } from "react";
+import { useBrowserPageTitle } from "@/src/shared/document-title/document-title-provider";
+import { formatMcjEntityPageTitle } from "@mcj/shared-constants";
+import { useMemo, useState } from "react";
 
 export function UserDetailPage({ userId }: { userId: string }) {
   const queryClient = useQueryClient();
@@ -21,6 +23,13 @@ export function UserDetailPage({ userId }: { userId: string }) {
     queryKey: ["admin-users", userId],
     queryFn: () => adminUsersService.getById(userId),
   });
+
+  const browserPageTitle = useMemo(() => {
+    const payload = detailQuery.data as AdminUserDetailPayload | undefined;
+    return formatMcjEntityPageTitle("User", payload?.user.name);
+  }, [detailQuery.data]);
+
+  useBrowserPageTitle(browserPageTitle);
 
   const transactionsQuery = useQuery({
     queryKey: ["admin-users", userId, "transactions"],

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatMcjEntityPageTitle } from "@mcj/shared-constants";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -14,6 +15,7 @@ import {
   enrollmentManageTabPath,
   type EnrollmentManageTabKey,
 } from "@/src/features/enrollments/utils/enrollment-manage.routes";
+import { useBrowserPageTitle } from "@/src/shared/document-title/document-title-provider";
 
 interface Props {
   enrollmentId: string;
@@ -40,6 +42,13 @@ export function EnrollmentManagePage({ enrollmentId, initialTab }: Props) {
   useEffect(() => {
     setActiveTab(initialTab ?? ENROLLMENT_MANAGE_DEFAULT_TAB);
   }, [initialTab]);
+
+  const browserPageTitle = useMemo(
+    () => formatMcjEntityPageTitle("Enrollment", enrollment?.enrollmentNumber),
+    [enrollment?.enrollmentNumber],
+  );
+
+  useBrowserPageTitle(browserPageTitle);
 
   const handleTabChange = useCallback(
     (tab: EnrollmentManageTabKey) => {

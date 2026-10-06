@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatMcjEntityPageTitle } from "@mcj/shared-constants";
 import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 
@@ -35,6 +36,7 @@ import { Button } from "@/src/shared/components/ui/button";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
+import { useBrowserPageTitle } from "@/src/shared/document-title/document-title-provider";
 
 import type { LessonTreeDto } from "@/src/features/learning/types/learning.types";
 
@@ -121,6 +123,13 @@ export function LessonLearningPage({
 
     return resolveActivePlayableVideo(lesson, activeMode, videoSelection);
   }, [lesson, activeMode, videoSelection]);
+
+  const browserPageTitle = useMemo(
+    () => formatMcjEntityPageTitle("Lesson", lesson?.title),
+    [lesson?.title],
+  );
+
+  useBrowserPageTitle(browserPageTitle);
 
   if (lessonQuery.isLoading || courseQuery.isLoading) {
     return <Skeleton className="h-[520px] rounded-xl" />;

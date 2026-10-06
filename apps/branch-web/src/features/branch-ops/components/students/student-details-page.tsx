@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatMcjEntityPageTitle } from "@mcj/shared-constants";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronRight, FileText } from "lucide-react";
 
@@ -40,6 +41,7 @@ import { Badge } from "@/src/shared/components/ui/badge";
 import { Card } from "@/src/shared/components/ui/card";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
+import { useBrowserPageTitle } from "@/src/shared/document-title/document-title-provider";
 import { Loader } from "@/src/shared/components/ui/loader";
 import { TablePaginationBar } from "@/src/shared/components/ui/table-pagination";
 import {
@@ -220,6 +222,22 @@ export function StudentDetailsPage({ studentId }: Props) {
     const enrollments = enrollmentsQuery.data?.items ?? [];
     return findActiveEnrollment(enrollments);
   }, [enrollmentsQuery.data?.items]);
+
+  const browserPageTitle = useMemo(() => {
+    const student = studentQuery.data;
+
+    if (!student) {
+      return null;
+    }
+
+    const fullName = [student.firstName, student.lastName]
+      .filter(Boolean)
+      .join(" ");
+
+    return formatMcjEntityPageTitle("Student", fullName);
+  }, [studentQuery.data]);
+
+  useBrowserPageTitle(browserPageTitle);
 
   if (studentQuery.loading || (enrollmentsQuery.loading && !enrollmentsQuery.data)) {
     return <Loader />;

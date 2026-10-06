@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatMcjEntityPageTitle } from "@mcj/shared-constants";
 import { useMemo } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 
@@ -27,6 +28,7 @@ import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
 import { cn } from "@/src/shared/lib/cn";
+import { useBrowserPageTitle } from "@/src/shared/document-title/document-title-provider";
 
 interface ModuleLearningPageProps {
   courseId: string;
@@ -40,6 +42,13 @@ export function ModuleLearningPage({
   const moduleQuery = useStudentModule(courseId, moduleId);
   const courseQuery = useStudentCourse(courseId);
   const dashboardQuery = useLearningDashboard();
+
+  const browserPageTitle = useMemo(
+    () => formatMcjEntityPageTitle("Module", moduleQuery.data?.title),
+    [moduleQuery.data?.title],
+  );
+
+  useBrowserPageTitle(browserPageTitle);
 
   const progressMap = useMemo(
     () => buildProgressMap(courseQuery.data?.progress.items ?? []),

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { formatMcjEntityPageTitle } from "@mcj/shared-constants";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
@@ -28,6 +29,7 @@ import { Card } from "@/src/shared/components/ui/card";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
+import { useBrowserPageTitle } from "@/src/shared/document-title/document-title-provider";
 
 interface CourseLearningPageProps {
   courseId: string;
@@ -40,6 +42,13 @@ export function CourseLearningPage({ courseId }: CourseLearningPageProps) {
   const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
 
   const payload = courseQuery.data;
+
+  const browserPageTitle = useMemo(
+    () => formatMcjEntityPageTitle("Course", payload?.course.title),
+    [payload?.course.title],
+  );
+
+  useBrowserPageTitle(browserPageTitle);
 
   const progressMap = useMemo(
     () => buildProgressMap(payload?.progress.items ?? []),
