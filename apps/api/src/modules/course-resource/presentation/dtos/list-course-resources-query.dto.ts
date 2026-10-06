@@ -17,6 +17,11 @@ export class ListCourseResourcesQueryDto extends PaginationQueryDto {
   @IsUUID()
   lessonId?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  moduleId?: string;
+
   @ApiPropertyOptional({ enum: ResourceType })
   @IsOptional()
   @IsEnum(ResourceType)

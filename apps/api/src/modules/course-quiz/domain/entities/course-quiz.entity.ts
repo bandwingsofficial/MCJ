@@ -6,6 +6,7 @@ import { QuizStatus } from '../enums/quiz-status.enum';
 export class CourseQuiz {
   private constructor(
     public readonly id: string,
+    public readonly moduleId: string,
     public readonly lessonId: string,
     public title: string,
     public description: string | null,
@@ -24,6 +25,7 @@ export class CourseQuiz {
   static create(params: CourseQuizCreateParams): CourseQuiz {
     return new CourseQuiz(
       params.id,
+      params.moduleId,
       params.lessonId,
       CourseQuiz.normalizeTitle(params.title),
       params.description ?? null,
@@ -45,6 +47,7 @@ export class CourseQuiz {
   ): CourseQuiz {
     return new CourseQuiz(
       params.id,
+      params.moduleId,
       params.lessonId,
       params.title,
       params.description,
@@ -128,6 +131,7 @@ export class CourseQuiz {
 
 export interface CourseQuizCreateParams {
   id: string;
+  moduleId: string;
   lessonId: string;
   title: string;
   description?: string | null;
@@ -148,6 +152,7 @@ export interface CourseQuizUpdateParams {
 
 export interface CourseQuizReconstituteParams {
   id: string;
+  moduleId: string;
   lessonId: string;
   title: string;
   description: string | null;

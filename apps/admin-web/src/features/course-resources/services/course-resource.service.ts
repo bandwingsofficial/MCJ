@@ -45,11 +45,9 @@ class CourseResourceService {
         ApiSuccessResponse<CourseResourceListItem[]>
       >(this.basePath, {
         params: {
-          lessonId:
-            filters.lessonId,
-
-          includeDeleted:
-            filters.includeDeleted,
+          lessonId: filters.lessonId,
+          moduleId: filters.moduleId,
+          includeDeleted: filters.includeDeleted,
         },
       });
 

@@ -1,3 +1,3 @@
 -- AlterTable
-ALTER TABLE "UserDeletionRecord" ADD COLUMN "originalEmail" TEXT;
-ALTER TABLE "UserDeletionRecord" ADD COLUMN "originalName" TEXT;
+ALTER TABLE "UserDeletionRecord" ADD COLUMN IF NOT EXISTS "originalEmail" TEXT;
+ALTER TABLE "UserDeletionRecord" ADD COLUMN IF NOT EXISTS "originalName" TEXT;

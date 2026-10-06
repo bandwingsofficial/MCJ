@@ -20,10 +20,15 @@ export class MoveCourseResourceHandler {
       await this.courseResourceRepo.findById(command.id),
     );
 
-    const siblings = await this.courseResourceRepo.findByLessonId(
-      resource.lessonId,
-      false,
-    );
+    const siblings = resource.lessonId
+      ? await this.courseResourceRepo.findByLessonId(resource.lessonId, false)
+      : resource.moduleId
+        ? await this.courseResourceRepo.findByModuleId(
+            resource.moduleId,
+            false,
+          )
+        : [];
+
     const maxPosition = siblings.length;
 
     if (
@@ -39,6 +44,7 @@ export class MoveCourseResourceHandler {
     await this.courseResourceRepo.move(
       resource.id,
       resource.lessonId,
+      resource.moduleId,
       resource.displayOrder,
       command.newPosition,
       command.updatedBy,

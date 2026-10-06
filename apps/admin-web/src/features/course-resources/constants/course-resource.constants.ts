@@ -31,7 +31,8 @@ export const DEFAULT_COURSE_RESOURCE_FILTERS: CourseResourceFilters = {
 
 export const DEFAULT_COURSE_RESOURCE_FORM_VALUES: CourseResourceFormValues =
   {
-    lessonId: "",
+    lessonId: null,
+    moduleId: null,
     title: "",
     type: "PDF",
     fileUrl: "",

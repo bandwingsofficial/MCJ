@@ -69,6 +69,7 @@ export class CreateQuizHandler {
 
     const quiz = CourseQuiz.create({
       id: randomUUID(),
+      moduleId: lesson.moduleId,
       lessonId: command.lessonId,
       title: command.title,
       description: command.description,

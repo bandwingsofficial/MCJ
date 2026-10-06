@@ -28,6 +28,7 @@ export interface CourseQuizQuestion {
 
 export interface CourseQuiz {
   id: string;
+  moduleId?: string;
   lessonId: string;
   title: string;
   description: string | null;
@@ -90,7 +91,8 @@ export interface ReorderQuizQuestionsRequest {
 }
 
 export interface GetCourseQuizzesRequest {
-  lessonId: string;
+  lessonId?: string;
+  moduleId?: string;
   includeDeleted?: boolean;
 }
 

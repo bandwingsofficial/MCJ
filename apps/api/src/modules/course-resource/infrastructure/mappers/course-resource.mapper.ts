@@ -11,6 +11,7 @@ export class CourseResourceMapper {
     return CourseResource.reconstitute({
       id: record.id,
       lessonId: record.lessonId,
+      moduleId: record.moduleId,
       title: record.title,
       type: record.type as ResourceType,
       fileUrl: record.fileUrl,
@@ -31,6 +32,7 @@ export class CourseResourceMapper {
     return {
       id: resource.id,
       lessonId: resource.lessonId,
+      moduleId: resource.moduleId,
       title: resource.title,
       type: resource.type,
       fileUrl: resource.fileUrl,

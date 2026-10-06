@@ -43,6 +43,15 @@ export function courseManageLessonPath(
   return `${courseManageModulePath(courseId, moduleId)}/lessons/${lessonId}/manage`;
 }
 
+export function courseManageModuleTestPath(
+  courseId: string,
+  moduleId: string,
+  quizId: string,
+): string {
+  return `${courseManageModulePath(courseId, moduleId)}/test/${quizId}`;
+}
+
+/** @deprecated Use courseManageModuleTestPath */
 export function courseManageLessonQuizPath(
   courseId: string,
   moduleId: string,

@@ -5,15 +5,22 @@ import {
   IsString,
   IsUUID,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { ResourceType } from '../../domain/enums/resource-type.enum';
 
 export class CreateCourseResourceDto {
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @ValidateIf((dto: CreateCourseResourceDto) => !dto.moduleId)
   @IsUUID()
-  lessonId!: string;
+  lessonId?: string;
+
+  @ApiPropertyOptional()
+  @ValidateIf((dto: CreateCourseResourceDto) => !dto.lessonId)
+  @IsUUID()
+  moduleId?: string;
 
   @ApiProperty({ example: 'Cheat Sheet' })
   @IsString()

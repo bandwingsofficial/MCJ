@@ -1,5 +1,6 @@
--- CreateTable
-CREATE TABLE "CommunityPostView" (
+-- Community post view/share tracking (idempotent for db push drift).
+
+CREATE TABLE IF NOT EXISTS "CommunityPostView" (
     "id" TEXT NOT NULL,
     "postId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -8,8 +9,7 @@ CREATE TABLE "CommunityPostView" (
     CONSTRAINT "CommunityPostView_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "CommunityPostShare" (
+CREATE TABLE IF NOT EXISTS "CommunityPostShare" (
     "id" TEXT NOT NULL,
     "postId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -18,40 +18,46 @@ CREATE TABLE "CommunityPostShare" (
     CONSTRAINT "CommunityPostShare_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE INDEX "CommunityPostView_postId_idx" ON "CommunityPostView"("postId");
+CREATE INDEX IF NOT EXISTS "CommunityPostView_postId_idx" ON "CommunityPostView"("postId");
+CREATE INDEX IF NOT EXISTS "CommunityPostView_userId_idx" ON "CommunityPostView"("userId");
+CREATE INDEX IF NOT EXISTS "CommunityPostView_postId_userId_idx" ON "CommunityPostView"("postId", "userId");
+CREATE INDEX IF NOT EXISTS "CommunityPostView_createdAt_idx" ON "CommunityPostView"("createdAt");
 
--- CreateIndex
-CREATE INDEX "CommunityPostView_userId_idx" ON "CommunityPostView"("userId");
+CREATE INDEX IF NOT EXISTS "CommunityPostShare_postId_idx" ON "CommunityPostShare"("postId");
+CREATE INDEX IF NOT EXISTS "CommunityPostShare_userId_idx" ON "CommunityPostShare"("userId");
+CREATE INDEX IF NOT EXISTS "CommunityPostShare_postId_createdAt_idx" ON "CommunityPostShare"("postId", "createdAt");
 
--- CreateIndex
-CREATE INDEX "CommunityPostView_postId_userId_idx" ON "CommunityPostView"("postId", "userId");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'CommunityPostView_postId_fkey'
+  ) THEN
+    ALTER TABLE "CommunityPostView" ADD CONSTRAINT "CommunityPostView_postId_fkey"
+      FOREIGN KEY ("postId") REFERENCES "CommunityPost"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
 
--- CreateIndex
-CREATE INDEX "CommunityPostView_createdAt_idx" ON "CommunityPostView"("createdAt");
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'CommunityPostView_userId_fkey'
+  ) THEN
+    ALTER TABLE "CommunityPostView" ADD CONSTRAINT "CommunityPostView_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
 
--- CreateIndex
-CREATE INDEX "CommunityPostShare_postId_idx" ON "CommunityPostShare"("postId");
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'CommunityPostShare_postId_fkey'
+  ) THEN
+    ALTER TABLE "CommunityPostShare" ADD CONSTRAINT "CommunityPostShare_postId_fkey"
+      FOREIGN KEY ("postId") REFERENCES "CommunityPost"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
 
--- CreateIndex
-CREATE INDEX "CommunityPostShare_userId_idx" ON "CommunityPostShare"("userId");
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'CommunityPostShare_userId_fkey'
+  ) THEN
+    ALTER TABLE "CommunityPostShare" ADD CONSTRAINT "CommunityPostShare_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE INDEX "CommunityPostShare_postId_createdAt_idx" ON "CommunityPostShare"("postId", "createdAt");
-
--- AddForeignKey
-ALTER TABLE "CommunityPostView" ADD CONSTRAINT "CommunityPostView_postId_fkey" FOREIGN KEY ("postId") REFERENCES "CommunityPost"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "CommunityPostView" ADD CONSTRAINT "CommunityPostView_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "CommunityPostShare" ADD CONSTRAINT "CommunityPostShare_postId_fkey" FOREIGN KEY ("postId") REFERENCES "CommunityPost"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "CommunityPostShare" ADD CONSTRAINT "CommunityPostShare_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- Keep aggregate view counts at least as large as share counts.
 UPDATE "CommunityPost"
 SET "viewCount" = "shareCount"
 WHERE "shareCount" > "viewCount";

@@ -39,7 +39,8 @@ import type {
 } from "@/src/features/course-resources/types";
 
 const resourceFormSchema = z.object({
-  lessonId: z.string(),
+  lessonId: z.string().nullable().optional(),
+  moduleId: z.string().nullable().optional(),
   title: z
     .string()
     .trim()
@@ -61,7 +62,8 @@ const resourceFormSchema = z.object({
 interface CourseResourceFormProps {
   open: boolean;
   loading: boolean;
-  lessonId: string;
+  lessonId?: string;
+  moduleId?: string;
   resource?: CourseResource;
   onClose: () => void;
   onSubmit: (
@@ -74,10 +76,12 @@ export function CourseResourceForm({
   open,
   loading,
   lessonId,
+  moduleId,
   resource,
   onClose,
   onSubmit,
 }: CourseResourceFormProps) {
+  const scopeKey = lessonId ?? moduleId ?? "resource";
   const isEdit = Boolean(resource);
   const [editValidationReady, setEditValidationReady] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -124,7 +128,7 @@ export function CourseResourceForm({
   const { sessionKey, discardCreateSession } = useModalFormSessionKey(
     open,
     resource ? { id: resource.id, updatedAt: resource.updatedAt } : undefined,
-    `resource-${lessonId}`,
+    `resource-${scopeKey}`,
   );
 
   useFormSessionReset(
@@ -133,13 +137,15 @@ export function CourseResourceForm({
     resource
       ? {
           lessonId: resource.lessonId,
+          moduleId: resource.moduleId ?? null,
           title: resource.title,
           type: resource.type,
           fileUrl: isResourceTypeLink(resource.type) ? resource.fileUrl : "",
         }
       : {
           ...DEFAULT_COURSE_RESOURCE_FORM_VALUES,
-          lessonId,
+          lessonId: lessonId ?? null,
+          moduleId: moduleId ?? null,
         },
     {
       onReset: () => {

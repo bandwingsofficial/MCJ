@@ -61,6 +61,7 @@ export class AdminCourseResourceController {
     const result = await this.createCourseResourceHandler.execute(
       new CreateCourseResourceCommand(
         dto.lessonId,
+        dto.moduleId,
         dto.title,
         dto.type,
         dto.fileUrl,
@@ -80,6 +81,7 @@ export class AdminCourseResourceController {
     const result = await this.listCourseResourcesHandler.execute(
       new ListCourseResourcesQuery(
         query.lessonId,
+        query.moduleId,
         query.type,
         query.search,
         query.includeDeleted,

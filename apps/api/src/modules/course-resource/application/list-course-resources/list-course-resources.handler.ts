@@ -12,12 +12,13 @@ export class ListCourseResourcesHandler {
   async execute(
     query: ListCourseResourcesQuery,
   ): Promise<CourseResourceResult[]> {
-    if (!query.lessonId) {
+    if (!query.lessonId && !query.moduleId) {
       return [];
     }
 
     const resources = await this.courseResourceRepo.findAll({
       lessonId: query.lessonId,
+      moduleId: query.moduleId,
       type: query.type,
       search: query.search,
       includeDeleted: query.includeDeleted,

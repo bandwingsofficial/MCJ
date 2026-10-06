@@ -1,4 +1,4 @@
--- AlterTable
-ALTER TABLE "Batch" ADD COLUMN "cancellationReason" TEXT;
-ALTER TABLE "Batch" ADD COLUMN "cancelledAt" TIMESTAMP(3);
-ALTER TABLE "Batch" ADD COLUMN "cancelledBy" TEXT;
+-- AlterTable (idempotent for DBs that already received these columns via db push)
+ALTER TABLE "Batch" ADD COLUMN IF NOT EXISTS "cancellationReason" TEXT;
+ALTER TABLE "Batch" ADD COLUMN IF NOT EXISTS "cancelledAt" TIMESTAMP(3);
+ALTER TABLE "Batch" ADD COLUMN IF NOT EXISTS "cancelledBy" TEXT;

@@ -24,6 +24,7 @@ class CourseQuizService {
       {
         params: {
           lessonId: filters.lessonId,
+          moduleId: filters.moduleId,
           includeDeleted: filters.includeDeleted,
         },
       },

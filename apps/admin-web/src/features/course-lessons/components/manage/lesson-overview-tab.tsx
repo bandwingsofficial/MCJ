@@ -4,7 +4,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
   ClipboardList,
-  FileQuestion,
   FileText,
   Hash,
   Layers,
@@ -19,7 +18,6 @@ import { LessonPreviewAccessBadge } from "@/src/features/course-lessons/componen
 import type { CourseLesson } from "@/src/features/course-lessons/types";
 import type { CourseModule } from "@/src/features/course-modules/types/course-module.types";
 import type {
-  ModuleQuizRow,
   ModuleResourceRow,
 } from "@/src/features/course-modules/hooks/use-module-content-data";
 import {
@@ -32,7 +30,6 @@ interface Props {
   lesson: CourseLesson;
   lessonPosition: number;
   resources: ModuleResourceRow[];
-  quizzes: ModuleQuizRow[];
   selfPacedCount: number;
   liveRecordedCount: number;
 }
@@ -118,7 +115,6 @@ export function LessonOverviewTab({
   lesson,
   lessonPosition,
   resources,
-  quizzes,
   selfPacedCount,
   liveRecordedCount,
 }: Props) {
@@ -152,16 +148,6 @@ export function LessonOverviewTab({
       iconBgClass: "bg-amber-50/90 ring-amber-100/80",
       cardClass:
         "border-amber-200/70 bg-gradient-to-br from-amber-50/60 via-[#FFFBF5] to-[#FFF8ED]",
-    },
-    {
-      key: "quizzes",
-      label: "Quizzes",
-      value: quizzes.length,
-      icon: FileQuestion,
-      iconClass: "text-emerald-600",
-      iconBgClass: "bg-emerald-50/90 ring-emerald-100/80",
-      cardClass:
-        "border-emerald-200/70 bg-gradient-to-br from-emerald-50/50 via-[#F6FDF9] to-[#EDFAF3]",
     },
     {
       key: "assignments",

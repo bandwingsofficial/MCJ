@@ -6,7 +6,8 @@ import { ResourceType } from '../enums/resource-type.enum';
 export class CourseResource {
   private constructor(
     public readonly id: string,
-    public readonly lessonId: string,
+    public readonly lessonId: string | null,
+    public readonly moduleId: string | null,
     public title: string,
     public type: ResourceType,
     public fileUrl: string | null,
@@ -23,9 +24,26 @@ export class CourseResource {
   static create(
     params: CourseResourceCreateParams,
   ): CourseResource {
+    if (!params.lessonId && !params.moduleId) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Resource must belong to a lesson or module',
+        400,
+      );
+    }
+
+    if (params.lessonId && params.moduleId) {
+      throw new BaseException(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Resource cannot belong to both a lesson and a module',
+        400,
+      );
+    }
+
     return new CourseResource(
       params.id,
-      params.lessonId,
+      params.lessonId ?? null,
+      params.moduleId ?? null,
       CourseResource.normalizeTitle(params.title),
       params.type ?? ResourceType.OTHER,
       params.fileUrl ?? null,
@@ -46,6 +64,7 @@ export class CourseResource {
     return new CourseResource(
       params.id,
       params.lessonId,
+      params.moduleId,
       params.title,
       params.type,
       params.fileUrl,
@@ -117,7 +136,8 @@ export class CourseResource {
 
 export interface CourseResourceCreateParams {
   id: string;
-  lessonId: string;
+  lessonId?: string | null;
+  moduleId?: string | null;
   title: string;
   type?: ResourceType;
   fileUrl?: string | null;
@@ -134,7 +154,8 @@ export interface CourseResourceUpdateParams {
 
 export interface CourseResourceReconstituteParams {
   id: string;
-  lessonId: string;
+  lessonId: string | null;
+  moduleId: string | null;
   title: string;
   type: ResourceType;
   fileUrl: string | null;

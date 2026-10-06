@@ -18,13 +18,14 @@ export class PermanentDeleteCourseResourceHandler {
     );
 
     const wasActive = !resource.isDeleted;
-    const { lessonId, displayOrder } = resource;
+    const { lessonId, moduleId, displayOrder } = resource;
 
     await this.courseResourceRepo.deletePermanent(resource.id);
 
     if (wasActive) {
       await this.courseResourceRepo.closeDisplayOrderGap(
         lessonId,
+        moduleId,
         displayOrder,
       );
     }

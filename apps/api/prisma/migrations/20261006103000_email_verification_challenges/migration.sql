@@ -1,8 +1,13 @@
--- CreateEnum
-CREATE TYPE "EmailVerificationStatus" AS ENUM ('PENDING', 'VERIFIED', 'CONSUMED');
+-- Email verification OTP challenges (idempotent for db push drift).
 
--- CreateTable
-CREATE TABLE "EmailVerificationChallenge" (
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'EmailVerificationStatus') THEN
+    CREATE TYPE "EmailVerificationStatus" AS ENUM ('PENDING', 'VERIFIED', 'CONSUMED');
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS "EmailVerificationChallenge" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "otpHash" TEXT NOT NULL,
@@ -19,17 +24,9 @@ CREATE TABLE "EmailVerificationChallenge" (
     CONSTRAINT "EmailVerificationChallenge_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE INDEX "EmailVerificationChallenge_email_idx" ON "EmailVerificationChallenge"("email");
+CREATE INDEX IF NOT EXISTS "EmailVerificationChallenge_email_idx" ON "EmailVerificationChallenge"("email");
+CREATE INDEX IF NOT EXISTS "EmailVerificationChallenge_email_status_idx" ON "EmailVerificationChallenge"("email", "status");
+CREATE INDEX IF NOT EXISTS "EmailVerificationChallenge_expiresAt_idx" ON "EmailVerificationChallenge"("expiresAt");
+CREATE INDEX IF NOT EXISTS "EmailVerificationChallenge_createdAt_idx" ON "EmailVerificationChallenge"("createdAt");
 
--- CreateIndex
-CREATE INDEX "EmailVerificationChallenge_email_status_idx" ON "EmailVerificationChallenge"("email", "status");
-
--- CreateIndex
-CREATE INDEX "EmailVerificationChallenge_expiresAt_idx" ON "EmailVerificationChallenge"("expiresAt");
-
--- CreateIndex
-CREATE INDEX "EmailVerificationChallenge_createdAt_idx" ON "EmailVerificationChallenge"("createdAt");
-
--- Trust existing accounts (do not force re-verification on login).
 UPDATE "User" SET "isEmailVerified" = true WHERE "isEmailVerified" = false;

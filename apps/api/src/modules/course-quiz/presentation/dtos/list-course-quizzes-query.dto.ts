@@ -10,6 +10,11 @@ export class ListCourseQuizzesQueryDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsUUID()
+  moduleId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => value === 'true' || value === true)
   includeDeleted?: boolean;

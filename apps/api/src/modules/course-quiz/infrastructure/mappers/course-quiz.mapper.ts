@@ -10,6 +10,7 @@ export class CourseQuizMapper {
   static toDomain(record: PrismaCourseQuiz): CourseQuiz {
     return CourseQuiz.reconstitute({
       id: record.id,
+      moduleId: record.moduleId,
       lessonId: record.lessonId,
       title: record.title,
       description: record.description,
@@ -31,6 +32,7 @@ export class CourseQuizMapper {
   ): Prisma.CourseQuizUncheckedCreateInput {
     return {
       id: quiz.id,
+      moduleId: quiz.moduleId,
       lessonId: quiz.lessonId,
       title: quiz.title,
       description: quiz.description,

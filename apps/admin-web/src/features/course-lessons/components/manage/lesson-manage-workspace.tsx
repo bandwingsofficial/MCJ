@@ -4,7 +4,6 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
-  FileQuestion,
   FileText,
   LayoutDashboard,
   Video,
@@ -23,10 +22,7 @@ import {
 import type { CourseLesson } from "@/src/features/course-lessons/types";
 import type { CourseModule } from "@/src/features/course-modules/types/course-module.types";
 import { ModuleVideosTab } from "@/src/features/course-modules/components/manage/module-videos-tab";
-import {
-  ModuleQuizzesTab,
-  ModuleResourcesTab,
-} from "@/src/features/course-modules/components/manage/module-other-tabs";
+import { ModuleResourcesTab } from "@/src/features/course-modules/components/manage/module-other-tabs";
 import { useCourseLearnItems } from "@/src/features/course-learn-items/hooks";
 import { useLessonContentData } from "@/src/features/course-lessons/hooks/use-lesson-content-data";
 import { getPlainLessonPosition } from "@/src/features/course-lessons/utils/lesson-order.utils";
@@ -38,8 +34,7 @@ export type LessonManageTab =
   | "overview"
   | "learn"
   | "videos"
-  | "resources"
-  | "quizzes";
+  | "resources";
 
 const TAB_CLASS =
   "inline-flex items-center rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-500 shadow-none data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none";
@@ -53,7 +48,6 @@ const TAB_ITEMS: ReadonlyArray<{
   { value: "learn", label: "Learn", icon: BookOpen },
   { value: "videos", label: "Self-Paced Videos", icon: Video },
   { value: "resources", label: "Resources", icon: FileText },
-  { value: "quizzes", label: "Quizzes", icon: FileQuestion },
 ];
 
 interface Props {
@@ -78,7 +72,6 @@ export function LessonManageWorkspace({
     quizLessonIds,
     resourceShellLessonIds,
     resources,
-    quizzes,
     selfPacedVideos,
     liveRecordedVideos,
     isLoading,
@@ -145,7 +138,6 @@ export function LessonManageWorkspace({
                 lesson={lesson}
                 lessonPosition={lessonPosition}
                 resources={resources}
-                quizzes={quizzes}
                 selfPacedCount={selfPacedVideos.length}
                 liveRecordedCount={liveRecordedVideos.length}
               />
@@ -178,15 +170,6 @@ export function LessonManageWorkspace({
               />
             </TabsContent>
 
-            <TabsContent value="quizzes">
-              <ModuleQuizzesTab
-                courseId={courseId}
-                moduleId={module.id}
-                lessonId={lesson.id}
-                quizzes={quizzes}
-                onRefresh={refetch}
-              />
-            </TabsContent>
           </>
         )}
       </Tabs>

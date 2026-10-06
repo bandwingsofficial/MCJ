@@ -3,7 +3,8 @@ import { ResourceType } from '../domain/enums/resource-type.enum';
 export class CourseResourceResult {
   constructor(
     public readonly id: string,
-    public readonly lessonId: string,
+    public readonly lessonId: string | null,
+    public readonly moduleId: string | null,
     public readonly title: string,
     public readonly type: ResourceType,
     public readonly fileUrl: string | null,

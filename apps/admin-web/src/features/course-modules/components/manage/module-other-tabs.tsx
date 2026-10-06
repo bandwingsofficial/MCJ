@@ -39,7 +39,7 @@ import type {
 } from "@/src/features/course-modules/hooks/use-module-content-data";
 import { ModuleContentSection } from "@/src/features/course-modules/components/manage/module-content-section";
 import { formatResourceSize } from "@/src/features/course-modules/utils/module-content.utils";
-import { courseManageLessonQuizPath } from "@/src/features/courses/utils/course-manage.routes";
+import { courseManageModuleTestPath } from "@/src/features/courses/utils/course-manage.routes";
 import { getErrorMessage } from "@/src/core/utils/get-error-message";
 import { reorderByDrag } from "@/src/shared/utils/reorder-drag.utils";
 
@@ -66,7 +66,6 @@ export function ModuleResourcesTab({
   onRefresh,
   lessonId,
 }: ResourcesTabProps) {
-  const { createCourseLesson } = useCreateCourseLesson();
   const { createCourseResource, isLoading: isCreating } =
     useCreateCourseResource();
   const { updateCourseResource, isLoading: isUpdating } =
@@ -189,7 +188,11 @@ export function ModuleResourcesTab({
             },
           ]}
           emptyTitle="No Resources Found"
-          emptyDescription="Add a resource to this lesson."
+          emptyDescription={
+            lessonId
+              ? "Add a resource to this lesson."
+              : "Add a resource to this module."
+          }
           emptySearchDescription="Create your first resource or adjust your filters."
           renderActions={(row) => (
             <ModuleContentActions
@@ -226,7 +229,8 @@ export function ModuleResourcesTab({
       <CourseResourceForm
         open={formOpen}
         loading={isCreating || isUpdating}
-        lessonId={selected?.lessonId ?? lessonId ?? ""}
+        lessonId={selected?.lessonId ?? lessonId ?? undefined}
+        moduleId={!lessonId && !selected?.lessonId ? moduleId : undefined}
         resource={selected ?? undefined}
         onClose={() => {
           setFormOpen(false);
@@ -254,15 +258,12 @@ export function ModuleResourcesTab({
               );
               appToast.success("Resource created successfully");
             } else {
-              const lesson = await createCourseLesson({
-                moduleId,
-                title: values.title,
-                description: "",
-                videoUrl: "",
-                contentType: "LESSON",
-              });
               await createCourseResource(
-                { ...values, lessonId: lesson.id },
+                {
+                  ...values,
+                  moduleId,
+                  lessonId: null,
+                },
                 file,
               );
               appToast.success("Resource created successfully");
@@ -334,7 +335,7 @@ export function ModuleResourcesTab({
   );
 }
 
-interface QuizzesTabProps {
+interface TestsTabProps {
   courseId: string;
   moduleId: string;
   quizzes: ModuleQuizRow[];
@@ -342,13 +343,13 @@ interface QuizzesTabProps {
   lessonId?: string;
 }
 
-export function ModuleQuizzesTab({
+export function ModuleTestsTab({
   courseId,
   moduleId,
   quizzes,
   onRefresh,
   lessonId,
-}: QuizzesTabProps) {
+}: TestsTabProps) {
   const router = useRouter();
   const { createCourseLesson } = useCreateCourseLesson();
   const { createCourseQuiz } = useCreateCourseQuiz();
@@ -397,9 +398,9 @@ export function ModuleQuizzesTab({
   return (
     <>
       <ModuleContentSection
-        title="Quizzes"
+        title="Tests"
         search={search}
-        searchPlaceholder="Search quizzes..."
+        searchPlaceholder="Search tests..."
         onSearchChange={(value) => {
           setSearch(value);
           setPage(1);
@@ -414,7 +415,7 @@ export function ModuleQuizzesTab({
           { label: "Draft", value: "DRAFT" },
           { label: "Published", value: "PUBLISHED" },
         ]}
-        actionLabel="Add Quiz"
+        actionLabel="Add Test"
         onAction={() => {
           setQuizTitle("");
           setQuizFormOpen(true);
@@ -459,16 +460,24 @@ export function ModuleQuizzesTab({
               ),
             },
           ]}
-          emptyTitle="No Quizzes Found"
-          emptyDescription="Create a quiz for this lesson."
-          emptySearchDescription="Create your first quiz or adjust your filters."
+          emptyTitle="No Tests Found"
+          emptyDescription={
+            lessonId
+              ? "Create a test for this lesson."
+              : "Create a test for this module."
+          }
+          emptySearchDescription="Create your first test or adjust your filters."
           renderActions={(row) => (
             <ModuleContentActions
               isArchived={row.isArchived}
               showManage
               onManage={() => {
                 router.push(
-                  courseManageLessonQuizPath(courseId, moduleId, row.lessonId),
+                  courseManageModuleTestPath(
+                    courseId,
+                    moduleId,
+                    row.quiz.id,
+                  ),
                 );
               }}
               onActivate={
@@ -498,17 +507,17 @@ export function ModuleQuizzesTab({
 
       <Modal
         open={quizFormOpen}
-        title="Add Quiz"
+        title="Add Test"
         onClose={() => setQuizFormOpen(false)}
       >
         <div className="space-y-3">
           <div>
-            <Label htmlFor="quiz-title">Quiz Name</Label>
+            <Label htmlFor="quiz-title">Test Name</Label>
             <Input
               id="quiz-title"
               value={quizTitle}
               onChange={(event) => setQuizTitle(event.target.value)}
-              placeholder="e.g. Python Basics Quiz"
+              placeholder="e.g. Python Basics Test"
             />
           </div>
           <div className="flex justify-end gap-2">
@@ -544,7 +553,7 @@ export function ModuleQuizzesTab({
                       title: quizTitle.trim(),
                     });
                   }
-                  appToast.success("Quiz created successfully");
+                  appToast.success("Test created successfully");
                   setQuizFormOpen(false);
                   setQuizTitle("");
                   await onRefresh();
@@ -555,7 +564,7 @@ export function ModuleQuizzesTab({
                 }
               }}
             >
-              Create Quiz
+              Create Test
             </Button>
           </div>
         </div>
@@ -563,8 +572,8 @@ export function ModuleQuizzesTab({
 
       <ConfirmDialog
         open={publishOpen}
-        title="Publish Quiz"
-        description={`Publish "${selected?.quiz.title ?? ""}"? The quiz must have valid questions before publishing.`}
+        title="Publish Test"
+        description={`Publish "${selected?.quiz.title ?? ""}"? The test must have valid questions before publishing.`}
         onCancel={() => {
           setPublishOpen(false);
           setSelected(null);
@@ -575,7 +584,7 @@ export function ModuleQuizzesTab({
           }
           try {
             await publishCourseQuiz(selected.quiz.id);
-            appToast.success("Quiz published successfully");
+            appToast.success("Test published successfully");
             setPublishOpen(false);
             setSelected(null);
             await onRefresh();
@@ -587,11 +596,11 @@ export function ModuleQuizzesTab({
 
       <ConfirmDialog
         open={deleteOpen}
-        title="Delete Quiz?"
+        title="Delete Test?"
         description={
           selected?.quiz.title
             ? `This action will permanently delete "${selected.quiz.title}".\nThis cannot be undone.`
-            : "This action will permanently delete this quiz.\nThis cannot be undone."
+            : "This action will permanently delete this test.\nThis cannot be undone."
         }
         loading={isDeletingQuiz}
         confirmLabel="Delete Permanently"
@@ -607,7 +616,7 @@ export function ModuleQuizzesTab({
           }
           try {
             await deleteCourseQuiz(selected.quiz.id);
-            appToast.success("Quiz permanently deleted");
+            appToast.success("Test permanently deleted");
             setDeleteOpen(false);
             setSelected(null);
             await onRefresh();
@@ -619,6 +628,9 @@ export function ModuleQuizzesTab({
     </>
   );
 }
+
+/** @deprecated Use ModuleTestsTab */
+export const ModuleQuizzesTab = ModuleTestsTab;
 
 export function ModuleAssignmentsTab({
   emptyDescription = "Create an assignment for this lesson.",

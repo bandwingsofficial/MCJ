@@ -3,6 +3,7 @@ import { CourseQuizQuestion } from '../entities/course-quiz-question.entity';
 
 export interface CourseQuizListFilters {
   lessonId?: string;
+  moduleId?: string;
   includeDeleted?: boolean;
   skip?: number;
   take?: number;

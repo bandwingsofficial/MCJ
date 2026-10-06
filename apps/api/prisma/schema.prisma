@@ -511,8 +511,10 @@ model CourseModule {
   deletedBy    String?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
-  lessons      CourseLesson[]
-  course       Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons          CourseLesson[]
+  quizzes          CourseQuiz[]
+  moduleResources  CourseResource[] @relation("ModuleResources")
+  course           Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([courseId, slug])
   @@index([courseId])
@@ -590,7 +592,8 @@ model CourseLearnItem {
 
 model CourseResource {
   id           String       @id @default(uuid())
-  lessonId     String
+  lessonId     String?
+  moduleId     String?
   title        String
   type         ResourceType @default(OTHER)
   fileUrl      String?
@@ -602,9 +605,11 @@ model CourseResource {
   deletedBy    String?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-  lesson       CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson       CourseLesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  module       CourseModule? @relation("ModuleResources", fields: [moduleId], references: [id], onDelete: Cascade)
 
   @@index([lessonId])
+  @@index([moduleId])
   @@index([displayOrder])
   @@index([type])
   @@index([lessonId, isDeleted])
@@ -614,6 +619,7 @@ model CourseResource {
 
 model CourseQuiz {
   id               String     @id @default(uuid())
+  moduleId         String
   lessonId         String     @unique
   title            String
   description      String?
@@ -627,10 +633,12 @@ model CourseQuiz {
   deletedAt        DateTime?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
+  module           CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   lesson           CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   questions        CourseQuizQuestion[]
   attempts         LessonQuizAttempt[]
 
+  @@index([moduleId])
   @@index([lessonId])
   @@index([isDeleted])
   @@index([status])

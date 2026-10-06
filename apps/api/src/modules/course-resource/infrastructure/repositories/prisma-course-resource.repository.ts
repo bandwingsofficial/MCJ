@@ -100,6 +100,38 @@ export class PrismaCourseResourceRepository
     return result._max.displayOrder ?? 0;
   }
 
+  async getMaxDisplayOrderForModule(moduleId: string): Promise<number> {
+    const result = await this.prisma.courseResource.aggregate({
+      where: {
+        moduleId,
+        isDeleted: false,
+      },
+      _max: {
+        displayOrder: true,
+      },
+    });
+
+    return result._max.displayOrder ?? 0;
+  }
+
+  async findByModuleId(
+    moduleId: string,
+    includeDeleted = false,
+  ): Promise<CourseResource[]> {
+    const records = await this.prisma.courseResource.findMany({
+      where: {
+        moduleId,
+        ...(includeDeleted ? {} : { isDeleted: false }),
+      },
+      orderBy: [
+        { displayOrder: 'asc' },
+        { createdAt: 'asc' },
+      ],
+    });
+
+    return records.map(CourseResourceMapper.toDomain);
+  }
+
   async shiftDisplayOrders(
     lessonId: string,
     oldOrder: number,
@@ -131,13 +163,17 @@ export class PrismaCourseResourceRepository
   }
 
   async closeDisplayOrderGap(
-    lessonId: string,
+    lessonId: string | null,
+    moduleId: string | null,
     deletedDisplayOrder: number,
   ): Promise<void> {
+    const scopeWhere = lessonId
+      ? { lessonId, isDeleted: false as const }
+      : { moduleId: moduleId ?? undefined, isDeleted: false as const };
+
     await this.prisma.courseResource.updateMany({
       where: {
-        lessonId,
-        isDeleted: false,
+        ...scopeWhere,
         displayOrder: { gt: deletedDisplayOrder },
       },
       data: { displayOrder: { decrement: 1 } },
@@ -146,16 +182,18 @@ export class PrismaCourseResourceRepository
 
   async move(
     id: string,
-    lessonId: string,
+    lessonId: string | null,
+    moduleId: string | null,
     _oldOrder: number,
     newOrder: number,
     updatedBy?: string | null,
   ): Promise<void> {
+    const scopeWhere = lessonId
+      ? { lessonId, isDeleted: false as const }
+      : { moduleId: moduleId ?? undefined, isDeleted: false as const };
+
     const siblings = await this.prisma.courseResource.findMany({
-      where: {
-        lessonId,
-        isDeleted: false,
-      },
+      where: scopeWhere,
       orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
       select: { id: true },
     });
@@ -197,6 +235,10 @@ export class PrismaCourseResourceRepository
 
     if (filters.lessonId) {
       where.lessonId = filters.lessonId;
+    }
+
+    if (filters.moduleId) {
+      where.moduleId = filters.moduleId;
     }
 
     if (filters.type) {

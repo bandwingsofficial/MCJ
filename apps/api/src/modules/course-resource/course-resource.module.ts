@@ -8,6 +8,9 @@ import { AuthModule } from '../auth/auth.module';
 import { COURSE_LESSON_TOKENS } from '../course-lesson/course-lesson.tokens';
 import { CourseLessonModule } from '../course-lesson/course-lesson.module';
 import type { CourseLessonRepository } from '../course-lesson/domain/repositories/course-lesson.repository';
+import { CourseModuleModule } from '../course-module/course-module.module';
+import type { CourseModuleRepository } from '../course-module/domain/repositories/course-module.repository';
+import { COURSE_MODULE_TOKENS } from '../course-module/course-module.tokens';
 
 import { COURSE_RESOURCE_TOKENS } from './course-resource.tokens';
 import { CreateCourseResourceHandler } from './application/create-course-resource/create-course-resource.handler';
@@ -25,7 +28,7 @@ import { AdminCourseResourceController } from './presentation/controllers/admin-
 import { CourseResourceController } from './presentation/controllers/course-resource.controller';
 
 @Module({
-  imports: [PrismaModule, AuthModule, CourseLessonModule],
+  imports: [PrismaModule, AuthModule, CourseLessonModule, CourseModuleModule],
 
   controllers: [
     AdminCourseResourceController,
@@ -48,14 +51,17 @@ import { CourseResourceController } from './presentation/controllers/course-reso
       useFactory: (
         courseResourceRepo: CourseResourceRepository,
         courseLessonRepo: CourseLessonRepository,
+        courseModuleRepo: CourseModuleRepository,
       ) =>
         new CreateCourseResourceHandler(
           courseResourceRepo,
           courseLessonRepo,
+          courseModuleRepo,
         ),
       inject: [
         COURSE_RESOURCE_TOKENS.COURSE_RESOURCE_REPOSITORY,
         COURSE_LESSON_TOKENS.COURSE_LESSON_REPOSITORY,
+        COURSE_MODULE_TOKENS.COURSE_MODULE_REPOSITORY,
       ],
     },
 

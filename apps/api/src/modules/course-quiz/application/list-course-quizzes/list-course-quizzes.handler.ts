@@ -14,6 +14,7 @@ export class ListCourseQuizzesHandler {
   ): Promise<CourseQuizResult[]> {
     const quizzes = await this.courseQuizRepo.findAll({
       lessonId: query.lessonId,
+      moduleId: query.moduleId,
       includeDeleted: query.includeDeleted,
       skip: query.skip,
       take: query.take,

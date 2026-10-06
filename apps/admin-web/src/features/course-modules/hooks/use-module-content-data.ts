@@ -33,8 +33,12 @@ interface UseModuleContentDataReturn {
   lessons: CourseLesson[];
   quizLessonIds: Set<string>;
   resourceShellLessonIds: Set<string>;
+  /** Lesson-scoped resources (for per-lesson counts and lesson manage). */
   resources: ModuleResourceRow[];
-  quizzes: ModuleQuizRow[];
+  /** Module-scoped resources for the module Resources tab. */
+  moduleResources: ModuleResourceRow[];
+  /** Module-level tests for the module Test tab. */
+  moduleTests: ModuleQuizRow[];
   lessonContentCountsByLessonId: Map<string, LessonContentSummaryCounts>;
   isLoading: boolean;
   error: string | null;
@@ -58,7 +62,7 @@ function buildLessonContentCountsMap(
   }
 
   for (const resource of resources) {
-    if (resource.isDeleted) {
+    if (resource.isDeleted || !resource.lessonId) {
       continue;
     }
 
@@ -127,7 +131,10 @@ export function useModuleContentData(
   const [lessons, setLessons] = useState<CourseLesson[]>([]);
   const [quizLessonIds, setQuizLessonIds] = useState<Set<string>>(new Set());
   const [resources, setResources] = useState<ModuleResourceRow[]>([]);
-  const [quizzes, setQuizzes] = useState<ModuleQuizRow[]>([]);
+  const [moduleResources, setModuleResources] = useState<ModuleResourceRow[]>(
+    [],
+  );
+  const [moduleTests, setModuleTests] = useState<ModuleQuizRow[]>([]);
   const [learnCountByLessonId, setLearnCountByLessonId] = useState<
     Map<string, number>
   >(new Map());
@@ -156,27 +163,25 @@ export function useModuleContentData(
       });
 
       const moduleLessons = lessonsResponse.data;
+      const lessonTitleById = new Map(
+        moduleLessons.map((lesson) => [lesson.id, lesson.title]),
+      );
 
-      const [quizResults, resourceResults, learnResults] = await Promise.all([
-        Promise.all(
-          moduleLessons.map(async (lesson) => {
-            const response = await courseQuizService.getCourseQuizzes({
-              lessonId: lesson.id,
-              includeDeleted: false,
-            });
-            const quiz = response.data[0];
-            if (!quiz) {
-              return null;
-            }
-
-            const detail = await courseQuizService.getCourseQuiz(quiz.id);
-            return {
-              lessonId: lesson.id,
-              quiz: detail.data,
-              questionCount: detail.data.questions?.length ?? 0,
-            };
-          }),
-        ),
+      const [
+        moduleResourcesResponse,
+        moduleQuizzesResponse,
+        resourceResults,
+        learnResults,
+      ] = await Promise.all([
+        courseResourceService.getCourseResources({
+          moduleId,
+          search: "",
+          includeDeleted: true,
+        }),
+        courseQuizService.getCourseQuizzes({
+          moduleId,
+          includeDeleted: true,
+        }),
         Promise.all(
           moduleLessons.map(async (lesson) => {
             const response = await courseResourceService.getCourseResources({
@@ -204,21 +209,72 @@ export function useModuleContentData(
         ),
       ]);
 
-      const quizRows = quizResults.filter(
-        (row): row is ModuleQuizRow => row !== null,
+      const moduleResourceRows: ModuleResourceRow[] =
+        moduleResourcesResponse.data.map((resource) => ({
+          ...resource,
+          lessonTitle:
+            (resource.lessonId &&
+              lessonTitleById.get(resource.lessonId)) ||
+            "Module",
+        }));
+
+      const quizSummaries = moduleQuizzesResponse.data;
+      const testDetails = await Promise.all(
+        quizSummaries.map(async (quiz) => {
+          const detail = await courseQuizService.getCourseQuiz(quiz.id);
+          return {
+            lessonId: detail.data.lessonId,
+            quiz: detail.data,
+            questionCount: detail.data.questions?.length ?? 0,
+          };
+        }),
       );
 
-      const flatResources = resourceResults.flat();
+      const flatLessonResources = resourceResults.flat();
       const learnMap = new Map<string, number>();
+      const quizIdsSet = new Set(testDetails.map((row) => row.lessonId));
+      const legacyShellLessonIds = new Set<string>();
+
+      for (const lesson of moduleLessons) {
+        const hasResource = flatLessonResources.some(
+          (resource) =>
+            !resource.isDeleted && resource.lessonId === lesson.id,
+        );
+        if (
+          hasResource &&
+          isPlainLesson(lesson) &&
+          !lesson.description?.trim() &&
+          !quizIdsSet.has(lesson.id)
+        ) {
+          legacyShellLessonIds.add(lesson.id);
+        }
+      }
+
+      const moduleResourceIds = new Set(
+        moduleResourceRows.map((resource) => resource.id),
+      );
+      const legacyModuleResources: ModuleResourceRow[] = flatLessonResources
+        .filter(
+          (resource) =>
+            resource.lessonId &&
+            legacyShellLessonIds.has(resource.lessonId) &&
+            !moduleResourceIds.has(resource.id),
+        )
+        .map((resource) => ({
+          ...resource,
+          lessonTitle:
+            lessonTitleById.get(resource.lessonId as string) ?? "Module",
+        }));
 
       for (const row of learnResults) {
         learnMap.set(row.lessonId, row.count);
       }
 
       setLessons(moduleLessons);
-      setQuizzes(quizRows);
-      setQuizLessonIds(new Set(quizRows.map((row) => row.lessonId)));
-      setResources(flatResources);
+      setModuleTests(testDetails);
+      setQuizLessonIds(quizIdsSet);
+      setModuleResources([...moduleResourceRows, ...legacyModuleResources]);
+      setResources(flatLessonResources);
       setLearnCountByLessonId(learnMap);
       hasLoadedOnceRef.current = true;
     } catch (err) {
@@ -241,8 +297,8 @@ export function useModuleContentData(
   const resourceShellLessonIds = useMemo(() => {
     const lessonIdsWithResources = new Set(
       resources
-        .filter((resource) => !resource.isDeleted)
-        .map((resource) => resource.lessonId),
+        .filter((resource) => !resource.isDeleted && resource.lessonId)
+        .map((resource) => resource.lessonId as string),
     );
     const shellIds = new Set<string>();
 
@@ -276,7 +332,8 @@ export function useModuleContentData(
     quizLessonIds,
     resourceShellLessonIds,
     resources,
-    quizzes,
+    moduleResources,
+    moduleTests,
     lessonContentCountsByLessonId,
     isLoading,
     error,
@@ -284,16 +341,17 @@ export function useModuleContentData(
   };
 }
 
-/** Root plain lessons shown in module lesson management (includes quiz-backed lessons). */
+/** Root plain lessons shown in module lesson management (excludes quiz/resource shell lessons). */
 export function filterNormalLessons(
   lessons: CourseLesson[],
-  _quizLessonIds: Set<string>,
+  quizLessonIds: Set<string>,
   resourceShellLessonIds: Set<string>,
 ) {
   return lessons.filter(
     (lesson) =>
       !lesson.parentLessonId &&
       !resourceShellLessonIds.has(lesson.id) &&
+      !quizLessonIds.has(lesson.id) &&
       isPlainLesson(lesson),
   );
 }

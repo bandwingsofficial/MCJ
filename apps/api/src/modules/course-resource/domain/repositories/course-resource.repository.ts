@@ -3,6 +3,7 @@ import { ResourceType } from '../enums/resource-type.enum';
 
 export interface CourseResourceListFilters {
   lessonId?: string;
+  moduleId?: string;
   type?: ResourceType;
   search?: string;
   includeDeleted?: boolean;
@@ -32,6 +33,13 @@ export interface CourseResourceRepository {
   // Display order management (scoped per lesson)
   getMaxDisplayOrder(lessonId: string): Promise<number>;
 
+  getMaxDisplayOrderForModule(moduleId: string): Promise<number>;
+
+  findByModuleId(
+    moduleId: string,
+    includeDeleted?: boolean,
+  ): Promise<CourseResource[]>;
+
   shiftDisplayOrders(
     lessonId: string,
     oldOrder: number,
@@ -39,13 +47,15 @@ export interface CourseResourceRepository {
   ): Promise<void>;
 
   closeDisplayOrderGap(
-    lessonId: string,
+    lessonId: string | null,
+    moduleId: string | null,
     deletedDisplayOrder: number,
   ): Promise<void>;
 
   move(
     id: string,
-    lessonId: string,
+    lessonId: string | null,
+    moduleId: string | null,
     oldOrder: number,
     newOrder: number,
     updatedBy?: string | null,

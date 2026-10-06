@@ -246,6 +246,10 @@ export class PrismaCourseQuizRepository implements CourseQuizRepository {
       where.lessonId = filters.lessonId;
     }
 
+    if (filters.moduleId) {
+      where.moduleId = filters.moduleId;
+    }
+
     return where;
   }
 }

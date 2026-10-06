@@ -85,6 +85,7 @@ export class AdminCourseQuizController {
     const result = await this.listCourseQuizzesHandler.execute(
       new ListCourseQuizzesQuery(
         query.lessonId,
+        query.moduleId,
         query.includeDeleted,
       ),
     );

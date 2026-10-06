@@ -50,6 +50,22 @@ export default async function CourseManageCatchAllRoute({ params }: Props) {
   }
 
   if (
+    segments.length === 4 &&
+    segments[0] === "modules" &&
+    segments[2] === "test"
+  ) {
+    const moduleId = segments[1];
+    const quizId = segments[3];
+    const { QuizBuilderPage } = await import(
+      "@/src/features/course-quizzes/components/quiz-builder-page"
+    );
+
+    return (
+      <QuizBuilderPage courseId={id} moduleId={moduleId} quizId={quizId} />
+    );
+  }
+
+  if (
     segments.length === 5 &&
     segments[0] === "modules" &&
     segments[2] === "lessons" &&

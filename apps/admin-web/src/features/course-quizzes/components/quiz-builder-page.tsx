@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
@@ -16,6 +17,7 @@ import { useCourse } from "@/src/features/courses/hooks/use-course";
 import {
   courseManageLessonPath,
   courseManageModulePath,
+  courseManageModuleTestPath,
   courseManagePath,
 } from "@/src/features/courses/utils/course-manage.routes";
 
@@ -29,16 +31,22 @@ import {
 interface QuizBuilderPageProps {
   courseId: string;
   moduleId: string;
-  lessonId: string;
+  /** Legacy lesson-scoped URL; resolves quiz then redirects to module test URL. */
+  lessonId?: string;
+  /** Module test builder URL (`.../modules/:moduleId/test/:quizId`). */
+  quizId?: string;
 }
 
 export function QuizBuilderPage({
   courseId,
   moduleId,
-  lessonId,
+  lessonId: lessonIdProp,
+  quizId: quizIdProp,
 }: QuizBuilderPageProps) {
+  const router = useRouter();
   const { course } = useCourse(courseId);
-  const [quizId, setQuizId] = useState<string | null>(null);
+  const [quizId, setQuizId] = useState<string | null>(quizIdProp ?? null);
+  const [lessonId, setLessonId] = useState<string | null>(lessonIdProp ?? null);
   const [initializing, setInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
   const [lesson, setLesson] = useState<CourseLesson | null>(null);
@@ -46,59 +54,91 @@ export function QuizBuilderPage({
   const { quiz, isLoading, error, refetch } = useCourseQuiz(quizId);
   const { createCourseQuiz, isLoading: isCreatingQuiz } = useCreateCourseQuiz();
 
-  const loadLesson = useCallback(async () => {
+  const loadLesson = useCallback(async (id: string) => {
     try {
-      const response = await courseLessonService.getCourseLesson(lessonId);
+      const response = await courseLessonService.getCourseLesson(id);
       setLesson(response.data);
     } catch {
       setLesson(null);
     }
-  }, [lessonId]);
+  }, []);
 
   const resolveQuiz = useCallback(async () => {
     setInitializing(true);
     setInitError(null);
 
     try {
-      await loadLesson();
+      if (quizIdProp) {
+        setQuizId(quizIdProp);
+        const detail = await courseQuizService.getCourseQuiz(quizIdProp);
+        setLessonId(detail.data.lessonId);
+        await loadLesson(detail.data.lessonId);
+        return;
+      }
+
+      if (!lessonIdProp) {
+        setInitError("Missing test or lesson identifier.");
+        return;
+      }
+
+      await loadLesson(lessonIdProp);
 
       const listResponse = await courseQuizService.getCourseQuizzes({
-        lessonId,
+        lessonId: lessonIdProp,
         includeDeleted: false,
       });
 
       const existingQuiz = listResponse.data[0];
 
       if (existingQuiz) {
-        setQuizId(existingQuiz.id);
+        router.replace(
+          courseManageModuleTestPath(courseId, moduleId, existingQuiz.id),
+        );
         return;
       }
 
       setQuizId(null);
+      setLessonId(lessonIdProp);
     } catch (resolveError) {
       setInitError(getErrorMessage(resolveError));
     } finally {
       setInitializing(false);
     }
-  }, [lessonId, loadLesson]);
+  }, [courseId, lessonIdProp, loadLesson, moduleId, quizIdProp, router]);
 
   useEffect(() => {
     void resolveQuiz();
   }, [resolveQuiz]);
 
+  useEffect(() => {
+    if (quiz?.lessonId && quiz.lessonId !== lessonId) {
+      setLessonId(quiz.lessonId);
+      void loadLesson(quiz.lessonId);
+    }
+  }, [quiz?.lessonId, lessonId, loadLesson]);
+
   const handleCreateQuiz = async () => {
+    if (!lessonId) {
+      return;
+    }
+
     try {
       const created = await createCourseQuiz({
         lessonId,
-        title: lesson?.title ?? "New Quiz",
+        title: lesson?.title ?? "New Test",
         description: lesson?.description ?? undefined,
       });
       setQuizId(created.id);
-      appToast.success("Quiz created");
+      router.replace(
+        courseManageModuleTestPath(courseId, moduleId, created.id),
+      );
+      appToast.success("Test created");
     } catch (createError) {
       appToast.error(getErrorMessage(createError));
     }
   };
+
+  const isModuleTestRoute = Boolean(quizIdProp ?? quizId);
 
   const breadcrumbs = (
     <nav className="flex flex-wrap items-center gap-1.5 text-sm text-[#647A9B]">
@@ -129,17 +169,34 @@ export function QuizBuilderPage({
       >
         Module
       </Link>
-      <span aria-hidden>›</span>
-      <span className="text-slate-700">Lessons</span>
-      <span aria-hidden>›</span>
-      <Link
-        href={courseManageLessonPath(courseId, moduleId, lessonId)}
-        className="font-medium text-[#2563EB] hover:underline"
-      >
-        {lesson?.title ?? "Lesson"}
-      </Link>
-      <span aria-hidden>›</span>
-      <span className="font-medium text-[#102A56]">Quiz Builder</span>
+      {isModuleTestRoute ? (
+        <>
+          <span aria-hidden>›</span>
+          <span className="text-slate-700">Test</span>
+          <span aria-hidden>›</span>
+          <span className="font-medium text-[#102A56]">
+            {quiz?.title ?? lesson?.title ?? "Test Builder"}
+          </span>
+        </>
+      ) : (
+        <>
+          <span aria-hidden>›</span>
+          <span className="text-slate-700">Lessons</span>
+          <span aria-hidden>›</span>
+          <Link
+            href={
+              lessonId
+                ? courseManageLessonPath(courseId, moduleId, lessonId)
+                : courseManageModulePath(courseId, moduleId)
+            }
+            className="font-medium text-[#2563EB] hover:underline"
+          >
+            {lesson?.title ?? "Lesson"}
+          </Link>
+          <span aria-hidden>›</span>
+          <span className="font-medium text-[#102A56]">Test Builder</span>
+        </>
+      )}
     </nav>
   );
 
@@ -150,7 +207,7 @@ export function QuizBuilderPage({
   if (initError) {
     return (
       <ErrorState
-        title="Failed To Load Quiz"
+        title="Failed To Load Test"
         description={initError}
         onRetry={() => {
           void resolveQuiz();
@@ -166,17 +223,17 @@ export function QuizBuilderPage({
 
         <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
           <p className="text-sm text-slate-600">
-            No quiz exists for this lesson yet.
+            No test exists for this lesson yet.
           </p>
           <Button
             type="button"
             className="mt-4"
-            disabled={isCreatingQuiz}
+            disabled={isCreatingQuiz || !lessonId}
             onClick={() => {
               void handleCreateQuiz();
             }}
           >
-            Create Quiz
+            Create Test
           </Button>
         </div>
       </div>
@@ -186,8 +243,8 @@ export function QuizBuilderPage({
   if (error || !quiz) {
     return (
       <ErrorState
-        title="Failed To Load Quiz"
-        description={error ?? "Unable to load quiz details."}
+        title="Failed To Load Test"
+        description={error ?? "Unable to load test details."}
         onRetry={() => {
           void refetch();
         }}
@@ -201,10 +258,10 @@ export function QuizBuilderPage({
 
       <div>
         <h1 className="text-xl font-semibold text-[#102A56] sm:text-2xl">
-          {lesson?.title ?? quiz.title}
+          {quiz.title}
         </h1>
         <p className="mt-1 text-sm text-[#647A9B]">
-          Build and publish the quiz for this lesson.
+          Build and publish the test for this module.
         </p>
       </div>
 

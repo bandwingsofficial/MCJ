@@ -9,6 +9,7 @@ export class CourseResourceResponseMapper {
     return new CourseResourceResult(
       resource.id,
       resource.lessonId,
+      resource.moduleId,
       resource.title,
       resource.type,
       publicView ? null : resource.fileUrl,

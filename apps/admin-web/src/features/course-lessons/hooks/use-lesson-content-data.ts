@@ -6,7 +6,6 @@ import {
   useModuleContentData,
   filterChildLiveRecordedVideoLessons,
   filterChildSelfPacedVideoLessons,
-  type ModuleQuizRow,
   type ModuleResourceRow,
 } from "@/src/features/course-modules/hooks/use-module-content-data";
 
@@ -15,7 +14,6 @@ interface UseLessonContentDataReturn {
   quizLessonIds: Set<string>;
   resourceShellLessonIds: Set<string>;
   resources: ModuleResourceRow[];
-  quizzes: ModuleQuizRow[];
   selfPacedVideos: ReturnType<typeof useModuleContentData>["lessons"];
   liveRecordedVideos: ReturnType<typeof useModuleContentData>["lessons"];
   isLoading: boolean;
@@ -35,11 +33,6 @@ export function useLessonContentData(
     [moduleData.resources, lessonId],
   );
 
-  const quizzes = useMemo(
-    () => moduleData.quizzes.filter((quiz) => quiz.lessonId === lessonId),
-    [moduleData.quizzes, lessonId],
-  );
-
   const selfPacedVideos = useMemo(
     () =>
       filterChildSelfPacedVideoLessons(moduleData.lessons, lessonId),
@@ -57,7 +50,6 @@ export function useLessonContentData(
     quizLessonIds: moduleData.quizLessonIds,
     resourceShellLessonIds: moduleData.resourceShellLessonIds,
     resources,
-    quizzes,
     selfPacedVideos,
     liveRecordedVideos,
     isLoading: moduleData.isLoading,

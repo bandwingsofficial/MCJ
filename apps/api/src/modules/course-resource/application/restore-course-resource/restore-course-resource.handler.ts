@@ -18,10 +18,13 @@ export class RestoreCourseResourceHandler {
       await this.courseResourceRepo.findById(command.id, true),
     );
 
-    const nextDisplayOrder =
-      (await this.courseResourceRepo.getMaxDisplayOrder(
-        resource.lessonId,
-      )) + 1;
+    const nextDisplayOrder = resource.lessonId
+      ? (await this.courseResourceRepo.getMaxDisplayOrder(
+          resource.lessonId,
+        )) + 1
+      : (await this.courseResourceRepo.getMaxDisplayOrderForModule(
+          resource.moduleId!,
+        )) + 1;
 
     resource.moveTo(nextDisplayOrder, command.updatedBy);
     resource.restore(command.updatedBy);

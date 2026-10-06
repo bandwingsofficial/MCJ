@@ -9,7 +9,9 @@ export interface ApiSuccessResponse<T> {
 export interface CourseResource {
   id: string;
 
-  lessonId: string;
+  lessonId: string | null;
+
+  moduleId?: string | null;
 
   title: string;
 
@@ -39,7 +41,9 @@ export type CourseResourceDetails =
   CourseResource;
 
 export interface CreateCourseResourceRequest {
-  lessonId: string;
+  lessonId?: string | null;
+
+  moduleId?: string | null;
 
   title: string;
 
@@ -61,7 +65,9 @@ export interface MoveCourseResourceRequest {
 }
 
 export interface CourseResourceFilters {
-  lessonId: string;
+  lessonId?: string;
+
+  moduleId?: string;
 
   search: string;
 
@@ -88,8 +94,10 @@ export type RestoreCourseResourceResponse =
 export type MoveCourseResourceResponse =
   CourseResource;
 
-  export interface CourseResourceFormValues {
-  lessonId: string;
+export interface CourseResourceFormValues {
+  lessonId?: string | null;
+
+  moduleId?: string | null;
 
   title: string;
 

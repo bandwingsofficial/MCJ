@@ -24,6 +24,7 @@ export class CourseResourceController {
     const result = await this.listCourseResourcesHandler.execute(
       new ListCourseResourcesQuery(
         query.lessonId,
+        query.moduleId,
         query.type,
         query.search,
         false,

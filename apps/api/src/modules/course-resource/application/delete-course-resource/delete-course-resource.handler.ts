@@ -25,6 +25,7 @@ export class DeleteCourseResourceHandler {
 
     await this.courseResourceRepo.closeDisplayOrderGap(
       resource.lessonId,
+      resource.moduleId,
       deletedDisplayOrder,
     );
 
