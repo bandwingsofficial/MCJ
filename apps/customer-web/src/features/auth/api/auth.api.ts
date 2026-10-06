@@ -35,6 +35,27 @@ export const authApi = {
     });
   },
 
+  sendRegistrationEmailOtp(email: string) {
+    return apiClient.post<ApiResponse<{ retryAfterSeconds?: number }>>(
+      "/auth/register/email-verification/send",
+      { email },
+    );
+  },
+
+  verifyRegistrationEmailOtp(email: string, otp: string) {
+    return apiClient.post<ApiResponse<{ verified: true }>>(
+      "/auth/register/email-verification/verify",
+      { email, otp },
+    );
+  },
+
+  validatePasswordResetToken(token: string) {
+    return apiClient.get<ApiResponse<{ valid: boolean }>>(
+      "/auth/password-reset/validate",
+      { params: { token } },
+    );
+  },
+
   register(
     payload: RegisterRequest
   ) {

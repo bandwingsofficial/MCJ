@@ -37,7 +37,7 @@ export interface RegisterResponse {
 }
 
 export interface LoginRequest {
-  identifier: string;
+  email: string;
   password: string;
 }
 
@@ -74,8 +74,7 @@ export interface PasswordResetRequest {
 }
 
 export interface PasswordResetConfirmRequest {
-  email: string;
-  otp: string;
+  token: string;
   newPassword: string;
 }
 

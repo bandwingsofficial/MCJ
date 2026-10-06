@@ -3,13 +3,11 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  identifier: z
+  email: z
     .string()
     .trim()
-    .min(
-      1,
-      "Email or phone number is required"
-    ),
+    .email("Please enter a valid email")
+    .transform((value) => value.toLowerCase()),
 
   password: z
     .string()
@@ -17,15 +15,6 @@ export const loginSchema = z.object({
       6,
       "Password must be at least 6 characters"
     ),
-}).transform((data) => {
-  // If the identifier looks like an email, force it to lowercase to prevent backend mismatches
-  if (data.identifier.includes("@")) {
-    return {
-      ...data,
-      identifier: data.identifier.toLowerCase(),
-    };
-  }
-  return data;
 });
 
 export type LoginFormValues =

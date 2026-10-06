@@ -2,7 +2,11 @@
 
 import { Inject, Logger } from '@nestjs/common';
 
-import { randomUUID, randomInt } from 'crypto';
+import { randomUUID, randomBytes } from 'crypto';
+
+import { ConfigService } from '@nestjs/config';
+
+import type { TransactionalEmailPort } from '../ports/transactional-email.port';
 
 import { RequestPasswordResetCommand } from './request-password-reset.command';
 
@@ -44,14 +48,14 @@ import { mapDomainError } from '../utils/map-domain-error.util';
 // 🔥 CONFIG
 // =====================
 
-const OTP_EXPIRY_MINUTES = 10;
+const RESET_LINK_EXPIRY_MINUTES = 60;
 
-const REQUEST_COOLDOWN_MS = 60 * 1000;
+const REQUEST_COOLDOWN_MS = 30 * 1000;
 
 const MAX_REQUESTS_PER_HOUR = 5;
 
 const GENERIC_RESET_MESSAGE =
-  'If an account exists for this email, a reset code has been sent';
+  'If an account exists for this email, a password reset link has been sent';
 
 export class RequestPasswordResetHandler {
   private readonly logger = new Logger(RequestPasswordResetHandler.name);
@@ -68,6 +72,11 @@ export class RequestPasswordResetHandler {
 
     @Inject(AUTH_TOKENS.PASSWORD_HASHER)
     private readonly passwordHasher: PasswordHasherPort,
+
+    @Inject(AUTH_TOKENS.TRANSACTIONAL_EMAIL)
+    private readonly email: TransactionalEmailPort,
+
+    private readonly config: ConfigService,
   ) {}
 
   async execute(
@@ -176,32 +185,18 @@ export class RequestPasswordResetHandler {
       );
     }
 
-    // =====================
-    // 🔐 GENERATE OTP (CSPRNG)
-    // =====================
-
-    const otp = randomInt(100000, 1000000).toString();
-
-    // =====================
-    // 🔒 HASH OTP
-    // =====================
-
-    const otpHash = await this.passwordHasher.hash(otp);
-
-    // =====================
-    // 🧱 CREATE TOKEN
-    // =====================
+    const tokenId = randomUUID();
+    const secret = randomBytes(32).toString('base64url');
+    const tokenHash = await this.passwordHasher.hash(secret);
 
     const token = PasswordResetToken.create({
-      id: randomUUID(),
-
+      id: tokenId,
       userId: user.id,
-
-      otpHash,
-
+      otpHash: tokenHash,
       requestedFromIp: ipAddress ?? undefined,
-
-      expiresAt: new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000),
+      expiresAt: new Date(
+        Date.now() + RESET_LINK_EXPIRY_MINUTES * 60 * 1000,
+      ),
     });
 
     // =====================
@@ -210,15 +205,26 @@ export class RequestPasswordResetHandler {
 
     await this.resetRepo.save(token);
 
-    // =====================
-    // 📩 SEND OTP
-    // =====================
+    const customerWebUrl =
+      this.config.get<string>('CUSTOMER_WEB_URL')?.replace(/\/$/, '') ||
+      this.config.get<string>('NEXT_PUBLIC_CUSTOMER_WEB_URL')?.replace(/\/$/, '');
 
-    // Replace with email provider in production. Never log OTP outside development.
-    if (process.env.NODE_ENV !== 'production') {
-      this.logger.debug(`📩 OTP for ${user.email.getValue()} → ${otp}`);
-    } else {
-      this.logger.log(`📩 Password reset OTP generated for user ${user.id}`);
+    if (!customerWebUrl) {
+      this.logger.error('CUSTOMER_WEB_URL is not configured');
+      return new RequestPasswordResetResult(GENERIC_RESET_MESSAGE);
+    }
+
+    const resetUrl = `${customerWebUrl}/reset-password?token=${encodeURIComponent(`${tokenId}.${secret}`)}`;
+
+    try {
+      await this.email.sendPasswordResetEmail({
+        toEmail: user.email.getValue(),
+        recipientName: user.name,
+        resetUrl,
+      });
+    } catch {
+      this.logger.error(`Password reset email failed for user ${user.id}`);
+      return new RequestPasswordResetResult(GENERIC_RESET_MESSAGE);
     }
 
     // =====================

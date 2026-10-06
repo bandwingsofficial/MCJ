@@ -8,6 +8,7 @@ import { AppModule } from '../src/app.module';
 import { AppExceptionFilter } from '../src/common/filters/app-exception.filter';
 import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
 import { PrismaService } from '../src/infrastructure/prisma/prisma.service';
+import { BrevoEmailService } from '../src/infrastructure/email/brevo-email.service';
 
 /**
  * HTTP E2E auth lifecycle. Requires a reachable DATABASE_URL.
@@ -21,6 +22,18 @@ describe('Auth lifecycle (e2e)', () => {
   const email = `e2e_${randomUUID().slice(0, 8)}@example.com`;
   const password = 'Password123!';
 
+  let lastRegistrationOtp: string | null = null;
+
+  const brevoEmailMock: Pick<
+    BrevoEmailService,
+    'sendEmailVerificationOtp' | 'sendPasswordResetEmail'
+  > = {
+    sendEmailVerificationOtp: async (input) => {
+      lastRegistrationOtp = input.otp;
+    },
+    sendPasswordResetEmail: async () => undefined,
+  };
+
   const unwrapData = <T extends Record<string, unknown>>(body: any): T => {
     const layer = body?.data ?? body;
     return (layer?.data ?? layer) as T;
@@ -30,7 +43,10 @@ describe('Auth lifecycle (e2e)', () => {
     try {
       const moduleFixture: TestingModule = await Test.createTestingModule({
         imports: [AppModule],
-      }).compile();
+      })
+        .overrideProvider(BrevoEmailService)
+        .useValue(brevoEmailMock)
+        .compile();
 
       app = moduleFixture.createNestApplication();
       app.useGlobalFilters(new AppExceptionFilter());
@@ -59,6 +75,9 @@ describe('Auth lifecycle (e2e)', () => {
 
   afterAll(async () => {
     if (dbReady && prisma) {
+      await prisma.emailVerificationChallenge
+        .deleteMany({ where: { email } })
+        .catch(() => undefined);
       await prisma.user.deleteMany({ where: { email } }).catch(() => undefined);
     }
     if (app) {
@@ -68,25 +87,48 @@ describe('Auth lifecycle (e2e)', () => {
 
   const requireDb = () => dbReady;
 
+  const registerWithVerifiedEmail = async (payload: {
+    name: string;
+    email: string;
+    password: string;
+  }) => {
+    lastRegistrationOtp = null;
+
+    const sendOtp = await request(app.getHttpServer())
+      .post('/auth/register/email-verification/send')
+      .send({ email: payload.email });
+
+    expect([200, 201]).toContain(sendOtp.status);
+    expect(lastRegistrationOtp).toMatch(/^\d{6}$/);
+
+    const verifyOtp = await request(app.getHttpServer())
+      .post('/auth/register/email-verification/verify')
+      .send({ email: payload.email, otp: lastRegistrationOtp });
+
+    expect([200, 201]).toContain(verifyOtp.status);
+
+    const register = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send(payload);
+
+    expect([200, 201]).toContain(register.status);
+  };
+
   it('register → login → me → refresh rotation → logout', async () => {
     if (!requireDb()) {
       return;
     }
 
-    const register = await request(app.getHttpServer())
-      .post('/auth/register')
-      .send({
-        name: 'E2E User',
-        email,
-        password,
-      });
-
-    expect([200, 201]).toContain(register.status);
+    await registerWithVerifiedEmail({
+      name: 'E2E User',
+      email,
+      password,
+    });
 
     const login = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
-        identifier: email,
+        email,
         password,
         clientType: 'WEB',
       });
@@ -163,7 +205,7 @@ describe('Auth lifecycle (e2e)', () => {
 
     const loginEmail = `e2e_reuse_${randomUUID().slice(0, 8)}@example.com`;
 
-    await request(app.getHttpServer()).post('/auth/register').send({
+    await registerWithVerifiedEmail({
       name: 'Reuse User',
       email: loginEmail,
       password,
@@ -172,7 +214,7 @@ describe('Auth lifecycle (e2e)', () => {
     const login = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
-        identifier: loginEmail,
+        email: loginEmail,
         password,
         clientType: 'IOS',
       });
@@ -194,6 +236,9 @@ describe('Auth lifecycle (e2e)', () => {
 
     expect(replay.status).toBe(401);
 
+    await prisma.emailVerificationChallenge
+      .deleteMany({ where: { email: loginEmail } })
+      .catch(() => undefined);
     await prisma.user.deleteMany({ where: { email: loginEmail } }).catch(() => undefined);
   });
 

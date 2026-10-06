@@ -45,6 +45,7 @@ export const ERROR_CODES = {
   // VALIDATION
   // =====================
   VALIDATION_ERROR: 'VALIDATION_ERROR',
+  EMAIL_DELIVERY_FAILED: 'EMAIL_DELIVERY_FAILED',
 
   // =====================
   // SYSTEM

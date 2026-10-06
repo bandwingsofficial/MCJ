@@ -34,6 +34,7 @@ import {
   ReferralRegistrationService,
 } from '../../../referral-rewards/application/referral-registration.service';
 import { UserAccountLifecycleService } from '../../../admin-user-management/application/user-account-lifecycle.service';
+import { RegistrationEmailVerificationService } from '../email-verification/registration-email-verification.service';
 
 export class RegisterUserHandler {
   constructor(
@@ -51,6 +52,8 @@ export class RegisterUserHandler {
     private readonly referralRegistration: ReferralRegistrationService,
 
     private readonly accountLifecycle: UserAccountLifecycleService,
+
+    private readonly registrationEmailVerification: RegistrationEmailVerificationService,
   ) {}
 
   async execute(command: RegisterUserCommand): Promise<RegisterUserResult> {
@@ -64,6 +67,10 @@ export class RegisterUserHandler {
       await this.accountLifecycle.assertRegistrationAllowed(
         normalizedEmail,
         normalizedPhone,
+      );
+
+      await this.registrationEmailVerification.assertVerifiedForRegistration(
+        normalizedEmail,
       );
 
       if (command.referralCode?.trim()) {
@@ -124,6 +131,7 @@ export class RegisterUserHandler {
           }
         }
 
+        existing.verifyEmail();
         await this.userRepo.save(existing);
         user = existing;
       } else {
@@ -140,9 +148,14 @@ export class RegisterUserHandler {
           passwordHash,
           phone: phoneVO?.getValue(),
         });
+        user.verifyEmail();
 
         await this.userRepo.save(user);
       }
+
+      await this.registrationEmailVerification.consumeVerifiedChallenge(
+        normalizedEmail,
+      );
 
       await this.linkExistingStudentByEmail(user.id, normalizedEmail);
 

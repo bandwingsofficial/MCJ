@@ -14,16 +14,15 @@ import type {
   PasswordResetConfirmRequest,
 } from "@/src/features/auth/types/auth.types";
 
-export function useResetPassword() {
+export function useResetPassword(token: string) {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: (
-      payload: PasswordResetConfirmRequest
-    ) =>
-      authService.confirmPasswordReset(
-        payload
-      ),
+    mutationFn: (payload: Pick<PasswordResetConfirmRequest, "newPassword">) =>
+      authService.confirmPasswordReset({
+        token,
+        newPassword: payload.newPassword,
+      }),
 
     onSuccess: () => {
       toast.success(

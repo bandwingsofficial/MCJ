@@ -39,6 +39,8 @@ import { LogoutAllHandler } from '../../application/session/logout-all.handler';
 import { RequestPasswordResetHandler } from '../../application/password-reset/request-password-reset.handler';
 
 import { ResetPasswordHandler } from '../../application/password-reset/reset-password.handler';
+import { ValidatePasswordResetTokenHandler } from '../../application/password-reset/validate-password-reset-token.handler';
+import { RegistrationEmailVerificationService } from '../../application/email-verification/registration-email-verification.service';
 
 import { GetMeHandler } from '../../application/me/get-me.handler';
 
@@ -87,7 +89,14 @@ import { RefreshTokenDto } from '../dtos/refresh-token.dto';
 
 import { RequestPasswordResetDto } from '../dtos/request-password-reset.dto';
 
-import { ResetPasswordDto } from '../dtos/reset-password.dto';
+import {
+  ResetPasswordDto,
+  ValidatePasswordResetTokenQueryDto,
+} from '../dtos/reset-password.dto';
+import {
+  SendRegistrationEmailOtpDto,
+  VerifyRegistrationEmailOtpDto,
+} from '../dtos/registration-email-verification.dto';
 
 // =====================
 // UTILS
@@ -118,6 +127,8 @@ export class AuthController {
     private readonly requestResetHandler: RequestPasswordResetHandler,
 
     private readonly resetPasswordHandler: ResetPasswordHandler,
+    private readonly validatePasswordResetTokenHandler: ValidatePasswordResetTokenHandler,
+    private readonly registrationEmailVerification: RegistrationEmailVerificationService,
     private readonly getMeHandler: GetMeHandler,
     private readonly accountLifecycle: UserAccountLifecycleService,
   ) {}
@@ -160,6 +171,35 @@ export class AuthController {
     };
   }
 
+  @Post('register/email-verification/send')
+  async sendRegistrationEmailOtp(
+    @Body() dto: SendRegistrationEmailOtpDto,
+    @Req() req: Request,
+  ) {
+    const result = await this.registrationEmailVerification.sendOtp({
+      email: dto.email,
+      ipAddress: getClientIp(req),
+    });
+
+    return {
+      message: 'Verification code sent',
+      data: result,
+    };
+  }
+
+  @Post('register/email-verification/verify')
+  async verifyRegistrationEmailOtp(@Body() dto: VerifyRegistrationEmailOtpDto) {
+    const result = await this.registrationEmailVerification.verifyOtp({
+      email: dto.email,
+      otp: dto.otp,
+    });
+
+    return {
+      message: 'Email verified successfully',
+      data: result,
+    };
+  }
+
   @Post('register')
   async register(@Body() dto: RegisterDto, @Req() req: Request) {
     const result = await this.registerHandler.execute(
@@ -195,7 +235,7 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Req() req: Request) {
     const result = await this.loginHandler.execute(
       new LoginUserCommand(
-        dto.identifier,
+        dto.email.trim().toLowerCase(),
 
         dto.password,
 
@@ -381,6 +421,20 @@ export class AuthController {
   // 🔥 RESET PASSWORD
   // =====================
 
+  @Get('password-reset/validate')
+  async validatePasswordResetToken(
+    @Query() query: ValidatePasswordResetTokenQueryDto,
+  ) {
+    const result = await this.validatePasswordResetTokenHandler.execute(
+      query.token,
+    );
+
+    return {
+      message: result.valid ? 'Reset link is valid' : 'Reset link is invalid',
+      data: result,
+    };
+  }
+
   @Post('password-reset/confirm')
   async resetPassword(
     @Body()
@@ -391,9 +445,7 @@ export class AuthController {
   ) {
     const result = await this.resetPasswordHandler.execute(
       new ResetPasswordCommand(
-        dto.email,
-
-        dto.otp,
+        dto.token,
 
         dto.newPassword,
 

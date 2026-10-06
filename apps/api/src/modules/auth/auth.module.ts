@@ -28,6 +28,10 @@ import { RevokeSessionHandler } from './application/session/revoke-session.handl
 import { LogoutAllHandler } from './application/session/logout-all.handler';
 import { RequestPasswordResetHandler } from './application/password-reset/request-password-reset.handler';
 import { ResetPasswordHandler } from './application/password-reset/reset-password.handler';
+import { ValidatePasswordResetTokenHandler } from './application/password-reset/validate-password-reset-token.handler';
+import { RegistrationEmailVerificationService } from './application/email-verification/registration-email-verification.service';
+import { BrevoEmailService } from '../../infrastructure/email/brevo-email.service';
+import type { TransactionalEmailPort } from './application/ports/transactional-email.port';
 import { GetMeHandler } from './application/me/get-me.handler';
 
 // ==============================
@@ -164,6 +168,13 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
       useClass: InMemoryAuthRateLimiterService,
     },
 
+    BrevoEmailService,
+    RegistrationEmailVerificationService,
+    {
+      provide: AUTH_TOKENS.TRANSACTIONAL_EMAIL,
+      useExisting: BrevoEmailService,
+    },
+
     // =====================
     // REPOSITORIES
     // =====================
@@ -236,6 +247,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
         prisma: PrismaService,
         referralRegistration: ReferralRegistrationService,
         accountLifecycle: UserAccountLifecycleService,
+        registrationEmailVerification: RegistrationEmailVerificationService,
       ) =>
         new RegisterUserHandler(
           userRepo,
@@ -244,6 +256,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
           prisma,
           referralRegistration,
           accountLifecycle,
+          registrationEmailVerification,
         ),
 
       inject: [
@@ -256,6 +269,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
         PrismaService,
         ReferralRegistrationService,
         UserAccountLifecycleService,
+        RegistrationEmailVerificationService,
       ],
     },
 
@@ -447,12 +461,16 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
         resetRepo: PasswordResetRepository,
         auditRepo: AuditLogRepository,
         passwordHasher: PasswordHasherPort,
+        email: TransactionalEmailPort,
+        config: ConfigService,
       ) =>
         new RequestPasswordResetHandler(
           userRepo,
           resetRepo,
           auditRepo,
           passwordHasher,
+          email,
+          config,
         ),
 
       inject: [
@@ -463,7 +481,18 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
         AUTH_TOKENS.AUDIT_LOG_REPOSITORY,
 
         AUTH_TOKENS.PASSWORD_HASHER,
+        AUTH_TOKENS.TRANSACTIONAL_EMAIL,
+        ConfigService,
       ],
+    },
+
+    {
+      provide: ValidatePasswordResetTokenHandler,
+      useFactory: (
+        resetRepo: PasswordResetRepository,
+        passwordHasher: PasswordHasherPort,
+      ) => new ValidatePasswordResetTokenHandler(resetRepo, passwordHasher),
+      inject: [AUTH_TOKENS.PASSWORD_RESET_REPOSITORY, AUTH_TOKENS.PASSWORD_HASHER],
     },
 
     {

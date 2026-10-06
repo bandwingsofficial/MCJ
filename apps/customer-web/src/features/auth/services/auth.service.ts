@@ -14,6 +14,21 @@ import type {
 } from "@/src/features/auth/types/auth.types";
 
 export const authService = {
+  async sendRegistrationEmailOtp(email: string) {
+    const response = await authApi.sendRegistrationEmailOtp(email);
+    return response.data.data;
+  },
+
+  async verifyRegistrationEmailOtp(email: string, otp: string) {
+    const response = await authApi.verifyRegistrationEmailOtp(email, otp);
+    return response.data.data;
+  },
+
+  async validatePasswordResetToken(token: string) {
+    const response = await authApi.validatePasswordResetToken(token);
+    return response.data.data;
+  },
+
   async register(
     payload: RegisterRequest
   ) {

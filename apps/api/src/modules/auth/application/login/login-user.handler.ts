@@ -18,8 +18,6 @@ import type { TokenPort } from '../ports/token.port';
 import type { AuthRateLimiterPort } from '../ports/auth-rate-limiter.port';
 
 import { Email } from '../../domain/value-objects/email.vo';
-import { Phone } from '../../domain/value-objects/phone.vo';
-
 import { Session } from '../../domain/entities/session.entity';
 import { AuditLog } from '../../domain/entities/audit-log.entity';
 import { User } from '../../domain/entities/user.entity';
@@ -36,7 +34,7 @@ import { AUTH_TOKENS } from '../../auth.tokens';
 import { UserAccountLifecycleService } from '../../../admin-user-management/application/user-account-lifecycle.service';
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
-import { isEmail, normalizePhone } from '../utils/phone.util';
+import { isEmail } from '../utils/phone.util';
 import { hashToken } from '../utils/token.util';
 import { mapDomainError } from '../utils/map-domain-error.util';
 
@@ -105,27 +103,22 @@ export class LoginUserHandler {
 
       let user: User | null = null;
 
-      let loginType: 'EMAIL' | 'PHONE';
+      const loginType: 'EMAIL' = 'EMAIL';
 
       // =====================
-      // 2️⃣ IDENTIFY USER
+      // 2️⃣ IDENTIFY USER (email only)
       // =====================
 
-      if (isEmail(rawIdentifier)) {
-        loginType = 'EMAIL';
-
-        const emailVO = Email.create(rawIdentifier);
-
-        user = await this.userRepo.findByEmail(emailVO);
-      } else {
-        loginType = 'PHONE';
-
-        const normalizedPhone = normalizePhone(rawIdentifier);
-
-        const phoneVO = Phone.create(normalizedPhone);
-
-        user = await this.userRepo.findByPhone(phoneVO);
+      if (!isEmail(rawIdentifier)) {
+        throw new UnauthorizedError(
+          'Invalid credentials',
+          ERROR_CODES.INVALID_CREDENTIALS,
+        );
       }
+
+      const emailVO = Email.create(rawIdentifier);
+
+      user = await this.userRepo.findByEmail(emailVO);
 
       const deviceType = parseDeviceType(command.userAgent);
 
@@ -190,6 +183,13 @@ export class LoginUserHandler {
       }
 
       user.canLogin();
+
+      if (!user.isEmailVerified) {
+        throw new UnauthorizedError(
+          'Please verify your email before logging in',
+          ERROR_CODES.USER_EMAIL_NOT_VERIFIED,
+        );
+      }
 
       this.domainService.ensureAdminHasMfa(user);
 

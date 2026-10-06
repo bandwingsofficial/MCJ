@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { Check } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -26,6 +27,8 @@ import {
   registerSchema,
   RegisterFormValues,
 } from "@/src/features/auth/schemas/register.schema";
+import { useRegistrationEmailVerification } from "@/src/features/auth/hooks/use-registration-email-verification";
+import { toast } from "sonner";
 
 function fieldReadyForAsyncCheck(
   value: string,
@@ -49,6 +52,7 @@ export function RegisterForm({
   initialReferralCode?: string;
 }) {
   const registerMutation = useRegister(redirectTo);
+  const emailVerification = useRegistrationEmailVerification();
   const publicReferralSettings = usePublicReferralSettings();
   const referralProgramEnabled =
     publicReferralSettings.data?.referralEnabled ?? false;
@@ -162,7 +166,18 @@ export function RegisterForm({
       : null;
   const referredUser = referralPreviewValid?.referrer ?? null;
 
+  useEffect(() => {
+    emailVerification.syncEmail(watchedEmail);
+  }, [watchedEmail, emailVerification.syncEmail]);
+
+  const emailVerified = emailVerification.isVerifiedFor(watchedEmail);
+
   const onSubmit = (data: RegisterFormValues) => {
+    if (!emailVerification.isVerifiedFor(data.email)) {
+      toast.error("Please verify your email before registering");
+      return;
+    }
+
     const referralCode =
       referralProgramEnabled ? data.referralCode?.trim() : undefined;
     registerMutation.mutate({
@@ -207,6 +222,33 @@ export function RegisterForm({
           height: 16px;
           pointer-events: none;
         }
+        .mcj-email-row {
+          display: flex;
+          gap: 8px;
+          align-items: stretch;
+        }
+        .mcj-email-row .mcj-input-wrap { flex: 1; min-width: 0; }
+        .mcj-verify-btn {
+          height: 44px !important;
+          padding: 0 14px !important;
+          border-radius: 10px !important;
+          white-space: nowrap;
+          font-size: 12px !important;
+          font-weight: 700 !important;
+        }
+        .mcj-verified-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 44px;
+          height: 44px;
+          border-radius: 10px;
+          background: #ECFDF5;
+          border: 1px solid #A7F3D0;
+          color: #059669;
+          flex-shrink: 0;
+        }
+        .mcj-otp-block { margin-top: 10px; }
         .mcj-input-wrap input {
           width: 100% !important;
           height: 44px !important;
@@ -332,46 +374,113 @@ export function RegisterForm({
             <RegisterFieldFeedback schemaMessage={errors.name?.message} />
           </div>
 
-          <div className="mcj-field">
+          <div className="mcj-field mcj-field-span-2">
             <label className="mcj-label">
               Email <span className="req">*</span>
             </label>
-            <div className="mcj-input-wrap">
-              <svg
-                className="ico"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                <polyline points="22,6 12,13 2,6" />
-              </svg>
-              <Input
-                placeholder="Enter email"
-                className={registerInputStatusClass(
-                  emailAsyncState,
-                  Boolean(errors.email),
-                )}
-                {...register("email")}
-              />
-              <RegisterInputIcon
-                asyncState={emailAsyncState}
-                hasSchemaError={Boolean(errors.email)}
-              />
+            <div className="mcj-email-row">
+              <div className="mcj-input-wrap">
+                <svg
+                  className="ico"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                <Input
+                  placeholder="Enter email"
+                  className={registerInputStatusClass(
+                    emailVerified ? "success" : emailAsyncState,
+                    Boolean(errors.email),
+                  )}
+                  {...register("email")}
+                />
+                {!emailVerified ? (
+                  <RegisterInputIcon
+                    asyncState={emailAsyncState}
+                    hasSchemaError={Boolean(errors.email)}
+                  />
+                ) : null}
+              </div>
+              {emailVerified ? (
+                <span className="mcj-verified-badge" aria-label="Email verified">
+                  <Check className="h-5 w-5" />
+                </span>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mcj-verify-btn"
+                  loading={emailVerification.isSending}
+                  disabled={
+                    !emailCheckEnabled ||
+                    emailAsyncState === "checking" ||
+                    emailAsyncState === "error"
+                  }
+                  onClick={() => void emailVerification.sendOtp(watchedEmail)}
+                >
+                  Verify
+                </Button>
+              )}
             </div>
             <RegisterFieldFeedback
               schemaMessage={errors.email?.message}
-              asyncState={emailAsyncState}
+              asyncState={emailVerified ? "success" : emailAsyncState}
               asyncMessage={
-                emailAsyncState === "success"
-                  ? "Email is available"
-                  : emailCheck.data?.message ??
-                    (emailCheck.isError ? "Unable to verify email" : undefined)
+                emailVerified
+                  ? "Email verified"
+                  : emailAsyncState === "success"
+                    ? "Email is available"
+                    : emailCheck.data?.message ??
+                      (emailCheck.isError ? "Unable to verify email" : undefined)
               }
             />
+
+            {emailVerification.otpSent && !emailVerified ? (
+              <div className="mcj-otp-block space-y-2">
+                <label className="mcj-label">OTP</label>
+                <Input
+                  placeholder="Enter OTP"
+                  value={emailVerification.otp}
+                  onChange={(event) =>
+                    emailVerification.setOtp(event.target.value)
+                  }
+                  maxLength={6}
+                  inputMode="numeric"
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    loading={emailVerification.isVerifying}
+                    onClick={() =>
+                      void emailVerification.verifyOtp(watchedEmail)
+                    }
+                  >
+                    Confirm OTP
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={
+                      emailVerification.cooldownSeconds > 0 ||
+                      emailVerification.isSending
+                    }
+                    onClick={() => void emailVerification.sendOtp(watchedEmail)}
+                  >
+                    {emailVerification.cooldownSeconds > 0
+                      ? `Resend OTP (${emailVerification.cooldownSeconds}s)`
+                      : "Resend OTP"}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="mcj-field">

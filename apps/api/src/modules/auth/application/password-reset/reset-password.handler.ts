@@ -18,8 +18,6 @@ import type { AuditLogRepository } from '../../domain/repositories/audit-log.rep
 
 import type { PasswordHasherPort } from '../ports/password-hasher.port';
 
-import { Email } from '../../domain/value-objects/email.vo';
-
 import { AuditLog } from '../../domain/entities/audit-log.entity';
 
 import { AuditAction } from '../../domain/enums/audit-action.enum';
@@ -40,6 +38,7 @@ import {
 
 import { mapDomainError } from '../utils/map-domain-error.util';
 import { DomainError } from '../../domain/errors/domain.error';
+import { parsePasswordResetToken } from './password-reset-token.util';
 
 // =====================
 // 🔥 CONFIG
@@ -73,16 +72,9 @@ export class ResetPasswordHandler {
     // 1️⃣ VALIDATION
     // =====================
 
-    if (!command.email?.trim()) {
+    if (!command.token?.trim()) {
       throw new ValidationError(
-        'Email is required',
-        ERROR_CODES.VALIDATION_ERROR,
-      );
-    }
-
-    if (!command.otp?.trim()) {
-      throw new ValidationError(
-        'OTP is required',
+        'Reset token is required',
         ERROR_CODES.VALIDATION_ERROR,
       );
     }
@@ -107,41 +99,33 @@ export class ResetPasswordHandler {
       userAgent: command.userAgent,
     });
 
-    // =====================
-    // 📧 NORMALIZE EMAIL
-    // =====================
+    const parsed = parsePasswordResetToken(command.token);
+    if (!parsed) {
+      throw new UnauthorizedError(
+        'Invalid or expired reset link',
+        ERROR_CODES.INVALID_TOKEN,
+      );
+    }
 
-    const normalizedEmail = command.email.trim().toLowerCase();
+    const token = await this.resetRepo.findById(parsed.id);
 
-    const emailVO = Email.create(normalizedEmail);
+    if (!token) {
+      throw new UnauthorizedError(
+        'Invalid or expired reset link',
+        ERROR_CODES.INVALID_TOKEN,
+      );
+    }
 
-    // =====================
-    // 2️⃣ FIND USER
-    // =====================
-
-    const user = await this.userRepo.findByEmail(emailVO);
+    const user = await this.userRepo.findById(token.userId);
 
     if (!user) {
       throw new UnauthorizedError(
-        'Invalid or expired reset credentials',
+        'Invalid or expired reset link',
         ERROR_CODES.INVALID_TOKEN,
       );
     }
 
     user.canLogin();
-
-    // =====================
-    // 3️⃣ GET ACTIVE TOKEN
-    // =====================
-
-    const token = await this.resetRepo.findLatestActiveByUserId(user.id);
-
-    if (!token) {
-      throw new UnauthorizedError(
-        'Invalid or expired reset credentials',
-        ERROR_CODES.INVALID_TOKEN,
-      );
-    }
 
     // =====================
     // 🚨 ATTEMPT LIMIT
@@ -165,20 +149,12 @@ export class ResetPasswordHandler {
 
     token.canBeUsed();
 
-    // =====================
-    // 🔍 VERIFY OTP
-    // =====================
-
-    const isOtpValid = await this.passwordHasher.compare(
-      command.otp,
+    const isTokenValid = await this.passwordHasher.compare(
+      parsed.secret,
       token.otpHash,
     );
 
-    // =====================
-    // ❌ INVALID OTP
-    // =====================
-
-    if (!isOtpValid) {
+    if (!isTokenValid) {
       token.incrementAttempts();
 
       await this.resetRepo.update(token);
@@ -207,11 +183,10 @@ export class ResetPasswordHandler {
       );
 
       throw new UnauthorizedError(
-        'Invalid or expired reset credentials',
+        'Invalid or expired reset link',
         ERROR_CODES.INVALID_TOKEN,
         {
           attempts: token.attempts,
-
           remainingAttempts: remaining,
         },
       );

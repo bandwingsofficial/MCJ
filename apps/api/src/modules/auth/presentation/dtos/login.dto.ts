@@ -6,8 +6,8 @@ import { ClientType } from '../../domain/enums/client-type.enum';
 
 export class LoginDto {
   @IsString()
-  @IsNotEmpty({ message: 'Email or phone is required' })
-  identifier!: string;
+  @IsNotEmpty({ message: 'Email is required' })
+  email!: string;
 
   @IsString()
   @IsNotEmpty({ message: 'Password is required' })

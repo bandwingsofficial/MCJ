@@ -11,7 +11,7 @@ export function ResetPasswordPage() {
     <AuthPageWrapper>
       <AuthCard
         title="Reset Password"
-        description="Enter OTP and new password"
+        description="Choose a new password for your account"
       >
         <div className="space-y-6">
           <ResetPasswordForm />

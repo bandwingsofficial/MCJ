@@ -83,6 +83,32 @@ model Session {
   @@index([createdAt])
 }
 
+enum EmailVerificationStatus {
+  PENDING
+  VERIFIED
+  CONSUMED
+}
+
+model EmailVerificationChallenge {
+  id              String                  @id @default(uuid())
+  email           String
+  otpHash         String
+  attempts        Int                     @default(0)
+  status          EmailVerificationStatus @default(PENDING)
+  verifiedAt      DateTime?
+  expiresAt       DateTime
+  lastSentAt      DateTime                @default(now())
+  requestedFromIp String?
+  consumedAt      DateTime?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([email])
+  @@index([email, status])
+  @@index([expiresAt])
+  @@index([createdAt])
+}
+
 model PasswordResetToken {
   id              String    @id @default(uuid())
   userId          String

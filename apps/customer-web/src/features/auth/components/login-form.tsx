@@ -134,9 +134,9 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
               <circle cx="12" cy="7" r="4"/>
             </svg>
-            <Input placeholder="Enter email" {...register("identifier")} />
+            <Input placeholder="Enter email" {...register("email")} />
           </div>
-          <FormError message={errors.identifier?.message} />
+          <FormError message={errors.email?.message} />
         </div>
 
         <div className="mcj-field">
