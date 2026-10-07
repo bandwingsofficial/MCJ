@@ -59,6 +59,7 @@ RUN pnpm --filter @mcj/shared-constants run build \
 
 RUN pnpm deploy --filter mcj --prod /prod/api \
   && cp -r apps/api/dist /prod/api/dist \
+  && cp -r apps/api/prisma /prod/api/prisma \
   && pnpm --filter mcj exec prisma generate --schema /prod/api/prisma/schema.prisma \
   && rm -rf /prod/api/src /prod/api/test
 
