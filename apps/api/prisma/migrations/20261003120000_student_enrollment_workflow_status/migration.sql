@@ -12,6 +12,8 @@ SET "status" = 'ADMITTED'::"EnrollmentStatus"
 WHERE "status"::text = 'ACTIVE';
 
 DO $$
+DECLARE
+  label_list text;
 BEGIN
   IF EXISTS (
     SELECT 1
@@ -19,20 +21,28 @@ BEGIN
     JOIN pg_type t ON t.oid = e.enumtypid
     WHERE t.typname = 'StudentStatus' AND e.enumlabel = 'ENQUIRED'
   ) THEN
-    ALTER TYPE "StudentStatus" RENAME TO "StudentStatus_old";
+    SELECT string_agg(quote_literal(e.enumlabel), ', ' ORDER BY e.enumsortorder)
+      INTO label_list
+    FROM pg_enum e
+    JOIN pg_type t ON t.oid = e.enumtypid
+    WHERE t.typname = 'StudentStatus'
+      AND e.enumlabel <> 'ENQUIRED';
 
-    CREATE TYPE "StudentStatus" AS ENUM (
-      'LEAD',
-      'ADVANCED',
-      'ADMITTED',
-      'COMPLETED',
-      'DROPPED',
-      'PLACED'
-    );
+    ALTER TABLE "Student" ALTER COLUMN "status" DROP DEFAULT;
+    ALTER TYPE "StudentStatus" RENAME TO "StudentStatus_old";
+    EXECUTE 'CREATE TYPE "StudentStatus" AS ENUM (' || label_list || ')';
 
     ALTER TABLE "Student"
       ALTER COLUMN "status" TYPE "StudentStatus"
-      USING ("status"::text::"StudentStatus");
+      USING (
+        CASE "status"::text
+          WHEN 'ENQUIRED' THEN 'LEAD'
+          ELSE "status"::text
+        END::"StudentStatus"
+      );
+
+    ALTER TABLE "Student"
+      ALTER COLUMN "status" SET DEFAULT 'LEAD'::"StudentStatus";
 
     DROP TYPE "StudentStatus_old";
   END IF;

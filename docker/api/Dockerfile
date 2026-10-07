@@ -25,6 +25,17 @@ COPY . .
 
 RUN pnpm dlx turbo@2.9.6 prune mcj --docker
 
+# Fail the build if turbo prune drops any Prisma migration.
+# This check is the whole migrations directory, not a single migration name.
+RUN set -eu \
+  && src=$(find apps/api/prisma/migrations -name migration.sql | wc -l | tr -d ' ') \
+  && pruned=$(find out/full/apps/api/prisma/migrations -name migration.sql | wc -l | tr -d ' ') \
+  && echo "Pruned Prisma migration SQL files: repo=${src} pruned=${pruned}" \
+  && test -f apps/api/prisma/schema.prisma \
+  && test -f out/full/apps/api/prisma/schema.prisma \
+  && test "$src" -gt 0 \
+  && test "$src" = "$pruned"
+
 
 # ============================================================
 # BUILDER
@@ -63,6 +74,17 @@ RUN pnpm deploy --filter mcj --prod /prod/api \
   && pnpm --filter mcj exec prisma generate --schema /prod/api/prisma/schema.prisma \
   && rm -rf /prod/api/src /prod/api/test
 
+# pnpm deploy does not define the migration set. The copy above does.
+# Fail the image build unless every migration.sql was packaged.
+RUN set -eu \
+  && test -f /prod/api/prisma/schema.prisma \
+  && test -d /prod/api/prisma/migrations \
+  && src=$(find apps/api/prisma/migrations -name migration.sql | wc -l | tr -d ' ') \
+  && dst=$(find /prod/api/prisma/migrations -name migration.sql | wc -l | tr -d ' ') \
+  && echo "Packaged Prisma migration SQL files: source=${src} image=${dst}" \
+  && test "$src" -gt 0 \
+  && test "$src" = "$dst"
+
 
 # ============================================================
 # RUNNER
@@ -82,7 +104,12 @@ COPY --from=builder --chown=nestjs:nodejs /prod/api ./
 
 COPY --chown=nestjs:nodejs docker/api/entrypoint.sh /entrypoint.sh
 
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh \
+  && test -f /app/prisma/schema.prisma \
+  && test -d /app/prisma/migrations \
+  && sql_count=$(find /app/prisma/migrations -name migration.sql | wc -l | tr -d ' ') \
+  && echo "Final image Prisma migration SQL files: ${sql_count}" \
+  && test "$sql_count" -gt 0
 
 USER nestjs
 

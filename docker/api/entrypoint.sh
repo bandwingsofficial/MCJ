@@ -6,14 +6,19 @@ if [ -z "${DATABASE_URL:-}" ]; then
   exit 1
 fi
 
-FAILED_MIGRATION="20261003120000_student_cancelled_replace_dropped"
-
-echo "Checking migration ${FAILED_MIGRATION}..."
+# These two migrations failed in production and PostgreSQL rolled the
+# transaction back. Mark only those failed rows rolled back so migrate
+# deploy can apply the corrected SQL. Any other failed migration stops
+# startup. After these rows are cleared, startup is only migrate deploy.
+echo "Checking for failed Prisma migrations..."
 set +e
-node <<'EOF'
+resolve_names=$(node <<'EOF'
 const { PrismaClient } = require("@prisma/client");
 
-const name = "20261003120000_student_cancelled_replace_dropped";
+const recoverable = new Set([
+  "20261003120000_student_cancelled_replace_dropped",
+  "20261003120000_student_enrollment_workflow_status",
+]);
 
 function dump(value) {
   return JSON.stringify(value, (_key, item) =>
@@ -24,70 +29,63 @@ function dump(value) {
 async function main() {
   const prisma = new PrismaClient();
   try {
-    const rows = await prisma.$queryRawUnsafe(
-      `SELECT started_at, finished_at, rolled_back_at, LEFT(COALESCE(logs, ''), 400) AS logs
+    const failed = await prisma.$queryRawUnsafe(
+      `SELECT migration_name, started_at, LEFT(COALESCE(logs, ''), 800) AS logs
        FROM "_prisma_migrations"
-       WHERE migration_name = $1
-       ORDER BY started_at DESC`,
-      name,
+       WHERE finished_at IS NULL AND rolled_back_at IS NULL
+       ORDER BY started_at`,
     );
-    console.log("MIGRATION_ROWS", dump(rows));
-
-    const labels = await prisma.$queryRawUnsafe(
-      `SELECT e.enumlabel
-       FROM pg_enum e
-       JOIN pg_type t ON e.enumtypid = t.oid
-       WHERE t.typname = 'StudentStatus'
-       ORDER BY e.enumsortorder`,
-    );
-    console.log(
-      "STUDENT_STATUS",
-      labels.map((row) => row.enumlabel).join(","),
-    );
-
-    const counts = await prisma.$queryRawUnsafe(
-      `SELECT status::text AS status, COUNT(*)::int AS n
-       FROM "Student"
-       WHERE status::text IN ('DROPPED', 'CANCELLED')
-       GROUP BY status
-       ORDER BY status`,
-    );
-    console.log("STUDENT_COUNTS", dump(counts));
-
-    const open = rows.find((row) => row.finished_at == null && row.rolled_back_at == null);
-    if (!open) {
-      console.log("RECOVERY skip: migration is not in a failed state");
-      return 0;
+    if (failed.length === 0) {
+      console.error("RECOVERY skip: no failed migrations");
+      return;
     }
 
-    console.log(
-      "RECOVERY: failed migration did not finish. PostgreSQL rolled the 55P04 transaction back. Marking it rolled back so the corrected SQL can be applied.",
-    );
-    return 10;
+    console.error("FAILED_MIGRATIONS", dump(failed));
+    const unknown = failed.filter((row) => !recoverable.has(row.migration_name));
+    if (unknown.length > 0) {
+      console.error("REFUSING to auto-resolve an unknown failed migration");
+      process.exit(1);
+    }
+
+    for (const row of failed) {
+      console.log(row.migration_name);
+    }
   } finally {
     await prisma.$disconnect();
   }
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
 EOF
+)
 status=$?
 set -e
 
-if [ "$status" -eq 10 ]; then
-  ./node_modules/.bin/prisma migrate resolve --rolled-back "$FAILED_MIGRATION" --schema=./prisma/schema.prisma
-elif [ "$status" -ne 0 ]; then
-  echo "Migration history check failed." >&2
+if [ "$status" -ne 0 ]; then
+  echo "Migration history check failed. Application will not start." >&2
   exit "$status"
 fi
 
+if [ -n "$resolve_names" ]; then
+  old_ifs=$IFS
+  IFS='
+'
+  for migration_name in $resolve_names; do
+    [ -n "$migration_name" ] || continue
+    echo "Marking ${migration_name} rolled back so the corrected SQL can be applied."
+    ./node_modules/.bin/prisma migrate resolve --rolled-back "$migration_name" --schema=./prisma/schema.prisma
+  done
+  IFS=$old_ifs
+fi
+
 echo "Applying Prisma migrations (migrate deploy)..."
-./node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma
+if ! ./node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma; then
+  echo "prisma migrate deploy failed. Application will not start." >&2
+  exit 1
+fi
 
 echo "Starting NestJS API..."
 exec node dist/main.js
