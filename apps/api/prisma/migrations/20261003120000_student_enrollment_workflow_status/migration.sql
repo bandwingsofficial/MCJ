@@ -8,10 +8,6 @@ ALTER TYPE "EnrollmentStatus" ADD VALUE IF NOT EXISTS 'LEAD';
 ALTER TYPE "EnrollmentStatus" ADD VALUE IF NOT EXISTS 'PLACED';
 
 UPDATE "Enrollment"
-SET "status" = 'LEAD'::"EnrollmentStatus"
-WHERE "status"::text IN ('PENDING', 'PENDING_APPROVAL');
-
-UPDATE "Enrollment"
 SET "status" = 'ADMITTED'::"EnrollmentStatus"
 WHERE "status"::text = 'ACTIVE';
 
