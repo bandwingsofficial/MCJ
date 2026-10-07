@@ -172,13 +172,13 @@ export function Header() {
             </button>
 
             {!user ? (
-              <button
-                type="button"
-                onClick={() => router.push("/login")}
+              <Link
+                href="/login"
+                scroll={false}
                 className="hidden rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:border-[#2563EB]/30 sm:inline-flex"
               >
                 Login
-              </button>
+              </Link>
             ) : null}
 
             <Link href="/contact" className="hidden sm:inline-flex">
@@ -308,13 +308,14 @@ export function Header() {
                 Search Courses
               </button>
               {!user ? (
-                <button
-                  type="button"
-                  onClick={() => router.push("/login")}
+                <Link
+                  href="/login"
+                  scroll={false}
+                  onClick={() => setMobileOpen(false)}
                   className="rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                   Login
-                </button>
+                </Link>
               ) : null}
               <Link
                 href="/contact"

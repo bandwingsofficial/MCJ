@@ -268,7 +268,7 @@ export function JobApplyPage({ slug }: JobApplyPageProps) {
     }
 
     if (!isAuthenticated) {
-      router.replace(loginRedirect);
+      router.replace(loginRedirect, { scroll: false });
     }
   }, [authReady, isAuthenticated, loginRedirect, router]);
 

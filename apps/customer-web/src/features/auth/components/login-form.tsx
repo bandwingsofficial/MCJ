@@ -52,15 +52,15 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
           text-transform: uppercase;
           font-family: 'Inter', system-ui, sans-serif;
         }
-        .mcj-label .req { color: #F59E0B; font-size: 14px; }
+        .mcj-label .req { color: #2563D9; font-size: 14px; }
         .mcj-forgot-link {
           font-size: 11.5px;
           font-weight: 600;
-          color: #D97706;
+          color: #2563D9;
           text-decoration: none;
           transition: color 0.15s;
         }
-        .mcj-forgot-link:hover { color: #B45309; text-decoration: underline; }
+        .mcj-forgot-link:hover { color: #1E49A8; text-decoration: underline; }
         .mcj-input-wrap { position: relative; }
         .mcj-input-wrap .ico {
           position: absolute; left: 13px; top: 50%;
@@ -70,7 +70,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
           pointer-events: none;
           transition: color 0.18s;
         }
-        .mcj-input-wrap:focus-within .ico { color: #F59E0B; }
+        .mcj-input-wrap:focus-within .ico { color: #2F6BE5; }
         .mcj-input-wrap input {
           width: 100% !important;
           height: 44px !important;
@@ -88,23 +88,23 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
         }
         .mcj-input-wrap input::placeholder { color: rgba(120,113,108,0.38) !important; font-size: 13.5px !important; }
         .mcj-input-wrap input:focus {
-          border-color: #F59E0B !important;
-          background: #FFFBEB !important;
-          box-shadow: 0 0 0 3px rgba(245,158,11,0.12) !important;
+          border-color: #2F6BE5 !important;
+          background: #F4F7FE !important;
+          box-shadow: 0 0 0 3px rgba(47,107,229,0.16) !important;
         }
         .mcj-btn-wrap { margin-top: 22px; }
         .mcj-btn-wrap button {
           width: 100% !important;
           height: 46px !important;
           border-radius: 12px !important;
-          background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%) !important;
+          background: linear-gradient(135deg, #2F6BE5 0%, #1E49A8 100%) !important;
           color: #fff !important;
           font-size: 14px !important;
           font-weight: 700 !important;
           letter-spacing: 0.02em !important;
           border: none !important;
           cursor: pointer !important;
-          box-shadow: 0 4px 16px rgba(245,158,11,0.30) !important;
+          box-shadow: 0 4px 16px rgba(47,107,229,0.30) !important;
           transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s !important;
           font-family: 'Inter', system-ui, sans-serif !important;
           position: relative; overflow: hidden;
@@ -118,7 +118,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
         .mcj-btn-wrap button:hover:not(:disabled) {
           opacity: 0.92 !important;
           transform: translateY(-1px) !important;
-          box-shadow: 0 8px 24px rgba(245,158,11,0.36) !important;
+          box-shadow: 0 8px 24px rgba(30,73,168,0.36) !important;
         }
         .mcj-btn-wrap button:active:not(:disabled) { transform: translateY(0) !important; }
         .mcj-btn-wrap button:disabled { opacity: 0.55 !important; cursor: not-allowed !important; }

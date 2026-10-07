@@ -43,12 +43,12 @@ export function CommunityPostGatePage({ postId }: Props) {
             className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary text-sm font-semibold text-white"
             onClick={(event) => {
               event.preventDefault();
-              router.push(loginHref);
+              router.push(loginHref, { scroll: false });
             }}
           >
             Sign in to continue
           </Link>
-          <Link href="/register" className="text-primary hover:underline">
+          <Link href="/register" scroll={false} className="text-primary hover:underline">
             Create an account
           </Link>
         </div>

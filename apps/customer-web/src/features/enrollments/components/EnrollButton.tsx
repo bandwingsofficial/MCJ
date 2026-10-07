@@ -38,9 +38,9 @@ export function EnrollButton({
       if (
         !isAuthenticated
       ) {
-        router.push(
-          `/login?redirect=/courses/${courseSlug}`,
-        );
+        router.push(`/login?redirect=/courses/${courseSlug}`, {
+          scroll: false,
+        });
 
         return;
       }

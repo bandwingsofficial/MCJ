@@ -202,7 +202,7 @@ export function RegisterForm({
           margin-bottom: 7px;
           font-family: 'Inter', system-ui, sans-serif;
         }
-        .mcj-label .req { color: #F59E0B; font-size: 14px; }
+        .mcj-label .req { color: #2563D9; font-size: 14px; }
         .mcj-input-wrap { position: relative; }
         .mcj-input-wrap .ico {
           position: absolute; left: 13px; top: 50%;
@@ -212,7 +212,7 @@ export function RegisterForm({
           pointer-events: none;
           transition: color 0.18s;
         }
-        .mcj-input-wrap:focus-within .ico { color: #F59E0B; }
+        .mcj-input-wrap:focus-within .ico { color: #2F6BE5; }
         .mcj-field-status-icon {
           position: absolute;
           right: 13px;
@@ -232,6 +232,8 @@ export function RegisterForm({
           height: 44px !important;
           padding: 0 14px !important;
           border-radius: 10px !important;
+          border-color: #2F6BE5 !important;
+          color: #1E49A8 !important;
           white-space: nowrap;
           font-size: 12px !important;
           font-weight: 700 !important;
@@ -266,9 +268,9 @@ export function RegisterForm({
         }
         .mcj-input-wrap input::placeholder { color: rgba(120,113,108,0.38) !important; font-size: 13.5px !important; }
         .mcj-input-wrap input:focus {
-          border-color: #F59E0B !important;
-          background: #FFFBEB !important;
-          box-shadow: 0 0 0 3px rgba(245,158,11,0.12) !important;
+          border-color: #2F6BE5 !important;
+          background: #F4F7FE !important;
+          box-shadow: 0 0 0 3px rgba(47,107,229,0.16) !important;
         }
         .mcj-input-wrap input.mcj-input-status-success {
           border-color: #10B981 !important;
@@ -310,14 +312,14 @@ export function RegisterForm({
           width: 100% !important;
           height: 46px !important;
           border-radius: 12px !important;
-          background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%) !important;
+          background: linear-gradient(135deg, #2F6BE5 0%, #1E49A8 100%) !important;
           color: #fff !important;
           font-size: 14px !important;
           font-weight: 700 !important;
           letter-spacing: 0.02em !important;
           border: none !important;
           cursor: pointer !important;
-          box-shadow: 0 4px 16px rgba(245,158,11,0.30) !important;
+          box-shadow: 0 4px 16px rgba(47,107,229,0.30) !important;
           transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s !important;
           font-family: 'Inter', system-ui, sans-serif !important;
           position: relative; overflow: hidden;
@@ -331,7 +333,7 @@ export function RegisterForm({
         .mcj-btn-wrap button:hover:not(:disabled) {
           opacity: 0.92 !important;
           transform: translateY(-1px) !important;
-          box-shadow: 0 8px 24px rgba(245,158,11,0.36) !important;
+          box-shadow: 0 8px 24px rgba(30,73,168,0.36) !important;
         }
         .mcj-btn-wrap button:active:not(:disabled) { transform: translateY(0) !important; }
         .mcj-btn-wrap button:disabled { opacity: 0.55 !important; cursor: not-allowed !important; }
@@ -372,6 +374,49 @@ export function RegisterForm({
               <Input placeholder="Enter full name" {...register("name")} />
             </div>
             <RegisterFieldFeedback schemaMessage={errors.name?.message} />
+          </div>
+
+          <div className="mcj-field">
+            <label className="mcj-label">
+              Phone Number <span className="req">*</span>
+            </label>
+            <div className="mcj-input-wrap">
+              <svg
+                className="ico"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+              </svg>
+              <Input
+                placeholder="Enter phone number"
+                className={registerInputStatusClass(
+                  phoneAsyncState,
+                  Boolean(errors.phone),
+                )}
+                {...register("phone")}
+              />
+              <RegisterInputIcon
+                asyncState={phoneAsyncState}
+                hasSchemaError={Boolean(errors.phone)}
+              />
+            </div>
+            <RegisterFieldFeedback
+              schemaMessage={errors.phone?.message}
+              asyncState={phoneAsyncState}
+              asyncMessage={
+                phoneAsyncState === "success"
+                  ? "Phone number is available"
+                  : phoneCheck.data?.message ??
+                    (phoneCheck.isError
+                      ? "Unable to verify phone number"
+                      : undefined)
+              }
+            />
           </div>
 
           <div className="mcj-field mcj-field-span-2">
@@ -485,49 +530,6 @@ export function RegisterForm({
 
           <div className="mcj-field">
             <label className="mcj-label">
-              Phone Number <span className="req">*</span>
-            </label>
-            <div className="mcj-input-wrap">
-              <svg
-                className="ico"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.62 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-              </svg>
-              <Input
-                placeholder="Enter phone number"
-                className={registerInputStatusClass(
-                  phoneAsyncState,
-                  Boolean(errors.phone),
-                )}
-                {...register("phone")}
-              />
-              <RegisterInputIcon
-                asyncState={phoneAsyncState}
-                hasSchemaError={Boolean(errors.phone)}
-              />
-            </div>
-            <RegisterFieldFeedback
-              schemaMessage={errors.phone?.message}
-              asyncState={phoneAsyncState}
-              asyncMessage={
-                phoneAsyncState === "success"
-                  ? "Phone number is available"
-                  : phoneCheck.data?.message ??
-                    (phoneCheck.isError
-                      ? "Unable to verify phone number"
-                      : undefined)
-              }
-            />
-          </div>
-
-          <div className="mcj-field">
-            <label className="mcj-label">
               Password <span className="req">*</span>
             </label>
             <div className="mcj-input-wrap">
@@ -553,7 +555,7 @@ export function RegisterForm({
           </div>
 
           {referralProgramEnabled ? (
-            <div className="mcj-field mcj-field-span-2">
+            <div className="mcj-field">
               <label className="mcj-label">
                 Referral Code{" "}
                 <span className="font-normal normal-case tracking-normal text-stone-400">

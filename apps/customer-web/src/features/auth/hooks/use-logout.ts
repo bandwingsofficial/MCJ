@@ -47,9 +47,7 @@ export function useLogout() {
     onSettled: () => {
       clearUser();
 
-      router.replace(
-        "/login"
-      );
+      router.replace("/login", { scroll: false });
     },
   });
 }

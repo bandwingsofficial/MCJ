@@ -415,7 +415,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
       return;
     }
 
-    router.replace(getEnrollmentLoginPath(enrollPath));
+    router.replace(getEnrollmentLoginPath(enrollPath), { scroll: false });
   }, [authReady, courseLoading, enrollPath, hasSession, router]);
 
   const checkoutButtonLabel = useMemo(() => {
@@ -446,7 +446,7 @@ export function EnrollPage({ slug }: EnrollPageProps) {
     }
 
     if (!hasSession) {
-      router.replace(getEnrollmentLoginPath(enrollPath));
+      router.replace(getEnrollmentLoginPath(enrollPath), { scroll: false });
       return;
     }
 

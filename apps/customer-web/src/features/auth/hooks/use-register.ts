@@ -34,7 +34,7 @@ export function useRegister(redirectTo?: string) {
         ? `/login?redirect=${encodeURIComponent(redirectTo)}`
         : "/login";
 
-      router.push(loginPath);
+      router.push(loginPath, { scroll: false });
     },
 
     onError: (
