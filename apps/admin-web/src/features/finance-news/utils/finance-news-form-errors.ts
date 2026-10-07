@@ -21,7 +21,6 @@ export interface FinanceNewsFormFieldErrors {
   tags?: string;
   status?: string;
   thumbnail?: string;
-  banner?: string;
   root?: string;
 }
 
@@ -92,10 +91,6 @@ export function mapFinanceNewsApiError(
     mapped.thumbnail = fieldErrors.thumbnailFileId[0];
   }
 
-  if (fieldErrors.bannerFileId?.[0]) {
-    mapped.banner = fieldErrors.bannerFileId[0];
-  }
-
   if (
     !mapped.title &&
     !mapped.shortDescription &&
@@ -107,8 +102,7 @@ export function mapFinanceNewsApiError(
     !mapped.metaKeywords &&
     !mapped.tags &&
     !mapped.status &&
-    !mapped.thumbnail &&
-    !mapped.banner
+    !mapped.thumbnail
   ) {
     mapped.root = message ?? "Request failed. Please try again.";
   }

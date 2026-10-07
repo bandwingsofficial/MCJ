@@ -72,7 +72,6 @@ export interface CreateFinanceNewsRequest {
   content: string;
   shortDescription?: string;
   thumbnailFileId?: string;
-  bannerFileId?: string;
   authorName?: string;
   metaTitle?: string;
   metaDescription?: string;
@@ -86,7 +85,6 @@ export interface UpdateFinanceNewsRequest {
   shortDescription?: string;
   content?: string;
   thumbnailFileId?: string | null;
-  bannerFileId?: string | null;
   authorName?: string;
   metaTitle?: string;
   metaDescription?: string;

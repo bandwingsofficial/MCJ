@@ -18,9 +18,7 @@ import { DEFAULT_AUTHOR_NAME } from "@/src/features/finance-news/constants/finan
 
 export interface FinanceNewsUploadFiles {
   thumbnail?: File | null;
-  banner?: File | null;
   removeThumbnail?: boolean;
-  removeBanner?: boolean;
 }
 
 interface UseCreateFinanceNewsReturn {
@@ -73,13 +71,6 @@ export const useCreateFinanceNews = (
           files.thumbnail,
         );
         payload.thumbnailFileId = getUploadFileId(uploadResponse);
-      }
-
-      if (files?.banner) {
-        const uploadResponse = await financeNewsService.uploadImage(
-          files.banner,
-        );
-        payload.bannerFileId = getUploadFileId(uploadResponse);
       }
 
       const response = await financeNewsService.createFinanceNews(payload);

@@ -109,11 +109,6 @@ export function EditFinanceNewsPage({ newsId }: EditFinanceNewsPageProps) {
               ? withImageCacheBust(article.thumbnailUrl, article.updatedAt)
               : null
           }
-          bannerPreviewUrl={
-            article.bannerUrl
-              ? withImageCacheBust(article.bannerUrl, article.updatedAt)
-              : null
-          }
           isSubmitting={isPending}
           externalErrors={fieldErrors}
           publishedAt={article.publishedAt}

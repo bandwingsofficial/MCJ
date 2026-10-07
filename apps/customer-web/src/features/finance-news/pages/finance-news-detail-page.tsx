@@ -1,21 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import {
-  ArrowLeft,
-  CalendarDays,
-  ImageOff,
-  Tag,
-  UserRound,
-} from "lucide-react";
+import { useMemo } from "react";
+import { formatMcjEntityPageTitle } from "@mcj/shared-constants";
+import { ChevronRight, Clock3, ImageOff } from "lucide-react";
 
-import { FinanceNewsCard } from "@/src/features/finance-news/components/finance-news-card";
+import { FinanceNewsArticleContent } from "@/src/features/finance-news/components/finance-news-article-content";
+import { FinanceNewsArticleSidebar } from "@/src/features/finance-news/components/finance-news-article-sidebar";
+import { FinanceNewsShareActions } from "@/src/features/finance-news/components/finance-news-share-actions";
 import { useFinanceNewsArticle } from "@/src/features/finance-news/hooks/use-finance-news-article";
 import { formatFinanceNewsDate } from "@/src/features/finance-news/utils/finance-news-display.util";
-import type { FinancialArticleListItem } from "@/src/features/finance-news/types/finance-news.types";
-import { Badge } from "@/src/shared/components/ui/badge";
+import { estimateFinanceNewsReadingTimeMinutes } from "@/src/features/finance-news/utils/finance-news-reading-time.util";
 import { EmptyState } from "@/src/shared/components/ui/empty-state";
 import { Skeleton } from "@/src/shared/components/ui/skeleton";
+import { useBrowserPageTitle } from "@/src/shared/document-title/document-title-provider";
+import { cn } from "@/src/shared/lib/cn";
 
 function isNotFoundError(error: unknown): boolean {
   return (
@@ -23,20 +22,52 @@ function isNotFoundError(error: unknown): boolean {
   );
 }
 
+function getAuthorInitials(authorName: string): string {
+  const parts = authorName.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) {
+    return "MC";
+  }
+
+  if (parts.length === 1) {
+    return parts[0]!.slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0]!.charAt(0)}${parts[parts.length - 1]!.charAt(0)}`.toUpperCase();
+}
+
+function FinanceNewsDetailSkeleton() {
+  return (
+    <main className="w-full bg-white pb-12">
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+        <Skeleton className="mb-6 h-4 w-64 max-w-full" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr]">
+          <Skeleton className="min-h-[280px] w-full rounded-xl lg:min-h-[360px]" />
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-5 w-full" />
+            <Skeleton className="mt-6 h-12 w-full" />
+          </div>
+        </div>
+        <Skeleton className="mt-10 h-64 w-full" />
+      </div>
+    </main>
+  );
+}
+
 export function FinanceNewsDetailPage({ slug }: { slug: string }) {
   const { data: article, isLoading, isError, error } = useFinanceNewsArticle(slug);
 
+  const browserPageTitle = useMemo(
+    () => formatMcjEntityPageTitle("Finance News", article?.title),
+    [article?.title],
+  );
+
+  useBrowserPageTitle(browserPageTitle);
+
   if (isLoading) {
-    return (
-      <main className="w-full bg-white pb-10">
-        <Skeleton className="h-48 w-full rounded-none md:h-72" />
-        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
-          <Skeleton className="mb-3 h-8 w-32" />
-          <Skeleton className="mb-4 h-10 w-full" />
-          <Skeleton className="h-48 w-full" />
-        </div>
-      </main>
-    );
+    return <FinanceNewsDetailSkeleton />;
   }
 
   if (isError && isNotFoundError(error)) {
@@ -48,9 +79,9 @@ export function FinanceNewsDetailPage({ slug }: { slug: string }) {
           action={
             <Link
               href="/finance-news"
-              className="inline-flex rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-4 py-2.5 text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
+              className="inline-flex rounded-lg border border-[#2563EB]/30 bg-white px-4 py-2 text-sm font-semibold text-[#2563EB] hover:bg-[#EFF6FF]"
             >
-              Back to Financial News
+              Browse Financial News
             </Link>
           }
         />
@@ -67,9 +98,9 @@ export function FinanceNewsDetailPage({ slug }: { slug: string }) {
           action={
             <Link
               href="/finance-news"
-              className="inline-flex rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-4 py-2.5 text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
+              className="inline-flex rounded-lg border border-[#2563EB]/30 bg-white px-4 py-2 text-sm font-semibold text-[#2563EB] hover:bg-[#EFF6FF]"
             >
-              Back to Financial News
+              Browse Financial News
             </Link>
           }
         />
@@ -77,125 +108,143 @@ export function FinanceNewsDetailPage({ slug }: { slug: string }) {
     );
   }
 
-  const bannerUrl = article.bannerUrl ?? article.thumbnailUrl;
-  const related = (article.relatedArticles ?? []).map(
-    (item): FinancialArticleListItem => ({
-      ...item,
-      content: null,
-      bannerUrl: null,
-      category: article.category,
-      displayOrder: 0,
-      status: "PUBLISHED",
-      isActive: true,
-      updatedAt: item.createdAt,
-    }),
+  const publishedLabel = formatFinanceNewsDate(
+    article.publishedAt ?? article.createdAt,
   );
+  const readingMinutes = estimateFinanceNewsReadingTimeMinutes(
+    article.content,
+    article.shortDescription,
+  );
+  const relatedArticles = article.relatedArticles ?? [];
+  const heroImageUrl = article.thumbnailUrl ?? article.bannerUrl;
 
   return (
-    <main className="w-full bg-white pb-10">
-      <section className="relative overflow-hidden border-b border-slate-100 bg-[#F8FBFF]">
-        <div className="pointer-events-none absolute -left-24 top-0 h-56 w-56 rounded-full bg-[#BFDBFE]/35 blur-3xl" />
-        <div className="pointer-events-none absolute right-0 top-0 h-64 w-64 rounded-full bg-[#DDD6FE]/30 blur-3xl" />
-
-        <div className="relative h-44 w-full overflow-hidden md:h-72">
-          {bannerUrl ? (
-            <>
-              <img
-                src={bannerUrl}
-                alt=""
-                className="h-full w-full object-cover object-center"
-              />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0B1F3A]/60 via-[#0B1F3A]/15 to-[#F8FBFF]/30" />
-            </>
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#EEF4FF] via-[#F8FBFF] to-[#F5F3FF] text-slate-400">
-              <ImageOff className="h-9 w-9" aria-hidden />
-            </div>
-          )}
-        </div>
-      </section>
-
-      <article className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="relative z-10 -mt-20 mb-5 md:-mt-24">
-          {article.thumbnailUrl ? (
-            <img
-              src={article.thumbnailUrl}
-              alt=""
-              className="h-36 w-36 rounded-2xl border-[3px] border-white object-cover shadow-lg ring-1 ring-[#BFDBFE]/60 sm:h-40 sm:w-40 md:h-44 md:w-44"
-            />
-          ) : null}
-        </div>
-
-        <Link
-          href="/finance-news"
-          className="mb-4 inline-flex items-center rounded-lg px-2 py-1 text-sm font-medium text-slate-600 hover:bg-[#EFF6FF] hover:text-[#2563EB]"
+    <main className="w-full overflow-x-hidden bg-white pb-12">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <nav
+          aria-label="Breadcrumb"
+          className="flex flex-wrap items-center gap-2 py-4 text-sm text-slate-500"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" aria-hidden />
-          Back to Financial News
-        </Link>
-
-        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <Link href="/" className="transition-colors hover:text-[#2563EB]">
+            Home
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
+          <Link
+            href="/finance-news"
+            className="transition-colors hover:text-[#2563EB]"
+          >
+            Financial News
+          </Link>
           {article.category?.name ? (
-            <Badge variant="info">{article.category.name}</Badge>
+            <>
+              <ChevronRight
+                className="h-3.5 w-3.5 shrink-0 text-slate-300"
+                aria-hidden
+              />
+              <span className="text-slate-600">{article.category.name}</span>
+            </>
           ) : null}
-          {article.tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center rounded-md border border-[#E0E7FF] bg-[#F5F3FF]/70 px-2 py-1 text-[11px] font-medium text-[#4338CA]"
-            >
-              <Tag className="mr-1 h-3 w-3" aria-hidden />
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        <h1 className="text-2xl font-bold leading-tight tracking-tight text-[#0B1F3A] md:text-3xl">
-          {article.title}
-        </h1>
-
-        <div className="mt-3 flex flex-wrap items-center gap-3 border-b border-slate-100 pb-4 text-sm text-slate-600">
-          <span className="inline-flex items-center gap-1.5">
-            <UserRound className="h-4 w-4 text-[#2563EB]" aria-hidden />
-            {article.authorName}
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
+          <span className="line-clamp-1 font-medium text-[#0B1F3A]">
+            {article.title}
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <CalendarDays className="h-4 w-4 text-[#2563EB]" aria-hidden />
-            {formatFinanceNewsDate(article.publishedAt ?? article.createdAt)}
-          </span>
-        </div>
+        </nav>
 
-        {article.shortDescription ? (
-          <p className="mt-4 text-base leading-relaxed text-slate-700 md:text-lg">
-            {article.shortDescription}
-          </p>
-        ) : null}
-
-        <div className="prose prose-slate mt-6 max-w-none">
-          {article.content ? (
-            <div className="whitespace-pre-wrap leading-7 text-slate-700 md:leading-8">
-              {article.content}
+        <header className="border-b border-slate-100 pb-8">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_3fr] lg:items-stretch lg:gap-8 xl:gap-10">
+            <div className="flex min-h-[240px] w-full items-center justify-center rounded-xl border border-slate-200/80 bg-[#F8FAFC] p-3 sm:min-h-[280px] lg:min-h-[360px]">
+              {heroImageUrl ? (
+                <img
+                  src={heroImageUrl}
+                  alt=""
+                  className="h-auto max-h-[min(480px,38vw)] w-full rounded-lg object-contain object-center"
+                />
+              ) : (
+                <div className="flex h-full min-h-[200px] w-full items-center justify-center rounded-lg text-slate-400">
+                  <ImageOff className="h-8 w-8" aria-hidden />
+                </div>
+              )}
             </div>
-          ) : (
-            <p className="text-slate-500">Full article content is not available.</p>
-          )}
-        </div>
 
-        {related.length > 0 ? (
-          <section className="mt-10 border-t border-slate-100 pt-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2563EB]">
-              Related
-            </p>
-            <h2 className="mt-1.5 mb-5 text-2xl font-bold tracking-tight text-[#0B1F3A]">
-              Related Articles
-            </h2>
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {related.slice(0, 3).map((item) => (
-                <FinanceNewsCard key={item.id} article={item} />
-              ))}
+            <div className="flex min-w-0 flex-col justify-center">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#2563EB]">
+                {article.category?.name ? (
+                  <span>{article.category.name}</span>
+                ) : null}
+                <span className="font-normal normal-case tracking-normal text-slate-500">
+                  {publishedLabel}
+                </span>
+                {readingMinutes ? (
+                  <span className="inline-flex items-center gap-1 font-normal normal-case tracking-normal text-slate-500">
+                    <Clock3 className="h-3.5 w-3.5" aria-hidden />
+                    {readingMinutes} min read
+                  </span>
+                ) : null}
+              </div>
+
+              <h1 className="mt-3 w-full text-2xl font-bold leading-tight tracking-tight text-[#0B1F3A] sm:text-3xl md:text-[2rem] md:leading-[1.15] lg:text-[2.125rem]">
+                {article.title}
+              </h1>
+
+              {article.shortDescription ? (
+                <p className="mt-3 w-full text-sm leading-relaxed text-slate-600 sm:text-base">
+                  {article.shortDescription}
+                </p>
+              ) : null}
+
+              <div className="mt-6 flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-full",
+                      "bg-[#EFF6FF] text-xs font-bold text-[#2563EB]",
+                    )}
+                    aria-hidden
+                  >
+                    {getAuthorInitials(article.authorName)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#0B1F3A]">
+                      {article.authorName}
+                    </p>
+                  </div>
+                </div>
+
+                <FinanceNewsShareActions title={article.title} />
+              </div>
             </div>
-          </section>
-        ) : null}
-      </article>
+          </div>
+        </header>
+
+        <article className="mt-8 w-full min-w-0">
+          <FinanceNewsArticleContent content={article.content} />
+
+          {article.tags.length > 0 ? (
+            <footer className="mt-10 border-t border-slate-100 pt-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                Tags
+              </p>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {article.tags.map((tag) => (
+                  <li key={tag}>
+                    <span className="inline-flex rounded-full border border-slate-200 bg-[#F8FAFC] px-3 py-1 text-xs font-medium text-[#334155]">
+                      {tag}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </footer>
+          ) : null}
+        </article>
+
+        <div className="mt-12">
+          <FinanceNewsArticleSidebar
+            currentSlug={article.slug}
+            relatedArticles={relatedArticles}
+            category={article.category}
+          />
+        </div>
+      </div>
     </main>
   );
 }

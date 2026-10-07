@@ -33,7 +33,6 @@ interface UseUpdateFinanceNewsReturn {
 function toUpdateRequest(
   values: FinanceNewsFormValues,
   thumbnailFileId?: string | null,
-  bannerFileId?: string | null,
 ): UpdateFinanceNewsRequest {
   return {
     title: values.title.trim(),
@@ -47,7 +46,6 @@ function toUpdateRequest(
     tags: values.tags,
     status: values.status,
     thumbnailFileId,
-    bannerFileId,
   };
 }
 
@@ -68,7 +66,6 @@ export const useUpdateFinanceNews = (
       setFieldErrors({});
 
       let thumbnailFileId: string | null | undefined;
-      let bannerFileId: string | null | undefined;
 
       if (files?.thumbnail) {
         const uploadResponse = await financeNewsService.uploadImage(
@@ -79,16 +76,7 @@ export const useUpdateFinanceNews = (
         thumbnailFileId = null;
       }
 
-      if (files?.banner) {
-        const uploadResponse = await financeNewsService.uploadImage(
-          files.banner,
-        );
-        bannerFileId = getUploadFileId(uploadResponse);
-      } else if (files?.removeBanner) {
-        bannerFileId = null;
-      }
-
-      const payload = toUpdateRequest(values, thumbnailFileId, bannerFileId);
+      const payload = toUpdateRequest(values, thumbnailFileId);
 
       const response = await financeNewsService.updateFinanceNews(
         id,

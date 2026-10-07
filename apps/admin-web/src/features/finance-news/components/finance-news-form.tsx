@@ -130,7 +130,6 @@ interface Props {
   mode: "create" | "edit";
   initialValues?: FinanceNewsFormValues;
   thumbnailPreviewUrl?: string | null;
-  bannerPreviewUrl?: string | null;
   isSubmitting?: boolean;
   externalErrors?: FinanceNewsFormFieldErrors;
   onSubmit: (
@@ -146,7 +145,6 @@ export function FinanceNewsForm({
   mode,
   initialValues,
   thumbnailPreviewUrl,
-  bannerPreviewUrl,
   isSubmitting = false,
   externalErrors = {},
   onSubmit,
@@ -158,17 +156,11 @@ export function FinanceNewsForm({
   >([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(
     thumbnailPreviewUrl ?? null,
   );
-  const [bannerPreview, setBannerPreview] = useState<string | null>(
-    bannerPreviewUrl ?? null,
-  );
   const [thumbnailError, setThumbnailError] = useState<string | null>(null);
-  const [bannerError, setBannerError] = useState<string | null>(null);
   const [thumbnailRemoved, setThumbnailRemoved] = useState(false);
-  const [bannerRemoved, setBannerRemoved] = useState(false);
 
   const {
     control,
@@ -309,13 +301,6 @@ export function FinanceNewsForm({
     setThumbnailError(null);
   }, [thumbnailPreviewUrl]);
 
-  useEffect(() => {
-    setBannerPreview(bannerPreviewUrl ?? null);
-    setBannerFile(null);
-    setBannerRemoved(false);
-    setBannerError(null);
-  }, [bannerPreviewUrl]);
-
   const mergedErrors = {
     title: errors.title?.message ?? externalErrors.title,
     shortDescription:
@@ -334,9 +319,7 @@ export function FinanceNewsForm({
   const submitHandler = handleSubmit(async (values) => {
     await onSubmit(values, {
       thumbnail: thumbnailFile,
-      banner: bannerFile,
       removeThumbnail: thumbnailRemoved,
-      removeBanner: bannerRemoved,
     });
   });
 
@@ -672,40 +655,6 @@ export function FinanceNewsForm({
               setThumbnailPreview(null);
               setThumbnailError(null);
               setThumbnailRemoved(true);
-            }}
-          />
-        </ValidatedField>
-
-        <ValidatedField
-          label="Banner"
-          state={bannerError || externalErrors.banner ? "invalid" : "neutral"}
-          errorMessage={bannerError ?? externalErrors.banner}
-        >
-          <ImageUploadField
-            previewUrl={bannerPreview}
-            file={bannerFile}
-            disabled={isSubmitting}
-            entityLabel="banner"
-            previewAlt="Article banner preview"
-            validateFile={validateImageFile}
-            onFileSelect={(file) => {
-              if (!file) {
-                return;
-              }
-              const validationError = validateImageFile(file);
-              if (validationError) {
-                setBannerError(validationError);
-                return;
-              }
-              setBannerError(null);
-              setBannerRemoved(false);
-              setBannerFile(file);
-            }}
-            onRemove={() => {
-              setBannerFile(null);
-              setBannerPreview(null);
-              setBannerError(null);
-              setBannerRemoved(true);
             }}
           />
         </ValidatedField>
