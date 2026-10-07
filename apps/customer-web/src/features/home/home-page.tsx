@@ -6,7 +6,7 @@ import {
   HomeStatsSection,
   HomeWhyMcjSection,
 } from "./components/home-marketing-sections";
-import { HeroSection } from "./components/hero";
+import { HomepageBanner } from "./components/homepage-banner";
 import { TestimonialsSection } from "./components/testimonials";
 
 import { HomeCourses } from "@/src/features/courses/components/home-courses";
@@ -15,8 +15,8 @@ import { HomeBranchesSection } from "@/src/features/branches/components/home-bra
 export function HomePage() {
   return (
     <main className="m-0 w-full p-0">
-      <HeroSection />
-      <FeatureStripSection />
+      <HomepageBanner />
+      <FeatureStripSection placement="below" />
       <HomeCourses />
       <HomeBranchesSection />
       <HomeWhyMcjSection />

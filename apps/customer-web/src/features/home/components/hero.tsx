@@ -18,7 +18,7 @@ export function HeroSection() {
   const { stats, isLoading } = useHomeStats();
 
   return (
-    <section className="relative overflow-hidden bg-[#F8FBFF]">
+    <section className="relative min-h-[calc(min(100vw,1920px)*750/1920)] overflow-hidden bg-[#F8FBFF]">
       {/* Soft blurred background extending fully behind the left content */}
       <div className="pointer-events-none absolute inset-y-0 left-0 w-[65%] bg-gradient-to-br from-[#E8F0FF]/80 via-[#F4F6FF]/70 to-transparent blur-2xl" />
 
@@ -26,7 +26,7 @@ export function HeroSection() {
       <div className="pointer-events-none absolute -left-10 bottom-[-120px] h-96 w-96 rounded-full bg-[#DBEAFE]/50 blur-3xl" />
       <div className="pointer-events-none absolute -right-16 top-0 h-80 w-80 rounded-full bg-[#EDE9FE]/50 blur-3xl" />
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-11">
+      <div className="relative mx-auto grid min-h-[calc(min(100vw,1920px)*750/1920)] max-w-7xl items-center gap-8 px-4 py-10 sm:px-6 sm:py-12 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-14">
         <div>
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#BFDBFE] bg-white px-3 py-1.5 text-xs font-semibold text-[#2563EB]">
             <Sparkles className="h-3.5 w-3.5" />
@@ -86,7 +86,7 @@ export function HeroSection() {
         </div>
 
         <div className="relative">
-          <div className="relative mx-auto aspect-[5/4] w-full max-h-[380px] overflow-hidden rounded-[28px] border border-white bg-white shadow-[0_24px_60px_rgba(11,31,58,0.12)]">
+          <div className="relative mx-auto aspect-[5/4] w-full max-h-[430px] overflow-hidden rounded-[28px] border border-white bg-white shadow-[0_24px_60px_rgba(11,31,58,0.12)]">
             <Image
               src="/images/student-learning.png"
               alt="MCJ Academy student"

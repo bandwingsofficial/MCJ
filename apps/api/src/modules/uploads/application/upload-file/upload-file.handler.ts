@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { createHash } from 'crypto';
 import { Logger } from '@nestjs/common';
+import { BANNER_UPLOAD_FOLDER } from '@mcj/shared-constants';
 
 import type { UploadRepository } from '../../domain/repositories/upload.repository';
 import { Upload } from '../../domain/entities/upload.entity';
@@ -73,7 +74,9 @@ export class UploadFileHandler {
           width: null as number | null,
           height: null as number | null,
         }
-      : await this.imageProcessor.optimize(command.file.buffer);
+      : command.folder.trim() === BANNER_UPLOAD_FOLDER
+        ? await this.imageProcessor.coverToBanner(command.file.buffer)
+        : await this.imageProcessor.optimize(command.file.buffer);
 
     const checksum = createHash('sha256')
       .update(processed.buffer)

@@ -10,4 +10,5 @@ export interface ProcessedImage {
 
 export interface ImageProcessor {
   optimize(input: Buffer): Promise<ProcessedImage>;
+  coverToBanner(input: Buffer): Promise<ProcessedImage>;
 }

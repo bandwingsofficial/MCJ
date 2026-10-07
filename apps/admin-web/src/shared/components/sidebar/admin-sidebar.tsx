@@ -21,6 +21,7 @@ import {
   BookOpen,
   Boxes,
   MessageSquare,
+  Images,
   Newspaper,
   Briefcase,
   ClipboardList,
@@ -110,6 +111,11 @@ const menu = [
         name: "Finance News",
         icon: Newspaper,
         path: "/finance-news",
+      },
+      {
+        name: "Banners",
+        icon: Images,
+        path: "/banners",
       },
       {
         name: "Jobs",

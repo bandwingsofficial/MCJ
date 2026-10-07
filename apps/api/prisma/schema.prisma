@@ -301,6 +301,7 @@ model Upload {
   courseMaterials            CourseMaterial[]
   financialArticleBanners    FinancialArticle[] @relation("FinancialArticleBanner")
   financialArticleThumbnails FinancialArticle[] @relation("FinancialArticleThumbnail")
+  bannerImages               BannerImage[]
   jobApplicationResumes      JobApplication[]   @relation("JobApplicationResume")
   studentProfileImages       Student[]          @relation("StudentProfileImage")
   studentDocuments           StudentDocument[]  @relation("StudentDocumentFile")
@@ -2429,4 +2430,50 @@ model ReferralRewardSettings {
   updatedByUserId            String?
 
   @@index([isActive])
+}
+
+enum BannerPlacement {
+  HOMEPAGE
+}
+
+enum BannerLifecycleStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Banner {
+  id           String                @id @default(uuid())
+  name         String
+  type         BannerPlacement
+  status       BannerLifecycleStatus @default(ACTIVE)
+  displayOrder Int                   @default(0)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  images       BannerImage[]
+
+  @@index([name])
+  @@index([type])
+  @@index([status])
+  @@index([displayOrder])
+  @@index([createdAt])
+}
+
+model BannerImage {
+  id           String   @id @default(uuid())
+  bannerId     String
+  uploadId     String
+  imageUrl     String
+  objectKey    String
+  displayOrder Int
+  isPrimary    Boolean  @default(false)
+  link         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  banner       Banner   @relation(fields: [bannerId], references: [id], onDelete: Cascade)
+  upload       Upload   @relation(fields: [uploadId], references: [id], onDelete: Restrict)
+
+  @@index([bannerId])
+  @@index([uploadId])
+  @@index([bannerId, displayOrder])
+  @@index([bannerId, isPrimary])
 }

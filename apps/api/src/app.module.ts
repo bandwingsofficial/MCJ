@@ -19,6 +19,7 @@ import { CourseQuizModule } from './modules/course-quiz/course-quiz.module';
 import { EnrollmentModule } from './modules/enrollment/enrollment.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { FinancialArticleModule } from './modules/financial-article/financial-article.module';
+import { BannerModule } from './modules/banner/banner.module';
 import { JobModule } from './modules/job/job.module';
 import { JobApplicationModule } from './modules/job-application/job-application.module';
 import { PaymentModule } from './modules/payment/payment.module';
@@ -57,6 +58,7 @@ import { RealtimeModule } from './infrastructure/realtime/realtime.module';
     EnrollmentModule,
     PaymentModule,
     FinancialArticleModule,
+    BannerModule,
     StudentPortalModule,
     JobModule,
     JobApplicationModule,

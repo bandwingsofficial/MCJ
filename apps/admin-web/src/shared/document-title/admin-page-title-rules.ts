@@ -113,6 +113,7 @@ const ADMIN_PAGE_TITLE_RULES: readonly PageTitleRule[] = [
   { pattern: /^\/community\/[^/]+$/, title: "Community" },
   { pattern: /^\/community$/, title: "Community" },
 
+  { pattern: /^\/banners$/, title: "Banner Management" },
   { pattern: /^\/finance-news\/create$/, title: "Create Finance News" },
   { pattern: /^\/finance-news\/[^/]+\/edit$/, title: "Edit Finance News" },
   { pattern: /^\/finance-news$/, title: "Finance News" },
