@@ -51,23 +51,15 @@ export function AuthModal({
 
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
+
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        close();
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
 
     return () => {
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
-      window.removeEventListener("keydown", onKeyDown);
     };
-  }, [authReady, close, hasSession]);
+  }, [authReady, hasSession]);
 
   if (!authReady || hasSession) {
     return null;
@@ -79,6 +71,7 @@ export function AuthModal({
       : mode === "register"
         ? "Create Account"
         : "Forgot Password";
+
   const description =
     mode === "login"
       ? "Sign in to continue"
@@ -92,10 +85,17 @@ export function AuthModal({
         .auth-modal-backdrop {
           animation: authModalBackdropIn 180ms ease-out;
         }
+
         @keyframes authModalBackdropIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from {
+            opacity: 0;
+          }
+
+          to {
+            opacity: 1;
+          }
         }
+
         @media (prefers-reduced-motion: reduce) {
           .auth-modal-backdrop,
           .mcj-auth-card-shell {
@@ -103,10 +103,10 @@ export function AuthModal({
           }
         }
       `}</style>
+
       <div
         className="auth-modal-backdrop fixed inset-0 z-[90] overflow-y-auto bg-black/70 p-4 sm:p-6"
         role="presentation"
-        onClick={close}
       >
         <div className="flex min-h-full items-center justify-center">
           <div
@@ -118,7 +118,6 @@ export function AuthModal({
                 ? "my-auto w-full max-w-[820px]"
                 : "my-auto w-full max-w-[440px]"
             }
-            onClick={(event) => event.stopPropagation()}
           >
             <AuthCard
               title={title}
@@ -130,19 +129,27 @@ export function AuthModal({
                 <div className="space-y-6">
                   <LoginForm
                     redirectTo={redirectTo}
-                    onForgotPassword={() => onSwitchMode("forgot-password")}
+                    onForgotPassword={() =>
+                      onSwitchMode("forgot-password")
+                    }
                   />
+
                   <div className="flex justify-between text-sm">
                     <button
                       type="button"
-                      onClick={() => onSwitchMode("forgot-password")}
+                      onClick={() =>
+                        onSwitchMode("forgot-password")
+                      }
                       className="text-primary hover:underline"
                     >
                       Forgot Password?
                     </button>
+
                     <button
                       type="button"
-                      onClick={() => onSwitchMode("register")}
+                      onClick={() =>
+                        onSwitchMode("register")
+                      }
                       className="text-primary hover:underline"
                     >
                       Create Account
@@ -155,6 +162,7 @@ export function AuthModal({
                     redirectTo={redirectTo}
                     initialReferralCode={initialReferralCode}
                   />
+
                   <div className="text-center text-sm">
                     <button
                       type="button"
@@ -167,7 +175,9 @@ export function AuthModal({
                 </div>
               ) : (
                 <ForgotPasswordFlow
-                  onBackToLogin={() => onSwitchMode("login")}
+                  onBackToLogin={() =>
+                    onSwitchMode("login")
+                  }
                   onCompleted={onClose}
                 />
               )}

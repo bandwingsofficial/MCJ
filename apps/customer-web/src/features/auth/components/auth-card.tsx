@@ -17,6 +17,7 @@ export function AuthCard({
   onClose,
 }: AuthCardProps) {
   const isWide = variant === "wide";
+
   return (
     <>
       <style>{`
@@ -35,15 +36,29 @@ export function AuthCard({
             0 0 0 1px rgba(47,107,229,0.16);
           animation: cardIn 0.45s cubic-bezier(0.22,1,0.36,1) both;
         }
+
         @keyframes cardIn {
-          from { opacity: 0; transform: translateY(18px) scale(0.98); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
+          from {
+            opacity: 0;
+            transform: translateY(18px) scale(0.98);
+          }
+
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
         }
+
         .mcj-card-header-strip {
           padding: 26px ${onClose ? "56px" : "30px"} 22px 30px;
-          background: linear-gradient(135deg, #2F6BE5 0%, #1E49A8 100%);
+          background: linear-gradient(
+            135deg,
+            #2F6BE5 0%,
+            #1E49A8 100%
+          );
           border-bottom: 1px solid rgba(255,255,255,0.14);
         }
+
         .mcj-card-header-strip h1 {
           font-size: 22px;
           font-weight: 800;
@@ -52,18 +67,24 @@ export function AuthCard({
           margin: 0 0 4px;
           font-family: 'Inter', system-ui, sans-serif;
         }
+
         .mcj-card-header-strip p {
           font-size: 13px;
           color: rgba(255,255,255,0.82);
           margin: 0;
           font-family: 'Inter', system-ui, sans-serif;
         }
+
         .mcj-card-body-wrap {
           padding: 24px 30px 28px;
         }
       `}</style>
 
-      <div className="mcj-auth-card-shell">
+      <div
+        className="mcj-auth-card-shell"
+        role="dialog"
+        aria-modal="true"
+      >
         {onClose ? (
           <button
             type="button"
@@ -71,15 +92,26 @@ export function AuthCard({
             aria-label="Close"
             className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-white transition hover:bg-white/20"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            >
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
         ) : null}
+
         <div className="mcj-card-header-strip">
           <h1>{title}</h1>
-          {description && <p>{description}</p>}
+
+          {description ? <p>{description}</p> : null}
         </div>
+
         <div className="mcj-card-body-wrap">
           {children}
         </div>
