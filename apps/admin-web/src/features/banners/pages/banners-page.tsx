@@ -11,6 +11,7 @@ import {
 import { ChevronRight, Pencil, Plus, Power, Trash2 } from "lucide-react";
 
 import { CategoryPagination } from "@/src/features/categories/components/category-pagination";
+import { Badge } from "@/src/shared/components/ui/badge";
 import { Button } from "@/src/shared/components/ui/button";
 import { Card } from "@/src/shared/components/ui/card";
 import { ConfirmDialog } from "@/src/shared/components/ui/dialog";
@@ -28,7 +29,12 @@ import type {
   BannerStatus,
 } from "@/src/features/banners/types/banner.types";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZES = [10, 20, 50, 100];
+
+const iconButtonClass =
+  "inline-flex h-5 w-5 shrink-0 items-center justify-center border-0 bg-transparent p-0 leading-none transition-colors hover:opacity-80";
+
+const iconClass = "h-[15px] w-[14px] stroke-[2]";
 
 export function BannersPage() {
   const queryClient = useQueryClient();
@@ -36,6 +42,7 @@ export function BannersPage() {
   const [status, setStatus] = useState<BannerStatus | "">("");
   const [type, setType] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingStatus, setPendingStatus] = useState<BannerListItem | null>(
@@ -52,9 +59,9 @@ export function BannersPage() {
       status: status || undefined,
       type: type ? ("HOMEPAGE" as const) : undefined,
       page,
-      pageSize: PAGE_SIZE,
+      pageSize,
     }),
-    [page, search, status, type],
+    [page, pageSize, search, status, type],
   );
 
   const query = useQuery({
@@ -65,7 +72,9 @@ export function BannersPage() {
   const items = query.data?.data ?? [];
   const total = query.data?.meta.total ?? 0;
   const catalogTotal = query.data?.meta.catalogTotal ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
   const limitReached = catalogTotal >= BANNER_MAX_GROUPS;
 
   const refresh = async () => {
@@ -200,106 +209,151 @@ export function BannersPage() {
         ) : null}
 
         {!query.isLoading && !query.isError ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-slate-100 text-xs uppercase tracking-wide text-[#647A9B]">
-                <tr>
-                  <th className="px-3 py-2 font-semibold">Banner Name</th>
-                  <th className="px-3 py-2 font-semibold">Type</th>
-                  <th className="px-3 py-2 font-semibold">Total Images</th>
-                  <th className="px-3 py-2 font-semibold">Status</th>
-                  <th className="px-3 py-2 text-right font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.length === 0 ? (
+          <>
+            <div className="w-full overflow-x-auto">
+              <table className="w-full min-w-full border-collapse text-sm">
+                <thead className="sticky top-0 z-10 border-b border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] text-[#526581]">
                   <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
-                      No banners match your filters.
-                    </td>
+                    <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide">
+                      Banner Name
+                    </th>
+                    <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide">
+                      Type
+                    </th>
+                    <th className="!px-4 !py-4 text-left text-[11px] font-semibold tracking-wide">
+                      Total Images
+                    </th>
+                    <th className="w-24 !px-4 !py-4 text-left text-[11px] font-semibold tracking-wide">
+                      Status
+                    </th>
+                    <th className="w-[6.75rem] !px-4 !py-4 text-right text-[11px] font-semibold tracking-wide">
+                      Actions
+                    </th>
                   </tr>
-                ) : (
-                  items.map((item) => (
-                    <tr key={item.id} className="border-b border-slate-50">
-                      <td className="px-3 py-3 font-medium text-[#0B1F3A]">
-                        {item.name}
-                      </td>
-                      <td className="px-3 py-3 text-slate-600">
-                        {getBannerPlacementLabel(item.type)}
-                      </td>
-                      <td className="px-3 py-3 text-slate-600">
-                        {item.imageCount}
-                      </td>
-                      <td className="px-3 py-3">
-                        <span
-                          className={
-                            item.status === "ACTIVE"
-                              ? "rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700"
-                              : "rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600"
-                          }
-                        >
-                          {item.status === "ACTIVE" ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3">
-                        <div className="flex justify-end gap-2">
-                          <Tooltip
-                            content={
-                              item.status === "ACTIVE"
-                                ? "Deactivate"
-                                : "Activate"
-                            }
-                          >
-                            <button
-                              type="button"
-                              aria-label="Change status"
-                              className="text-[#2563EB]"
-                              onClick={() => setPendingStatus(item)}
-                            >
-                              <Power className="h-4 w-4" />
-                            </button>
-                          </Tooltip>
-                          <Tooltip content="Edit">
-                            <button
-                              type="button"
-                              aria-label="Edit banner"
-                              className="text-[#0B1F3A]"
-                              onClick={() => {
-                                setEditingId(item.id);
-                                setFormOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                          </Tooltip>
-                          <Tooltip content="Delete">
-                            <button
-                              type="button"
-                              aria-label="Delete banner"
-                              className="text-red-700"
-                              onClick={() => setPendingDelete(item)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </Tooltip>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {items.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="!px-4 !py-4 align-middle">
+                        <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-4 text-center">
+                          <h3 className="text-base font-semibold text-[#102A56]">
+                            No Banners Found
+                          </h3>
+                          <p className="mt-1 max-w-md text-sm text-[#647A9B]">
+                            {catalogTotal === 0
+                              ? "Create your first banner for the homepage."
+                              : "No banners match your filters."}
+                          </p>
                         </div>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
+                  ) : (
+                    items.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="border-b border-slate-100 bg-white transition-colors hover:bg-slate-50"
+                      >
+                        <td className="!px-4 !py-4 align-middle">
+                          <p className="text-sm font-medium leading-snug text-[#102A56]">
+                            {item.name}
+                          </p>
+                        </td>
+                        <td className="!px-4 !py-4 align-middle text-sm text-[#526581]">
+                          {getBannerPlacementLabel(item.type)}
+                        </td>
+                        <td className="!px-4 !py-4 align-middle text-sm text-[#526581]">
+                          {item.imageCount}
+                        </td>
+                        <td className="!px-4 !py-4 align-middle">
+                          <Badge
+                            variant={item.status === "ACTIVE" ? "success" : "default"}
+                            className="px-2 py-0 text-[11px] font-semibold leading-5"
+                          >
+                            {item.status === "ACTIVE" ? "Active" : "Inactive"}
+                          </Badge>
+                        </td>
+                        <td className="!px-4 !py-4 align-middle">
+                          <div className="flex items-center justify-end gap-2">
+                            <Tooltip
+                              content={
+                                item.status === "ACTIVE" ? "Deactivate" : "Activate"
+                              }
+                            >
+                              <button
+                                type="button"
+                                aria-label={
+                                  item.status === "ACTIVE"
+                                    ? "Deactivate banner"
+                                    : "Activate banner"
+                                }
+                                className={`${iconButtonClass} text-[#2563EB]`}
+                                onClick={() => setPendingStatus(item)}
+                              >
+                                <Power className={iconClass} />
+                              </button>
+                            </Tooltip>
+                            <Tooltip content="Edit">
+                              <button
+                                type="button"
+                                aria-label="Edit banner"
+                                className={`${iconButtonClass} text-[#0B1F3A]`}
+                                onClick={() => {
+                                  setEditingId(item.id);
+                                  setFormOpen(true);
+                                }}
+                              >
+                                <Pencil className={iconClass} />
+                              </button>
+                            </Tooltip>
+                            <Tooltip content="Delete">
+                              <button
+                                type="button"
+                                aria-label="Delete banner"
+                                className={`${iconButtonClass} text-red-800`}
+                                onClick={() => setPendingDelete(item)}
+                              >
+                                <Trash2 className={iconClass} />
+                              </button>
+                            </Tooltip>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-        {totalPages > 1 ? (
-          <div className="mt-3">
-            <CategoryPagination
-              page={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-            />
-          </div>
+            <div className="mt-3 flex flex-col gap-1.5 border-t border-[#D9E4F2] bg-gradient-to-r from-[#F8FBFF] via-[#F2F7FD] to-[#EAF2FB] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#647A9B] sm:text-sm">
+                <span>
+                  Showing {from}–{to} of {total}
+                </span>
+                <label className="flex items-center gap-1.5">
+                  <span className="whitespace-nowrap">Rows per page</span>
+                  <select
+                    className="h-7 rounded-md border border-[#DCE8F5] bg-white px-1.5 text-xs text-[#102A56] sm:text-sm"
+                    value={pageSize}
+                    onChange={(event) => {
+                      setPageSize(Number(event.target.value));
+                      setPage(1);
+                    }}
+                  >
+                    {PAGE_SIZES.map((size) => (
+                      <option key={size} value={size}>
+                        {size}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <CategoryPagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </div>
+          </>
         ) : null}
       </Card>
 
@@ -319,11 +373,9 @@ export function BannersPage() {
         }
         description={
           pendingStatus
-            ? `${pendingStatus.name} will ${
-                pendingStatus.status === "ACTIVE"
-                  ? "stop appearing"
-                  : "start appearing"
-              } on the customer homepage.`
+            ? pendingStatus.status === "ACTIVE"
+              ? `${pendingStatus.name} will stop appearing on the homepage. The default hero is used when no banner is active.`
+              : `${pendingStatus.name} will become the only active banner. Any banner that is currently active will be set to inactive.`
             : ""
         }
         confirmLabel={

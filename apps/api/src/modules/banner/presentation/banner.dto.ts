@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsIn,
   IsInt,
+  Max,
   IsOptional,
   IsString,
   IsUrl,
@@ -111,5 +112,6 @@ export class ListBannersQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   take?: number;
 }

@@ -2448,6 +2448,7 @@ enum BannerLifecycleStatus {
   INACTIVE
 }
 
+/// At most one row may be ACTIVE. Enforced by Banner_one_active_idx.
 model Banner {
   id           String                @id @default(uuid())
   name         String

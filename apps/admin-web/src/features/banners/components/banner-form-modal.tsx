@@ -9,19 +9,36 @@ import {
   BANNER_MAX_IMAGES_PER_GROUP,
   BANNER_PLACEMENTS,
 } from "@mcj/shared-constants";
-import { ArrowDown, ArrowUp, ImageOff, Link2, RefreshCw, Star, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  GripVertical,
+  ImageOff,
+  Link2,
+  RefreshCw,
+  Star,
+  Trash2,
+  Upload,
+} from "lucide-react";
 
 import { Button } from "@/src/shared/components/ui/button";
 import { Input } from "@/src/shared/components/ui/input";
+import { Label } from "@/src/shared/components/ui/label";
 import { AppSelect } from "@/src/shared/components/ui/select";
 import { Modal } from "@/src/shared/components/ui/model";
 import { appToast } from "@/src/shared/components/ui/toast";
+import {
+  ValidatedField,
+  validatedFieldInputClass,
+  type FieldVisualState,
+} from "@/src/shared/components/ui/validated-field";
 import { cn } from "@/src/shared/lib/cn";
 
 import { bannerService } from "@/src/features/banners/services/banner.service";
 import type {
   BannerDetail,
   BannerPlacement,
+  BannerStatus,
 } from "@/src/features/banners/types/banner.types";
 
 function isValidBannerLink(value: string) {
@@ -64,9 +81,18 @@ export function BannerFormModal({
   const isEdit = Boolean(bannerId);
   const [name, setName] = useState("");
   const [type, setType] = useState<BannerPlacement>("HOMEPAGE");
+  const [status, setStatus] = useState<BannerStatus>("ACTIVE");
   const [images, setImages] = useState<DraftImage[]>([]);
+  const [nameTouched, setNameTouched] = useState(false);
+  const [typeTouched, setTypeTouched] = useState(false);
+  const [statusTouched, setStatusTouched] = useState(false);
+  const [imagesTouched, setImagesTouched] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [touchedLinks, setTouchedLinks] = useState<Record<string, boolean>>({});
   const [nameError, setNameError] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [dragKey, setDragKey] = useState<string | null>(null);
+  const [dropKey, setDropKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [replacing, setReplacing] = useState(false);
@@ -82,10 +108,19 @@ export function BannerFormModal({
     setNameError(null);
     setImageError(null);
     setUploadLabel(null);
+    setNameTouched(false);
+    setTypeTouched(false);
+    setStatusTouched(false);
+    setImagesTouched(false);
+    setSubmitted(false);
+    setTouchedLinks({});
+    setDragKey(null);
+    setDropKey(null);
 
     if (!bannerId) {
       setName("");
       setType("HOMEPAGE");
+      setStatus("ACTIVE");
       setImages([]);
       return;
     }
@@ -102,6 +137,7 @@ export function BannerFormModal({
 
         setName(banner.name);
         setType(banner.type);
+        setStatus(banner.status);
         setImages(
           [...banner.images]
             .sort((left, right) => left.displayOrder - right.displayOrder)
@@ -301,12 +337,55 @@ export function BannerFormModal({
     }
   };
 
-  const save = async () => {
-    const trimmed = name.trim();
+  const nameMessage =
+    name.trim().length < 2
+      ? "Banner name is required."
+      : name.trim().length > 120
+        ? "Banner name must be 120 characters or fewer."
+        : null;
+  const showName = nameTouched || submitted;
+  const showImages = imagesTouched || submitted;
+  const nameState: FieldVisualState = !showName
+    ? "neutral"
+    : nameMessage
+      ? "invalid"
+      : "valid";
+  const typeState: FieldVisualState =
+    typeTouched || submitted ? "valid" : "neutral";
+  const statusState: FieldVisualState =
+    statusTouched || submitted ? "valid" : "neutral";
 
-    if (trimmed.length < 2) {
-      setNameError("Banner name is required.");
+  const reorderImages = (fromKey: string, toKey: string) => {
+    if (fromKey === toKey) {
       return;
+    }
+
+    setImages((current) => {
+      const fromIndex = current.findIndex((image) => image.key === fromKey);
+      const toIndex = current.findIndex((image) => image.key === toKey);
+      if (fromIndex < 0 || toIndex < 0) {
+        return current;
+      }
+
+      const next = [...current];
+      const [item] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, item!);
+      return next;
+    });
+  };
+
+  const save = async () => {
+    setSubmitted(true);
+    const trimmed = name.trim();
+    const nextNameError =
+      trimmed.length < 2
+        ? "Banner name is required."
+        : trimmed.length > 120
+          ? "Banner name must be 120 characters or fewer."
+          : null;
+
+    if (nextNameError) {
+      setNameError(nextNameError);
     }
 
     if (!images.length) {
@@ -316,6 +395,13 @@ export function BannerFormModal({
 
     if (images.some((image) => !isValidBannerLink(image.link))) {
       setImageError("Enter a valid link for each image, including https://.");
+      setTouchedLinks(
+        Object.fromEntries(images.map((image) => [image.key, true])),
+      );
+      return;
+    }
+
+    if (nextNameError) {
       return;
     }
 
@@ -359,6 +445,7 @@ export function BannerFormModal({
       const payload = {
         name: trimmed,
         type,
+        status,
         images: uploaded,
       };
 
@@ -392,195 +479,318 @@ export function BannerFormModal({
       {loading ? (
         <p className="text-sm text-slate-500">Loading banner...</p>
       ) : (
-        <div className="space-y-5">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#102A56]">
-              Banner Name
-            </label>
-            <Input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Homepage Main Banner"
+        <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-3">
+            <ValidatedField
+              label="Banner Name"
+              required
+              state={nameError && showName ? "invalid" : nameState}
+              errorMessage={showName ? nameError ?? nameMessage : null}
+              successMessage={nameState === "valid" && !nameError ? "Looks good" : null}
+            >
+              <Input
+                value={name}
+                placeholder="Homepage Main Banner"
                 disabled={saving || replacing}
-            />
-            {nameError ? (
-              <p className="mt-1 text-xs text-red-600">{nameError}</p>
-            ) : null}
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#102A56]">
-              Banner Type
-            </label>
-            <AppSelect
-              value={type}
-              options={BANNER_PLACEMENTS.map((item) => ({
-                value: item.value,
-                label: item.label,
-              }))}
-              onValueChange={(value) => setType(value as BannerPlacement)}
-                disabled={saving || replacing}
-            />
-          </div>
-
-          <div className="rounded-lg border border-[#E1EBF5] bg-[#F8FBFF] px-3 py-2 text-xs text-[#334155]">
-            <p>
-              Required Banner Resolution: {BANNER_IMAGE_WIDTH} × {BANNER_IMAGE_HEIGHT} px
-            </p>
-            <p className="mt-1">
-              Images will be automatically resized to fit the banner.
-            </p>
-            <p className="mt-1">Supported formats: PNG, JPG, JPEG, WEBP</p>
-            <p className="mt-1">
-              Up to {BANNER_MAX_IMAGES_PER_GROUP} images. The first image is
-              primary unless you choose another.
-            </p>
-          </div>
-
-          <div
-            className="rounded-xl border border-dashed border-[#BFDBFE] bg-white px-4 py-6 text-center"
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => {
-              event.preventDefault();
-              void addFiles(event.dataTransfer.files);
-            }}
-          >
-            <p className="text-sm font-medium text-[#0B1F3A]">
-              Drag and drop banner images
-            </p>
-            <p className="mt-1 text-xs text-slate-500">or browse files</p>
-            <label className="mt-3 inline-flex cursor-pointer rounded-lg bg-[#2563EB] px-3 py-2 text-xs font-semibold text-white">
-              Browse
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                multiple
-                className="hidden"
-                disabled={saving || replacing}
+                className={validatedFieldInputClass(
+                  nameError && showName ? "invalid" : nameState,
+                )}
+                onBlur={() => setNameTouched(true)}
                 onChange={(event) => {
-                  void addFiles(event.target.files);
-                  event.target.value = "";
+                  setName(event.target.value);
+                  setNameError(null);
                 }}
               />
-            </label>
+            </ValidatedField>
+
+            <ValidatedField
+              label="Banner Type"
+              required
+              select
+              state={typeState}
+              successMessage={typeState === "valid" ? "Selected" : null}
+            >
+              <AppSelect
+                value={type}
+                options={BANNER_PLACEMENTS.map((item) => ({
+                  value: item.value,
+                  label: item.label,
+                }))}
+                disabled={saving || replacing}
+                triggerClassName={validatedFieldInputClass(typeState, undefined, {
+                  select: true,
+                })}
+                onValueChange={(value) => {
+                  setTypeTouched(true);
+                  setType(value as BannerPlacement);
+                }}
+              />
+            </ValidatedField>
+
+            <ValidatedField
+              label="Status"
+              required
+              select
+              state={statusState}
+              successMessage={statusState === "valid" ? "Selected" : null}
+            >
+              <AppSelect
+                value={status}
+                options={[
+                  { value: "ACTIVE", label: "Active" },
+                  { value: "INACTIVE", label: "Inactive" },
+                ]}
+                disabled={saving || replacing}
+                triggerClassName={validatedFieldInputClass(statusState, undefined, {
+                  select: true,
+                })}
+                onValueChange={(value) => {
+                  setStatusTouched(true);
+                  setStatus(value as BannerStatus);
+                }}
+              />
+            </ValidatedField>
           </div>
 
-          {imageError ? (
-            <p className="text-xs text-red-600">{imageError}</p>
-          ) : null}
-          {uploadLabel ? (
-            <p className="text-xs font-medium text-[#2563EB]">{uploadLabel}</p>
-          ) : null}
+          <section className="rounded-xl border border-[#E1EBF5] bg-[#F8FBFF] p-3">
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <Label required>Banner Images</Label>
+                <p className="text-xs leading-5 text-[#647A9B]">
+                  Required resolution {BANNER_IMAGE_WIDTH} × {BANNER_IMAGE_HEIGHT} px.
+                  PNG, JPG, JPEG, or WEBP. Up to {BANNER_MAX_IMAGES_PER_GROUP} images.
+                  Images are resized to fit the banner.
+                </p>
+              </div>
+              <label className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-[#2563EB] px-3 text-xs font-semibold text-white">
+                <Upload className="h-3.5 w-3.5" />
+                Add images
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  multiple
+                  className="hidden"
+                  disabled={saving || replacing}
+                  onChange={(event) => {
+                    setImagesTouched(true);
+                    void addFiles(event.target.files);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {images.map((image, index) => (
-              <article
-                key={image.key}
-                className="overflow-hidden rounded-lg border border-slate-200 bg-white"
-              >
-                <div className="relative aspect-[1920/750] bg-slate-100">
-                  {image.previewUrl ? (
-                    <img
-                      src={image.previewUrl}
-                      alt=""
-                      className="h-full w-full object-contain object-center"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-slate-400">
-                      <ImageOff className="h-5 w-5" />
-                    </div>
-                  )}
-                  <span className="absolute left-2 top-2 rounded bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-[#0B1F3A]">
-                    {index + 1}
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center justify-between gap-2 px-2 py-2">
-                  <button
-                    type="button"
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold",
-                      image.isPrimary
-                        ? "bg-[#FEF3C7] text-[#92400E]"
-                        : "bg-slate-100 text-slate-600",
-                    )}
-                    disabled={saving || replacing}
-                    onClick={() => setPrimary(image.key)}
-                  >
-                    <Star className="h-3 w-3" />
-                    {image.isPrimary ? "Primary" : "Set primary"}
-                  </button>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      aria-label="Replace image"
-                      className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-[11px] font-semibold text-[#2563EB] hover:bg-slate-100 disabled:opacity-50"
-                      disabled={saving || replacing}
-                      onClick={() => {
-                        replaceKeyRef.current = image.key;
-                        replaceInputRef.current?.click();
+            <div
+              className={cn(
+                "rounded-lg border border-dashed border-[#93C5FD] bg-white text-center transition-colors",
+                images.length ? "px-3 py-2" : "px-4 py-5",
+              )}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (event.dataTransfer.files?.length) {
+                  setImagesTouched(true);
+                  void addFiles(event.dataTransfer.files);
+                }
+              }}
+            >
+              <p className="text-sm font-medium text-[#0B1F3A]">
+                Drag and drop images here
+              </p>
+              <p className="mt-0.5 text-xs text-[#647A9B]">
+                {BANNER_IMAGE_WIDTH} × {BANNER_IMAGE_HEIGHT} px
+              </p>
+            </div>
+
+            {imageError || (showImages && !images.length) ? (
+              <p role="alert" className="mt-2 text-sm text-red-500">
+                {imageError ?? "Add at least one banner image."}
+              </p>
+            ) : null}
+            {uploadLabel ? (
+              <p className="mt-2 text-xs font-medium text-[#2563EB]">{uploadLabel}</p>
+            ) : null}
+
+            {images.length ? (
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {images.map((image, index) => {
+                  const linkTouched = Boolean(touchedLinks[image.key]) || submitted;
+                  const linkInvalid = !isValidBannerLink(image.link);
+                  const linkState: FieldVisualState = !linkTouched
+                    ? "neutral"
+                    : linkInvalid
+                      ? "invalid"
+                      : image.link.trim()
+                        ? "valid"
+                        : "neutral";
+
+                  return (
+                    <article
+                      key={image.key}
+                      draggable={!saving && !replacing}
+                      onDragStart={() => setDragKey(image.key)}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        if (dragKey) {
+                          setDropKey(image.key);
+                        }
                       }}
+                      onDrop={(event) => {
+                        if (!dragKey) {
+                          return;
+                        }
+
+                        event.preventDefault();
+                        event.stopPropagation();
+                        reorderImages(dragKey, image.key);
+                        setDragKey(null);
+                        setDropKey(null);
+                      }}
+                      onDragEnd={() => {
+                        setDragKey(null);
+                        setDropKey(null);
+                      }}
+                      className={cn(
+                        "overflow-hidden rounded-xl border bg-white shadow-sm transition-colors",
+                        image.isPrimary
+                          ? "border-[#2563EB] ring-2 ring-[#2563EB]/20"
+                          : "border-[#E1EBF5]",
+                        dropKey === image.key && dragKey !== image.key
+                          ? "border-[#0EA5E9] ring-2 ring-[#0EA5E9]/30"
+                          : "",
+                        dragKey === image.key ? "opacity-60" : "",
+                      )}
                     >
-                      <RefreshCw className="h-3 w-3" />
-                      Replace
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Move up"
-                      className="rounded p-1 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
-                      disabled={saving || replacing}
-                      onClick={() => moveImage(index, -1)}
-                    >
-                      <ArrowUp className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Move down"
-                      className="rounded p-1 text-slate-500 hover:bg-slate-100 disabled:opacity-50"
-                      disabled={saving || replacing}
-                      onClick={() => moveImage(index, 1)}
-                    >
-                      <ArrowDown className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="Remove image"
-                      className="rounded p-1 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                      disabled={saving || replacing}
-                      onClick={() =>
-                        setImages((current) => {
-                          const next = current.filter(
-                            (item) => item.key !== image.key,
-                          );
-                          if (
-                            next.length > 0 &&
-                            !next.some((item) => item.isPrimary)
-                          ) {
-                            next[0] = { ...next[0]!, isPrimary: true };
+                      <div className="relative aspect-[1920/750] bg-slate-100">
+                        {image.previewUrl ? (
+                          <img
+                            src={image.previewUrl}
+                            alt=""
+                            className="h-full w-full object-cover object-center"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-slate-400">
+                            <ImageOff className="h-5 w-5" />
+                          </div>
+                        )}
+                        <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-md bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-[#102A56] shadow-sm">
+                          <GripVertical className="h-3 w-3 text-slate-400" />
+                          {index + 1}
+                        </span>
+                        {image.isPrimary ? (
+                          <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md bg-[#2563EB] px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                            <Star className="h-3 w-3 fill-white" />
+                            Primary
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="grid grid-cols-3 gap-1 border-t border-[#E8F1FF] p-2">
+                        <button
+                          type="button"
+                          className={cn(
+                            "inline-flex items-center justify-center gap-1 rounded-md border px-1.5 py-1 text-[11px] font-semibold",
+                            image.isPrimary
+                              ? "border-[#2563EB] bg-[#EFF6FF] text-[#1D4ED8]"
+                              : "border-[#DCE8F5] bg-white text-[#102A56] hover:bg-[#F8FBFF]",
+                          )}
+                          disabled={saving || replacing}
+                          onClick={() => setPrimary(image.key)}
+                        >
+                          <Star className="h-3 w-3" />
+                          Set Primary
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center gap-1 rounded-md border border-[#DCE8F5] bg-white px-1.5 py-1 text-[11px] font-semibold text-[#102A56] hover:bg-[#F8FBFF] disabled:opacity-40"
+                          disabled={saving || replacing || index === 0}
+                          onClick={() => moveImage(index, -1)}
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                          Move Up
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center gap-1 rounded-md border border-[#DCE8F5] bg-white px-1.5 py-1 text-[11px] font-semibold text-[#102A56] hover:bg-[#F8FBFF] disabled:opacity-40"
+                          disabled={saving || replacing || index === images.length - 1}
+                          onClick={() => moveImage(index, 1)}
+                        >
+                          <ArrowDown className="h-3 w-3" />
+                          Move Down
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center gap-1 rounded-md border border-[#DCE8F5] bg-white px-1.5 py-1 text-[11px] font-semibold text-[#2563EB] hover:bg-[#F8FBFF] disabled:opacity-40"
+                          disabled={saving || replacing}
+                          onClick={() => {
+                            replaceKeyRef.current = image.key;
+                            replaceInputRef.current?.click();
+                          }}
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                          Replace
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center gap-1 rounded-md border border-red-100 bg-white px-1.5 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50 disabled:opacity-40"
+                          disabled={saving || replacing}
+                          onClick={() => {
+                            setImagesTouched(true);
+                            setImages((current) => {
+                              const next = current.filter(
+                                (item) => item.key !== image.key,
+                              );
+                              if (
+                                next.length > 0 &&
+                                !next.some((item) => item.isPrimary)
+                              ) {
+                                next[0] = { ...next[0]!, isPrimary: true };
+                              }
+                              return next;
+                            });
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Delete
+                        </button>
+                        <span className="inline-flex items-center justify-center gap-1 rounded-md border border-transparent px-1.5 py-1 text-[11px] font-semibold text-[#647A9B]">
+                          <Link2 className="h-3 w-3" />
+                          Link (Optional)
+                        </span>
+                      </div>
+                      <div className="border-t border-[#E8F1FF] px-2 pb-2">
+                        <Input
+                          value={image.link}
+                          placeholder="https://example.com/courses"
+                          disabled={saving || replacing}
+                          className={cn(
+                            "h-8 rounded-lg px-2 text-xs",
+                            linkState === "invalid" && "border-red-300",
+                            linkState === "valid" && "border-emerald-400",
+                          )}
+                          onBlur={() =>
+                            setTouchedLinks((current) => ({
+                              ...current,
+                              [image.key]: true,
+                            }))
                           }
-                          return next;
-                        })
-                      }
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-                <div className="border-t border-slate-100 px-2 py-2">
-                  <label className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-slate-500">
-                    <Link2 className="h-3 w-3" />
-                    Link
-                  </label>
-                  <Input
-                    value={image.link}
-                    placeholder="https://mcjacademy.com/courses"
-                    disabled={saving || replacing}
-                    className="h-8 rounded-lg px-2 text-xs"
-                    onChange={(event) => updateLink(image.key, event.target.value)}
-                  />
-                </div>
-              </article>
-            ))}
-          </div>
+                          onChange={(event) =>
+                            updateLink(image.key, event.target.value)
+                          }
+                        />
+                        {linkState === "invalid" ? (
+                          <p role="alert" className="mt-1 text-xs text-red-500">
+                            Enter a valid http or https link.
+                          </p>
+                        ) : linkState === "valid" ? (
+                          <p className="mt-1 text-xs text-emerald-600">Looks good</p>
+                        ) : null}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : null}
+          </section>
 
           <input
             ref={replaceInputRef}

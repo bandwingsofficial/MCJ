@@ -57,7 +57,7 @@ export class BannerService {
     take?: number;
   }) {
     const skip = params.skip ?? 0;
-    const take = Math.min(params.take ?? 10, 50);
+    const take = Math.min(params.take ?? 10, 100);
     const search = params.search?.trim();
 
     const where: Prisma.BannerWhereInput = {
@@ -90,20 +90,22 @@ export class BannerService {
   }
 
   async listActivePublic() {
-    const rows = await this.prisma.banner.findMany({
+    const row = await this.prisma.banner.findFirst({
       where: { status: 'ACTIVE' },
-      orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
       include: {
         images: { orderBy: { displayOrder: 'asc' } },
       },
     });
 
-    return rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      type: row.type,
-      displayOrder: row.displayOrder,
-      images: row.images.map((image) => ({
+    const rows = row ? [row] : [];
+
+    return rows.map((banner) => ({
+      id: banner.id,
+      name: banner.name,
+      type: banner.type,
+      displayOrder: banner.displayOrder,
+      images: banner.images.map((image) => ({
         id: image.id,
         imageUrl: image.imageUrl,
         displayOrder: image.displayOrder,
@@ -140,24 +142,31 @@ export class BannerService {
       _max: { displayOrder: true },
     });
 
-    const created = await this.prisma.banner.create({
-      data: {
-        name,
-        type: input.type,
-        status: input.status ?? 'ACTIVE',
-        displayOrder: (last._max.displayOrder ?? 0) + 1,
-        images: {
-          create: images.map((image) => ({
-            uploadId: image.uploadId,
-            imageUrl: image.imageUrl,
-            objectKey: image.objectKey,
-            displayOrder: image.displayOrder,
-            isPrimary: image.isPrimary,
-            link: image.link,
-          })),
+    const status = input.status ?? 'ACTIVE';
+    const created = await this.prisma.$transaction(async (tx) => {
+      if (status === 'ACTIVE') {
+        await this.claimActiveSlot(tx);
+      }
+
+      return tx.banner.create({
+        data: {
+          name,
+          type: input.type,
+          status,
+          displayOrder: (last._max.displayOrder ?? 0) + 1,
+          images: {
+            create: images.map((image) => ({
+              uploadId: image.uploadId,
+              imageUrl: image.imageUrl,
+              objectKey: image.objectKey,
+              displayOrder: image.displayOrder,
+              isPrimary: image.isPrimary,
+              link: image.link,
+            })),
+          },
         },
-      },
-      include: { images: { orderBy: { displayOrder: 'asc' } } },
+        include: { images: { orderBy: { displayOrder: 'asc' } } },
+      });
     });
 
     return this.toDetail(created);
@@ -196,6 +205,7 @@ export class BannerService {
       }
     }
 
+    const nextStatus = input.status ?? existing.status;
     const keptIds = images.flatMap((image) => (image.id ? [image.id] : []));
     const removedUploadIds = existing.images
       .filter((image) => !keptIds.includes(image.id))
@@ -206,6 +216,10 @@ export class BannerService {
     });
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      if (nextStatus === 'ACTIVE') {
+        await this.claimActiveSlot(tx, id);
+      }
+
       await tx.bannerImage.deleteMany({
         where: {
           bannerId: id,
@@ -247,7 +261,7 @@ export class BannerService {
         data: {
           name,
           type: input.type,
-          ...(input.status ? { status: input.status } : {}),
+          status: nextStatus,
         },
         include: { images: { orderBy: { displayOrder: 'asc' } } },
       });
@@ -259,16 +273,22 @@ export class BannerService {
   }
 
   async setStatus(id: string, status: 'ACTIVE' | 'INACTIVE') {
-    const existing = await this.prisma.banner.findUnique({ where: { id } });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.banner.findUnique({ where: { id } });
 
-    if (!existing) {
-      throw new BaseException(ERROR_CODES.BANNER_NOT_FOUND, 'Banner not found', 404);
-    }
+      if (!existing) {
+        throw new BaseException(ERROR_CODES.BANNER_NOT_FOUND, 'Banner not found', 404);
+      }
 
-    const updated = await this.prisma.banner.update({
-      where: { id },
-      data: { status },
-      include: { _count: { select: { images: true } } },
+      if (status === 'ACTIVE') {
+        await this.claimActiveSlot(tx, id);
+      }
+
+      return tx.banner.update({
+        where: { id },
+        data: { status },
+        include: { _count: { select: { images: true } } },
+      });
     });
 
     return this.toListItem(updated);
@@ -345,6 +365,20 @@ export class BannerService {
       isPrimary: updated.isPrimary,
       link: updated.link,
     };
+  }
+
+  private async claimActiveSlot(
+    tx: Prisma.TransactionClient,
+    exceptId?: string,
+  ) {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(714203)`;
+    await tx.banner.updateMany({
+      where: {
+        status: 'ACTIVE',
+        ...(exceptId ? { id: { not: exceptId } } : {}),
+      },
+      data: { status: 'INACTIVE' },
+    });
   }
 
   private async deleteUnusedUploads(uploadIds: string[]) {
