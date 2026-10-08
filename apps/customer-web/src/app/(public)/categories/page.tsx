@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
+
 import { CategorySection } from "@/src/features/categories/components/category-section";
+
+export const metadata: Metadata = {
+  title: "Course Categories | Accounting, Tally, GST & Finance",
+  description:
+    "Explore MCJ Academy's course categories and discover practical learning programs in accounting, Tally, GST, finance and other career-focused domains.",
+};
 
 export default function CategoriesPage() {
   return (
@@ -18,5 +26,5 @@ export default function CategoriesPage() {
         <CategorySection />
       </div>
     </main>
-  );  
+  );
 }

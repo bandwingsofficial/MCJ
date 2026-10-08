@@ -13,6 +13,12 @@ import { DocumentTitleProvider } from "@/src/shared/document-title/document-titl
 
 export const metadata: Metadata = {
   title: MCJ_ROOT_METADATA_TITLE,
+  description:
+    "MCJ Institute of Accounting offers industry-aligned programs in Tally, GST, HR Payroll, and financial accounting.",
+  metadataBase: new URL("https://mcjacademy.com"),
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
