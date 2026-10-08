@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { LogIn, UserPlus } from "lucide-react";
+
+import { useAuthModalController } from "@/src/features/auth/components/auth-modal-context";
 
 interface EnrollmentAuthRequiredProps {
   loginHref: string;
@@ -9,11 +10,38 @@ interface EnrollmentAuthRequiredProps {
   variant?: "card" | "inline";
 }
 
+function readRedirect(href: string): string | undefined {
+  const query = href.split("?")[1];
+
+  if (!query) {
+    return undefined;
+  }
+
+  const redirect = new URLSearchParams(query).get("redirect");
+
+  if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//")) {
+    return undefined;
+  }
+
+  return redirect;
+}
+
 export function EnrollmentAuthRequired({
   loginHref,
   registerHref,
   variant = "card",
 }: EnrollmentAuthRequiredProps) {
+  const { openAuthModal } = useAuthModalController();
+  const redirectTo = readRedirect(loginHref) ?? readRedirect(registerHref);
+
+  const openLogin = () => {
+    openAuthModal({ mode: "login", redirectTo });
+  };
+
+  const openRegister = () => {
+    openAuthModal({ mode: "register", redirectTo });
+  };
+
   if (variant === "inline") {
     return (
       <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
@@ -26,23 +54,23 @@ export function EnrollmentAuthRequired({
         </p>
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <Link
-            href={loginHref}
-            scroll={false}
+          <button
+            type="button"
+            onClick={openLogin}
             className="inline-flex h-10 items-center justify-center rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-5 text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
           >
             <LogIn className="mr-2 h-4 w-4" />
             Sign In
-          </Link>
+          </button>
 
-          <Link
-            href={registerHref}
-            scroll={false}
+          <button
+            type="button"
+            onClick={openRegister}
             className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
           >
             <UserPlus className="mr-2 h-4 w-4" />
             Create Account
-          </Link>
+          </button>
         </div>
       </section>
     );
@@ -63,23 +91,23 @@ export function EnrollmentAuthRequired({
       </p>
 
       <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-        <Link
-          href={loginHref}
-          scroll={false}
+        <button
+          type="button"
+          onClick={openLogin}
           className="inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-6 text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96]"
         >
           <LogIn className="mr-2 h-4 w-4" />
           Sign In
-        </Link>
+        </button>
 
-        <Link
-          href={registerHref}
-          scroll={false}
+        <button
+          type="button"
+          onClick={openRegister}
           className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-900 hover:bg-slate-50"
         >
           <UserPlus className="mr-2 h-4 w-4" />
           Create Account
-        </Link>
+        </button>
       </div>
     </div>
   );

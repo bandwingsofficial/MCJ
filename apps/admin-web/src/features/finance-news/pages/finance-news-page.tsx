@@ -2,8 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-
 import { SkeletonTable } from "@/src/shared/components/ui/skeleton-table";
 import { ErrorState } from "@/src/shared/components/ui/error-state";
 import { CategoryPagination } from "@/src/features/categories/components/category-pagination";
@@ -36,6 +34,14 @@ const CreateFinanceNewsModal = dynamic(
   () =>
     import("@/src/features/finance-news/components/create-finance-news-modal").then(
       (mod) => ({ default: mod.CreateFinanceNewsModal }),
+    ),
+  { ssr: false },
+);
+
+const EditFinanceNewsModal = dynamic(
+  () =>
+    import("@/src/features/finance-news/components/edit-finance-news-modal").then(
+      (mod) => ({ default: mod.EditFinanceNewsModal }),
     ),
   { ssr: false },
 );
@@ -109,8 +115,6 @@ function getEmptyMessage(filters: FinanceNewsFilters): string {
 }
 
 export function FinanceNewsPage() {
-  const router = useRouter();
-
   const {
     items,
     total,
@@ -140,6 +144,7 @@ export function FinanceNewsPage() {
   const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] =
     useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
 
   const { activateFinanceNews, isLoading: isActivating } =
@@ -501,8 +506,9 @@ export function FinanceNewsPage() {
                 }
                 emptyMessage={emptyMessage}
                 onEdit={(item) => {
-                  router.push(`/finance-news/${item.id}/edit`);
-                }}
+  setSelectedItem(item);
+  setIsEditOpen(true);
+}}
                 onActivate={(item) => {
                   setSelectedItem(item);
                   setStatusMode("activate");
@@ -579,6 +585,19 @@ export function FinanceNewsPage() {
           }}
         />
       ) : null}
+      {isEditOpen ? (
+  <EditFinanceNewsModal
+    open={isEditOpen}
+    newsId={selectedItem?.id ?? null}
+    onClose={() => {
+      setIsEditOpen(false);
+      setSelectedItem(null);
+    }}
+    onSuccess={() => {
+      void refetch();
+    }}
+  />
+) : null}
 
       {statusMode !== null ? (
       <StatusFinanceNewsDialog

@@ -1,7 +1,7 @@
 export const MCJ_CONTACT = {
   phone: "+91 888 000 7484",
   phoneSecondary: "+91 966 337 0950",
-  email: "support@mcjinstitute.com",
+  email: "mcjtrainingacademy@gmail.com",
   addressLines: [
     "#258/1, 1st Floor, Near 31E Bus Stop Rd",
     "2nd Block, Thyagaraja Nagar",

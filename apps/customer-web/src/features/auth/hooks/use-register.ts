@@ -8,6 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 
 import { toast } from "sonner";
 
+import { useAuthModalController } from "@/src/features/auth/components/auth-modal-context";
 import { authService } from "@/src/features/auth/services/auth.service";
 
 import type {
@@ -16,6 +17,7 @@ import type {
 
 export function useRegister(redirectTo?: string) {
   const router = useRouter();
+  const { isOpen, setAuthModalMode } = useAuthModalController();
 
   return useMutation({
     mutationFn: (
@@ -29,6 +31,11 @@ export function useRegister(redirectTo?: string) {
       toast.success(
         "Registration successful! Please log in to continue."
       );
+
+      if (isOpen) {
+        setAuthModalMode("login");
+        return;
+      }
 
       const loginPath = redirectTo
         ? `/login?redirect=${encodeURIComponent(redirectTo)}`

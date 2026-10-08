@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-
 import { AuthCard } from "@/src/features/auth/components/auth-card";
+import { useAuthModalController } from "@/src/features/auth/components/auth-modal-context";
 import { AuthPageWrapper } from "@/src/features/auth/components/auth-page-wrapper";
 import { useAuthSessionReady } from "@/src/features/auth/hooks/use-auth-session";
 import { CommunityPostPage } from "@/src/features/community/pages/community-post-page";
@@ -14,7 +12,7 @@ interface Props {
 }
 
 export function CommunityPostGatePage({ postId }: Props) {
-  const router = useRouter();
+  const { openAuthModal } = useAuthModalController();
   const redirectPath = buildCommunityPostSharePath(postId);
   const { authReady, hasSession } = useAuthSessionReady();
 
@@ -26,8 +24,6 @@ export function CommunityPostGatePage({ postId }: Props) {
     return <CommunityPostPage postId={postId} />;
   }
 
-  const loginHref = `/login?redirect=${encodeURIComponent(redirectPath)}`;
-
   return (
     <AuthPageWrapper>
       <AuthCard
@@ -38,19 +34,24 @@ export function CommunityPostGatePage({ postId }: Props) {
           <p className="text-slate-600">
             Sign in to view the full post, including media and details.
           </p>
-          <Link
-            href={loginHref}
+          <button
+            type="button"
             className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary text-sm font-semibold text-white"
-            onClick={(event) => {
-              event.preventDefault();
-              router.push(loginHref, { scroll: false });
-            }}
+            onClick={() =>
+              openAuthModal({ mode: "login", redirectTo: redirectPath })
+            }
           >
             Sign in to continue
-          </Link>
-          <Link href="/register" scroll={false} className="text-primary hover:underline">
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              openAuthModal({ mode: "register", redirectTo: redirectPath })
+            }
+            className="text-primary hover:underline"
+          >
             Create an account
-          </Link>
+          </button>
         </div>
       </AuthCard>
     </AuthPageWrapper>

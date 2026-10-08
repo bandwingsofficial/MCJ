@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { MCJ_ROOT_METADATA_TITLE } from "@mcj/shared-constants";
 import { Toaster } from "sonner";
 
+import { AuthModalControllerProvider } from "@/src/features/auth/components/auth-modal-controller";
 import { AuthProvider } from "@/src/providers/auth-provider";
 import { QueryProvider } from "@/src/core/providers/query-provider";
 import { AppProvider } from "@/src/core/providers/app-provider";
@@ -26,10 +27,12 @@ export default function RootLayout({
         <QueryProvider>
           <AppProvider>
             <AuthProvider>
-              <DocumentTitleProvider>
-                {children}
-                {authModal}
-              </DocumentTitleProvider>
+              <AuthModalControllerProvider>
+                <DocumentTitleProvider>
+                  {children}
+                  {authModal}
+                </DocumentTitleProvider>
+              </AuthModalControllerProvider>
 
               <Toaster
                 position="top-right"

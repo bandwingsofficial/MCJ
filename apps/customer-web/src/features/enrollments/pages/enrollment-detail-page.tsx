@@ -60,8 +60,7 @@ function formatCurrency(amount: number): string {
 export function EnrollmentDetailPage({
   enrollmentId,
 }: EnrollmentDetailPageProps) {
-  const { enrollment, isLoading, error, refetch } =
-    useEnrollment(enrollmentId);
+  const { enrollment, isLoading, error, refetch } = useEnrollment(enrollmentId);
 
   if (isLoading) {
     return <Loader />;
@@ -121,7 +120,9 @@ export function EnrollmentDetailPage({
 
             <div className="grid gap-6 sm:grid-cols-2">
               <section>
-                <h3 className="text-sm font-semibold text-slate-900">Student</h3>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Student
+                </h3>
                 <div className="mt-3 space-y-2 text-sm text-slate-600">
                   <p>
                     {enrollment.student.firstName} {enrollment.student.lastName}
@@ -161,8 +162,7 @@ export function EnrollmentDetailPage({
                 </h3>
                 <div className="mt-3 space-y-2 text-sm text-slate-600">
                   <p>
-                    Created:{" "}
-                    {new Date(enrollment.createdAt).toLocaleString()}
+                    Created: {new Date(enrollment.createdAt).toLocaleString()}
                   </p>
                   <p>Source: {enrollment.source}</p>
                   {enrollment.admissionDate ? (
@@ -178,8 +178,8 @@ export function EnrollmentDetailPage({
             {enrollment.remarks ? (
               <>
                 <div className="my-6">
-              <Separator />
-            </div>
+                  <Separator />
+                </div>
                 <section>
                   <h3 className="text-sm font-semibold text-slate-900">
                     Remarks
@@ -207,10 +207,10 @@ export function EnrollmentDetailPage({
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-[#2563D9]" />
                 <a
-                  href="mailto:support@mcjinstitute.com"
+                  href="mailto:mcjtrainingacademy@gmail.com"
                   className="hover:text-[#2563D9]"
                 >
-                  support@mcjinstitute.com
+                  mcjtrainingacademy@gmail.com
                 </a>
               </div>
               <div className="flex items-center gap-2">

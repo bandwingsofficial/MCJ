@@ -109,18 +109,25 @@ model EmailVerificationChallenge {
   @@index([createdAt])
 }
 
+enum PasswordResetChannel {
+  LINK
+  OTP
+}
+
 model PasswordResetToken {
-  id              String    @id @default(uuid())
+  id              String                @id @default(uuid())
   userId          String
   otpHash         String
-  attempts        Int       @default(0)
-  isUsed          Boolean   @default(false)
+  attempts        Int                   @default(0)
+  isUsed          Boolean               @default(false)
+  channel         PasswordResetChannel  @default(LINK)
+  authorizedAt    DateTime?
   requestedFromIp String?
   lastAttemptAt   DateTime?
   expiresAt       DateTime
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @default(now()) @updatedAt
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @default(now()) @updatedAt
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])

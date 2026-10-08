@@ -38,6 +38,29 @@ export class BrevoEmailService {
     });
   }
 
+  async sendPasswordResetOtp(input: {
+    toEmail: string;
+    recipientName?: string;
+    otp: string;
+  }): Promise<void> {
+    const subject = 'Your MCJ Academy password reset code';
+    const htmlContent = `
+      <p>Hello${input.recipientName ? ` ${this.escapeHtml(input.recipientName)}` : ''},</p>
+      <p>Your password reset code is:</p>
+      <p style="font-size:24px;font-weight:700;letter-spacing:4px;">${this.escapeHtml(input.otp)}</p>
+      <p>This code expires in 5 minutes. If you did not request a password reset, you can ignore this email.</p>
+    `;
+    const textContent = `Your MCJ Academy password reset code is ${input.otp}. It expires in 5 minutes.`;
+
+    await this.sendTransactionalEmail({
+      toEmail: input.toEmail,
+      toName: input.recipientName,
+      subject,
+      htmlContent,
+      textContent,
+    });
+  }
+
   async sendPasswordResetEmail(input: {
     toEmail: string;
     recipientName?: string;

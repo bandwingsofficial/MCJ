@@ -1,35 +1,35 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { AuthCard } from "@/src/features/auth/components/auth-card";
+import { ForgotPasswordFlow } from "@/src/features/auth/components/forgot-password-flow";
 import { LoginForm } from "@/src/features/auth/components/login-form";
 import { RegisterForm } from "@/src/features/auth/components/register-form";
 import { useAuthSessionReady } from "@/src/features/auth/hooks/use-auth-session";
+import type { AuthModalMode } from "@/src/features/auth/components/auth-modal-context";
 
-export type AuthModalMode = "login" | "register";
+export type { AuthModalMode } from "@/src/features/auth/components/auth-modal-context";
 export type AuthModalCloseMode = "back" | "home";
-
-function getSafeRedirect(value: string | null): string | undefined {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return undefined;
-  }
-
-  return value;
-}
 
 interface AuthModalProps {
   mode: AuthModalMode;
-  closeMode?: AuthModalCloseMode;
+  redirectTo?: string;
+  initialReferralCode?: string;
+  onClose: () => void;
+  onHide: () => void;
+  onSwitchMode: (mode: AuthModalMode) => void;
 }
 
-export function AuthModal({ mode, closeMode = "back" }: AuthModalProps) {
+export function AuthModal({
+  mode,
+  redirectTo,
+  initialReferralCode = "",
+  onClose,
+  onSwitchMode,
+}: AuthModalProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectTo = getSafeRedirect(searchParams.get("redirect"));
-  const initialReferralCode = searchParams.get("ref")?.trim() ?? "";
   const { authReady, hasSession } = useAuthSessionReady();
 
   useEffect(() => {
@@ -41,13 +41,8 @@ export function AuthModal({ mode, closeMode = "back" }: AuthModalProps) {
   }, [authReady, hasSession, redirectTo, router]);
 
   const close = useCallback(() => {
-    if (closeMode === "home") {
-      router.replace("/");
-      return;
-    }
-
-    router.back();
-  }, [closeMode, router]);
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     if (!authReady || hasSession) {
@@ -74,29 +69,22 @@ export function AuthModal({ mode, closeMode = "back" }: AuthModalProps) {
     };
   }, [authReady, close, hasSession]);
 
-  function switchMode(next: AuthModalMode) {
-    const params = new URLSearchParams();
-
-    if (redirectTo) {
-      params.set("redirect", redirectTo);
-    }
-
-    if (next === "register" && initialReferralCode) {
-      params.set("ref", initialReferralCode);
-    }
-
-    const query = params.toString();
-    const path = next === "login" ? "/login" : "/register";
-    router.replace(query ? `${path}?${query}` : path, { scroll: false });
-  }
-
   if (!authReady || hasSession) {
     return null;
   }
 
-  const title = mode === "login" ? "Welcome Back" : "Create Account";
+  const title =
+    mode === "login"
+      ? "Welcome Back"
+      : mode === "register"
+        ? "Create Account"
+        : "Forgot Password";
   const description =
-    mode === "login" ? "Sign in to continue" : "Register to access MCJ LMS";
+    mode === "login"
+      ? "Sign in to continue"
+      : mode === "register"
+        ? "Register to access MCJ LMS"
+        : "Reset your password";
 
   return (
     <>
@@ -140,24 +128,28 @@ export function AuthModal({ mode, closeMode = "back" }: AuthModalProps) {
             >
               {mode === "login" ? (
                 <div className="space-y-6">
-                  <LoginForm redirectTo={redirectTo} />
+                  <LoginForm
+                    redirectTo={redirectTo}
+                    onForgotPassword={() => onSwitchMode("forgot-password")}
+                  />
                   <div className="flex justify-between text-sm">
-                    <Link
-                      href="/forgot-password"
+                    <button
+                      type="button"
+                      onClick={() => onSwitchMode("forgot-password")}
                       className="text-primary hover:underline"
                     >
                       Forgot Password?
-                    </Link>
+                    </button>
                     <button
                       type="button"
-                      onClick={() => switchMode("register")}
+                      onClick={() => onSwitchMode("register")}
                       className="text-primary hover:underline"
                     >
                       Create Account
                     </button>
                   </div>
                 </div>
-              ) : (
+              ) : mode === "register" ? (
                 <div className="space-y-6">
                   <RegisterForm
                     redirectTo={redirectTo}
@@ -166,13 +158,18 @@ export function AuthModal({ mode, closeMode = "back" }: AuthModalProps) {
                   <div className="text-center text-sm">
                     <button
                       type="button"
-                      onClick={() => switchMode("login")}
+                      onClick={() => onSwitchMode("login")}
                       className="text-primary hover:underline"
                     >
                       Already have an account?
                     </button>
                   </div>
                 </div>
+              ) : (
+                <ForgotPasswordFlow
+                  onBackToLogin={() => onSwitchMode("login")}
+                  onCompleted={onClose}
+                />
               )}
             </AuthCard>
           </div>

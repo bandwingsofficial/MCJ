@@ -114,6 +114,22 @@ export const authService = {
     }
   },
 
+  async sendPasswordResetOtp(email: string) {
+    await authApi.sendPasswordResetOtp(email);
+  },
+
+  async verifyPasswordResetOtp(email: string, otp: string) {
+    const response = await authApi.verifyPasswordResetOtp(email, otp);
+    return response.data.data;
+  },
+
+  async completePasswordReset(payload: {
+    resetToken: string;
+    newPassword: string;
+  }) {
+    await authApi.completePasswordResetOtp(payload);
+  },
+
   async requestPasswordReset(
     payload: PasswordResetRequest
   ) {

@@ -10,4 +10,10 @@ export interface TransactionalEmailPort {
     recipientName?: string;
     resetUrl: string;
   }): Promise<void>;
+
+  sendPasswordResetOtp(input: {
+    toEmail: string;
+    recipientName?: string;
+    otp: string;
+  }): Promise<void>;
 }

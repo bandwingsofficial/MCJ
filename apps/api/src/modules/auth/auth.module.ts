@@ -30,6 +30,7 @@ import { RequestPasswordResetHandler } from './application/password-reset/reques
 import { ResetPasswordHandler } from './application/password-reset/reset-password.handler';
 import { ValidatePasswordResetTokenHandler } from './application/password-reset/validate-password-reset-token.handler';
 import { RegistrationEmailVerificationService } from './application/email-verification/registration-email-verification.service';
+import { PasswordResetOtpService } from './application/password-reset/password-reset-otp.service';
 import { BrevoEmailService } from '../../infrastructure/email/brevo-email.service';
 import type { TransactionalEmailPort } from './application/ports/transactional-email.port';
 import { GetMeHandler } from './application/me/get-me.handler';
@@ -170,6 +171,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 
     BrevoEmailService,
     RegistrationEmailVerificationService,
+    PasswordResetOtpService,
     {
       provide: AUTH_TOKENS.TRANSACTIONAL_EMAIL,
       useExisting: BrevoEmailService,

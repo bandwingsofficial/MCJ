@@ -1,31 +1,17 @@
-// src/features/auth/pages/forgot-password.page.tsx
+"use client";
 
-import Link from "next/link";
+import { AuthRouteModalBridge } from "@/src/features/auth/components/auth-modal-controller";
+import type { AuthModalCloseMode } from "@/src/features/auth/components/auth-modal";
 
-import { AuthCard } from "@/src/features/auth/components/auth-card";
-import { AuthPageWrapper } from "@/src/features/auth/components/auth-page-wrapper";
-import { ForgotPasswordForm } from "@/src/features/auth/components/forgot-password-form";
-
-export function ForgotPasswordPage() {
+export function ForgotPasswordPage({
+  closeMode = "back",
+}: {
+  closeMode?: AuthModalCloseMode;
+}) {
   return (
-    <AuthPageWrapper>
-      <AuthCard
-        title="Forgot Password"
-        description="Enter your email to receive OTP"
-      >
-        <div className="space-y-6">
-          <ForgotPasswordForm />
-
-          <div className="text-center text-sm">
-            <Link
-              href="/login"
-              className="text-primary hover:underline"
-            >
-              Back To Login
-            </Link>
-          </div>
-        </div>
-      </AuthCard>
-    </AuthPageWrapper>
+    <AuthRouteModalBridge
+      mode="forgot-password"
+      dismiss={closeMode === "home" ? "home" : "back"}
+    />
   );
 }

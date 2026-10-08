@@ -41,6 +41,7 @@ import { RequestPasswordResetHandler } from '../../application/password-reset/re
 import { ResetPasswordHandler } from '../../application/password-reset/reset-password.handler';
 import { ValidatePasswordResetTokenHandler } from '../../application/password-reset/validate-password-reset-token.handler';
 import { RegistrationEmailVerificationService } from '../../application/email-verification/registration-email-verification.service';
+import { PasswordResetOtpService } from '../../application/password-reset/password-reset-otp.service';
 
 import { GetMeHandler } from '../../application/me/get-me.handler';
 
@@ -97,6 +98,11 @@ import {
   SendRegistrationEmailOtpDto,
   VerifyRegistrationEmailOtpDto,
 } from '../dtos/registration-email-verification.dto';
+import {
+  CompletePasswordResetOtpDto,
+  SendPasswordResetOtpDto,
+  VerifyPasswordResetOtpDto,
+} from '../dtos/password-reset-otp.dto';
 
 // =====================
 // UTILS
@@ -129,6 +135,7 @@ export class AuthController {
     private readonly resetPasswordHandler: ResetPasswordHandler,
     private readonly validatePasswordResetTokenHandler: ValidatePasswordResetTokenHandler,
     private readonly registrationEmailVerification: RegistrationEmailVerificationService,
+    private readonly passwordResetOtp: PasswordResetOtpService,
     private readonly getMeHandler: GetMeHandler,
     private readonly accountLifecycle: UserAccountLifecycleService,
   ) {}
@@ -393,6 +400,55 @@ export class AuthController {
   // =====================
   // 🔥 REQUEST RESET
   // =====================
+
+  @Post('password-reset/otp/send')
+  async sendPasswordResetOtp(
+    @Body() dto: SendPasswordResetOtpDto,
+    @Req() req: Request,
+  ) {
+    await this.passwordResetOtp.sendOtp({
+      email: dto.email,
+      ipAddress: getClientIp(req),
+    });
+
+    return {
+      message: 'Verification code sent',
+    };
+  }
+
+  @Post('password-reset/otp/verify')
+  async verifyPasswordResetOtp(
+    @Body() dto: VerifyPasswordResetOtpDto,
+    @Req() req: Request,
+  ) {
+    const result = await this.passwordResetOtp.verifyOtp({
+      email: dto.email,
+      otp: dto.otp,
+      ipAddress: getClientIp(req),
+    });
+
+    return {
+      message: 'OTP verified',
+      data: result,
+    };
+  }
+
+  @Post('password-reset/otp/complete')
+  async completePasswordResetOtp(
+    @Body() dto: CompletePasswordResetOtpDto,
+    @Req() req: Request,
+  ) {
+    await this.passwordResetOtp.completeReset({
+      resetToken: dto.resetToken,
+      newPassword: dto.newPassword,
+      ipAddress: getClientIp(req),
+      userAgent: getUserAgent(req),
+    });
+
+    return {
+      message: 'Password reset successful',
+    };
+  }
 
   @Post('password-reset/request')
   async requestReset(

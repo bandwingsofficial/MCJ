@@ -7,7 +7,12 @@ function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
   useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setInView(true); }, { threshold });
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) setInView(true);
+      },
+      { threshold },
+    );
     if (ref.current) obs.observe(ref.current);
     return () => obs.disconnect();
   }, [threshold]);
@@ -30,12 +35,23 @@ function useCounter(end: number, duration = 1800, start = false) {
   return count;
 }
 
-function AnimCounter({ value, suffix = "+", label }: { value: number, suffix?: string, label: string }) {
+function AnimCounter({
+  value,
+  suffix = "+",
+  label,
+}: {
+  value: number;
+  suffix?: string;
+  label: string;
+}) {
   const [ref, inView] = useInView();
   const n = useCounter(value, 1800, inView);
   return (
     <div ref={ref} className="anim-stat">
-      <span className="anim-num">{n}{suffix}</span>
+      <span className="anim-num">
+        {n}
+        {suffix}
+      </span>
       <span className="anim-lbl">{label}</span>
     </div>
   );
@@ -45,26 +61,96 @@ export function FranchisePage() {
   const [activeStep, setActiveStep] = useState(0);
 
   const pillars = [
-    { icon: "📋", color: "blue",  title: "Zero Curriculum Work",      desc: "Every course — Tally, GST, Financial Accounting — is fully developed, tested, and ready to deliver. You teach from day one." },
-    { icon: "🎓", color: "gold",  title: "Faculty Training Program",    desc: "MCJ trains your team before your center opens. Methodology, delivery, and student engagement — all covered." },
-    { icon: "📣", color: "navy",  title: "Brand & Admission Support",   desc: "Leverage MCJ's digital presence, social campaigns, and reputation to drive student inquiries from launch day." },
-    { icon: "💼", color: "blue",  title: "Placement Network Access",    desc: "Your students plug into MCJ's 5,000+ alumni and employer network — making your placement record strong from day one." },
-    { icon: "🖥️", color: "gold",  title: "Technology & LMS",            desc: "Access our student management platform, digital classrooms, and attendance tools without building anything yourself." },
-    { icon: "🤝", color: "navy",  title: "Dedicated Partner Manager",   desc: "A single point of contact who knows your center, your city, and your goals — available whenever you need support." },
+    {
+      icon: "📋",
+      color: "blue",
+      title: "Zero Curriculum Work",
+      desc: "Every course — Tally, GST, Financial Accounting — is fully developed, tested, and ready to deliver. You teach from day one.",
+    },
+    {
+      icon: "🎓",
+      color: "gold",
+      title: "Faculty Training Program",
+      desc: "MCJ trains your team before your center opens. Methodology, delivery, and student engagement — all covered.",
+    },
+    {
+      icon: "📣",
+      color: "navy",
+      title: "Brand & Admission Support",
+      desc: "Leverage MCJ's digital presence, social campaigns, and reputation to drive student inquiries from launch day.",
+    },
+    {
+      icon: "💼",
+      color: "blue",
+      title: "Placement Network Access",
+      desc: "Your students plug into MCJ's 5,000+ alumni and employer network — making your placement record strong from day one.",
+    },
+    {
+      icon: "🖥️",
+      color: "gold",
+      title: "Technology & LMS",
+      desc: "Access our student management platform, digital classrooms, and attendance tools without building anything yourself.",
+    },
+    {
+      icon: "🤝",
+      color: "navy",
+      title: "Dedicated Partner Manager",
+      desc: "A single point of contact who knows your center, your city, and your goals — available whenever you need support.",
+    },
   ];
 
   const steps = [
-    { num: "01", title: "Express Interest", icon: "✉️", short: "Fill the inquiry or call us directly.", detail: "Tell us your city, background, and vision. Our franchise team reviews every application personally within 48 hours and follows up the same day." },
-    { num: "02", title: "Discovery Call",   icon: "📞", short: "One-on-one consultation with our team.", detail: "We understand your local market, walk you through the opportunity in detail, and assess mutual fit — no pressure, no commitment, just an honest conversation." },
-    { num: "03", title: "Agreement & Setup", icon: "📄", short: "Formalize the partnership.", detail: "Sign the franchise agreement and kick off center setup. MCJ provides infrastructure guidance, branding kits, signage, and complete staff training." },
-    { num: "04", title: "Grand Launch",     icon: "🚀", short: "Open with MCJ's full support behind you.", detail: "Launch your center backed by a full admissions drive, digital campaign, and our ongoing operational and academic support through year one and beyond." },
+    {
+      num: "01",
+      title: "Express Interest",
+      icon: "✉️",
+      short: "Fill the inquiry or call us directly.",
+      detail:
+        "Tell us your city, background, and vision. Our franchise team reviews every application personally within 48 hours and follows up the same day.",
+    },
+    {
+      num: "02",
+      title: "Discovery Call",
+      icon: "📞",
+      short: "One-on-one consultation with our team.",
+      detail:
+        "We understand your local market, walk you through the opportunity in detail, and assess mutual fit — no pressure, no commitment, just an honest conversation.",
+    },
+    {
+      num: "03",
+      title: "Agreement & Setup",
+      icon: "📄",
+      short: "Formalize the partnership.",
+      detail:
+        "Sign the franchise agreement and kick off center setup. MCJ provides infrastructure guidance, branding kits, signage, and complete staff training.",
+    },
+    {
+      num: "04",
+      title: "Grand Launch",
+      icon: "🚀",
+      short: "Open with MCJ's full support behind you.",
+      detail:
+        "Launch your center backed by a full admissions drive, digital campaign, and our ongoing operational and academic support through year one and beyond.",
+    },
   ];
 
   const whys = [
-    { label: "Accounting is evergreen",  sub: "Every business needs Tally-proficient staff. Demand never dips." },
-    { label: "Brand trust is built-in",  sub: "MCJ's name converts enquiries faster than any new institute." },
-    { label: "Low execution risk",       sub: "Curriculum, faculty training, and admission tools are already ready." },
-    { label: "Community impact",         sub: "You create employment and transform careers in your own city." },
+    {
+      label: "Accounting is evergreen",
+      sub: "Every business needs Tally-proficient staff. Demand never dips.",
+    },
+    {
+      label: "Brand trust is built-in",
+      sub: "MCJ's name converts enquiries faster than any new institute.",
+    },
+    {
+      label: "Low execution risk",
+      sub: "Curriculum, faculty training, and admission tools are already ready.",
+    },
+    {
+      label: "Community impact",
+      sub: "You create employment and transform careers in your own city.",
+    },
   ];
 
   return (
@@ -424,18 +510,35 @@ export function FranchisePage() {
             <div>
               <div className="eyebrow-pill">Franchise Partnership · 2025</div>
               <h1 className="hero-h1">
-                Open an MCJ Center<br />in <em>Your City</em>
+                Open an MCJ Center
+                <br />
+                in <em>Your City</em>
               </h1>
               <p className="hero-sub">
-                India's most in-demand accounting skills — Tally, GST, Financial Accounting —
-                delivered through your center, backed by MCJ's proven curriculum, brand, and
-                placement network. You bring the vision; we provide everything else.
+                India's most in-demand accounting skills — Tally, GST, Financial
+                Accounting — delivered through your center, backed by MCJ's
+                proven curriculum, brand, and placement network. You bring the
+                vision; we provide everything else.
               </p>
               <div className="hero-btns">
-                <button className="btn-navy" onClick={() => document.getElementById('contact-sec')?.scrollIntoView({ behavior: 'smooth' })}>
+                <button
+                  className="btn-navy"
+                  onClick={() =>
+                    document
+                      .getElementById("contact-sec")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                >
                   Apply for Franchise →
                 </button>
-                <button className="btn-gold-out" onClick={() => document.getElementById('process-sec')?.scrollIntoView({ behavior: 'smooth' })}>
+                <button
+                  className="btn-gold-out"
+                  onClick={() =>
+                    document
+                      .getElementById("process-sec")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                >
                   How It Works
                 </button>
               </div>
@@ -443,14 +546,38 @@ export function FranchisePage() {
 
             <div className="hero-card">
               <div className="hc-tag">MCJ Franchise Advantage</div>
-              <h3 className="hc-title">What You Get<br />From Day One</h3>
+              <h3 className="hc-title">
+                What You Get
+                <br />
+                From Day One
+              </h3>
               <div className="hc-list">
                 {[
-                  { dot: "d-gold",  t: "Complete Curriculum Package",       s: "Tally · GST · Financial Accounting" },
-                  { dot: "d-blue",  t: "Faculty Training & Certification",   s: "Before you open — not after" },
-                  { dot: "d-gold",  t: "Branding & Marketing Kit",           s: "Digital + physical · Ready to deploy" },
-                  { dot: "d-white", t: "Placement Network Access",           s: "5,000+ alumni · Live employer tie-ups" },
-                  { dot: "d-blue",  t: "Dedicated Relationship Manager",     s: "Ongoing · Not just at launch" },
+                  {
+                    dot: "d-gold",
+                    t: "Complete Curriculum Package",
+                    s: "Tally · GST · Financial Accounting",
+                  },
+                  {
+                    dot: "d-blue",
+                    t: "Faculty Training & Certification",
+                    s: "Before you open — not after",
+                  },
+                  {
+                    dot: "d-gold",
+                    t: "Branding & Marketing Kit",
+                    s: "Digital + physical · Ready to deploy",
+                  },
+                  {
+                    dot: "d-white",
+                    t: "Placement Network Access",
+                    s: "5,000+ alumni · Live employer tie-ups",
+                  },
+                  {
+                    dot: "d-blue",
+                    t: "Dedicated Relationship Manager",
+                    s: "Ongoing · Not just at launch",
+                  },
                 ].map((item, i) => (
                   <div key={i} className="hc-item">
                     <div className={`hc-dot ${item.dot}`} />
@@ -472,9 +599,9 @@ export function FranchisePage() {
         <div className="stats-band">
           <div className="stats-inner">
             <AnimCounter value={5000} suffix="+" label="Students Trained" />
-            <AnimCounter value={12}   suffix="+" label="Active Centers" />
-            <AnimCounter value={98}   suffix="%" label="Placement Rate" />
-            <AnimCounter value={8}    suffix="+" label="Years of Excellence" />
+            <AnimCounter value={12} suffix="+" label="Active Centers" />
+            <AnimCounter value={98} suffix="%" label="Placement Rate" />
+            <AnimCounter value={8} suffix="+" label="Years of Excellence" />
           </div>
         </div>
 
@@ -483,12 +610,17 @@ export function FranchisePage() {
             <div className="pillars-top">
               <div>
                 <div className="eyebrow">Partnership Benefits</div>
-                <h2 className="sec-h2">Everything Already<br /><em>Built for You</em></h2>
+                <h2 className="sec-h2">
+                  Everything Already
+                  <br />
+                  <em>Built for You</em>
+                </h2>
               </div>
               <p className="sec-lead">
-                MCJ partners inherit a decade of curriculum refinement, placement relationships,
-                and brand equity that students already trust. You focus on running your center —
-                we've done the groundwork.
+                MCJ partners inherit a decade of curriculum refinement,
+                placement relationships, and brand equity that students already
+                trust. You focus on running your center — we've done the
+                groundwork.
               </p>
             </div>
             <div className="pillars-grid">
@@ -506,11 +638,19 @@ export function FranchisePage() {
         <section className="sec process-bg" id="process-sec">
           <div className="sec-inner">
             <div className="eyebrow ey-blue">The Journey</div>
-            <h2 className="sec-h2">From Enquiry to<br /><em>Opening Day</em></h2>
+            <h2 className="sec-h2">
+              From Enquiry to
+              <br />
+              <em>Opening Day</em>
+            </h2>
             <div className="process-layout">
               <div className="step-tabs">
                 {steps.map((s, i) => (
-                  <div key={i} className={`step-tab ${activeStep === i ? "active" : ""}`} onClick={() => setActiveStep(i)}>
+                  <div
+                    key={i}
+                    className={`step-tab ${activeStep === i ? "active" : ""}`}
+                    onClick={() => setActiveStep(i)}
+                  >
                     <span className="st-num">{s.num}</span>
                     <div>
                       <div className="st-title">{s.title}</div>
@@ -526,7 +666,12 @@ export function FranchisePage() {
                 <h3 className="sd-title">{steps[activeStep].title}</h3>
                 <p className="sd-text">{steps[activeStep].detail}</p>
                 <div className="sd-dots">
-                  {steps.map((_, i) => <div key={i} className={`sd-dot ${i === activeStep ? "on" : ""}`} />)}
+                  {steps.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`sd-dot ${i === activeStep ? "on" : ""}`}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -549,16 +694,22 @@ export function FranchisePage() {
               </div>
               <div>
                 <div className="eyebrow">Why This Works</div>
-                <h2 className="sec-h2">A Business Built on<br /><em>Proven Demand</em></h2>
+                <h2 className="sec-h2">
+                  A Business Built on
+                  <br />
+                  <em>Proven Demand</em>
+                </h2>
                 <p className="sec-lead">
-                  Every business in India needs accounting-trained staff. The demand for Tally,
-                  GST, and finance skills has only grown — and MCJ centers are the trusted answer
-                  in every city they serve.
+                  Every business in India needs accounting-trained staff. The
+                  demand for Tally, GST, and finance skills has only grown — and
+                  MCJ centers are the trusted answer in every city they serve.
                 </p>
                 <div className="why-items">
                   {whys.map((w, i) => (
                     <div key={i} className="why-item">
-                      <span className="wi-n">{String(i + 1).padStart(2, "0")}</span>
+                      <span className="wi-n">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
                       <div>
                         <div className="wi-t">{w.label}</div>
                         <div className="wi-s">{w.sub}</div>
@@ -575,18 +726,39 @@ export function FranchisePage() {
           <div className="partner-inner">
             <div>
               <div className="eyebrow">Who We're Looking For</div>
-              <h2 className="sec-h2">The Ideal<br /><em>MCJ Partner</em></h2>
+              <h2 className="sec-h2">
+                The Ideal
+                <br />
+                <em>MCJ Partner</em>
+              </h2>
               <p className="sec-lead">
-                You don't need an education background — you need drive, local knowledge, and
-                the ambition to build something meaningful in your city. MCJ provides everything else.
+                You don't need an education background — you need drive, local
+                knowledge, and the ambition to build something meaningful in
+                your city. MCJ provides everything else.
               </p>
             </div>
             <div className="p-cards">
               {[
-                { icon: "🏙️", title: "Local Presence",   desc: "You know your city's student market, colleges, and business community well." },
-                { icon: "📈", title: "Growth Mindset",   desc: "Committed to building long-term, not just filling seats short-term." },
-                { icon: "👥", title: "People Skills",    desc: "Able to lead a small team and communicate MCJ's value to students and parents." },
-                { icon: "🎯", title: "Mission-Aligned",  desc: "Genuinely wants to improve career outcomes for young people in your area." },
+                {
+                  icon: "🏙️",
+                  title: "Local Presence",
+                  desc: "You know your city's student market, colleges, and business community well.",
+                },
+                {
+                  icon: "📈",
+                  title: "Growth Mindset",
+                  desc: "Committed to building long-term, not just filling seats short-term.",
+                },
+                {
+                  icon: "👥",
+                  title: "People Skills",
+                  desc: "Able to lead a small team and communicate MCJ's value to students and parents.",
+                },
+                {
+                  icon: "🎯",
+                  title: "Mission-Aligned",
+                  desc: "Genuinely wants to improve career outcomes for young people in your area.",
+                },
               ].map((c, i) => (
                 <div key={i} className="p-card">
                   <span className="pc-icon">{c.icon}</span>
@@ -601,34 +773,63 @@ export function FranchisePage() {
         <section className="sec contact-bg" id="contact-sec">
           <div className="sec-inner">
             <div className="eyebrow ey-blue">Get in Touch</div>
-            <h2 className="sec-h2">Start the<br /><em>Conversation</em></h2>
+            <h2 className="sec-h2">
+              Start the
+              <br />
+              <em>Conversation</em>
+            </h2>
             <div className="contact-grid">
               <div className="info-box">
                 <div className="info-label">Headquarters</div>
                 <div className="info-val">
-                  #258/1, 1st Floor, Near 31E Bus Stop Rd,<br />
-                  2nd Block, Thyagaraja Nagar,<br />
+                  #258/1, 1st Floor, Near 31E Bus Stop Rd,
+                  <br />
+                  2nd Block, Thyagaraja Nagar,
+                  <br />
                   Bengaluru, Karnataka — 560028
                 </div>
                 <div className="info-divider" />
                 <div className="info-label">Working Hours</div>
-                <div className="info-val">Monday – Saturday &nbsp;·&nbsp; 9:00 AM – 6:00 PM</div>
+                <div className="info-val">
+                  Monday – Saturday &nbsp;·&nbsp; 9:00 AM – 6:00 PM
+                </div>
                 <div className="map-box">
                   <div className="map-pin-big">📍</div>
                   <div className="map-txt">MCJ Academy of Accounting</div>
-                  <div className="map-addr">Thyagaraja Nagar, Bengaluru 560028</div>
+                  <div className="map-addr">
+                    Thyagaraja Nagar, Bengaluru 560028
+                  </div>
                 </div>
               </div>
 
               <div className="contact-cards">
                 <p className="contact-intro">
-                  Reach out directly and our franchise team will connect with you within 48 hours.
-                  We're happy to answer any question before you make any decision.
+                  Reach out directly and our franchise team will connect with
+                  you within 48 hours. We're happy to answer any question before
+                  you make any decision.
                 </p>
                 {[
-                  { icon: "📞", cls: "ci-blue",  label: "Call Us",    val: "+91 888 000 7484",         sub: "+91 966 337 0950" },
-                  { icon: "✉️", cls: "ci-gold",  label: "Email Us",   val: "support@mcjinstitute.com", sub: "We respond within 24 hours" },
-                  { icon: "💬", cls: "ci-navy",  label: "WhatsApp",   val: "+91 888 000 7484",         sub: "Quick queries, quick answers" },
+                  {
+                    icon: "📞",
+                    cls: "ci-blue",
+                    label: "Call Us",
+                    val: "+91 888 000 7484",
+                    sub: "+91 966 337 0950",
+                  },
+                  {
+                    icon: "✉️",
+                    cls: "ci-gold",
+                    label: "Email Us",
+                    val: "mcjtrainingacademy@gmail.com",
+                    sub: "We respond within 24 hours",
+                  },
+                  {
+                    icon: "💬",
+                    cls: "ci-navy",
+                    label: "WhatsApp",
+                    val: "+91 888 000 7484",
+                    sub: "Quick queries, quick answers",
+                  },
                 ].map((c, i) => (
                   <div key={i} className="c-card">
                     <div className={`c-icon ${c.cls}`}>{c.icon}</div>
@@ -645,7 +846,6 @@ export function FranchisePage() {
           </div>
         </section>
         <CTASection />
-
       </div>
     </>
   );

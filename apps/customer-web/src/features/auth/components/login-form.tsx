@@ -16,7 +16,13 @@ import {
   LoginFormValues,
 } from "@/src/features/auth/schemas/login.schema";
 
-export function LoginForm({ redirectTo }: { redirectTo?: string }) {
+export function LoginForm({
+  redirectTo,
+  onForgotPassword,
+}: {
+  redirectTo?: string;
+  onForgotPassword: () => void;
+}) {
   const loginMutation = useLogin(redirectTo);
 
   const {
@@ -58,6 +64,10 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
           font-weight: 600;
           color: #2563D9;
           text-decoration: none;
+          background: none;
+          border: 0;
+          padding: 0;
+          cursor: pointer;
           transition: color 0.15s;
         }
         .mcj-forgot-link:hover { color: #1E49A8; text-decoration: underline; }
@@ -142,7 +152,13 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
         <div className="mcj-field">
           <div className="mcj-label-row">
             <label className="mcj-label">Password <span className="req">*</span></label>
-            <a href="/forgot-password" className="mcj-forgot-link">Forgot password?</a>
+            <button
+              type="button"
+              className="mcj-forgot-link"
+              onClick={onForgotPassword}
+            >
+              Forgot password?
+            </button>
           </div>
           <div className="mcj-input-wrap">
             <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

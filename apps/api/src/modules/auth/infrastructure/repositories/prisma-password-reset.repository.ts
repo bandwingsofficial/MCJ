@@ -2,6 +2,8 @@
 
 import { Logger } from '@nestjs/common';
 
+import { PasswordResetChannel } from '@prisma/client';
+
 import { PrismaService } from '../../../../infrastructure/prisma/prisma.service';
 
 import type { PasswordResetRepository } from '../../domain/repositories/password-reset.repository';
@@ -86,7 +88,7 @@ export class PrismaPasswordResetRepository implements PasswordResetRepository {
     const record = await this.prisma.passwordResetToken.findFirst({
       where: {
         userId,
-
+        channel: PasswordResetChannel.LINK,
         isUsed: false,
 
         expiresAt: {
@@ -110,7 +112,7 @@ export class PrismaPasswordResetRepository implements PasswordResetRepository {
     const count = await this.prisma.passwordResetToken.count({
       where: {
         userId,
-
+        channel: PasswordResetChannel.LINK,
         isUsed: false,
 
         expiresAt: {
@@ -126,6 +128,7 @@ export class PrismaPasswordResetRepository implements PasswordResetRepository {
     return this.prisma.passwordResetToken.count({
       where: {
         userId,
+        channel: PasswordResetChannel.LINK,
 
         createdAt: {
           gte: since,
@@ -142,6 +145,7 @@ export class PrismaPasswordResetRepository implements PasswordResetRepository {
     await this.prisma.passwordResetToken.deleteMany({
       where: {
         userId,
+        channel: PasswordResetChannel.LINK,
 
         OR: [
           {

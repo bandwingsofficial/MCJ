@@ -123,6 +123,30 @@ export const authApi = {
     );
   },
 
+  sendPasswordResetOtp(email: string) {
+    return apiClient.post<ApiResponse<null>>(
+      "/auth/password-reset/otp/send",
+      { email },
+    );
+  },
+
+  verifyPasswordResetOtp(email: string, otp: string) {
+    return apiClient.post<ApiResponse<{ resetToken: string }>>(
+      "/auth/password-reset/otp/verify",
+      { email, otp },
+    );
+  },
+
+  completePasswordResetOtp(payload: {
+    resetToken: string;
+    newPassword: string;
+  }) {
+    return apiClient.post<ApiResponse<null>>(
+      "/auth/password-reset/otp/complete",
+      payload,
+    );
+  },
+
   requestPasswordReset(
     payload: PasswordResetRequest
   ) {

@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useAuthModalController } from "@/src/features/auth/components/auth-modal-context";
 import { Button } from "@/src/shared/components/ui/button";
 
 import { EnrollmentDialog } from "@/src/features/enrollments/components/EnrollmentDialog";
@@ -19,6 +20,7 @@ export function EnrollButton({
   isAuthenticated,
 }: EnrollButtonProps) {
   const router = useRouter();
+  const { openAuthModal } = useAuthModalController();
 
   const [open, setOpen] =
     useState(false);
@@ -38,8 +40,9 @@ export function EnrollButton({
       if (
         !isAuthenticated
       ) {
-        router.push(`/login?redirect=/courses/${courseSlug}`, {
-          scroll: false,
+        openAuthModal({
+          mode: "login",
+          redirectTo: `/courses/${courseSlug}`,
         });
 
         return;
@@ -49,7 +52,7 @@ export function EnrollButton({
     }, [
       courseSlug,
       isAuthenticated,
-      router,
+      openAuthModal,
     ]);
 
   const handleClose =

@@ -307,9 +307,9 @@ export function ContactPage() {
                 {MCJ_CONTACT.hours}
               </ContactInfoBlock>
 
-              <ContactInfoBlock icon={Building2} label="Institute">
-                MCJ Training Institute
-              </ContactInfoBlock>
+              <ContactInfoBlock icon={Building2} label="Academy">
+  MCJ Academy
+</ContactInfoBlock>
             </aside>
           </div>
         </div>

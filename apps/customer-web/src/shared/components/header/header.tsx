@@ -14,8 +14,8 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { useAuthModalController } from "@/src/features/auth/components/auth-modal-context";
 import { useAuthStore } from "@/src/features/auth/store/auth.store";
-import { AUTH_ROUTES } from "@/src/features/auth/constants/auth.constants";
 import { useLogout } from "@/src/features/auth/hooks/use-logout";
 import { useStudentPortalNavigation } from "@/src/features/student/context/StudentPortalNavigationProvider";
 import { getVisibleStudentPortalNavItems } from "@/src/features/student/config/student-portal-nav-items";
@@ -62,6 +62,7 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const { openAuthModal } = useAuthModalController();
   const logoutMutation = useLogout();
   const navigation = useStudentPortalNavigation();
 
@@ -84,7 +85,7 @@ export function Header() {
 
   const handleProtectedRoute = (href: string) => {
     if (!user) {
-      router.push(AUTH_ROUTES.LOGIN);
+      openAuthModal({ mode: "login" });
       return;
     }
     router.push(href);
@@ -172,13 +173,15 @@ export function Header() {
             </button>
 
             {!user ? (
-              <Link
-                href="/login"
-                scroll={false}
-                className="hidden rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:border-[#2563EB]/30 sm:inline-flex"
-              >
-                Login
-              </Link>
+              <div className="hidden items-center gap-2 sm:flex">
+                <button
+                  type="button"
+                  onClick={() => openAuthModal({ mode: "login" })}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-[#0B1F3A] transition hover:border-[#2563EB]/30"
+                >
+                  Login
+                </button>
+              </div>
             ) : null}
 
             <Link href="/contact" className="hidden sm:inline-flex">
@@ -308,14 +311,28 @@ export function Header() {
                 Search Courses
               </button>
               {!user ? (
-                <Link
-                  href="/login"
-                  scroll={false}
-                  onClick={() => setMobileOpen(false)}
-                  className="rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Login
-                </Link>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      openAuthModal({ mode: "login" });
+                    }}
+                    className="rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    Login
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      openAuthModal({ mode: "register" });
+                    }}
+                    className="rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    Register
+                  </button>
+                </>
               ) : null}
               <Link
                 href="/contact"
