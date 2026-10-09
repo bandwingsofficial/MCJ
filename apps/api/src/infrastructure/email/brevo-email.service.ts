@@ -135,4 +135,109 @@ export class BrevoEmailService {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
   }
+  
+async sendBranchEnquiryEmail(input: {
+  branchName: string;
+  branchEmail: string;
+  studentName: string;
+  phone: string;
+  courseName?: string;
+  batchName?: string;
+  notes?: string;
+}): Promise<void> {
+  const escape = (value: string) => this.escapeHtml(value);
+
+  const subject = `New Enquiry - ${input.branchName}`;
+
+  const rows = [
+    ["Branch", input.branchName],
+    ["Student Name", input.studentName],
+    ["Phone Number", input.phone],
+    ["Interested Course", input.courseName || "Not specified"],
+    ["Preferred Batch", input.batchName || "Not specified"],
+    ["Additional Notes", input.notes || "None"],
+  ];
+
+  const htmlContent = `
+    <h2>New Student Enquiry</h2>
+    <p>A new enquiry has been submitted through the MCJ Academy website.</p>
+    <table cellpadding="8" cellspacing="0" border="1"
+      style="border-collapse:collapse;border-color:#ddd;width:100%">
+      ${rows
+        .map(
+          ([label, value]) => `
+            <tr>
+              <td><strong>${escape(label)}</strong></td>
+              <td>${escape(value)}</td>
+            </tr>
+          `,
+        )
+        .join("")}
+    </table>
+  `;
+
+  const textContent = rows
+    .map(([label, value]) => `${label}: ${value}`)
+    .join("\n");
+
+  await this.sendTransactionalEmail({
+    toEmail: input.branchEmail,
+    toName: input.branchName,
+    subject,
+    htmlContent,
+    textContent,
+  });
+}
+
+async sendContactEnquiryEmail(input: {
+  fullName: string;
+  email: string;
+  phone?: string;
+  message: string;
+}): Promise<void> {
+  const recipientEmail = this.config
+    .get<string>('MCJ_CONTACT_EMAIL')
+    ?.trim();
+
+  if (!recipientEmail) {
+    this.logger.error('MCJ_CONTACT_EMAIL is not configured');
+    throw new Error('EMAIL_DELIVERY_UNAVAILABLE');
+  }
+
+  const rows = [
+    ['Full Name', input.fullName],
+    ['Email Address', input.email],
+    ['Phone Number', input.phone?.trim() || 'Not provided'],
+    ['Message', input.message],
+  ];
+
+  const htmlContent = `
+    <h2>New Contact Enquiry - MCJ Academy</h2>
+    <p>A new message has been submitted through the Contact page.</p>
+    <table cellpadding="8" cellspacing="0" border="1"
+      style="border-collapse:collapse;border-color:#ddd;width:100%">
+      ${rows
+        .map(
+          ([label, value]) => `
+            <tr>
+              <td><strong>${this.escapeHtml(label)}</strong></td>
+              <td>${this.escapeHtml(value)}</td>
+            </tr>
+          `,
+        )
+        .join('')}
+    </table>
+  `;
+
+  const textContent = rows
+    .map(([label, value]) => `${label}: ${value}`)
+    .join('\n');
+
+  await this.sendTransactionalEmail({
+    toEmail: recipientEmail,
+    subject: `New Contact Enquiry from ${input.fullName}`,
+    htmlContent,
+    textContent,
+  });
+}
 }

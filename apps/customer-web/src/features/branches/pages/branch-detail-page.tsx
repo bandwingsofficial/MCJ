@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   BookOpen,
   ChevronLeft,
@@ -96,8 +95,7 @@ function BranchHero({
             MCJ Academy
           </p>
           <h1 className="mt-2 text-3xl font-bold text-[#0B1F3A] sm:text-4xl">
-            {branch.branchName}{" "}
-            <span className="text-[#2563EB]">Branch</span>
+            {branch.branchName} <span className="text-[#2563EB]">Branch</span>
           </h1>
           <p className="mt-2 text-lg font-medium text-slate-700">
             Learn. Practice. Get Placed.
@@ -109,7 +107,10 @@ function BranchHero({
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {(statsLoading
-              ? Array.from({ length: 3 }, () => ({ label: "Loading", value: "—" }))
+              ? Array.from({ length: 3 }, () => ({
+                  label: "Loading",
+                  value: "—",
+                }))
               : stats
             ).map((item, index) => (
               <div
@@ -140,7 +141,12 @@ function BranchHero({
           <div className="pointer-events-none absolute -inset-4 rounded-[36px] bg-gradient-to-br from-[#BFDBFE]/50 via-[#E9D5FF]/35 to-transparent blur-2xl" />
           <div className="relative min-h-[320px] overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_24px_60px_rgba(37,99,235,0.12)]">
             {heroImage ? (
-              <Image src={heroImage} alt={branch.branchName} fill className="object-cover" />
+              <Image
+                src={heroImage}
+                alt={branch.branchName}
+                fill
+                className="object-cover"
+              />
             ) : (
               <div className="flex h-full min-h-[320px] items-center justify-center bg-gradient-to-br from-[#DBEAFE] to-[#EDE9FE] text-[#2563EB]">
                 {branch.branchCode}
@@ -164,12 +170,42 @@ function BranchHero({
 
 function BranchFeatureStrip() {
   const featureStyles = [
-    { icon: GraduationCap, bg: "bg-[#EFF6FF]", iconBg: "bg-[#DBEAFE]", text: "text-[#2563EB]" },
-    { icon: Monitor, bg: "bg-[#F5F3FF]", iconBg: "bg-[#EDE9FE]", text: "text-[#7C3AED]" },
-    { icon: BookOpen, bg: "bg-[#ECFEFF]", iconBg: "bg-[#CFFAFE]", text: "text-[#0891B2]" },
-    { icon: Headphones, bg: "bg-[#FDF2F8]", iconBg: "bg-[#FCE7F3]", text: "text-[#DB2777]" },
-    { icon: Sparkles, bg: "bg-[#EFF6FF]", iconBg: "bg-[#DBEAFE]", text: "text-[#2563EB]" },
-    { icon: Users, bg: "bg-[#F5F3FF]", iconBg: "bg-[#EDE9FE]", text: "text-[#7C3AED]" },
+    {
+      icon: GraduationCap,
+      bg: "bg-[#EFF6FF]",
+      iconBg: "bg-[#DBEAFE]",
+      text: "text-[#2563EB]",
+    },
+    {
+      icon: Monitor,
+      bg: "bg-[#F5F3FF]",
+      iconBg: "bg-[#EDE9FE]",
+      text: "text-[#7C3AED]",
+    },
+    {
+      icon: BookOpen,
+      bg: "bg-[#ECFEFF]",
+      iconBg: "bg-[#CFFAFE]",
+      text: "text-[#0891B2]",
+    },
+    {
+      icon: Headphones,
+      bg: "bg-[#FDF2F8]",
+      iconBg: "bg-[#FCE7F3]",
+      text: "text-[#DB2777]",
+    },
+    {
+      icon: Sparkles,
+      bg: "bg-[#EFF6FF]",
+      iconBg: "bg-[#DBEAFE]",
+      text: "text-[#2563EB]",
+    },
+    {
+      icon: Users,
+      bg: "bg-[#F5F3FF]",
+      iconBg: "bg-[#EDE9FE]",
+      text: "text-[#7C3AED]",
+    },
   ] as const;
 
   return (
@@ -215,7 +251,6 @@ function BranchEnquiryForm({
   courses: Array<{ id: string; title: string; slug: string }>;
   batches: Array<{ id: string; name: string }>;
 }) {
-  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [courseId, setCourseId] = useState("");
@@ -227,40 +262,91 @@ function BranchEnquiryForm({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
     const nextErrors: Record<string, string> = {};
-    if (!fullName.trim()) nextErrors.fullName = "Full name is required";
-    if (!phone.trim()) nextErrors.phone = "Phone number is required";
-    if (Object.keys(nextErrors).length) {
+
+    if (!fullName.trim()) {
+      nextErrors.fullName = "Full name is required";
+    }
+
+    if (!phone.trim()) {
+      nextErrors.phone = "Phone number is required";
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
     }
 
     setSubmitting(true);
     setErrors({});
-    const params = new URLSearchParams({
-      branch: branch.id,
-      name: fullName.trim(),
-      phone: phone.trim(),
-    });
-    if (courseId) params.set("courseId", courseId);
-    if (batchId) params.set("batchId", batchId);
-    const trimmedNotes = notes.trim();
-    if (trimmedNotes) params.set("notes", trimmedNotes);
-    router.push(`/contact?${params.toString()}`);
-    setSubmitted(true);
-    setSubmitting(false);
+
+    try {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
+
+      if (!apiBaseUrl) {
+        throw new Error("API configuration is missing");
+      }
+
+      const response = await fetch(
+        `${apiBaseUrl}/branches/${encodeURIComponent(branch.id)}/enquiries`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            studentName: fullName.trim(),
+            phone: phone.trim(),
+            courseName: courses.find((course) => course.id === courseId)?.title,
+            batchName: batches.find((batch) => batch.id === batchId)?.name,
+            notes: notes.trim(),
+          }),
+        },
+      );
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          typeof result?.message === "string"
+            ? result.message
+            : "Unable to send your enquiry. Please try again.",
+        );
+      }
+
+      setSubmitted(true);
+    } catch (error) {
+      setErrors({
+        submit:
+          error instanceof Error
+            ? error.message
+            : "Unable to send your enquiry. Please try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (submitted) {
     return (
       <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-6 text-sm text-emerald-700">
-        Thank you. Continue on the contact page to complete your enquiry.
+        Thank you! Your enquiry has been sent to {branch.branchName}. We will
+        contact you soon.
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+    >
+      {errors.submit ? (
+        <p role="alert" className="text-sm text-red-600">
+          {errors.submit}
+        </p>
+      ) : null}
       <h3 className="text-lg font-semibold text-[#0B1F3A]">
         Enquire for {branch.branchName}
       </h3>
@@ -274,7 +360,9 @@ function BranchEnquiryForm({
             errors.fullName ? "border-red-400" : "border-slate-200",
           )}
         />
-        {errors.fullName ? <p className="mt-1 text-xs text-red-500">{errors.fullName}</p> : null}
+        {errors.fullName ? (
+          <p className="mt-1 text-xs text-red-500">{errors.fullName}</p>
+        ) : null}
       </div>
       <div>
         <input
@@ -286,7 +374,9 @@ function BranchEnquiryForm({
             errors.phone ? "border-red-400" : "border-slate-200",
           )}
         />
-        {errors.phone ? <p className="mt-1 text-xs text-red-500">{errors.phone}</p> : null}
+        {errors.phone ? (
+          <p className="mt-1 text-xs text-red-500">{errors.phone}</p>
+        ) : null}
       </div>
       <select
         value={courseId}
@@ -401,7 +491,10 @@ export function BranchDetailPage({ branchSlugOrId }: Props) {
                 Courses Available at {branch.branchName}
               </h2>
             </div>
-            <Link href={`/courses?branch=${branch.id}`} className="text-sm font-semibold text-[#2563EB]">
+            <Link
+              href={`/courses?branch=${branch.id}`}
+              className="text-sm font-semibold text-[#2563EB]"
+            >
               View All Courses →
             </Link>
           </div>
@@ -434,7 +527,10 @@ export function BranchDetailPage({ branchSlugOrId }: Props) {
                 Meet Our Trainers at {branch.branchName}
               </h2>
             </div>
-            <Link href={`/trainers?branch=${branch.id}`} className="text-sm font-semibold text-[#2563EB]">
+            <Link
+              href={`/trainers?branch=${branch.id}`}
+              className="text-sm font-semibold text-[#2563EB]"
+            >
               View All Trainers →
             </Link>
           </div>
@@ -486,7 +582,9 @@ export function BranchDetailPage({ branchSlugOrId }: Props) {
                       {trainer.firstName} {trainer.lastName}
                     </h3>
                     <p className="text-sm text-slate-500">
-                      {trainer.specialization || trainer.qualification || "Trainer"}
+                      {trainer.specialization ||
+                        trainer.qualification ||
+                        "Trainer"}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
                       {trainer.experienceYears}+ years experience
@@ -512,7 +610,9 @@ export function BranchDetailPage({ branchSlugOrId }: Props) {
       <section className="bg-[#F8FBFF] py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-[#0B1F3A]">Our Branch Facilities</h2>
+            <h2 className="text-2xl font-bold text-[#0B1F3A]">
+              Our Branch Facilities
+            </h2>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -550,10 +650,17 @@ export function BranchDetailPage({ branchSlugOrId }: Props) {
                 )}
               >
                 <div className="relative h-52">
-                  <Image src={facility.image} alt={facility.name} fill className="object-cover" />
+                  <Image
+                    src={facility.image}
+                    alt={facility.name}
+                    fill
+                    className="object-cover"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B1F3A]/80 to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4">
-                    <p className="text-sm font-semibold text-white">{facility.name}</p>
+                    <p className="text-sm font-semibold text-white">
+                      {facility.name}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -594,15 +701,21 @@ export function BranchDetailPage({ branchSlugOrId }: Props) {
               </div>
             ) : null}
             <div className="mt-4 flex flex-wrap gap-3">
-              <a href={getGoogleMapsSearchUrl(branch)} target="_blank" rel="noreferrer">
+              <a
+                href={getGoogleMapsSearchUrl(branch)}
+                target="_blank"
+                rel="noreferrer"
+              >
                 <Button variant="outline" className="rounded-xl">
                   View on Google Maps
                 </Button>
               </a>
-              <a href={getGoogleMapsDirectionsUrl(branch)} target="_blank" rel="noreferrer">
-                <Button className="rounded-xl">
-                  Get Directions
-                </Button>
+              <a
+                href={getGoogleMapsDirectionsUrl(branch)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Button className="rounded-xl">Get Directions</Button>
               </a>
             </div>
           </div>

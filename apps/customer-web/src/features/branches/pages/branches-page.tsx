@@ -21,10 +21,7 @@ export function BranchesPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
-  const cities = useMemo(
-    () => getUniqueBranchCities(branches),
-    [branches],
-  );
+  const cities = useMemo(() => getUniqueBranchCities(branches), [branches]);
 
   const filteredBranches = useMemo(() => {
     const seen = new Set<string>();
@@ -53,14 +50,14 @@ export function BranchesPage() {
         <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2563EB]">
-              MCJ Training Institute
+              MCJ Academy
             </p>
             <h1 className="mt-3 text-4xl font-bold tracking-tight text-[#0B1F3A] sm:text-5xl">
               Our Branches
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
-              Find an MCJ Training Institute branch near you and explore the
-              courses, batches, trainers, and learning options available at each
+              Find an MCJ Academy branch near you and explore the courses,
+              batches, trainers, and learning options available at each
               location.
             </p>
 
@@ -120,8 +117,7 @@ export function BranchesPage() {
                 </button>
                 {cities.map((city) => {
                   const active =
-                    debouncedSearch.trim().toLowerCase() ===
-                    city.toLowerCase();
+                    debouncedSearch.trim().toLowerCase() === city.toLowerCase();
 
                   return (
                     <button

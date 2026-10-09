@@ -48,9 +48,10 @@ import { BRANCH_TOKENS } from './branch.tokens';
 import { BatchModule } from '../batch/batch.module';
 import { BATCH_TOKENS } from '../batch/batch.tokens';
 import type { BatchRepository } from '../batch/domain/repositories/batch.repository';
+import { EmailModule } from '../../infrastructure/email/email.module';
 
 @Module({
-  imports: [PrismaModule, UploadsModule, forwardRef(() => BatchModule)],
+  imports: [PrismaModule, UploadsModule, forwardRef(() => BatchModule), EmailModule],
 
   controllers: [
     BranchController,

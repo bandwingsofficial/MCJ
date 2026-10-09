@@ -32,6 +32,7 @@ import { ValidatePasswordResetTokenHandler } from './application/password-reset/
 import { RegistrationEmailVerificationService } from './application/email-verification/registration-email-verification.service';
 import { PasswordResetOtpService } from './application/password-reset/password-reset-otp.service';
 import { BrevoEmailService } from '../../infrastructure/email/brevo-email.service';
+import { EmailModule } from '../../infrastructure/email/email.module';
 import type { TransactionalEmailPort } from './application/ports/transactional-email.port';
 import { GetMeHandler } from './application/me/get-me.handler';
 
@@ -105,10 +106,11 @@ import { JwtStrategy } from './presentation/strategies/jwt.strategy';
 import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
 
 @Module({
-  imports: [
-    PrismaModule,
-    forwardRef(() => ReferralRewardsModule),
-    forwardRef(() => AdminUserManagementModule),
+imports: [
+  EmailModule,
+  PrismaModule,
+  forwardRef(() => ReferralRewardsModule),
+  forwardRef(() => AdminUserManagementModule),
 
     ConfigModule,
 
@@ -169,13 +171,12 @@ import { JwtAuthGuard } from './presentation/guards/jwt-auth.guard';
       useClass: InMemoryAuthRateLimiterService,
     },
 
-    BrevoEmailService,
     RegistrationEmailVerificationService,
-    PasswordResetOtpService,
-    {
-      provide: AUTH_TOKENS.TRANSACTIONAL_EMAIL,
-      useExisting: BrevoEmailService,
-    },
+PasswordResetOtpService,
+{
+  provide: AUTH_TOKENS.TRANSACTIONAL_EMAIL,
+  useExisting: BrevoEmailService,
+},
 
     // =====================
     // REPOSITORIES

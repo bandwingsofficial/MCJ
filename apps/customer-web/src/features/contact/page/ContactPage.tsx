@@ -55,6 +55,8 @@ function ContactInfoBlock({
 
 export function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+const [submitError, setSubmitError] = useState<string | null>(null);
 
   const mapsQuery = useMemo(
     () => encodeURIComponent(MCJ_CONTACT.addressLines.join(", ")),
@@ -63,10 +65,113 @@ export function ContactPage() {
   const mapsEmbedUrl = `https://maps.google.com/maps?q=${mapsQuery}&z=15&output=embed`;
   const mapsOpenUrl = `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setSubmitted(true);
+  
+
+
+async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+
+  const form = e.currentTarget;
+  const formData = new FormData(form);
+
+  const fullName = String(formData.get("fullName") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const message = String(formData.get("message") ?? "").trim();
+
+  setSubmitError(null);
+
+  // Full name: mandatory, minimum 3 characters
+  if (fullName.length < 3) {
+    setSubmitError("Full name must contain at least 3 characters.");
+    return;
   }
+
+  if (fullName.length > 100) {
+    setSubmitError("Full name cannot exceed 100 characters.");
+    return;
+  }
+
+  // Email: mandatory
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    setSubmitError("Please enter a valid email address.");
+    return;
+  }
+
+  if (email.length > 254) {
+    setSubmitError("Email address is too long.");
+    return;
+  }
+
+  // Phone: mandatory, valid 10-digit Indian mobile number
+  if (!/^[6-9]\d{9}$/.test(phone)) {
+    setSubmitError("Enter a valid 10-digit Indian mobile number.");
+    return;
+  }
+
+  // Message: mandatory
+  if (message.length < 3) {
+    setSubmitError("Message must contain at least 3 characters.");
+    return;
+  }
+
+  if (message.length > 2000) {
+    setSubmitError("Message cannot exceed 2000 characters.");
+    return;
+  }
+
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(
+    /\/+$/,
+    "",
+  );
+
+  if (!apiBaseUrl) {
+    setSubmitError("API configuration is missing.");
+    return;
+  }
+
+  setSubmitting(true);
+
+  try {
+    const response = await fetch(
+      `${apiBaseUrl}/branches/contact/enquiries`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName,
+          email,
+          phone,
+          message,
+        }),
+      },
+    );
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok || result?.success !== true) {
+      throw new Error(
+        typeof result?.message === "string"
+          ? result.message
+          : "Unable to send your message. Please try again.",
+      );
+    }
+
+    form.reset();
+    setSubmitted(true);
+  } catch (error) {
+    setSubmitError(
+      error instanceof Error
+        ? error.message
+        : "Unable to send your message. Please try again.",
+    );
+  } finally {
+    setSubmitting(false);
+  }
+}
+
 
   return (
     <div className="m-0 w-full bg-white p-0">
@@ -87,7 +192,7 @@ export function ContactPage() {
             </h1>
             <p className="mt-3.5 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base">
               Have a question, idea, or need support? We&apos;re here to help
-              you connect with MCJ Training Institute.
+              you connect with MCJ Academy.
             </p>
 
             <div className="mt-5 flex flex-wrap gap-2.5">
@@ -114,7 +219,7 @@ export function ContactPage() {
               <div className="relative aspect-[16/10] w-full">
                 <Image
                   src="/why/Image-Expert-Mentors.jpg"
-                  alt="MCJ Training Institute"
+                  alt="MCJ Academy"
                   fill
                   priority
                   sizes="(max-width: 1024px) 100vw, 420px"
@@ -127,7 +232,11 @@ export function ContactPage() {
                   Visit us
                 </p>
                 <p className="mt-1 text-xs leading-relaxed text-[#0B1F3A]">
-                  {MCJ_CONTACT.addressLines[MCJ_CONTACT.addressLines.length - 1]}
+                  {
+                    MCJ_CONTACT.addressLines[
+                      MCJ_CONTACT.addressLines.length - 1
+                    ]
+                  }
                 </p>
               </div>
             </div>
@@ -156,81 +265,104 @@ export function ContactPage() {
                     </p>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                    <div>
-                      <Label required htmlFor="contact-name">
-                        Full Name
-                      </Label>
-                      <div className="relative">
-                        <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <Input
-                          id="contact-name"
-                          name="fullName"
-                          required
-                          placeholder="Enter your full name"
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
+                  
+<form onSubmit={handleSubmit} className="space-y-5">
+  {submitError && (
+    <p role="alert" className="text-sm text-red-600">
+      {submitError}
+    </p>
+  )}
 
-                    <div className="grid gap-5 sm:grid-cols-2">
-                      <div>
-                        <Label required htmlFor="contact-email">
-                          Email Address
-                        </Label>
-                        <div className="relative">
-                          <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                          <Input
-                            id="contact-email"
-                            name="email"
-                            type="email"
-                            required
-                            placeholder="you@example.com"
-                            className="pl-10"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="contact-phone">Phone Number</Label>
-                        <div className="relative">
-                          <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                          <Input
-                            id="contact-phone"
-                            name="phone"
-                            type="tel"
-                            placeholder="Your phone number"
-                            className="pl-10"
-                          />
-                        </div>
-                      </div>
-                    </div>
+  <div>
+    <Label required htmlFor="contact-name">
+      Full Name
+    </Label>
+    <div className="relative">
+      <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <Input
+  id="contact-name"
+  name="fullName"
+  required
+  minLength={3}
+  maxLength={100}
+  placeholder="Enter your full name"
+  className="pl-10"
+/>
+    </div>
+  </div>
 
-                    <div>
-                      <Label required htmlFor="contact-message">
-                        Your Message
-                      </Label>
-                      <div className="relative">
-                        <MessageSquare className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
-                        <Textarea
-                          id="contact-message"
-                          name="message"
-                          required
-                          rows={5}
-                          placeholder="How can we help you?"
-                          className="min-h-[140px] resize-y pl-10"
-                        />
-                      </div>
-                    </div>
+  <div className="grid gap-5 sm:grid-cols-2">
+    <div>
+      <Label required htmlFor="contact-email">
+        Email Address
+      </Label>
+      <div className="relative">
+        <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Input
+          id="contact-email"
+          name="email"
+          type="email"
+          required
+          maxLength={254}
+          placeholder="you@example.com"
+          className="pl-10"
+        />
+      </div>
+    </div>
 
-                    <Button
-                      type="submit"
-                      size="lg"
-                      className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96] sm:w-auto sm:px-8"
-                    >
-                      <Send className="mr-2 h-4 w-4" />
-                      Send Message
-                    </Button>
-                  </form>
+    <div>
+      <Label required htmlFor="contact-phone">
+        Phone Number
+      </Label>
+      <div className="relative">
+        <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Input
+          id="contact-phone"
+          name="phone"
+          type="tel"
+          required
+          inputMode="numeric"
+          pattern="[6-9][0-9]{9}"
+          maxLength={10}
+          minLength={10}
+          title="Enter a valid 10-digit Indian mobile number"
+          placeholder="10-digit mobile number"
+          className="pl-10"
+        />
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <Label required htmlFor="contact-message">
+      Your Message
+    </Label>
+    <div className="relative">
+      <MessageSquare className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+      <Textarea
+        id="contact-message"
+        name="message"
+        required
+        minLength={3}
+        maxLength={2000}
+        rows={5}
+        placeholder="How can we help you?"
+        className="min-h-[140px] resize-y pl-10"
+      />
+    </div>
+  </div>
+
+  <Button
+    type="submit"
+    size="lg"
+    disabled={submitting}
+    className="h-12 w-full rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] text-sm font-semibold text-white hover:from-[#2860D4] hover:to-[#1A3F96] sm:w-auto sm:px-8"
+  >
+    <Send className="mr-2 h-4 w-4" />
+    {submitting ? "Sending..." : "Send Message"}
+  </Button>
+</form>
+
                 </>
               ) : (
                 <div className="flex flex-col items-center py-10 text-center sm:py-14">
@@ -308,8 +440,8 @@ export function ContactPage() {
               </ContactInfoBlock>
 
               <ContactInfoBlock icon={Building2} label="Academy">
-  MCJ Academy
-</ContactInfoBlock>
+                MCJ Academy
+              </ContactInfoBlock>
             </aside>
           </div>
         </div>
