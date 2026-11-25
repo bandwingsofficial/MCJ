@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo } from "react";
@@ -23,25 +24,28 @@ export function HomeBranchesSection() {
     <section className="w-full bg-[#F8FBFF] py-12 sm:py-14">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+          <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#2563EB]">
               Our Branches
             </p>
-            <h2 className="mt-2 text-3xl font-bold text-[#0B1F3A]">
-              {branches.length > 0
-                ? `${branches.length} Locations Across Bangalore`
-                : "Our Branches"}
+
+            <h2 className="mt-2 text-3xl font-bold leading-tight text-[#0B1F3A]">
+              Visit an MCJ Accounting Training Institute Near You
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Learn at a location convenient for you.
+
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              MCJ offers classroom training through its Bangalore branches.
+              Explore our branch locations, course availability and batch
+              information to find a convenient training centre.
             </p>
           </div>
+
           <Button
             variant="outline"
             onClick={() => router.push("/branches")}
-            className="rounded-xl"
+            className="shrink-0 rounded-xl"
           >
-            View on Map →
+            View All Branches →
           </Button>
         </div>
 

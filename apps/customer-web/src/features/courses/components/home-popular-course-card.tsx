@@ -244,7 +244,7 @@ export function HomePopularCourseCard({
               "
               onClick={handleEnroll}
             >
-              Learn More
+              View Course Details
 
               <ArrowRight
                 className="

@@ -48,14 +48,15 @@ export function HomeWhyMcjSection() {
             Why MCJ Academy
           </p>
           <h2 className="mt-3 text-3xl font-bold leading-tight sm:text-4xl">
-            More Than a Course. A{" "}
+            Why Choose MCJ Accounting Training Institute{" "}
             <span className="bg-gradient-to-r from-[#60A5FA] to-[#A78BFA] bg-clip-text text-transparent">
-              Brighter Future.
+              in Bangalore?
             </span>
           </h2>
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-300">
-            We combine practical accounting training, expert mentorship, and
-            placement support to help learners become job-ready professionals.
+            We provide practical, career-focused accounting and taxation
+            training to help learners develop the skills needed for
+            professional opportunities.
           </p>
           <Link href="/about" className="mt-6 inline-flex">
             <Button className="rounded-xl bg-white text-[#0B1F3A] hover:bg-slate-100">
@@ -85,30 +86,47 @@ export function HomeWhyMcjSection() {
   );
 }
 
+
 export function HomeFinalCtaSection() {
+  const whatsappNumber = "918880007484";
+
   return (
     <section className="bg-[#0B1F3A] px-4 py-14 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl rounded-3xl border border-white/10 bg-gradient-to-br from-[#102A56] to-[#0B1F3A] px-6 py-10 text-center sm:px-10">
         <h2 className="text-2xl font-bold text-white sm:text-3xl">
-          Take the First Step Towards a Successful Career
+          Start Your Accounting Career with MCJ Academy
         </h2>
-        <p className="mx-auto mt-3 max-w-2xl text-sm text-slate-300">
-          Speak with our counsellors, explore courses, and find the right batch
-          at your nearest MCJ Academy branch.
+
+        <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+          Looking to build a career in accounting, taxation or finance? Choose
+          the right accounting training programme and develop practical skills
+          with MCJ Accounting Training Institute. Contact us to learn about
+          courses, upcoming batches and free demo classes.
         </p>
-        <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+
+        <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap">
           <Link href="/contact">
             <Button className="rounded-xl bg-white px-6 text-[#0B1F3A] hover:bg-slate-100">
-              Enquire Now →
+              Enquire Now
             </Button>
           </Link>
-          <a href={`tel:${MCJ_CONTACT.phone.replace(/\s/g, "")}`}>
+
+          <Link href="/contact">
             <Button
               variant="outline"
-              className="rounded-xl border-white/20 bg-transparent text-white hover:bg-white/10"
+              className="rounded-xl border-white/30 bg-transparent px-6 text-white hover:bg-white/10"
             >
-              <Phone className="mr-2 h-4 w-4" />
-              Call Us
+              Book a Free Demo
+            </Button>
+          </Link>
+
+          <a
+            href={`https://wa.me/${whatsappNumber}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button className="rounded-xl bg-[#25D366] px-6 text-white hover:bg-[#1DA851]">
+              WhatsApp Us
             </Button>
           </a>
         </div>
@@ -116,3 +134,4 @@ export function HomeFinalCtaSection() {
     </section>
   );
 }
+

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMemo } from "react";
@@ -61,20 +62,20 @@ export function HomeCourses() {
               <span className="h-px w-6 bg-[#d4a84b]" />
 
               <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#b8922a]">
-                Featured Learning
+                Our Accounting Courses
               </span>
             </div>
 
             {/* Heading */}
 
-            <h2 className="text-[30px] font-bold leading-tight tracking-[-0.025em] text-[#0f2044] sm:text-[32px]">
-              Popular Courses
-            </h2>
+            <h2 className="text-[30px] font-bold leading-tight tracking-[-0.025em] text-[#2563EB] sm:text-[32px]">
+  Accounting Courses Offered at MCJ Academy
+</h2>
 
             {/* Description */}
 
             <p className="mt-1 max-w-lg text-[13px] leading-relaxed text-slate-500">
-              Most loved courses by our students.
+              Choose a programme based on your learning needs and career goals.
             </p>
           </div>
 

@@ -30,25 +30,29 @@ export function HeroSection() {
         <div>
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#BFDBFE] bg-white px-3 py-1.5 text-xs font-semibold text-[#2563EB]">
             <Sparkles className="h-3.5 w-3.5" />
-            Bangalore&apos;s Trusted Learning Partner
+            Accounting Training Institute in Bangalore
           </div>
 
           <h1 className="text-4xl font-bold leading-[1.05] tracking-tight text-[#0B1F3A] sm:text-5xl lg:text-[3.35rem]">
-            Future-Ready Skills for a{" "}
+            Build Your Career with{" "}
             <span className="bg-gradient-to-r from-[#2563EB] to-[#7C3AED] bg-clip-text text-transparent">
-              Brighter You
+              MCJ Academy
             </span>
           </h1>
 
           <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base">
-            Build accounting, HR, and business skills with practical training,
-            expert mentors, and placement-focused learning at MCJ Academy.
+            Start your career in accounting with practical, job-oriented training
+            at MCJ Accounting Training Institute, Bangalore. Learn accounting,
+            Tally Prime, GST filing, Income Tax, TDS, Advanced Excel, Payroll
+            Management and Zoho Books through hands-on training and
+            industry-relevant learning. Choose from classroom training, live
+            online classes and pre-recorded courses.
           </p>
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link href="/courses">
               <Button className="h-11 rounded-xl bg-gradient-to-r from-[#2F6BE5] to-[#1E49A8] px-5 text-white hover:from-[#2860D4] hover:to-[#1A3F96]">
-                Explore Courses
+                Explore Our Courses
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
@@ -59,7 +63,16 @@ export function HeroSection() {
                 className="h-11 rounded-xl border-slate-200 bg-white px-5 text-[#0B1F3A]"
               >
                 <Play className="mr-2 h-4 w-4" />
-                Watch Video
+                Book a Free Demo
+              </Button>
+            </Link>
+
+            <Link href="/contact">
+              <Button
+                variant="outline"
+                className="h-11 rounded-xl border-slate-200 bg-white px-5 text-[#0B1F3A]"
+              >
+                Enquire Now
               </Button>
             </Link>
           </div>

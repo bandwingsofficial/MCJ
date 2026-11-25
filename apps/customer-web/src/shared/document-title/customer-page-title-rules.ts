@@ -4,7 +4,10 @@ import {
 } from "@mcj/shared-constants";
 
 const CUSTOMER_PAGE_TITLE_RULES: readonly PageTitleRule[] = [
-  { pattern: /^\/$/, title: "Home" },
+  {
+    pattern: /^\/$/,
+    title: "Accounting Training Institute in Bangalore | MCJ Academy",
+  },
   { pattern: /^\/login$/, title: "Login" },
   { pattern: /^\/register$/, title: "Register" },
   { pattern: /^\/forgot-password$/, title: "Forgot Password" },

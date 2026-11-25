@@ -55,38 +55,40 @@ export const MCJ_BRANCH_FEATURE_ITEMS = [
   "Modern Classroom",
 ] as const;
 
+
 export const MCJ_WHY_FEATURES = [
   {
-    title: "Experienced & Friendly Faculty",
+    title: "Practical, Hands-on Accounting Training",
     description:
-      "Learn from qualified mentors who combine industry experience with approachable teaching.",
+      "Develop accounting skills through practical exercises, real-world examples, and hands-on accounting activities.",
   },
   {
-    title: "Real-time Practical Training",
+    title: "Classroom and Online Learning Options",
     description:
-      "Hands-on sessions, live examples, and real accounting workflows—not theory alone.",
+      "Choose between classroom training and live online classes based on your convenience.",
   },
   {
-    title: "Small Batch Sizes",
+    title: "Pre-recorded Video Learning",
     description:
-      "Limited seats per batch so every learner gets attention and doubt resolution.",
+      "Access pre-recorded lessons to learn at your own pace and revisit important topics whenever needed.",
   },
   {
-    title: "Flexible Timings",
+    title: "Simulation Software Practice",
     description:
-      "Weekday and weekend batches designed for students and working professionals.",
+      "Practise accounting activities using simulation software to understand real working environments.",
   },
   {
-    title: "Placement Support",
+    title: "Printed and Online Study Materials",
     description:
-      "Interview preparation, resume guidance, and hiring partner connections.",
+      "Get access to printed and digital study materials to support your learning and revision.",
   },
   {
-    title: "Certification & Career Guidance",
+    title: "Placement Assistance",
     description:
-      "Industry-relevant certification plus career counselling from expert mentors.",
+      "Get career guidance, interview preparation, and placement assistance to support your job search.",
   },
 ] as const;
+
 
 export const MCJ_BRANCH_FACILITIES = [
   {

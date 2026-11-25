@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
-import { formatMcjPageTitle } from "@mcj/shared-constants";
+import { formatMcjPageTitle, MCJ_ACADEMY_BRAND } from "@mcj/shared-constants";
 
 import { resolveCustomerPageTitle } from "@/src/shared/document-title/customer-page-title-rules";
 
@@ -34,7 +34,13 @@ export function DocumentTitleProvider({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    document.title = formatMcjPageTitle(override ?? routeTitle);
+    const segment = override ?? routeTitle;
+    const brandSuffix = `| ${MCJ_ACADEMY_BRAND}`;
+
+    document.title =
+      segment?.trim().endsWith(brandSuffix)
+        ? segment.trim()
+        : formatMcjPageTitle(segment);
   }, [override, routeTitle]);
 
   const setPageTitleOverride = useCallback((title: string | null) => {
